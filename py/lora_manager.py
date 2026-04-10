@@ -222,6 +222,7 @@ class LoraManager:
 
             # Register DownloadManager with ServiceRegistry
             await ServiceRegistry.get_download_manager()
+            await ServiceRegistry.get_backup_service()
 
             from .services.metadata_service import initialize_metadata_providers
 

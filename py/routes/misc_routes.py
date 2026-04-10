@@ -23,6 +23,7 @@ from .handlers.misc_handlers import (
     FileSystemHandler,
     HealthCheckHandler,
     LoraCodeHandler,
+    BackupHandler,
     MetadataArchiveHandler,
     MiscHandlerSet,
     ModelExampleFilesHandler,
@@ -116,6 +117,7 @@ class MiscRoutes:
             settings_service=self._settings,
             metadata_provider_updater=self._metadata_provider_updater,
         )
+        backup = BackupHandler()
         filesystem = FileSystemHandler(settings_service=self._settings)
         node_registry_handler = NodeRegistryHandler(
             node_registry=self._node_registry,
@@ -141,6 +143,7 @@ class MiscRoutes:
             node_registry=node_registry_handler,
             model_library=model_library,
             metadata_archive=metadata_archive,
+            backup=backup,
             filesystem=filesystem,
             custom_words=custom_words,
             supporters=supporters,

@@ -41,6 +41,8 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     metadata_refresh_skip_paths: [],
     skip_previously_downloaded_model_versions: false,
     download_skip_base_models: [],
+    backup_auto_enabled: true,
+    backup_retention_count: 5,
 });
 
 export function createDefaultSettings() {

@@ -62,6 +62,10 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/metadata-archive-status", "get_metadata_archive_status"
     ),
+    RouteDefinition("GET", "/api/lm/backup/status", "get_backup_status"),
+    RouteDefinition("POST", "/api/lm/backup/export", "export_backup"),
+    RouteDefinition("POST", "/api/lm/backup/import", "import_backup"),
+    RouteDefinition("POST", "/api/lm/backup/open-location", "open_backup_location"),
     RouteDefinition(
         "GET", "/api/lm/model-versions-status", "get_model_versions_status"
     ),

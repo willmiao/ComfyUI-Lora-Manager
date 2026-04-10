@@ -361,6 +361,13 @@ export class SettingsManager {
             });
         }
 
+        const openBackupLocationButton = document.getElementById('backupOpenLocationBtn');
+        if (openBackupLocationButton) {
+            openBackupLocationButton.addEventListener('click', () => {
+                this.openBackupLocation();
+            });
+        }
+
         ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
             const customInput = document.getElementById(`${modelType}CustomTemplate`);
             if (customInput) {
@@ -742,6 +749,35 @@ export class SettingsManager {
         }
     }
 
+    async openBackupLocation() {
+        try {
+            const response = await fetch('/api/lm/backup/open-location', {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.mode === 'clipboard' && data.path) {
+                try {
+                    await navigator.clipboard.writeText(data.path);
+                    showToast('settings.backup.locationCopied', { path: data.path }, 'success');
+                } catch (clipboardErr) {
+                    console.warn('Clipboard API not available:', clipboardErr);
+                    showToast('settings.backup.locationClipboardFallback', { path: data.path }, 'info');
+                }
+            } else {
+                showToast('settings.backup.openFolderSuccess', {}, 'success');
+            }
+        } catch (error) {
+            console.error('Failed to open backup folder:', error);
+            showToast('settings.backup.openFolderFailed', {}, 'error');
+        }
+    }
+
     async loadSettingsToUI() {
         // Set frontend settings from state
         const blurMatureContentCheckbox = document.getElementById('blurMatureContent');
@@ -877,6 +913,9 @@ export class SettingsManager {
 
         // Load metadata archive settings
         await this.loadMetadataArchiveSettings();
+
+        // Load backup settings
+        await this.loadBackupSettings();
 
         // Load base model path mappings
         this.loadBaseModelMappings();
@@ -1857,6 +1896,10 @@ export class SettingsManager {
                 await this.updateMetadataArchiveStatus();
             }
 
+            if (settingKey === 'backup_auto_enabled') {
+                await this.updateBackupStatus();
+            }
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
             // Apply frontend settings immediately
@@ -1942,6 +1985,163 @@ export class SettingsManager {
             await this.updateMetadataArchiveStatus();
         } catch (error) {
             console.error('Error loading metadata archive settings:', error);
+        }
+    }
+
+    async loadBackupSettings() {
+        const backupAutoEnabledCheckbox = document.getElementById('backupAutoEnabled');
+        if (backupAutoEnabledCheckbox) {
+            backupAutoEnabledCheckbox.checked = state.global.settings.backup_auto_enabled ?? true;
+        }
+
+        const backupRetentionCountInput = document.getElementById('backupRetentionCount');
+        if (backupRetentionCountInput) {
+            backupRetentionCountInput.value = state.global.settings.backup_retention_count ?? 5;
+        }
+
+        await this.updateBackupStatus();
+    }
+
+    async updateBackupStatus() {
+        try {
+            const response = await fetch('/api/lm/backup/status');
+            const data = await response.json();
+
+            const statusContainer = document.getElementById('backupStatus');
+            if (!statusContainer || !data.success) {
+                return;
+            }
+
+            const status = data.status || {};
+            const latestAutoSnapshot = status.latestAutoSnapshot;
+            const retentionCount = status.retentionCount ?? state.global.settings.backup_retention_count ?? 5;
+            const enabled = status.enabled ?? state.global.settings.backup_auto_enabled ?? true;
+            const backupDir = status.backupDir || '';
+            const backupLocationPath = document.getElementById('backupLocationPath');
+            if (backupLocationPath) {
+                backupLocationPath.textContent = backupDir;
+                backupLocationPath.title = backupDir;
+            }
+
+            const formatTimestamp = (timestamp) => {
+                if (!timestamp) {
+                    return translate('common.status.unknown', {}, 'Unknown');
+                }
+                return new Date(timestamp * 1000).toLocaleString();
+            };
+
+            const renderSnapshotDetail = (snapshot) => {
+                if (!snapshot) {
+                    return translate('settings.backup.noneAvailable', {}, 'No snapshots yet');
+                }
+
+                const size = typeof snapshot.size === 'number' ? ` (${this.formatFileSize(snapshot.size)})` : '';
+                return `${snapshot.name}${size}`;
+            };
+
+            statusContainer.innerHTML = `
+                <div class="backup-summary-grid">
+                    <div class="backup-summary-card">
+                        <div class="backup-summary-label">${translate('settings.backup.autoEnabled', {}, 'Automatic snapshots')}</div>
+                        <div class="backup-summary-value status-${enabled ? 'enabled' : 'disabled'}">
+                            ${enabled ? translate('common.status.enabled') : translate('common.status.disabled')}
+                        </div>
+                    </div>
+                    <div class="backup-summary-card">
+                        <div class="backup-summary-label">${translate('settings.backup.retention', {}, 'Retention')}</div>
+                        <div class="backup-summary-value">${retentionCount}</div>
+                    </div>
+                    <div class="backup-summary-card">
+                        <div class="backup-summary-label">${translate('settings.backup.snapshotCount', {}, 'Saved snapshots')}</div>
+                        <div class="backup-summary-value">${status.snapshotCount ?? 0}</div>
+                    </div>
+                </div>
+                <div class="backup-status-list">
+                    <div class="backup-status-row">
+                        <div class="backup-status-label">${translate('settings.backup.latestAutoSnapshot', {}, 'Latest auto snapshot')}</div>
+                        <div class="backup-status-content">
+                            <div class="backup-status-primary">${formatTimestamp(latestAutoSnapshot?.mtime)}</div>
+                            <div class="backup-status-secondary">${renderSnapshotDetail(latestAutoSnapshot)}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            console.error('Error updating backup status:', error);
+        }
+    }
+
+    async exportBackup() {
+        try {
+            const response = await fetch('/api/lm/backup/export', {
+                method: 'POST',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            const blob = await response.blob();
+            const contentDisposition = response.headers.get('Content-Disposition') || '';
+            const match = contentDisposition.match(/filename="([^"]+)"/);
+            const filename = match?.[1] || `lora-manager-backup-${Date.now()}.zip`;
+
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+
+            showToast('settings.backup.exportSuccess', {}, 'success');
+        } catch (error) {
+            console.error('Failed to export backup:', error);
+            showToast('settings.backup.exportFailed', { message: error.message }, 'error');
+        }
+    }
+
+    triggerBackupImport() {
+        const input = document.getElementById('backupImportInput');
+        input?.click();
+    }
+
+    async handleBackupImportFile(input) {
+        if (!(input instanceof HTMLInputElement)) {
+            return;
+        }
+
+        const file = input.files?.[0];
+        input.value = '';
+        if (!file) {
+            return;
+        }
+
+        if (!confirm(translate('settings.backup.importConfirm', {}, 'Import this backup and overwrite local user state?'))) {
+            return;
+        }
+
+        try {
+            const formData = new FormData();
+            formData.append('archive', file);
+
+            const response = await fetch('/api/lm/backup/import', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const data = await response.json();
+            if (!response.ok || data.success === false) {
+                throw new Error(data.error || `Request failed with status ${response.status}`);
+            }
+
+            showToast('settings.backup.importSuccess', {}, 'success');
+            await this.updateBackupStatus();
+            window.location.reload();
+        } catch (error) {
+            console.error('Failed to import backup:', error);
+            showToast('settings.backup.importFailed', { message: error.message }, 'error');
         }
     }
 
@@ -2473,8 +2673,11 @@ export class SettingsManager {
 
         try {
             // Check if value has changed from existing value
-            const currentValue = state.global.settings[settingKey] || '';
-            if (value === currentValue) {
+            const currentValue = state.global.settings[settingKey];
+            const normalizedCurrentValue = currentValue === undefined || currentValue === null
+                ? ''
+                : String(currentValue).trim();
+            if (value === normalizedCurrentValue) {
                 return; // No change, exit early
             }
 
@@ -2515,6 +2718,9 @@ export class SettingsManager {
 
             if (settingKey === 'recipes_path') {
                 showToast('toast.settings.recipesPathUpdated', {}, 'success');
+            } else if (settingKey === 'backup_retention_count') {
+                await this.updateBackupStatus();
+                showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             } else {
                 showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
             }

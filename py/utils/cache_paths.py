@@ -11,6 +11,8 @@ Target structure:
         │   └── symlink_map.json
         ├── model/
         │   └── {library_name}.sqlite
+        ├── model_update/
+        │   └── {library_name}.sqlite
         ├── recipe/
         │   └── {library_name}.sqlite
         └── fts/
@@ -36,6 +38,7 @@ class CacheType(Enum):
     """Types of cache files managed by the cache path resolver."""
 
     MODEL = "model"
+    MODEL_UPDATE = "model_update"
     RECIPE = "recipe"
     RECIPE_FTS = "recipe_fts"
     TAG_FTS = "tag_fts"
@@ -45,6 +48,7 @@ class CacheType(Enum):
 # Subdirectory structure for each cache type
 _CACHE_SUBDIRS = {
     CacheType.MODEL: "model",
+    CacheType.MODEL_UPDATE: "model_update",
     CacheType.RECIPE: "recipe",
     CacheType.RECIPE_FTS: "fts",
     CacheType.TAG_FTS: "fts",
@@ -54,6 +58,7 @@ _CACHE_SUBDIRS = {
 # Filename patterns for each cache type
 _CACHE_FILENAMES = {
     CacheType.MODEL: "{library_name}.sqlite",
+    CacheType.MODEL_UPDATE: "{library_name}.sqlite",
     CacheType.RECIPE: "{library_name}.sqlite",
     CacheType.RECIPE_FTS: "recipe_fts.sqlite",
     CacheType.TAG_FTS: "tag_fts.sqlite",

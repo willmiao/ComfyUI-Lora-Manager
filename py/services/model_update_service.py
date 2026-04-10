@@ -12,6 +12,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 
 from .errors import RateLimitError, ResourceNotFoundError
 from .settings_manager import get_settings_manager
+from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 
@@ -234,12 +235,52 @@ class ModelUpdateService:
             ON model_update_versions(model_id);
     """
 
-    def __init__(self, db_path: str, *, ttl_seconds: int = 24 * 60 * 60, settings_manager=None) -> None:
-        self._db_path = db_path
+    def __init__(
+        self,
+        db_path: str | None = None,
+        *,
+        ttl_seconds: int = 24 * 60 * 60,
+        settings_manager=None,
+    ) -> None:
+        self._settings = settings_manager or get_settings_manager()
+        self._library_name = self._get_active_library_name()
+        self._db_path = db_path or self._resolve_default_path(self._library_name)
         self._ttl_seconds = ttl_seconds
         self._lock = asyncio.Lock()
         self._schema_initialized = False
-        self._settings = settings_manager or get_settings_manager()
+        self._custom_db_path = db_path is not None
+        self._ensure_directory()
+        self._initialize_schema()
+
+    def _get_active_library_name(self) -> str:
+        try:
+            value = self._settings.get_active_library_name()
+        except Exception:
+            value = None
+        return value or "default"
+
+    def _resolve_default_path(self, library_name: str) -> str:
+        env_override = os.environ.get("LORA_MANAGER_MODEL_UPDATE_DB")
+        return resolve_cache_path_with_migration(
+            CacheType.MODEL_UPDATE,
+            library_name=library_name,
+            env_override=env_override,
+        )
+
+    def on_library_changed(self) -> None:
+        """Switch to the database for the active library."""
+
+        if self._custom_db_path:
+            return
+
+        library_name = self._get_active_library_name()
+        new_path = self._resolve_default_path(library_name)
+        if new_path == self._db_path:
+            return
+
+        self._library_name = library_name
+        self._db_path = new_path
+        self._schema_initialized = False
         self._ensure_directory()
         self._initialize_schema()
 
@@ -262,10 +303,113 @@ class ModelUpdateService:
                 conn.execute("PRAGMA foreign_keys = ON")
                 conn.executescript(self._SCHEMA)
                 self._apply_migrations(conn)
+                self._migrate_from_legacy_snapshot(conn)
             self._schema_initialized = True
         except Exception as exc:  # pragma: no cover - defensive guard
             logger.error("Failed to initialize update schema: %s", exc, exc_info=True)
             raise
+
+    def _migrate_from_legacy_snapshot(self, conn: sqlite3.Connection) -> None:
+        """Copy update tracking data out of the legacy model snapshot database."""
+
+        if self._custom_db_path:
+            return
+
+        try:
+            from .persistent_model_cache import get_persistent_cache
+
+            legacy_path = get_persistent_cache(self._library_name).get_database_path()
+        except Exception:
+            return
+
+        if not legacy_path or os.path.abspath(legacy_path) == os.path.abspath(self._db_path):
+            return
+        if not os.path.exists(legacy_path):
+            return
+
+        try:
+            existing_row = conn.execute(
+                "SELECT 1 FROM model_update_status LIMIT 1"
+            ).fetchone()
+            if existing_row:
+                return
+        except Exception:
+            return
+
+        try:
+            with sqlite3.connect(legacy_path, check_same_thread=False) as legacy_conn:
+                legacy_conn.row_factory = sqlite3.Row
+                status_rows = legacy_conn.execute(
+                    """
+                    SELECT model_id, model_type, last_checked_at, should_ignore_model
+                    FROM model_update_status
+                    """
+                ).fetchall()
+                if not status_rows:
+                    return
+
+                version_rows = legacy_conn.execute(
+                    """
+                    SELECT model_id, version_id, sort_index, name, base_model, released_at,
+                           size_bytes, preview_url, is_in_library, should_ignore,
+                           early_access_ends_at, is_early_access
+                    FROM model_update_versions
+                    ORDER BY model_id ASC, sort_index ASC, version_id ASC
+                    """
+                ).fetchall()
+
+                conn.execute("BEGIN")
+                conn.executemany(
+                    """
+                    INSERT OR REPLACE INTO model_update_status (
+                        model_id, model_type, last_checked_at, should_ignore_model
+                    ) VALUES (?, ?, ?, ?)
+                    """,
+                    [
+                        (
+                            int(row["model_id"]),
+                            row["model_type"],
+                            row["last_checked_at"],
+                            int(row["should_ignore_model"] or 0),
+                        )
+                        for row in status_rows
+                    ],
+                )
+                conn.executemany(
+                    """
+                    INSERT OR REPLACE INTO model_update_versions (
+                        model_id, version_id, sort_index, name, base_model, released_at,
+                        size_bytes, preview_url, is_in_library, should_ignore,
+                        early_access_ends_at, is_early_access
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    """,
+                    [
+                        (
+                            int(row["model_id"]),
+                            int(row["version_id"]),
+                            int(row["sort_index"] or 0),
+                            row["name"],
+                            row["base_model"],
+                            row["released_at"],
+                            row["size_bytes"],
+                            row["preview_url"],
+                            int(row["is_in_library"] or 0),
+                            int(row["should_ignore"] or 0),
+                            row["early_access_ends_at"],
+                            int(row["is_early_access"] or 0),
+                        )
+                        for row in version_rows
+                    ],
+                )
+                conn.commit()
+                logger.info(
+                    "Migrated model update tracking data from legacy snapshot DB for %s",
+                    self._library_name,
+                )
+        except sqlite3.OperationalError as exc:
+            logger.debug("Legacy model update migration skipped: %s", exc)
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.warning("Failed to migrate model update data: %s", exc, exc_info=True)
 
     def _apply_migrations(self, conn: sqlite3.Connection) -> None:
         """Ensure legacy databases match the current schema without dropping data."""

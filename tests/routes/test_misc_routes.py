@@ -8,6 +8,8 @@ import pytest
 from aiohttp import web
 
 from py.routes.handlers.misc_handlers import (
+    BackupHandler,
+    FileSystemHandler,
     LoraCodeHandler,
     ModelLibraryHandler,
     NodeRegistry,
@@ -109,6 +111,106 @@ async def test_update_settings_rejects_missing_example_path(tmp_path):
 
     assert payload["success"] is False
     assert "Path does not exist" in payload["error"]
+
+
+class DummyBackupService:
+    def __init__(self):
+        self.restore_calls = []
+
+    async def create_snapshot(self, *, snapshot_type="manual", persist=False):
+        return {
+            "archive_name": "backup.zip",
+            "archive_bytes": b"zip-bytes",
+            "manifest": {"snapshot_type": snapshot_type},
+        }
+
+    async def restore_snapshot(self, archive_path):
+        self.restore_calls.append(archive_path)
+        return {"success": True, "restored_files": 3, "snapshot_type": "manual"}
+
+    def get_status(self):
+        return {
+            "backupDir": "/tmp/backups",
+            "enabled": True,
+            "retentionCount": 5,
+            "snapshotCount": 1,
+        }
+
+    def get_available_snapshots(self):
+        return [{"name": "backup.zip", "path": "/tmp/backup.zip", "size": 8, "mtime": 1.0, "is_auto": False}]
+
+
+@pytest.mark.asyncio
+async def test_backup_handler_returns_status_and_exports(monkeypatch):
+    service = DummyBackupService()
+
+    async def factory():
+        return service
+
+    handler = BackupHandler(backup_service_factory=factory)
+
+    status_response = await handler.get_backup_status(FakeRequest())
+    status_payload = json.loads(status_response.text)
+    assert status_payload["success"] is True
+    assert status_payload["status"]["backupDir"] == "/tmp/backups"
+    assert status_payload["status"]["enabled"] is True
+    assert status_payload["snapshots"][0]["name"] == "backup.zip"
+
+    export_response = await handler.export_backup(FakeRequest())
+    assert export_response.status == 200
+    assert export_response.body == b"zip-bytes"
+
+
+@pytest.mark.asyncio
+async def test_backup_handler_rejects_missing_import_archive():
+    service = DummyBackupService()
+
+    async def factory():
+        return service
+
+    handler = BackupHandler(backup_service_factory=factory)
+
+    class EmptyRequest:
+        content_type = "application/octet-stream"
+
+        async def read(self):
+            return b""
+
+    response = await handler.import_backup(EmptyRequest())
+    payload = json.loads(response.text)
+
+    assert response.status == 400
+    assert payload["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatch):
+    settings_dir = tmp_path / "settings"
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    settings_file = settings_dir / "settings.json"
+    settings_file.write_text("{}", encoding="utf-8")
+    backup_dir = settings_dir / "backups"
+    backup_dir.mkdir(parents=True, exist_ok=True)
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace(settings_file=str(settings_file)))
+
+    calls = []
+
+    def fake_popen(args):
+        calls.append(args)
+        return MagicMock()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    response = await handler.open_backup_location(FakeRequest())
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["path"] == str(backup_dir)
+    assert calls == [["xdg-open", str(backup_dir)]]
 
 
 class RecordingRouter:

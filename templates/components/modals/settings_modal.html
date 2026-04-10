@@ -90,7 +90,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+                       
                         <!-- API Configuration -->
                         <div class="setting-item api-key-item">
                             <div class="setting-row">
@@ -110,6 +110,93 @@
                                             <i class="fas fa-eye"></i>
                                         </button>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Backup -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.backup') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="backupAutoEnabled">
+                                            {{ t('settings.backup.autoEnabled') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.backup.autoEnabledHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="backupAutoEnabled"
+                                                   onchange="settingsManager.saveToggleSetting('backupAutoEnabled', 'backup_auto_enabled')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="backupRetentionCount">
+                                            {{ t('settings.backup.retention') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.backup.retentionHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper">
+                                            <input
+                                                type="number"
+                                                id="backupRetentionCount"
+                                                min="1"
+                                                step="1"
+                                                onblur="settingsManager.saveInputSetting('backupRetentionCount', 'backup_retention_count')"
+                                                onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>
+                                            {{ t('settings.backup.management') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.backup.managementHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <button type="button" class="secondary-btn" onclick="settingsManager.exportBackup()">
+                                            {{ t('settings.backup.exportButton') }}
+                                        </button>
+                                        <button type="button" class="secondary-btn" onclick="settingsManager.triggerBackupImport()" style="margin-left: 10px;">
+                                            {{ t('settings.backup.importButton') }}
+                                        </button>
+                                        <input
+                                            type="file"
+                                            id="backupImportInput"
+                                            accept=".zip,application/zip"
+                                            style="display: none;"
+                                            onchange="settingsManager.handleBackupImportFile(this)"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <details class="backup-location-details">
+                                    <summary>{{ t('settings.backup.locationSummary') }}</summary>
+                                    <div class="backup-location-panel">
+                                        <code id="backupLocationPath" class="backup-location-path"></code>
+                                        <button type="button" class="secondary-btn" id="backupOpenLocationBtn">
+                                            {{ t('settings.backup.openFolderButton') }}
+                                        </button>
+                                    </div>
+                                </details>
+                            </div>
+                            <div class="setting-item">
+                                <div class="backup-status" id="backupStatus">
+                                    <!-- Status will be populated by JavaScript -->
                                 </div>
                             </div>
                         </div>
@@ -450,6 +537,7 @@
                                 </div>
                             </div>
                         </div>
+
                     </div>
                     
                     <!-- Section 3: Library -->

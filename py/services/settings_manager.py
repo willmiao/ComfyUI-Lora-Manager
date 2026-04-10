@@ -95,6 +95,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "metadata_refresh_skip_paths": [],
     "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
+    "backup_auto_enabled": True,
+    "backup_retention_count": 5,
 }
 
 
@@ -1983,6 +1985,7 @@ class SettingsManager:
                 "checkpoint_scanner",
                 "embedding_scanner",
                 "recipe_scanner",
+                "model_update_service",
             ):
                 service = ServiceRegistry.get_service_sync(service_name)
                 if service and hasattr(service, "on_library_changed"):
