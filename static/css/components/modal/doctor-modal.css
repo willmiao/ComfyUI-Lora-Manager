@@ -9,6 +9,9 @@
 }
 
 .doctor-status-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     min-width: 18px;
     height: 18px;
     padding: 0 5px;
@@ -16,7 +19,7 @@
     background: var(--lora-error);
     color: #fff;
     font-size: 11px;
-    line-height: 18px;
+    line-height: 1;
     font-weight: 700;
 }
 
