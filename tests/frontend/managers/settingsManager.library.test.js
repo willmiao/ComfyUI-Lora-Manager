@@ -96,6 +96,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+    vi.useRealTimers();
     delete global.fetch;
     delete document.hidden;
     Object.defineProperty(window, 'location', {
@@ -229,6 +230,51 @@ describe('SettingsManager library controls', () => {
         await manager.loadSettingsToUI();
 
         expect(input.value).toBe('/custom/recipes');
+    });
+
+    it('does not autofocus empty extra folder path rows during initial settings load', async () => {
+        vi.useFakeTimers();
+
+        const manager = createManager();
+        document.body.innerHTML = `
+            <div id="extraFolderPaths-loras"></div>
+            <div id="extraFolderPaths-checkpoints"></div>
+            <div id="extraFolderPaths-unet"></div>
+            <div id="extraFolderPaths-embeddings"></div>
+        `;
+
+        vi.spyOn(manager, 'loadMetadataArchiveSettings').mockResolvedValue();
+        vi.spyOn(manager, 'loadBackupSettings').mockResolvedValue();
+        vi.spyOn(manager, 'loadLibraries').mockResolvedValue();
+        vi.spyOn(manager, 'loadLoraRoots').mockResolvedValue();
+        vi.spyOn(manager, 'loadCheckpointRoots').mockResolvedValue();
+        vi.spyOn(manager, 'loadUnetRoots').mockResolvedValue();
+        vi.spyOn(manager, 'loadEmbeddingRoots').mockResolvedValue();
+
+        const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => {});
+
+        state.global.settings = {
+            extra_folder_paths: {},
+        };
+
+        await manager.loadSettingsToUI();
+        await vi.runAllTimersAsync();
+
+        expect(focusSpy).not.toHaveBeenCalled();
+    });
+
+    it('still focuses an extra folder path row when it is added explicitly', async () => {
+        vi.useFakeTimers();
+
+        const manager = createManager();
+        document.body.innerHTML = '<div id="extraFolderPaths-embeddings"></div>';
+
+        const focusSpy = vi.spyOn(HTMLElement.prototype, 'focus').mockImplementation(() => {});
+
+        manager.addExtraFolderPathRow('embeddings', '');
+        await vi.runAllTimersAsync();
+
+        expect(focusSpy).toHaveBeenCalledTimes(1);
     });
 
     it('shows loading while saving recipes_path', async () => {

@@ -1443,12 +1443,12 @@ export class SettingsManager {
 
             // Add empty row for new path if no paths exist
             if (paths.length === 0) {
-                this.addExtraFolderPathRow(modelType, '');
+                this.addExtraFolderPathRow(modelType, '', false);
             }
         });
     }
 
-    addExtraFolderPathRow(modelType, path = '') {
+    addExtraFolderPathRow(modelType, path = '', shouldFocus = true) {
         const container = document.getElementById(`extraFolderPaths-${modelType}`);
         if (!container) return;
 
@@ -1472,7 +1472,7 @@ export class SettingsManager {
         container.appendChild(row);
 
         // Focus the input if it's empty (new row)
-        if (!path) {
+        if (!path && shouldFocus) {
             const input = row.querySelector('.extra-folder-path-input');
             if (input) {
                 setTimeout(() => input.focus(), 0);
