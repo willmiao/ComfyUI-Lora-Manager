@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "Systemdiagnose",
+        "title": "Doktor",
+        "buttonTitle": "Diagnose und häufige Fehlerbehebungen ausführen",
+        "loading": "Umgebung wird geprüft...",
+        "footer": "Exportiere ein Diagnosepaket, falls das Problem nach der Reparatur weiterhin besteht.",
+        "summary": {
+            "idle": "Führe eine Überprüfung von Einstellungen, Cache-Integrität und UI-Konsistenz durch.",
+            "ok": "Keine aktiven Probleme wurden in der aktuellen Umgebung gefunden.",
+            "warning": "{count} Problem(e) wurden gefunden. Die meisten lassen sich direkt über dieses Panel beheben.",
+            "error": "Bevor die App vollständig fehlerfrei ist, müssen {count} Problem(e) behoben werden."
+        },
+        "status": {
+            "ok": "Gesund",
+            "warning": "Handlungsbedarf",
+            "error": "Aktion erforderlich"
+        },
+        "actions": {
+            "runAgain": "Erneut ausführen",
+            "exportBundle": "Paket exportieren"
+        },
+        "toast": {
+            "loadFailed": "Diagnose konnte nicht geladen werden: {message}",
+            "repairSuccess": "Cache-Neuaufbau abgeschlossen.",
+            "repairFailed": "Cache-Neuaufbau fehlgeschlagen: {message}",
+            "exportSuccess": "Diagnosepaket exportiert.",
+            "exportFailed": "Export des Diagnosepakets fehlgeschlagen: {message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "Anwendungs-Update erkannt",

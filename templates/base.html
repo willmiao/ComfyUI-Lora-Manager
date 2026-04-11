@@ -62,7 +62,7 @@
 </head>
 
 {% set page_id = self.page_id() %}
-<body data-page="{{ page_id }}">
+<body data-page="{{ page_id }}" data-app-version="{{ version }}">
     <!-- Header is always visible, even during initialization -->
     {% include 'components/header.html' %}
 

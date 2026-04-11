@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "Diagnostics système",
+        "title": "Docteur",
+        "buttonTitle": "Lancer les diagnostics et les corrections courantes",
+        "loading": "Vérification de l'environnement...",
+        "footer": "Exportez un lot de diagnostic si le problème persiste après la réparation.",
+        "summary": {
+            "idle": "Lancez une vérification de l'état des paramètres, de l'intégrité du cache et de la cohérence de l'interface.",
+            "ok": "Aucun problème actif n'a été trouvé dans l'environnement actuel.",
+            "warning": "{count} problème(s) ont été trouvés. La plupart peuvent être corrigés directement depuis ce panneau.",
+            "error": "{count} problème(s) nécessitent une attention avant que l'application soit entièrement saine."
+        },
+        "status": {
+            "ok": "Sain",
+            "warning": "Nécessite une attention",
+            "error": "Action requise"
+        },
+        "actions": {
+            "runAgain": "Relancer",
+            "exportBundle": "Exporter le lot"
+        },
+        "toast": {
+            "loadFailed": "Échec du chargement des diagnostics : {message}",
+            "repairSuccess": "Reconstruction du cache terminée.",
+            "repairFailed": "Échec de la reconstruction du cache : {message}",
+            "exportSuccess": "Lot de diagnostics exporté.",
+            "exportFailed": "Échec de l'export du lot de diagnostics : {message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "Mise à jour de l'application détectée",

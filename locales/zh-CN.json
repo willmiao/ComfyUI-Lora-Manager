@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "系统诊断",
+        "title": "医生",
+        "buttonTitle": "运行诊断并尝试修复常见问题",
+        "loading": "正在检查当前环境...",
+        "footer": "如果修复后问题仍然存在，可以导出诊断包进一步排查。",
+        "summary": {
+            "idle": "检查设置、缓存健康状况和前后端 UI 版本是否一致。",
+            "ok": "当前环境未发现活动问题。",
+            "warning": "发现 {count} 个问题，大多数可以直接在这里处理。",
+            "error": "发现 {count} 个需要尽快处理的问题。"
+        },
+        "status": {
+            "ok": "健康",
+            "warning": "需要关注",
+            "error": "需要处理"
+        },
+        "actions": {
+            "runAgain": "重新检查",
+            "exportBundle": "导出诊断包"
+        },
+        "toast": {
+            "loadFailed": "加载诊断结果失败：{message}",
+            "repairSuccess": "缓存重建完成。",
+            "repairFailed": "缓存重建失败：{message}",
+            "exportSuccess": "诊断包已导出。",
+            "exportFailed": "导出诊断包失败：{message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "检测到应用更新",

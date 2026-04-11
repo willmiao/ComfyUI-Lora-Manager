@@ -10,15 +10,19 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import io
 import json
 import logging
 import os
+import platform
+import re
 import subprocess
 import sys
 import tempfile
 import zipfile
 from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, Mapping, Protocol
+from datetime import datetime, timezone
+from typing import Any, Awaitable, Callable, Dict, Mapping, Protocol, Sequence
 
 from aiohttp import web
 
@@ -32,6 +36,7 @@ from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...services.errors import ResourceNotFoundError
+from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
 from ...utils.constants import (
     CIVITAI_USER_MODEL_TYPES,
     DEFAULT_NODE_COLOR,
@@ -42,10 +47,319 @@ from ...utils.constants import (
 from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.example_images_paths import is_valid_example_images_root
 from ...utils.lora_metadata import extract_trained_words
+from ...utils.session_logging import get_standalone_session_log_snapshot
 from ...utils.usage_stats import UsageStats
 from .base_model_handlers import BaseModelHandlerSet
 
 logger = logging.getLogger(__name__)
+
+
+def _get_project_root() -> str:
+    current_file = os.path.abspath(__file__)
+    return os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.dirname(current_file)))
+    )
+
+
+def _get_app_version_string() -> str:
+    version = "1.0.0"
+    short_hash = "stable"
+    try:
+        import toml
+
+        root_dir = _get_project_root()
+        pyproject_path = os.path.join(root_dir, "pyproject.toml")
+
+        if os.path.exists(pyproject_path):
+            with open(pyproject_path, "r", encoding="utf-8") as handle:
+                data = toml.load(handle)
+                version = (
+                    data.get("project", {}).get("version", "1.0.0").replace("v", "")
+                )
+
+        git_dir = os.path.join(root_dir, ".git")
+        if os.path.exists(git_dir):
+            try:
+                import git
+
+                repo = git.Repo(root_dir)
+                short_hash = repo.head.commit.hexsha[:7]
+            except Exception:
+                pass
+    except Exception as exc:  # pragma: no cover - defensive logging
+        logger.debug("Failed to resolve app version for doctor diagnostics: %s", exc)
+
+    return f"{version}-{short_hash}"
+
+
+def _sanitize_sensitive_data(payload: Any) -> Any:
+    sensitive_markers = (
+        "api_key",
+        "apikey",
+        "token",
+        "password",
+        "secret",
+        "authorization",
+    )
+
+    if isinstance(payload, dict):
+        sanitized: dict[str, Any] = {}
+        for key, value in payload.items():
+            normalized_key = str(key).lower()
+            if any(marker in normalized_key for marker in sensitive_markers):
+                if isinstance(value, str) and value:
+                    sanitized[key] = f"{value[:4]}***{value[-2:]}" if len(value) > 6 else "***"
+                else:
+                    sanitized[key] = "***"
+            else:
+                sanitized[key] = _sanitize_sensitive_data(value)
+        return sanitized
+
+    if isinstance(payload, list):
+        return [_sanitize_sensitive_data(item) for item in payload]
+
+    if isinstance(payload, str):
+        return _sanitize_sensitive_text(payload)
+
+    return payload
+
+
+def _sanitize_sensitive_text(value: str) -> str:
+    if not value:
+        return value
+
+    redacted = value
+    patterns = (
+        (
+            r'(?i)("authorization"\s*:\s*")Bearer\s+([^"]+)(")',
+            r'\1Bearer ***\3',
+        ),
+        (
+            r'(?i)("x[-_]?api[-_]?key"\s*:\s*")([^"]+)(")',
+            r'\1***\3',
+        ),
+        (
+            r'(?i)("api[_-]?key"\s*:\s*")([^"]+)(")',
+            r'\1***\3',
+        ),
+        (
+            r'(?i)("token"\s*:\s*")([^"]+)(")',
+            r'\1***\3',
+        ),
+        (
+            r'(?i)("password"\s*:\s*")([^"]+)(")',
+            r'\1***\3',
+        ),
+        (
+            r'(?i)("secret"\s*:\s*")([^"]+)(")',
+            r'\1***\3',
+        ),
+        (
+            r"(?i)\b(authorization\s*[:=]\s*bearer\s+)([A-Za-z0-9._\-+/=]+)",
+            r"\1***",
+        ),
+        (
+            r"(?i)\b(x[-_]?api[-_]?key\s*[:=]\s*)([^\s,;]+)",
+            r"\1***",
+        ),
+        (
+            r"(?i)\b(api[_-]?key\s*[:=]\s*)([^\s,;]+)",
+            r"\1***",
+        ),
+        (
+            r"(?i)\b(token\s*[:=]\s*)([^\s,;]+)",
+            r"\1***",
+        ),
+        (
+            r"(?i)\b(password\s*[:=]\s*)([^\s,;]+)",
+            r"\1***",
+        ),
+        (
+            r"(?i)\b(secret\s*[:=]\s*)([^\s,;]+)",
+            r"\1***",
+        ),
+    )
+
+    import re
+
+    for pattern, replacement in patterns:
+        redacted = re.sub(pattern, replacement, redacted)
+
+    return redacted
+
+
+def _read_log_file_tail(path: str, max_bytes: int = 64 * 1024) -> str:
+    if not path or not os.path.isfile(path):
+        return ""
+
+    with open(path, "rb") as handle:
+        handle.seek(0, os.SEEK_END)
+        file_size = handle.tell()
+        handle.seek(max(file_size - max_bytes, 0))
+        payload = handle.read()
+
+    return payload.decode("utf-8", errors="replace")
+
+
+def _read_text_file_head(path: str, max_bytes: int = 8 * 1024) -> str:
+    if not path or not os.path.isfile(path):
+        return ""
+
+    with open(path, "rb") as handle:
+        payload = handle.read(max_bytes)
+
+    return payload.decode("utf-8", errors="replace")
+
+
+def _extract_startup_marker(text: str, label: str) -> str | None:
+    if not text:
+        return None
+
+    pattern = re.compile(rf"{re.escape(label)}\s*:\s*([^\r\n]+)")
+    match = pattern.search(text)
+    if not match:
+        return None
+
+    return match.group(1).strip()
+
+
+def _format_comfyui_log_entries(entries: Sequence[Mapping[str, Any]] | None) -> str:
+    if not entries:
+        return ""
+
+    rendered: list[str] = []
+    for entry in entries:
+        timestamp = str(entry.get("t", "")).strip()
+        message = str(entry.get("m", ""))
+        if not message:
+            continue
+
+        if timestamp:
+            rendered.append(f"{timestamp} - {message}")
+        else:
+            rendered.append(message)
+
+    if not rendered:
+        return ""
+
+    text = "".join(rendered)
+    if text.endswith("\n"):
+        return text
+    return f"{text}\n"
+
+
+def _get_embedded_comfyui_log_path() -> str:
+    return os.path.abspath(
+        os.path.join(_get_project_root(), "..", "..", "user", "comfyui.log")
+    )
+
+
+def _collect_comfyui_session_logs(
+    *,
+    log_entries: Sequence[Mapping[str, Any]] | None = None,
+    log_file_path: str | None = None,
+) -> dict[str, Any]:
+    if log_entries is None:
+        try:
+            import app.logger as comfy_logger
+
+            log_entries = list(comfy_logger.get_logs() or [])
+        except Exception as exc:  # pragma: no cover - environment dependent
+            logger.debug("Failed to read ComfyUI in-memory logs: %s", exc)
+            log_entries = []
+
+    session_log_text = _format_comfyui_log_entries(log_entries)
+    session_started_at = _extract_startup_marker(
+        session_log_text, "** ComfyUI startup time"
+    )
+    if not session_started_at and log_entries:
+        session_started_at = str(log_entries[0].get("t", "")).strip() or None
+
+    resolved_log_path = os.path.abspath(log_file_path or _get_embedded_comfyui_log_path())
+    persisted_log_text = ""
+    notes: list[str] = []
+
+    if os.path.isfile(resolved_log_path):
+        head_text = _read_text_file_head(resolved_log_path)
+        file_started_at = _extract_startup_marker(head_text, "** ComfyUI startup time")
+        if session_started_at and file_started_at and file_started_at == session_started_at:
+            persisted_log_text = _read_log_file_tail(resolved_log_path)
+        elif session_started_at and file_started_at and file_started_at != session_started_at:
+            notes.append(
+                "Persistent ComfyUI log file does not match the current process session."
+            )
+        elif not session_started_at and file_started_at:
+            persisted_log_text = _read_log_file_tail(resolved_log_path)
+            session_started_at = file_started_at
+        else:
+            notes.append(
+                "Persistent ComfyUI log file is missing a startup marker and was not trusted as the current session log."
+            )
+    else:
+        notes.append("Persistent ComfyUI log file was not found.")
+
+    source_method = "comfyui_in_memory"
+    if persisted_log_text:
+        source_method = "comfyui_in_memory+current_log_file"
+    elif not session_log_text:
+        source_method = "unavailable"
+
+    return {
+        "mode": "comfyui",
+        "session_started_at": session_started_at,
+        "session_log_text": session_log_text,
+        "persistent_log_path": resolved_log_path,
+        "persistent_log_text": persisted_log_text,
+        "source_method": source_method,
+        "notes": notes,
+    }
+
+
+def _collect_standalone_session_logs(
+    *, snapshot: Mapping[str, Any] | None = None
+) -> dict[str, Any]:
+    snapshot = snapshot or get_standalone_session_log_snapshot()
+
+    if not snapshot:
+        return {
+            "mode": "standalone",
+            "session_started_at": None,
+            "session_log_text": "",
+            "persistent_log_path": None,
+            "persistent_log_text": "",
+            "source_method": "unavailable",
+            "session_id": None,
+            "notes": ["Standalone session logging was not initialized."],
+        }
+
+    log_file_path = snapshot.get("log_file_path")
+    persisted_log_text = _read_log_file_tail(log_file_path) if log_file_path else ""
+    session_log_text = str(snapshot.get("in_memory_text") or "")
+    source_method = "standalone_memory"
+    if persisted_log_text:
+        source_method = "standalone_session_file"
+    elif session_log_text:
+        source_method = "standalone_memory"
+    else:
+        source_method = "unavailable"
+
+    return {
+        "mode": "standalone",
+        "session_started_at": snapshot.get("started_at"),
+        "session_log_text": session_log_text,
+        "persistent_log_path": log_file_path,
+        "persistent_log_text": persisted_log_text,
+        "source_method": source_method,
+        "session_id": snapshot.get("session_id"),
+        "notes": [],
+    }
+
+
+def _collect_backend_session_logs() -> dict[str, Any]:
+    standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+    if standalone_mode:
+        return _collect_standalone_session_logs()
+    return _collect_comfyui_session_logs()
 
 
 def _is_wsl() -> bool:
@@ -270,6 +584,388 @@ class SupportersHandler:
         except Exception as exc:
             self._logger.error("Error loading supporters: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+
+class DoctorHandler:
+    """Run environment diagnostics and export a support bundle."""
+
+    def __init__(
+        self,
+        *,
+        settings_service=None,
+        civitai_client_factory: Callable[[], Awaitable[Any]] = ServiceRegistry.get_civitai_client,
+        scanner_factories: Sequence[tuple[str, str, Callable[[], Awaitable[Any]]]] | None = None,
+        app_version_getter: Callable[[], str] = _get_app_version_string,
+    ) -> None:
+        self._settings = settings_service or get_settings_manager()
+        self._civitai_client_factory = civitai_client_factory
+        self._scanner_factories = tuple(
+            scanner_factories
+            or (
+                ("lora", "LoRAs", ServiceRegistry.get_lora_scanner),
+                ("checkpoint", "Checkpoints", ServiceRegistry.get_checkpoint_scanner),
+                ("embedding", "Embeddings", ServiceRegistry.get_embedding_scanner),
+            )
+        )
+        self._app_version_getter = app_version_getter
+
+    async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
+        try:
+            client_version = (request.query.get("clientVersion") or "").strip()
+            app_version = self._app_version_getter()
+            diagnostics = [
+                await self._check_civitai_api_key(),
+                await self._check_cache_health(),
+                self._check_ui_version(client_version, app_version),
+            ]
+
+            issue_count = sum(
+                1 for item in diagnostics if item.get("status") in {"warning", "error"}
+            )
+            error_count = sum(1 for item in diagnostics if item.get("status") == "error")
+            warning_count = sum(
+                1 for item in diagnostics if item.get("status") == "warning"
+            )
+
+            overall_status = "ok"
+            if error_count:
+                overall_status = "error"
+            elif warning_count:
+                overall_status = "warning"
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "app_version": app_version,
+                    "summary": {
+                        "status": overall_status,
+                        "issue_count": issue_count,
+                        "warning_count": warning_count,
+                        "error_count": error_count,
+                        "checked_at": datetime.now(timezone.utc).isoformat(),
+                    },
+                    "diagnostics": diagnostics,
+                }
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error building doctor diagnostics: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def repair_doctor_cache(self, request: web.Request) -> web.Response:
+        repaired: list[dict[str, Any]] = []
+        failures: list[dict[str, str]] = []
+
+        for model_type, label, factory in self._scanner_factories:
+            try:
+                scanner = await factory()
+                await scanner.get_cached_data(force_refresh=True, rebuild_cache=True)
+                repaired.append({"model_type": model_type, "label": label})
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error("Doctor cache rebuild failed for %s: %s", model_type, exc, exc_info=True)
+                failures.append(
+                    {
+                        "model_type": model_type,
+                        "label": label,
+                        "error": str(exc),
+                    }
+                )
+
+        status = 200 if not failures else 500
+        return web.json_response(
+            {
+                "success": not failures,
+                "repaired": repaired,
+                "failures": failures,
+            },
+            status=status,
+        )
+
+    async def export_doctor_bundle(self, request: web.Request) -> web.Response:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+
+        try:
+            archive_bytes = self._build_support_bundle(payload)
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
+            headers = {
+                "Content-Type": "application/zip",
+                "Content-Disposition": f'attachment; filename="lora-manager-doctor-{timestamp}.zip"',
+            }
+            return web.Response(body=archive_bytes, headers=headers)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error exporting doctor bundle: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def _check_civitai_api_key(self) -> dict[str, Any]:
+        api_key = (self._settings.get("civitai_api_key", "") or "").strip()
+        if not api_key:
+            return {
+                "id": "civitai_api_key",
+                "title": "Civitai API Key",
+                "status": "warning",
+                "summary": "Civitai API key is not configured.",
+                "details": [
+                    "Downloads and authenticated Civitai requests may fail until a valid API key is saved."
+                ],
+                "actions": [{"id": "open-settings", "label": "Open Settings"}],
+            }
+
+        obvious_placeholders = {"your_api_key", "changeme", "placeholder", "none"}
+        if api_key.lower() in obvious_placeholders:
+            return {
+                "id": "civitai_api_key",
+                "title": "Civitai API Key",
+                "status": "error",
+                "summary": "Civitai API key looks like a placeholder value.",
+                "details": ["Replace the placeholder with a real key from your Civitai account settings."],
+                "actions": [{"id": "open-settings", "label": "Open Settings"}],
+            }
+
+        try:
+            client = await self._civitai_client_factory()
+            success, result = await client._make_request(  # noqa: SLF001 - internal diagnostic probe
+                "GET",
+                f"{client.base_url}/models",
+                use_auth=True,
+                params={"limit": 1},
+            )
+            if success:
+                return {
+                    "id": "civitai_api_key",
+                    "title": "Civitai API Key",
+                    "status": "ok",
+                    "summary": "Civitai API key is configured and accepted.",
+                    "details": [],
+                    "actions": [{"id": "open-settings", "label": "Open Settings"}],
+                }
+
+            error_text = str(result)
+            lowered = error_text.lower()
+            if any(token in lowered for token in ("401", "403", "unauthorized", "forbidden", "invalid")):
+                return {
+                    "id": "civitai_api_key",
+                    "title": "Civitai API Key",
+                    "status": "error",
+                    "summary": "Configured Civitai API key was rejected.",
+                    "details": [error_text],
+                    "actions": [{"id": "open-settings", "label": "Open Settings"}],
+                }
+
+            return {
+                "id": "civitai_api_key",
+                "title": "Civitai API Key",
+                "status": "warning",
+                "summary": "Unable to confirm whether the Civitai API key is valid.",
+                "details": [error_text],
+                "actions": [{"id": "open-settings", "label": "Open Settings"}],
+            }
+        except Exception as exc:  # pragma: no cover - network/path dependent
+            logger.warning("Doctor API key validation failed: %s", exc)
+            return {
+                "id": "civitai_api_key",
+                "title": "Civitai API Key",
+                "status": "warning",
+                "summary": "Could not validate the Civitai API key right now.",
+                "details": [str(exc)],
+                "actions": [{"id": "open-settings", "label": "Open Settings"}],
+            }
+
+    async def _check_cache_health(self) -> dict[str, Any]:
+        details: list[dict[str, Any]] = []
+        overall_status = "ok"
+        summary = "All model caches look healthy."
+
+        for model_type, label, factory in self._scanner_factories:
+            try:
+                scanner = await factory()
+                persisted = None
+                persistent_cache = getattr(scanner, "_persistent_cache", None)
+                if persistent_cache and hasattr(persistent_cache, "load_cache"):
+                    loop = asyncio.get_event_loop()
+                    persisted = await loop.run_in_executor(
+                        None,
+                        persistent_cache.load_cache,
+                        getattr(scanner, "model_type", model_type),
+                    )
+
+                raw_data = list(getattr(persisted, "raw_data", None) or [])
+                if not raw_data:
+                    cache = await scanner.get_cached_data(force_refresh=False)
+                    raw_data = list(getattr(cache, "raw_data", None) or [])
+
+                report = CacheHealthMonitor().check_health(raw_data, auto_repair=False)
+                report_status = "ok"
+                if report.status == CacheHealthStatus.CORRUPTED:
+                    report_status = "error"
+                elif report.status != CacheHealthStatus.HEALTHY:
+                    report_status = "warning"
+
+                details.append(
+                    {
+                        "model_type": model_type,
+                        "label": label,
+                        "status": report_status,
+                        "message": report.message,
+                        "total_entries": report.total_entries,
+                        "invalid_entries": report.invalid_entries,
+                        "repaired_entries": report.repaired_entries,
+                        "corruption_rate": f"{report.corruption_rate:.1%}",
+                    }
+                )
+
+                if report_status == "error":
+                    overall_status = "error"
+                elif report_status == "warning" and overall_status == "ok":
+                    overall_status = "warning"
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error("Doctor cache health check failed for %s: %s", model_type, exc, exc_info=True)
+                details.append(
+                    {
+                        "model_type": model_type,
+                        "label": label,
+                        "status": "error",
+                        "message": str(exc),
+                    }
+                )
+                overall_status = "error"
+
+        if overall_status == "warning":
+            summary = "One or more model caches contain invalid entries."
+        elif overall_status == "error":
+            summary = "One or more model caches are corrupted or unavailable."
+
+        return {
+            "id": "cache_health",
+            "title": "Model Cache Health",
+            "status": overall_status,
+            "summary": summary,
+            "details": details,
+            "actions": [{"id": "repair-cache", "label": "Rebuild Cache"}],
+        }
+
+    def _check_ui_version(self, client_version: str, app_version: str) -> dict[str, Any]:
+        if client_version and client_version != app_version:
+            return {
+                "id": "ui_version",
+                "title": "UI Version",
+                "status": "warning",
+                "summary": "Browser is running an older UI bundle than the backend expects.",
+                "details": [
+                    {
+                        "client_version": client_version,
+                        "server_version": app_version,
+                    }
+                ],
+                "actions": [{"id": "reload-page", "label": "Reload UI"}],
+            }
+
+        return {
+            "id": "ui_version",
+            "title": "UI Version",
+            "status": "ok",
+            "summary": "Browser UI bundle matches the backend version.",
+            "details": [
+                {
+                    "client_version": client_version or app_version,
+                    "server_version": app_version,
+                }
+            ],
+            "actions": [{"id": "reload-page", "label": "Reload UI"}],
+        }
+
+    def _collect_backend_session_logs(self) -> dict[str, Any]:
+        return _collect_backend_session_logs()
+
+    def _build_support_bundle(self, payload: dict[str, Any]) -> bytes:
+        diagnostics = payload.get("diagnostics") or []
+        frontend_logs = payload.get("frontend_logs") or []
+        client_context = payload.get("client_context") or {}
+
+        app_version = self._app_version_getter()
+        settings_snapshot = _sanitize_sensitive_data(
+            getattr(self._settings, "settings", {}) or {}
+        )
+        startup_messages_getter = getattr(self._settings, "get_startup_messages", None)
+        startup_messages = (
+            list(startup_messages_getter()) if callable(startup_messages_getter) else []
+        )
+
+        environment = {
+            "app_version": app_version,
+            "python_version": sys.version,
+            "platform": platform.platform(),
+            "cwd": os.getcwd(),
+            "standalone_mode": os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1",
+            "settings_file": getattr(self._settings, "settings_file", None),
+            "exported_at": datetime.now(timezone.utc).isoformat(),
+            "client_context": client_context,
+        }
+        backend_logs = self._collect_backend_session_logs()
+        backend_session_text = _sanitize_sensitive_text(
+            str(backend_logs.get("session_log_text") or "")
+        )
+        backend_persisted_text = _sanitize_sensitive_text(
+            str(backend_logs.get("persistent_log_text") or "")
+        )
+        if not backend_session_text and backend_persisted_text:
+            backend_session_text = backend_persisted_text
+        if not backend_session_text:
+            backend_session_text = "No current backend session logs were available.\n"
+
+        buffer = io.BytesIO()
+        with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr(
+                "doctor-report.json",
+                json.dumps(
+                    {
+                        "app_version": app_version,
+                        "diagnostics": diagnostics,
+                        "summary": payload.get("summary"),
+                    },
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+            )
+            archive.writestr(
+                "settings-sanitized.json",
+                json.dumps(settings_snapshot, indent=2, ensure_ascii=False),
+            )
+            archive.writestr(
+                "startup-messages.json",
+                json.dumps(startup_messages, indent=2, ensure_ascii=False),
+            )
+            archive.writestr(
+                "environment.json",
+                json.dumps(environment, indent=2, ensure_ascii=False),
+            )
+            archive.writestr(
+                "frontend-console.json",
+                json.dumps(_sanitize_sensitive_data(frontend_logs), indent=2, ensure_ascii=False),
+            )
+            archive.writestr("backend-logs.txt", backend_session_text)
+            archive.writestr(
+                "backend-log-source.json",
+                json.dumps(
+                    _sanitize_sensitive_data(
+                        {
+                            "mode": backend_logs.get("mode"),
+                            "source_method": backend_logs.get("source_method"),
+                            "session_started_at": backend_logs.get("session_started_at"),
+                            "session_id": backend_logs.get("session_id"),
+                            "persistent_log_path": backend_logs.get("persistent_log_path"),
+                            "notes": backend_logs.get("notes") or [],
+                        }
+                    ),
+                    indent=2,
+                    ensure_ascii=False,
+                ),
+            )
+            if backend_persisted_text:
+                archive.writestr("backend-session-file-tail.txt", backend_persisted_text)
+
+        return buffer.getvalue()
 
 
 class ExampleWorkflowsHandler:
@@ -2022,6 +2718,7 @@ class MiscHandlerSet:
         filesystem: FileSystemHandler,
         custom_words: CustomWordsHandler,
         supporters: SupportersHandler,
+        doctor: DoctorHandler,
         example_workflows: ExampleWorkflowsHandler,
         base_model: BaseModelHandlerSet,
     ) -> None:
@@ -2038,6 +2735,7 @@ class MiscHandlerSet:
         self.filesystem = filesystem
         self.custom_words = custom_words
         self.supporters = supporters
+        self.doctor = doctor
         self.example_workflows = example_workflows
         self.base_model = base_model
 
@@ -2048,6 +2746,9 @@ class MiscHandlerSet:
             "health_check": self.health.health_check,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
+            "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
+            "repair_doctor_cache": self.doctor.repair_doctor_cache,
+            "export_doctor_bundle": self.doctor.export_doctor_bundle,
             "get_priority_tags": self.settings.get_priority_tags,
             "get_settings_libraries": self.settings.get_libraries,
             "activate_library": self.settings.activate_library,

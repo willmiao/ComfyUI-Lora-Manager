@@ -84,6 +84,18 @@ export class ModalManager {
             });
         }
 
+        const doctorModal = document.getElementById('doctorModal');
+        if (doctorModal) {
+            this.registerModal('doctorModal', {
+                element: doctorModal,
+                onClose: () => {
+                    this.getModal('doctorModal').element.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         // Add moveModal registration
         const moveModal = document.getElementById('moveModal');
         if (moveModal) {

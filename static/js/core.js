@@ -9,6 +9,7 @@ import { moveManager } from './managers/MoveManager.js';
 import { bulkManager } from './managers/BulkManager.js';
 import { ExampleImagesManager } from './managers/ExampleImagesManager.js';
 import { helpManager } from './managers/HelpManager.js';
+import { doctorManager } from './managers/DoctorManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
@@ -58,6 +59,7 @@ export class AppCore {
         const exampleImagesManager = new ExampleImagesManager();
         window.exampleImagesManager = exampleImagesManager;
         window.helpManager = helpManager;
+        window.doctorManager = doctorManager;
         window.moveManager = moveManager;
         window.bulkManager = bulkManager;
         
@@ -77,6 +79,7 @@ export class AppCore {
         exampleImagesManager.initialize();
         // Initialize the help manager
         helpManager.initialize();
+        doctorManager.initialize();
 
         const cardInfoDisplay = state.global.settings.card_info_display || 'always';
         document.body.classList.toggle('hover-reveal', cardInfoDisplay === 'hover');

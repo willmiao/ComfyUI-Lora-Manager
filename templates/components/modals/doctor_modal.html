@@ -1,0 +1,40 @@
+<div id="doctorModal" class="modal">
+    <div class="modal-content doctor-modal">
+        <button class="close" onclick="modalManager.closeModal('doctorModal')">&times;</button>
+
+        <div class="doctor-shell">
+            <div class="doctor-hero">
+                <div class="doctor-hero-copy">
+                    <span class="doctor-kicker">{{ t('doctor.kicker', default='System diagnostics') }}</span>
+                    <h2>{{ t('doctor.title', default='Doctor') }}</h2>
+                    <p id="doctorSummaryText">{{ t('doctor.summary.idle', default='Run a health check for settings, cache integrity, and UI consistency.') }}</p>
+                </div>
+                <div id="doctorSummaryBadge" class="doctor-summary-badge doctor-status-ok">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>{{ t('doctor.status.ok', default='Healthy') }}</span>
+                </div>
+            </div>
+
+            <div id="doctorLoadingState" class="doctor-loading-state">
+                <i class="fas fa-spinner fa-spin"></i>
+                <span>{{ t('doctor.loading', default='Checking environment...') }}</span>
+            </div>
+
+            <div id="doctorIssuesList" class="doctor-issues-list"></div>
+
+            <div class="doctor-footer">
+                <div class="doctor-footer-note">{{ t('doctor.footer', default='Export a diagnostics bundle if the issues remain after repair.') }}</div>
+                <div class="doctor-footer-actions">
+                    <button id="doctorRefreshBtn" class="secondary-btn">
+                        <i class="fas fa-sync-alt"></i>
+                        <span>{{ t('doctor.actions.runAgain', default='Run Again') }}</span>
+                    </button>
+                    <button id="doctorExportBtn" class="primary-btn">
+                        <i class="fas fa-file-export"></i>
+                        <span>{{ t('doctor.actions.exportBundle', default='Export Bundle') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

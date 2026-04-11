@@ -113,6 +113,8 @@ import asyncio
 import logging
 from aiohttp import web
 
+from py.utils.session_logging import setup_standalone_session_logging
+
 # Increase allowable header size to align with in-ComfyUI configuration.
 HEADER_SIZE_LIMIT = 16384
 
@@ -124,6 +126,8 @@ logger = logging.getLogger("lora-manager-standalone")
 
 # Configure aiohttp access logger to be less verbose
 logging.getLogger("aiohttp.access").setLevel(logging.WARNING)
+
+setup_standalone_session_logging(ensure_settings_file(logger))
 
 
 # Add specific suppression for connection reset errors

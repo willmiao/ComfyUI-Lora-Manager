@@ -1,0 +1,278 @@
+.doctor-trigger {
+    min-width: 120px;
+    position: relative;
+    border-color: color-mix(in srgb, var(--lora-accent) 24%, var(--border-color));
+}
+
+.doctor-trigger i {
+    color: var(--lora-accent);
+}
+
+.doctor-status-badge {
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 999px;
+    background: var(--lora-error);
+    color: #fff;
+    font-size: 11px;
+    line-height: 18px;
+    font-weight: 700;
+}
+
+.doctor-status-badge.hidden {
+    display: none;
+}
+
+.doctor-modal {
+    width: min(960px, 92vw);
+    max-width: 960px;
+}
+
+.doctor-shell {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-top: var(--space-2);
+}
+
+.doctor-hero {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-3);
+    align-items: flex-start;
+    margin-top: var(--space-2);
+    padding: var(--space-3);
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--lora-border);
+    background: rgba(0, 0, 0, 0.03);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+.doctor-kicker {
+    display: inline-block;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--lora-accent);
+    margin-bottom: 6px;
+}
+
+.doctor-hero h2 {
+    margin: 0 0 8px;
+}
+
+.doctor-hero p {
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.88;
+}
+
+.doctor-summary-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    border: 1px solid transparent;
+}
+
+.doctor-status-ok {
+    background: color-mix(in oklch, var(--lora-success) 14%, transparent);
+    border-color: color-mix(in oklch, var(--lora-success) 28%, transparent);
+    color: color-mix(in oklch, var(--lora-success) 72%, var(--text-color));
+}
+
+.doctor-status-warning {
+    background: color-mix(in oklch, var(--lora-warning) 16%, transparent);
+    border-color: color-mix(in oklch, var(--lora-warning) 30%, transparent);
+    color: color-mix(in oklch, var(--lora-warning) 70%, var(--text-color));
+}
+
+.doctor-status-error {
+    background: color-mix(in oklch, var(--lora-error) 16%, transparent);
+    border-color: color-mix(in oklch, var(--lora-error) 30%, transparent);
+    color: color-mix(in oklch, var(--lora-error) 68%, var(--text-color));
+}
+
+.doctor-loading-state {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    min-height: 22px;
+    border-radius: var(--border-radius-sm);
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+
+.doctor-loading-state.visible {
+    visibility: visible;
+    opacity: 1;
+}
+
+.doctor-issues-list {
+    display: grid;
+    gap: var(--space-2);
+}
+
+.doctor-issue-card {
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: rgba(0, 0, 0, 0.03);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-3);
+    box-shadow: none;
+}
+
+.doctor-issue-card[data-status="warning"] {
+    border-color: color-mix(in oklch, var(--lora-warning) 32%, var(--lora-border));
+}
+
+.doctor-issue-card[data-status="error"] {
+    border-color: color-mix(in oklch, var(--lora-error) 28%, var(--lora-border));
+}
+
+.doctor-issue-header {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    align-items: flex-start;
+}
+
+.doctor-issue-header h3 {
+    margin: 0 0 6px;
+    font-size: 1rem;
+}
+
+.doctor-issue-summary {
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.92;
+}
+
+.doctor-issue-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border-radius: 999px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.doctor-issue-card[data-status="ok"] .doctor-issue-tag {
+    background: color-mix(in oklch, var(--lora-success) 14%, transparent);
+    color: color-mix(in oklch, var(--lora-success) 72%, var(--text-color));
+}
+
+.doctor-issue-card[data-status="warning"] .doctor-issue-tag {
+    background: color-mix(in oklch, var(--lora-warning) 16%, transparent);
+    color: color-mix(in oklch, var(--lora-warning) 70%, var(--text-color));
+}
+
+.doctor-issue-card[data-status="error"] .doctor-issue-tag {
+    background: color-mix(in oklch, var(--lora-error) 16%, transparent);
+    color: color-mix(in oklch, var(--lora-error) 68%, var(--text-color));
+}
+
+.doctor-issue-details {
+    margin: 14px 0 0;
+    padding-left: 18px;
+    color: var(--text-color);
+}
+
+.doctor-issue-details li + li {
+    margin-top: 8px;
+}
+
+.doctor-issue-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 16px;
+}
+
+.doctor-inline-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 10px;
+    margin-top: 14px;
+}
+
+.doctor-inline-detail {
+    padding: 10px 12px;
+    border-radius: var(--border-radius-xs);
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
+}
+
+.doctor-inline-detail strong {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 0.82rem;
+}
+
+.doctor-footer {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--space-2);
+    align-items: center;
+    padding-top: var(--space-1);
+}
+
+.doctor-footer-note {
+    color: var(--text-color);
+    opacity: 0.82;
+}
+
+.doctor-footer-actions {
+    display: flex;
+    gap: 10px;
+}
+
+[data-theme="dark"] .doctor-hero,
+[data-theme="dark"] .doctor-issue-card {
+    background: rgba(255, 255, 255, 0.03);
+    border-color: var(--lora-border);
+    box-shadow: none;
+}
+
+@media (max-width: 760px) {
+    .doctor-trigger {
+        min-width: auto;
+        padding-inline: 10px;
+    }
+
+    .doctor-trigger span:not(.doctor-status-badge) {
+        display: none;
+    }
+
+    .doctor-hero,
+    .doctor-footer {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .doctor-hero {
+        padding-right: var(--space-3);
+    }
+
+    .doctor-summary-badge {
+        align-self: flex-start;
+    }
+
+    .doctor-footer-actions {
+        width: 100%;
+    }
+
+    .doctor-footer-actions button {
+        flex: 1;
+    }
+}

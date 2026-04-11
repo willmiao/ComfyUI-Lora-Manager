@@ -12,6 +12,7 @@
 @import 'components/modal/delete-modal.css';
 @import 'components/modal/update-modal.css';
 @import 'components/modal/settings-modal.css';
+@import 'components/modal/doctor-modal.css';
 @import 'components/modal/help-modal.css';
 @import 'components/modal/relink-civitai-modal.css';
 @import 'components/modal/example-access-modal.css';

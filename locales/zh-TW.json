@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "系統診斷",
+        "title": "醫生",
+        "buttonTitle": "執行診斷與常見修復",
+        "loading": "正在檢查環境...",
+        "footer": "如果修復後問題仍然存在，請匯出診斷套件。",
+        "summary": {
+            "idle": "針對設定、快取完整性與 UI 一致性執行健康檢查。",
+            "ok": "目前環境中未發現任何活動中的問題。",
+            "warning": "找到 {count} 個問題。大多可以直接在此面板修復。",
+            "error": "應先處理 {count} 個問題，應用程式才能完全正常。"
+        },
+        "status": {
+            "ok": "健康",
+            "warning": "需要注意",
+            "error": "需要處理"
+        },
+        "actions": {
+            "runAgain": "重新執行",
+            "exportBundle": "匯出套件"
+        },
+        "toast": {
+            "loadFailed": "載入診斷失敗：{message}",
+            "repairSuccess": "快取重建完成。",
+            "repairFailed": "快取重建失敗：{message}",
+            "exportSuccess": "診斷套件已匯出。",
+            "exportFailed": "匯出診斷套件失敗：{message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "偵測到應用程式更新",

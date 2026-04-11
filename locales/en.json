@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "System diagnostics",
+        "title": "Doctor",
+        "buttonTitle": "Run diagnostics and common fixes",
+        "loading": "Checking environment...",
+        "footer": "Export a diagnostics bundle if the issue still persists after repair.",
+        "summary": {
+            "idle": "Run a health check for settings, cache integrity, and UI consistency.",
+            "ok": "No active issues were found in the current environment.",
+            "warning": "{count} issue(s) were found. Most can be fixed directly from this panel.",
+            "error": "{count} issue(s) need attention before the app is fully healthy."
+        },
+        "status": {
+            "ok": "Healthy",
+            "warning": "Needs Attention",
+            "error": "Action Required"
+        },
+        "actions": {
+            "runAgain": "Run Again",
+            "exportBundle": "Export Bundle"
+        },
+        "toast": {
+            "loadFailed": "Failed to load diagnostics: {message}",
+            "repairSuccess": "Cache rebuild completed.",
+            "repairFailed": "Cache rebuild failed: {message}",
+            "exportSuccess": "Diagnostics bundle exported.",
+            "exportFailed": "Failed to export diagnostics bundle: {message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "Application Update Detected",

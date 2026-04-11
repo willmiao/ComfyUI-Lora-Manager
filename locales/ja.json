@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "システム診断",
+        "title": "ドクター",
+        "buttonTitle": "診断と一般的な修復を実行",
+        "loading": "環境を確認中...",
+        "footer": "修復後も問題が続く場合は、診断パッケージをエクスポートしてください。",
+        "summary": {
+            "idle": "設定、キャッシュ整合性、UI の一貫性をヘルスチェックします。",
+            "ok": "現在の環境でアクティブな問題は見つかりませんでした。",
+            "warning": "{count} 件の問題が見つかりました。ほとんどはこのパネルから直接修復できます。",
+            "error": "アプリが完全に正常になる前に、{count} 件の問題に対処する必要があります。"
+        },
+        "status": {
+            "ok": "正常",
+            "warning": "要注意",
+            "error": "対応が必要"
+        },
+        "actions": {
+            "runAgain": "再実行",
+            "exportBundle": "パッケージをエクスポート"
+        },
+        "toast": {
+            "loadFailed": "診断の読み込みに失敗しました: {message}",
+            "repairSuccess": "キャッシュの再構築が完了しました。",
+            "repairFailed": "キャッシュの再構築に失敗しました: {message}",
+            "exportSuccess": "診断パッケージをエクスポートしました。",
+            "exportFailed": "診断パッケージのエクスポートに失敗しました: {message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "アプリケーション更新が検出されました",

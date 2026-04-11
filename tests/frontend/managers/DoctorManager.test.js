@@ -1,0 +1,56 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { mountMarkup, resetDom } from '../utils/domFixtures.js';
+
+vi.mock('../../../static/js/managers/ModalManager.js', () => ({
+  modalManager: {
+    showModal: vi.fn(),
+  },
+}));
+
+vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
+  showToast: vi.fn(),
+}));
+
+vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({
+  translate: vi.fn((key, _params, fallback) => fallback || key),
+}));
+
+vi.mock('../../../static/js/components/shared/utils.js', () => ({
+  escapeHtml: vi.fn((value) => String(value)),
+}));
+
+import { DoctorManager } from '../../../static/js/managers/DoctorManager.js';
+
+function renderDoctorFixture() {
+  mountMarkup(`
+    <button id="doctorTriggerBtn"></button>
+    <span id="doctorStatusBadge" class="hidden"></span>
+    <div id="doctorModal"></div>
+    <div id="doctorIssuesList"></div>
+    <div id="doctorSummaryText"></div>
+    <div id="doctorSummaryBadge"></div>
+    <div id="doctorLoadingState"></div>
+    <button id="doctorRefreshBtn"></button>
+    <button id="doctorExportBtn"></button>
+  `);
+  document.body.dataset.appVersion = '1.2.3-test';
+}
+
+describe('DoctorManager', () => {
+  beforeEach(() => {
+    resetDom();
+    vi.clearAllMocks();
+    delete window.__lmDoctorConsolePatched;
+    delete window.__lmDoctorConsoleEntries;
+  });
+
+  it('does not run diagnostics during initialize', () => {
+    renderDoctorFixture();
+    const manager = new DoctorManager();
+    const refreshSpy = vi.spyOn(manager, 'refreshDiagnostics').mockResolvedValue(undefined);
+
+    manager.initialize();
+
+    expect(refreshSpy).not.toHaveBeenCalled();
+  });
+});

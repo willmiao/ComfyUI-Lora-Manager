@@ -1,6 +1,9 @@
+import io
 import json
+import logging
 import os
 import subprocess
+import zipfile
 from types import SimpleNamespace
 from unittest.mock import patch, MagicMock
 
@@ -9,6 +12,7 @@ from aiohttp import web
 
 from py.routes.handlers.misc_handlers import (
     BackupHandler,
+    DoctorHandler,
     FileSystemHandler,
     LoraCodeHandler,
     ModelLibraryHandler,
@@ -16,9 +20,14 @@ from py.routes.handlers.misc_handlers import (
     NodeRegistryHandler,
     ServiceRegistryAdapter,
     SettingsHandler,
+    _collect_comfyui_session_logs,
     _is_wsl,
     _wsl_to_windows_path,
     _is_docker,
+)
+from py.utils.session_logging import (
+    reset_standalone_session_logging_for_tests,
+    setup_standalone_session_logging,
 )
 from py.routes.misc_route_registrar import MISC_ROUTE_DEFINITIONS, MiscRouteRegistrar
 from py.routes.misc_routes import MiscRoutes
@@ -37,6 +46,7 @@ class FakeRequest:
 class DummySettings:
     def __init__(self, data=None):
         self.data = data or {}
+        self.settings = self.data
 
     def get(self, key, default=None):
         return self.data.get(key, default)
@@ -65,6 +75,31 @@ async def noop_async(*_args, **_kwargs):
 
 async def dummy_downloader_factory():
     return DummyDownloader()
+
+
+class DummyDoctorScanner:
+    def __init__(self, *, model_type='lora', raw_data=None, rebuild_error=None):
+        self.model_type = model_type
+        self._raw_data = list(raw_data or [])
+        self._rebuild_error = rebuild_error
+        self._persistent_cache = SimpleNamespace(
+            load_cache=lambda _model_type: SimpleNamespace(raw_data=list(self._raw_data))
+        )
+
+    async def get_cached_data(self, force_refresh=False, rebuild_cache=False):
+        if rebuild_cache and self._rebuild_error:
+            raise self._rebuild_error
+        return SimpleNamespace(raw_data=list(self._raw_data))
+
+
+class DummyCivitaiClient:
+    def __init__(self, *, success=True, result=None):
+        self.base_url = 'https://civitai.com/api/v1'
+        self._success = success
+        self._result = result if result is not None else {'items': []}
+
+    async def _make_request(self, *_args, **_kwargs):
+        return self._success, self._result
 
 
 @pytest.mark.asyncio
@@ -111,6 +146,257 @@ async def test_update_settings_rejects_missing_example_path(tmp_path):
 
     assert payload["success"] is False
     assert "Path does not exist" in payload["error"]
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_reports_key_cache_and_ui_issues():
+    settings_service = DummySettings({"civitai_api_key": ""})
+    invalid_entry = {"file_path": "/tmp/missing.safetensors"}
+
+    async def civitai_factory():
+        return DummyCivitaiClient()
+
+    async def scanner_factory():
+        return DummyDoctorScanner(model_type="lora", raw_data=[invalid_entry])
+
+    handler = DoctorHandler(
+        settings_service=settings_service,
+        civitai_client_factory=civitai_factory,
+        scanner_factories=(("lora", "LoRAs", scanner_factory),),
+        app_version_getter=lambda: "1.2.3-server",
+    )
+
+    response = await handler.get_doctor_diagnostics(
+        FakeRequest(query={"clientVersion": "1.2.2-client"}, method="GET")
+    )
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert payload["summary"]["status"] == "error"
+    diagnostic_map = {item["id"]: item for item in payload["diagnostics"]}
+    assert diagnostic_map["civitai_api_key"]["status"] == "warning"
+    assert diagnostic_map["cache_health"]["status"] == "error"
+    assert diagnostic_map["ui_version"]["status"] == "warning"
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_can_repair_cache():
+    scanner = DummyDoctorScanner(model_type="lora", raw_data=[])
+
+    async def civitai_factory():
+        return DummyCivitaiClient()
+
+    async def scanner_factory():
+        return scanner
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "token"}),
+        civitai_client_factory=civitai_factory,
+        scanner_factories=(("lora", "LoRAs", scanner_factory),),
+    )
+
+    response = await handler.repair_doctor_cache(FakeRequest())
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["repaired"] == [{"model_type": "lora", "label": "LoRAs"}]
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_exports_support_bundle():
+    async def civitai_factory():
+        return DummyCivitaiClient()
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "secret-key"}),
+        civitai_client_factory=civitai_factory,
+        scanner_factories=(),
+        app_version_getter=lambda: "9.9.9-test",
+    )
+
+    response = await handler.export_doctor_bundle(
+        FakeRequest(
+            json_data={
+                "summary": {"status": "warning"},
+                "diagnostics": [{"id": "cache_health", "status": "warning"}],
+                "frontend_logs": [{"level": "error", "message": "boom"}],
+                "client_context": {"app_version": "9.9.8-old"},
+            }
+        )
+    )
+
+    assert response.status == 200
+    with zipfile.ZipFile(io.BytesIO(response.body), "r") as archive:
+        names = set(archive.namelist())
+        assert "doctor-report.json" in names
+        assert "settings-sanitized.json" in names
+        assert "backend-log-source.json" in names
+        settings_payload = json.loads(archive.read("settings-sanitized.json").decode("utf-8"))
+        assert settings_payload["civitai_api_key"].startswith("secr")
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_redacts_string_secrets_in_bundle():
+    async def civitai_factory():
+        return DummyCivitaiClient()
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "secret-key"}),
+        civitai_client_factory=civitai_factory,
+        scanner_factories=(),
+        app_version_getter=lambda: "9.9.9-test",
+    )
+
+    response = await handler.export_doctor_bundle(
+        FakeRequest(
+            json_data={
+                "frontend_logs": [
+                    {
+                        "level": "error",
+                        "message": "Authorization: Bearer abcdef123456 token=xyz password=hunter2",
+                    }
+                ],
+            }
+        )
+    )
+
+    assert response.status == 200
+    with zipfile.ZipFile(io.BytesIO(response.body), "r") as archive:
+        frontend_logs = archive.read("frontend-console.json").decode("utf-8")
+        assert "abcdef123456" not in frontend_logs
+        assert "hunter2" not in frontend_logs
+        assert "Bearer ***" in frontend_logs
+        backend_logs = archive.read("backend-logs.txt").decode("utf-8")
+        assert "hunter2" not in backend_logs
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_redacts_json_shaped_string_secrets_in_bundle():
+    async def civitai_factory():
+        return DummyCivitaiClient()
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "secret-key"}),
+        civitai_client_factory=civitai_factory,
+        scanner_factories=(),
+        app_version_getter=lambda: "9.9.9-test",
+    )
+    handler._collect_backend_session_logs = lambda: {
+        "mode": "standalone",
+        "source_method": "standalone_memory",
+        "session_started_at": "2026-04-11T10:00:00+00:00",
+        "session_id": "session-123",
+        "persistent_log_path": None,
+        "persistent_log_text": "",
+        "session_log_text": '{"token":"abcd1234","authorization":"Bearer qwerty","password":"hunter2"}\n',
+        "notes": [],
+    }
+
+    response = await handler.export_doctor_bundle(
+        FakeRequest(
+            json_data={
+                "frontend_logs": [
+                    {
+                        "level": "error",
+                        "message": '{"token":"abcd1234","authorization":"Bearer qwerty","password":"hunter2"}',
+                    }
+                ],
+            }
+        )
+    )
+
+    assert response.status == 200
+    with zipfile.ZipFile(io.BytesIO(response.body), "r") as archive:
+        frontend_logs = archive.read("frontend-console.json").decode("utf-8")
+        backend_logs = archive.read("backend-logs.txt").decode("utf-8")
+
+        assert '"token":"abcd1234"' not in frontend_logs
+        assert '"password":"hunter2"' not in frontend_logs
+        assert 'Bearer qwerty' not in frontend_logs
+        assert '\\"token\\":\\"***\\"' in frontend_logs
+        assert '\\"password\\":\\"***\\"' in frontend_logs
+        assert 'Bearer ***' in frontend_logs
+
+        assert '"token":"abcd1234"' not in backend_logs
+        assert '"password":"hunter2"' not in backend_logs
+        assert 'Bearer qwerty' not in backend_logs
+
+
+@pytest.mark.asyncio
+async def test_doctor_handler_exports_backend_session_logs_from_helper():
+    async def civitai_factory():
+        return DummyCivitaiClient()
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "secret-key"}),
+        civitai_client_factory=civitai_factory,
+        scanner_factories=(),
+        app_version_getter=lambda: "9.9.9-test",
+    )
+    handler._collect_backend_session_logs = lambda: {
+        "mode": "standalone",
+        "source_method": "standalone_session_file",
+        "session_started_at": "2026-04-11T10:00:00+00:00",
+        "session_id": "session-123",
+        "persistent_log_path": "/tmp/standalone.log",
+        "persistent_log_text": "token=abcd1234\n",
+        "session_log_text": "Authorization: Bearer supersecret\n",
+        "notes": [],
+    }
+
+    response = await handler.export_doctor_bundle(FakeRequest(json_data={}))
+
+    assert response.status == 200
+    with zipfile.ZipFile(io.BytesIO(response.body), "r") as archive:
+        backend_logs = archive.read("backend-logs.txt").decode("utf-8")
+        backend_source = json.loads(
+            archive.read("backend-log-source.json").decode("utf-8")
+        )
+
+        assert "supersecret" not in backend_logs
+        assert backend_source["source_method"] == "standalone_session_file"
+        assert backend_source["session_id"] == "session-123"
+
+
+def test_collect_comfyui_session_logs_only_uses_matching_current_session_file(tmp_path):
+    log_file = tmp_path / "comfyui.log"
+    log_file.write_text(
+        "** ComfyUI startup time: 2026-04-11 12:00:00.000\n"
+        "[2026-04-11 12:00:01.000] file log line\n",
+        encoding="utf-8",
+    )
+
+    result = _collect_comfyui_session_logs(
+        log_entries=[
+            {
+                "t": "2026-04-11 12:05:00.000",
+                "m": "** ComfyUI startup time: 2026-04-11 12:05:00.000\n",
+            },
+            {"t": "2026-04-11 12:05:01.000", "m": "current session line\n"},
+        ],
+        log_file_path=str(log_file),
+    )
+
+    assert result["persistent_log_text"] == ""
+    assert any("does not match" in note for note in result["notes"])
+
+
+def test_setup_standalone_session_logging_creates_current_session_file(tmp_path):
+    reset_standalone_session_logging_for_tests()
+    settings_file = tmp_path / "settings.json"
+    settings_file.write_text("{}", encoding="utf-8")
+
+    state = setup_standalone_session_logging(str(settings_file))
+    logger = logging.getLogger("lora-manager-standalone-test")
+    logger.info("standalone current session line")
+
+    assert state.log_file_path is not None
+    assert os.path.isfile(state.log_file_path)
+    with open(state.log_file_path, "r", encoding="utf-8") as handle:
+        payload = handle.read()
+
+    assert "LoRA Manager standalone startup time:" in payload
 
 
 class DummyBackupService:

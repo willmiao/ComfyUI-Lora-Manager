@@ -19,6 +19,7 @@ from ..services.downloader import get_downloader
 from ..utils.usage_stats import UsageStats
 from .handlers.misc_handlers import (
     CustomWordsHandler,
+    DoctorHandler,
     ExampleWorkflowsHandler,
     FileSystemHandler,
     HealthCheckHandler,
@@ -130,6 +131,7 @@ class MiscRoutes:
         )
         custom_words = CustomWordsHandler()
         supporters = SupportersHandler()
+        doctor = DoctorHandler(settings_service=self._settings)
         example_workflows = ExampleWorkflowsHandler()
         base_model = BaseModelHandlerSet()
 
@@ -147,6 +149,7 @@ class MiscRoutes:
             filesystem=filesystem,
             custom_words=custom_words,
             supporters=supporters,
+            doctor=doctor,
             example_workflows=example_workflows,
             base_model=base_model,
         )

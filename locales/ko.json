@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "시스템 진단",
+        "title": "닥터",
+        "buttonTitle": "진단 및 일반적인 수정 실행",
+        "loading": "환경을 확인하는 중...",
+        "footer": "수리 후에도 문제가 계속되면 진단 번들을 내보내세요.",
+        "summary": {
+            "idle": "설정, 캐시 무결성, UI 일관성에 대한 상태 검사를 실행합니다.",
+            "ok": "현재 환경에서 활성 문제를 찾지 못했습니다.",
+            "warning": "{count}개의 문제가 발견되었습니다. 대부분은 이 패널에서 바로 해결할 수 있습니다.",
+            "error": "앱이 완전히 정상 상태가 되기 전에 {count}개의 문제를 처리해야 합니다."
+        },
+        "status": {
+            "ok": "정상",
+            "warning": "주의 필요",
+            "error": "조치 필요"
+        },
+        "actions": {
+            "runAgain": "다시 실행",
+            "exportBundle": "번들 내보내기"
+        },
+        "toast": {
+            "loadFailed": "진단 로드 실패: {message}",
+            "repairSuccess": "캐시 재구성이 완료되었습니다.",
+            "repairFailed": "캐시 재구성 실패: {message}",
+            "exportSuccess": "진단 번들이 내보내졌습니다.",
+            "exportFailed": "진단 번들 내보내기 실패: {message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "애플리케이션 업데이트 감지",

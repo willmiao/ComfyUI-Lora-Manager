@@ -120,6 +120,13 @@
         </div>
 
         <div class="controls-right">
+            <div class="control-group doctor-control-group">
+                <button id="doctorTriggerBtn" class="doctor-trigger" title="{{ t('doctor.buttonTitle', default='Run diagnostics and common fixes') }}">
+                    <i class="fas fa-stethoscope"></i>
+                    <span>{{ t('doctor.title', default='Doctor') }}</span>
+                    <span id="doctorStatusBadge" class="doctor-status-badge hidden" aria-hidden="true"></span>
+                </button>
+            </div>
             <div class="keyboard-nav-hint tooltip">
                 <i class="fas fa-keyboard"></i>
                 <span class="tooltiptext">

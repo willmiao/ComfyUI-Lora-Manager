@@ -1806,6 +1806,35 @@
             "moveFailed": "Failed to move item: {message}"
         }
     },
+    "doctor": {
+        "kicker": "Diagnósticos del sistema",
+        "title": "Doctor",
+        "buttonTitle": "Ejecutar diagnósticos y correcciones comunes",
+        "loading": "Comprobando el entorno...",
+        "footer": "Exporta un paquete de diagnóstico si el problema persiste después de la reparación.",
+        "summary": {
+            "idle": "Ejecuta una comprobación del estado de la configuración, la integridad de la caché y la coherencia de la interfaz.",
+            "ok": "No se encontraron problemas activos en el entorno actual.",
+            "warning": "Se encontraron {count} problema(s). La mayoría se puede solucionar directamente desde este panel.",
+            "error": "Se encontraron {count} problema(s). Deben atenderse antes de que la aplicación esté completamente saludable."
+        },
+        "status": {
+            "ok": "Saludable",
+            "warning": "Requiere atención",
+            "error": "Se requiere acción"
+        },
+        "actions": {
+            "runAgain": "Ejecutar de nuevo",
+            "exportBundle": "Exportar paquete"
+        },
+        "toast": {
+            "loadFailed": "Error al cargar los diagnósticos: {message}",
+            "repairSuccess": "Reconstrucción de caché completada.",
+            "repairFailed": "Error al reconstruir la caché: {message}",
+            "exportSuccess": "Paquete de diagnósticos exportado.",
+            "exportFailed": "Error al exportar el paquete de diagnósticos: {message}"
+        }
+    },
     "banners": {
         "versionMismatch": {
             "title": "Actualización de la aplicación detectada",
