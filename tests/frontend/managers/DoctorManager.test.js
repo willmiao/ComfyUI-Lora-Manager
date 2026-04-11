@@ -53,4 +53,26 @@ describe('DoctorManager', () => {
 
     expect(refreshSpy).not.toHaveBeenCalled();
   });
+
+  it('builds a cache-busted reload URL that preserves the current location', () => {
+    renderDoctorFixture();
+    window.history.replaceState({}, '', '/loras?filter=active#details');
+    vi.spyOn(Date, 'now').mockReturnValue(1234567890);
+
+    const manager = new DoctorManager();
+
+    const url = manager.buildReloadUrl();
+
+    expect(url).toBe('http://localhost:3000/loras?filter=active&_lm_reload=1234567890#details');
+  });
+
+  it('delegates reload-page actions to reloadUi', async () => {
+    renderDoctorFixture();
+    const manager = new DoctorManager();
+    const reloadSpy = vi.spyOn(manager, 'reloadUi').mockImplementation(() => undefined);
+
+    await manager.handleAction('reload-page');
+
+    expect(reloadSpy).toHaveBeenCalledTimes(1);
+  });
 });

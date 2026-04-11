@@ -103,6 +103,16 @@ export class DoctorManager {
         return document.body?.dataset?.appVersion || '';
     }
 
+    buildReloadUrl() {
+        const url = new URL(window.location.href);
+        url.searchParams.set('_lm_reload', Date.now().toString());
+        return url.toString();
+    }
+
+    reloadUi() {
+        window.location.replace(this.buildReloadUrl());
+    }
+
     setLoading(isLoading) {
         if (this.loadingState) {
             this.loadingState.classList.toggle('visible', isLoading);
@@ -308,7 +318,7 @@ export class DoctorManager {
                 await this.repairCache();
                 break;
             case 'reload-page':
-                window.location.reload();
+                this.reloadUi();
                 break;
             default:
                 break;

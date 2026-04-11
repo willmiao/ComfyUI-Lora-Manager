@@ -64,7 +64,6 @@ class ModelPageView:
         self._settings = settings_service
         self._server_i18n = server_i18n
         self._logger = logger
-        self._app_version = self._get_app_version()
 
     def _load_supporters(self) -> dict:
         """Load supporters data from JSON file."""
@@ -155,7 +154,7 @@ class ModelPageView:
                 "request": request,
                 "folders": [],
                 "t": self._server_i18n.get_translation,
-                "version": self._app_version,
+                "version": self._get_app_version(),
             }
 
             if not is_initializing:
