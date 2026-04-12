@@ -952,6 +952,30 @@ class RecipeScanner:
         except Exception as exc:
             logger.debug("Failed to update FTS index for recipe: %s", exc)
 
+    @staticmethod
+    def _normalize_recipe_gen_params(recipe_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Return a recipe copy with normalized generation parameter aliases added."""
+
+        normalized_recipe = dict(recipe_data)
+        gen_params = recipe_data.get("gen_params")
+        if not isinstance(gen_params, dict):
+            return normalized_recipe
+
+        normalized_gen_params = dict(gen_params)
+        for key, value in gen_params.items():
+            if value in (None, ""):
+                continue
+
+            normalized_key = GenParamsMerger.NORMALIZATION_MAPPING.get(key, key)
+            if normalized_key not in GenParamsMerger.ALLOWED_KEYS:
+                continue
+
+            if normalized_gen_params.get(normalized_key) in (None, ""):
+                normalized_gen_params[normalized_key] = value
+
+        normalized_recipe["gen_params"] = normalized_gen_params
+        return normalized_recipe
+
     async def _enrich_cache_metadata(self) -> None:
         """Perform remote metadata enrichment after the initial scan."""
 
@@ -1345,6 +1369,7 @@ class RecipeScanner:
             # Ensure gen_params exists
             if "gen_params" not in recipe_data:
                 recipe_data["gen_params"] = {}
+            recipe_data = self._normalize_recipe_gen_params(recipe_data)
 
             # Update lora information with local paths and availability
             lora_metadata_updated = await self._update_lora_information(recipe_data)
@@ -2055,7 +2080,10 @@ class RecipeScanner:
         end_idx = min(start_idx + page_size, total_items)
 
         # Get paginated items
-        paginated_items = filtered_data[start_idx:end_idx]
+        paginated_items = [
+            self._normalize_recipe_gen_params(item)
+            for item in filtered_data[start_idx:end_idx]
+        ]
 
         # Add inLibrary information and URLs for each recipe
         for item in paginated_items:
@@ -2116,7 +2144,7 @@ class RecipeScanner:
 
         # Prefer the on-disk recipe JSON for fields that are not persisted in the
         # SQLite cache yet, such as source_path.
-        merged_recipe = {**recipe}
+        merged_recipe = self._normalize_recipe_gen_params({**recipe})
         recipe_json = await self._load_recipe_json(recipe_id)
         if recipe_json:
             for field in ("source_path", "checkpoint", "loras", "gen_params"):
@@ -2181,7 +2209,7 @@ class RecipeScanner:
         if not isinstance(recipe_data, dict):
             return None
 
-        return recipe_data
+        return self._normalize_recipe_gen_params(recipe_data)
 
     def _format_file_url(self, file_path: str) -> str:
         """Format file path as URL for serving in web UI"""

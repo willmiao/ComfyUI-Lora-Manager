@@ -403,6 +403,61 @@ async def test_get_recipe_by_id_merges_recipe_json_details(recipe_scanner):
 
 
 @pytest.mark.asyncio
+async def test_get_recipe_by_id_normalizes_gen_params_aliases_without_dropping_metadata(
+    recipe_scanner,
+):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(scanner.recipes_dir)
+    recipe_id = "dirty-json-gen-params"
+    recipe_json_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": "/tmp/dirty-json-gen-params.png",
+                "title": "Dirty Recipe",
+                "gen_params": {
+                    "Prompt": "prompt from json",
+                    "negativePrompt": "negative from json",
+                    "cfgScale": 7,
+                    "raw_metadata": {"prompt": "nested"},
+                    "Version": "ComfyUI",
+                    "RNG": "cpu",
+                },
+                "loras": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner._cache.raw_data = [
+        {
+            "id": recipe_id,
+            "file_path": "/tmp/dirty-json-gen-params.png",
+            "title": "Cached Recipe",
+            "folder": "",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "gen_params": {"prompt": "cached prompt", "raw_metadata": {"bad": True}},
+        }
+    ]
+
+    recipe = await scanner.get_recipe_by_id(recipe_id)
+
+    assert recipe is not None
+    assert recipe["gen_params"]["Prompt"] == "prompt from json"
+    assert recipe["gen_params"]["negativePrompt"] == "negative from json"
+    assert recipe["gen_params"]["cfgScale"] == 7
+    assert recipe["gen_params"]["raw_metadata"] == {"prompt": "nested"}
+    assert recipe["gen_params"]["Version"] == "ComfyUI"
+    assert recipe["gen_params"]["RNG"] == "cpu"
+    assert recipe["gen_params"]["prompt"] == "prompt from json"
+    assert recipe["gen_params"]["negative_prompt"] == "negative from json"
+    assert recipe["gen_params"]["cfg_scale"] == 7
+
+
+@pytest.mark.asyncio
 async def test_get_recipe_by_id_prefers_json_file_path(recipe_scanner):
     scanner, _ = recipe_scanner
     recipes_dir = Path(scanner.recipes_dir)
@@ -526,6 +581,40 @@ async def test_get_paginated_data_filters_by_checkpoint_hash(recipe_scanner):
     )
 
     assert [item["id"] for item in result["items"]] == ["checkpoint-match"]
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_normalizes_gen_params_aliases_without_dropping_metadata(
+    recipe_scanner,
+):
+    scanner, _ = recipe_scanner
+    await scanner.add_recipe(
+        {
+            "id": "dirty-listing",
+            "file_path": str(Path(config.loras_roots[0]) / "dirty-listing.webp"),
+            "title": "Dirty Listing",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "gen_params": {
+                "Prompt": "a beautiful forest landscape",
+                "cfgScale": 7,
+                "Version": "ComfyUI",
+                "raw_metadata": {"bad": True},
+            },
+        }
+    )
+    await asyncio.sleep(0)
+
+    result = await scanner.get_paginated_data(page=1, page_size=10)
+    item = next(entry for entry in result["items"] if entry["id"] == "dirty-listing")
+
+    assert item["gen_params"]["Prompt"] == "a beautiful forest landscape"
+    assert item["gen_params"]["cfgScale"] == 7
+    assert item["gen_params"]["Version"] == "ComfyUI"
+    assert item["gen_params"]["raw_metadata"] == {"bad": True}
+    assert item["gen_params"]["prompt"] == "a beautiful forest landscape"
+    assert item["gen_params"]["cfg_scale"] == 7
 
 
 @pytest.mark.asyncio

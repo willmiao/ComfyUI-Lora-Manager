@@ -7,6 +7,36 @@ import { fetchRecipeDetails, updateRecipeMetadata } from '../api/recipeApi.js';
 import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 
+const ALLOWED_GEN_PARAM_KEYS = new Set([
+    'prompt',
+    'negative_prompt',
+    'steps',
+    'sampler',
+    'cfg_scale',
+    'seed',
+    'size',
+    'clip_skip',
+    'denoising_strength',
+]);
+
+const GEN_PARAM_NORMALIZATION = {
+    cfg: 'cfg_scale',
+    cfgScale: 'cfg_scale',
+    clipSkip: 'clip_skip',
+    negativePrompt: 'negative_prompt',
+    Sampler: 'sampler',
+    sampler_name: 'sampler',
+    scheduler: 'sampler',
+    Steps: 'steps',
+    Seed: 'seed',
+    Size: 'size',
+    Prompt: 'prompt',
+    'Negative prompt': 'negative_prompt',
+    'Cfg scale': 'cfg_scale',
+    'Clip skip': 'clip_skip',
+    'Denoising strength': 'denoising_strength',
+};
+
 class RecipeModal {
     constructor() {
         this.promptEditorState = {};
@@ -321,8 +351,13 @@ class RecipeModal {
             mediaContainer.appendChild(sourceUrlContainer);
             mediaContainer.appendChild(sourceUrlEditor);
 
-            // Set up event listeners for source URL functionality
+            // Delay binding slightly so modal layout is stable, but skip if this render was torn down.
+            const sourceUrlContainerRef = sourceUrlContainer;
+            const sourceUrlEditorRef = sourceUrlEditor;
             setTimeout(() => {
+                if (!document.body.contains(sourceUrlContainerRef) || !document.body.contains(sourceUrlEditorRef)) {
+                    return;
+                }
                 this.setupSourceUrlHandlers();
             }, 50);
         }
@@ -562,18 +597,19 @@ class RecipeModal {
         const promptInput = document.getElementById('recipePromptInput');
         const negativePromptInput = document.getElementById('recipeNegativePromptInput');
         const promptFieldsOnly = options.promptFieldsOnly === true;
+        const sanitizedGenParams = this.sanitizeGenParams(genParams);
 
-        if (genParams) {
+        if (sanitizedGenParams) {
             if (!promptFieldsOnly) {
-                this.renderPromptContent(promptElement, genParams.prompt, 'No prompt information available');
-                this.renderPromptContent(negativePromptElement, genParams.negative_prompt, 'No negative prompt information available');
+                this.renderPromptContent(promptElement, sanitizedGenParams.prompt, 'No prompt information available');
+                this.renderPromptContent(negativePromptElement, sanitizedGenParams.negative_prompt, 'No negative prompt information available');
 
                 if (promptInput) {
-                    promptInput.value = genParams.prompt || '';
+                    promptInput.value = sanitizedGenParams.prompt || '';
                 }
 
                 if (negativePromptInput) {
-                    negativePromptInput.value = genParams.negative_prompt || '';
+                    negativePromptInput.value = sanitizedGenParams.negative_prompt || '';
                 }
             }
 
@@ -581,7 +617,7 @@ class RecipeModal {
                 otherParamsElement.innerHTML = '';
                 const excludedParams = ['prompt', 'negative_prompt'];
 
-                for (const [key, value] of Object.entries(genParams)) {
+                for (const [key, value] of Object.entries(sanitizedGenParams)) {
                     if (!excludedParams.includes(key) && value !== undefined && value !== null) {
                         const paramTag = document.createElement('div');
                         paramTag.className = 'param-tag';
@@ -610,6 +646,43 @@ class RecipeModal {
         if (otherParamsElement) {
             otherParamsElement.innerHTML = '<div class="no-params">No parameters available</div>';
         }
+    }
+
+    sanitizeGenParams(genParams) {
+        if (!genParams || typeof genParams !== 'object') {
+            return null;
+        }
+
+        const sanitized = {};
+
+        for (const [key, value] of Object.entries(genParams)) {
+            if (value === undefined || value === null || value === '') {
+                continue;
+            }
+
+            if (!ALLOWED_GEN_PARAM_KEYS.has(key)) {
+                continue;
+            }
+
+            sanitized[key] = value;
+        }
+
+        for (const [key, value] of Object.entries(genParams)) {
+            if (value === undefined || value === null || value === '') {
+                continue;
+            }
+
+            const normalizedKey = GEN_PARAM_NORMALIZATION[key] || key;
+            if (!ALLOWED_GEN_PARAM_KEYS.has(normalizedKey)) {
+                continue;
+            }
+
+            if (sanitized[normalizedKey] === undefined || sanitized[normalizedKey] === null || sanitized[normalizedKey] === '') {
+                sanitized[normalizedKey] = value;
+            }
+        }
+
+        return sanitized;
     }
 
     syncResourcesSection(recipe = {}) {
@@ -1117,7 +1190,7 @@ class RecipeModal {
 
         const currentGenParams = this.currentRecipe.gen_params || {};
         const nextValue = input.value.trim() === '' ? '' : input.value;
-        const currentValue = currentGenParams[config.field] || '';
+        const currentValue = this.sanitizeGenParams(currentGenParams)?.[config.field] || '';
 
         if (nextValue === currentValue) {
             this.clearFieldDirty(config.field);

@@ -1165,6 +1165,113 @@ describe('Interaction-level regression coverage', () => {
     expect(otherParamsText).not.toContain('cfg_scale');
   });
 
+  it('filters dirty generation params from recipe modal display', async () => {
+    document.body.innerHTML = `
+      <div id="recipeModal" class="modal">
+        <div id="recipeModalTitle"></div>
+        <div id="recipePreviewContainer"></div>
+        <div id="recipeTagsCompact"></div>
+        <div id="recipeTagsTooltip"><div id="recipeTagsTooltipContent"></div></div>
+        <div id="recipePrompt"></div>
+        <textarea id="recipePromptInput"></textarea>
+        <div id="recipeNegativePrompt"></div>
+        <textarea id="recipeNegativePromptInput"></textarea>
+        <div class="other-params" id="recipeOtherParams"></div>
+        <div id="recipeCheckpoint"></div>
+        <div id="recipeResourceDivider"></div>
+        <div id="recipeLorasList"></div>
+        <span id="recipeLorasCount"></span>
+        <button id="viewRecipeLorasBtn"></button>
+        <button id="copyRecipeSyntaxBtn"></button>
+      </div>
+    `;
+
+    const { RecipeModal } = await import('../../../static/js/components/RecipeModal.js');
+    const recipeModal = new RecipeModal();
+
+    recipeModal.showRecipeDetails({
+      id: '',
+      file_path: '/recipes/dirty-gen-params.json',
+      title: 'Dirty Gen Params Recipe',
+      tags: [],
+      file_url: '',
+      preview_url: '',
+      source_path: '',
+      gen_params: {
+        Prompt: 'visible prompt',
+        negativePrompt: 'visible negative',
+        Sampler: 'euler',
+        cfgScale: 7,
+        Version: 'ComfyUI',
+        raw_metadata: { prompt: 'hidden prompt' },
+        RNG: 'cpu',
+      },
+      loras: [],
+    });
+
+    const otherParamsText = document.getElementById('recipeOtherParams').textContent;
+    expect(document.getElementById('recipePrompt').textContent).toContain('visible prompt');
+    expect(document.getElementById('recipeNegativePrompt').textContent).toContain('visible negative');
+    expect(otherParamsText).toContain('sampler:');
+    expect(otherParamsText).toContain('cfg_scale:');
+    expect(otherParamsText).not.toContain('Version');
+    expect(otherParamsText).not.toContain('raw_metadata');
+    expect(otherParamsText).not.toContain('RNG');
+  });
+
+  it('prefers canonical generation params over legacy aliases in modal display', async () => {
+    document.body.innerHTML = `
+      <div id="recipeModal" class="modal">
+        <div id="recipeModalTitle"></div>
+        <div id="recipePreviewContainer"></div>
+        <div id="recipeTagsCompact"></div>
+        <div id="recipeTagsTooltip"><div id="recipeTagsTooltipContent"></div></div>
+        <div id="recipePrompt"></div>
+        <textarea id="recipePromptInput"></textarea>
+        <div id="recipeNegativePrompt"></div>
+        <textarea id="recipeNegativePromptInput"></textarea>
+        <div class="other-params" id="recipeOtherParams"></div>
+        <div id="recipeCheckpoint"></div>
+        <div id="recipeResourceDivider"></div>
+        <div id="recipeLorasList"></div>
+        <span id="recipeLorasCount"></span>
+        <button id="viewRecipeLorasBtn"></button>
+        <button id="copyRecipeSyntaxBtn"></button>
+      </div>
+    `;
+
+    const { RecipeModal } = await import('../../../static/js/components/RecipeModal.js');
+    const recipeModal = new RecipeModal();
+
+    recipeModal.showRecipeDetails({
+      id: '',
+      file_path: '/recipes/canonical-wins.json',
+      title: 'Canonical Wins Recipe',
+      tags: [],
+      file_url: '',
+      preview_url: '',
+      source_path: '',
+      gen_params: {
+        Prompt: 'stale prompt',
+        prompt: 'fresh prompt',
+        negativePrompt: 'stale negative',
+        negative_prompt: 'fresh negative',
+        cfgScale: 3,
+        cfg_scale: 7,
+      },
+      loras: [],
+    });
+
+    const otherParamsText = document.getElementById('recipeOtherParams').textContent;
+    expect(document.getElementById('recipePrompt').textContent).toContain('fresh prompt');
+    expect(document.getElementById('recipePrompt').textContent).not.toContain('stale prompt');
+    expect(document.getElementById('recipeNegativePrompt').textContent).toContain('fresh negative');
+    expect(document.getElementById('recipeNegativePrompt').textContent).not.toContain('stale negative');
+    expect(otherParamsText).toContain('cfg_scale:');
+    expect(otherParamsText).toContain('7');
+    expect(otherParamsText).not.toContain('3');
+  });
+
   it('replaces cached checkpoint and loras with hydrated resources', async () => {
     fetchRecipeDetailsMock.mockResolvedValueOnce({
       id: 'recipe-resources',
@@ -1854,6 +1961,8 @@ describe('Interaction-level regression coverage', () => {
         negative_prompt: 'keep negative',
         steps: 30,
         cfg_scale: 7,
+        raw_metadata: { prompt: 'preserve me' },
+        Version: 'ComfyUI',
       },
       loras: [],
     });
@@ -1882,6 +1991,8 @@ describe('Interaction-level regression coverage', () => {
           negative_prompt: 'keep negative',
           steps: 30,
           cfg_scale: 7,
+          raw_metadata: { prompt: 'preserve me' },
+          Version: 'ComfyUI',
         },
       },
       { listFilePath: '/recipes/prompt.json' }
