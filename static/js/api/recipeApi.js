@@ -31,6 +31,20 @@ export function extractRecipeId(filePath) {
     return dotIndex > 0 ? basename.substring(0, dotIndex) : basename;
 }
 
+export async function fetchRecipeDetails(recipeId) {
+    if (!recipeId) {
+        throw new Error('Unable to determine recipe ID');
+    }
+
+    const encodedRecipeId = encodeURIComponent(recipeId);
+    const response = await fetch(`${RECIPE_ENDPOINTS.detail}/${encodedRecipeId}`);
+    if (!response.ok) {
+        throw new Error(`Failed to load recipe: ${response.statusText}`);
+    }
+
+    return response.json();
+}
+
 /**
  * Fetch recipes with pagination for virtual scrolling
  * @param {number} page - Page number to fetch
@@ -61,7 +75,9 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
         // If we have a specific recipe ID to load
         if (pageState.customFilter?.active && pageState.customFilter?.recipeId) {
             // Special case: load specific recipe
-            const response = await fetch(`${RECIPE_ENDPOINTS.detail}/${pageState.customFilter.recipeId}`);
+            const response = await fetch(
+                `${RECIPE_ENDPOINTS.detail}/${encodeURIComponent(pageState.customFilter.recipeId)}`
+            );
 
             if (!response.ok) {
                 throw new Error(`Failed to load recipe: ${response.statusText}`);
@@ -349,9 +365,10 @@ export function createRecipeCard(recipe) {
  * @param {Object} updates - The metadata updates to apply
  * @returns {Promise<Object>} The updated recipe data
  */
-export async function updateRecipeMetadata(filePath, updates) {
+export async function updateRecipeMetadata(filePath, updates, options = {}) {
     try {
         state.loadingManager.showSimpleLoading('Saving metadata...');
+        const listFilePath = options.listFilePath || filePath;
 
         // Extract recipeId from filePath (basename without extension)
         const recipeId = extractRecipeId(filePath);
@@ -359,7 +376,7 @@ export async function updateRecipeMetadata(filePath, updates) {
             throw new Error('Unable to determine recipe ID');
         }
 
-        const response = await fetch(`${RECIPE_ENDPOINTS.update}/${recipeId}/update`, {
+        const response = await fetch(`${RECIPE_ENDPOINTS.update}/${encodeURIComponent(recipeId)}/update`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -374,7 +391,7 @@ export async function updateRecipeMetadata(filePath, updates) {
             throw new Error(data.error || 'Failed to update recipe');
         }
 
-        state.virtualScroller.updateSingleItem(filePath, updates);
+        state.virtualScroller.updateSingleItem(listFilePath, updates);
 
         return data;
     } catch (error) {

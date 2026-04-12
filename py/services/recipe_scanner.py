@@ -2114,8 +2114,18 @@ class RecipeScanner:
         if not recipe:
             return None
 
+        # Prefer the on-disk recipe JSON for fields that are not persisted in the
+        # SQLite cache yet, such as source_path.
+        merged_recipe = {**recipe}
+        recipe_json = await self._load_recipe_json(recipe_id)
+        if recipe_json:
+            for field in ("source_path", "checkpoint", "loras", "gen_params"):
+                if field not in recipe_json:
+                    merged_recipe.pop(field, None)
+            merged_recipe.update(recipe_json)
+
         # Format the recipe with all needed information
-        formatted_recipe = {**recipe}  # Copy all fields
+        formatted_recipe = {**merged_recipe}
 
         # Format file path to URL
         if "file_path" in formatted_recipe:
@@ -2148,6 +2158,30 @@ class RecipeScanner:
                 formatted_recipe.pop("checkpoint", None)
 
         return formatted_recipe
+
+    async def _load_recipe_json(self, recipe_id: str) -> Optional[Dict[str, Any]]:
+        """Load the raw recipe JSON payload for a recipe ID if it exists."""
+
+        recipe_json_path = await self.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
+            return None
+
+        try:
+            with open(recipe_json_path, "r", encoding="utf-8") as f:
+                recipe_data = json.load(f)
+        except Exception as exc:
+            logger.debug(
+                "Failed to load recipe JSON for %s from %s: %s",
+                recipe_id,
+                recipe_json_path,
+                exc,
+            )
+            return None
+
+        if not isinstance(recipe_data, dict):
+            return None
+
+        return recipe_data
 
     def _format_file_url(self, file_path: str) -> str:
         """Format file path as URL for serving in web UI"""

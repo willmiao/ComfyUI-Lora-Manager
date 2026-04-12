@@ -359,6 +359,133 @@ async def test_get_recipe_by_id_handles_non_dict_checkpoint(recipe_scanner):
 
 
 @pytest.mark.asyncio
+async def test_get_recipe_by_id_merges_recipe_json_details(recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(scanner.recipes_dir)
+    recipe_id = "hydrate-me"
+    recipe_json_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": "/tmp/hydrate-me.png",
+                "title": "Hydrated Recipe",
+                "source_path": "https://example.com/source",
+                "gen_params": {
+                    "prompt": "prompt from json",
+                    "negative_prompt": "negative from json",
+                },
+                "loras": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner._cache.raw_data = [
+        {
+            "id": recipe_id,
+            "file_path": "/tmp/hydrate-me.png",
+            "title": "Cached Recipe",
+            "folder": "",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "gen_params": {},
+        }
+    ]
+
+    recipe = await scanner.get_recipe_by_id(recipe_id)
+
+    assert recipe is not None
+    assert recipe["title"] == "Hydrated Recipe"
+    assert recipe["source_path"] == "https://example.com/source"
+    assert recipe["gen_params"]["prompt"] == "prompt from json"
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_prefers_json_file_path(recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(scanner.recipes_dir)
+    recipe_id = "move-me"
+    recipe_json_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": "/tmp/new-location.png",
+                "title": "Moved Recipe",
+                "source_path": "https://example.com/moved",
+                "gen_params": {},
+                "loras": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner._cache.raw_data = [
+        {
+            "id": recipe_id,
+            "file_path": "/tmp/old-location.png",
+            "title": "Cached Title",
+            "folder": "",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "loras": [],
+            "gen_params": {},
+        }
+    ]
+
+    recipe = await scanner.get_recipe_by_id(recipe_id)
+
+    assert recipe is not None
+    assert recipe["file_path"] == "/tmp/new-location.png"
+    assert recipe["title"] == "Moved Recipe"
+    assert recipe["source_path"] == "https://example.com/moved"
+
+
+@pytest.mark.asyncio
+async def test_get_recipe_by_id_drops_deleted_optional_json_fields(recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(scanner.recipes_dir)
+    recipe_id = "drop-optional-fields"
+    recipe_json_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": "/tmp/drop-optional-fields.png",
+                "title": "Trimmed Recipe",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner._cache.raw_data = [
+        {
+            "id": recipe_id,
+            "file_path": "/tmp/drop-optional-fields.png",
+            "title": "Cached Recipe",
+            "folder": "",
+            "modified": 0.0,
+            "created_date": 0.0,
+            "source_path": "https://example.com/stale-source",
+            "checkpoint": {"name": "stale-checkpoint.safetensors"},
+            "loras": [{"modelName": "stale-lora"}],
+            "gen_params": {"prompt": "stale prompt"},
+        }
+    ]
+
+    recipe = await scanner.get_recipe_by_id(recipe_id)
+
+    assert recipe is not None
+    assert recipe["title"] == "Trimmed Recipe"
+    assert "source_path" not in recipe
+    assert "checkpoint" not in recipe
+    assert "gen_params" not in recipe
+    assert "loras" not in recipe
+
+
+@pytest.mark.asyncio
 async def test_get_paginated_data_filters_by_checkpoint_hash(recipe_scanner):
     scanner, _ = recipe_scanner
     image_path = Path(config.loras_roots[0]) / "checkpoint-filter.webp"

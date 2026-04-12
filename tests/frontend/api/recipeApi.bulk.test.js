@@ -5,6 +5,9 @@ const loadingManagerMock = vi.hoisted(() => ({
   showSimpleLoading: vi.fn(),
   hide: vi.fn(),
 }));
+const virtualScrollerMock = vi.hoisted(() => ({
+  updateSingleItem: vi.fn(),
+}));
 
 vi.mock('../../../static/js/utils/uiHelpers.js', () => {
   return {
@@ -20,12 +23,13 @@ vi.mock('../../../static/js/state/index.js', () => {
   return {
     state: {
       loadingManager: loadingManagerMock,
+      virtualScroller: virtualScrollerMock,
     },
     getCurrentPageState: vi.fn(),
   };
 });
 
-import { RecipeSidebarApiClient } from '../../../static/js/api/recipeApi.js';
+import { RecipeSidebarApiClient, fetchRecipeDetails, updateRecipeMetadata } from '../../../static/js/api/recipeApi.js';
 
 describe('RecipeSidebarApiClient bulk operations', () => {
   beforeEach(() => {
@@ -110,5 +114,38 @@ describe('RecipeSidebarApiClient bulk operations', () => {
       failed_count: 0,
     });
     expect(loadingManagerMock.hide).toHaveBeenCalled();
+  });
+
+  it('encodes recipe IDs when fetching recipe details', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: 'abc' }),
+    });
+
+    await fetchRecipeDetails('recipe#1?name=foo%bar');
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/recipe/recipe%231%3Fname%3Dfoo%25bar');
+  });
+
+  it('updates the virtual scroller using the original list path when provided', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true }),
+    });
+
+    await updateRecipeMetadata(
+      '/recipes/new-folder/recipe#1.webp',
+      { title: 'Updated Title' },
+      { listFilePath: '/recipes/old-folder/recipe#1.webp' }
+    );
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/lm/recipe/recipe%231/update',
+      expect.objectContaining({ method: 'PUT' })
+    );
+    expect(virtualScrollerMock.updateSingleItem).toHaveBeenCalledWith(
+      '/recipes/old-folder/recipe#1.webp',
+      { title: 'Updated Title' }
+    );
   });
 });
