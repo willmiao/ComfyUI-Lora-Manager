@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, Iterable, Optional
 
 from ...config import config
+from ...recipes.constants import GEN_PARAM_KEYS
 from ...utils.utils import calculate_recipe_fingerprint
 from .errors import RecipeNotFoundError, RecipeValidationError
 
@@ -90,23 +91,7 @@ class RecipePersistenceService:
         current_time = time.time()
         loras_data = [self._normalise_lora_entry(lora) for lora in (metadata.get("loras") or [])]
         checkpoint_entry = self._sanitize_checkpoint_entry(self._extract_checkpoint_entry(metadata))
-
-        gen_params = metadata.get("gen_params") or {}
-        if not gen_params and "raw_metadata" in metadata:
-            raw_metadata = metadata.get("raw_metadata", {})
-            gen_params = {
-                "prompt": raw_metadata.get("prompt", ""),
-                "negative_prompt": raw_metadata.get("negative_prompt", ""),
-                "steps": raw_metadata.get("steps", ""),
-                "sampler": raw_metadata.get("sampler", ""),
-                "cfg_scale": raw_metadata.get("cfg_scale", ""),
-                "seed": raw_metadata.get("seed", ""),
-                "size": raw_metadata.get("size", ""),
-                "clip_skip": raw_metadata.get("clip_skip", ""),
-            }
-
-        # Drop checkpoint duplication from generation parameters to store it only at top level
-        gen_params.pop("checkpoint", None)
+        gen_params = self._sanitize_gen_params_for_storage(metadata)
 
         fingerprint = calculate_recipe_fingerprint(loras_data)
         recipe_data: Dict[str, Any] = {
@@ -133,6 +118,7 @@ class RecipePersistenceService:
         json_filename = f"{recipe_id}.recipe.json"
         json_path = os.path.join(recipes_dir, json_filename)
         json_path = os.path.normpath(json_path)
+
         with open(json_path, "w", encoding="utf-8") as file_obj:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
@@ -151,6 +137,30 @@ class RecipePersistenceService:
                 "matching_recipes": matching_recipes,
             }
         )
+
+    @staticmethod
+    def _sanitize_gen_params_for_storage(metadata: dict[str, Any]) -> dict[str, Any]:
+        gen_params = metadata.get("gen_params")
+        if isinstance(gen_params, dict) and gen_params:
+            source = gen_params
+        else:
+            source = metadata.get("raw_metadata")
+
+        if not isinstance(source, dict):
+            return {}
+
+        allowed_keys = set(GEN_PARAM_KEYS)
+        sanitized: dict[str, Any] = {}
+        for key in allowed_keys:
+            if key not in source:
+                continue
+            value = source.get(key)
+            if value in (None, ""):
+                continue
+            sanitized[key] = value
+
+        sanitized.pop("checkpoint", None)
+        return sanitized
 
     async def delete_recipe(self, *, recipe_scanner, recipe_id: str) -> PersistenceResult:
         """Delete an existing recipe."""

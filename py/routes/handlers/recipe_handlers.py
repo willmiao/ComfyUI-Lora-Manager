@@ -756,6 +756,14 @@ class RecipeManagementHandler:
             )
             gen_params_request = self._parse_gen_params(params.get("gen_params"))
 
+            self._logger.info(
+                "Remote recipe import received: url=%s, request_gen_params_keys=%s, lora_count=%d, checkpoint_keys=%s",
+                image_url,
+                sorted(gen_params_request.keys()) if gen_params_request else [],
+                len(lora_entries),
+                sorted(checkpoint_entry.keys()) if isinstance(checkpoint_entry, dict) else [],
+            )
+
             # 2. Initial Metadata Construction
             metadata: Dict[str, Any] = {
                 "base_model": params.get("base_model", "") or "",

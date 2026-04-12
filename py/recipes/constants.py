@@ -13,4 +13,5 @@ GEN_PARAM_KEYS = [
     'seed',
     'size',
     'clip_skip',
+    'denoising_strength',
 ]
