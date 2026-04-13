@@ -957,6 +957,8 @@
             "earlyAccess": "גישה מוקדמת",
             "earlyAccessTooltip": "נדרשת גישה מוקדמת",
             "inLibrary": "בספרייה",
+            "downloaded": "הורד",
+            "downloadedTooltip": "הורד בעבר, אך הוא אינו נמצא כרגע בספרייה שלך.",
             "alreadyInLibrary": "כבר בספרייה",
             "autoOrganizedPath": "[מאורגן אוטומטית לפי תבנית נתיב]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "גרסה נוכחית",
                     "inLibrary": "בספרייה",
+                    "downloaded": "הורד",
                     "newer": "גרסה חדשה יותר",
                     "earlyAccess": "גישה מוקדמת",
                     "ignored": "התעלם"

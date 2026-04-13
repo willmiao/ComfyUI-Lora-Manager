@@ -250,6 +250,7 @@ export class DownloadManager {
                 (version.files[0]?.sizeKB / 1024).toFixed(2);
 
             const existsLocally = version.existsLocally;
+            const hasBeenDownloaded = version.hasBeenDownloaded && !existsLocally;
             const localPath = version.localPath;
             const isEarlyAccess = version.availability === 'EarlyAccess';
 
@@ -262,11 +263,22 @@ export class DownloadManager {
                 `;
             }
 
-            const localStatus = existsLocally ?
-                `<div class="local-badge">
+            let localStatus = '';
+            if (existsLocally) {
+                localStatus = `<div class="local-badge">
                     <i class="fas fa-check"></i> ${translate('modals.download.inLibrary')}
                     <div class="local-path">${localPath || ''}</div>
-                 </div>` : '';
+                 </div>`;
+            } else if (hasBeenDownloaded) {
+                localStatus = `<div class="downloaded-badge">
+                    <i class="fas fa-history"></i> ${translate('modals.download.downloaded', {}, 'Downloaded')}
+                    <div class="downloaded-info">${translate(
+                        'modals.download.downloadedTooltip',
+                        {},
+                        'Previously downloaded, but it is not currently in your library.'
+                    )}</div>
+                 </div>`;
+            }
 
             return `
                 <div class="version-item ${this.currentVersion?.id === version.id ? 'selected' : ''} 

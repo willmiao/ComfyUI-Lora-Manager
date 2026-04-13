@@ -957,6 +957,8 @@
             "earlyAccess": "アーリーアクセス",
             "earlyAccessTooltip": "アーリーアクセスが必要",
             "inLibrary": "ライブラリ内",
+            "downloaded": "ダウンロード済み",
+            "downloadedTooltip": "以前にダウンロード済みですが、現在はライブラリにありません。",
             "alreadyInLibrary": "既にライブラリ内",
             "autoOrganizedPath": "[パステンプレートによる自動整理]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "現在のバージョン",
                     "inLibrary": "ライブラリにあります",
+                    "downloaded": "ダウンロード済み",
                     "newer": "新しいバージョン",
                     "earlyAccess": "早期アクセス",
                     "ignored": "無視中"

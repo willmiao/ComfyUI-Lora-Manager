@@ -957,6 +957,8 @@
             "earlyAccess": "Ранний доступ",
             "earlyAccessTooltip": "Требуется ранний доступ",
             "inLibrary": "В библиотеке",
+            "downloaded": "Загружено",
+            "downloadedTooltip": "Ранее загружено, но сейчас этого нет в вашей библиотеке.",
             "alreadyInLibrary": "Уже в библиотеке",
             "autoOrganizedPath": "[Автоматически организовано по шаблону пути]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "Текущая версия",
                     "inLibrary": "В библиотеке",
+                    "downloaded": "Загружено",
                     "newer": "Более новая версия",
                     "earlyAccess": "Ранний доступ",
                     "ignored": "Игнорируется"

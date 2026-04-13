@@ -957,6 +957,8 @@
             "earlyAccess": "Acceso temprano",
             "earlyAccessTooltip": "Acceso temprano requerido",
             "inLibrary": "En la biblioteca",
+            "downloaded": "Descargado",
+            "downloadedTooltip": "Descargado anteriormente, pero actualmente no está en tu biblioteca.",
             "alreadyInLibrary": "Ya en la biblioteca",
             "autoOrganizedPath": "[Auto-organizado por plantilla de ruta]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "Versión actual",
                     "inLibrary": "En la biblioteca",
+                    "downloaded": "Descargado",
                     "newer": "Versión más reciente",
                     "earlyAccess": "Acceso temprano",
                     "ignored": "Ignorada"

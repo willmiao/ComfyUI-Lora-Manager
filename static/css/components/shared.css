@@ -21,6 +21,56 @@
     font-size: 0.9em;
 }
 
+.downloaded-badge {
+    display: inline-flex;
+    align-items: center;
+    background: color-mix(in oklch, var(--badge-update-bg, #4a90e2) 22%, transparent);
+    color: var(--badge-update-bg, #4a90e2);
+    border: 1px solid color-mix(in oklch, var(--badge-update-bg, #4a90e2) 50%, transparent);
+    padding: 4px 8px;
+    border-radius: var(--border-radius-xs);
+    font-size: 0.8em;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+    position: relative;
+    transform: translateZ(0);
+    will-change: transform;
+}
+
+.downloaded-badge i {
+    margin-right: 4px;
+    font-size: 0.9em;
+}
+
+.downloaded-info {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0;
+    background: var(--card-bg);
+    border: 1px solid color-mix(in oklch, var(--badge-update-bg, #4a90e2) 50%, transparent);
+    border-radius: var(--border-radius-xs);
+    padding: var(--space-1);
+    margin-top: 4px;
+    font-size: 0.9em;
+    color: var(--text-color);
+    white-space: normal;
+    word-break: break-word;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    min-width: 240px;
+    max-width: 320px;
+    transform: translateZ(0);
+    position: fixed;
+    pointer-events: none;
+}
+
+.downloaded-badge:hover .downloaded-info {
+    display: block;
+    pointer-events: auto;
+}
+
 /* Early Access Badge */
 .early-access-badge {
     display: inline-flex;

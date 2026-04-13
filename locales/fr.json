@@ -957,6 +957,8 @@
             "earlyAccess": "Accès anticipé",
             "earlyAccessTooltip": "Accès anticipé requis",
             "inLibrary": "Dans la bibliothèque",
+            "downloaded": "Téléchargé",
+            "downloadedTooltip": "Déjà téléchargé, mais il n'est actuellement pas dans votre bibliothèque.",
             "alreadyInLibrary": "Déjà dans la bibliothèque",
             "autoOrganizedPath": "[Auto-organisé par modèle de chemin]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "Version actuelle",
                     "inLibrary": "Dans la bibliothèque",
+                    "downloaded": "Téléchargé",
                     "newer": "Version plus récente",
                     "earlyAccess": "Accès anticipé",
                     "ignored": "Ignorée"

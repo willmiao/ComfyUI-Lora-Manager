@@ -957,6 +957,8 @@
             "earlyAccess": "얼리 액세스",
             "earlyAccessTooltip": "얼리 액세스 필요",
             "inLibrary": "라이브러리에 있음",
+            "downloaded": "다운로드됨",
+            "downloadedTooltip": "이전에 다운로드했지만 현재 라이브러리에 없습니다.",
             "alreadyInLibrary": "이미 라이브러리에 있음",
             "autoOrganizedPath": "[경로 템플릿으로 자동 정리됨]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "현재 버전",
                     "inLibrary": "라이브러리에 있음",
+                    "downloaded": "다운로드됨",
                     "newer": "최신 버전",
                     "earlyAccess": "얼리 액세스",
                     "ignored": "무시됨"

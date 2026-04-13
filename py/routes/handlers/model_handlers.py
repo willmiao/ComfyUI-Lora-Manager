@@ -19,6 +19,7 @@ from ...services.download_coordinator import DownloadCoordinator
 from ...services.metadata_sync_service import MetadataSyncService
 from ...services.model_file_service import ModelMoveService
 from ...services.preview_asset_service import PreviewAssetService
+from ...services.service_registry import ServiceRegistry
 from ...services.settings_manager import SettingsManager, get_settings_manager
 from ...services.tag_update_service import TagUpdateService
 from ...services.use_cases import (
@@ -1531,6 +1532,13 @@ class ModelCivitaiHandler:
 
             cache = await self._service.scanner.get_cached_data()
             version_index = cache.version_index
+            history_service = await ServiceRegistry.get_downloaded_version_history_service()
+            downloaded_version_ids = set(
+                await history_service.get_downloaded_version_ids(
+                    self._service.model_type,
+                    model_id,
+                )
+            )
 
             for version in versions:
                 version_id = None
@@ -1547,6 +1555,9 @@ class ModelCivitaiHandler:
                     else None
                 )
                 version["existsLocally"] = cache_entry is not None
+                version["hasBeenDownloaded"] = (
+                    version_id in downloaded_version_ids if version_id is not None else False
+                )
                 if cache_entry and isinstance(cache_entry, Mapping):
                     local_path = cache_entry.get("file_path")
                     if local_path:
@@ -2265,7 +2276,7 @@ class ModelUpdateHandler:
         self,
         record,
         *,
-        version_context: Optional[Dict[int, Dict[str, Optional[str]]]] = None,
+        version_context: Optional[Dict[int, Dict[str, Any]]] = None,
     ) -> Dict:
         context = version_context or {}
         # Check user setting for hiding early access versions
@@ -2294,7 +2305,7 @@ class ModelUpdateHandler:
 
     @staticmethod
     def _serialize_version(
-        version, context: Optional[Dict[str, Optional[str]]]
+        version, context: Optional[Dict[str, Any]]
     ) -> Dict:
         context = context or {}
         preview_override = context.get("preview_override")
@@ -2328,6 +2339,7 @@ class ModelUpdateHandler:
             "sizeBytes": version.size_bytes,
             "previewUrl": preview_url,
             "isInLibrary": version.is_in_library,
+            "hasBeenDownloaded": bool(context.get("has_been_downloaded", False)),
             "shouldIgnore": version.should_ignore,
             "earlyAccessEndsAt": version.early_access_ends_at,
             "isEarlyAccess": is_early_access,
@@ -2337,8 +2349,31 @@ class ModelUpdateHandler:
 
     async def _build_version_context(
         self, record
-    ) -> Dict[int, Dict[str, Optional[str]]]:
-        context: Dict[int, Dict[str, Optional[str]]] = {}
+    ) -> Dict[int, Dict[str, Any]]:
+        context: Dict[int, Dict[str, Any]] = {}
+        downloaded_version_ids: set[int] = set()
+        try:
+            history_service = await ServiceRegistry.get_downloaded_version_history_service()
+            downloaded_version_ids = set(
+                await history_service.get_downloaded_version_ids(
+                    record.model_type,
+                    record.model_id,
+                )
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            self._logger.debug(
+                "Failed to load download history while building version context: %s",
+                exc,
+            )
+
+        for version in record.versions:
+            context[version.version_id] = {
+                "file_path": None,
+                "file_name": None,
+                "preview_override": None,
+                "has_been_downloaded": version.version_id in downloaded_version_ids,
+            }
+
         try:
             cache = await self._service.scanner.get_cached_data()
         except Exception as exc:  # pragma: no cover - defensive logging
@@ -2357,16 +2392,21 @@ class ModelUpdateHandler:
             cache_entry = version_index.get(version.version_id)
             if isinstance(cache_entry, Mapping):
                 preview = cache_entry.get("preview_url")
-                context_entry: Dict[str, Optional[str]] = {
-                    "file_path": cache_entry.get("file_path"),
-                    "file_name": cache_entry.get("file_name"),
-                    "preview_override": None,
-                }
+                context_entry = context.setdefault(
+                    version.version_id,
+                    {
+                        "file_path": None,
+                        "file_name": None,
+                        "preview_override": None,
+                        "has_been_downloaded": version.version_id in downloaded_version_ids,
+                    },
+                )
+                context_entry["file_path"] = cache_entry.get("file_path")
+                context_entry["file_name"] = cache_entry.get("file_name")
                 if isinstance(preview, str) and preview:
                     context_entry["preview_override"] = config.get_preview_static_url(
                         preview
                     )
-                context[version.version_id] = context_entry
         return context
 
 

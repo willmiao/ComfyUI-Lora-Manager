@@ -349,4 +349,59 @@ describe('ModelVersionsTab media rendering', () => {
     );
     expect(firstBadges).toContain('Newer Version');
   });
+
+  it('shows downloaded badge only for previously downloaded versions that are not in library', async () => {
+    fetchModelUpdateVersions.mockResolvedValue({
+      success: true,
+      record: {
+        shouldIgnore: false,
+        inLibraryVersionIds: [8],
+        versions: [
+          {
+            versionId: 9,
+            name: 'History only',
+            baseModel: 'SDXL',
+            previewUrl: '/api/lm/previews/v9.png',
+            sizeBytes: 1024,
+            isInLibrary: false,
+            hasBeenDownloaded: true,
+            shouldIgnore: false,
+          },
+          {
+            versionId: 8,
+            name: 'Local copy',
+            baseModel: 'SDXL',
+            previewUrl: '/api/lm/previews/v8.png',
+            sizeBytes: 2048,
+            isInLibrary: true,
+            hasBeenDownloaded: true,
+            shouldIgnore: false,
+          },
+        ],
+      },
+    });
+
+    const { initVersionsTab } = await import(MODEL_VERSIONS_MODULE);
+    const controller = initVersionsTab({
+      modalId: 'model-versions-modal',
+      modelType: 'loras',
+      modelId: 654,
+      currentVersionId: 8,
+    });
+
+    await controller.load();
+
+    const rows = document.querySelectorAll('.model-version-row');
+    const historyBadges = Array.from(rows[0].querySelectorAll('.version-badge')).map(
+      badge => badge.textContent?.trim()
+    );
+    const localBadges = Array.from(rows[1].querySelectorAll('.version-badge')).map(
+      badge => badge.textContent?.trim()
+    );
+
+    expect(historyBadges).toContain('Downloaded');
+    expect(historyBadges).not.toContain('In Library');
+    expect(localBadges).toContain('In Library');
+    expect(localBadges).not.toContain('Downloaded');
+  });
 });

@@ -433,7 +433,13 @@ function renderRow(version, options) {
 
     if (version.isInLibrary) {
         badges.push(buildBadge(translate('modals.model.versions.badges.inLibrary', {}, 'In Library'), 'success'));
-    } else if (isNewer && !version.shouldIgnore) {
+    }
+
+    if (!version.isInLibrary && version.hasBeenDownloaded) {
+        badges.push(buildBadge(translate('modals.model.versions.badges.downloaded', {}, 'Downloaded'), 'info'));
+    }
+
+    if (!version.isInLibrary && isNewer && !version.shouldIgnore) {
         badges.push(buildBadge(translate('modals.model.versions.badges.newer', {}, 'Newer Version'), 'info'));
     }
 

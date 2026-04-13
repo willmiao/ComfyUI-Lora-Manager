@@ -957,6 +957,8 @@
             "earlyAccess": "早期访问",
             "earlyAccessTooltip": "需要早期访问权限",
             "inLibrary": "已在库中",
+            "downloaded": "已下载",
+            "downloadedTooltip": "之前已下载，但当前不在你的库中。",
             "alreadyInLibrary": "已存在于库中",
             "autoOrganizedPath": "【已按路径模板自动整理】",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "当前版本",
                     "inLibrary": "已在库中",
+                    "downloaded": "已下载",
                     "newer": "较新的版本",
                     "earlyAccess": "抢先体验",
                     "ignored": "已忽略"

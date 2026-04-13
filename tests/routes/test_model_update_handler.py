@@ -7,6 +7,7 @@ import pytest
 
 from py.config import config
 from py.routes.handlers.model_handlers import ModelUpdateHandler
+from py.services.service_registry import ServiceRegistry
 from py.utils.metadata_manager import MetadataManager
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
 
@@ -91,7 +92,75 @@ async def test_build_version_context_includes_static_urls():
 
     overrides = await handler._build_version_context(record)
     expected = config.get_preview_static_url("/tmp/previews/example.png")
-    assert overrides == {123: {"file_path": None, "file_name": None, "preview_override": expected}}
+    assert overrides == {
+        123: {
+            "file_path": None,
+            "file_name": None,
+            "preview_override": expected,
+            "has_been_downloaded": False,
+        }
+    }
+
+
+@pytest.mark.asyncio
+async def test_build_version_context_includes_download_history(monkeypatch):
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=SimpleNamespace(),
+        metadata_provider_selector=lambda *_: None,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyHistoryService:
+        async def get_downloaded_version_ids(self, model_type, model_id):
+            assert model_type == "lora"
+            assert model_id == 42
+            return [123]
+
+    async def fake_history_service_factory():
+        return DummyHistoryService()
+
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_downloaded_version_history_service",
+        staticmethod(fake_history_service_factory),
+    )
+
+    record = ModelUpdateRecord(
+        model_type="lora",
+        model_id=42,
+        versions=[
+            ModelVersionRecord(
+                version_id=123,
+                name="Downloaded",
+                base_model=None,
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=124,
+                name="Fresh",
+                base_model=None,
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+    overrides = await handler._build_version_context(record)
+    assert overrides[123]["has_been_downloaded"] is True
+    assert overrides[124]["has_been_downloaded"] is False
 
 
 @pytest.mark.asyncio

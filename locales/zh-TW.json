@@ -957,6 +957,8 @@
             "earlyAccess": "早期存取",
             "earlyAccessTooltip": "需要早期存取",
             "inLibrary": "已在庫存",
+            "downloaded": "已下載",
+            "downloadedTooltip": "先前已下載，但目前不在你的庫中。",
             "alreadyInLibrary": "已在庫存",
             "autoOrganizedPath": "[依路徑範本自動整理]",
             "errors": {
@@ -1228,6 +1230,7 @@
                 "badges": {
                     "current": "目前版本",
                     "inLibrary": "已在庫中",
+                    "downloaded": "已下載",
                     "newer": "較新版本",
                     "earlyAccess": "搶先體驗",
                     "ignored": "已忽略"
