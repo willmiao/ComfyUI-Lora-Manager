@@ -1228,18 +1228,30 @@
                     "days": "בעוד {count} ימים"
                 },
                 "badges": {
-                    "current": "גרסה נוכחית",
+                    "current": "גרסה שנפתחה",
+                    "currentTooltip": "זוהי הגרסה שממנה נפתח החלון הזה",
                     "inLibrary": "בספרייה",
+                    "inLibraryTooltip": "גרסה זו קיימת בספרייה המקומית שלך",
                     "downloaded": "הורד",
+                    "downloadedTooltip": "גרסה זו הורדה בעבר, אך אינה נמצאת כרגע בספרייה שלך",
                     "newer": "גרסה חדשה יותר",
+                    "newerTooltip": "גרסה זו חדשה יותר מהגרסה המקומית האחרונה שלך",
                     "earlyAccess": "גישה מוקדמת",
-                    "ignored": "התעלם"
+                    "earlyAccessTooltip": "גרסה זו דורשת כרגע גישת Early Access של Civitai",
+                    "ignored": "התעלם",
+                    "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו"
                 },
                 "actions": {
                     "download": "הורדה",
+                    "downloadTooltip": "הורד את הגרסה הזו",
+                    "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-Civitai",
                     "delete": "מחיקה",
+                    "deleteTooltip": "מחק את הגרסה המקומית הזו",
                     "ignore": "התעלם",
                     "unignore": "בטל התעלמות",
+                    "ignoreTooltip": "התעלם מהתראות העדכון עבור גרסה זו",
+                    "unignoreTooltip": "חזור לקבל התראות עדכון עבור גרסה זו",
+                    "viewVersionOnCivitai": "הצג את הגרסה ב-Civitai",
                     "earlyAccessTooltip": "נדרש רכישת גישה מוקדמת",
                     "resumeModelUpdates": "המשך עדכונים עבור מודל זה",
                     "ignoreModelUpdates": "התעלם מעדכונים עבור מודל זה",

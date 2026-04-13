@@ -1228,18 +1228,30 @@
                     "days": "dans {count}j"
                 },
                 "badges": {
-                    "current": "Version actuelle",
+                    "current": "Version ouverte",
+                    "currentTooltip": "C'est la version à partir de laquelle cette fenêtre a été ouverte",
                     "inLibrary": "Dans la bibliothèque",
+                    "inLibraryTooltip": "Cette version existe dans votre bibliothèque locale",
                     "downloaded": "Téléchargé",
+                    "downloadedTooltip": "Cette version a déjà été téléchargée, mais n'est pas actuellement dans votre bibliothèque",
                     "newer": "Version plus récente",
+                    "newerTooltip": "Cette version est plus récente que votre dernière version locale",
                     "earlyAccess": "Accès anticipé",
-                    "ignored": "Ignorée"
+                    "earlyAccessTooltip": "Cette version nécessite actuellement l'accès anticipé Civitai",
+                    "ignored": "Ignorée",
+                    "ignoredTooltip": "Les notifications de mise à jour sont désactivées pour cette version"
                 },
                 "actions": {
                     "download": "Télécharger",
+                    "downloadTooltip": "Télécharger cette version",
+                    "downloadEarlyAccessTooltip": "Télécharger cette version en accès anticipé depuis Civitai",
                     "delete": "Supprimer",
+                    "deleteTooltip": "Supprimer cette version locale",
                     "ignore": "Ignorer",
                     "unignore": "Ne plus ignorer",
+                    "ignoreTooltip": "Ignorer les notifications de mise à jour pour cette version",
+                    "unignoreTooltip": "Reprendre les notifications de mise à jour pour cette version",
+                    "viewVersionOnCivitai": "Voir la version sur Civitai",
                     "earlyAccessTooltip": "Nécessite l'achat de l'accès anticipé",
                     "resumeModelUpdates": "Reprendre les mises à jour pour ce modèle",
                     "ignoreModelUpdates": "Ignorer les mises à jour pour ce modèle",

@@ -1228,18 +1228,30 @@
                     "days": "{count}日後"
                 },
                 "badges": {
-                    "current": "現在のバージョン",
+                    "current": "開いたバージョン",
+                    "currentTooltip": "このモーダルを開くために選択したバージョンです",
                     "inLibrary": "ライブラリにあります",
+                    "inLibraryTooltip": "このバージョンはローカルライブラリに存在します",
                     "downloaded": "ダウンロード済み",
+                    "downloadedTooltip": "このバージョンは以前ダウンロードされましたが、現在はライブラリにありません",
                     "newer": "新しいバージョン",
+                    "newerTooltip": "このバージョンはローカルの最新バージョンより新しいです",
                     "earlyAccess": "早期アクセス",
-                    "ignored": "無視中"
+                    "earlyAccessTooltip": "このバージョンは現在 Civitai の早期アクセスが必要です",
+                    "ignored": "無視中",
+                    "ignoredTooltip": "このバージョンの更新通知は無効です"
                 },
                 "actions": {
                     "download": "ダウンロード",
+                    "downloadTooltip": "このバージョンをダウンロード",
+                    "downloadEarlyAccessTooltip": "Civitai からこの早期アクセス版をダウンロード",
                     "delete": "削除",
+                    "deleteTooltip": "このローカルバージョンを削除",
                     "ignore": "無視",
                     "unignore": "無視を解除",
+                    "ignoreTooltip": "このバージョンの更新通知を無視",
+                    "unignoreTooltip": "このバージョンの更新通知を再開",
+                    "viewVersionOnCivitai": "Civitai でバージョンを表示",
                     "earlyAccessTooltip": "早期アクセス購入が必要",
                     "resumeModelUpdates": "このモデルの更新を再開",
                     "ignoreModelUpdates": "このモデルの更新を無視",

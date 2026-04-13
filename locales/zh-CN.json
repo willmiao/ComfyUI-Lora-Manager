@@ -1228,18 +1228,30 @@
                     "days": "{count}天后"
                 },
                 "badges": {
-                    "current": "当前版本",
+                    "current": "已打开版本",
+                    "currentTooltip": "这是你用来打开此弹窗的版本",
                     "inLibrary": "已在库中",
+                    "inLibraryTooltip": "此版本已存在于你的本地库中",
                     "downloaded": "已下载",
+                    "downloadedTooltip": "此版本之前下载过，但当前不在你的本地库中",
                     "newer": "较新的版本",
+                    "newerTooltip": "此版本比你本地的最新版本更新",
                     "earlyAccess": "抢先体验",
-                    "ignored": "已忽略"
+                    "earlyAccessTooltip": "此版本当前需要 Civitai 抢先体验权限",
+                    "ignored": "已忽略",
+                    "ignoredTooltip": "此版本已关闭更新通知"
                 },
                 "actions": {
                     "download": "下载",
+                    "downloadTooltip": "下载此版本",
+                    "downloadEarlyAccessTooltip": "从 Civitai 下载此抢先体验版本",
                     "delete": "删除",
+                    "deleteTooltip": "删除此本地版本",
                     "ignore": "忽略",
                     "unignore": "取消忽略",
+                    "ignoreTooltip": "忽略此版本的更新通知",
+                    "unignoreTooltip": "恢复此版本的更新通知",
+                    "viewVersionOnCivitai": "在 Civitai 上查看版本",
                     "earlyAccessTooltip": "需要购买抢先体验",
                     "resumeModelUpdates": "继续跟踪该模型的更新",
                     "ignoreModelUpdates": "忽略该模型的更新",

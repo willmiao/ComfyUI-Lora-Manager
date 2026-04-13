@@ -1228,18 +1228,30 @@
                     "days": "en {count}d"
                 },
                 "badges": {
-                    "current": "Versión actual",
+                    "current": "Versión abierta",
+                    "currentTooltip": "Es la versión con la que abriste este modal",
                     "inLibrary": "En la biblioteca",
+                    "inLibraryTooltip": "Esta versión existe en tu biblioteca local",
                     "downloaded": "Descargado",
+                    "downloadedTooltip": "Esta versión se descargó antes, pero ahora no está en tu biblioteca",
                     "newer": "Versión más reciente",
+                    "newerTooltip": "Esta versión es más reciente que tu última versión local",
                     "earlyAccess": "Acceso temprano",
-                    "ignored": "Ignorada"
+                    "earlyAccessTooltip": "Esta versión requiere actualmente acceso temprano de Civitai",
+                    "ignored": "Ignorada",
+                    "ignoredTooltip": "Las notificaciones de actualización están desactivadas para esta versión"
                 },
                 "actions": {
                     "download": "Descargar",
+                    "downloadTooltip": "Descargar esta versión",
+                    "downloadEarlyAccessTooltip": "Descargar esta versión de acceso temprano desde Civitai",
                     "delete": "Eliminar",
+                    "deleteTooltip": "Eliminar esta versión local",
                     "ignore": "Ignorar",
                     "unignore": "Dejar de ignorar",
+                    "ignoreTooltip": "Ignorar las notificaciones de actualización de esta versión",
+                    "unignoreTooltip": "Reanudar las notificaciones de actualización de esta versión",
+                    "viewVersionOnCivitai": "Ver versión en Civitai",
                     "earlyAccessTooltip": "Requiere compra de acceso temprano",
                     "resumeModelUpdates": "Reanudar actualizaciones para este modelo",
                     "ignoreModelUpdates": "Ignorar actualizaciones para este modelo",

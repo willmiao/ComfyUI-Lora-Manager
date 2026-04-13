@@ -1228,18 +1228,30 @@
                     "days": "{count}일 후"
                 },
                 "badges": {
-                    "current": "현재 버전",
+                    "current": "열린 버전",
+                    "currentTooltip": "이 모달을 열 때 사용한 버전입니다",
                     "inLibrary": "라이브러리에 있음",
+                    "inLibraryTooltip": "이 버전은 로컬 라이브러리에 있습니다",
                     "downloaded": "다운로드됨",
+                    "downloadedTooltip": "이 버전은 이전에 다운로드되었지만 현재는 라이브러리에 없습니다",
                     "newer": "최신 버전",
+                    "newerTooltip": "이 버전은 로컬의 최신 버전보다 더 새롭습니다",
                     "earlyAccess": "얼리 액세스",
-                    "ignored": "무시됨"
+                    "earlyAccessTooltip": "이 버전은 현재 Civitai 얼리 액세스가 필요합니다",
+                    "ignored": "무시됨",
+                    "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다"
                 },
                 "actions": {
                     "download": "다운로드",
+                    "downloadTooltip": "이 버전 다운로드",
+                    "downloadEarlyAccessTooltip": "Civitai에서 이 얼리 액세스 버전 다운로드",
                     "delete": "삭제",
+                    "deleteTooltip": "이 로컬 버전 삭제",
                     "ignore": "무시",
                     "unignore": "무시 해제",
+                    "ignoreTooltip": "이 버전의 업데이트 알림 무시",
+                    "unignoreTooltip": "이 버전의 업데이트 알림 다시 받기",
+                    "viewVersionOnCivitai": "Civitai에서 버전 보기",
                     "earlyAccessTooltip": "얼리 액세스 구매 필요",
                     "resumeModelUpdates": "이 모델 업데이트 재개",
                     "ignoreModelUpdates": "이 모델 업데이트 무시",

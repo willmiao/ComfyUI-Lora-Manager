@@ -1228,18 +1228,30 @@
                     "days": "in {count}d"
                 },
                 "badges": {
-                    "current": "Current Version",
+                    "current": "Opened Version",
+                    "currentTooltip": "This is the version you opened this modal from",
                     "inLibrary": "In Library",
+                    "inLibraryTooltip": "This version exists in your local library",
                     "downloaded": "Downloaded",
+                    "downloadedTooltip": "This version was downloaded before, but is not currently in your library",
                     "newer": "Newer Version",
+                    "newerTooltip": "This version is newer than your latest local version",
                     "earlyAccess": "Early Access",
-                    "ignored": "Ignored"
+                    "earlyAccessTooltip": "This version currently requires Civitai early access",
+                    "ignored": "Ignored",
+                    "ignoredTooltip": "Update notifications are disabled for this version"
                 },
                 "actions": {
                     "download": "Download",
+                    "downloadTooltip": "Download this version",
+                    "downloadEarlyAccessTooltip": "Download this early access version from Civitai",
                     "delete": "Delete",
+                    "deleteTooltip": "Delete this local version",
                     "ignore": "Ignore",
                     "unignore": "Unignore",
+                    "ignoreTooltip": "Ignore update notifications for this version",
+                    "unignoreTooltip": "Resume update notifications for this version",
+                    "viewVersionOnCivitai": "View version on Civitai",
                     "earlyAccessTooltip": "Requires early access purchase",
                     "resumeModelUpdates": "Resume updates for this model",
                     "ignoreModelUpdates": "Ignore updates for this model",

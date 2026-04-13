@@ -220,8 +220,31 @@ function buildMetaMarkup(version, options = {}) {
         .join('<span class="version-meta-separator">•</span>');
 }
 
-function buildBadge(label, tone) {
-    return `<span class="version-badge version-badge-${tone}">${escapeHtml(label)}</span>`;
+function buildBadge(label, tone, options = {}) {
+    const attributes = [];
+    if (options.title) {
+        attributes.push(`title="${escapeHtml(options.title)}"`);
+    }
+    if (options.ariaLabel) {
+        attributes.push(`aria-label="${escapeHtml(options.ariaLabel)}"`);
+    }
+    const suffix = attributes.length ? ` ${attributes.join(' ')}` : '';
+    return `<span class="version-badge version-badge-${tone}"${suffix}>${escapeHtml(label)}</span>`;
+}
+
+function buildActionButton(label, variant, action, options = {}) {
+    const attributes = [
+        `class="version-action ${variant}"`,
+        `data-version-action="${escapeHtml(action)}"`,
+    ];
+    if (options.title) {
+        attributes.push(`title="${escapeHtml(options.title)}"`);
+        attributes.push(`aria-label="${escapeHtml(options.title)}"`);
+    }
+    if (options.extraAttributes) {
+        attributes.push(options.extraAttributes);
+    }
+    return `<button ${attributes.join(' ')}>${options.iconMarkup || ''}${escapeHtml(label)}</button>`;
 }
 
 const DISPLAY_FILTER_MODES = Object.freeze({
@@ -426,29 +449,72 @@ function renderRow(version, options) {
         version.versionId > latestLibraryVersionId;
     const isEarlyAccess = isEarlyAccessActive(version);
     const badges = [];
+    const openedBadgeLabel = translate('modals.model.versions.badges.current', {}, 'Opened Version');
+    const inLibraryBadgeLabel = translate('modals.model.versions.badges.inLibrary', {}, 'In Library');
+    const downloadedBadgeLabel = translate('modals.model.versions.badges.downloaded', {}, 'Downloaded');
+    const newerBadgeLabel = translate('modals.model.versions.badges.newer', {}, 'Newer Version');
+    const earlyAccessBadgeLabel = translate('modals.model.versions.badges.earlyAccess', {}, 'Early Access');
+    const ignoredBadgeLabel = translate('modals.model.versions.badges.ignored', {}, 'Ignored');
+    const versionName = version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version');
 
     if (isCurrent) {
-        badges.push(buildBadge(translate('modals.model.versions.badges.current', {}, 'Current Version'), 'current'));
+        badges.push(buildBadge(openedBadgeLabel, 'current', {
+            title: translate(
+                'modals.model.versions.badges.currentTooltip',
+                {},
+                'This is the version you opened this modal from'
+            ),
+        }));
     }
 
     if (version.isInLibrary) {
-        badges.push(buildBadge(translate('modals.model.versions.badges.inLibrary', {}, 'In Library'), 'success'));
+        badges.push(buildBadge(inLibraryBadgeLabel, 'success', {
+            title: translate(
+                'modals.model.versions.badges.inLibraryTooltip',
+                {},
+                'This version exists in your local library'
+            ),
+        }));
     }
 
     if (!version.isInLibrary && version.hasBeenDownloaded) {
-        badges.push(buildBadge(translate('modals.model.versions.badges.downloaded', {}, 'Downloaded'), 'info'));
+        badges.push(buildBadge(downloadedBadgeLabel, 'info', {
+            title: translate(
+                'modals.model.versions.badges.downloadedTooltip',
+                {},
+                'This version was downloaded before, but is not currently in your library'
+            ),
+        }));
     }
 
     if (!version.isInLibrary && isNewer && !version.shouldIgnore) {
-        badges.push(buildBadge(translate('modals.model.versions.badges.newer', {}, 'Newer Version'), 'info'));
+        badges.push(buildBadge(newerBadgeLabel, 'info', {
+            title: translate(
+                'modals.model.versions.badges.newerTooltip',
+                {},
+                'This version is newer than your latest local version'
+            ),
+        }));
     }
 
     if (isEarlyAccess) {
-        badges.push(buildBadge(translate('modals.model.versions.badges.earlyAccess', {}, 'Early Access'), 'early-access'));
+        badges.push(buildBadge(earlyAccessBadgeLabel, 'early-access', {
+            title: translate(
+                'modals.model.versions.badges.earlyAccessTooltip',
+                {},
+                'This version currently requires Civitai early access'
+            ),
+        }));
     }
 
     if (version.shouldIgnore) {
-        badges.push(buildBadge(translate('modals.model.versions.badges.ignored', {}, 'Ignored'), 'muted'));
+        badges.push(buildBadge(ignoredBadgeLabel, 'muted', {
+            title: translate(
+                'modals.model.versions.badges.ignoredTooltip',
+                {},
+                'Update notifications are disabled for this version'
+            ),
+        }));
     }
 
     const downloadLabel = translate('modals.model.versions.actions.download', {}, 'Download');
@@ -465,29 +531,82 @@ function renderRow(version, options) {
     if (!version.isInLibrary) {
         // Download button with optional EA bolt icon
         const downloadIcon = isEarlyAccess ? '<i class="fas fa-bolt"></i> ' : '';
-        actions.push(
-            `<button class="version-action version-action-primary" data-version-action="download">${downloadIcon}${escapeHtml(downloadLabel)}</button>`
-        );
+        actions.push(buildActionButton(
+            downloadLabel,
+            'version-action-primary',
+            'download',
+            {
+                title: isEarlyAccess
+                    ? translate(
+                        'modals.model.versions.actions.downloadEarlyAccessTooltip',
+                        {},
+                        'Download this early access version from Civitai'
+                    )
+                    : translate(
+                        'modals.model.versions.actions.downloadTooltip',
+                        {},
+                        'Download this version'
+                    ),
+                iconMarkup: downloadIcon,
+            }
+        ));
     } else if (version.filePath) {
-        actions.push(
-            `<button class="version-action version-action-danger" data-version-action="delete">${escapeHtml(deleteLabel)}</button>`
-        );
+        actions.push(buildActionButton(
+            deleteLabel,
+            'version-action-danger',
+            'delete',
+            {
+                title: translate(
+                    'modals.model.versions.actions.deleteTooltip',
+                    {},
+                    'Delete this local version'
+                ),
+            }
+        ));
     }
-    actions.push(
-        `<button class="version-action version-action-ghost" data-version-action="toggle-ignore" data-ignore-state="${
-            version.shouldIgnore ? 'ignored' : 'active'
-        }">${escapeHtml(ignoreLabel)}</button>`
-    );
+    actions.push(buildActionButton(
+        ignoreLabel,
+        'version-action-ghost',
+        'toggle-ignore',
+        {
+            title: version.shouldIgnore
+                ? translate(
+                    'modals.model.versions.actions.unignoreTooltip',
+                    {},
+                    'Resume update notifications for this version'
+                )
+                : translate(
+                    'modals.model.versions.actions.ignoreTooltip',
+                    {},
+                    'Ignore update notifications for this version'
+                ),
+            extraAttributes: `data-ignore-state="${version.shouldIgnore ? 'ignored' : 'active'}"`,
+        }
+    ));
 
     const linkTarget = buildCivitaiVersionUrl(
         version.modelId || parentModelId,
         version.versionId
     );
     const civitaiTooltip = translate(
-        'modals.model.actions.viewOnCivitai',
+        'modals.model.versions.actions.viewVersionOnCivitai',
         {},
-        'View on Civitai'
+        'View version on Civitai'
     );
+    const civitaiLinkMarkup = linkTarget
+        ? `
+            <a
+                class="version-civitai-link"
+                href="${escapeHtml(linkTarget)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="${escapeHtml(civitaiTooltip)}"
+                aria-label="${escapeHtml(civitaiTooltip)}"
+            >
+                <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            </a>
+        `
+        : '';
 
     const rowAttributes = [
         `class="model-version-row${isCurrent ? ' is-current' : ''}${linkTarget ? ' is-clickable' : ''}${isEarlyAccess ? ' is-early-access' : ''}"`,
@@ -495,7 +614,6 @@ function renderRow(version, options) {
     ];
     if (linkTarget) {
         rowAttributes.push(`data-civitai-url="${escapeHtml(linkTarget)}"`);
-        rowAttributes.push(`title="${escapeHtml(civitaiTooltip)}"`);
     }
 
     return `
@@ -503,7 +621,8 @@ function renderRow(version, options) {
             ${renderMediaMarkup(version)}
             <div class="version-details">
                 <div class="version-title">
-                    <span class="versions-tab-version-name">${escapeHtml(version.name || translate('modals.model.versions.labels.unnamed', {}, 'Untitled Version'))}</span>
+                    <span class="versions-tab-version-name">${escapeHtml(versionName)}</span>
+                    ${civitaiLinkMarkup}
                 </div>
                 <div class="version-badges">${badges.join('')}</div>
                 <div class="version-meta">
@@ -1236,6 +1355,7 @@ export function initVersionsTab({
         if (!row) {
             return;
         }
+
         if (event.target.closest('button')) {
             return;
         }
