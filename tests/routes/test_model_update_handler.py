@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 
 from py.config import config
-from py.routes.handlers.model_handlers import ModelUpdateHandler
+from py.routes.handlers.model_handlers import ModelCivitaiHandler, ModelUpdateHandler
 from py.services.service_registry import ServiceRegistry
 from py.utils.metadata_manager import MetadataManager
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
@@ -161,6 +161,62 @@ async def test_build_version_context_includes_download_history(monkeypatch):
     overrides = await handler._build_version_context(record)
     assert overrides[123]["has_been_downloaded"] is True
     assert overrides[124]["has_been_downloaded"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_civitai_versions_degrades_when_download_history_unavailable(monkeypatch):
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    class DummyProvider:
+        async def get_model_versions(self, model_id):
+            assert model_id == "42"
+            return {
+                "type": "lora",
+                "modelVersions": [
+                    {
+                        "id": 7,
+                        "name": "Version 7",
+                        "files": [],
+                    }
+                ],
+            }
+
+    async def fake_history_service_factory():
+        raise RuntimeError("download history unavailable")
+
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_downloaded_version_history_service",
+        staticmethod(fake_history_service_factory),
+    )
+
+    async def metadata_provider_factory():
+        return DummyProvider()
+
+    handler = ModelCivitaiHandler(
+        service=service,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        ws_manager=SimpleNamespace(),
+        logger=logging.getLogger(__name__),
+        metadata_provider_factory=metadata_provider_factory,
+        validate_model_type=lambda *_: True,
+        expected_model_types=lambda: "LoRA",
+        find_model_file=lambda *_: None,
+        metadata_sync=SimpleNamespace(),
+        metadata_refresh_use_case=SimpleNamespace(),
+        metadata_progress_callback=lambda *_args, **_kwargs: None,
+    )
+
+    response = await handler.get_civitai_versions(
+        SimpleNamespace(match_info={"model_id": "42"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload[0]["id"] == 7
+    assert payload[0]["existsLocally"] is False
+    assert payload[0]["hasBeenDownloaded"] is False
 
 
 @pytest.mark.asyncio

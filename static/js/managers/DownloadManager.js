@@ -270,13 +270,13 @@ export class DownloadManager {
                     <div class="local-path">${localPath || ''}</div>
                  </div>`;
             } else if (hasBeenDownloaded) {
-                localStatus = `<div class="downloaded-badge">
+                const downloadedTooltip = translate(
+                    'modals.download.downloadedTooltip',
+                    {},
+                    'Previously downloaded, but it is not currently in your library.'
+                );
+                localStatus = `<div class="downloaded-badge" title="${downloadedTooltip.replace(/"/g, '&quot;')}">
                     <i class="fas fa-history"></i> ${translate('modals.download.downloaded', {}, 'Downloaded')}
-                    <div class="downloaded-info">${translate(
-                        'modals.download.downloadedTooltip',
-                        {},
-                        'Previously downloaded, but it is not currently in your library.'
-                    )}</div>
                  </div>`;
             }
 

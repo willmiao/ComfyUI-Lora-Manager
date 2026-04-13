@@ -1532,13 +1532,20 @@ class ModelCivitaiHandler:
 
             cache = await self._service.scanner.get_cached_data()
             version_index = cache.version_index
-            history_service = await ServiceRegistry.get_downloaded_version_history_service()
-            downloaded_version_ids = set(
-                await history_service.get_downloaded_version_ids(
-                    self._service.model_type,
-                    model_id,
+            downloaded_version_ids: set[int] = set()
+            try:
+                history_service = await ServiceRegistry.get_downloaded_version_history_service()
+                downloaded_version_ids = set(
+                    await history_service.get_downloaded_version_ids(
+                        self._service.model_type,
+                        model_id,
+                    )
                 )
-            )
+            except Exception as exc:  # pragma: no cover - defensive logging
+                self._logger.debug(
+                    "Failed to load download history for CivitAI versions: %s",
+                    exc,
+                )
 
             for version in versions:
                 version_id = None

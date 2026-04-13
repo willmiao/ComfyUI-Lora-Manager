@@ -127,7 +127,7 @@ describe('DownloadManager version history badges', () => {
     expect(items).toHaveLength(2);
 
     expect(items[0].querySelector('.downloaded-badge')?.textContent).toContain('Downloaded');
-    expect(items[0].querySelector('.downloaded-info')?.textContent).toContain(
+    expect(items[0].querySelector('.downloaded-badge')?.getAttribute('title')).toContain(
       'Previously downloaded, but it is not currently in your library.'
     );
     expect(items[0].querySelector('.local-badge')).toBeNull();
