@@ -122,7 +122,7 @@ export class DownloadManager {
             modalManager.closeModal('importModal');
 
             // Refresh the recipe
-            window.recipeManager.loadRecipes();
+            window.recipeManager.loadRecipes({ preserveScroll: true });
 
         } catch (error) {
             console.error('Error:', error);

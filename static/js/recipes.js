@@ -328,16 +328,32 @@ class RecipeManager {
         });
     }
 
+    normalizeLoadRecipesOptions(options = true) {
+        if (typeof options === 'boolean') {
+            return {
+                resetPage: options,
+                preserveScroll: false
+            };
+        }
+
+        return {
+            resetPage: options?.resetPage !== false,
+            preserveScroll: options?.preserveScroll === true
+        };
+    }
+
     // This method is kept for compatibility but now uses virtual scrolling
-    async loadRecipes(resetPage = true) {
+    async loadRecipes(options = true) {
         // Skip loading if in duplicates mode
         const pageState = getCurrentPageState();
         if (pageState.duplicatesMode) {
             return;
         }
 
+        const { resetPage, preserveScroll } = this.normalizeLoadRecipesOptions(options);
+
         if (resetPage) {
-            refreshVirtualScroll();
+            await refreshVirtualScroll({ preserveScroll });
         }
     }
 

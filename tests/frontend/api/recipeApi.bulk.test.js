@@ -4,10 +4,15 @@ const showToastMock = vi.hoisted(() => vi.fn());
 const loadingManagerMock = vi.hoisted(() => ({
   showSimpleLoading: vi.fn(),
   hide: vi.fn(),
+  restoreProgressBar: vi.fn(),
 }));
 const virtualScrollerMock = vi.hoisted(() => ({
   updateSingleItem: vi.fn(),
+  refreshWithData: vi.fn(),
 }));
+const getCurrentPageStateMock = vi.hoisted(() => vi.fn());
+const captureScrollPositionMock = vi.hoisted(() => vi.fn());
+const restoreScrollPositionMock = vi.hoisted(() => vi.fn());
 
 vi.mock('../../../static/js/utils/uiHelpers.js', () => {
   return {
@@ -25,16 +30,39 @@ vi.mock('../../../static/js/state/index.js', () => {
       loadingManager: loadingManagerMock,
       virtualScroller: virtualScrollerMock,
     },
-    getCurrentPageState: vi.fn(),
+    getCurrentPageState: getCurrentPageStateMock,
   };
 });
 
-import { RecipeSidebarApiClient, fetchRecipeDetails, updateRecipeMetadata } from '../../../static/js/api/recipeApi.js';
+vi.mock('../../../static/js/utils/infiniteScroll.js', () => ({
+  captureScrollPosition: captureScrollPositionMock,
+  restoreScrollPosition: restoreScrollPositionMock,
+}));
+
+import {
+  RecipeSidebarApiClient,
+  fetchRecipeDetails,
+  resetAndReload,
+  syncChanges,
+  updateRecipeMetadata
+} from '../../../static/js/api/recipeApi.js';
 
 describe('RecipeSidebarApiClient bulk operations', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();
+    getCurrentPageStateMock.mockReturnValue({
+      pageSize: 50,
+      currentPage: 1,
+      hasMore: true,
+      isLoading: false,
+      sortBy: 'date:desc',
+      showFavoritesOnly: false,
+      activeFolder: null,
+      searchOptions: { recursive: true },
+      customFilter: { active: false },
+      filters: {},
+    });
   });
 
   afterEach(() => {
@@ -147,5 +175,45 @@ describe('RecipeSidebarApiClient bulk operations', () => {
       '/recipes/old-folder/recipe#1.webp',
       { title: 'Updated Title' }
     );
+  });
+
+  it('preserves scroll position for recipe reloads when requested', async () => {
+    const scrollSnapshot = { scrollContainer: { scrollTop: 480 }, scrollTop: 480 };
+    captureScrollPositionMock.mockReturnValue(scrollSnapshot);
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [{ id: 'recipe-1' }],
+        total: 1,
+        total_pages: 1,
+      }),
+    });
+
+    await resetAndReload(false, { preserveScroll: true });
+
+    expect(captureScrollPositionMock).toHaveBeenCalledTimes(1);
+    expect(virtualScrollerMock.refreshWithData).toHaveBeenCalledWith(
+      [{ id: 'recipe-1' }],
+      1,
+      false
+    );
+    expect(restoreScrollPositionMock).toHaveBeenCalledWith(scrollSnapshot);
+  });
+
+  it('uses scroll-preserving reloads for syncChanges', async () => {
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [],
+        total: 0,
+        total_pages: 0,
+      }),
+    });
+
+    await syncChanges();
+
+    expect(captureScrollPositionMock).toHaveBeenCalledTimes(1);
+    expect(restoreScrollPositionMock).toHaveBeenCalledTimes(1);
+    expect(loadingManagerMock.restoreProgressBar).toHaveBeenCalledTimes(1);
   });
 });

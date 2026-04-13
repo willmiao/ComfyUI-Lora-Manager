@@ -311,7 +311,7 @@ export class BulkMissingLoraDownloadManager {
 
         // Refresh the recipes list to update LoRA status
         if (window.recipeManager) {
-            window.recipeManager.loadRecipes();
+            window.recipeManager.loadRecipes({ preserveScroll: true });
         }
     }
 

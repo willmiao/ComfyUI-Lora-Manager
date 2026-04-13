@@ -23,7 +23,7 @@ export class RecipeContextMenu extends BaseContextMenu {
     // Override resetAndReload for recipe context
     async resetAndReload() {
         const { resetAndReload } = await import('../../api/recipeApi.js');
-        return resetAndReload();
+        return resetAndReload(false, { preserveScroll: true });
     }
 
     showMenu(x, y, card) {

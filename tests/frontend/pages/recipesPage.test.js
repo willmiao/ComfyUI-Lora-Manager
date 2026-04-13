@@ -212,6 +212,19 @@ describe('RecipeManager', () => {
     expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(1);
   });
 
+  it('supports preserve-scroll options while keeping boolean compatibility', async () => {
+    const manager = new RecipeManager();
+
+    await manager.loadRecipes({ preserveScroll: true });
+    expect(refreshVirtualScrollMock).toHaveBeenNthCalledWith(1, { preserveScroll: true });
+
+    await manager.loadRecipes(false);
+    expect(refreshVirtualScrollMock).toHaveBeenCalledTimes(1);
+
+    await manager.loadRecipes({ resetPage: true, preserveScroll: false });
+    expect(refreshVirtualScrollMock).toHaveBeenNthCalledWith(2, { preserveScroll: false });
+  });
+
   it('proxies duplicate management and refresh helpers', async () => {
     const manager = new RecipeManager();
 

@@ -4,6 +4,43 @@ import { createModelCard, setupModelCardEventDelegation } from '../components/sh
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { showToast } from './uiHelpers.js';
 
+function getScrollContainer() {
+    return document.querySelector('.page-content');
+}
+
+function getClampedScrollTop(scrollContainer, scrollTop) {
+    const maxScrollTop = Math.max(0, scrollContainer.scrollHeight - scrollContainer.clientHeight);
+    return Math.min(Math.max(scrollTop, 0), maxScrollTop);
+}
+
+function waitForAnimationFrame() {
+    return new Promise(resolve => requestAnimationFrame(resolve));
+}
+
+export function captureScrollPosition() {
+    const scrollContainer = getScrollContainer();
+    if (!scrollContainer) {
+        return null;
+    }
+
+    return {
+        scrollContainer,
+        scrollTop: scrollContainer.scrollTop
+    };
+}
+
+export async function restoreScrollPosition(snapshot) {
+    if (!snapshot?.scrollContainer) {
+        return;
+    }
+
+    // Wait for layout and the scheduled virtual-scroll render to settle.
+    await waitForAnimationFrame();
+    await waitForAnimationFrame();
+
+    snapshot.scrollContainer.scrollTop = getClampedScrollTop(snapshot.scrollContainer, snapshot.scrollTop);
+}
+
 // Function to dynamically import the appropriate card creator based on page type
 async function getCardCreator(pageType) {
     if (pageType === 'recipes') {
@@ -87,7 +124,7 @@ async function initializeVirtualScroll(pageType) {
     }
 
     // Change this line to get the actual scrolling container
-    const scrollContainer = document.querySelector('.page-content');
+    const scrollContainer = getScrollContainer();
     const gridContainer = scrollContainer.querySelector('.container');
 
     if (!gridContainer) {
@@ -200,9 +237,16 @@ export function cleanupKeyboardNavigation() {
 }
 
 // Export a method to refresh the virtual scroller when filters change
-export function refreshVirtualScroll() {
+export async function refreshVirtualScroll(options = {}) {
+    const { preserveScroll = false } = options;
+
     if (state.virtualScroller) {
+        const scrollSnapshot = preserveScroll ? captureScrollPosition() : null;
         state.virtualScroller.reset();
-        state.virtualScroller.initialize();
+        await state.virtualScroller.initialize();
+
+        if (scrollSnapshot) {
+            await restoreScrollPosition(scrollSnapshot);
+        }
     }
 }

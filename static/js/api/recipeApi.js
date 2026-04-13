@@ -1,6 +1,7 @@
 import { RecipeCard } from '../components/RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { captureScrollPosition, restoreScrollPosition } from '../utils/infiniteScroll.js';
 
 const RECIPE_ENDPOINTS = {
     list: '/api/lm/recipes',
@@ -182,10 +183,12 @@ export async function resetAndReloadWithVirtualScroll(options = {}) {
     const {
         modelType = 'lora',
         updateFolders = false,
-        fetchPageFunction
+        fetchPageFunction,
+        preserveScroll = false
     } = options;
 
     const pageState = getCurrentPageState();
+    const scrollSnapshot = preserveScroll ? captureScrollPosition() : null;
 
     try {
         pageState.isLoading = true;
@@ -207,6 +210,10 @@ export async function resetAndReloadWithVirtualScroll(options = {}) {
         pageState.hasMore = result.hasMore;
         pageState.currentPage = 2; // Next page will be 2
 
+        if (scrollSnapshot) {
+            await restoreScrollPosition(scrollSnapshot);
+        }
+
         return result;
     } catch (error) {
         console.error(`Error reloading ${modelType}s:`, error);
@@ -227,10 +234,12 @@ export async function loadMoreWithVirtualScroll(options = {}) {
         modelType = 'lora',
         resetPage = false,
         updateFolders = false,
-        fetchPageFunction
+        fetchPageFunction,
+        preserveScroll = false
     } = options;
 
     const pageState = getCurrentPageState();
+    const scrollSnapshot = preserveScroll ? captureScrollPosition() : null;
 
     try {
         // Start loading state
@@ -255,6 +264,10 @@ export async function loadMoreWithVirtualScroll(options = {}) {
         pageState.hasMore = result.hasMore;
         pageState.currentPage = 2; // Next page to load would be 2
 
+        if (scrollSnapshot) {
+            await restoreScrollPosition(scrollSnapshot);
+        }
+
         return result;
     } catch (error) {
         console.error(`Error loading ${modelType}s:`, error);
@@ -270,11 +283,12 @@ export async function loadMoreWithVirtualScroll(options = {}) {
  * @param {boolean} updateFolders - Whether to update folder tags
  * @returns {Promise<Object>} The fetch result
  */
-export async function resetAndReload(updateFolders = false) {
+export async function resetAndReload(updateFolders = false, options = {}) {
     return resetAndReloadWithVirtualScroll({
         modelType: 'recipe',
         updateFolders,
-        fetchPageFunction: fetchRecipesPage
+        fetchPageFunction: fetchRecipesPage,
+        preserveScroll: options.preserveScroll === true
     });
 }
 
@@ -286,7 +300,7 @@ export async function syncChanges() {
         state.loadingManager.showSimpleLoading('Syncing changes...');
 
         // Simply reload the recipes without rebuilding cache
-        await resetAndReload();
+        await resetAndReload(false, { preserveScroll: true });
 
         showToast('toast.recipes.syncComplete', {}, 'success');
     } catch (error) {
@@ -314,7 +328,7 @@ export async function refreshRecipes() {
         }
 
         // After successful cache rebuild, reload the recipes
-        await resetAndReload();
+        await resetAndReload(false, { preserveScroll: true });
 
         showToast('toast.recipes.refreshComplete', {}, 'success');
     } catch (error) {
