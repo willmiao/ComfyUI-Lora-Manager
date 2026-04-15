@@ -20,8 +20,8 @@ class TextLM:
                     "AUTOCOMPLETE_TEXT_PROMPT,STRING",
                     {
                         "widgetType": "AUTOCOMPLETE_TEXT_PROMPT",
-                        "placeholder": "Enter text... /char, /artist, /wild for quick search",
-                        "tooltip": "The text output. Wildcard references inserted with /wild are expanded at runtime.",
+                        "placeholder": "Enter text... /character, /artist, /wildcard for quick search",
+                        "tooltip": "The text output. Wildcard references inserted with /wildcard are expanded at runtime.",
                     },
                 ),
             },

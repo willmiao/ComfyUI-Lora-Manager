@@ -286,7 +286,6 @@ describe('AutoComplete widget interactions', () => {
     const commandNames = autoComplete.items.map((item) => item.command);
 
     expect(commandNames).toContain('/character');
-    expect(commandNames).toContain('/char');
     expect(commandNames).toContain('/artist');
     expect(commandNames).toContain('/general');
     expect(commandNames).toContain('/copyright');
@@ -295,7 +294,6 @@ describe('AutoComplete widget interactions', () => {
     expect(commandNames).toContain('/lore');
     expect(commandNames).toContain('/emb');
     expect(commandNames).toContain('/embedding');
-    expect(commandNames).toContain('/wild');
     expect(commandNames).toContain('/wildcard');
   });
 
@@ -817,12 +815,12 @@ describe('AutoComplete widget interactions', () => {
       json: () => Promise.resolve({ success: true, words: mockTags }),
     });
 
-    // Simulate "/char looking to the side" input
-    caretHelperInstance.getBeforeCursor.mockReturnValue('/char looking to the side');
+    // Simulate "/character looking to the side" input
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/character looking to the side');
     caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
 
     const input = document.createElement('textarea');
-    input.value = '/char looking to the side';
+    input.value = '/character looking to the side';
     input.selectionStart = input.value.length;
     input.focus = vi.fn();
     input.setSelectionRange = vi.fn();
@@ -840,7 +838,7 @@ describe('AutoComplete widget interactions', () => {
     autoComplete.activeCommand = { categories: [4, 11], label: 'Character' };
     autoComplete.items = mockTags;
     autoComplete.selectedIndex = 0;
-    autoComplete.currentSearchTerm = '/char looking to the side';
+    autoComplete.currentSearchTerm = '/character looking to the side';
 
     await autoComplete.insertSelection('looking_to_the_side');
 
@@ -1147,18 +1145,18 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith('/lm/custom-words/search?enriched=true&search=cat&limit=100');
   });
 
-  it('searches wildcard keys when using the /wild command', async () => {
+  it('searches wildcard keys when using the /wildcard command', async () => {
     vi.useFakeTimers();
 
     fetchApiMock.mockResolvedValue({
       json: () => Promise.resolve({ success: true, words: ['animals/cat'] }),
     });
 
-    caretHelperInstance.getBeforeCursor.mockReturnValue('/wild cat');
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wildcard cat');
     caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
 
     const input = document.createElement('textarea');
-    input.value = '/wild cat';
+    input.value = '/wildcard cat';
     input.selectionStart = input.value.length;
     document.body.append(input);
 
@@ -1179,11 +1177,11 @@ describe('AutoComplete widget interactions', () => {
     expect(autoComplete.items).toEqual(['animals/cat']);
   });
 
-  it('inserts wildcard references when accepting a /wild result', async () => {
-    caretHelperInstance.getBeforeCursor.mockReturnValue('/wild animals/cat');
+  it('inserts wildcard references when accepting a /wildcard result', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wildcard animals/cat');
 
     const input = document.createElement('textarea');
-    input.value = '/wild animals/cat';
+    input.value = '/wildcard animals/cat';
     input.selectionStart = input.value.length;
     input.focus = vi.fn();
     input.setSelectionRange = vi.fn();

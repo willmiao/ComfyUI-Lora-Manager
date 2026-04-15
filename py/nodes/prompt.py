@@ -71,8 +71,8 @@ class PromptLM:
                     "AUTOCOMPLETE_TEXT_PROMPT,STRING",
                     {
                         "widgetType": "AUTOCOMPLETE_TEXT_PROMPT",
-                        "placeholder": "Enter prompt... /char, /artist, /wild for quick search",
-                        "tooltip": "The text to be encoded. Wildcard references inserted with /wild are expanded at runtime.",
+                        "placeholder": "Enter prompt... /character, /artist, /wildcard for quick search",
+                        "tooltip": "The text to be encoded. Wildcard references inserted with /wildcard are expanded at runtime.",
                     },
                 ),
                 "clip": (

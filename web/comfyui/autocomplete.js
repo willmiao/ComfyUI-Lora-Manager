@@ -19,7 +19,6 @@ import { showToast } from "./utils.js";
 // Command definitions for category filtering
 const TAG_COMMANDS = {
     '/character': { categories: [4, 11], label: 'Character' },
-    '/char': { categories: [4, 11], label: 'Character' },
     '/artist': { categories: [1, 8], label: 'Artist' },
     '/general': { categories: [0, 7], label: 'General' },
     '/copyright': { categories: [3, 10], label: 'Copyright' },
@@ -1270,7 +1269,7 @@ class AutoComplete {
             };
         }
 
-        // Command with search term (e.g., "/char miku")
+        // Command with search term (e.g., "/character miku")
         const commandPart = trimmed.slice(0, spaceIndex).toLowerCase();
         const searchPart = trimmed.slice(spaceIndex + 1).trim();
 
@@ -1417,7 +1416,7 @@ class AutoComplete {
 
     /**
      * Insert a command into the input
-     * @param {string} command - The command to insert (e.g., "/char")
+     * @param {string} command - The command to insert (e.g., "/character")
      */
     _insertCommand(command) {
         const currentValue = this.inputElement.value;
@@ -2310,7 +2309,7 @@ class AutoComplete {
         // This allows "hello 1gi" + selecting "1girl" to become "hello 1girl, "
         // However, if the user typed a multi-word phrase that matches a tag (e.g., "looking to the side"
         // matching "looking_to_the_side"), replace the entire phrase instead of just the last word.
-        // Command mode (e.g., "/char miku") should replace the entire command+search
+        // Command mode (e.g., "/character miku") should replace the entire command+search
         let searchTerm = fullSearchTerm;
         if (this.modelType === 'prompt' && this.searchType === 'custom_words' && !this.activeCommand) {
             // Check if the selectedItem exists and its tag_name matches the full search term

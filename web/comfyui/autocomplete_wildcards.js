@@ -1,5 +1,4 @@
 export const WILDCARD_COMMANDS = {
-    '/wild': { type: 'wildcard', label: 'Wildcards' },
     '/wildcard': { type: 'wildcard', label: 'Wildcards' },
 };
 
