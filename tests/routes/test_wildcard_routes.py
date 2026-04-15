@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from types import SimpleNamespace
 
 import pytest
 
@@ -15,6 +16,14 @@ class FakeRequest:
 @pytest.mark.asyncio
 async def test_search_wildcards_returns_results():
     class StubService:
+        def get_metadata(self, create_dir=False):
+            assert create_dir is True
+            return SimpleNamespace(
+                has_wildcards=True,
+                wildcards_dir="/tmp/settings/wildcards",
+                supported_formats=(".txt", ".yaml", ".yml", ".json"),
+            )
+
         def search_keys(self, search_term, limit, offset):
             assert search_term == "cat"
             assert limit == 25
@@ -28,12 +37,27 @@ async def test_search_wildcards_returns_results():
     payload = json.loads(response.text)
 
     assert response.status == 200
-    assert payload == {"success": True, "words": ["animals/cat"]}
+    assert payload == {
+        "success": True,
+        "words": ["animals/cat"],
+        "meta": {
+            "has_wildcards": True,
+            "wildcards_dir": "/tmp/settings/wildcards",
+            "supported_formats": [".txt", ".yaml", ".yml", ".json"],
+        },
+    }
 
 
 @pytest.mark.asyncio
 async def test_search_wildcards_handles_errors():
     class StubService:
+        def get_metadata(self, create_dir=False):
+            return SimpleNamespace(
+                has_wildcards=False,
+                wildcards_dir="/tmp/settings/wildcards",
+                supported_formats=(".txt",),
+            )
+
         def search_keys(self, search_term, limit, offset):
             raise RuntimeError("boom")
 

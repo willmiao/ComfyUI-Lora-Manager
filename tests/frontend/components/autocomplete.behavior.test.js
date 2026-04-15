@@ -1209,7 +1209,15 @@ describe('AutoComplete widget interactions', () => {
     vi.useFakeTimers();
 
     fetchApiMock.mockResolvedValue({
-      json: () => Promise.resolve({ success: true, words: ['animals/cat'] }),
+      json: () => Promise.resolve({
+        success: true,
+        words: ['animals/cat'],
+        meta: {
+          has_wildcards: true,
+          wildcards_dir: '/tmp/settings/wildcards',
+          supported_formats: ['.txt', '.yaml', '.yml', '.json'],
+        },
+      }),
     });
 
     caretHelperInstance.getBeforeCursor.mockReturnValue('/wildcard cat');
@@ -1235,6 +1243,129 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith('/lm/wildcards/search?search=cat&limit=100');
     expect(autoComplete.searchType).toBe('wildcards');
     expect(autoComplete.items).toEqual(['animals/cat']);
+  });
+
+  it('shows wildcard onboarding when /wildcard is used before any files exist', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({
+        success: true,
+        words: [],
+        meta: {
+          has_wildcards: false,
+          wildcards_dir: '/tmp/settings/wildcards',
+          supported_formats: ['.txt', '.yaml', '.yml', '.json'],
+        },
+      }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wildcard cat');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '/wildcard cat';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.isVisible).toBe(true);
+    expect(autoComplete.items).toHaveLength(1);
+    expect(autoComplete.items[0].type).toBe('wildcard_empty_state');
+    expect(autoComplete.dropdown.textContent).toContain('No wildcards found yet');
+    expect(autoComplete.dropdown.textContent).toContain('/tmp/settings/wildcards');
+    expect(autoComplete.dropdown.textContent).toContain('.txt, .yaml, .yml, .json');
+  });
+
+  it('shows wildcard onboarding when only the /wildcard command is entered', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({
+        success: true,
+        words: [],
+        meta: {
+          has_wildcards: false,
+          wildcards_dir: '/tmp/settings/wildcards',
+          supported_formats: ['.txt', '.yaml', '.yml', '.json'],
+        },
+      }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wildcard ');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '/wildcard ';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/lm/wildcards/search?search=&limit=100');
+    expect(autoComplete.isVisible).toBe(true);
+    expect(autoComplete.items).toHaveLength(1);
+    expect(autoComplete.items[0].type).toBe('wildcard_empty_state');
+    expect(autoComplete.dropdown.textContent).toContain('No wildcards found yet');
+  });
+
+  it('shows a lightweight no-match state when wildcard files exist but search misses', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({
+        success: true,
+        words: [],
+        meta: {
+          has_wildcards: true,
+          wildcards_dir: '/tmp/settings/wildcards',
+          supported_formats: ['.txt', '.yaml', '.yml', '.json'],
+        },
+      }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wildcard dragon');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '/wildcard dragon';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.items).toHaveLength(1);
+    expect(autoComplete.items[0].type).toBe('wildcard_no_matches');
+    expect(autoComplete.dropdown.textContent).toContain('No wildcard matches');
+    expect(autoComplete.dropdown.textContent).not.toContain('Open wildcards folder');
   });
 
   it('inserts wildcard references when accepting a /wildcard result', async () => {

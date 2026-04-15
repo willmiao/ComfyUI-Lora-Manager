@@ -55,6 +55,13 @@ class WildcardEntry:
     values_count: int
 
 
+@dataclass(frozen=True)
+class WildcardMetadata:
+    has_wildcards: bool
+    wildcards_dir: str
+    supported_formats: tuple[str, ...]
+
+
 class WildcardService:
     """Discover wildcard keys and expand wildcard syntax."""
 
@@ -133,6 +140,14 @@ class WildcardService:
             WildcardEntry(key=key, values_count=len(values))
             for key, values in sorted(self.get_wildcard_dict().items())
         ]
+
+    def get_metadata(self, *, create_dir: bool = False) -> WildcardMetadata:
+        wildcards_dir = get_wildcards_dir(create=create_dir)
+        return WildcardMetadata(
+            has_wildcards=bool(self.get_wildcard_dict()),
+            wildcards_dir=wildcards_dir,
+            supported_formats=(".txt", ".yaml", ".yml", ".json"),
+        )
 
     def _build_signature(self) -> tuple[tuple[str, int, int], ...]:
         root = get_wildcards_dir(create=False)
@@ -405,6 +420,7 @@ def get_wildcard_service() -> WildcardService:
 
 __all__ = [
     "WildcardService",
+    "WildcardMetadata",
     "contains_dynamic_syntax",
     "get_wildcard_service",
     "get_wildcards_dir",

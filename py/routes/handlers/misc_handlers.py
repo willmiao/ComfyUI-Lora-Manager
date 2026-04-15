@@ -2411,6 +2411,16 @@ class FileSystemHandler:
             logger.error("Failed to open backup location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def open_wildcards_location(self, request: web.Request) -> web.Response:
+        try:
+            from ...services.wildcard_service import get_wildcards_dir
+
+            wildcards_dir = get_wildcards_dir(create=True)
+            return await self._open_path(wildcards_dir)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to open wildcards location: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class CustomWordsHandler:
     """Handler for autocomplete via TagFTSIndex."""
@@ -2507,8 +2517,19 @@ class WildcardsHandler:
             search_term = request.query.get("search", "")
             limit = min(int(request.query.get("limit", "20")), 100)
             offset = max(0, int(request.query.get("offset", "0")))
+            metadata = self._service.get_metadata(create_dir=True)
             results = self._service.search_keys(search_term, limit=limit, offset=offset)
-            return web.json_response({"success": True, "words": results})
+            return web.json_response(
+                {
+                    "success": True,
+                    "words": results,
+                    "meta": {
+                        "has_wildcards": metadata.has_wildcards,
+                        "wildcards_dir": metadata.wildcards_dir,
+                        "supported_formats": list(metadata.supported_formats),
+                    },
+                }
+            )
         except Exception as exc:
             logger.error("Error searching wildcards: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
@@ -2801,6 +2822,7 @@ class MiscHandlerSet:
             "open_file_location": self.filesystem.open_file_location,
             "open_settings_location": self.filesystem.open_settings_location,
             "open_backup_location": self.filesystem.open_backup_location,
+            "open_wildcards_location": self.filesystem.open_wildcards_location,
             "search_custom_words": self.custom_words.search_custom_words,
             "search_wildcards": self.wildcards.search_wildcards,
             "get_supporters": self.supporters.get_supporters,

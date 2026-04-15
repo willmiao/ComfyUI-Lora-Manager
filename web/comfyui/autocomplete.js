@@ -3,9 +3,12 @@ import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 import {
     WILDCARD_COMMANDS,
+    createWildcardEmptyStateItem,
+    createWildcardNoMatchesItem,
     getWildcardInsertText,
     getWildcardSearchEndpoint,
     isWildcardCommand,
+    isWildcardInfoItem,
 } from "./autocomplete_wildcards.js";
 import {
     getAutocompleteAppendCommaPreference,
@@ -363,6 +366,7 @@ class AutoComplete {
         this.debounceTimer = null;
         this.isVisible = false;
         this.currentSearchTerm = '';
+        this.wildcardMeta = null;
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
         this.searchType = null;
@@ -703,7 +707,12 @@ class AutoComplete {
             }
         }
 
-        if (searchTerm.length < this.options.minChars) {
+        const allowEmptyWildcardSearch =
+            this.modelType === 'prompt' &&
+            this.searchType === 'wildcards' &&
+            searchTerm.length === 0;
+
+        if (!allowEmptyWildcardSearch && searchTerm.length < this.options.minChars) {
             this.hide();
             return;
         }
@@ -1005,12 +1014,24 @@ class AutoComplete {
         return uniqueQueries;
     }
 
+    _containsInformationalItems() {
+        return this.items.some((item) => isWildcardInfoItem(item));
+    }
+
+    _isSelectableInfoItem(item) {
+        return isWildcardInfoItem(item);
+    }
+
     /**
      * Get display text for an item (without extension for models)
      * @param {string|Object} item - Item to get display text from
      * @returns {string} - Display text without extension
      */
     _getDisplayText(item) {
+        if (isWildcardInfoItem(item)) {
+            return item.title || item.description || 'Wildcards';
+        }
+
         const itemText = typeof item === 'object' && item.tag_name ? item.tag_name : String(item);
         // Remove extension for models to avoid matching/displaying .safetensors etc.
         if (this.modelType === 'loras' || this.searchType === 'embeddings') {
@@ -1159,6 +1180,7 @@ class AutoComplete {
             // This is critical for preventing command suggestions from persisting
             // when switching from command mode to regular tag search
             this.items = [];
+            this.wildcardMeta = null;
 
             if (!endpoint) {
                 endpoint = `/lm/${this.modelType}/relative-paths`;
@@ -1167,7 +1189,10 @@ class AutoComplete {
             // Generate multiple query variations for better matching, but avoid
             // sending duplicate-equivalent requests that normalize to the same
             // backend search term.
-            const queriesToExecute = this._getQueriesToExecute(term);
+            const queriesToExecute =
+                this.searchType === 'wildcards' && term.length === 0
+                    ? ['']
+                    : this._getQueriesToExecute(term);
 
             if (queriesToExecute.length === 0) {
                 this.items = [];
@@ -1184,10 +1209,16 @@ class AutoComplete {
                 try {
                     const response = await api.fetchApi(url);
                     const data = await response.json();
-                    return data.success ? (data.relative_paths || data.words || []) : [];
+                    return {
+                        items: data.success ? (data.relative_paths || data.words || []) : [],
+                        meta: data?.meta || null,
+                    };
                 } catch (error) {
                     console.warn(`Search query failed for "${query}":`, error);
-                    return [];
+                    return {
+                        items: [],
+                        meta: null,
+                    };
                 }
             });
 
@@ -1205,7 +1236,12 @@ class AutoComplete {
             const seen = new Set();
             const mergedItems = [];
 
-            for (const resultArray of resultsArrays) {
+            for (const result of resultsArrays) {
+                if (!this.wildcardMeta && result?.meta) {
+                    this.wildcardMeta = result.meta;
+                }
+
+                const resultArray = result?.items || [];
                 for (const item of resultArray) {
                     const itemKey = typeof item === 'object' && item.tag_name
                         ? item.tag_name.toLowerCase()
@@ -1216,6 +1252,17 @@ class AutoComplete {
                         mergedItems.push(item);
                     }
                 }
+            }
+
+            if (this.searchType === 'wildcards' && mergedItems.length === 0) {
+                const meta = this.wildcardMeta || {};
+                this.items = meta.has_wildcards
+                    ? [createWildcardNoMatchesItem(term, meta)]
+                    : [createWildcardEmptyStateItem(meta)];
+                this.hasMoreItems = false;
+                this.render();
+                this.show();
+                return;
             }
 
             // Use backend-sorted results directly without re-scoring
@@ -1486,91 +1533,7 @@ class AutoComplete {
             const isCommand = this.items[0] && typeof this.items[0] === 'object' && 'command' in this.items[0];
 
             this.items.forEach((itemData, index) => {
-                const item = document.createElement('div');
-                item.className = 'comfy-autocomplete-item';
-
-                if (isCommand) {
-                    // Render command item
-                    const cmdSpan = document.createElement('span');
-                    cmdSpan.className = 'lm-autocomplete-command-name';
-                    cmdSpan.textContent = itemData.command;
-
-                    const labelSpan = document.createElement('span');
-                    labelSpan.className = 'lm-autocomplete-command-label';
-                    labelSpan.textContent = itemData.label;
-
-                    item.appendChild(cmdSpan);
-                    item.appendChild(labelSpan);
-                    item.style.cssText = `
-                        padding: 8px 12px;
-                        cursor: pointer;
-                        color: rgba(226, 232, 240, 0.8);
-                        border-bottom: 1px solid rgba(226, 232, 240, 0.1);
-                        transition: all 0.2s ease;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        gap: 12px;
-                    `;
-                } else if (isEnriched) {
-                    // Render enriched item with category badge and post count
-                    this._renderEnrichedItem(item, itemData, this.currentSearchTerm);
-                } else {
-                    // Create highlighted content for simple items, wrapped in a span
-                    // to prevent flex layout from breaking up the text
-                    const nameSpan = document.createElement('span');
-                    nameSpan.className = 'lm-autocomplete-name';
-                    // Use display text without extension for cleaner UI
-                    const displayTextWithoutExt = this._getDisplayText(itemData);
-                    nameSpan.innerHTML = this.highlightMatch(displayTextWithoutExt, this.currentSearchTerm);
-                    nameSpan.style.cssText = `
-                        flex: 1;
-                        min-width: 0;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    `;
-                    item.appendChild(nameSpan);
-                    
-                    // Apply item styles with new color scheme
-                    item.style.cssText = `
-                        padding: 8px 12px;
-                        cursor: pointer;
-                        color: rgba(226, 232, 240, 0.8);
-                        border-bottom: 1px solid rgba(226, 232, 240, 0.1);
-                        transition: all 0.2s ease;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                        position: relative;
-                        display: flex;
-                        justify-content: space-between;
-                        align-items: center;
-                        gap: 8px;
-                    `;
-                }
-
-                // Hover and selection handlers
-                item.addEventListener('mouseenter', () => {
-                    this.selectItem(index, { manual: true });
-                });
-
-                item.addEventListener('mouseleave', () => {
-                    this.hidePreview();
-                });
-
-                // Click handler
-                item.addEventListener('click', () => {
-                    if (isCommand) {
-                        this._insertCommand(itemData.command);
-                    } else {
-                        const insertPath = isEnriched ? itemData.tag_name : itemData;
-                        this.insertSelection(insertPath);
-                    }
-                });
-
+                const item = this.createItemElement(itemData, index, isEnriched, isCommand);
                 this.dropdown.appendChild(item);
             });
 
@@ -1664,6 +1627,124 @@ class AutoComplete {
         itemEl.appendChild(nameSpan);
         itemEl.appendChild(metaSpan);
     }
+
+    _renderInformationalItem(itemEl, itemData) {
+        itemEl.classList.add('comfy-autocomplete-info-item');
+        itemEl.style.cssText = `
+            padding: 12px;
+            color: rgba(226, 232, 240, 0.88);
+            border-bottom: none;
+            cursor: default;
+            display: block;
+            white-space: normal;
+            height: auto;
+        `;
+
+        const title = document.createElement('div');
+        title.className = 'lm-autocomplete-info-title';
+        title.textContent = itemData.title || 'Wildcards';
+        title.style.cssText = `
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 6px;
+        `;
+        itemEl.appendChild(title);
+
+        const description = document.createElement('div');
+        description.className = 'lm-autocomplete-info-description';
+        description.textContent = itemData.description || '';
+        description.style.cssText = `
+            font-size: 12px;
+            line-height: 1.45;
+            color: rgba(226, 232, 240, 0.72);
+        `;
+        itemEl.appendChild(description);
+
+        if (itemData.type === 'wildcard_no_matches') {
+            return;
+        }
+
+        const pathBlock = document.createElement('div');
+        pathBlock.style.cssText = `
+            margin-top: 10px;
+            padding: 8px 10px;
+            border-radius: 6px;
+            background: rgba(15, 23, 42, 0.6);
+            font-size: 11px;
+            line-height: 1.5;
+        `;
+        pathBlock.innerHTML = [
+            '<div style="font-weight: 600; margin-bottom: 4px;">Wildcards folder</div>',
+            `<code style="word-break: break-all; color: #dbeafe;">${itemData.wildcardsDir || '(unavailable)'}</code>`,
+            `<div style="margin-top: 6px; color: rgba(226, 232, 240, 0.68);">Supported formats: ${(itemData.supportedFormats || []).join(', ')}</div>`,
+        ].join('');
+        itemEl.appendChild(pathBlock);
+
+        const examples = document.createElement('div');
+        examples.style.cssText = `
+            margin-top: 10px;
+            font-size: 11px;
+            line-height: 1.55;
+            color: rgba(226, 232, 240, 0.72);
+        `;
+        examples.innerHTML = [
+            '<div style="font-weight: 600; color: rgba(226, 232, 240, 0.88); margin-bottom: 4px;">Examples</div>',
+            '<div><code>animals/cat.txt</code> -> use <code>__animals/cat__</code></div>',
+            '<div><code>colors.yaml</code> with <code>palette: { warm: [red, orange] }</code> -> use <code>__palette/warm__</code></div>',
+            '<div style="margin-top: 6px;">Text files use one option per line. YAML/JSON use nested keys ending in string arrays.</div>',
+        ].join('');
+        itemEl.appendChild(examples);
+
+        const actions = document.createElement('div');
+        actions.style.cssText = `
+            display: flex;
+            gap: 8px;
+            margin-top: 12px;
+            flex-wrap: wrap;
+        `;
+
+        const openButton = document.createElement('button');
+        openButton.type = 'button';
+        openButton.dataset.action = 'open-wildcards-folder';
+        openButton.textContent = 'Open wildcards folder';
+        openButton.style.cssText = `
+            border: 1px solid rgba(96, 165, 250, 0.45);
+            background: rgba(37, 99, 235, 0.18);
+            color: #dbeafe;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            cursor: pointer;
+        `;
+        openButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await this._openWildcardsFolder();
+        });
+        actions.appendChild(openButton);
+
+        const copyButton = document.createElement('button');
+        copyButton.type = 'button';
+        copyButton.dataset.action = 'copy-wildcards-path';
+        copyButton.textContent = 'Copy path';
+        copyButton.style.cssText = `
+            border: 1px solid rgba(226, 232, 240, 0.2);
+            background: rgba(148, 163, 184, 0.12);
+            color: rgba(226, 232, 240, 0.88);
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 11px;
+            cursor: pointer;
+        `;
+        copyButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            await this._copyWildcardPath(itemData.wildcardsDir || '');
+        });
+        actions.appendChild(copyButton);
+
+        itemEl.appendChild(actions);
+    }
     
     highlightMatch(text, searchTerm) {
         const { include } = parseSearchTokens(searchTerm);
@@ -1680,6 +1761,62 @@ class AutoComplete {
             regex,
             '<span style="background-color: rgba(66, 153, 225, 0.3); color: white; padding: 1px 2px; border-radius: 2px;">$1</span>',
         );
+    }
+
+    async _openWildcardsFolder() {
+        try {
+            const response = await api.fetchApi('/lm/wildcards/open-location', { method: 'POST' });
+            const data = await response.json();
+            if (!response.ok || data?.success === false) {
+                throw new Error(data?.error || 'Failed to open wildcards folder');
+            }
+
+            if (data?.mode === 'clipboard' && data?.path) {
+                await this._copyWildcardPath(data.path);
+                return;
+            }
+
+            showToast({
+                severity: 'success',
+                summary: 'Wildcards folder',
+                detail: 'Opened wildcards folder.',
+                life: 2500,
+            });
+        } catch (error) {
+            console.error('[Lora Manager] Failed to open wildcards folder:', error);
+            showToast({
+                severity: 'error',
+                summary: 'Error',
+                detail: error?.message || 'Failed to open wildcards folder',
+                life: 3000,
+            });
+        }
+    }
+
+    async _copyWildcardPath(path) {
+        if (!path) {
+            return;
+        }
+
+        try {
+            if (navigator?.clipboard?.writeText) {
+                await navigator.clipboard.writeText(path);
+            }
+            showToast({
+                severity: 'info',
+                summary: 'Wildcards path',
+                detail: path,
+                life: 3000,
+            });
+        } catch (error) {
+            console.error('[Lora Manager] Failed to copy wildcards path:', error);
+            showToast({
+                severity: 'warn',
+                summary: 'Wildcards path',
+                detail: path,
+                life: 4000,
+            });
+        }
     }
     
     showPreviewForItem(relativePath, itemElement) {
@@ -1874,6 +2011,14 @@ class AutoComplete {
     updateVirtualScrollHeight() {
         if (!this.contentContainer || !this.scrollContainer) return;
 
+        if (this._containsInformationalItems()) {
+            this.totalHeight = 0;
+            this.contentContainer.style.height = 'auto';
+            this.scrollContainer.style.maxHeight = `${this.options.visibleItems * this.options.itemHeight}px`;
+            this.scrollContainer.style.overflowY = 'hidden';
+            return;
+        }
+
         this.totalHeight = this.items.length * this.options.itemHeight;
         this.contentContainer.style.height = `${this.totalHeight}px`;
         
@@ -1891,6 +2036,16 @@ class AutoComplete {
      */
     updateVisibleItems() {
         if (!this.scrollContainer || !this.contentContainer) return;
+
+        if (this._containsInformationalItems()) {
+            this.contentContainer.innerHTML = '';
+            if (this.items[0]) {
+                this.contentContainer.appendChild(
+                    this.createItemElement(this.items[0], 0, false, false)
+                );
+            }
+            return;
+        }
 
         const scrollTop = this.scrollContainer.scrollTop;
         const containerHeight = this.scrollContainer.clientHeight;
@@ -1971,7 +2126,9 @@ class AutoComplete {
             isCommand = true;
         }
 
-        if (isCommand) {
+        if (isWildcardInfoItem(itemData)) {
+            this._renderInformationalItem(item, itemData);
+        } else if (isCommand) {
             // Render command item
             const cmdSpan = document.createElement('span');
             cmdSpan.className = 'lm-autocomplete-command-name';
@@ -2012,6 +2169,10 @@ class AutoComplete {
 
         // Click handler
         item.addEventListener('click', () => {
+            if (isWildcardInfoItem(itemData)) {
+                return;
+            }
+
             if (isCommand) {
                 this._insertCommand(itemData.command);
             } else {
@@ -2101,6 +2262,7 @@ class AutoComplete {
         // Clear items to prevent stale data from being displayed
         // when autocomplete is shown again
         this.items = [];
+        this.wildcardMeta = null;
         
         // Clear content container to prevent stale items from showing
         if (this.contentContainer) {
@@ -2189,7 +2351,7 @@ class AutoComplete {
                     item.scrollIntoView({ block: 'nearest' });
 
                     // Show preview for selected item
-                    if (this.options.showPreview) {
+                    if (this.options.showPreview && !this._isSelectableInfoItem(this.items[index])) {
                         if (typeof this.behavior.showPreview === 'function') {
                             this.behavior.showPreview(this, this.items[index], item);
                         } else if (this.previewTooltip) {
@@ -2216,7 +2378,7 @@ class AutoComplete {
             selectedEl.style.backgroundColor = 'rgba(66, 153, 225, 0.2)';
 
             // Show preview for selected item
-            if (this.options.showPreview) {
+            if (this.options.showPreview && !this._isSelectableInfoItem(this.items[index])) {
                 if (typeof this.behavior.showPreview === 'function') {
                     this.behavior.showPreview(this, this.items[index], selectedEl);
                 } else if (this.previewTooltip) {
@@ -2289,8 +2451,15 @@ class AutoComplete {
                         // Insert command
                         this._insertCommand(this.items[this.selectedIndex].command);
                     } else {
-                        // Insert selection (handle enriched items)
                         const selectedItem = this.items[this.selectedIndex];
+                        if (isWildcardInfoItem(selectedItem)) {
+                            if (selectedItem.type === 'wildcard_empty_state') {
+                                this._openWildcardsFolder();
+                            }
+                            break;
+                        }
+
+                        // Insert selection (handle enriched items)
                         const insertPath = typeof selectedItem === 'object' && 'tag_name' in selectedItem
                             ? selectedItem.tag_name
                             : selectedItem;

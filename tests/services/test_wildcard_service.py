@@ -68,6 +68,17 @@ def test_search_keys_supports_offset_and_limit(monkeypatch, tmp_path):
     assert service.search_keys("cat", limit=1, offset=1) == ["catgirl"]
 
 
+def test_get_metadata_creates_directory_and_reports_formats(monkeypatch, tmp_path):
+    service, wildcards_dir = _make_service(monkeypatch, tmp_path)
+
+    metadata = service.get_metadata(create_dir=True)
+
+    assert metadata.has_wildcards is False
+    assert metadata.wildcards_dir == str(wildcards_dir)
+    assert metadata.supported_formats == (".txt", ".yaml", ".yml", ".json")
+    assert wildcards_dir.is_dir()
+
+
 def test_expand_text_resolves_nested_wildcards(monkeypatch, tmp_path):
     service, wildcards_dir = _make_service(monkeypatch, tmp_path)
     wildcards_dir.mkdir()

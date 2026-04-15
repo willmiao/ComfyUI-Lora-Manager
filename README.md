@@ -253,6 +253,41 @@ pip install -r requirements.txt
    - Paste into the Lora Loader node's text input
    - The node will automatically apply preset strength and trigger words
 
+### Wildcards for TextLM / PromptLM
+
+`Text (LoraManager)` and `Prompt (LoraManager)` support `/wildcard` autocomplete plus runtime wildcard expansion.
+
+- Wildcard files live in `{settings folder}/wildcards/`
+- When you type `/wildcard` and no wildcard files exist yet, the autocomplete dropdown shows the exact folder path and lets you open it
+- Supported formats: `.txt`, `.yaml`, `.yml`, `.json`
+
+Format rules:
+
+- `wildcards/animals/cat.txt` becomes `__animals/cat__`
+- `.txt` files use one option per line
+- YAML / JSON files use nested keys that end in string arrays
+
+Examples:
+
+```txt
+# wildcards/color.txt
+red
+blue
+green
+```
+
+Use it as `__color__`.
+
+```yaml
+# wildcards/colors.yaml
+palette:
+  warm:
+    - red
+    - orange
+```
+
+Use it as `__palette/warm__`.
+
 ### Filename Format Patterns for Save Image Node
 
 The Save Image Node supports dynamic filename generation using pattern codes. You can customize how your images are named using the following format patterns:

@@ -499,6 +499,38 @@ async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatc
     assert calls == [["xdg-open", str(backup_dir)]]
 
 
+@pytest.mark.asyncio
+async def test_open_wildcards_location_creates_and_opens_directory(tmp_path, monkeypatch):
+    wildcards_dir = tmp_path / "settings" / "wildcards"
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace(settings_file=str(tmp_path / "settings.json")))
+
+    calls = []
+
+    def fake_popen(args):
+        calls.append(args)
+        return MagicMock()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+    monkeypatch.setattr(
+        "py.services.wildcard_service.get_wildcards_dir",
+        lambda create=False: str(wildcards_dir.mkdir(parents=True, exist_ok=True) or wildcards_dir)
+        if create
+        else str(wildcards_dir),
+    )
+
+    response = await handler.open_wildcards_location(FakeRequest())
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["path"] == str(wildcards_dir)
+    assert wildcards_dir.is_dir()
+    assert calls == [["xdg-open", str(wildcards_dir)]]
+
+
 class RecordingRouter:
     def __init__(self):
         self.calls = []
