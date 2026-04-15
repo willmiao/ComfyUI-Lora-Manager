@@ -2,6 +2,12 @@ import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { TextAreaCaretHelper } from "./textarea_caret_helper.js";
 import {
+    WILDCARD_COMMANDS,
+    getWildcardInsertText,
+    getWildcardSearchEndpoint,
+    isWildcardCommand,
+} from "./autocomplete_wildcards.js";
+import {
     getAutocompleteAppendCommaPreference,
     getAutocompleteAutoFormatPreference,
     getAutocompleteAcceptKeyPreference,
@@ -22,6 +28,7 @@ const TAG_COMMANDS = {
     '/lore': { categories: [15], label: 'Lore' },
     '/emb': { type: 'embedding', label: 'Embeddings' },
     '/embedding': { type: 'embedding', label: 'Embeddings' },
+    ...WILDCARD_COMMANDS,
     // Autocomplete toggle commands - only show one based on current state
     '/ac': {
         type: 'toggle_setting',
@@ -314,6 +321,8 @@ const MODEL_BEHAVIORS = {
                 const trimmedName = removeGeneralExtension(fileName);
                 const folder = directories.length ? `${directories.join('/')}/` : '';
                 return formatAutocompleteInsertion(`embedding:${folder}${trimmedName}`);
+            } else if (instance.searchType === 'wildcards' || isWildcardCommand(instance.activeCommand)) {
+                return formatAutocompleteInsertion(getWildcardInsertText(relativePath));
             } else {
                 let tagText = relativePath;
 
@@ -658,6 +667,9 @@ class AutoComplete {
                         // /emb or /embedding command
                         endpoint = '/lm/embeddings/relative-paths';
                         this.searchType = 'embeddings';
+                    } else if (isWildcardCommand(commandResult.command)) {
+                        endpoint = getWildcardSearchEndpoint();
+                        this.searchType = 'wildcards';
                     } else {
                         // Category filter command
                         const categories = commandResult.command.categories.join(',');
@@ -1611,6 +1623,8 @@ class AutoComplete {
             if (this.modelType === 'prompt') {
                 if (this.searchType === 'embeddings') {
                     endpoint = '/lm/embeddings/relative-paths';
+                } else if (this.searchType === 'wildcards') {
+                    endpoint = getWildcardSearchEndpoint();
                 } else if (this.searchType === 'custom_words') {
                     if (this.activeCommand?.categories) {
                         const categories = this.activeCommand.categories.join(',');

@@ -2489,6 +2489,30 @@ class CustomWordsHandler:
             return None
 
 
+class WildcardsHandler:
+    """Handler for wildcard autocomplete search."""
+
+    def __init__(self, *, service=None) -> None:
+        if service is None:
+            from ...services.wildcard_service import get_wildcard_service
+
+            service = get_wildcard_service()
+        self._service = service
+
+    async def search_wildcards(self, request: web.Request) -> web.Response:
+        """Search managed wildcard keys for autocomplete."""
+
+        try:
+            search_term = request.query.get("search", "")
+            limit = min(int(request.query.get("limit", "20")), 100)
+            offset = max(0, int(request.query.get("offset", "0")))
+            results = self._service.search_keys(search_term, limit=limit, offset=offset)
+            return web.json_response({"success": True, "words": results})
+        except Exception as exc:
+            logger.error("Error searching wildcards: %s", exc, exc_info=True)
+            return web.json_response({"error": str(exc)}, status=500)
+
+
 class NodeRegistryHandler:
     def __init__(
         self,
@@ -2717,6 +2741,7 @@ class MiscHandlerSet:
         backup: BackupHandler,
         filesystem: FileSystemHandler,
         custom_words: CustomWordsHandler,
+        wildcards: WildcardsHandler,
         supporters: SupportersHandler,
         doctor: DoctorHandler,
         example_workflows: ExampleWorkflowsHandler,
@@ -2734,6 +2759,7 @@ class MiscHandlerSet:
         self.backup = backup
         self.filesystem = filesystem
         self.custom_words = custom_words
+        self.wildcards = wildcards
         self.supporters = supporters
         self.doctor = doctor
         self.example_workflows = example_workflows
@@ -2775,6 +2801,7 @@ class MiscHandlerSet:
             "open_settings_location": self.filesystem.open_settings_location,
             "open_backup_location": self.filesystem.open_backup_location,
             "search_custom_words": self.custom_words.search_custom_words,
+            "search_wildcards": self.wildcards.search_wildcards,
             "get_supporters": self.supporters.get_supporters,
             "get_example_workflows": self.example_workflows.get_example_workflows,
             "get_example_workflow": self.example_workflows.get_example_workflow,

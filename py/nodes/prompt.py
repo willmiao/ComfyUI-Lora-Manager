@@ -1,15 +1,34 @@
+from __future__ import annotations
+
 from typing import Any
 import inspect
 
+from ..services.wildcard_service import get_wildcard_service, is_trigger_words_input
 
-class _AllContainer:
-    """Container that accepts any key for dynamic input validation."""
 
-    def __contains__(self, item):
-        return True
+class _PromptOptionalInputs:
+    """Lookup that preserves explicit optional inputs and dynamic trigger slots."""
 
-    def __getitem__(self, key):
-        return ("STRING", {"forceInput": True})
+    def __init__(self, explicit_inputs: dict[str, tuple[str, dict[str, Any]]]) -> None:
+        self._explicit_inputs = explicit_inputs
+
+    def __contains__(self, item: object) -> bool:
+        if not isinstance(item, str):
+            return False
+        return item in self._explicit_inputs or is_trigger_words_input(item)
+
+    def __getitem__(self, key: str) -> tuple[str, dict[str, Any]]:
+        if key in self._explicit_inputs:
+            return self._explicit_inputs[key]
+        if is_trigger_words_input(key):
+            return (
+                "STRING",
+                {
+                    "forceInput": True,
+                    "tooltip": "Trigger words to prepend. Connect to add more inputs.",
+                },
+            )
+        raise KeyError(key)
 
 
 class PromptLM:
@@ -20,12 +39,19 @@ class PromptLM:
     DESCRIPTION = (
         "Encodes a text prompt using a CLIP model into an embedding that can be used "
         "to guide the diffusion model towards generating specific images. "
-        "Supports dynamic trigger words inputs."
+        "Supports dynamic trigger words inputs and runtime wildcard expansion."
     )
 
     @classmethod
     def INPUT_TYPES(cls):
-        dyn_inputs = {
+        optional_inputs: dict[str, tuple[str, dict[str, Any]]] = {
+            "seed": (
+                "INT",
+                {
+                    "forceInput": True,
+                    "tooltip": "Optional seed for wildcard generation. Leave unconnected for non-deterministic wildcard expansion.",
+                },
+            ),
             "trigger_words1": (
                 "STRING",
                 {
@@ -35,10 +61,9 @@ class PromptLM:
             ),
         }
 
-        # Bypass validation for dynamic inputs during graph execution
         stack = inspect.stack()
         if len(stack) > 2 and stack[2].function == "get_input_info":
-            dyn_inputs = _AllContainer()
+            optional_inputs = _PromptOptionalInputs(optional_inputs)  # type: ignore[assignment]
 
         return {
             "required": {
@@ -46,8 +71,8 @@ class PromptLM:
                     "AUTOCOMPLETE_TEXT_PROMPT,STRING",
                     {
                         "widgetType": "AUTOCOMPLETE_TEXT_PROMPT",
-                        "placeholder": "Enter prompt... /char, /artist for quick tag search",
-                        "tooltip": "The text to be encoded.",
+                        "placeholder": "Enter prompt... /char, /artist, /wild for quick search",
+                        "tooltip": "The text to be encoded. Wildcard references inserted with /wild are expanded at runtime.",
                     },
                 ),
                 "clip": (
@@ -55,7 +80,7 @@ class PromptLM:
                     {"tooltip": "The CLIP model used for encoding the text."},
                 ),
             },
-            "optional": dyn_inputs,
+            "optional": optional_inputs,
         }
 
     RETURN_TYPES = ("CONDITIONING", "STRING")
@@ -65,18 +90,24 @@ class PromptLM:
     )
     FUNCTION = "encode"
 
-    def encode(self, text: str, clip: Any, **kwargs):
-        # Collect all trigger words from dynamic inputs
+    def encode(
+        self,
+        text: str,
+        clip: Any,
+        seed: int | None = None,
+        **kwargs: Any,
+    ):
+        expanded_text = get_wildcard_service().expand_text(text, seed=seed)
+
         trigger_words = []
         for key, value in kwargs.items():
-            if key.startswith("trigger_words") and value:
+            if is_trigger_words_input(key) and value:
                 trigger_words.append(value)
 
-        # Build final prompt
         if trigger_words:
-            prompt = ", ".join(trigger_words + [text])
+            prompt = ", ".join(trigger_words + [expanded_text])
         else:
-            prompt = text
+            prompt = expanded_text
 
         from nodes import CLIPTextEncode  # type: ignore
 

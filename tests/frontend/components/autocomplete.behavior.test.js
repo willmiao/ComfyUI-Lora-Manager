@@ -1073,6 +1073,66 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith('/lm/custom-words/search?enriched=true&search=cat&limit=100');
   });
 
+  it('searches wildcard keys when using the /wild command', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: ['animals/cat'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wild cat');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    input.value = '/wild cat';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/lm/wildcards/search?search=cat&limit=100');
+    expect(autoComplete.searchType).toBe('wildcards');
+    expect(autoComplete.items).toEqual(['animals/cat']);
+  });
+
+  it('inserts wildcard references when accepting a /wild result', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/wild animals/cat');
+
+    const input = document.createElement('textarea');
+    input.value = '/wild animals/cat';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    autoComplete.searchType = 'wildcards';
+    autoComplete.activeCommand = { type: 'wildcard', label: 'Wildcards' };
+    autoComplete.items = ['animals/cat'];
+    autoComplete.selectedIndex = 0;
+
+    await autoComplete.insertSelection('animals/cat');
+
+    expect(input.value).toBe('__animals/cat__,');
+    expect(input.focus).toHaveBeenCalled();
+    expect(input.setSelectionRange).toHaveBeenCalled();
+  });
+
   it('invalidates stale autocomplete metadata and falls back to delimiter-based matching', async () => {
     settingGetMock.mockImplementation((key) => {
       if (key === 'loramanager.autocomplete_append_comma') {

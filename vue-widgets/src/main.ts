@@ -425,7 +425,7 @@ function shouldBypassAutocompleteWidgetMigration(
   }
 
   const originalWidgetsInputs = Object.values(inputDefs).filter((input: any) =>
-    widgetNames.has(input.name) || input.forceInput
+    widgetNames.has(input.name)
   )
 
   const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input: any) =>

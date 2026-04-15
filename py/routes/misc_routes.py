@@ -35,6 +35,7 @@ from .handlers.misc_handlers import (
     SupportersHandler,
     TrainedWordsHandler,
     UsageStatsHandler,
+    WildcardsHandler,
     build_service_registry_adapter,
 )
 from .handlers.base_model_handlers import BaseModelHandlerSet
@@ -130,6 +131,7 @@ class MiscRoutes:
             metadata_provider_factory=self._metadata_provider_factory,
         )
         custom_words = CustomWordsHandler()
+        wildcards = WildcardsHandler()
         supporters = SupportersHandler()
         doctor = DoctorHandler(settings_service=self._settings)
         example_workflows = ExampleWorkflowsHandler()
@@ -148,6 +150,7 @@ class MiscRoutes:
             backup=backup,
             filesystem=filesystem,
             custom_words=custom_words,
+            wildcards=wildcards,
             supporters=supporters,
             doctor=doctor,
             example_workflows=example_workflows,

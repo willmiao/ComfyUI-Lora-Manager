@@ -15557,7 +15557,7 @@ function shouldBypassAutocompleteWidgetMigration(node, widgetValues) {
     return false;
   }
   const originalWidgetsInputs = Object.values(inputDefs).filter(
-    (input) => widgetNames.has(input.name) || input.forceInput
+    (input) => widgetNames.has(input.name)
   );
   const widgetIndexHasForceInput = originalWidgetsInputs.flatMap(
     (input) => input.control_after_generate ? [!!input.forceInput, false] : [!!input.forceInput]
