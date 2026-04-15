@@ -126,6 +126,31 @@ describe('AutoComplete widget interactions', () => {
     expect(caretHelperInstance.getCursorOffset).toHaveBeenCalled();
   });
 
+  it('deduplicates duplicate-equivalent query variations before issuing requests', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, words: [] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('Example');
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'prompt', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = 'Example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(fetchApiMock).toHaveBeenCalledTimes(1);
+    expect(fetchApiMock).toHaveBeenCalledWith('/lm/custom-words/search?enriched=true&search=Example&limit=100');
+  });
+
   it('inserts the selected LoRA with usage tip strengths and restores focus', async () => {
     fetchApiMock.mockImplementation((url) => {
       if (url.includes('usage-tips-by-path')) {
@@ -242,6 +267,55 @@ describe('AutoComplete widget interactions', () => {
 
     expect(input.value).toBe('foo   bar, , baz  ,,   qux');
     expect(inputListener).not.toHaveBeenCalled();
+  });
+
+  it('shows the full command list when typing a single slash', async () => {
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', { showPreview: false, minChars: 1 });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const commandNames = autoComplete.items.map((item) => item.command);
+
+    expect(commandNames).toContain('/character');
+    expect(commandNames).toContain('/char');
+    expect(commandNames).toContain('/artist');
+    expect(commandNames).toContain('/general');
+    expect(commandNames).toContain('/copyright');
+    expect(commandNames).toContain('/meta');
+    expect(commandNames).toContain('/species');
+    expect(commandNames).toContain('/lore');
+    expect(commandNames).toContain('/emb');
+    expect(commandNames).toContain('/embedding');
+    expect(commandNames).toContain('/wild');
+    expect(commandNames).toContain('/wildcard');
+  });
+
+  it('renders every command item when slash opens the command list', async () => {
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'prompt', { showPreview: false, minChars: 1 });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const renderedCommands = autoComplete.contentContainer.querySelectorAll('.lm-autocomplete-command-name');
+
+    expect(renderedCommands).toHaveLength(autoComplete.items.length);
   });
 
   it('accepts the selected suggestion with Enter', async () => {
@@ -1095,6 +1169,7 @@ describe('AutoComplete widget interactions', () => {
       minChars: 1,
     });
 
+    fetchApiMock.mockClear();
     input.dispatchEvent(new Event('input', { bubbles: true }));
     await vi.runAllTimersAsync();
     await Promise.resolve();
@@ -1131,6 +1206,61 @@ describe('AutoComplete widget interactions', () => {
     expect(input.value).toBe('__animals/cat__,');
     expect(input.focus).toHaveBeenCalled();
     expect(input.setSelectionRange).toHaveBeenCalled();
+  });
+
+  it('does not reopen autocomplete on blur after inserting a wildcard literal', async () => {
+    const input = document.createElement('textarea');
+    input.value = '__flower__,';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('__flower__,');
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    const hideSpy = vi.spyOn(autoComplete, 'hide');
+    input.dispatchEvent(new Event('blur', { bubbles: true }));
+
+    expect(fetchApiMock).not.toHaveBeenCalled();
+    expect(hideSpy).toHaveBeenCalled();
+    expect(autoComplete.isVisible).toBe(false);
+  });
+
+  it('treats a command after a wildcard literal as the active token', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({
+        success: true,
+        words: [{ tag_name: 'flower_field', category: 4, post_count: 1234 }],
+      }),
+    });
+
+    const input = document.createElement('textarea');
+    input.value = '__flower__ /character f';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('__flower__ /character f');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(autoComplete.getSearchTerm(input.value)).toBe('/character f');
   });
 
   it('invalidates stale autocomplete metadata and falls back to delimiter-based matching', async () => {

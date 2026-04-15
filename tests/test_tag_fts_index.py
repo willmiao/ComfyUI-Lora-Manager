@@ -1,6 +1,7 @@
 """Tests for TagFTSIndex functionality."""
 
 import os
+import sqlite3
 import tempfile
 from typing import List
 
@@ -172,6 +173,40 @@ class TestTagFTSIndexSearch:
 
         assert len(results) >= 1
         assert all(r["category"] in [4, 11] for r in results)
+
+    def test_search_with_category_filter_uses_fts_first_plan(self, populated_fts):
+        """Category-filtered searches should start from FTS hits, not category scans."""
+        sql, params = populated_fts._build_search_statement(
+            query_lower="f",
+            fts_query="f*",
+            categories=[4, 11],
+            limit=20,
+            offset=0,
+        )
+
+        conn = sqlite3.connect(f"file:{populated_fts.get_database_path()}?mode=ro", uri=True)
+        try:
+            plan_rows = conn.execute(f"EXPLAIN QUERY PLAN {sql}", params).fetchall()
+        finally:
+            conn.close()
+
+        plan_details = [row[3] for row in plan_rows]
+        assert any(detail.startswith("SCAN tag_fts VIRTUAL TABLE INDEX") for detail in plan_details)
+        assert any("SEARCH t USING INTEGER PRIMARY KEY" in detail for detail in plan_details)
+        assert not any("SEARCH t USING INDEX idx_tags_category" in detail for detail in plan_details)
+
+    def test_search_statement_uses_post_count_as_tie_breaker(self, populated_fts):
+        """Search ranking should use popularity as a secondary sort key."""
+        sql, _ = populated_fts._build_search_statement(
+            query_lower="f",
+            fts_query="f*",
+            categories=[4, 11],
+            limit=20,
+            offset=0,
+        )
+
+        assert "ORDER BY is_tag_name_match DESC, t.post_count DESC, rank_score DESC" in sql
+        assert "LOG10" not in sql
 
     def test_search_with_category_filter_excludes_others(self, populated_fts):
         """Test that category filter excludes other categories."""

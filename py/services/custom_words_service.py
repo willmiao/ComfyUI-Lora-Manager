@@ -7,11 +7,13 @@ with category filtering and enriched results including post counts.
 from __future__ import annotations
 
 import logging
+import re
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
 
 
+_EMBEDDED_COMMAND_PATTERN = re.compile(r"\s/\w")
 class CustomWordsService:
     """Service for autocomplete via TagFTSIndex.
 
@@ -77,10 +79,47 @@ class CustomWordsService:
         Returns:
             List of dicts with tag_name, category, and post_count.
         """
+        normalized_search = search_term.strip()
+        if not normalized_search:
+            return []
+
+        # Prompt widgets should only send the active token, but guard against
+        # accidental full-prompt queries reaching the FTS path.
+        if (
+            "__" in normalized_search
+            or "," in normalized_search
+            or ">" in normalized_search
+            or "\n" in normalized_search
+            or "\r" in normalized_search
+            or _EMBEDDED_COMMAND_PATTERN.search(normalized_search)
+        ):
+            logger.debug("Skipping prompt-like custom words query: %s", normalized_search)
+            return []
+
+        logger.info(
+            "LM custom words service start search=%r categories=%s limit=%s offset=%s enriched=%s",
+            normalized_search,
+            categories,
+            limit,
+            offset,
+            enriched,
+        )
+
         tag_index = self._get_tag_index()
         if tag_index is not None:
+            logger.info(
+                "LM custom words service tag_index ready=%s indexing=%s",
+                getattr(tag_index, "is_ready", lambda: "unknown")(),
+                getattr(tag_index, "is_indexing", lambda: "unknown")(),
+            )
+
             results = tag_index.search(
-                search_term, categories=categories, limit=limit, offset=offset
+                normalized_search, categories=categories, limit=limit, offset=offset
+            )
+            logger.info(
+                "LM custom words service done search=%r result_count=%s",
+                normalized_search,
+                len(results),
             )
             return results
 

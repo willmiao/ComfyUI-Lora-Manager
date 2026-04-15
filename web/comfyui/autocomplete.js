@@ -366,6 +366,7 @@ class AutoComplete {
         this.previewTooltip = null;
         this.previewTooltipPromise = null;
         this.searchType = null;
+        this.suppressAutocompleteOnce = false;
 
         // Virtual scrolling state
         this.virtualScrollOffset = 0;
@@ -505,6 +506,11 @@ class AutoComplete {
     bindEvents() {
         // Handle input changes
         this.onInput = (e) => {
+            if (this.suppressAutocompleteOnce) {
+                this.suppressAutocompleteOnce = false;
+                this.hide();
+                return;
+            }
             this.handleInput(e.target.value);
         };
         this.inputElement.addEventListener('input', this.onInput);
@@ -521,6 +527,7 @@ class AutoComplete {
                 const formattedValue = formatAutocompleteTextOnBlur(this.inputElement.value);
                 if (formattedValue !== this.inputElement.value) {
                     this.inputElement.value = formattedValue;
+                    this.suppressAutocompleteOnce = true;
                     this.inputElement.dispatchEvent(new Event('input', { bubbles: true }));
                 }
             }
@@ -725,9 +732,24 @@ class AutoComplete {
         }
 
         const rawText = beforeCursor.substring(start);
-        const text = rawText.trim();
         const leadingWhitespaceLength = rawText.length - rawText.trimStart().length;
         const trimmedStart = start + leadingWhitespaceLength;
+        const text = rawText.trim();
+
+        if (this.modelType === 'prompt') {
+            const tokenRange = this._getPromptTokenRange(rawText, trimmedStart, caretPos);
+            if (tokenRange) {
+                return {
+                    start: tokenRange.start,
+                    trimmedStart: tokenRange.trimmedStart,
+                    end: caretPos,
+                    beforeCursor,
+                    rawText: tokenRange.rawText,
+                    text: tokenRange.text,
+                    tokenType: tokenRange.tokenType,
+                };
+            }
+        }
 
         return {
             start,
@@ -736,6 +758,73 @@ class AutoComplete {
             beforeCursor,
             rawText,
             text,
+        };
+    }
+
+    _getPromptTokenRange(rawText = '', trimmedStart = 0, caretPos = 0) {
+        const trimmedText = rawText.trim();
+        if (!trimmedText) {
+            return {
+                start: trimmedStart,
+                trimmedStart,
+                rawText: '',
+                text: '',
+                tokenType: 'empty',
+            };
+        }
+
+        const commandOffset = trimmedText.startsWith('/')
+            ? 0
+            : trimmedText.lastIndexOf(' /');
+        if (commandOffset !== -1) {
+            const normalizedCommandOffset = commandOffset === 0 ? 0 : commandOffset + 1;
+            const commandText = trimmedText.slice(normalizedCommandOffset);
+            const commandStart = trimmedStart + normalizedCommandOffset;
+            return {
+                start: commandStart,
+                trimmedStart: commandStart,
+                rawText: commandText,
+                text: commandText,
+                tokenType: commandText === '/' ? 'empty_command_trigger' : 'command',
+            };
+        }
+
+        const wildcardMatch = trimmedText.match(/(?:^|\s)(__[\w\s.\-+/*\\]+?__)$/);
+        if (wildcardMatch) {
+            const wildcardText = wildcardMatch[1];
+            const wildcardOffset = trimmedText.lastIndexOf(wildcardText);
+            const wildcardStart = trimmedStart + wildcardOffset;
+            return {
+                start: wildcardStart,
+                trimmedStart: wildcardStart,
+                rawText: wildcardText,
+                text: '',
+                tokenType: 'wildcard_literal',
+            };
+        }
+
+        const embeddingOffset = trimmedText.search(/(?:^|\s)emb:[^\s]*$/i);
+        if (embeddingOffset !== -1) {
+            const normalizedEmbeddingOffset = trimmedText.slice(embeddingOffset).startsWith(' ')
+                ? embeddingOffset + 1
+                : embeddingOffset;
+            const embeddingText = trimmedText.slice(normalizedEmbeddingOffset);
+            const embeddingStart = trimmedStart + normalizedEmbeddingOffset;
+            return {
+                start: embeddingStart,
+                trimmedStart: embeddingStart,
+                rawText: embeddingText,
+                text: embeddingText,
+                tokenType: 'embedding_literal',
+            };
+        }
+
+        return {
+            start: trimmedStart,
+            trimmedStart,
+            rawText,
+            text: trimmedText,
+            tokenType: 'tag_text',
         };
     }
 
@@ -890,6 +979,32 @@ class AutoComplete {
         return Array.from(variations).filter(v => v.length >= this.options.minChars);
     }
 
+    _normalizeQueryForRequest(term = '') {
+        return term.trim().toLowerCase();
+    }
+
+    _getQueriesToExecute(term = '') {
+        const queryVariations = this._generateQueryVariations(term);
+        const uniqueQueries = [];
+        const seen = new Set();
+
+        for (const query of queryVariations) {
+            const normalized = this._normalizeQueryForRequest(query);
+            if (!normalized || seen.has(normalized)) {
+                continue;
+            }
+
+            seen.add(normalized);
+            uniqueQueries.push(query);
+
+            if (uniqueQueries.length >= 4) {
+                break;
+            }
+        }
+
+        return uniqueQueries;
+    }
+
     /**
      * Get display text for an item (without extension for models)
      * @param {string|Object} item - Item to get display text from
@@ -1041,17 +1156,16 @@ class AutoComplete {
                 endpoint = `/lm/${this.modelType}/relative-paths`;
             }
 
-            // Generate multiple query variations for better matching
-            const queryVariations = this._generateQueryVariations(term);
+            // Generate multiple query variations for better matching, but avoid
+            // sending duplicate-equivalent requests that normalize to the same
+            // backend search term.
+            const queriesToExecute = this._getQueriesToExecute(term);
 
-            if (queryVariations.length === 0) {
+            if (queriesToExecute.length === 0) {
                 this.items = [];
                 this.hide();
                 return;
             }
-
-            // Limit the number of parallel queries to avoid overwhelming the server
-            const queriesToExecute = queryVariations.slice(0, 4);
 
             // Execute all queries in parallel
             const searchPromises = queriesToExecute.map(async (query) => {
@@ -1190,20 +1304,15 @@ class AutoComplete {
         
         const filterLower = filter.toLowerCase();
 
-        // Get unique commands (avoid duplicates like /char and /character)
-        const seenLabels = new Set();
         const commands = [];
 
         for (const [cmd, info] of Object.entries(TAG_COMMANDS)) {
-            if (seenLabels.has(info.label)) continue;
-
             // Filter out toggle commands that don't meet their condition
             if (info.type === 'toggle_setting' && info.condition) {
                 if (!info.condition()) continue;
             }
 
             if (!filter || cmd.slice(1).startsWith(filterLower)) {
-                seenLabels.add(info.label);
                 commands.push({ command: cmd, ...info });
             }
         }
@@ -1288,8 +1397,16 @@ class AutoComplete {
         }
 
         // Auto-select immediately so accept keys remain stable.
+        // In virtual-scroll mode, calling selectItem() before the dropdown is
+        // visible can see a zero-height container and incorrectly replace the
+        // full command list with a partially virtualized slice.
         if (this.items.length > 0) {
-            this.selectItem(0);
+            this.selectedIndex = 0;
+            if (this.contentContainer) {
+                this._applyItemSelection(0);
+            } else {
+                this.selectItem(0);
+            }
         }
         
         // Update virtual scroll height for virtual scrolling mode
@@ -1635,8 +1752,7 @@ class AutoComplete {
                 }
             }
 
-            const queryVariations = this._generateQueryVariations(this.currentSearchTerm);
-            const queriesToExecute = queryVariations.slice(0, 4);
+            const queriesToExecute = this._getQueriesToExecute(this.currentSearchTerm);
             const offset = this.items.length;
 
             // Execute all queries in parallel with offset

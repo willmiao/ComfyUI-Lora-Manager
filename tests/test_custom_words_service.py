@@ -94,6 +94,19 @@ class TestCustomWordsService:
         results = service.search_words("test")
         assert mock_tag_index.called
 
+    def test_search_words_skips_prompt_like_queries(self):
+        service = CustomWordsService.__new__(CustomWordsService)
+        mock_tag_index = MockTagFTSIndex()
+
+        def mock_get_index():
+            return mock_tag_index
+
+        service._get_tag_index = mock_get_index
+
+        results = service.search_words("__flower__ /character f")
+
+        assert results == []
+        assert mock_tag_index.called is False
 
 class MockTagFTSIndex:
     """Mock TagFTSIndex for testing."""
