@@ -56,6 +56,15 @@ Insomnia Art Designs, megakirbs, Brennok, 2018cfh, W+K+White, wackop, Takkan, Ca
 
 ## Release Notes
 
+### v1.0.3
+
+* **Custom Recipe Storage Path** - Added support for configuring a custom storage path for recipes, with migration support to move existing recipe data when changing locations.
+* **Wildcard Support for LM Text/Prompt Nodes** - The LM `Text` node and `Prompt` node now support the new `/wildcard` command, with runtime wildcard expansion and support for dynamic prompt syntax for more flexible prompt construction.
+* **System Diagnostics ("Doctor")** - Added a new diagnostics feature to help surface environment and setup issues more clearly.
+* **User-State Backup Support** - Added backup support for user state, with accompanying UI and clearer backup scope messaging in Settings.
+* **Downloaded Status Visibility** - Added clearer downloaded-status UX so previously downloaded model versions are easier to recognize.
+* **Autocomplete Performance Improvements** - Fixed autocomplete performance issues to reduce tag-search overhead and improve responsiveness.
+
 ### v1.0.2
 
 * **Model Download History Tracking** - LoRA Manager now keeps a history of downloaded model versions, allowing it to recognize whether a version has been downloaded before, even if it is no longer currently present in your library.
