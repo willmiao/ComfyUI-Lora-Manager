@@ -3,7 +3,11 @@ from __future__ import annotations
 from typing import Any
 import inspect
 
-from ..services.wildcard_service import get_wildcard_service, is_trigger_words_input
+from ..services.wildcard_service import (
+    contains_dynamic_syntax,
+    get_wildcard_service,
+    is_trigger_words_input,
+)
 
 
 class _PromptOptionalInputs:
@@ -89,6 +93,19 @@ class PromptLM:
         "A conditioning containing the embedded text used to guide the diffusion model.",
     )
     FUNCTION = "encode"
+
+    @classmethod
+    def IS_CHANGED(
+        cls,
+        text: str,
+        clip: Any | None = None,
+        seed: int | None = None,
+        **kwargs: Any,
+    ):
+        del clip, kwargs
+        if contains_dynamic_syntax(text) and seed is None:
+            return float("NaN")
+        return False
 
     def encode(
         self,

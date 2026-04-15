@@ -59,3 +59,26 @@ def test_text_lm_input_types_expose_input_only_seed():
     assert seed_type == "INT"
     assert seed_options["forceInput"] is True
     assert "wildcard generation" in seed_options["tooltip"]
+
+
+def test_text_lm_is_changed_forces_rerun_without_seed_when_text_is_dynamic():
+    result = TextLM.IS_CHANGED("__flower__", seed=None)
+
+    assert result != result
+
+
+def test_text_lm_is_changed_keeps_cache_for_seeded_or_static_text():
+    assert TextLM.IS_CHANGED("__flower__", seed=7) is False
+    assert TextLM.IS_CHANGED("plain text", seed=None) is False
+    assert TextLM.IS_CHANGED("{red|blue}", seed=7) is False
+
+
+def test_prompt_lm_is_changed_forces_rerun_without_seed_when_text_is_dynamic():
+    result = PromptLM.IS_CHANGED("{red|blue}", clip="clip", seed=None)
+
+    assert result != result
+
+
+def test_prompt_lm_is_changed_keeps_cache_for_seeded_or_static_text():
+    assert PromptLM.IS_CHANGED("__flower__", clip="clip", seed=11) is False
+    assert PromptLM.IS_CHANGED("plain text", clip="clip", seed=None) is False

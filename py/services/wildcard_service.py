@@ -31,6 +31,14 @@ def _is_numeric_string(value: str) -> bool:
     return bool(_NUMERIC_PATTERN.match(value))
 
 
+def contains_dynamic_syntax(text: str) -> bool:
+    """Return True when text contains supported wildcard or option syntax."""
+
+    return isinstance(text, str) and bool(
+        _WILDCARD_PATTERN.search(text) or _OPTION_PATTERN.search(text)
+    )
+
+
 def get_wildcards_dir(create: bool = False) -> str:
     """Return the managed wildcard directory inside the settings folder."""
 
@@ -397,6 +405,7 @@ def get_wildcard_service() -> WildcardService:
 
 __all__ = [
     "WildcardService",
+    "contains_dynamic_syntax",
     "get_wildcard_service",
     "get_wildcards_dir",
     "is_trigger_words_input",

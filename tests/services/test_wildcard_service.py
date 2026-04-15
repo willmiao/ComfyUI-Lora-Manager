@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 
-from py.services.wildcard_service import WildcardService
+from py.services.wildcard_service import WildcardService, contains_dynamic_syntax
 
 
 def _make_service(monkeypatch, tmp_path):
@@ -121,3 +121,10 @@ def test_expand_text_leaves_unresolved_reference_visible(monkeypatch, tmp_path):
     wildcards_dir.mkdir()
 
     assert service.expand_text("__missing__", seed=1) == "__missing__"
+
+
+def test_contains_dynamic_syntax_detects_wildcards_and_options():
+    assert contains_dynamic_syntax("plain text") is False
+    assert contains_dynamic_syntax("__flower__") is True
+    assert contains_dynamic_syntax("{red|blue}") is True
+    assert contains_dynamic_syntax("{2$$, $$red|blue|green}") is True

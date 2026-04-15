@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from ..services.wildcard_service import get_wildcard_service
+from ..services.wildcard_service import contains_dynamic_syntax, get_wildcard_service
 
 
 class TextLM:
@@ -40,6 +40,12 @@ class TextLM:
     RETURN_NAMES = ("STRING",)
     OUTPUT_TOOLTIPS = ("The text output.",)
     FUNCTION = "process"
+
+    @classmethod
+    def IS_CHANGED(cls, text: str, seed: int | None = None):
+        if contains_dynamic_syntax(text) and seed is None:
+            return float("NaN")
+        return False
 
     def process(self, text: str, seed: int | None = None):
         return (get_wildcard_service().expand_text(text, seed=seed),)
