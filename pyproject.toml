@@ -14,7 +14,8 @@ dependencies = [
     "natsort",
     "GitPython",
     "aiosqlite",
-    "platformdirs"
+    "platformdirs",
+    "pyyaml"
 ]
 
 [project.urls]

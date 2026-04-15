@@ -11,3 +11,4 @@ GitPython
 aiosqlite
 beautifulsoup4
 platformdirs
+pyyaml
