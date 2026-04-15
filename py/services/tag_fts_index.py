@@ -464,17 +464,6 @@ class TagFTSIndex:
             List of dictionaries with tag_name, category, post_count,
             rank_score, and optionally matched_alias.
         """
-        search_started_at = time.perf_counter()
-        logger.info(
-            "LM tag FTS search start query=%r categories=%s limit=%s offset=%s ready=%s indexing=%s",
-            query,
-            categories,
-            limit,
-            offset,
-            self.is_ready(),
-            self.is_indexing(),
-        )
-
         # Ensure index is ready (lazy initialization)
         if not self.ensure_ready():
             if not self._warned_not_ready:
@@ -489,18 +478,10 @@ class TagFTSIndex:
         if not fts_query:
             return []
 
-        logger.info(
-            "LM tag FTS search built query=%r fts_query=%r",
-            query,
-            fts_query,
-        )
-
         query_lower = query.lower().strip()
 
         try:
-            logger.info("LM tag FTS search waiting_for_lock query=%r", query)
             with self._lock:
-                logger.info("LM tag FTS search acquired_lock query=%r", query)
                 conn = self._connect(readonly=True)
                 try:
                     sql, params = self._build_search_statement(
@@ -510,21 +491,8 @@ class TagFTSIndex:
                         limit=limit,
                         offset=offset,
                     )
-
-                    logger.info(
-                        "LM tag FTS search executing_sql query=%r query_len=%s category_count=%s",
-                        query,
-                        len(query_lower),
-                        len(categories) if categories else 0,
-                    )
                     cursor = conn.execute(sql, params)
-                    logger.info("LM tag FTS search execute_returned query=%r", query)
                     rows = cursor.fetchall()
-                    logger.info(
-                        "LM tag FTS search fetchall_returned query=%r row_count=%s",
-                        query,
-                        len(rows),
-                    )
                     results = []
                     for row in rows:
                         result = {
@@ -548,13 +516,6 @@ class TagFTSIndex:
                             result["matched_alias"] = matched_alias
 
                         results.append(result)
-                    elapsed_ms = (time.perf_counter() - search_started_at) * 1000
-                    logger.info(
-                        "LM tag FTS search done query=%r result_count=%s elapsed_ms=%.2f",
-                        query,
-                        len(results),
-                        elapsed_ms,
-                    )
                     return results
                 finally:
                     conn.close()

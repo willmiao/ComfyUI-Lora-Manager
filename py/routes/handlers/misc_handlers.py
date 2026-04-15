@@ -2434,7 +2434,6 @@ class CustomWordsHandler:
                       even without category filtering.
         """
         try:
-            started_at = time.perf_counter()
             search_term = request.query.get("search", "")
             limit = int(request.query.get("limit", "20"))
             offset = max(0, int(request.query.get("offset", "0")))
@@ -2446,30 +2445,12 @@ class CustomWordsHandler:
             if category_param:
                 categories = self._parse_category_param(category_param)
 
-            logger.info(
-                "LM custom words request search=%r category_param=%r categories=%s limit=%s offset=%s enriched=%s",
-                search_term,
-                category_param,
-                categories,
-                limit,
-                offset,
-                enriched_param,
-            )
-
             results = self._service.search_words(
                 search_term,
                 limit,
                 offset=offset,
                 categories=categories,
                 enriched=enriched_param,
-            )
-
-            elapsed_ms = (time.perf_counter() - started_at) * 1000
-            logger.info(
-                "LM custom words response search=%r result_count=%s elapsed_ms=%.2f",
-                search_term,
-                len(results),
-                elapsed_ms,
             )
 
             return web.json_response({"success": True, "words": results})

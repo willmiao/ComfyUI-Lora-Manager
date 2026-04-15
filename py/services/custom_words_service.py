@@ -96,32 +96,11 @@ class CustomWordsService:
             logger.debug("Skipping prompt-like custom words query: %s", normalized_search)
             return []
 
-        logger.info(
-            "LM custom words service start search=%r categories=%s limit=%s offset=%s enriched=%s",
-            normalized_search,
-            categories,
-            limit,
-            offset,
-            enriched,
-        )
-
         tag_index = self._get_tag_index()
         if tag_index is not None:
-            logger.info(
-                "LM custom words service tag_index ready=%s indexing=%s",
-                getattr(tag_index, "is_ready", lambda: "unknown")(),
-                getattr(tag_index, "is_indexing", lambda: "unknown")(),
-            )
-
-            results = tag_index.search(
+            return tag_index.search(
                 normalized_search, categories=categories, limit=limit, offset=offset
             )
-            logger.info(
-                "LM custom words service done search=%r result_count=%s",
-                normalized_search,
-                len(results),
-            )
-            return results
 
         logger.debug("TagFTSIndex not available, returning empty results")
         return []
