@@ -372,6 +372,66 @@ describe('AutoComplete widget interactions', () => {
     expect(insertSelectionSpy).toHaveBeenCalledWith('loop');
   });
 
+  it('preserves manual ArrowDown selection when Tab accepts a suggestion', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('loop');
+
+    const input = document.createElement('textarea');
+    input.value = 'loop';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', { showPreview: false, minChars: 1 });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.items = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1000 },
+      { tag_name: 'loop', category: 0, post_count: 500 },
+    ];
+    autoComplete.currentSearchTerm = 'loo';
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true }));
+
+    expect(autoComplete.selectedIndex).toBe(1);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('loop');
+  });
+
+  it('preserves manual ArrowDown selection when Enter accepts a suggestion', async () => {
+    caretHelperInstance.getBeforeCursor.mockReturnValue('loop');
+
+    const input = document.createElement('textarea');
+    input.value = 'loop';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input,'prompt', { showPreview: false, minChars: 1 });
+
+    autoComplete.searchType = 'custom_words';
+    autoComplete.items = [
+      { tag_name: 'looking_to_the_side', category: 0, post_count: 1000 },
+      { tag_name: 'loop', category: 0, post_count: 500 },
+    ];
+    autoComplete.currentSearchTerm = 'loo';
+    autoComplete.selectedIndex = 0;
+    autoComplete.isVisible = true;
+    const insertSelectionSpy = vi.spyOn(autoComplete,'insertSelection').mockResolvedValue();
+
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true }));
+
+    expect(autoComplete.selectedIndex).toBe(1);
+    expect(insertSelectionSpy).toHaveBeenCalledWith('loop');
+  });
+
   it('accepts the first available suggestion with Tab even if delayed auto-selection has not happened yet', async () => {
     caretHelperInstance.getBeforeCursor.mockReturnValue('loop');
 

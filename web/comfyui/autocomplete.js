@@ -358,6 +358,7 @@ class AutoComplete {
 
         this.dropdown = null;
         this.selectedIndex = -1;
+        this.hasManualSelection = false;
         this.items = [];
         this.debounceTimer = null;
         this.isVisible = false;
@@ -1139,6 +1140,14 @@ class AutoComplete {
         return 0;
     }
 
+    _getAcceptSelectionIndex(searchTerm = '') {
+        if (this.hasManualSelection && this.selectedIndex >= 0 && this.selectedIndex < this.items.length) {
+            return this.selectedIndex;
+        }
+
+        return this._getPreferredSelectedIndex(searchTerm);
+    }
+
     async search(term = '', endpoint = null) {
         try {
             this.currentSearchTerm = term;
@@ -1339,6 +1348,7 @@ class AutoComplete {
             this.dropdown.innerHTML = '';
         }
         this.selectedIndex = -1;
+        this.hasManualSelection = false;
 
         this.items.forEach((item, index) => {
             const itemEl = document.createElement('div');
@@ -1374,7 +1384,7 @@ class AutoComplete {
             `;
 
             itemEl.addEventListener('mouseenter', () => {
-                this.selectItem(index);
+                this.selectItem(index, { manual: true });
             });
 
             itemEl.addEventListener('click', () => {
@@ -1401,6 +1411,7 @@ class AutoComplete {
         // full command list with a partially virtualized slice.
         if (this.items.length > 0) {
             this.selectedIndex = 0;
+            this.hasManualSelection = false;
             if (this.contentContainer) {
                 this._applyItemSelection(0);
             } else {
@@ -1443,6 +1454,7 @@ class AutoComplete {
 
     render() {
         this.selectedIndex = -1;
+        this.hasManualSelection = false;
 
         // Reset virtual scroll state
         this.virtualScrollOffset = 0;
@@ -1542,7 +1554,7 @@ class AutoComplete {
 
                 // Hover and selection handlers
                 item.addEventListener('mouseenter', () => {
-                    this.selectItem(index);
+                    this.selectItem(index, { manual: true });
                 });
 
                 item.addEventListener('mouseleave', () => {
@@ -1991,7 +2003,7 @@ class AutoComplete {
 
         // Hover and selection handlers
         item.addEventListener('mouseenter', () => {
-            this.selectItem(index);
+            this.selectItem(index, { manual: true });
         });
 
         item.addEventListener('mouseleave', () => {
@@ -2083,6 +2095,7 @@ class AutoComplete {
         this.dropdown.style.display = 'none';
         this.isVisible = false;
         this.selectedIndex = -1;
+        this.hasManualSelection = false;
         this.showingCommands = false;
         
         // Clear items to prevent stale data from being displayed
@@ -2121,7 +2134,7 @@ class AutoComplete {
         });
     }
     
-    selectItem(index) {
+    selectItem(index, { manual = false } = {}) {
         // Remove previous selection
         const container = this.options.enableVirtualScroll && this.contentContainer
             ? this.contentContainer
@@ -2135,6 +2148,7 @@ class AutoComplete {
         // Add new selection
         if (index >= 0 && index < this.items.length) {
             this.selectedIndex = index;
+            this.hasManualSelection = manual;
 
             // For virtual scrolling, we need to ensure the item is rendered
             if (this.options.enableVirtualScroll && this.scrollContainer) {
@@ -2228,15 +2242,15 @@ class AutoComplete {
                             this.loadMoreItems().then(() => {
                                 // After loading more, select the next item
                                 if (this.selectedIndex < this.items.length - 1) {
-                                    this.selectItem(this.selectedIndex + 1);
+                                    this.selectItem(this.selectedIndex + 1, { manual: true });
                                 }
                             });
                         }
                     } else {
-                        this.selectItem(this.selectedIndex + 1);
+                        this.selectItem(this.selectedIndex + 1, { manual: true });
                     }
                 } else {
-                    this.selectItem(Math.min(this.selectedIndex + 1, this.items.length - 1));
+                    this.selectItem(Math.min(this.selectedIndex + 1, this.items.length - 1), { manual: true });
                 }
                 break;
                 
@@ -2246,12 +2260,12 @@ class AutoComplete {
                     // For virtual scrolling, handle top boundary
                     if (this.selectedIndex <= 0) {
                         // Already at first item, ensure it's selected
-                        this.selectItem(0);
+                        this.selectItem(0, { manual: true });
                     } else {
-                        this.selectItem(this.selectedIndex - 1);
+                        this.selectItem(this.selectedIndex - 1, { manual: true });
                     }
                 } else {
-                    this.selectItem(Math.max(this.selectedIndex - 1, 0));
+                    this.selectItem(Math.max(this.selectedIndex - 1, 0), { manual: true });
                 }
                 break;
                 
@@ -2263,9 +2277,9 @@ class AutoComplete {
 
                 {
                     const liveSearchTerm = this._getLiveSearchTermForAcceptance();
-                    const preferredIndex = this._getPreferredSelectedIndex(liveSearchTerm);
-                    if (preferredIndex !== -1 && preferredIndex !== this.selectedIndex) {
-                        this.selectItem(preferredIndex);
+                    const acceptIndex = this._getAcceptSelectionIndex(liveSearchTerm);
+                    if (acceptIndex !== -1 && acceptIndex !== this.selectedIndex) {
+                        this.selectItem(acceptIndex);
                     }
                 }
 
