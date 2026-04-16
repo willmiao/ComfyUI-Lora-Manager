@@ -56,6 +56,11 @@ Insomnia Art Designs, megakirbs, Brennok, 2018cfh, W+K+White, wackop, Takkan, Ca
 
 ## Release Notes
 
+### v1.0.5
+
+* **Excluded Models Management View** - Added a new global-menu view for excluded models, with actions to restore them or delete them permanently.
+* **Fix for `401 Unauthorized` Downloads** - Fixed an issue where some `civitai.red` downloads could lose authentication during redirect and fail with `401 Unauthorized`.
+
 ### v1.0.4
 
 * **Civitai Domain Split Support** - Added support for `civitai.com` and `civitai.red` model URLs and recipe/image URLs across import, analysis, and download flows.
