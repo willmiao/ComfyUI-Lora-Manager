@@ -6,6 +6,8 @@ const {
   STORAGE_MODULE,
   CONSTANTS_MODULE,
   EVENT_MANAGER_MODULE,
+  BANNER_SERVICE_MODULE,
+  MODAL_MANAGER_MODULE,
   UI_HELPERS_MODULE,
 } = vi.hoisted(() => ({
   I18N_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
@@ -13,12 +15,16 @@ const {
   STORAGE_MODULE: new URL('../../../static/js/utils/storageHelpers.js', import.meta.url).pathname,
   CONSTANTS_MODULE: new URL('../../../static/js/utils/constants.js', import.meta.url).pathname,
   EVENT_MANAGER_MODULE: new URL('../../../static/js/utils/EventManager.js', import.meta.url).pathname,
+  BANNER_SERVICE_MODULE: new URL('../../../static/js/managers/BannerService.js', import.meta.url).pathname,
+  MODAL_MANAGER_MODULE: new URL('../../../static/js/managers/ModalManager.js', import.meta.url).pathname,
   UI_HELPERS_MODULE: new URL('../../../static/js/utils/uiHelpers.js', import.meta.url).pathname,
 }));
 
 const translateMock = vi.fn((key, _params, fallback) => fallback || key);
 const getStorageItemMock = vi.fn();
 const setStorageItemMock = vi.fn();
+const registerBannerMock = vi.fn();
+const showModalMock = vi.fn();
 
 vi.mock(I18N_MODULE, () => ({
   translate: translateMock,
@@ -50,6 +56,18 @@ vi.mock(EVENT_MANAGER_MODULE, () => ({
   },
 }));
 
+vi.mock(BANNER_SERVICE_MODULE, () => ({
+  bannerService: {
+    registerBanner: registerBannerMock,
+  },
+}));
+
+vi.mock(MODAL_MANAGER_MODULE, () => ({
+  modalManager: {
+    showModal: showModalMock,
+  },
+}));
+
 describe('UI helper DOM utilities', () => {
   beforeEach(() => {
     document.body.innerHTML = '';
@@ -57,6 +75,8 @@ describe('UI helper DOM utilities', () => {
     document.documentElement.removeAttribute('data-theme');
     getStorageItemMock.mockReset();
     setStorageItemMock.mockReset();
+    registerBannerMock.mockReset();
+    showModalMock.mockReset();
     translateMock.mockReset();
     globalThis.requestAnimationFrame = (cb) => cb();
   });
@@ -155,5 +175,59 @@ describe('UI helper DOM utilities', () => {
       '#1 Root Loader',
       '#2 (Character Subgraph) Nested Loader',
     ]);
+  });
+
+  it('opens Civitai links using the preferred host and registers the first-use banner once', async () => {
+    const openSpy = vi.fn();
+    globalThis.window.open = openSpy;
+
+    getStorageItemMock.mockImplementation((key, defaultValue) => {
+      if (key === 'civitai_host_info_banner_seen') {
+        return false;
+      }
+      return defaultValue;
+    });
+
+    const { openCivitaiByMetadata } = await import(UI_HELPERS_MODULE);
+
+    openCivitaiByMetadata(123, 456, 'Demo Model');
+
+    expect(setStorageItemMock).toHaveBeenCalledWith('civitai_host_info_banner_seen', true);
+    expect(registerBannerMock).toHaveBeenCalledTimes(1);
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://civitai.com/models/123?modelVersionId=456',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  });
+
+  it('uses the configured red host for fallback searches', async () => {
+    const openSpy = vi.fn();
+    globalThis.window.open = openSpy;
+
+    getStorageItemMock.mockImplementation((key, defaultValue) => {
+      if (key === 'civitai_host_info_banner_seen') {
+        return true;
+      }
+      return defaultValue;
+    });
+
+    const stateModule = await import(STATE_MODULE);
+    stateModule.state.global = {
+      settings: {
+        civitai_host: 'civitai.red',
+      },
+    };
+
+    const { openCivitaiByMetadata } = await import(UI_HELPERS_MODULE);
+
+    openCivitaiByMetadata(null, null, 'Demo Model');
+
+    expect(registerBannerMock).not.toHaveBeenCalled();
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://civitai.red/models?query=Demo%20Model',
+      '_blank',
+      'noopener,noreferrer'
+    );
   });
 });

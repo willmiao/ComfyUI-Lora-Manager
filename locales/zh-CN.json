@@ -250,6 +250,19 @@
         "civitaiApiKey": "Civitai API 密钥",
         "civitaiApiKeyPlaceholder": "请输入你的 Civitai API 密钥",
         "civitaiApiKeyHelp": "用于从 Civitai 下载模型时的身份验证",
+        "civitaiHost": {
+            "label": "Civitai 站点",
+            "help": "选择使用“在 Civitai 中查看”时默认打开的 Civitai 站点。",
+            "options": {
+                "com": "civitai.com（仅 SFW）",
+                "red": "civitai.red（无限制）"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "已提供 Civitai 站点偏好设置",
+            "content": "Civitai 现在使用 civitai.com 提供 SFW 内容，使用 civitai.red 提供无限制内容。你可以在设置中更改默认打开的站点。",
+            "openSettings": "打开设置"
+        },
         "openSettingsFileLocation": {
             "label": "打开设置文件夹",
             "tooltip": "打开包含 settings.json 的文件夹",

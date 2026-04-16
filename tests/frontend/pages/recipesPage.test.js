@@ -7,6 +7,8 @@ const getCurrentPageStateMock = vi.fn();
 const getSessionItemMock = vi.fn();
 const removeSessionItemMock = vi.fn();
 const getStorageItemMock = vi.fn();
+const setStorageItemMock = vi.fn();
+const removeStorageItemMock = vi.fn();
 const RecipeContextMenuMock = vi.fn();
 const refreshVirtualScrollMock = vi.fn();
 const refreshRecipesMock = vi.fn();
@@ -53,6 +55,8 @@ vi.mock('../../../static/js/utils/storageHelpers.js', () => ({
   getSessionItem: getSessionItemMock,
   removeSessionItem: removeSessionItemMock,
   getStorageItem: getStorageItemMock,
+  setStorageItem: setStorageItemMock,
+  removeStorageItem: removeStorageItemMock,
 }));
 
 vi.mock('../../../static/js/components/ContextMenu/index.js', () => ({

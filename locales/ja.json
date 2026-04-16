@@ -250,6 +250,19 @@
         "civitaiApiKey": "Civitai APIキー",
         "civitaiApiKeyPlaceholder": "Civitai APIキーを入力してください",
         "civitaiApiKeyHelp": "Civitaiからモデルをダウンロードするときの認証に使用されます",
+        "civitaiHost": {
+            "label": "Civitai ホスト",
+            "help": "「View on Civitai」リンクを使うときに開く Civitai サイトを選択します。",
+            "options": {
+                "com": "civitai.com（SFW のみ）",
+                "red": "civitai.red（制限なし）"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "Civitai ホスト設定を利用できます",
+            "content": "Civitai は現在、SFW コンテンツには civitai.com、制限なしコンテンツには civitai.red を使用しています。設定で既定で開くサイトを変更できます。",
+            "openSettings": "設定を開く"
+        },
         "openSettingsFileLocation": {
             "label": "設定フォルダーを開く",
             "tooltip": "settings.json を含むフォルダーを開きます",

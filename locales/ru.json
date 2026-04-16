@@ -250,6 +250,19 @@
         "civitaiApiKey": "Ключ API Civitai",
         "civitaiApiKeyPlaceholder": "Введите ваш ключ API Civitai",
         "civitaiApiKeyHelp": "Используется для аутентификации при загрузке моделей с Civitai",
+        "civitaiHost": {
+            "label": "Хост Civitai",
+            "help": "Выберите, какой сайт Civitai будет открываться при использовании ссылок «View on Civitai».",
+            "options": {
+                "com": "civitai.com (только SFW)",
+                "red": "civitai.red (без ограничений)"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "Доступна настройка хоста Civitai",
+            "content": "Теперь Civitai использует civitai.com для контента SFW и civitai.red для контента без ограничений. В настройках можно изменить, какой сайт открывать по умолчанию.",
+            "openSettings": "Открыть настройки"
+        },
         "openSettingsFileLocation": {
             "label": "Открыть папку настроек",
             "tooltip": "Открыть папку, содержащую settings.json",

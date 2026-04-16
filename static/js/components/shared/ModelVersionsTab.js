@@ -1,26 +1,21 @@
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { downloadManager } from '../../managers/DownloadManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { showToast } from '../../utils/uiHelpers.js';
+import { openCivitaiUrl, showToast } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
+import { buildCivitaiModelUrl } from '../../utils/civitaiUtils.js';
 import { formatFileSize } from './utils.js';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
 const PREVIEW_PLACEHOLDER_URL = '/loras_static/images/no-preview.png';
 
 function buildCivitaiVersionUrl(modelId, versionId) {
-    if (modelId == null || versionId == null) {
-        return null;
-    }
-    const normalizedModelId = String(modelId).trim();
-    const normalizedVersionId = String(versionId).trim();
-    if (!normalizedModelId || !normalizedVersionId) {
-        return null;
-    }
-    const encodedModelId = encodeURIComponent(normalizedModelId);
-    const encodedVersionId = encodeURIComponent(normalizedVersionId);
-    return `https://civitai.com/models/${encodedModelId}?modelVersionId=${encodedVersionId}`;
+    return buildCivitaiModelUrl(
+        modelId,
+        versionId,
+        state?.global?.settings?.civitai_host
+    );
 }
 
 function escapeHtml(value) {
@@ -1352,6 +1347,13 @@ export function initVersionsTab({
         }
 
         const row = event.target.closest('.model-version-row.is-clickable');
+        const civitaiLink = event.target.closest('.version-civitai-link');
+        if (civitaiLink) {
+            event.preventDefault();
+            openCivitaiUrl(civitaiLink.href);
+            return;
+        }
+
         if (!row) {
             return;
         }
@@ -1371,7 +1373,7 @@ export function initVersionsTab({
             return;
         }
         event.preventDefault();
-        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+        openCivitaiUrl(targetUrl);
     });
 
     // Listen for extension-triggered refresh requests

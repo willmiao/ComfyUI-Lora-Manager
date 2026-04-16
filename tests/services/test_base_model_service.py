@@ -886,3 +886,111 @@ async def test_format_response_defaults_update_flag_false(service_cls, extra_fie
 
     assert "update_available" in formatted
     assert formatted["update_available"] is False
+
+
+@pytest.mark.asyncio
+async def test_get_model_civitai_url_uses_default_host():
+    raw_data = [
+        {
+            "file_name": "demo.safetensors",
+            "civitai": {"modelId": 123, "id": 456},
+        }
+    ]
+
+    class CacheStub:
+        def __init__(self, raw_data):
+            self.raw_data = raw_data
+
+    class ScannerStub:
+        def __init__(self, cache):
+            self._cache = cache
+
+        async def get_cached_data(self, *_, **__):
+            return self._cache
+
+    service = DummyService(
+        model_type="stub",
+        scanner=ScannerStub(CacheStub(raw_data)),
+        metadata_class=BaseModelMetadata,
+        settings_provider=StubSettings({}),
+    )
+
+    result = await service.get_model_civitai_url("demo.safetensors")
+
+    assert result == {
+        "civitai_url": "https://civitai.com/models/123?modelVersionId=456",
+        "model_id": "123",
+        "version_id": "456",
+    }
+
+
+@pytest.mark.asyncio
+async def test_get_model_civitai_url_uses_configured_host():
+    raw_data = [
+        {
+            "file_name": "demo.safetensors",
+            "civitai": {"modelId": 123, "id": 456},
+        }
+    ]
+
+    class CacheStub:
+        def __init__(self, raw_data):
+            self.raw_data = raw_data
+
+    class ScannerStub:
+        def __init__(self, cache):
+            self._cache = cache
+
+        async def get_cached_data(self, *_, **__):
+            return self._cache
+
+    service = DummyService(
+        model_type="stub",
+        scanner=ScannerStub(CacheStub(raw_data)),
+        metadata_class=BaseModelMetadata,
+        settings_provider=StubSettings({"civitai_host": "civitai.red"}),
+    )
+
+    result = await service.get_model_civitai_url("demo.safetensors")
+
+    assert result == {
+        "civitai_url": "https://civitai.red/models/123?modelVersionId=456",
+        "model_id": "123",
+        "version_id": "456",
+    }
+
+
+@pytest.mark.asyncio
+async def test_get_model_civitai_url_falls_back_when_host_setting_is_not_a_string():
+    raw_data = [
+        {
+            "file_name": "demo.safetensors",
+            "civitai": {"modelId": 123, "id": 456},
+        }
+    ]
+
+    class CacheStub:
+        def __init__(self, raw_data):
+            self.raw_data = raw_data
+
+    class ScannerStub:
+        def __init__(self, cache):
+            self._cache = cache
+
+        async def get_cached_data(self, *_, **__):
+            return self._cache
+
+    service = DummyService(
+        model_type="stub",
+        scanner=ScannerStub(CacheStub(raw_data)),
+        metadata_class=BaseModelMetadata,
+        settings_provider=StubSettings({"civitai_host": True}),
+    )
+
+    result = await service.get_model_civitai_url("demo.safetensors")
+
+    assert result == {
+        "civitai_url": "https://civitai.com/models/123?modelVersionId=456",
+        "model_id": "123",
+        "version_id": "456",
+    }

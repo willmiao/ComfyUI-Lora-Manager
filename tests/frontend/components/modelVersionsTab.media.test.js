@@ -26,6 +26,7 @@ vi.mock(DOWNLOAD_MANAGER_MODULE, () => ({
 
 vi.mock(UI_HELPERS_MODULE, () => ({
   showToast: vi.fn(),
+  openCivitaiUrl: vi.fn(),
 }));
 
 const stateMock = {

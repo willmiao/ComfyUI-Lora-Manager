@@ -8,6 +8,7 @@ from urllib.parse import parse_qs, urlparse, urlunparse
 
 
 _SUPPORTED_CIVITAI_PAGE_HOSTS = frozenset({"civitai.com", "civitai.red"})
+DEFAULT_CIVITAI_PAGE_HOST = "civitai.com"
 _DEFAULT_ALLOW_COMMERCIAL_USE: Sequence[str] = ("Sell",)
 _LICENSE_DEFAULTS: Dict[str, Any] = {
     "allowNoCredit": True,
@@ -25,6 +26,44 @@ def is_supported_civitai_page_host(hostname: str | None) -> bool:
     if not hostname:
         return False
     return hostname.lower() in _SUPPORTED_CIVITAI_PAGE_HOSTS
+
+
+def normalize_civitai_page_host(hostname: str | None) -> str:
+    """Return a supported Civitai page host or the default host."""
+
+    if not isinstance(hostname, str):
+        return DEFAULT_CIVITAI_PAGE_HOST
+
+    normalized = hostname.strip().lower()
+    if is_supported_civitai_page_host(normalized):
+        return normalized
+
+    return DEFAULT_CIVITAI_PAGE_HOST
+
+
+def build_civitai_model_page_url(
+    model_id: str | int | None,
+    version_id: str | int | None = None,
+    *,
+    host: str | None = None,
+) -> str | None:
+    """Build a Civitai model or model-version page URL."""
+
+    normalized_host = normalize_civitai_page_host(host)
+    normalized_model_id = str(model_id).strip() if model_id is not None else ""
+    normalized_version_id = str(version_id).strip() if version_id is not None else ""
+
+    if normalized_model_id:
+        path = f"/models/{normalized_model_id}"
+        query = f"modelVersionId={normalized_version_id}" if normalized_version_id else ""
+        return urlunparse(("https", normalized_host, path, "", query, ""))
+
+    if normalized_version_id:
+        return urlunparse(
+            ("https", normalized_host, f"/model-versions/{normalized_version_id}", "", "", "")
+        )
+
+    return None
 
 
 def _parse_supported_civitai_page_url(url: str | None):

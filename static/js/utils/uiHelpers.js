@@ -3,6 +3,66 @@ import { state, getCurrentPageState } from '../state/index.js';
 import { getStorageItem, setStorageItem } from './storageHelpers.js';
 import { NODE_TYPE_ICONS, DEFAULT_NODE_COLOR } from './constants.js';
 import { eventManager } from './EventManager.js';
+import { bannerService } from '../managers/BannerService.js';
+import { modalManager } from '../managers/ModalManager.js';
+import { buildCivitaiUrl, normalizeCivitaiPageHost } from './civitaiUtils.js';
+
+const CIVITAI_HOST_INFO_BANNER_ID = 'civitai-host-preference';
+const CIVITAI_HOST_INFO_BANNER_SEEN_KEY = 'civitai_host_info_banner_seen';
+
+function getPreferredCivitaiHost() {
+  return normalizeCivitaiPageHost(state?.global?.settings?.civitai_host);
+}
+
+function maybeRegisterCivitaiHostInfoBanner() {
+  if (getStorageItem(CIVITAI_HOST_INFO_BANNER_SEEN_KEY, false)) {
+    return;
+  }
+
+  setStorageItem(CIVITAI_HOST_INFO_BANNER_SEEN_KEY, true);
+
+  bannerService.registerBanner(CIVITAI_HOST_INFO_BANNER_ID, {
+    id: CIVITAI_HOST_INFO_BANNER_ID,
+    title: translate(
+      'settings.civitaiHostBanner.title',
+      {},
+      'Civitai host preference available'
+    ),
+    content: translate(
+      'settings.civitaiHostBanner.content',
+      {},
+      'Civitai now uses civitai.com for SFW content and civitai.red for unrestricted content. You can change which site opens by default in Settings.'
+    ),
+    actions: [
+      {
+        text: translate('settings.civitaiHostBanner.openSettings', {}, 'Open Settings'),
+        icon: 'fas fa-cog',
+        action: 'open-settings-modal',
+        type: 'primary',
+      },
+    ],
+    dismissible: true,
+    priority: 70,
+    onRegister: (bannerElement) => {
+      const button = bannerElement.querySelector('.banner-action[data-action="open-settings-modal"]');
+      if (button) {
+        button.addEventListener('click', (event) => {
+          event.preventDefault();
+          modalManager.showModal('settingsModal');
+        });
+      }
+    },
+  });
+}
+
+export function openCivitaiUrl(url) {
+  if (!url) {
+    return null;
+  }
+
+  maybeRegisterCivitaiHostInfoBanner();
+  return window.open(url, '_blank', 'noopener,noreferrer');
+}
 
 /**
  * Utility function to copy text to clipboard with fallback for older browsers
@@ -184,14 +244,15 @@ function filterByFolder(folderPath) {
 }
 
 export function openCivitaiByMetadata(civitaiId, versionId, modelName = null) {
-  if (versionId) {
-    // Use model-versions endpoint which auto-redirects to correct model page
-    window.open(`https://civitai.com/model-versions/${versionId}`, '_blank');
-  } else if (civitaiId) {
-    window.open(`https://civitai.com/models/${civitaiId}`, '_blank');
-  } else if (modelName) {
-    // Fallback: search by name
-    window.open(`https://civitai.com/models?query=${encodeURIComponent(modelName)}`, '_blank');
+  const url = buildCivitaiUrl({
+    modelId: civitaiId,
+    versionId,
+    modelName,
+    host: getPreferredCivitaiHost(),
+  });
+
+  if (url) {
+    openCivitaiUrl(url);
   }
 }
 

@@ -250,6 +250,19 @@
         "civitaiApiKey": "מפתח API של Civitai",
         "civitaiApiKeyPlaceholder": "הזן את מפתח ה-API שלך מ-Civitai",
         "civitaiApiKeyHelp": "משמש לאימות בעת הורדת מודלים מ-Civitai",
+        "civitaiHost": {
+            "label": "מארח Civitai",
+            "help": "בחר איזה אתר של Civitai ייפתח בעת שימוש בקישורי \"View on Civitai\".",
+            "options": {
+                "com": "civitai.com (SFW בלבד)",
+                "red": "civitai.red (ללא הגבלות)"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "העדפת מארח Civitai זמינה",
+            "content": "Civitai משתמש כעת ב-civitai.com עבור תוכן SFW וב-civitai.red עבור תוכן ללא הגבלות. ניתן לשנות בהגדרות איזה אתר ייפתח כברירת מחדל.",
+            "openSettings": "פתח הגדרות"
+        },
         "openSettingsFileLocation": {
             "label": "פתח תיקיית הגדרות",
             "tooltip": "פתח את התיקייה שמכילה את ‎settings.json",

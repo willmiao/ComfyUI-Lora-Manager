@@ -1,5 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
+    DEFAULT_CIVITAI_PAGE_HOST,
+    normalizeCivitaiPageHost,
+    buildCivitaiModelUrl,
+    buildCivitaiSearchUrl,
+    buildCivitaiUrl,
     rewriteCivitaiUrl,
     getOptimizedUrl,
     getShowcaseUrl,
@@ -16,6 +21,47 @@ describe('civitaiUtils', () => {
         it('should have correct mode values', () => {
             expect(OptimizationMode.SHOWCASE).toBe('showcase');
             expect(OptimizationMode.THUMBNAIL).toBe('thumbnail');
+        });
+    });
+
+    describe('Civitai page URL helpers', () => {
+        it('normalizes invalid hosts to the default page host', () => {
+            expect(DEFAULT_CIVITAI_PAGE_HOST).toBe('civitai.com');
+            expect(normalizeCivitaiPageHost('civitai.red')).toBe('civitai.red');
+            expect(normalizeCivitaiPageHost(' CIVITAI.COM ')).toBe('civitai.com');
+            expect(normalizeCivitaiPageHost('example.com')).toBe('civitai.com');
+            expect(normalizeCivitaiPageHost(null)).toBe('civitai.com');
+        });
+
+        it('builds model URLs using the configured host', () => {
+            expect(buildCivitaiModelUrl(123, 456, 'civitai.red')).toBe(
+                'https://civitai.red/models/123?modelVersionId=456'
+            );
+            expect(buildCivitaiModelUrl(123, null, 'civitai.com')).toBe(
+                'https://civitai.com/models/123'
+            );
+        });
+
+        it('falls back to the model-versions endpoint when only a version id is available', () => {
+            expect(buildCivitaiModelUrl(null, 456, 'civitai.red')).toBe(
+                'https://civitai.red/model-versions/456'
+            );
+        });
+
+        it('builds search URLs using the configured host', () => {
+            expect(buildCivitaiSearchUrl('demo model', 'civitai.red')).toBe(
+                'https://civitai.red/models?query=demo%20model'
+            );
+            expect(buildCivitaiSearchUrl('', 'civitai.red')).toBe(null);
+        });
+
+        it('prefers model/version URLs and falls back to search URLs', () => {
+            expect(buildCivitaiUrl({ modelId: 321, versionId: 654, host: 'civitai.red' })).toBe(
+                'https://civitai.red/models/321?modelVersionId=654'
+            );
+            expect(buildCivitaiUrl({ modelName: 'search me', host: 'civitai.red' })).toBe(
+                'https://civitai.red/models?query=search%20me'
+            );
         });
     });
 

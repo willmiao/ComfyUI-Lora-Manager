@@ -802,6 +802,11 @@ export class SettingsManager {
             usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
         }
 
+        const civitaiHostSelect = document.getElementById('civitaiHost');
+        if (civitaiHostSelect) {
+            civitaiHostSelect.value = state.global.settings.civitai_host || 'civitai.com';
+        }
+
         const recipesPathInput = document.getElementById('recipesPath');
         if (recipesPathInput) {
             recipesPathInput.value = state.global.settings.recipes_path || '';

@@ -13,10 +13,63 @@ export const OptimizationMode = {
     THUMBNAIL: 'thumbnail',
 };
 
+export const DEFAULT_CIVITAI_PAGE_HOST = 'civitai.com';
+
 const SUPPORTED_CIVITAI_PAGE_HOSTS = new Set([
     'civitai.com',
     'civitai.red',
 ]);
+
+export function normalizeCivitaiPageHost(hostname) {
+    if (!hostname || typeof hostname !== 'string') {
+        return DEFAULT_CIVITAI_PAGE_HOST;
+    }
+
+    const normalized = hostname.trim().toLowerCase();
+    if (SUPPORTED_CIVITAI_PAGE_HOSTS.has(normalized)) {
+        return normalized;
+    }
+
+    return DEFAULT_CIVITAI_PAGE_HOST;
+}
+
+export function buildCivitaiModelUrl(modelId, versionId = null, host = DEFAULT_CIVITAI_PAGE_HOST) {
+    const normalizedHost = normalizeCivitaiPageHost(host);
+    const normalizedModelId = modelId == null ? '' : String(modelId).trim();
+    const normalizedVersionId = versionId == null ? '' : String(versionId).trim();
+
+    if (normalizedModelId) {
+        const encodedModelId = encodeURIComponent(normalizedModelId);
+        let url = `https://${normalizedHost}/models/${encodedModelId}`;
+        if (normalizedVersionId) {
+            url += `?modelVersionId=${encodeURIComponent(normalizedVersionId)}`;
+        }
+        return url;
+    }
+
+    if (normalizedVersionId) {
+        return `https://${normalizedHost}/model-versions/${encodeURIComponent(normalizedVersionId)}`;
+    }
+
+    return null;
+}
+
+export function buildCivitaiSearchUrl(query, host = DEFAULT_CIVITAI_PAGE_HOST) {
+    const normalizedQuery = query == null ? '' : String(query).trim();
+    if (!normalizedQuery) {
+        return null;
+    }
+
+    const normalizedHost = normalizeCivitaiPageHost(host);
+    return `https://${normalizedHost}/models?query=${encodeURIComponent(normalizedQuery)}`;
+}
+
+export function buildCivitaiUrl({ modelId = null, versionId = null, modelName = null, host = DEFAULT_CIVITAI_PAGE_HOST } = {}) {
+    return (
+        buildCivitaiModelUrl(modelId, versionId, host)
+        || buildCivitaiSearchUrl(modelName, host)
+    );
+}
 
 /**
  * Rewrite Civitai preview URLs to use optimized renditions.

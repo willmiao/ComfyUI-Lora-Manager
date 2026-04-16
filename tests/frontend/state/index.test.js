@@ -14,6 +14,7 @@ describe('state module', () => {
 
     expect(defaultSettings).toMatchObject({
       civitai_api_key: '',
+      civitai_host: 'civitai.com',
       language: 'en',
       blur_mature_content: true,
       mature_blur_level: 'R'

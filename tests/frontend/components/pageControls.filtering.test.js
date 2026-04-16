@@ -12,6 +12,7 @@ const apiClientMock = {
 };
 
 const showToastMock = vi.fn();
+const openCivitaiByMetadataMock = vi.fn();
 const updatePanelPositionsMock = vi.fn();
 const downloadManagerMock = {
   showDownloadModal: vi.fn(),
@@ -40,6 +41,7 @@ vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
 
 vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
   showToast: showToastMock,
+  openCivitaiByMetadata: openCivitaiByMetadataMock,
   updatePanelPositions: updatePanelPositionsMock,
 }));
 

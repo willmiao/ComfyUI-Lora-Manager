@@ -114,6 +114,21 @@
                             </div>
                         </div>
 
+                        <div class="setting-item">
+                            <div class="setting-row">
+                                <div class="setting-info">
+                                    <label for="civitaiHost">{{ t('settings.civitaiHost.label') }}</label>
+                                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.civitaiHost.help') }}"></i>
+                                </div>
+                                <div class="setting-control select-control">
+                                    <select id="civitaiHost" onchange="settingsManager.saveSelectSetting('civitaiHost', 'civitai_host')">
+                                        <option value="civitai.com">{{ t('settings.civitaiHost.options.com') }}</option>
+                                        <option value="civitai.red">{{ t('settings.civitaiHost.options.red') }}</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Backup -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">

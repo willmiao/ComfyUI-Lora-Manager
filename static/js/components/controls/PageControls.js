@@ -1,7 +1,7 @@
 // PageControls.js - Manages controls for both LoRAs and Checkpoints pages
 import { state, getCurrentPageState, setCurrentPageType } from '../../state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
-import { showToast } from '../../utils/uiHelpers.js';
+import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
 
@@ -353,18 +353,8 @@ export class PageControls {
         const metaData = JSON.parse(card.dataset.meta);
         const civitaiId = metaData.modelId;
         const versionId = metaData.id;
-        
-        // Build URL
-        if (civitaiId) {
-            let url = `https://civitai.com/models/${civitaiId}`;
-            if (versionId) {
-                url += `?modelVersionId=${versionId}`;
-            }
-            window.open(url, '_blank');
-        } else {
-            // If no ID, try searching by name
-            window.open(`https://civitai.com/models?query=${encodeURIComponent(modelName)}`, '_blank');
-        }
+
+        openCivitaiByMetadata(civitaiId, versionId, modelName);
     }
     
     /**

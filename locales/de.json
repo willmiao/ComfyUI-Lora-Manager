@@ -250,6 +250,19 @@
         "civitaiApiKey": "Civitai API Key",
         "civitaiApiKeyPlaceholder": "Geben Sie Ihren Civitai API Key ein",
         "civitaiApiKeyHelp": "Wird für die Authentifizierung beim Herunterladen von Modellen von Civitai verwendet",
+        "civitaiHost": {
+            "label": "Civitai-Host",
+            "help": "Wählen Sie aus, welche Civitai-Seite geöffnet wird, wenn Sie „View on Civitai“-Links verwenden.",
+            "options": {
+                "com": "civitai.com (nur SFW)",
+                "red": "civitai.red (uneingeschränkt)"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "Civitai-Host-Einstellung verfügbar",
+            "content": "Civitai verwendet jetzt civitai.com für SFW-Inhalte und civitai.red für uneingeschränkte Inhalte. In den Einstellungen können Sie ändern, welche Seite standardmäßig geöffnet wird.",
+            "openSettings": "Einstellungen öffnen"
+        },
         "openSettingsFileLocation": {
             "label": "Einstellungsordner öffnen",
             "tooltip": "Den Ordner mit der settings.json öffnen",

@@ -250,6 +250,19 @@
         "civitaiApiKey": "Civitai API Key",
         "civitaiApiKeyPlaceholder": "Enter your Civitai API key",
         "civitaiApiKeyHelp": "Used for authentication when downloading models from Civitai",
+        "civitaiHost": {
+            "label": "Civitai host",
+            "help": "Choose which Civitai site opens when using View on Civitai links.",
+            "options": {
+                "com": "civitai.com (SFW)",
+                "red": "civitai.red (unrestricted)"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "Civitai host preference available",
+            "content": "Civitai now uses civitai.com for SFW content and civitai.red for unrestricted content. You can change which site opens by default in Settings.",
+            "openSettings": "Open Settings"
+        },
         "openSettingsFileLocation": {
             "label": "Open settings folder",
             "tooltip": "Open folder containing settings.json",

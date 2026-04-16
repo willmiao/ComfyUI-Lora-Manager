@@ -250,6 +250,19 @@
         "civitaiApiKey": "Clave API de Civitai",
         "civitaiApiKeyPlaceholder": "Introduce tu clave API de Civitai",
         "civitaiApiKeyHelp": "Utilizada para autenticación al descargar modelos de Civitai",
+        "civitaiHost": {
+            "label": "Host de Civitai",
+            "help": "Elige qué sitio de Civitai se abre al usar los enlaces de \"View on Civitai\".",
+            "options": {
+                "com": "civitai.com (solo SFW)",
+                "red": "civitai.red (sin restricciones)"
+            }
+        },
+        "civitaiHostBanner": {
+            "title": "Preferencia de host de Civitai disponible",
+            "content": "Civitai ahora usa civitai.com para contenido SFW y civitai.red para contenido sin restricciones. Puedes cambiar en Ajustes qué sitio se abre por defecto.",
+            "openSettings": "Abrir ajustes"
+        },
         "openSettingsFileLocation": {
             "label": "Abrir carpeta de ajustes",
             "tooltip": "Abrir la carpeta que contiene settings.json",

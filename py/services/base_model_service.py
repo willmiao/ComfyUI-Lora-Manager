@@ -20,6 +20,7 @@ from .model_query import (
     resolve_sub_type,
 )
 from .settings_manager import get_settings_manager
+from ..utils.civitai_utils import build_civitai_model_page_url
 
 logger = logging.getLogger(__name__)
 
@@ -774,9 +775,12 @@ class BaseModelService(ABC):
                 version_id = civitai_data.get("id")
 
                 if model_id:
-                    civitai_url = f"https://civitai.com/models/{model_id}"
-                    if version_id:
-                        civitai_url += f"?modelVersionId={version_id}"
+                    civitai_host = self.settings.get("civitai_host", "civitai.com")
+                    civitai_url = build_civitai_model_page_url(
+                        model_id,
+                        version_id,
+                        host=civitai_host,
+                    )
 
                     return {
                         "civitai_url": civitai_url,
