@@ -274,7 +274,9 @@ class StubCivitaiClient:
     def __init__(self) -> None:
         self.image_info: Dict[str, Any] = {}
 
-    async def get_image_info(self, image_id: str) -> Optional[Dict[str, Any]]:
+    async def get_image_info(
+        self, image_id: str, source_url: str | None = None
+    ) -> Optional[Dict[str, Any]]:
         return self.image_info.get(image_id)
 
 
@@ -666,6 +668,25 @@ async def test_import_remote_recipe_supports_civitai_red(monkeypatch, tmp_path: 
         assert payload["success"] is True
         assert harness.downloader.urls
         assert "width=450,optimized=true" in harness.downloader.urls[0]
+
+
+async def test_analyze_remote_image_supports_civitai_red(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis.result = SimpleNamespace(payload={"loras": []}, status=200)
+
+        response = await harness.client.post(
+            "/api/lm/recipes/analyze-image",
+            json={"url": "https://civitai.red/images/126920345"},
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload == {"loras": []}
+        assert harness.analysis.remote_calls == [
+            "https://civitai.red/images/126920345"
+        ]
 
 
 async def test_analyze_uploaded_image_error_path(monkeypatch, tmp_path: Path) -> None:

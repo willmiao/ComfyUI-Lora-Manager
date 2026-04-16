@@ -9,7 +9,7 @@ from .model_metadata_provider import (
 )
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
-from ..utils.civitai_utils import resolve_license_payload
+from ..utils.civitai_utils import extract_civitai_page_host, resolve_license_payload
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +40,23 @@ class CivitaiClient:
         self._initialized = True
 
         self.base_url = "https://civitai.com/api/v1"
+        self._image_info_api_hosts = ("civitai.com", "civitai.red")
+
+    def _build_image_info_url(self, host: str, image_id: str) -> str:
+        return f"https://{host}/api/v1/images?imageId={image_id}&nsfw=X"
+
+    def _resolve_image_info_hosts(self, source_url: str | None) -> List[str]:
+        preferred_host = extract_civitai_page_host(source_url)
+        if preferred_host in self._image_info_api_hosts:
+            return [
+                preferred_host,
+                *[
+                    host
+                    for host in self._image_info_api_hosts
+                    if host != preferred_host
+                ],
+            ]
+        return list(self._image_info_api_hosts)
 
     async def _make_request(
         self,
@@ -479,48 +496,106 @@ class CivitaiClient:
             logger.error(error_msg)
             return None, error_msg
 
-    async def get_image_info(self, image_id: str) -> Optional[Dict]:
+    async def get_image_info(
+        self, image_id: str, source_url: str | None = None
+    ) -> Optional[Dict]:
         """Fetch image information from Civitai API
 
         Args:
             image_id: The Civitai image ID
+            source_url: Optional original image page URL used to prioritize
+                ``civitai.com`` vs ``civitai.red`` image lookups.
 
         Returns:
             Optional[Dict]: The image data or None if not found
         """
         try:
-            url = f"{self.base_url}/images?imageId={image_id}&nsfw=X"
             requested_id = int(image_id)
+            candidate_hosts = self._resolve_image_info_hosts(source_url)
+            last_error: Any = None
+            logger.debug(
+                "Fetching image info for ID %s with host order %s",
+                image_id,
+                candidate_hosts,
+            )
 
-            logger.debug(f"Fetching image info for ID: {image_id}")
-            success, result = await self._make_request("GET", url, use_auth=True)
+            for index, host in enumerate(candidate_hosts):
+                url = self._build_image_info_url(host, image_id)
+                success, result = await self._make_request("GET", url, use_auth=True)
 
-            if success:
-                if result and "items" in result and isinstance(result["items"], list):
-                    items = result["items"]
+                if not success:
+                    last_error = result
+                    if index < len(candidate_hosts) - 1:
+                        logger.warning(
+                            "Failed to fetch image info for ID %s from %s: %s. Trying fallback host.",
+                            image_id,
+                            host,
+                            result,
+                        )
+                        continue
 
-                    # First, try to find the item with matching ID
-                    for item in items:
-                        if isinstance(item, dict) and item.get("id") == requested_id:
-                            logger.debug(f"Successfully fetched image info for ID: {image_id}")
-                            return item
-
-                    # No matching ID found - log warning with details about returned items
-                    returned_ids = [
-                        item.get("id") for item in items
-                        if isinstance(item, dict) and "id" in item
-                    ]
-                    logger.warning(
-                        f"CivitAI API returned no matching image for requested ID {image_id}. "
-                        f"Returned {len(items)} item(s) with IDs: {returned_ids}. "
-                        f"This may indicate the image was deleted, hidden, or there is a database lag."
+                    logger.error(
+                        "Failed to fetch image info for ID %s from %s: %s",
+                        image_id,
+                        host,
+                        result,
                     )
                     return None
 
-                logger.warning(f"No image found with ID: {image_id}")
+                if result and "items" in result and isinstance(result["items"], list):
+                    items = result["items"]
+
+                    for item in items:
+                        if isinstance(item, dict) and item.get("id") == requested_id:
+                            logger.debug(
+                                "Successfully fetched image info for ID %s from %s",
+                                image_id,
+                                host,
+                            )
+                            return item
+
+                    returned_ids = [
+                        item.get("id")
+                        for item in items
+                        if isinstance(item, dict) and "id" in item
+                    ]
+
+                    if index < len(candidate_hosts) - 1:
+                        logger.info(
+                            "No matching image for requested ID %s from %s; trying fallback host. Returned %d item(s) with IDs: %s",
+                            image_id,
+                            host,
+                            len(items),
+                            returned_ids,
+                        )
+                        continue
+
+                    logger.warning(
+                        "CivitAI API returned no matching image for requested ID %s from %s. Returned %d item(s) with IDs: %s. This may indicate the image was deleted, hidden, or there is a database lag.",
+                        image_id,
+                        host,
+                        len(items),
+                        returned_ids,
+                    )
+                    return None
+
+                if index < len(candidate_hosts) - 1:
+                    logger.info(
+                        "No image found with ID %s from %s; trying fallback host",
+                        image_id,
+                        host,
+                    )
+                    continue
+
+                logger.warning("No image found with ID: %s", image_id)
                 return None
 
-            logger.error(f"Failed to fetch image info for ID: {image_id}: {result}")
+            if last_error is not None:
+                logger.error(
+                    "Failed to fetch image info for ID %s from all candidate hosts: %s",
+                    image_id,
+                    last_error,
+                )
             return None
         except RateLimitError:
             raise

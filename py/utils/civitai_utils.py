@@ -80,6 +80,16 @@ def extract_civitai_image_id(url: str | None) -> str | None:
     return path_match.group(1)
 
 
+def extract_civitai_page_host(url: str | None) -> str | None:
+    """Extract the supported Civitai page host from a URL."""
+
+    parsed = _parse_supported_civitai_page_url(url)
+    if parsed is None:
+        return None
+
+    return parsed.hostname.lower() if parsed.hostname else None
+
+
 def _normalize_commercial_values(value: Any) -> Sequence[str]:
     """Return a normalized list of commercial permissions preserving source values."""
 
@@ -263,6 +273,7 @@ def rewrite_preview_url(
 __all__ = [
     "build_license_flags",
     "extract_civitai_image_id",
+    "extract_civitai_page_host",
     "extract_civitai_model_url_parts",
     "is_supported_civitai_page_host",
     "resolve_license_payload",

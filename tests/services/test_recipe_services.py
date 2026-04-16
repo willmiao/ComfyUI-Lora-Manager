@@ -678,7 +678,7 @@ async def test_analyze_remote_video(tmp_path):
     )
 
     class DummyClient:
-        async def get_image_info(self, image_id):
+        async def get_image_info(self, image_id, source_url=None):
             return {
                 "url": "https://civitai.com/video.mp4",
                 "type": "video",
@@ -698,3 +698,60 @@ async def test_analyze_remote_video(tmp_path):
     assert result.payload["is_video"] is True
     assert result.payload["extension"] == ".mp4"
     assert result.payload["image_base64"] is not None
+
+
+@pytest.mark.asyncio
+async def test_analyze_remote_image_supports_civitai_red():
+    exif_utils = DummyExifUtils()
+
+    class DummyFactory:
+        def create_parser(self, metadata):
+            async def parse_metadata(m, recipe_scanner=None, civitai_client=None):
+                return {"loras": [], "gen_params": {"prompt": "red prompt"}}
+
+            return SimpleNamespace(parse_metadata=parse_metadata)
+
+    async def downloader_factory():
+        class Downloader:
+            async def download_file(self, url, path, use_auth=False):
+                Path(path).write_bytes(b"fake-image")
+                return True, "success"
+
+        return Downloader()
+
+    service = RecipeAnalysisService(
+        exif_utils=exif_utils,
+        recipe_parser_factory=DummyFactory(),
+        downloader_factory=downloader_factory,
+        metadata_collector=None,
+        metadata_processor_cls=None,
+        metadata_registry_cls=None,
+        standalone_mode=False,
+        logger=logging.getLogger("test"),
+    )
+
+    class DummyClient:
+        def __init__(self):
+            self.calls = []
+
+        async def get_image_info(self, image_id, source_url=None):
+            self.calls.append((image_id, source_url))
+            return {
+                "url": "https://image.civitai.com/x/y/original=true/sample.jpeg",
+                "type": "image",
+                "meta": {"prompt": "red prompt"},
+            }
+
+    class DummyScanner:
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    client = DummyClient()
+    result = await service.analyze_remote_image(
+        url="https://civitai.red/images/123",
+        recipe_scanner=DummyScanner(),
+        civitai_client=client,
+    )
+
+    assert client.calls == [("123", "https://civitai.red/images/123")]
+    assert result.payload["loras"] == []

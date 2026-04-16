@@ -1202,7 +1202,9 @@ class RecipeManagementHandler:
                     raise RecipeDownloadError(
                         "Civitai client unavailable for image download"
                     )
-                image_info = await civitai_client.get_image_info(civitai_image_id)
+                image_info = await civitai_client.get_image_info(
+                    civitai_image_id, source_url=image_url
+                )
                 if not image_info:
                     raise RecipeDownloadError(
                         "Failed to fetch image information from Civitai"

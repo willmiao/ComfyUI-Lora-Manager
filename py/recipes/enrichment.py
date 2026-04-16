@@ -1,11 +1,11 @@
 import logging
 import json
-import re
 import os
 from typing import Any, Dict, Optional
 from .merger import GenParamsMerger
 from .base import RecipeMetadataParser
 from ..services.metadata_service import get_default_metadata_provider
+from ..utils.civitai_utils import extract_civitai_image_id
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +39,12 @@ class RecipeEnricher:
         source_url = recipe.get("source_url") or recipe.get("source_path", "")
         
         # Check if it's a Civitai image URL
-        image_id_match = re.search(r'civitai\.com/images/(\d+)', str(source_url))
-        if image_id_match:
-            image_id = image_id_match.group(1)
+        image_id = extract_civitai_image_id(str(source_url))
+        if image_id:
             try:
-                image_info = await civitai_client.get_image_info(image_id)
+                image_info = await civitai_client.get_image_info(
+                    image_id, source_url=str(source_url)
+                )
                 if image_info:
                     # Handle nested meta often found in Civitai API responses
                     raw_meta = image_info.get("meta")

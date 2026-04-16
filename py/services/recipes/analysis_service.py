@@ -5,7 +5,6 @@ from __future__ import annotations
 import base64
 import io
 import os
-import re
 import tempfile
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
@@ -14,7 +13,7 @@ import numpy as np
 from PIL import Image
 
 from ...utils.utils import calculate_recipe_fingerprint
-from ...utils.civitai_utils import rewrite_preview_url
+from ...utils.civitai_utils import extract_civitai_image_id, rewrite_preview_url
 from .errors import (
     RecipeDownloadError,
     RecipeNotFoundError,
@@ -104,9 +103,11 @@ class RecipeAnalysisService:
         extension = ".jpg"  # Default
 
         try:
-            civitai_match = re.match(r"https://civitai\.com/images/(\d+)", url)
-            if civitai_match:
-                image_info = await civitai_client.get_image_info(civitai_match.group(1))
+            civitai_image_id = extract_civitai_image_id(url)
+            if civitai_image_id:
+                image_info = await civitai_client.get_image_info(
+                    civitai_image_id, source_url=url
+                )
                 if not image_info:
                     raise RecipeDownloadError(
                         "Failed to fetch image information from Civitai"

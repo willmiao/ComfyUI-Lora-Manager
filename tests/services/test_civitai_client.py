@@ -530,6 +530,97 @@ async def test_get_image_info_handles_missing(monkeypatch, downloader):
     assert result is None
 
 
+async def test_get_image_info_prefers_red_host_for_red_source(monkeypatch, downloader):
+    requested_urls = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        requested_urls.append(url)
+        return True, {"items": [{"id": 124950237, "name": "target"}]}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result = await client.get_image_info(
+        "124950237", source_url="https://civitai.red/images/124950237"
+    )
+
+    assert result == {"id": 124950237, "name": "target"}
+    assert requested_urls == [
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X"
+    ]
+
+
+async def test_get_image_info_falls_back_from_com_to_red(monkeypatch, downloader):
+    requested_urls = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        requested_urls.append(url)
+        if url.startswith("https://civitai.com/"):
+            return True, {"items": []}
+        return True, {"items": [{"id": 124950237, "name": "fallback"}]}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result = await client.get_image_info("124950237")
+
+    assert result == {"id": 124950237, "name": "fallback"}
+    assert requested_urls == [
+        "https://civitai.com/api/v1/images?imageId=124950237&nsfw=X",
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X",
+    ]
+
+
+async def test_get_image_info_falls_back_from_red_to_com(monkeypatch, downloader):
+    requested_urls = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        requested_urls.append(url)
+        if url.startswith("https://civitai.red/"):
+            return True, {"items": []}
+        return True, {"items": [{"id": 124950237, "name": "fallback"}]}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result = await client.get_image_info(
+        "124950237", source_url="https://civitai.red/images/124950237"
+    )
+
+    assert result == {"id": 124950237, "name": "fallback"}
+    assert requested_urls == [
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X",
+        "https://civitai.com/api/v1/images?imageId=124950237&nsfw=X",
+    ]
+
+
+async def test_get_image_info_falls_back_after_request_failure(monkeypatch, downloader):
+    requested_urls = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        requested_urls.append(url)
+        if url.startswith("https://civitai.red/"):
+            return False, "403 forbidden"
+        return True, {"items": [{"id": 124950237, "name": "fallback"}]}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result = await client.get_image_info(
+        "124950237", source_url="https://civitai.red/images/124950237"
+    )
+
+    assert result == {"id": 124950237, "name": "fallback"}
+    assert requested_urls == [
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X",
+        "https://civitai.com/api/v1/images?imageId=124950237&nsfw=X",
+    ]
+
+
 async def test_get_image_info_handles_invalid_id(monkeypatch, downloader, caplog):
     """When given a non-numeric image ID, return None and log error."""
     client = await CivitaiClient.get_instance()
