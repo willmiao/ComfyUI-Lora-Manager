@@ -56,6 +56,13 @@ Insomnia Art Designs, megakirbs, Brennok, 2018cfh, W+K+White, wackop, Takkan, Ca
 
 ## Release Notes
 
+### v1.0.4
+
+* **Civitai Domain Split Support** - Added support for `civitai.com` and `civitai.red` model URLs and recipe/image URLs across import, analysis, and download flows.
+* **Civitai API Host Migration** - Updated core Civitai API requests to use `civitai.red` for compatibility with Civitai's current API host.
+* **Configurable Civitai View Host** - Added a setting to choose which Civitai site opens by default for model, search, and view links.
+* **401 Unauthorized Reminder** - Some users have reported `401 Unauthorized` errors. If you run into this, try generating a new API key on `civitai.red` and updating it in LoRA Manager settings.
+
 ### v1.0.3
 
 * **Custom Recipe Storage Path** - Added support for configuring a custom storage path for recipes, with migration support to move existing recipe data when changing locations.
