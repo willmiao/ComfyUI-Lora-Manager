@@ -138,7 +138,7 @@ class Downloader:
         self.chunk_size = (
             16 * 1024 * 1024
         )  # 16MB chunks to balance I/O reduction and memory usage
-        self.max_retries = 5
+        self.max_retries = self._resolve_max_retries()
         self.base_delay = 2.0  # Base delay for exponential backoff
         self.session_timeout = 300  # 5 minutes
         self.stall_timeout = self._resolve_stall_timeout()
@@ -191,6 +191,18 @@ class Downloader:
             timeout_value = default_timeout
 
         return max(30.0, timeout_value)
+
+    def _resolve_max_retries(self) -> int:
+        """Determine max retry count from environment while preserving defaults."""
+        default_retries = 5
+        raw_value = os.environ.get("COMFYUI_DOWNLOAD_MAX_RETRIES")
+
+        try:
+            retries = int(raw_value)
+        except (TypeError, ValueError):
+            retries = default_retries
+
+        return max(0, retries)
 
     def _should_refresh_session(self) -> bool:
         """Check if session should be refreshed"""
@@ -334,6 +346,7 @@ class Downloader:
             logger.info(f"Resuming download from offset {resume_offset} bytes")
 
         total_size = 0
+        range_redirect_retry_urls: set[str] = set()
 
         while retry_count <= self.max_retries:
             try:
@@ -372,6 +385,23 @@ class Downloader:
                     if response.status == 200:
                         # Full content response
                         if resume_offset > 0:
+                            redirected_url = str(response.url)
+                            if (
+                                allow_resume
+                                and response.history
+                                and redirected_url
+                                and redirected_url != url
+                                and redirected_url not in range_redirect_retry_urls
+                            ):
+                                range_redirect_retry_urls.add(redirected_url)
+                                logger.info(
+                                    "Range request was not honored after redirect; retrying final URL directly: %s",
+                                    redirected_url,
+                                )
+                                url = redirected_url
+                                response.release()
+                                continue
+
                             # Server doesn't support ranges, restart from beginning
                             logger.warning(
                                 "Server doesn't support range requests, restarting download"
@@ -571,37 +601,53 @@ class Downloader:
                     expected_size = total_size if total_size > 0 else None
 
                     integrity_error: Optional[str] = None
+                    resumable_incomplete = False
                     if final_size <= 0:
                         integrity_error = "Downloaded file is empty"
                     elif expected_size is not None and final_size != expected_size:
                         integrity_error = f"File size mismatch. Expected: {expected_size}, Got: {final_size}"
+                        resumable_incomplete = (
+                            allow_resume
+                            and part_path != save_path
+                            and final_size > 0
+                            and final_size < expected_size
+                        )
 
                     if integrity_error is not None:
-                        logger.error(
+                        log_fn = logger.warning if resumable_incomplete else logger.error
+                        log_fn(
                             "Download integrity check failed for %s: %s",
                             save_path,
                             integrity_error,
                         )
 
-                        # Remove the corrupted payload so future attempts start fresh
-                        if os.path.exists(part_path):
-                            try:
-                                os.remove(part_path)
-                            except OSError as remove_error:
-                                logger.warning(
-                                    "Failed to delete corrupted download %s: %s",
-                                    part_path,
-                                    remove_error,
-                                )
-                        if part_path != save_path and os.path.exists(save_path):
-                            try:
-                                os.remove(save_path)
-                            except OSError as remove_error:
-                                logger.warning(
-                                    "Failed to delete target file %s after integrity error: %s",
-                                    save_path,
-                                    remove_error,
-                                )
+                        if resumable_incomplete:
+                            logger.info(
+                                "Preserving incomplete download for resume: %s (%s/%s bytes)",
+                                part_path,
+                                final_size,
+                                expected_size,
+                            )
+                        else:
+                            # Remove corrupted payloads that cannot be safely resumed.
+                            if os.path.exists(part_path):
+                                try:
+                                    os.remove(part_path)
+                                except OSError as remove_error:
+                                    logger.warning(
+                                        "Failed to delete corrupted download %s: %s",
+                                        part_path,
+                                        remove_error,
+                                    )
+                            if part_path != save_path and os.path.exists(save_path):
+                                try:
+                                    os.remove(save_path)
+                                except OSError as remove_error:
+                                    logger.warning(
+                                        "Failed to delete target file %s after integrity error: %s",
+                                        save_path,
+                                        remove_error,
+                                    )
 
                         retry_count += 1
                         if retry_count <= self.max_retries:
@@ -611,8 +657,16 @@ class Downloader:
                                 delay,
                             )
                             await asyncio.sleep(delay)
-                            resume_offset = 0
-                            total_size = 0
+                            if resumable_incomplete and os.path.exists(part_path):
+                                resume_offset = os.path.getsize(part_path)
+                                total_size = expected_size or 0
+                                logger.info(
+                                    "Will resume incomplete download from byte %s",
+                                    resume_offset,
+                                )
+                            else:
+                                resume_offset = 0
+                                total_size = 0
                             await self._create_session()
                             continue
 
