@@ -26,7 +26,7 @@ from ...services.recipes import (
     RecipeValidationError,
 )
 from ...services.metadata_service import get_default_metadata_provider
-from ...utils.civitai_utils import rewrite_preview_url
+from ...utils.civitai_utils import extract_civitai_image_id, rewrite_preview_url
 from ...utils.exif_utils import ExifUtils
 from ...recipes.merger import GenParamsMerger
 from ...recipes.enrichment import RecipeEnricher
@@ -1196,13 +1196,13 @@ class RecipeManagementHandler:
                 temp_path = temp_file.name
             download_url = image_url
             image_info = None
-            civitai_match = re.match(r"https://civitai\.com/images/(\d+)", image_url)
-            if civitai_match:
+            civitai_image_id = extract_civitai_image_id(image_url)
+            if civitai_image_id:
                 if civitai_client is None:
                     raise RecipeDownloadError(
                         "Civitai client unavailable for image download"
                     )
-                image_info = await civitai_client.get_image_info(civitai_match.group(1))
+                image_info = await civitai_client.get_image_info(civitai_image_id)
                 if not image_info:
                     raise RecipeDownloadError(
                         "Failed to fetch image information from Civitai"
@@ -1236,7 +1236,7 @@ class RecipeManagementHandler:
                 return (
                     file_obj.read(),
                     extension,
-                    image_info.get("meta") if civitai_match and image_info else None,
+                    image_info.get("meta") if civitai_image_id and image_info else None,
                 )
         except RecipeDownloadError:
             raise

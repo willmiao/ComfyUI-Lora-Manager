@@ -581,6 +581,7 @@ class TestInputValidation:
         assert service._validate_url("https://example.com/image.png") is True
         assert service._validate_url("http://example.com/image.png") is True
         assert service._validate_url("https://civitai.com/images/123") is True
+        assert service._validate_url("https://civitai.red/images/123") is True
 
     def test_validate_invalid_url(self, service):
         assert service._validate_url("not-a-url") is False

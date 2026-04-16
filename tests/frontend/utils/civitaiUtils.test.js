@@ -4,7 +4,10 @@ import {
     getOptimizedUrl,
     getShowcaseUrl,
     getThumbnailUrl,
+    extractCivitaiImageId,
+    extractCivitaiModelUrlParts,
     isCivitaiUrl,
+    isSupportedCivitaiPageHost,
     OptimizationMode
 } from '../../../static/js/utils/civitaiUtils.js';
 
@@ -215,6 +218,45 @@ describe('civitaiUtils', () => {
 
         it('should handle invalid URLs gracefully', () => {
             expect(isCivitaiUrl('not-a-url')).toBe(false);
+        });
+    });
+
+    describe('isSupportedCivitaiPageHost', () => {
+        it('accepts civitai.com and civitai.red page hosts', () => {
+            expect(isSupportedCivitaiPageHost('civitai.com')).toBe(true);
+            expect(isSupportedCivitaiPageHost('civitai.red')).toBe(true);
+        });
+
+        it('rejects unrelated hosts', () => {
+            expect(isSupportedCivitaiPageHost('www.civitai.com')).toBe(false);
+            expect(isSupportedCivitaiPageHost('www.civitai.red')).toBe(false);
+            expect(isSupportedCivitaiPageHost('example.com')).toBe(false);
+            expect(isSupportedCivitaiPageHost('')).toBe(false);
+            expect(isSupportedCivitaiPageHost(null)).toBe(false);
+        });
+    });
+
+    describe('extractCivitaiModelUrlParts', () => {
+        it('extracts model and version ids from civitai.red model URLs', () => {
+            expect(
+                extractCivitaiModelUrlParts('https://civitai.red/models/65423/name?modelVersionId=98765')
+            ).toEqual({ modelId: '65423', modelVersionId: '98765' });
+        });
+
+        it('rejects model-like URLs from unsupported hosts', () => {
+            expect(
+                extractCivitaiModelUrlParts('https://example.com/models/65423?modelVersionId=98765')
+            ).toEqual({ modelId: null, modelVersionId: null });
+        });
+    });
+
+    describe('extractCivitaiImageId', () => {
+        it('extracts image ids from civitai.red image URLs', () => {
+            expect(extractCivitaiImageId('https://civitai.red/images/126920345')).toBe('126920345');
+        });
+
+        it('rejects image-like URLs from unsupported hosts', () => {
+            expect(extractCivitaiImageId('https://example.com/images/126920345')).toBe(null);
         });
     });
 });

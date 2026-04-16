@@ -6,6 +6,7 @@ import { bulkManager } from '../../managers/BulkManager.js';
 import { MODEL_CONFIG } from '../../api/apiConfig.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getNsfwLevelSelector } from '../shared/NsfwLevelSelector.js';
+import { extractCivitaiModelUrlParts } from '../../utils/civitaiUtils.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
@@ -154,25 +155,7 @@ export const ModelContextMenuMixin = {
     },
 
     extractModelVersionId(url) {
-        try {
-            // Handle all three URL formats:
-            // 1. https://civitai.com/models/649516
-            // 2. https://civitai.com/models/649516?modelVersionId=726676
-            // 3. https://civitai.com/models/649516/cynthia-pokemon-diamond-and-pearl-pdxl-lora?modelVersionId=726676
-            
-            const parsedUrl = new URL(url);
-            
-            // Extract model ID from path
-            const pathMatch = parsedUrl.pathname.match(/\/models\/(\d+)/);
-            const modelId = pathMatch ? pathMatch[1] : null;
-            
-            // Extract model version ID from query parameters
-            const modelVersionId = parsedUrl.searchParams.get('modelVersionId');
-            
-            return { modelId, modelVersionId };
-        } catch (e) {
-            return { modelId: null, modelVersionId: null };
-        }
+        return extractCivitaiModelUrlParts(url);
     },
 
     parseModelId(value) {

@@ -1,4 +1,11 @@
-from py.utils.civitai_utils import build_license_flags, resolve_license_info, resolve_license_payload
+from py.utils.civitai_utils import (
+    build_license_flags,
+    extract_civitai_image_id,
+    extract_civitai_model_url_parts,
+    is_supported_civitai_page_host,
+    resolve_license_info,
+    resolve_license_payload,
+)
 
 
 def test_resolve_license_payload_defaults():
@@ -78,3 +85,40 @@ def test_build_license_flags_parses_aggregate_inside_list():
     flags = build_license_flags(source)
     expected_flags = (1 << 0) | (7 << 1) | (1 << 5)
     assert flags == expected_flags
+
+
+def test_supported_civitai_page_hosts_include_red():
+    assert is_supported_civitai_page_host("civitai.com") is True
+    assert is_supported_civitai_page_host("civitai.red") is True
+    assert is_supported_civitai_page_host("www.civitai.com") is False
+    assert is_supported_civitai_page_host("www.civitai.red") is False
+    assert is_supported_civitai_page_host("example.com") is False
+
+
+def test_extract_civitai_model_url_parts_supports_red():
+    model_id, version_id = extract_civitai_model_url_parts(
+        "https://civitai.red/models/65423/nijimecha-artstyle?modelVersionId=777"
+    )
+
+    assert model_id == "65423"
+    assert version_id == "777"
+
+
+def test_extract_civitai_model_url_parts_rejects_non_civitai_host():
+    model_id, version_id = extract_civitai_model_url_parts(
+        "https://example.com/models/65423?modelVersionId=777"
+    )
+
+    assert model_id is None
+    assert version_id is None
+
+
+def test_extract_civitai_image_id_supports_red():
+    assert (
+        extract_civitai_image_id("https://civitai.red/images/126920345")
+        == "126920345"
+    )
+
+
+def test_extract_civitai_image_id_rejects_non_civitai_host():
+    assert extract_civitai_image_id("https://example.com/images/126920345") is None

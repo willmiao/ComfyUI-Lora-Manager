@@ -136,4 +136,14 @@ describe('DownloadManager version history badges', () => {
     expect(items[1].querySelector('.local-path')?.textContent).toContain('/models/still-local.safetensors');
     expect(items[1].querySelector('.downloaded-badge')).toBeNull();
   });
+
+  it('extracts model and version ids from civitai.red URLs', () => {
+    const manager = new DownloadManager();
+
+    expect(
+      manager.extractModelId('https://civitai.red/models/65423/nijimecha-artstyle?modelVersionId=777')
+    ).toBe('65423');
+    expect(manager.modelVersionId).toBe('777');
+    expect(manager.source).toBeNull();
+  });
 });

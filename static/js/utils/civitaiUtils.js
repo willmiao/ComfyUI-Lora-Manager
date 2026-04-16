@@ -13,6 +13,11 @@ export const OptimizationMode = {
     THUMBNAIL: 'thumbnail',
 };
 
+const SUPPORTED_CIVITAI_PAGE_HOSTS = new Set([
+    'civitai.com',
+    'civitai.red',
+]);
+
 /**
  * Rewrite Civitai preview URLs to use optimized renditions.
  * Mirrors the backend's rewrite_preview_url() function from py/utils/civitai_utils.py
@@ -117,5 +122,52 @@ export function isCivitaiUrl(url) {
         return hostname.endsWith('.civitai.com') && hostname !== 'civitai.com';
     } catch (e) {
         return false;
+    }
+}
+
+export function isSupportedCivitaiPageHost(hostname) {
+    if (!hostname) {
+        return false;
+    }
+
+    return SUPPORTED_CIVITAI_PAGE_HOSTS.has(hostname.toLowerCase());
+}
+
+export function extractCivitaiModelUrlParts(url) {
+    if (!url) {
+        return { modelId: null, modelVersionId: null };
+    }
+
+    try {
+        const parsedUrl = new URL(url);
+        if (!isSupportedCivitaiPageHost(parsedUrl.hostname)) {
+            return { modelId: null, modelVersionId: null };
+        }
+
+        const pathMatch = parsedUrl.pathname.match(/\/models\/(\d+)/);
+        const modelId = pathMatch ? pathMatch[1] : null;
+        const modelVersionId = parsedUrl.searchParams.get('modelVersionId');
+
+        return { modelId, modelVersionId };
+    } catch (e) {
+        return { modelId: null, modelVersionId: null };
+    }
+}
+
+export function extractCivitaiImageId(url) {
+    if (!url) {
+        return null;
+    }
+
+    try {
+        const parsedUrl = new URL(url);
+        if (!isSupportedCivitaiPageHost(parsedUrl.hostname)) {
+            return null;
+        }
+
+        const pathMatch = parsedUrl.pathname.match(/\/images\/(\d+)/);
+        return pathMatch ? pathMatch[1] : null;
+    } catch (e) {
+        return null;
     }
 }

@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, Iterable, Mapping, Sequence
-from urllib.parse import urlparse, urlunparse
+from urllib.parse import parse_qs, urlparse, urlunparse
 
 
+_SUPPORTED_CIVITAI_PAGE_HOSTS = frozenset({"civitai.com", "civitai.red"})
 _DEFAULT_ALLOW_COMMERCIAL_USE: Sequence[str] = ("Sell",)
 _LICENSE_DEFAULTS: Dict[str, Any] = {
     "allowNoCredit": True,
@@ -15,6 +17,67 @@ _LICENSE_DEFAULTS: Dict[str, Any] = {
 }
 _COMMERCIAL_ALLOWED_VALUES = {"sell", "rent", "rentcivit", "image"}
 _COMMERCIAL_SHIFT = 1
+
+
+def is_supported_civitai_page_host(hostname: str | None) -> bool:
+    """Return whether the hostname is a supported Civitai page domain."""
+
+    if not hostname:
+        return False
+    return hostname.lower() in _SUPPORTED_CIVITAI_PAGE_HOSTS
+
+
+def _parse_supported_civitai_page_url(url: str | None):
+    if not url:
+        return None
+
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return None
+
+    if parsed.scheme not in {"http", "https"}:
+        return None
+
+    if not is_supported_civitai_page_host(parsed.hostname):
+        return None
+
+    return parsed
+
+
+def extract_civitai_model_url_parts(
+    url: str | None,
+) -> tuple[str | None, str | None]:
+    """Extract model and version identifiers from a supported Civitai model URL."""
+
+    parsed = _parse_supported_civitai_page_url(url)
+    if parsed is None:
+        return None, None
+
+    path_match = re.search(r"/models/(\d+)", parsed.path)
+    if not path_match:
+        return None, None
+
+    model_id = path_match.group(1)
+
+    query_params = parse_qs(parsed.query)
+    version_values = query_params.get("modelVersionId") or []
+    version_id = version_values[0] if version_values else None
+    return model_id, version_id
+
+
+def extract_civitai_image_id(url: str | None) -> str | None:
+    """Extract the image identifier from a supported Civitai image page URL."""
+
+    parsed = _parse_supported_civitai_page_url(url)
+    if parsed is None:
+        return None
+
+    path_match = re.search(r"/images/(\d+)", parsed.path)
+    if not path_match:
+        return None
+
+    return path_match.group(1)
 
 
 def _normalize_commercial_values(value: Any) -> Sequence[str]:
@@ -199,6 +262,9 @@ def rewrite_preview_url(
 
 __all__ = [
     "build_license_flags",
+    "extract_civitai_image_id",
+    "extract_civitai_model_url_parts",
+    "is_supported_civitai_page_host",
     "resolve_license_payload",
     "resolve_license_info",
     "rewrite_preview_url",

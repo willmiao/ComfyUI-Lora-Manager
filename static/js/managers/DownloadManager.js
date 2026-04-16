@@ -6,6 +6,7 @@ import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { translate } from '../utils/i18nHelpers.js';
+import { extractCivitaiModelUrlParts } from '../utils/civitaiUtils.js';
 
 export class DownloadManager {
     constructor() {
@@ -197,21 +198,22 @@ export class DownloadManager {
     }
 
     extractModelId(url) {
-        const versionMatch = url.match(/modelVersionId=(\d+)/i);
-        this.modelVersionId = versionMatch ? versionMatch[1] : null;
-
         const civarchiveMatch = url.match(/https?:\/\/(?:www\.)?(?:civitaiarchive|civarchive)\.com\/models\/(\d+)/i);
         if (civarchiveMatch) {
+            const versionMatch = url.match(/modelVersionId=(\d+)/i);
+            this.modelVersionId = versionMatch ? versionMatch[1] : null;
             this.source = 'civarchive';
             return civarchiveMatch[1];
         }
 
-        const civitaiMatch = url.match(/https?:\/\/(?:www\.)?civitai\.com\/models\/(\d+)/i);
-        if (civitaiMatch) {
+        const { modelId, modelVersionId } = extractCivitaiModelUrlParts(url);
+        if (modelId) {
+            this.modelVersionId = modelVersionId;
             this.source = null;
-            return civitaiMatch[1];
+            return modelId;
         }
 
+        this.modelVersionId = null;
         this.source = null;
         return null;
     }
