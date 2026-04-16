@@ -94,7 +94,7 @@ class DummyDoctorScanner:
 
 class DummyCivitaiClient:
     def __init__(self, *, success=True, result=None):
-        self.base_url = 'https://civitai.com/api/v1'
+        self.base_url = 'https://civitai.red/api/v1'
         self._success = success
         self._result = result if result is not None else {'items': []}
 

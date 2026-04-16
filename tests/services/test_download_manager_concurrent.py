@@ -7,7 +7,10 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from py.services.download_manager import DownloadManager
+from py.services.download_manager import (
+    CIVITAI_DOWNLOAD_URL_PREFIXES,
+    DownloadManager,
+)
 from py.services import download_manager
 from py.services.service_registry import ServiceRegistry
 from py.services.settings_manager import SettingsManager, get_settings_manager
@@ -307,6 +310,67 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
     assert metadata.preview_nsfw_level == 1
     stored_preview = manager._active_downloads["dl"].get("preview_path")
     assert stored_preview and stored_preview.endswith(".jpeg")
+
+
+@pytest.mark.asyncio
+async def test_execute_download_uses_auth_for_red_civitai_downloads(monkeypatch, tmp_path):
+    manager = DownloadManager()
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    target_path = save_dir / "file.safetensors"
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = str(path)
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+            self.preview_nsfw_level = None
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, _path):
+            return None
+
+        def to_dict(self):
+            return {"file_path": self.file_path}
+
+    metadata = DummyMetadata(target_path)
+    recorded_use_auth = []
+
+    class DummyDownloader:
+        stall_timeout = None
+
+        async def download_file(self, url, path, progress_callback=None, use_auth=None, **_kwargs):
+            recorded_use_auth.append((url, use_auth))
+            Path(path).write_bytes(b"model")
+            return True, None
+
+    monkeypatch.setattr(
+        download_manager, "get_downloader", AsyncMock(return_value=DummyDownloader())
+    )
+    monkeypatch.setattr(MetadataManager, "save_metadata", AsyncMock(return_value=True))
+
+    dummy_scanner = SimpleNamespace(add_model_to_cache=AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        DownloadManager, "_get_lora_scanner", AsyncMock(return_value=dummy_scanner)
+    )
+
+    result = await manager._execute_download(
+        download_urls=["https://civitai.red/api/download/models/119514"],
+        save_dir=str(save_dir),
+        metadata=metadata,
+        version_info={"images": []},
+        relative_path="",
+        progress_callback=None,
+        model_type="lora",
+        download_id=None,
+    )
+
+    assert result == {"success": True}
+    assert recorded_use_auth == [("https://civitai.red/api/download/models/119514", True)]
+    assert "https://civitai.red/api/download/".startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
 
 
 @pytest.mark.asyncio

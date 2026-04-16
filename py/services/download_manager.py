@@ -31,6 +31,11 @@ import tempfile
 
 logger = logging.getLogger(__name__)
 
+CIVITAI_DOWNLOAD_URL_PREFIXES = (
+    "https://civitai.com/api/download/",
+    "https://civitai.red/api/download/",
+)
+
 
 class DownloadManager:
     _instance = None
@@ -647,12 +652,12 @@ class DownloadManager:
                     civitai_urls = [
                         u
                         for u in download_urls
-                        if u.startswith("https://civitai.com/api/download/")
+                        if u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
                     ]
                     non_civitai_urls = [
                         u
                         for u in download_urls
-                        if not u.startswith("https://civitai.com/api/download/")
+                        if not u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
                     ]
                     download_urls = non_civitai_urls + civitai_urls
             else:
@@ -1133,7 +1138,7 @@ class DownloadManager:
                 pause_control.update_stall_timeout(downloader.stall_timeout)
             last_error = None
             for download_url in download_urls:
-                use_auth = download_url.startswith("https://civitai.com/api/download/")
+                use_auth = download_url.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
                 download_kwargs = {
                     "progress_callback": lambda progress, snapshot=None: (
                         self._handle_download_progress(

@@ -9,7 +9,7 @@ from .model_metadata_provider import (
 )
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
-from ..utils.civitai_utils import extract_civitai_page_host, resolve_license_payload
+from ..utils.civitai_utils import resolve_license_payload
 
 logger = logging.getLogger(__name__)
 
@@ -39,24 +39,10 @@ class CivitaiClient:
             return
         self._initialized = True
 
-        self.base_url = "https://civitai.com/api/v1"
-        self._image_info_api_hosts = ("civitai.com", "civitai.red")
+        self.base_url = "https://civitai.red/api/v1"
 
-    def _build_image_info_url(self, host: str, image_id: str) -> str:
-        return f"https://{host}/api/v1/images?imageId={image_id}&nsfw=X"
-
-    def _resolve_image_info_hosts(self, source_url: str | None) -> List[str]:
-        preferred_host = extract_civitai_page_host(source_url)
-        if preferred_host in self._image_info_api_hosts:
-            return [
-                preferred_host,
-                *[
-                    host
-                    for host in self._image_info_api_hosts
-                    if host != preferred_host
-                ],
-            ]
-        return list(self._image_info_api_hosts)
+    def _build_image_info_url(self, image_id: str) -> str:
+        return f"{self.base_url}/images?imageId={image_id}&nsfw=X"
 
     async def _make_request(
         self,
@@ -207,7 +193,9 @@ class CivitaiClient:
         """Get all versions of a model with local availability info"""
         try:
             success, result = await self._make_request(
-                "GET", f"{self.base_url}/models/{model_id}", use_auth=True
+                "GET",
+                f"{self.base_url}/models/{model_id}",
+                use_auth=True,
             )
             if success:
                 # Also return model type along with versions
@@ -363,7 +351,9 @@ class CivitaiClient:
 
     async def _fetch_model_data(self, model_id: int) -> Optional[Dict]:
         success, data = await self._make_request(
-            "GET", f"{self.base_url}/models/{model_id}", use_auth=True
+            "GET",
+            f"{self.base_url}/models/{model_id}",
+            use_auth=True,
         )
         if success:
             return data
@@ -375,7 +365,9 @@ class CivitaiClient:
             return None
 
         success, version = await self._make_request(
-            "GET", f"{self.base_url}/model-versions/{version_id}", use_auth=True
+            "GET",
+            f"{self.base_url}/model-versions/{version_id}",
+            use_auth=True,
         )
         if success:
             return version
@@ -388,7 +380,9 @@ class CivitaiClient:
             return None
 
         success, version = await self._make_request(
-            "GET", f"{self.base_url}/model-versions/by-hash/{model_hash}", use_auth=True
+            "GET",
+            f"{self.base_url}/model-versions/by-hash/{model_hash}",
+            use_auth=True,
         )
         if success:
             return version
@@ -470,13 +464,11 @@ class CivitaiClient:
         try:
             url = f"{self.base_url}/model-versions/{version_id}"
 
-            logger.debug(f"Resolving DNS for model version info: {url}")
+            logger.debug("Resolving Civitai model version info: %s", url)
             success, result = await self._make_request("GET", url, use_auth=True)
 
             if success:
-                logger.debug(
-                    f"Successfully fetched model version info for: {version_id}"
-                )
+                logger.debug("Successfully fetched model version info for: %s", version_id)
                 self._remove_comfy_metadata(result)
                 return result, None
 
@@ -503,99 +495,51 @@ class CivitaiClient:
 
         Args:
             image_id: The Civitai image ID
-            source_url: Optional original image page URL used to prioritize
-                ``civitai.com`` vs ``civitai.red`` image lookups.
+            source_url: Original image page URL. Accepted for caller compatibility;
+                API requests always target ``civitai.red``.
 
         Returns:
             Optional[Dict]: The image data or None if not found
         """
         try:
             requested_id = int(image_id)
-            candidate_hosts = self._resolve_image_info_hosts(source_url)
-            last_error: Any = None
-            logger.debug(
-                "Fetching image info for ID %s with host order %s",
-                image_id,
-                candidate_hosts,
-            )
+            url = self._build_image_info_url(image_id)
+            success, result = await self._make_request("GET", url, use_auth=True)
 
-            for index, host in enumerate(candidate_hosts):
-                url = self._build_image_info_url(host, image_id)
-                success, result = await self._make_request("GET", url, use_auth=True)
-
-                if not success:
-                    last_error = result
-                    if index < len(candidate_hosts) - 1:
-                        logger.warning(
-                            "Failed to fetch image info for ID %s from %s: %s. Trying fallback host.",
-                            image_id,
-                            host,
-                            result,
-                        )
-                        continue
-
-                    logger.error(
-                        "Failed to fetch image info for ID %s from %s: %s",
-                        image_id,
-                        host,
-                        result,
-                    )
-                    return None
-
-                if result and "items" in result and isinstance(result["items"], list):
-                    items = result["items"]
-
-                    for item in items:
-                        if isinstance(item, dict) and item.get("id") == requested_id:
-                            logger.debug(
-                                "Successfully fetched image info for ID %s from %s",
-                                image_id,
-                                host,
-                            )
-                            return item
-
-                    returned_ids = [
-                        item.get("id")
-                        for item in items
-                        if isinstance(item, dict) and "id" in item
-                    ]
-
-                    if index < len(candidate_hosts) - 1:
-                        logger.info(
-                            "No matching image for requested ID %s from %s; trying fallback host. Returned %d item(s) with IDs: %s",
-                            image_id,
-                            host,
-                            len(items),
-                            returned_ids,
-                        )
-                        continue
-
-                    logger.warning(
-                        "CivitAI API returned no matching image for requested ID %s from %s. Returned %d item(s) with IDs: %s. This may indicate the image was deleted, hidden, or there is a database lag.",
-                        image_id,
-                        host,
-                        len(items),
-                        returned_ids,
-                    )
-                    return None
-
-                if index < len(candidate_hosts) - 1:
-                    logger.info(
-                        "No image found with ID %s from %s; trying fallback host",
-                        image_id,
-                        host,
-                    )
-                    continue
-
-                logger.warning("No image found with ID: %s", image_id)
+            if not success:
+                logger.error(
+                    "Failed to fetch image info for ID %s from civitai.red: %s",
+                    image_id,
+                    result,
+                )
                 return None
 
-            if last_error is not None:
-                logger.error(
-                    "Failed to fetch image info for ID %s from all candidate hosts: %s",
+            if result and "items" in result and isinstance(result["items"], list):
+                items = result["items"]
+
+                for item in items:
+                    if isinstance(item, dict) and item.get("id") == requested_id:
+                        logger.debug(
+                            "Successfully fetched image info for ID %s from civitai.red",
+                            image_id,
+                        )
+                        return item
+
+                returned_ids = [
+                    item.get("id")
+                    for item in items
+                    if isinstance(item, dict) and "id" in item
+                ]
+
+                logger.warning(
+                    "CivitAI API returned no matching image for requested ID %s from civitai.red. Returned %d item(s) with IDs: %s. This may indicate the image was deleted, hidden, or there is a database lag.",
                     image_id,
-                    last_error,
+                    len(items),
+                    returned_ids,
                 )
+                return None
+
+            logger.warning("No image found with ID: %s", image_id)
             return None
         except RateLimitError:
             raise
@@ -614,8 +558,12 @@ class CivitaiClient:
             return None
 
         try:
-            url = f"{self.base_url}/models?username={username}"
-            success, result = await self._make_request("GET", url, use_auth=True)
+            success, result = await self._make_request(
+                "GET",
+                f"{self.base_url}/models",
+                use_auth=True,
+                params={"username": username},
+            )
 
             if not success:
                 logger.error("Failed to fetch models for %s: %s", username, result)

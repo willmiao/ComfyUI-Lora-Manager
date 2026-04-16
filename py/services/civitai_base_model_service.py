@@ -30,7 +30,7 @@ class CivitaiBaseModelService:
     DEFAULT_CACHE_TTL = 7 * 24 * 60 * 60
 
     # Civitai API endpoint for enums
-    CIVITAI_ENUMS_URL = "https://civitai.com/api/v1/enums"
+    CIVITAI_ENUMS_URL = "https://civitai.red/api/v1/enums"
 
     @classmethod
     async def get_instance(cls) -> CivitaiBaseModelService:
