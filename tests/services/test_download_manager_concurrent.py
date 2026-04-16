@@ -369,8 +369,8 @@ async def test_execute_download_uses_auth_for_red_civitai_downloads(monkeypatch,
     )
 
     assert result == {"success": True}
-    assert recorded_use_auth == [("https://civitai.red/api/download/models/119514", True)]
-    assert "https://civitai.red/api/download/".startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
+    assert recorded_use_auth == [("https://civitai.com/api/download/models/119514", True)]
+    assert "https://civitai.com/api/download/".startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
 
 
 @pytest.mark.asyncio

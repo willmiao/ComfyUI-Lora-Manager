@@ -3,6 +3,7 @@ from py.utils.civitai_utils import (
     extract_civitai_image_id,
     extract_civitai_model_url_parts,
     is_supported_civitai_page_host,
+    normalize_civitai_download_url,
     resolve_license_info,
     resolve_license_payload,
 )
@@ -122,3 +123,24 @@ def test_extract_civitai_image_id_supports_red():
 
 def test_extract_civitai_image_id_rejects_non_civitai_host():
     assert extract_civitai_image_id("https://example.com/images/126920345") is None
+
+
+def test_normalize_civitai_download_url_rewrites_red_to_com():
+    url = "https://civitai.red/api/download/models/2786889?type=Model&format=SafeTensor"
+
+    assert (
+        normalize_civitai_download_url(url)
+        == "https://civitai.com/api/download/models/2786889?type=Model&format=SafeTensor"
+    )
+
+
+def test_normalize_civitai_download_url_keeps_non_download_red_urls():
+    url = "https://civitai.red/models/65423/nijimecha-artstyle?modelVersionId=777"
+
+    assert normalize_civitai_download_url(url) == url
+
+
+def test_normalize_civitai_download_url_keeps_existing_com_urls():
+    url = "https://civitai.com/api/download/models/2786889?type=Model&format=SafeTensor"
+
+    assert normalize_civitai_download_url(url) == url

@@ -16,7 +16,7 @@ from ..utils.constants import (
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
 )
-from ..utils.civitai_utils import rewrite_preview_url
+from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
@@ -644,7 +644,9 @@ class DownloadManager:
             if mirrors:
                 for mirror in mirrors:
                     if mirror.get("deletedAt") is None and mirror.get("url"):
-                        download_urls.append(mirror["url"])
+                        download_urls.append(
+                            normalize_civitai_download_url(mirror["url"])
+                        )
 
                 # When source is 'civarchive', prioritize non-Civitai URLs
                 # This avoids failed downloads from deleted Civitai models
@@ -663,7 +665,9 @@ class DownloadManager:
             else:
                 download_url = file_info.get("downloadUrl")
                 if download_url:
-                    download_urls.append(download_url)
+                    download_urls.append(
+                        normalize_civitai_download_url(download_url)
+                    )
 
             if not download_urls:
                 return {"success": False, "error": "No mirror URL found"}
@@ -1138,6 +1142,7 @@ class DownloadManager:
                 pause_control.update_stall_timeout(downloader.stall_timeout)
             last_error = None
             for download_url in download_urls:
+                download_url = normalize_civitai_download_url(download_url)
                 use_auth = download_url.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
                 download_kwargs = {
                     "progress_callback": lambda progress, snapshot=None: (

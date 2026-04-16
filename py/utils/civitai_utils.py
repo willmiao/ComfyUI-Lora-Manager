@@ -119,6 +119,24 @@ def extract_civitai_image_id(url: str | None) -> str | None:
     return path_match.group(1)
 
 
+def normalize_civitai_download_url(url: str | None) -> str | None:
+    """Rewrite Civitai download URLs to the canonical authenticated host."""
+
+    if not url:
+        return url
+
+    try:
+        parsed = urlparse(url)
+    except ValueError:
+        return url
+
+    hostname = parsed.hostname.lower() if parsed.hostname else None
+    if hostname != "civitai.red" or not parsed.path.startswith("/api/download/"):
+        return url
+
+    return urlunparse(parsed._replace(netloc="civitai.com"))
+
+
 def extract_civitai_page_host(url: str | None) -> str | None:
     """Extract the supported Civitai page host from a URL."""
 
