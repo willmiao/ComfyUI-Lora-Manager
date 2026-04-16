@@ -175,6 +175,9 @@
             "success": "{count} Rezepte erfolgreich repariert.",
             "cancelled": "Reparatur abgebrochen. {count} Rezepte wurden repariert.",
             "error": "Recipe-Reparatur fehlgeschlagen: {message}"
+        },
+        "manageExcludedModels": {
+            "label": "Ausgeschlossene Modelle verwalten"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "In Ordner verschieben",
             "repairMetadata": "Metadaten reparieren",
             "excludeModel": "Modell ausschließen",
+            "restoreModel": "Modell wiederherstellen",
             "deleteModel": "Modell löschen",
             "shareRecipe": "Rezept teilen",
             "viewAllLoras": "Alle LoRAs anzeigen",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "Fehler beim Löschen von {type}: {message}",
             "excludeSuccess": "{type} erfolgreich ausgeschlossen",
             "excludeFailed": "Fehler beim Ausschließen von {type}: {message}",
+            "restoreSuccess": "{type} erfolgreich wiederhergestellt",
+            "restoreFailed": "{type} konnte nicht wiederhergestellt werden: {message}",
             "fileNameUpdated": "Dateiname erfolgreich aktualisiert",
             "fileRenameFailed": "Fehler beim Umbenennen der Datei: {error}",
             "previewUpdated": "Vorschau erfolgreich aktualisiert",

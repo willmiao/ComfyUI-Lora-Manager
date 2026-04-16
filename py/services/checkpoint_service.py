@@ -42,6 +42,7 @@ class CheckpointService(BaseModelService):
             "notes": checkpoint_data.get("notes", ""),
             "sub_type": sub_type,
             "favorite": checkpoint_data.get("favorite", False),
+            "exclude": bool(checkpoint_data.get("exclude", False)),
             "update_available": bool(checkpoint_data.get("update_available", False)),
             "skip_metadata_refresh": bool(checkpoint_data.get("skip_metadata_refresh", False)),
             "civitai": self.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True)

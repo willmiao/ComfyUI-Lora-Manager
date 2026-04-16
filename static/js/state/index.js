@@ -90,7 +90,9 @@ export const state = {
                 baseModel: [],
                 tags: {},
                 license: {},
-                modelTypes: []
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
             },
             bulkMode: false,
             selectedLoras: new Set(),
@@ -98,6 +100,12 @@ export const state = {
             showFavoritesOnly: false,
             showUpdateAvailableOnly: false,
             duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: {
+                sortBy: 'name:asc',
+                search: '',
+            },
+            activeViewSnapshot: null,
         },
 
         recipes: {
@@ -147,7 +155,9 @@ export const state = {
                 baseModel: [],
                 tags: {},
                 license: {},
-                modelTypes: []
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
             },
             modelType: 'checkpoint', // 'checkpoint' or 'diffusion_model'
             bulkMode: false,
@@ -156,6 +166,12 @@ export const state = {
             showFavoritesOnly: false,
             showUpdateAvailableOnly: false,
             duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: {
+                sortBy: 'name:asc',
+                search: '',
+            },
+            activeViewSnapshot: null,
         },
 
         [MODEL_TYPES.EMBEDDING]: {
@@ -178,7 +194,9 @@ export const state = {
                 baseModel: [],
                 tags: {},
                 license: {},
-                modelTypes: []
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
             },
             bulkMode: false,
             selectedModels: new Set(),
@@ -186,6 +204,12 @@ export const state = {
             showFavoritesOnly: false,
             showUpdateAvailableOnly: false,
             duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: {
+                sortBy: 'name:asc',
+                search: '',
+            },
+            activeViewSnapshot: null,
         }
     },
 

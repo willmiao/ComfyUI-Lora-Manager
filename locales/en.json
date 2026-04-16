@@ -175,6 +175,9 @@
             "success": "Successfully repaired {count} recipes.",
             "cancelled": "Repair cancelled. {count} recipes were repaired.",
             "error": "Recipe repair failed: {message}"
+        },
+        "manageExcludedModels": {
+            "label": "Manage Excluded Models"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "Move to Folder",
             "repairMetadata": "Repair metadata",
             "excludeModel": "Exclude Model",
+            "restoreModel": "Restore Model",
             "deleteModel": "Delete Model",
             "shareRecipe": "Share Recipe",
             "viewAllLoras": "View All LoRAs",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "Failed to delete {type}: {message}",
             "excludeSuccess": "{type} excluded successfully",
             "excludeFailed": "Failed to exclude {type}: {message}",
+            "restoreSuccess": "{type} restored successfully",
+            "restoreFailed": "Failed to restore {type}: {message}",
             "fileNameUpdated": "File name updated successfully",
             "fileRenameFailed": "Failed to rename file: {error}",
             "previewUpdated": "Preview updated successfully",

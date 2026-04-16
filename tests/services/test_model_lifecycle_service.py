@@ -5,6 +5,7 @@ import pytest
 
 from py.services.model_lifecycle_service import ModelLifecycleService
 from py.utils.metadata_manager import MetadataManager
+from py.utils.models import LoraMetadata
 
 
 class DummyCache:
@@ -443,6 +444,63 @@ async def test_exclude_model_empty_path_raises_error():
 
     with pytest.raises(ValueError, match="Model path is required"):
         await service.exclude_model("")
+
+
+@pytest.mark.asyncio
+async def test_unexclude_model_restores_cache_entry(tmp_path: Path):
+    """Verify unexclude_model clears exclude metadata and restores cache entry."""
+    model_path = tmp_path / "restored_model.safetensors"
+    model_path.write_bytes(b"content")
+
+    metadata_payload = {
+        "file_name": "restored_model",
+        "model_name": "restored_model",
+        "file_path": str(model_path),
+        "sha256": "abc123",
+        "exclude": True,
+        "tags": ["tag1"],
+    }
+    metadata_path = tmp_path / "restored_model.metadata.json"
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    class RestoreScanner:
+        def __init__(self):
+            self.model_type = "lora"
+            self.model_class = LoraMetadata
+            self._excluded_models = [str(model_path)]
+            self.updated = []
+
+        async def update_single_model_cache(self, old_path, new_path, metadata, recalculate_type=False):
+            exclude_value = metadata.get("exclude") if isinstance(metadata, dict) else metadata.exclude
+            self.updated.append((old_path, new_path, exclude_value, recalculate_type))
+
+    saved_metadata = []
+
+    class SavingMetadataManager:
+        async def save_metadata(self, path: str, metadata: dict):
+            saved_metadata.append((path, metadata.copy()))
+            await MetadataManager.save_metadata(path, metadata)
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    scanner = RestoreScanner()
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=SavingMetadataManager(),
+        metadata_loader=metadata_loader,
+    )
+
+    result = await service.unexclude_model(str(model_path))
+
+    assert result["success"] is True
+    assert "restored" in result["message"].lower()
+    assert scanner._excluded_models == []
+    assert saved_metadata[0][1]["exclude"] is False
+    assert scanner.updated == [
+        (str(model_path), str(model_path), False, True)
+    ]
 
 
 # =============================================================================

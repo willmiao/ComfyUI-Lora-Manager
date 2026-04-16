@@ -175,6 +175,9 @@
             "success": "{count} 件のレシピを正常に修復しました。",
             "cancelled": "修復がキャンセルされました。{count}個のレシピが修復されました。",
             "error": "レシピの修復に失敗しました: {message}"
+        },
+        "manageExcludedModels": {
+            "label": "除外モデルを管理"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "フォルダに移動",
             "repairMetadata": "メタデータを修復",
             "excludeModel": "モデルを除外",
+            "restoreModel": "モデルを復元",
             "deleteModel": "モデルを削除",
             "shareRecipe": "レシピを共有",
             "viewAllLoras": "すべてのLoRAを表示",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "{type}の削除に失敗しました：{message}",
             "excludeSuccess": "{type}が正常に除外されました",
             "excludeFailed": "{type}の除外に失敗しました：{message}",
+            "restoreSuccess": "{type}を復元しました",
+            "restoreFailed": "{type}の復元に失敗しました: {message}",
             "fileNameUpdated": "ファイル名が正常に更新されました",
             "fileRenameFailed": "ファイル名の変更に失敗しました：{error}",
             "previewUpdated": "プレビューが正常に更新されました",

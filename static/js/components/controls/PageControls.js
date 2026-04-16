@@ -38,8 +38,12 @@ export class PageControls {
 
         // Initialize favorites filter button state
         this.initFavoritesFilter();
+
+        this.initExcludedViewControls();
+        this.syncExcludedViewState();
         
         console.log(`PageControls initialized for ${pageType} page`);
+        window.pageControls = this;
     }
     
     /**
@@ -56,6 +60,19 @@ export class PageControls {
         
         // Load sort preference
         this.loadSortPreference();
+
+        if (!this.pageState.viewMode) {
+            this.pageState.viewMode = 'active';
+        }
+        if (!this.pageState.excludedViewState) {
+            this.pageState.excludedViewState = {
+                sortBy: 'name:asc',
+                search: '',
+            };
+        }
+        if (!this.pageState.filters?.search) {
+            this.pageState.filters.search = '';
+        }
     }
     
     /**
@@ -115,6 +132,15 @@ export class PageControls {
         
         // Page-specific event listeners
         this.initPageSpecificListeners();
+    }
+
+    initExcludedViewControls() {
+        const backButton = document.getElementById('excludedViewBackBtn');
+        if (backButton) {
+            backButton.addEventListener('click', async () => {
+                await this.exitExcludedView();
+            });
+        }
     }
     
     /**
@@ -334,6 +360,13 @@ export class PageControls {
      * @param {string} sortValue - The sort value to save
      */
     saveSortPreference(sortValue) {
+        if (this.pageState.viewMode === 'excluded') {
+            this.pageState.excludedViewState = {
+                ...(this.pageState.excludedViewState || {}),
+                sortBy: sortValue,
+            };
+            return;
+        }
         setStorageItem(`${this.pageType}_sort`, sortValue);
     }
     
@@ -473,6 +506,8 @@ export class PageControls {
             // Update app state
             this.pageState.showFavoritesOnly = showFavoritesOnly;
         }
+
+        this.updateActionButtonStates();
     }
 
     /**
@@ -489,12 +524,17 @@ export class PageControls {
         if (updateFilterBtn) {
             updateFilterBtn.classList.toggle('active', showUpdatesOnly);
         }
+
+        this.updateActionButtonStates();
     }
 
     /**
      * Toggle favorites-only filter and reload models
      */
     async toggleFavoritesOnly() {
+        if (this.pageState.viewMode === 'excluded') {
+            return;
+        }
         const favoriteFilterBtn = document.getElementById('favoriteFilterBtn');
         
         // Toggle the filter state in storage
@@ -521,6 +561,9 @@ export class PageControls {
      * Toggle update-available-only filter and reload models
      */
     async toggleUpdateAvailableOnly() {
+        if (this.pageState.viewMode === 'excluded') {
+            return;
+        }
         const updateFilterBtn = document.getElementById('updateFilterBtn');
         const storageKey = `show_update_available_only_${this.pageType}`;
         const newState = !this.pageState.showUpdateAvailableOnly;
@@ -534,6 +577,234 @@ export class PageControls {
         }
 
         await this.resetAndReload(true);
+    }
+
+    cloneFilters(filters = this.pageState.filters) {
+        return JSON.parse(JSON.stringify(filters || {}));
+    }
+
+    buildExcludedFilters(search = '') {
+        return {
+            baseModel: [],
+            tags: {},
+            license: {},
+            modelTypes: [],
+            search,
+            tagLogic: 'any',
+        };
+    }
+
+    applyFilterState(filters) {
+        this.pageState.filters = filters;
+
+        if (window.filterManager) {
+            window.filterManager.filters = window.filterManager.initializeFilters(filters);
+            window.filterManager.updateActiveFiltersCount();
+            if (typeof window.filterManager.updateSelections === 'function') {
+                window.filterManager.updateSelections();
+            }
+            window.filterManager.closeFilterPanel();
+        }
+    }
+
+    updateActionButtonStates() {
+        const favoriteFilterBtn = document.getElementById('favoriteFilterBtn');
+        if (favoriteFilterBtn) {
+            favoriteFilterBtn.classList.toggle('active', Boolean(this.pageState.showFavoritesOnly));
+        }
+
+        const updateFilterBtn = document.getElementById('updateFilterBtn');
+        if (updateFilterBtn) {
+            updateFilterBtn.classList.toggle('active', Boolean(this.pageState.showUpdateAvailableOnly));
+        }
+    }
+
+    syncExcludedViewState() {
+        const isExcludedView = this.pageState.viewMode === 'excluded';
+        const sortSelect = document.getElementById('sortSelect');
+        const searchInput = document.getElementById('searchInput');
+        const excludedBanner = document.getElementById('excludedViewBanner');
+        const filterButton = document.getElementById('filterButton');
+        const breadcrumbContainer = document.getElementById('breadcrumbContainer');
+        const duplicatesBanner = document.getElementById('duplicatesBanner');
+        const alphabetBarContainer = document.querySelector('.alphabet-bar-container');
+        const hiddenSelectors = [
+            '[data-action="fetch"]',
+            '[data-action="download"]',
+            '[data-action="bulk"]',
+            '[data-action="find-duplicates"]',
+            '#favoriteFilterBtn',
+            '.update-filter-group',
+        ];
+        const customFilterIndicator = document.getElementById('customFilterIndicator');
+
+        document.body.classList.toggle('excluded-view-active', isExcludedView);
+        excludedBanner?.classList.toggle('hidden', !isExcludedView);
+        breadcrumbContainer?.classList.toggle('hidden', isExcludedView);
+        alphabetBarContainer?.classList.toggle('hidden', isExcludedView);
+
+        if (duplicatesBanner && isExcludedView) {
+            duplicatesBanner.style.display = 'none';
+        }
+
+        hiddenSelectors.forEach((selector) => {
+            document.querySelectorAll(selector).forEach((element) => {
+                element.classList.toggle('hidden', isExcludedView);
+            });
+        });
+
+        if (customFilterIndicator && isExcludedView) {
+            customFilterIndicator.classList.add('hidden');
+        }
+
+        if (filterButton) {
+            filterButton.disabled = isExcludedView;
+            filterButton.classList.toggle('hidden', isExcludedView);
+        }
+
+        const activeFiltersCount = document.getElementById('activeFiltersCount');
+        if (activeFiltersCount && isExcludedView) {
+            activeFiltersCount.style.display = 'none';
+        }
+
+        if (sortSelect) {
+            sortSelect.value = this.pageState.sortBy;
+        }
+        if (searchInput) {
+            searchInput.value = this.pageState.filters?.search || '';
+        }
+
+        this.updateActionButtonStates();
+
+        if (this.sidebarManager) {
+            const shouldShowSidebar = !isExcludedView && state?.global?.settings?.show_folder_sidebar !== false;
+            this.sidebarManager.setSidebarEnabled(shouldShowSidebar).catch((error) => {
+                console.error('Failed to update sidebar visibility:', error);
+            });
+        }
+    }
+
+    suspendInteractiveModes() {
+        const snapshot = {
+            bulkMode: Boolean(state.bulkMode),
+            duplicatesMode: Boolean(this.pageState.duplicatesMode),
+        };
+
+        if (snapshot.bulkMode && window.bulkManager?.toggleBulkMode) {
+            window.bulkManager.toggleBulkMode();
+        }
+
+        if (snapshot.duplicatesMode && window.modelDuplicatesManager?.exitDuplicateMode) {
+            window.modelDuplicatesManager.exitDuplicateMode();
+        }
+
+        return snapshot;
+    }
+
+    async restoreInteractiveModes(snapshot = {}) {
+        if (snapshot.bulkMode && !state.bulkMode && window.bulkManager?.toggleBulkMode) {
+            window.bulkManager.toggleBulkMode();
+        }
+
+        if (!snapshot.duplicatesMode || this.pageState.duplicatesMode) {
+            return;
+        }
+
+        const duplicatesManager = window.modelDuplicatesManager;
+        if (!duplicatesManager) {
+            return;
+        }
+
+        if (typeof duplicatesManager.enterDuplicateMode === 'function' &&
+            Array.isArray(duplicatesManager.duplicateGroups) &&
+            duplicatesManager.duplicateGroups.length > 0) {
+            duplicatesManager.enterDuplicateMode();
+            return;
+        }
+
+        if (typeof duplicatesManager.findDuplicates === 'function') {
+            await duplicatesManager.findDuplicates();
+        }
+    }
+
+    syncCustomFilterIndicator() {
+        const indicator = document.getElementById('customFilterIndicator');
+        if (!indicator) {
+            return;
+        }
+
+        if (this.pageState.viewMode === 'excluded') {
+            indicator.classList.add('hidden');
+            return;
+        }
+
+        if (typeof this.checkCustomFilters === 'function') {
+            this.checkCustomFilters();
+        }
+    }
+
+    async enterExcludedView() {
+        if (this.pageState.viewMode === 'excluded') {
+            return;
+        }
+
+        const interactionSnapshot = this.suspendInteractiveModes();
+
+        this.pageState.activeViewSnapshot = {
+            sortBy: this.pageState.sortBy,
+            activeFolder: this.pageState.activeFolder,
+            activeLetterFilter: this.pageState.activeLetterFilter ?? null,
+            showFavoritesOnly: this.pageState.showFavoritesOnly,
+            showUpdateAvailableOnly: this.pageState.showUpdateAvailableOnly,
+            bulkMode: interactionSnapshot.bulkMode,
+            duplicatesMode: interactionSnapshot.duplicatesMode,
+            filters: this.cloneFilters(),
+        };
+
+        const excludedState = this.pageState.excludedViewState || {
+            sortBy: 'name:asc',
+            search: '',
+        };
+
+        this.pageState.viewMode = 'excluded';
+        this.pageState.sortBy = excludedState.sortBy || 'name:asc';
+        this.pageState.currentPage = 1;
+        this.pageState.activeFolder = null;
+        this.pageState.activeLetterFilter = null;
+        this.pageState.showFavoritesOnly = false;
+        this.pageState.showUpdateAvailableOnly = false;
+
+        this.applyFilterState(this.buildExcludedFilters(excludedState.search || ''));
+        this.syncExcludedViewState();
+        await this.resetAndReload(false);
+    }
+
+    async exitExcludedView() {
+        if (this.pageState.viewMode !== 'excluded') {
+            return;
+        }
+
+        this.pageState.excludedViewState = {
+            ...(this.pageState.excludedViewState || {}),
+            sortBy: this.pageState.sortBy,
+            search: this.pageState.filters?.search || '',
+        };
+
+        const snapshot = this.pageState.activeViewSnapshot || {};
+        this.pageState.viewMode = 'active';
+        this.pageState.sortBy = snapshot.sortBy || this.convertLegacySortFormat(getStorageItem(`${this.pageType}_sort`) || 'name:asc');
+        this.pageState.currentPage = 1;
+        this.pageState.activeFolder = snapshot.activeFolder ?? getStorageItem(`${this.pageType}_activeFolder`);
+        this.pageState.activeLetterFilter = snapshot.activeLetterFilter ?? null;
+        this.pageState.showFavoritesOnly = Boolean(snapshot.showFavoritesOnly);
+        this.pageState.showUpdateAvailableOnly = Boolean(snapshot.showUpdateAvailableOnly);
+        this.applyFilterState(snapshot.filters || this.buildExcludedFilters(''));
+        this.pageState.activeViewSnapshot = null;
+
+        this.syncExcludedViewState();
+        await this.resetAndReload(true);
+        this.syncCustomFilterIndicator();
+        await this.restoreInteractiveModes(snapshot);
     }
     
     /**

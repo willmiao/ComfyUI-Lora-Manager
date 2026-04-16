@@ -1,4 +1,16 @@
 <div class="controls">
+    <div id="excludedViewBanner" class="excluded-view-banner hidden">
+        <div class="excluded-view-banner__content">
+            <div class="excluded-view-banner__title">
+                <i class="fas fa-eye-slash"></i>
+                <span>{{ t('globalContextMenu.manageExcludedModels.label', default='Excluded Models') }}</span>
+            </div>
+            <button id="excludedViewBackBtn" class="excluded-view-banner__back">
+                <i class="fas fa-arrow-left"></i>
+                <span>{{ t('common.actions.back', default='Back') }}</span>
+            </button>
+        </div>
+    </div>
     <div class="actions">
         <div class="action-buttons">
             <div title="{{ t('loras.controls.sort.title') }}" class="control-group">

@@ -18,6 +18,11 @@ export class EmbeddingContextMenu extends BaseContextMenu {
     async saveModelMetadata(filePath, data) {
         return getModelApiClient().saveModelMetadata(filePath, data);
     }
+
+    showMenu(x, y, card) {
+        super.showMenu(x, y, card);
+        this.updateExcludeMenuItem();
+    }
     
     handleMenuAction(action) {
         // First try to handle with common actions
@@ -55,6 +60,9 @@ export class EmbeddingContextMenu extends BaseContextMenu {
                 break;
             case 'exclude':
                 showExcludeModal(this.currentCard.dataset.filepath);
+                break;
+            case 'restore':
+                this.restoreExcludedModel(this.currentCard.dataset.filepath);
                 break;
         }
     }

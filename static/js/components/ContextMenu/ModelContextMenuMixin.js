@@ -10,6 +10,39 @@ import { extractCivitaiModelUrlParts } from '../../utils/civitaiUtils.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
+    isExcludedView() {
+        return state?.pages?.[state.currentPageType]?.viewMode === 'excluded';
+    },
+
+    updateExcludeMenuItem() {
+        const excludeItem = this.menu?.querySelector('[data-action="exclude"], [data-action="restore"]');
+        if (!excludeItem) {
+            return;
+        }
+
+        const isExcludedView = this.isExcludedView();
+        excludeItem.dataset.action = isExcludedView ? 'restore' : 'exclude';
+        excludeItem.innerHTML = isExcludedView
+            ? `<i class="fas fa-undo"></i> <span>${translate('loras.contextMenu.restoreModel', {}, 'Restore model')}</span>`
+            : `<i class="fas fa-eye-slash"></i> <span>${translate('loras.contextMenu.excludeModel', {}, 'Exclude model')}</span>`;
+    },
+
+    async restoreExcludedModel(filePath) {
+        const restored = await getModelApiClient().unexcludeModel(filePath);
+        if (!restored) {
+            return;
+        }
+
+        if (window.pageControls?.exitExcludedView) {
+            await window.pageControls.exitExcludedView();
+        } else {
+            const resetFn = this.resetAndReload || resetAndReload;
+            if (typeof resetFn === 'function') {
+                await resetFn(true);
+            }
+        }
+    },
+
     // NSFW Selector methods
     initNSFWSelector() {
         if (this._nsfwSelectorInitialized) {

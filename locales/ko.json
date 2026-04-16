@@ -175,6 +175,9 @@
             "success": "{count}개의 레시피가 성공적으로 복구되었습니다.",
             "cancelled": "수리가 취소되었습니다. {count}개의 레시피가 수리되었습니다.",
             "error": "레시피 복구 실패: {message}"
+        },
+        "manageExcludedModels": {
+            "label": "제외된 모델 관리"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "폴더로 이동",
             "repairMetadata": "메타데이터 복구",
             "excludeModel": "모델 제외",
+            "restoreModel": "모델 복원",
             "deleteModel": "모델 삭제",
             "shareRecipe": "레시피 공유",
             "viewAllLoras": "모든 LoRA 보기",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "{type} 삭제 실패: {message}",
             "excludeSuccess": "{type}이(가) 성공적으로 제외되었습니다",
             "excludeFailed": "{type} 제외 실패: {message}",
+            "restoreSuccess": "{type} 복원 완료",
+            "restoreFailed": "{type} 복원 실패: {message}",
             "fileNameUpdated": "파일명이 성공적으로 업데이트되었습니다",
             "fileRenameFailed": "파일 이름 변경 실패: {error}",
             "previewUpdated": "미리보기가 성공적으로 업데이트되었습니다",

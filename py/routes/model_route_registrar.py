@@ -22,8 +22,10 @@ class RouteDefinition:
 
 COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/{prefix}/list", "get_models"),
+    RouteDefinition("GET", "/api/lm/{prefix}/excluded", "get_excluded_models"),
     RouteDefinition("POST", "/api/lm/{prefix}/delete", "delete_model"),
     RouteDefinition("POST", "/api/lm/{prefix}/exclude", "exclude_model"),
+    RouteDefinition("POST", "/api/lm/{prefix}/unexclude", "unexclude_model"),
     RouteDefinition("POST", "/api/lm/{prefix}/fetch-civitai", "fetch_civitai"),
     RouteDefinition("POST", "/api/lm/{prefix}/fetch-all-civitai", "fetch_all_civitai"),
     RouteDefinition("POST", "/api/lm/{prefix}/relink-civitai", "relink_civitai"),

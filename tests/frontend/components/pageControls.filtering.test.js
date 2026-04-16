@@ -86,6 +86,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  delete window.bulkManager;
   delete window.modelDuplicatesManager;
   delete global.fetch;
   vi.useRealTimers();
@@ -114,6 +115,9 @@ function renderControlsDom(pageKey) {
       <button class="clear-filter"></button>
     </div>
     <div class="controls">
+      <div id="excludedViewBanner" class="excluded-view-banner hidden">
+        <button id="excludedViewBackBtn">Back</button>
+      </div>
       <div class="actions">
         <div class="action-buttons">
           <div class="control-group">
@@ -172,6 +176,9 @@ function renderControlsDom(pageKey) {
         <i class="fas fa-times-circle clear-filter"></i>
       </div>
     </div>
+    <div id="breadcrumbContainer"></div>
+    <div id="duplicatesBanner" style="display: none;"></div>
+    <div class="alphabet-bar-container"></div>
   `;
 }
 
@@ -575,5 +582,94 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
     const duplicateButton = document.querySelector('[data-action="find-duplicates"]');
     duplicateButton.click();
     expect(toggleDuplicateMode).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    ['loras', 'LorasControls'],
+    ['checkpoints', 'CheckpointsControls'],
+    ['embeddings', 'EmbeddingsControls'],
+  ])('switches %s page into excluded mode and restores state', async (pageKey, exportName) => {
+    renderControlsDom(pageKey);
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState(pageKey);
+    const pageState = stateModule.getCurrentPageState();
+    pageState.filters.search = 'active-search';
+    pageState.showFavoritesOnly = true;
+    pageState.showUpdateAvailableOnly = true;
+
+    const controlsModule = await import('../../../static/js/components/controls/index.js');
+    const ControlsClass = controlsModule[exportName];
+    const controls = new ControlsClass();
+
+    await controls.enterExcludedView();
+
+    expect(pageState.viewMode).toBe('excluded');
+    expect(pageState.filters.search).toBe('');
+    expect(resetAndReloadMock).toHaveBeenLastCalledWith(false);
+    expect(document.getElementById('excludedViewBanner').classList.contains('hidden')).toBe(false);
+    expect(document.querySelector('[data-action="fetch"]').classList.contains('hidden')).toBe(true);
+    expect(document.getElementById('filterButton').disabled).toBe(true);
+
+    pageState.filters.search = 'excluded-search';
+    await controls.exitExcludedView();
+
+    expect(pageState.viewMode).toBe('active');
+    expect(pageState.filters.search).toBe('active-search');
+    expect(pageState.excludedViewState.search).toBe('excluded-search');
+    expect(resetAndReloadMock).toHaveBeenLastCalledWith(true);
+    expect(document.getElementById('excludedViewBanner').classList.contains('hidden')).toBe(true);
+    expect(document.querySelector('[data-action="fetch"]').classList.contains('hidden')).toBe(false);
+    expect(document.getElementById('filterButton').disabled).toBe(false);
+  });
+
+  it('suspends bulk and duplicate modes for excluded view and restores custom filter banner on exit', async () => {
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const pageState = stateModule.getCurrentPageState();
+    stateModule.state.bulkMode = true;
+    pageState.duplicatesMode = true;
+
+    sessionStorage.setItem('lora_manager_recipe_to_lora_filterLoraHash', 'hash-1');
+    sessionStorage.setItem('lora_manager_filterRecipeName', 'Recipe Filter');
+
+    const { LorasControls } = await import('../../../static/js/components/controls/LorasControls.js');
+
+    const toggleBulkMode = vi.fn(() => {
+      stateModule.state.bulkMode = !stateModule.state.bulkMode;
+    });
+    const exitDuplicateMode = vi.fn(() => {
+      pageState.duplicatesMode = false;
+    });
+    const enterDuplicateMode = vi.fn(() => {
+      pageState.duplicatesMode = true;
+    });
+
+    window.bulkManager = { toggleBulkMode };
+    window.modelDuplicatesManager = {
+      duplicateGroups: [{ hash: 'dup-1', models: [{ file_path: 'a' }, { file_path: 'b' }] }],
+      exitDuplicateMode,
+      enterDuplicateMode,
+    };
+
+    const controls = new LorasControls();
+    const indicator = document.getElementById('customFilterIndicator');
+    expect(indicator.classList.contains('hidden')).toBe(false);
+
+    await controls.enterExcludedView();
+
+    expect(toggleBulkMode).toHaveBeenCalledTimes(1);
+    expect(exitDuplicateMode).toHaveBeenCalledTimes(1);
+    expect(stateModule.state.bulkMode).toBe(false);
+    expect(pageState.duplicatesMode).toBe(false);
+    expect(indicator.classList.contains('hidden')).toBe(true);
+
+    await controls.exitExcludedView();
+
+    expect(indicator.classList.contains('hidden')).toBe(false);
+    expect(toggleBulkMode).toHaveBeenCalledTimes(2);
+    expect(enterDuplicateMode).toHaveBeenCalledTimes(1);
+    expect(stateModule.state.bulkMode).toBe(true);
+    expect(pageState.duplicatesMode).toBe(true);
   });
 });

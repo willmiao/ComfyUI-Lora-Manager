@@ -24,6 +24,7 @@ export class CheckpointContextMenu extends BaseContextMenu {
 
     showMenu(x, y, card) {
         super.showMenu(x, y, card);
+        this.updateExcludeMenuItem();
 
         // Update the "Move to other root" label based on current model type
         const moveOtherItem = this.menu.querySelector('[data-action="move-other"]');
@@ -82,6 +83,9 @@ export class CheckpointContextMenu extends BaseContextMenu {
                 break;
             case 'exclude':
                 showExcludeModal(this.currentCard.dataset.filepath);
+                break;
+            case 'restore':
+                this.restoreExcludedModel(this.currentCard.dataset.filepath);
                 break;
         }
     }

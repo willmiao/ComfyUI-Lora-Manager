@@ -175,6 +175,9 @@
             "success": "成功修复了 {count} 个配方。",
             "cancelled": "修复已取消。已修复 {count} 个配方。",
             "error": "配方修复失败：{message}"
+        },
+        "manageExcludedModels": {
+            "label": "管理已排除的模型"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "移动到文件夹",
             "repairMetadata": "修复元数据",
             "excludeModel": "排除模型",
+            "restoreModel": "恢复模型",
             "deleteModel": "删除模型",
             "shareRecipe": "分享配方",
             "viewAllLoras": "查看所有 LoRA",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "删除 {type} 失败：{message}",
             "excludeSuccess": "{type} 排除成功",
             "excludeFailed": "排除 {type} 失败：{message}",
+            "restoreSuccess": "{type} 已成功恢复",
+            "restoreFailed": "恢复 {type} 失败：{message}",
             "fileNameUpdated": "文件名更新成功",
             "fileRenameFailed": "重命名文件失败：{error}",
             "previewUpdated": "预览图片更新成功",

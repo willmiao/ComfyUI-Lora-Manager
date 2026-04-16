@@ -680,3 +680,22 @@
     margin-left: 0;
     line-height: 1;
 }
+
+.excluded-model {
+    border-style: dashed;
+}
+
+.model-excluded-badge {
+    width: 16px;
+    height: 16px;
+    padding: 0;
+    border-radius: 3px;
+    background: color-mix(in oklab, var(--warning-color, #d97706) 85%, white 15%);
+    color: white;
+    font-size: 0.65rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    opacity: 0.9;
+}

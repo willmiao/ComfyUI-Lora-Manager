@@ -51,6 +51,7 @@ export class BaseModelApiClient {
     async fetchModelsPage(page = 1, pageSize = null) {
         const pageState = this.getPageState();
         const actualPageSize = pageSize || pageState.pageSize || this.apiConfig.config.defaultPageSize;
+        const isExcludedView = pageState.viewMode === 'excluded';
 
         try {
             const params = this._buildQueryParams({
@@ -71,7 +72,10 @@ export class BaseModelApiClient {
                 };
             }
 
-            const response = await fetch(`${this.apiConfig.endpoints.list}?${params}`);
+            const endpoint = isExcludedView
+                ? this.apiConfig.endpoints.excluded
+                : this.apiConfig.endpoints.list;
+            const response = await fetch(`${endpoint}?${params}`);
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.displayName}s: ${response.statusText}`);
             }
@@ -84,7 +88,7 @@ export class BaseModelApiClient {
                 totalPages: data.total_pages,
                 currentPage: page,
                 hasMore: page < data.total_pages,
-                folders: data.folders
+                folders: data.folders || []
             };
 
         } catch (error) {
@@ -206,6 +210,50 @@ export class BaseModelApiClient {
         } catch (error) {
             console.error(`Error excluding ${this.apiConfig.config.singularName}:`, error);
             showToast('toast.api.excludeFailed', { type: this.apiConfig.config.singularName, message: error.message }, 'error');
+            return false;
+        } finally {
+            state.loadingManager.hide();
+        }
+    }
+
+    async unexcludeModel(filePath) {
+        try {
+            state.loadingManager.showSimpleLoading(`Restoring ${this.apiConfig.config.singularName}...`);
+
+            const response = await fetch(this.apiConfig.endpoints.unexclude, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_path: filePath })
+            });
+
+            if (!response.ok) {
+                throw new Error(`Failed to restore ${this.apiConfig.config.singularName}: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success) {
+                if (state.virtualScroller) {
+                    state.virtualScroller.removeItemByFilePath(filePath);
+                }
+                showToast(
+                    'toast.api.restoreSuccess',
+                    { type: this.apiConfig.config.displayName },
+                    'success',
+                    `Restored ${this.apiConfig.config.displayName}`
+                );
+                return true;
+            }
+
+            throw new Error(data.error || `Failed to restore ${this.apiConfig.config.singularName}`);
+        } catch (error) {
+            console.error(`Error restoring ${this.apiConfig.config.singularName}:`, error);
+            showToast(
+                'toast.api.restoreFailed',
+                { type: this.apiConfig.config.singularName, message: error.message },
+                'error',
+                `Failed to restore ${this.apiConfig.config.singularName}: ${error.message}`
+            );
             return false;
         } finally {
             state.loadingManager.hide();
@@ -883,20 +931,21 @@ export class BaseModelApiClient {
 
     _buildQueryParams(baseParams, pageState) {
         const params = new URLSearchParams(baseParams);
+        const isExcludedView = pageState.viewMode === 'excluded';
 
-        if (pageState.activeFolder !== null) {
+        if (!isExcludedView && pageState.activeFolder !== null) {
             params.append('folder', pageState.activeFolder);
         }
 
-        if (pageState.showFavoritesOnly) {
+        if (!isExcludedView && pageState.showFavoritesOnly) {
             params.append('favorites_only', 'true');
         }
 
-        if (pageState.showUpdateAvailableOnly) {
+        if (!isExcludedView && pageState.showUpdateAvailableOnly) {
             params.append('update_available_only', 'true');
         }
 
-        if (this.apiConfig.config.supportsLetterFilter && pageState.activeLetterFilter) {
+        if (!isExcludedView && this.apiConfig.config.supportsLetterFilter && pageState.activeLetterFilter) {
             params.append('first_letter', pageState.activeLetterFilter);
         }
 
@@ -918,7 +967,7 @@ export class BaseModelApiClient {
 
         params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
 
-        if (pageState.filters) {
+        if (!isExcludedView && pageState.filters) {
             if (pageState.filters.tags && Object.keys(pageState.filters.tags).length > 0) {
                 Object.entries(pageState.filters.tags).forEach(([tag, state]) => {
                     if (state === 'include') {
@@ -981,7 +1030,9 @@ export class BaseModelApiClient {
             }
         }
 
-        this._addModelSpecificParams(params, pageState);
+        if (!isExcludedView) {
+            this._addModelSpecificParams(params, pageState);
+        }
 
         return params;
     }

@@ -8,6 +8,7 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Opti
 
 from ..services.service_registry import ServiceRegistry
 from ..utils.constants import PREVIEW_EXTENSIONS
+from ..utils.metadata_manager import MetadataManager
 
 logger = logging.getLogger(__name__)
 
@@ -207,9 +208,54 @@ class ModelLifecycleService:
 
         excluded = getattr(self._scanner, "_excluded_models", None)
         if isinstance(excluded, list):
-            excluded.append(file_path)
+            if file_path not in excluded:
+                excluded.append(file_path)
+
+        persist_current_cache = getattr(self._scanner, "_persist_current_cache", None)
+        if callable(persist_current_cache):
+            await persist_current_cache()
 
         message = f"Model {os.path.basename(file_path)} excluded"
+        return {"success": True, "message": message}
+
+    async def unexclude_model(self, file_path: str) -> Dict[str, object]:
+        """Restore a previously excluded model to the active cache."""
+
+        if not file_path:
+            raise ValueError("Model path is required")
+
+        if not os.path.exists(file_path):
+            raise ValueError("Model file does not exist")
+
+        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_payload = await self._metadata_loader(metadata_path)
+        metadata_payload["exclude"] = False
+
+        await self._metadata_manager.save_metadata(file_path, metadata_payload)
+
+        metadata, should_skip = await MetadataManager.load_metadata(
+            file_path,
+            self._scanner.model_class,
+        )
+        if should_skip:
+            metadata = None
+        if metadata is None:
+            metadata = metadata_payload
+
+        excluded = getattr(self._scanner, "_excluded_models", None)
+        if isinstance(excluded, list):
+            self._scanner._excluded_models = [
+                path for path in excluded if path != file_path
+            ]
+
+        await self._scanner.update_single_model_cache(
+            file_path,
+            file_path,
+            metadata,
+            recalculate_type=True,
+        )
+
+        message = f"Model {os.path.basename(file_path)} restored"
         return {"success": True, "message": message}
 
     async def bulk_delete_models(self, file_paths: Iterable[str]) -> Dict[str, object]:

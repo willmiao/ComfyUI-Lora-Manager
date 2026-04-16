@@ -48,6 +48,7 @@ class LoraService(BaseModelService):
             "usage_tips": lora_data.get("usage_tips", ""),
             "notes": lora_data.get("notes", ""),
             "favorite": lora_data.get("favorite", False),
+            "exclude": bool(lora_data.get("exclude", False)),
             "update_available": bool(lora_data.get("update_available", False)),
             "skip_metadata_refresh": bool(
                 lora_data.get("skip_metadata_refresh", False)

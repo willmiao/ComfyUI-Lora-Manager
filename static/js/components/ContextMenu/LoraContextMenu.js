@@ -20,6 +20,11 @@ export class LoraContextMenu extends BaseContextMenu {
         return getModelApiClient().saveModelMetadata(filePath, data);
     }
 
+    showMenu(x, y, card) {
+        super.showMenu(x, y, card);
+        this.updateExcludeMenuItem();
+    }
+
     handleMenuAction(action, menuItem) {
         // First try to handle with common actions
         if (ModelContextMenuMixin.handleCommonMenuActions.call(this, action)) {
@@ -60,6 +65,9 @@ export class LoraContextMenu extends BaseContextMenu {
                 break;
             case 'exclude':
                 showExcludeModal(this.currentCard.dataset.filepath);
+                break;
+            case 'restore':
+                this.restoreExcludedModel(this.currentCard.dataset.filepath);
                 break;
         }
     }

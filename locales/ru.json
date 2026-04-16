@@ -175,6 +175,9 @@
             "success": "Успешно восстановлено {count} рецептов.",
             "cancelled": "Восстановление отменено. {count} рецептов было восстановлено.",
             "error": "Ошибка восстановления рецептов: {message}"
+        },
+        "manageExcludedModels": {
+            "label": "Управление исключёнными моделями"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "Переместить в папку",
             "repairMetadata": "Восстановить метаданные",
             "excludeModel": "Исключить модель",
+            "restoreModel": "Восстановить модель",
             "deleteModel": "Удалить модель",
             "shareRecipe": "Поделиться рецептом",
             "viewAllLoras": "Посмотреть все LoRAs",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "Не удалось удалить {type}: {message}",
             "excludeSuccess": "{type} успешно исключен",
             "excludeFailed": "Не удалось исключить {type}: {message}",
+            "restoreSuccess": "{type} успешно восстановлен",
+            "restoreFailed": "Не удалось восстановить {type}: {message}",
             "fileNameUpdated": "Имя файла успешно обновлено",
             "fileRenameFailed": "Не удалось переименовать файл: {error}",
             "previewUpdated": "Превью успешно обновлено",

@@ -22,6 +22,7 @@ export class GlobalContextMenu extends BaseContextMenu {
         const licenseRefreshItem = this.menu.querySelector('[data-action="fetch-missing-licenses"]');
         const downloadExamplesItem = this.menu.querySelector('[data-action="download-example-images"]');
         const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
+        const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
         const repairRecipesItem = this.menu.querySelector('[data-action="repair-recipes"]');
 
         if (isRecipesPage) {
@@ -29,12 +30,14 @@ export class GlobalContextMenu extends BaseContextMenu {
             licenseRefreshItem?.classList.add('hidden');
             downloadExamplesItem?.classList.add('hidden');
             cleanupExamplesItem?.classList.add('hidden');
+            excludedModelsItem?.classList.add('hidden');
             repairRecipesItem?.classList.remove('hidden');
         } else {
             modelUpdateItem?.classList.remove('hidden');
             licenseRefreshItem?.classList.remove('hidden');
             downloadExamplesItem?.classList.remove('hidden');
             cleanupExamplesItem?.classList.remove('hidden');
+            excludedModelsItem?.classList.remove('hidden');
             repairRecipesItem?.classList.add('hidden');
         }
 
@@ -68,10 +71,19 @@ export class GlobalContextMenu extends BaseContextMenu {
                     console.error('Failed to repair recipes:', error);
                 });
                 break;
+            case 'manage-excluded-models':
+                this.manageExcludedModels();
+                break;
             default:
                 console.warn(`Unhandled global context menu action: ${action}`);
                 break;
         }
+    }
+
+    manageExcludedModels() {
+        window.pageControls?.enterExcludedView?.().catch((error) => {
+            console.error('Failed to open excluded models view:', error);
+        });
     }
 
     async downloadExampleImages(menuItem) {

@@ -56,8 +56,10 @@ export function getApiEndpoints(modelType) {
     return {
         // Base CRUD operations
         list: `/api/lm/${modelType}/list`,
+        excluded: `/api/lm/${modelType}/excluded`,
         delete: `/api/lm/${modelType}/delete`,
         exclude: `/api/lm/${modelType}/exclude`,
+        unexclude: `/api/lm/${modelType}/unexclude`,
         rename: `/api/lm/${modelType}/rename`,
         save: `/api/lm/${modelType}/save-metadata`,
         cancelTask: `/api/lm/${modelType}/cancel-task`,

@@ -175,6 +175,9 @@
             "success": "{count} recettes réparées avec succès.",
             "cancelled": "Réparation annulée. {count} recettes ont été réparées.",
             "error": "Échec de la réparation des recettes : {message}"
+        },
+        "manageExcludedModels": {
+            "label": "Gérer les modèles exclus"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "Déplacer vers un dossier",
             "repairMetadata": "Réparer les métadonnées",
             "excludeModel": "Exclure le modèle",
+            "restoreModel": "Restaurer le modèle",
             "deleteModel": "Supprimer le modèle",
             "shareRecipe": "Partager la recipe",
             "viewAllLoras": "Voir tous les LoRAs",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "Échec de la suppression de {type} : {message}",
             "excludeSuccess": "{type} exclu avec succès",
             "excludeFailed": "Échec de l'exclusion de {type} : {message}",
+            "restoreSuccess": "{type} restauré avec succès",
+            "restoreFailed": "Échec de la restauration de {type} : {message}",
             "fileNameUpdated": "Nom de fichier mis à jour avec succès",
             "fileRenameFailed": "Échec du renommage du fichier : {error}",
             "previewUpdated": "Aperçu mis à jour avec succès",

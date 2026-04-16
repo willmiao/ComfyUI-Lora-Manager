@@ -2102,6 +2102,7 @@ describe('Interaction-level regression coverage', () => {
         <div class="context-menu-item" data-action="check-model-updates"></div>
         <div class="context-menu-item" data-action="fetch-missing-licenses"></div>
         <div class="context-menu-item" data-action="cleanup-example-images-folders"></div>
+        <div class="context-menu-item" data-action="manage-excluded-models"></div>
       </div>
     `;
 
@@ -2119,6 +2120,9 @@ describe('Interaction-level regression coverage', () => {
       showProgressPanel: vi.fn(),
       startProgressUpdates: vi.fn(),
       updateDownloadButtonText: vi.fn(),
+    };
+    window.pageControls = {
+      enterExcludedView: vi.fn().mockResolvedValue(undefined),
     };
 
     global.fetch = vi.fn()
@@ -2224,5 +2228,10 @@ describe('Interaction-level regression coverage', () => {
     );
     expect(loadingManagerStub.showSimpleLoading).toHaveBeenNthCalledWith(2, 'Refreshing license metadata for LoRAs...');
     expect(fetchMissingItem.classList.contains('disabled')).toBe(false);
+
+    menu.showMenu(560, 600);
+    const excludedItem = document.querySelector('[data-action="manage-excluded-models"]');
+    excludedItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(window.pageControls.enterExcludedView).toHaveBeenCalledTimes(1);
   });
 });

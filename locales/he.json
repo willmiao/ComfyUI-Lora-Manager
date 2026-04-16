@@ -175,6 +175,9 @@
             "success": "תוקנו בהצלחה {count} מתכונים.",
             "cancelled": "תיקון בוטל. {count} מתכונים תוקנו.",
             "error": "תיקון המתכונים נכשל: {message}"
+        },
+        "manageExcludedModels": {
+            "label": "ניהול מודלים מוחרגים"
         }
     },
     "header": {
@@ -680,6 +683,7 @@
             "moveToFolder": "העבר לתיקייה",
             "repairMetadata": "תיקון מטא-דאטה",
             "excludeModel": "החרג מודל",
+            "restoreModel": "שחזור מודל",
             "deleteModel": "מחק מודל",
             "shareRecipe": "שתף מתכון",
             "viewAllLoras": "הצג את כל ה-LoRAs",
@@ -1803,6 +1807,8 @@
             "deleteFailed": "מחיקת {type} נכשלה: {message}",
             "excludeSuccess": "{type} הוחרג בהצלחה",
             "excludeFailed": "החרגת {type} נכשלה: {message}",
+            "restoreSuccess": "{type} שוחזר בהצלחה",
+            "restoreFailed": "שחזור {type} נכשל: {message}",
             "fileNameUpdated": "שם הקובץ עודכן בהצלחה",
             "fileRenameFailed": "שינוי שם הקובץ נכשל: {error}",
             "previewUpdated": "התצוגה המקדימה עודכנה בהצלחה",

@@ -224,6 +224,42 @@ class ModelListingHandler:
             )
             return web.json_response({"error": str(exc)}, status=500)
 
+    async def get_excluded_models(self, request: web.Request) -> web.Response:
+        start_time = time.perf_counter()
+        try:
+            params = self._parse_common_params(request)
+            result = await self._service.get_excluded_paginated_data(**params)
+
+            format_start = time.perf_counter()
+            formatted_result = {
+                "items": [
+                    await self._service.format_response(item)
+                    for item in result["items"]
+                ],
+                "total": result["total"],
+                "page": result["page"],
+                "page_size": result["page_size"],
+                "total_pages": result["total_pages"],
+            }
+            format_duration = time.perf_counter() - format_start
+
+            duration = time.perf_counter() - start_time
+            self._logger.debug(
+                "Request for %s/excluded took %.3fs (formatting: %.3fs)",
+                self._service.model_type,
+                duration,
+                format_duration,
+            )
+            return web.json_response(formatted_result)
+        except Exception as exc:
+            self._logger.error(
+                "Error retrieving excluded %ss: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
+            return web.json_response({"error": str(exc)}, status=500)
+
     def _parse_common_params(self, request: web.Request) -> Dict:
         page = int(request.query.get("page", "1"))
         page_size = min(int(request.query.get("page_size", "20")), 100)
@@ -390,6 +426,21 @@ class ModelManagementHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
         except Exception as exc:
             self._logger.error("Error excluding model: %s", exc, exc_info=True)
+            return web.Response(text=str(exc), status=500)
+
+    async def unexclude_model(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            file_path = data.get("file_path")
+            if not file_path:
+                return web.Response(text="Model path is required", status=400)
+
+            result = await self._lifecycle_service.unexclude_model(file_path)
+            return web.json_response(result)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error restoring model: %s", exc, exc_info=True)
             return web.Response(text=str(exc), status=500)
 
     async def fetch_civitai(self, request: web.Request) -> web.Response:
@@ -2437,8 +2488,10 @@ class ModelHandlerSet:
         return {
             "handle_models_page": self.page_view.handle,
             "get_models": self.listing.get_models,
+            "get_excluded_models": self.listing.get_excluded_models,
             "delete_model": self.management.delete_model,
             "exclude_model": self.management.exclude_model,
+            "unexclude_model": self.management.unexclude_model,
             "fetch_civitai": self.management.fetch_civitai,
             "fetch_all_civitai": self.civitai.fetch_all_civitai,
             "relink_civitai": self.management.relink_civitai,
