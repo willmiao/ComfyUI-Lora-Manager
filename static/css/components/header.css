@@ -19,6 +19,7 @@
   align-items: center;
   justify-content: space-between;
   height: 100%;
+  gap: 1rem;
 }
 
 /* Responsive header container for larger screens */
@@ -101,7 +102,6 @@
 .header-search {
   flex: 1;
   max-width: 400px;
-  margin: 0 1rem;
   transition: opacity 0.2s ease;
 }
 
