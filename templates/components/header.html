@@ -145,8 +145,21 @@
 
   <div class="filter-section">
     <h4>{{ t('header.filter.baseModel') }}</h4>
+    <input
+      type="text"
+      id="baseModelSearchInput"
+      class="filter-search-input"
+      placeholder="{{ t('header.filter.baseModelSearchPlaceholder') }}"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="none"
+      spellcheck="false"
+    >
     <div class="filter-tags" id="baseModelTags">
       <!-- Tags will be dynamically inserted here -->
+    </div>
+    <div id="baseModelEmptyState" class="filter-empty-state" hidden>
+      {{ t('header.filter.noBaseModelMatches') }}
     </div>
   </div>
   <div class="filter-section">

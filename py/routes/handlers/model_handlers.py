@@ -910,7 +910,7 @@ class ModelQueryHandler:
     async def get_base_models(self, request: web.Request) -> web.Response:
         try:
             limit = int(request.query.get("limit", "20"))
-            if limit < 1 or limit > 100:
+            if limit < 0 or limit > 100:
                 limit = 20
             base_models = await self._service.get_base_models(limit)
             return web.json_response({"success": True, "base_models": base_models})

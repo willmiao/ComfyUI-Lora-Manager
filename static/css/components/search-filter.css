@@ -145,7 +145,7 @@
     position: fixed;
     right: 20px;
     top: 50px; /* Position below header */
-    width: 320px;
+    width: 366px;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-base);
@@ -195,6 +195,31 @@
 
 .filter-section {
     margin-bottom: 16px;
+}
+
+.filter-search-input {
+    width: 100%;
+    box-sizing: border-box;
+    margin-bottom: 8px;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    font-size: 13px;
+}
+
+.filter-search-input:focus {
+    outline: none;
+    border-color: var(--lora-accent);
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 76, 175, 80), 0.15);
+}
+
+.filter-empty-state {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-color);
+    opacity: 0.7;
 }
 
 .filter-section h4 {

@@ -329,6 +329,7 @@ class RecipeQueryHandler:
             if recipe_scanner is None:
                 raise RuntimeError("Recipe scanner unavailable")
 
+            limit = int(request.query.get("limit", "20"))
             cache = await recipe_scanner.get_cached_data()
 
             base_model_counts: Dict[str, int] = {}
@@ -344,6 +345,8 @@ class RecipeQueryHandler:
                 for model, count in base_model_counts.items()
             ]
             sorted_models.sort(key=lambda entry: entry["count"], reverse=True)
+            if limit > 0:
+                sorted_models = sorted_models[:limit]
             return web.json_response({"success": True, "base_models": sorted_models})
         except Exception as exc:
             self._logger.error("Error retrieving base models: %s", exc, exc_info=True)

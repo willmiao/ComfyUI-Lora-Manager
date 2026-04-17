@@ -25,6 +25,7 @@ export function initializeEventManagement() {
     setupPageUnloadCleanup();
     
     // Register global event handlers that need coordination
+    registerGlobalEventHandlers();
     registerContextMenuEvents();
     registerGlobalClickHandlers();
     
@@ -148,12 +149,24 @@ function registerGlobalClickHandlers() {
  * Register common application-wide event handlers
  */
 export function registerGlobalEventHandlers() {
+    eventManager.removeHandler('keydown', 'global-escape');
+    eventManager.removeHandler('focusin', 'global-focus');
+    eventManager.removeHandler('click', 'global-analytics');
+
     // Escape key handler for closing modals/panels
     eventManager.addHandler('keydown', 'global-escape', (e) => {
         if (e.key === 'Escape') {
             // Check if any modal is open and close it
             if (eventManager.getState('modalOpen')) {
                 modalManager.closeCurrentModal();
+                return true; // Stop propagation
+            }
+
+            if (
+                window.filterManager?.filterPanel
+                && !window.filterManager.filterPanel.classList.contains('hidden')
+            ) {
+                window.filterManager.closeFilterPanel();
                 return true; // Stop propagation
             }
             

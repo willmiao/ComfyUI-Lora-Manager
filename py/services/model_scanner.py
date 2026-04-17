@@ -1535,7 +1535,7 @@ class ModelScanner:
         return sorted_tags[:limit]
         
     async def get_base_models(self, limit: int = 20) -> List[Dict[str, any]]:
-        """Get base models sorted by frequency"""
+        """Get base models sorted by count. If limit is 0, return all."""
         cache = await self.get_cached_data()
         
         base_model_counts = {}
@@ -1546,7 +1546,9 @@ class ModelScanner:
         
         sorted_models = [{'name': model, 'count': count} for model, count in base_model_counts.items()]
         sorted_models.sort(key=lambda x: x['count'], reverse=True)
-        
+
+        if limit == 0:
+            return sorted_models
         return sorted_models[:limit]
         
     async def get_model_info_by_name(self, name):

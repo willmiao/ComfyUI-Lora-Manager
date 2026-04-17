@@ -20,6 +20,8 @@ export class FilterManager {
         this.filterPanel = document.getElementById('filterPanel');
         this.filterButton = document.getElementById('filterButton');
         this.activeFiltersCount = document.getElementById('activeFiltersCount');
+        this.baseModelSearchInput = document.getElementById('baseModelSearchInput');
+        this.baseModelOptions = [];
         this.tagsLoaded = false;
 
         // Initialize preset manager
@@ -49,6 +51,8 @@ export class FilterManager {
     }
 
     initialize() {
+        this.initializeFilterSearchInputs();
+
         // Create base model filter tags if they exist
         if (document.getElementById('baseModelTags')) {
             this.createBaseModelTags();
@@ -110,6 +114,18 @@ export class FilterManager {
         this.updateTagLogicToggleUI();
     }
 
+    initializeFilterSearchInputs() {
+        if (this.baseModelSearchInput) {
+            this.baseModelSearchInput.addEventListener('input', () => {
+                this.renderBaseModelTags();
+            });
+        }
+    }
+
+    getNormalizedSearchQuery(input) {
+        return (input?.value || '').trim().toLowerCase();
+    }
+
     updateTagLogicToggleUI() {
         const toggleContainer = document.getElementById('tagLogicToggle');
         if (!toggleContainer) return;
@@ -164,11 +180,6 @@ export class FilterManager {
 
         tagsContainer.innerHTML = '';
 
-        if (!tags.length) {
-            tagsContainer.innerHTML = `<div class="no-tags">No ${this.currentPage === 'recipes' ? 'recipe ' : ''}tags available</div>`;
-            return;
-        }
-
         // Collect existing tag names from the API response
         const existingTagNames = new Set(tags.map(t => t.tag));
 
@@ -184,6 +195,11 @@ export class FilterManager {
                     existingTagNames.add(tagName);
                 }
             });
+        }
+
+        if (!tags.length) {
+            tagsContainer.innerHTML = `<div class="no-tags">No ${this.currentPage === 'recipes' ? 'recipe ' : ''}tags available</div>`;
+            return;
         }
 
         tags.forEach(tag => {
@@ -212,7 +228,6 @@ export class FilterManager {
                 await this.applyFilters(false);
             });
 
-            this.applyTagElementState(tagEl, (this.filters.tags && this.filters.tags[tagName]) || 'none');
             tagsContainer.appendChild(tagEl);
         });
 
@@ -235,8 +250,8 @@ export class FilterManager {
             await this.applyFilters(false);
         });
 
-        this.applyTagElementState(noTagsEl, (this.filters.tags && this.filters.tags[noTagsKey]) || 'none');
         tagsContainer.appendChild(noTagsEl);
+        this.updateTagSelections();
     }
 
     initializeLicenseFilters() {
@@ -323,50 +338,72 @@ export class FilterManager {
         if (!baseModelTagsContainer) return;
 
         // Set the API endpoint based on current page
-        const apiEndpoint = `/api/lm/${this.currentPage}/base-models`;
+        const apiEndpoint = `/api/lm/${this.currentPage}/base-models?limit=0`;
 
         // Fetch base models
         fetch(apiEndpoint)
             .then(response => response.json())
             .then(data => {
                 if (data.success && data.base_models) {
-                    baseModelTagsContainer.innerHTML = '';
-
-                    data.base_models.forEach(model => {
-                        const tag = document.createElement('div');
-                        tag.className = `filter-tag base-model-tag`;
-                        tag.dataset.baseModel = model.name;
-                        tag.innerHTML = `${model.name} <span class="tag-count">${model.count}</span>`;
-
-                        // Add click handler to toggle selection and automatically apply
-                        tag.addEventListener('click', async () => {
-                            tag.classList.toggle('active');
-
-                            if (tag.classList.contains('active')) {
-                                if (!this.filters.baseModel.includes(model.name)) {
-                                    this.filters.baseModel.push(model.name);
-                                }
-                            } else {
-                                this.filters.baseModel = this.filters.baseModel.filter(m => m !== model.name);
-                            }
-
-                            this.updateActiveFiltersCount();
-
-                            // Auto-apply filter when tag is clicked
-                            await this.applyFilters(false);
-                        });
-
-                        baseModelTagsContainer.appendChild(tag);
-                    });
-
-                    // Update selections based on stored filters
-                    this.updateTagSelections();
+                    this.baseModelOptions = data.base_models;
+                    this.renderBaseModelTags();
                 }
             })
             .catch(error => {
                 console.error(`Error fetching base models for ${this.currentPage}:`, error);
                 baseModelTagsContainer.innerHTML = '<div class="tags-error">Failed to load base models</div>';
             });
+    }
+
+    renderBaseModelTags() {
+        const baseModelTagsContainer = document.getElementById('baseModelTags');
+        const emptyState = document.getElementById('baseModelEmptyState');
+        if (!baseModelTagsContainer) return;
+
+        baseModelTagsContainer.innerHTML = '';
+
+        if (!this.baseModelOptions.length) {
+            baseModelTagsContainer.innerHTML = '<div class="no-tags">No base models available</div>';
+            if (emptyState) {
+                emptyState.hidden = true;
+            }
+            return;
+        }
+
+        const query = this.getNormalizedSearchQuery(this.baseModelSearchInput);
+        const filteredModels = query
+            ? this.baseModelOptions.filter(model => model.name.toLowerCase().includes(query))
+            : this.baseModelOptions;
+
+        filteredModels.forEach(model => {
+            const tag = document.createElement('div');
+            tag.className = 'filter-tag base-model-tag';
+            tag.dataset.baseModel = model.name;
+            tag.innerHTML = `${model.name} <span class="tag-count">${model.count}</span>`;
+
+            tag.addEventListener('click', async () => {
+                tag.classList.toggle('active');
+
+                if (tag.classList.contains('active')) {
+                    if (!this.filters.baseModel.includes(model.name)) {
+                        this.filters.baseModel.push(model.name);
+                    }
+                } else {
+                    this.filters.baseModel = this.filters.baseModel.filter(m => m !== model.name);
+                }
+
+                this.updateActiveFiltersCount();
+                await this.applyFilters(false);
+            });
+
+            baseModelTagsContainer.appendChild(tag);
+        });
+
+        if (emptyState) {
+            emptyState.hidden = filteredModels.length > 0;
+        }
+
+        this.updateTagSelections();
     }
 
     async createModelTypeTags() {
@@ -453,6 +490,7 @@ export class FilterManager {
 
                 this.filterPanel.classList.remove('hidden');
                 this.filterButton.classList.add('active');
+                this.baseModelSearchInput?.focus();
 
                 // Load tags if they haven't been loaded yet
                 if (!this.tagsLoaded) {

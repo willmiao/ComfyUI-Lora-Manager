@@ -110,7 +110,9 @@ function renderControlsDom(pageKey) {
       <div class="search-option-tag active" data-option="filename"></div>
     </div>
     <div id="filterPanel" class="filter-panel hidden">
+      <input id="baseModelSearchInput" />
       <div id="baseModelTags" class="filter-tags"></div>
+      <div id="baseModelEmptyState" hidden></div>
       <div id="modelTagsFilter" class="filter-tags"></div>
       <button class="clear-filter"></button>
     </div>
@@ -286,6 +288,8 @@ describe('FilterManager tag and base model filters', () => {
 
     const manager = new FilterManager({ page: pageKey });
 
+    expect(global.fetch).toHaveBeenCalledWith(`/api/lm/${pageKey}/base-models?limit=0`);
+
     await vi.waitFor(() => {
       const chip = document.querySelector('[data-base-model="SDXL"]');
       expect(chip).not.toBeNull();
@@ -311,6 +315,167 @@ describe('FilterManager tag and base model filters', () => {
     expect(getCurrentPageState().filters.baseModel).toEqual([]);
     expect(baseModelChip.classList.contains('active')).toBe(false);
   });
+
+  it('filters base model chips locally without changing selected state', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        base_models: [
+          { name: 'SDXL', count: 2 },
+          { name: 'LTXV 2.3', count: 1 },
+        ],
+      }),
+    });
+
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { getCurrentPageState } = stateModule;
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+
+    new FilterManager({ page: 'loras' });
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-base-model="LTXV 2.3"]')).not.toBeNull();
+    });
+
+    const searchInput = document.getElementById('baseModelSearchInput');
+    const ltxvChip = document.querySelector('[data-base-model="LTXV 2.3"]');
+    ltxvChip.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledTimes(1));
+    expect(getCurrentPageState().filters.baseModel).toEqual(['LTXV 2.3']);
+
+    loadMoreWithVirtualScrollMock.mockClear();
+    searchInput.value = 'sdx';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+
+    expect(document.querySelector('[data-base-model="SDXL"]')).not.toBeNull();
+    expect(document.querySelector('[data-base-model="LTXV 2.3"]')).toBeNull();
+    expect(document.getElementById('baseModelEmptyState').hidden).toBe(true);
+    expect(getCurrentPageState().filters.baseModel).toEqual(['LTXV 2.3']);
+
+    searchInput.value = 'zzz';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(document.getElementById('baseModelEmptyState').hidden).toBe(false);
+
+    searchInput.value = 'ltx';
+    searchInput.dispatchEvent(new Event('input', { bubbles: true }));
+    const restoredChip = document.querySelector('[data-base-model="LTXV 2.3"]');
+    expect(restoredChip).not.toBeNull();
+    expect(restoredChip.classList.contains('active')).toBe(true);
+  });
+
+  it('disables browser autocomplete helpers for the base model search input', async () => {
+    renderControlsDom('loras');
+
+    const searchInput = document.getElementById('baseModelSearchInput');
+
+    searchInput.setAttribute('autocomplete', 'off');
+    searchInput.setAttribute('autocorrect', 'off');
+    searchInput.setAttribute('autocapitalize', 'none');
+    searchInput.setAttribute('spellcheck', 'false');
+
+    expect(searchInput.getAttribute('autocomplete')).toBe('off');
+    expect(searchInput.getAttribute('autocorrect')).toBe('off');
+    expect(searchInput.getAttribute('autocapitalize')).toBe('none');
+    expect(searchInput.getAttribute('spellcheck')).toBe('false');
+  });
+
+  it('focuses the base model search input when opening the filter panel', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        base_models: [{ name: 'SDXL', count: 2 }],
+      }),
+    });
+
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+
+    const manager = new FilterManager({ page: 'loras' });
+    const searchInput = document.getElementById('baseModelSearchInput');
+
+    expect(document.activeElement).not.toBe(searchInput);
+
+    manager.toggleFilterPanel();
+
+    expect(document.activeElement).toBe(searchInput);
+  });
+
+  it('does not let base model search trigger bulk shortcuts', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        base_models: [{ name: 'SDXL', count: 2 }],
+      }),
+    });
+
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { BulkManager } = await import('../../../static/js/managers/BulkManager.js');
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+
+    const filterManager = new FilterManager({ page: 'loras' });
+    const bulkManager = new BulkManager();
+    const searchInput = document.getElementById('baseModelSearchInput');
+    window.filterManager = filterManager;
+
+    searchInput.focus();
+
+    const bulkEvent = new KeyboardEvent('keydown', {
+      key: 'b',
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(bulkEvent, 'target', { value: searchInput });
+    expect(bulkManager.handleGlobalKeyboard(bulkEvent)).toBe(false);
+
+    const selectAllEvent = new KeyboardEvent('keydown', {
+      key: 'a',
+      ctrlKey: true,
+      bubbles: true,
+      cancelable: true,
+    });
+    Object.defineProperty(selectAllEvent, 'target', { value: searchInput });
+    expect(bulkManager.handleGlobalKeyboard(selectAllEvent)).toBe(false);
+  });
+
+  it('closes the filter panel on Escape', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        base_models: [{ name: 'SDXL', count: 2 }],
+      }),
+    });
+
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+    const { eventManager } = await import('../../../static/js/utils/EventManager.js');
+    const { initializeEventManagement } = await import('../../../static/js/utils/eventManagementInit.js');
+
+    eventManager.cleanup();
+    initializeEventManagement();
+
+    const manager = new FilterManager({ page: 'loras' });
+    window.filterManager = manager;
+    manager.toggleFilterPanel();
+    expect(manager.filterPanel.classList.contains('hidden')).toBe(false);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+    expect(manager.filterPanel.classList.contains('hidden')).toBe(true);
+    eventManager.cleanup();
+  });
+
 });
 
 describe('PageControls favorites, sorting, and duplicates scenarios', () => {

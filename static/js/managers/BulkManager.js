@@ -240,9 +240,7 @@ export class BulkManager {
      */
     handleGlobalKeyboard(e) {
         // Skip if modal is open (handled by event manager conditions)
-        // Skip if search input is focused
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput && document.activeElement === searchInput) {
+        if (this.isEditingTextInputContext(e.target)) {
             return false; // Don't handle, allow default behavior
         }
 
@@ -264,6 +262,26 @@ export class BulkManager {
         }
 
         return false; // Continue with other handlers
+    }
+
+    isEditingTextInputContext(target) {
+        const activeElement = document.activeElement;
+        const candidate = target instanceof Element ? target : activeElement;
+        if (!candidate) {
+            return false;
+        }
+
+        const tagName = candidate.tagName?.toLowerCase();
+        if (
+            candidate.isContentEditable
+            || tagName === 'input'
+            || tagName === 'textarea'
+            || tagName === 'select'
+        ) {
+            return true;
+        }
+
+        return Boolean(candidate.closest?.('#filterPanel'));
     }
 
     toggleBulkMode() {
