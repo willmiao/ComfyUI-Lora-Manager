@@ -232,7 +232,7 @@ export class FilterPresetManager {
 
         try {
             const fetchOptions = signal ? { signal } : {};
-            const response = await fetch(`/api/lm/${this.currentPage}/base-models`, fetchOptions);
+            const response = await fetch(`/api/lm/${this.currentPage}/base-models?limit=0`, fetchOptions);
 
             if (!response.ok) throw new Error('Failed to fetch base models');
 

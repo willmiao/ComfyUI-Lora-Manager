@@ -113,6 +113,7 @@ function renderControlsDom(pageKey) {
       <input id="baseModelSearchInput" />
       <div id="baseModelTags" class="filter-tags"></div>
       <div id="baseModelEmptyState" hidden></div>
+      <div id="filterPresets" class="filter-presets"></div>
       <div id="modelTagsFilter" class="filter-tags"></div>
       <button class="clear-filter"></button>
     </div>
@@ -474,6 +475,98 @@ describe('FilterManager tag and base model filters', () => {
 
     expect(manager.filterPanel.classList.contains('hidden')).toBe(true);
     eventManager.cleanup();
+  });
+
+  it('applies all base models from a preset using the full base model list', async () => {
+    global.fetch = vi.fn((url) => {
+      if (url.includes('/base-models?limit=0')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            base_models: [
+              { name: 'SDXL 1.0', count: 5 },
+              { name: 'SDXL Lightning', count: 3 },
+              { name: 'SDXL Hyper', count: 2 },
+            ],
+          }),
+        });
+      }
+
+      if (url.includes('/base-models')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            base_models: [{ name: 'SDXL 1.0', count: 5 }],
+          }),
+        });
+      }
+
+      if (url.includes('/top-tags')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            tags: [],
+          }),
+        });
+      }
+
+      if (url.includes('/model-types')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({
+            success: true,
+            model_types: [],
+          }),
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ success: true }),
+      });
+    });
+
+    renderControlsDom('loras');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('loras');
+    stateModule.state.global.settings.filter_presets = {
+      loras: [
+        {
+          name: 'SDXL Family',
+          filters: {
+            baseModel: ['SDXL 1.0', 'SDXL Lightning', 'SDXL Hyper'],
+            tags: {},
+            license: {},
+            modelTypes: [],
+            tagLogic: 'any',
+          },
+        },
+      ],
+    };
+
+    const { getCurrentPageState } = stateModule;
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+
+    const manager = new FilterManager({ page: 'loras' });
+
+    await vi.waitFor(() => {
+      expect(document.querySelector('[data-base-model="SDXL Hyper"]')).not.toBeNull();
+    });
+
+    await manager.presetManager.applyPreset('SDXL Family');
+
+    expect(manager.activePreset).toBe('SDXL Family');
+    expect(manager.filters.baseModel).toEqual(['SDXL 1.0', 'SDXL Lightning', 'SDXL Hyper']);
+    expect(getCurrentPageState().filters.baseModel).toEqual(['SDXL 1.0', 'SDXL Lightning', 'SDXL Hyper']);
+    expect(loadMoreWithVirtualScrollMock).toHaveBeenCalledWith(true, false);
+    expect(showToastMock).toHaveBeenCalledWith(
+      'Preset "SDXL Family" applied',
+      {},
+      'success',
+    );
   });
 
 });
