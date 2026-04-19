@@ -263,6 +263,19 @@
                 "red": "civitai.red（無限制）"
             }
         },
+        "downloadBackend": {
+            "label": "下載後端",
+            "help": "選擇模型檔案的下載方式。Python 使用內建下載器。aria2 使用實驗性的外部下載程序。",
+            "options": {
+                "python": "Python（內建）",
+                "aria2": "aria2（實驗性）"
+            }
+        },
+        "aria2cPath": {
+            "label": "aria2c 路徑",
+            "help": "可選的 aria2c 可執行檔路徑。留空則使用系統 PATH 中的 aria2c。",
+            "placeholder": "留空則使用 PATH 中的 aria2c"
+        },
         "civitaiHostBanner": {
             "title": "已提供 Civitai 站點偏好設定",
             "content": "Civitai 現在使用 civitai.com 提供 SFW 內容，使用 civitai.red 提供無限制內容。你可以在設定中變更預設開啟的站點。",
@@ -278,6 +291,7 @@
         },
         "sections": {
             "contentFiltering": "內容過濾",
+            "downloads": "下載",
             "videoSettings": "影片設定",
             "layoutSettings": "版面設定",
             "misc": "其他",

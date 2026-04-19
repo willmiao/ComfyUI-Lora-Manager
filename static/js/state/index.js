@@ -6,6 +6,8 @@ import { DEFAULT_PATH_TEMPLATES, DEFAULT_PRIORITY_TAG_CONFIG } from '../utils/co
 const DEFAULT_SETTINGS_BASE = Object.freeze({
     civitai_api_key: '',
     civitai_host: 'civitai.com',
+    download_backend: 'python',
+    aria2c_path: '',
     use_portable_settings: false,
     language: 'en',
     show_only_sfw: false,

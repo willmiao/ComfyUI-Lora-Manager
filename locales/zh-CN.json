@@ -263,6 +263,19 @@
                 "red": "civitai.red（无限制）"
             }
         },
+        "downloadBackend": {
+            "label": "下载后端",
+            "help": "选择模型文件的下载方式。Python 使用内置下载器。aria2 使用实验性的外部下载进程。",
+            "options": {
+                "python": "Python（内置）",
+                "aria2": "aria2（实验性）"
+            }
+        },
+        "aria2cPath": {
+            "label": "aria2c 路径",
+            "help": "可选的 aria2c 可执行文件路径。留空则使用系统 PATH 中的 aria2c。",
+            "placeholder": "留空则使用 PATH 中的 aria2c"
+        },
         "civitaiHostBanner": {
             "title": "已提供 Civitai 站点偏好设置",
             "content": "Civitai 现在使用 civitai.com 提供 SFW 内容，使用 civitai.red 提供无限制内容。你可以在设置中更改默认打开的站点。",
@@ -278,6 +291,7 @@
         },
         "sections": {
             "contentFiltering": "内容过滤",
+            "downloads": "下载",
             "videoSettings": "视频设置",
             "layoutSettings": "布局设置",
             "misc": "其他",

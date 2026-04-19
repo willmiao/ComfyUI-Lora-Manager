@@ -147,6 +147,11 @@ def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     assert mgr.get("civitai_api_key") == "secret"
 
 
+def test_default_download_backend_is_python(manager):
+    assert manager.get("download_backend") == "python"
+    assert manager.get("aria2c_path") == ""
+
+
 def _create_manager_with_settings(
     tmp_path, monkeypatch, initial_settings, *, save_spy=None
 ):

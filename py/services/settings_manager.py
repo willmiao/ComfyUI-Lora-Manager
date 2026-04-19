@@ -55,6 +55,8 @@ DEFAULT_KEYS_CLEANUP_THRESHOLD = 10
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "civitai_api_key": "",
     "civitai_host": "civitai.com",
+    "download_backend": "python",
+    "aria2c_path": "",
     "use_portable_settings": False,
     "hash_chunk_size_mb": DEFAULT_HASH_CHUNK_SIZE_MB,
     "language": "en",

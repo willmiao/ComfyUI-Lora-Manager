@@ -807,6 +807,16 @@ export class SettingsManager {
             civitaiHostSelect.value = state.global.settings.civitai_host || 'civitai.com';
         }
 
+        const downloadBackendSelect = document.getElementById('downloadBackend');
+        if (downloadBackendSelect) {
+            downloadBackendSelect.value = state.global.settings.download_backend || 'python';
+        }
+
+        const aria2cPathInput = document.getElementById('aria2cPath');
+        if (aria2cPathInput) {
+            aria2cPathInput.value = state.global.settings.aria2c_path || '';
+        }
+
         const recipesPathInput = document.getElementById('recipesPath');
         if (recipesPathInput) {
             recipesPathInput.value = state.global.settings.recipes_path || '';
@@ -950,7 +960,34 @@ export class SettingsManager {
             languageSelect.value = currentLanguage;
         }
 
+        this.loadDownloadBackendSettings();
         this.loadProxySettings();
+    }
+
+    loadDownloadBackendSettings() {
+        const downloadBackendSelect = document.getElementById('downloadBackend');
+        const aria2PathSetting = document.getElementById('aria2PathSetting');
+        const updateVisibility = () => {
+            if (!aria2PathSetting || !downloadBackendSelect) {
+                return;
+            }
+            aria2PathSetting.style.display = downloadBackendSelect.value === 'aria2' ? 'block' : 'none';
+        };
+
+        if (downloadBackendSelect) {
+            downloadBackendSelect.value = state.global.settings.download_backend || 'python';
+            downloadBackendSelect.onchange = () => {
+                updateVisibility();
+                this.saveSelectSetting('downloadBackend', 'download_backend');
+            };
+        }
+
+        const aria2cPathInput = document.getElementById('aria2cPath');
+        if (aria2cPathInput) {
+            aria2cPathInput.value = state.global.settings.aria2c_path || '';
+        }
+
+        updateVisibility();
     }
 
     setupPriorityTagInputs() {

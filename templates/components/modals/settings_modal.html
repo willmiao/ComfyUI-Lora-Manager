@@ -129,6 +129,43 @@
                             </div>
                         </div>
 
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.downloads') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="downloadBackend">{{ t('settings.downloadBackend.label') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadBackend.help') }}"></i>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="downloadBackend" onchange="settingsManager.saveSelectSetting('downloadBackend', 'download_backend')">
+                                            <option value="python">{{ t('settings.downloadBackend.options.python') }}</option>
+                                            <option value="aria2">{{ t('settings.downloadBackend.options.aria2') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item" id="aria2PathSetting" style="display: none;">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="aria2cPath">{{ t('settings.aria2cPath.label') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aria2cPath.help') }}"></i>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper">
+                                            <input type="text"
+                                                   id="aria2cPath"
+                                                   placeholder="{{ t('settings.aria2cPath.placeholder') }}"
+                                                   onblur="settingsManager.saveInputSetting('aria2cPath', 'aria2c_path')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Backup -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">

@@ -263,6 +263,19 @@
                 "red": "civitai.red (ללא הגבלות)"
             }
         },
+        "downloadBackend": {
+            "label": "מנגנון הורדה",
+            "help": "בחר כיצד יורדים קבצי המודל. Python משתמש במוריד המובנה. aria2 משתמש בתהליך הורדה חיצוני ניסיוני.",
+            "options": {
+                "python": "Python (מובנה)",
+                "aria2": "aria2 (ניסיוני)"
+            }
+        },
+        "aria2cPath": {
+            "label": "נתיב aria2c",
+            "help": "נתיב אופציונלי לקובץ ההפעלה aria2c. השאר ריק כדי להשתמש ב-aria2c מתוך ה-PATH של המערכת.",
+            "placeholder": "השאר ריק כדי להשתמש ב-aria2c מתוך ה-PATH"
+        },
         "civitaiHostBanner": {
             "title": "העדפת מארח Civitai זמינה",
             "content": "Civitai משתמש כעת ב-civitai.com עבור תוכן SFW וב-civitai.red עבור תוכן ללא הגבלות. ניתן לשנות בהגדרות איזה אתר ייפתח כברירת מחדל.",
@@ -278,6 +291,7 @@
         },
         "sections": {
             "contentFiltering": "סינון תוכן",
+            "downloads": "הורדות",
             "videoSettings": "הגדרות וידאו",
             "layoutSettings": "הגדרות פריסה",
             "misc": "שונות",
