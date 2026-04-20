@@ -332,6 +332,43 @@ def test_auto_set_default_roots_keeps_valid_values(manager):
     assert manager.get("default_embedding_root") == "/embeddings"
 
 
+def test_auto_set_default_roots_keeps_valid_extra_values(manager):
+    manager.settings["default_lora_root"] = "/extra-loras"
+    manager.settings["default_checkpoint_root"] = "/extra-checkpoints"
+    manager.settings["default_embedding_root"] = "/extra-embeddings"
+    manager.settings["default_unet_root"] = "/extra-unet"
+
+    manager.settings["folder_paths"] = {
+        "loras": ["/loras"],
+        "checkpoints": ["/checkpoints"],
+        "unet": ["/unet"],
+        "embeddings": ["/embeddings"],
+    }
+    manager.settings["extra_folder_paths"] = {
+        "loras": ["/extra-loras"],
+        "checkpoints": ["/extra-checkpoints"],
+        "unet": ["/extra-unet"],
+        "embeddings": ["/extra-embeddings"],
+    }
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "/extra-loras"
+    assert manager.get("default_checkpoint_root") == "/extra-checkpoints"
+    assert manager.get("default_unet_root") == "/extra-unet"
+    assert manager.get("default_embedding_root") == "/extra-embeddings"
+
+
+def test_auto_set_default_roots_falls_back_to_extra_when_primary_missing(manager):
+    manager.settings["default_lora_root"] = ""
+    manager.settings["folder_paths"] = {"loras": []}
+    manager.settings["extra_folder_paths"] = {"loras": ["/extra-loras"]}
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "/extra-loras"
+
+
 def test_delete_setting(manager):
     manager.set("example", 1)
     manager.delete("example")

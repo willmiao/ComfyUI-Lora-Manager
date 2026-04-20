@@ -763,34 +763,29 @@ class SettingsManager:
         if self._preserve_disk_template:
             return
 
-        folder_paths = self.settings.get("folder_paths", {})
         updated = False
 
         def _check_and_auto_set(key: str, setting_key: str) -> bool:
             """Repair default roots when empty or no longer present."""
             current = self.settings.get(setting_key, "")
-            candidates = folder_paths.get(key, [])
-            if not isinstance(candidates, list) or not candidates:
+            primary_candidates = self._get_valid_root_candidates(key)
+            if not primary_candidates:
                 return False
 
-            # Filter valid path strings
-            valid_paths = [p for p in candidates if isinstance(p, str) and p.strip()]
-            if not valid_paths:
+            allowed_roots = self._get_allowed_roots(key)
+            if current and current in allowed_roots:
                 return False
 
-            if current in valid_paths:
-                return False
-
-            self.settings[setting_key] = valid_paths[0]
+            self.settings[setting_key] = primary_candidates[0]
             if current:
                 logger.info(
-                    "Repaired stale %s from '%s' to '%s'",
+                    "Repaired stale %s from '%s' to '%s' because it is not present in primary or extra roots",
                     setting_key,
                     current,
-                    valid_paths[0],
+                    primary_candidates[0],
                 )
             else:
-                logger.info("Auto-set %s to '%s'", setting_key, valid_paths[0])
+                logger.info("Auto-set %s to '%s'", setting_key, primary_candidates[0])
             return True
 
         # Process all model types
@@ -812,6 +807,33 @@ class SettingsManager:
                 self._needs_initial_save = True
             else:
                 self._save_settings()
+
+    def _get_valid_root_candidates(self, key: str) -> List[str]:
+        """Return stable root candidates, preferring primary roots over extra roots."""
+
+        candidates: List[str] = []
+        seen: set[str] = set()
+        for mapping_key in ("folder_paths", "extra_folder_paths"):
+            raw_paths = self.settings.get(mapping_key, {})
+            if not isinstance(raw_paths, Mapping):
+                continue
+            values = raw_paths.get(key, [])
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                if not isinstance(value, str):
+                    continue
+                normalized = value.strip()
+                if not normalized or normalized in seen:
+                    continue
+                seen.add(normalized)
+                candidates.append(normalized)
+        return candidates
+
+    def _get_allowed_roots(self, key: str) -> set[str]:
+        """Return all valid roots for a model type, including extra roots."""
+
+        return set(self._get_valid_root_candidates(key))
 
     def _check_environment_variables(self) -> None:
         """Check for environment variables and update settings if needed"""
