@@ -804,7 +804,8 @@ class Downloader:
             Tuple[bool, Union[bytes, str], Optional[Dict]]: (success, content or error message, response headers if requested)
         """
         guard = await ConnectivityGuard.get_instance()
-        if guard.should_block_request():
+        destination = self._guard_destination(url)
+        if guard.should_block_request(destination):
             return False, OFFLINE_FRIENDLY_MESSAGE, None
 
         try:
@@ -849,8 +850,8 @@ class Downloader:
 
         except Exception as e:
             if guard.is_network_unreachable_error(e):
-                guard.register_network_failure(e)
-                if guard.should_block_request():
+                guard.register_network_failure(e, destination)
+                if guard.should_block_request(destination):
                     return False, OFFLINE_FRIENDLY_MESSAGE, None
                 logger.debug("Network unavailable during memory download: %s", e)
                 return False, str(e), None
