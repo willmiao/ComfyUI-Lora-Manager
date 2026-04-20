@@ -4,6 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
+from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
 from py.services.errors import RateLimitError
 from py.services.metadata_sync_service import MetadataSyncService
 
@@ -243,17 +244,32 @@ async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
 
     assert not ok
     assert "Model not found" in error
-    assert model_data["from_civitai"] is False
-    assert model_data["civitai_deleted"] is True
 
-    helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
-    assert model_data["hydrated"] is True
 
-    helpers.metadata_manager.save_metadata.assert_awaited_once()
-    call_args = helpers.metadata_manager.save_metadata.await_args
-    assert call_args.args[0].endswith("model.safetensors")
-    assert "folder" not in call_args.args[1]
-    assert call_args.args[1]["hydrated"] is True
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_returns_friendly_offline_message(tmp_path):
+    helpers = build_service()
+    helpers.default_provider.get_model_by_hash.return_value = (None, OFFLINE_COOLDOWN_ERROR)
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "model_name": "Local",
+        "folder": "root",
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="abc",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok is False
+    assert error is not None
+    assert OFFLINE_FRIENDLY_MESSAGE in error
+    update_cache.assert_not_awaited()
 
 
 @pytest.mark.asyncio

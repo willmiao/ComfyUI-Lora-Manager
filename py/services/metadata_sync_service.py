@@ -11,6 +11,7 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
 from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
+from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
@@ -274,11 +275,18 @@ class MetadataSyncService:
                     else "No provider returned metadata"
                 )
 
+                resolved_error = last_error or default_error
+                if is_expected_offline_error(resolved_error):
+                    resolved_error = OFFLINE_FRIENDLY_MESSAGE
+
                 error_msg = (
-                    f"Error fetching metadata: {last_error or default_error} "
+                    f"Error fetching metadata: {resolved_error} "
                     f"(model_name={model_data.get('model_name', '')})"
                 )
-                logger.error(error_msg)
+                if is_expected_offline_error(resolved_error):
+                    logger.info(error_msg)
+                else:
+                    logger.error(error_msg)
                 return False, error_msg
 
             model_data["from_civitai"] = True
@@ -347,6 +355,9 @@ class MetadataSyncService:
             return False, error_msg
         except Exception as exc:  # pragma: no cover - error path
             error_msg = f"Error fetching metadata: {exc}"
+            if is_expected_offline_error(str(exc)):
+                logger.info(OFFLINE_FRIENDLY_MESSAGE)
+                return False, OFFLINE_FRIENDLY_MESSAGE
             logger.error(error_msg, exc_info=True)
             return False, error_msg
 

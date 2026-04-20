@@ -3,6 +3,11 @@ import copy
 import logging
 import os
 from typing import Any, Optional, Dict, Tuple, List, Sequence
+from .connectivity_guard import (
+    OFFLINE_FRIENDLY_MESSAGE,
+    is_expected_offline_error,
+    is_offline_cooldown_error,
+)
 from .model_metadata_provider import (
     CivitaiModelMetadataProvider,
     ModelMetadataProviderManager,
@@ -65,6 +70,8 @@ class CivitaiClient:
             if result.provider is None:
                 result.provider = "civitai_api"
             raise result
+        if not success and is_offline_cooldown_error(result):
+            return False, OFFLINE_FRIENDLY_MESSAGE
         return success, result
 
     @staticmethod
@@ -124,6 +131,8 @@ class CivitaiClient:
             )
             if not success:
                 message = str(version)
+                if is_expected_offline_error(message):
+                    return None, OFFLINE_FRIENDLY_MESSAGE
                 if "not found" in message.lower():
                     return None, "Model not found"
 
@@ -164,6 +173,9 @@ class CivitaiClient:
                 return True
             return False
         except Exception as e:
+            if is_expected_offline_error(str(e)):
+                logger.debug("Preview download skipped due to offline state.")
+                return False
             logger.error(f"Download Error: {str(e)}")
             return False
 
@@ -207,6 +219,9 @@ class CivitaiClient:
             message = self._extract_error_message(result)
             if message and "not found" in message.lower():
                 raise ResourceNotFoundError(f"Resource not found for model {model_id}")
+            if is_expected_offline_error(message):
+                logger.info("Civitai request skipped: %s", OFFLINE_FRIENDLY_MESSAGE)
+                return None
             if message:
                 raise RuntimeError(message)
             return None
@@ -357,6 +372,8 @@ class CivitaiClient:
         )
         if success:
             return data
+        if is_expected_offline_error(data):
+            return None
         logger.warning(f"Failed to fetch model data for model {model_id}")
         return None
 
@@ -371,6 +388,8 @@ class CivitaiClient:
         )
         if success:
             return version
+        if is_expected_offline_error(version):
+            return None
 
         logger.warning(f"Failed to fetch version by id {version_id}")
         return None
@@ -386,6 +405,8 @@ class CivitaiClient:
         )
         if success:
             return version
+        if is_expected_offline_error(version):
+            return None
 
         logger.warning(f"Failed to fetch version by hash {model_hash}")
         return None
@@ -473,6 +494,8 @@ class CivitaiClient:
                 return result, None
 
             # Handle specific error cases
+            if is_expected_offline_error(result):
+                return None, OFFLINE_FRIENDLY_MESSAGE
             if "not found" in str(result):
                 error_msg = f"Model not found"
                 logger.warning(f"Model version not found: {version_id} - {error_msg}")
@@ -507,6 +530,8 @@ class CivitaiClient:
             success, result = await self._make_request("GET", url, use_auth=True)
 
             if not success:
+                if is_expected_offline_error(result):
+                    return None
                 logger.error(
                     "Failed to fetch image info for ID %s from civitai.red: %s",
                     image_id,
@@ -566,6 +591,9 @@ class CivitaiClient:
             )
 
             if not success:
+                if is_expected_offline_error(result):
+                    logger.info("User model fetch skipped: %s", OFFLINE_FRIENDLY_MESSAGE)
+                    return None
                 logger.error("Failed to fetch models for %s: %s", username, result)
                 return None
 
