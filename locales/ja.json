@@ -263,6 +263,19 @@
                 "red": "civitai.red（制限なし）"
             }
         },
+        "downloadBackend": {
+            "label": "ダウンロードバックエンド",
+            "help": "モデルファイルのダウンロード方法を選択します。Python は内蔵ダウンローダーを使用し、aria2 は実験的な外部ダウンローダープロセスを使用します。",
+            "options": {
+                "python": "Python（内蔵）",
+                "aria2": "aria2（実験的）"
+            }
+        },
+        "aria2cPath": {
+            "label": "aria2c のパス",
+            "help": "aria2c 実行ファイルへの任意のパスです。空欄のままにすると、システム PATH 上の aria2c を使用します。",
+            "placeholder": "空欄のままにすると PATH 上の aria2c を使用します"
+        },
         "civitaiHostBanner": {
             "title": "Civitai ホスト設定を利用できます",
             "content": "Civitai は現在、SFW コンテンツには civitai.com、制限なしコンテンツには civitai.red を使用しています。設定で既定で開くサイトを変更できます。",
@@ -278,6 +291,7 @@
         },
         "sections": {
             "contentFiltering": "コンテンツフィルタリング",
+            "downloads": "ダウンロード",
             "videoSettings": "動画設定",
             "layoutSettings": "レイアウト設定",
             "misc": "その他",

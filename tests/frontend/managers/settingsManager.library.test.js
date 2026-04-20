@@ -305,4 +305,39 @@ describe('SettingsManager library controls', () => {
             'success',
         );
     });
+
+    it('loads download backend settings and toggles the aria2 path field', () => {
+        const manager = createManager();
+        document.body.innerHTML = `
+            <select id="downloadBackend">
+                <option value="python">Python</option>
+                <option value="aria2">aria2</option>
+            </select>
+            <div id="aria2PathSetting" style="display: none;"></div>
+            <input id="aria2cPath" />
+        `;
+
+        state.global.settings = {
+            download_backend: 'aria2',
+            aria2c_path: '/usr/bin/aria2c',
+        };
+
+        const saveSpy = vi.spyOn(manager, 'saveSelectSetting').mockResolvedValue();
+
+        manager.loadDownloadBackendSettings();
+
+        const backendSelect = document.getElementById('downloadBackend');
+        const aria2PathSetting = document.getElementById('aria2PathSetting');
+        const aria2cPath = document.getElementById('aria2cPath');
+
+        expect(backendSelect.value).toBe('aria2');
+        expect(aria2cPath.value).toBe('/usr/bin/aria2c');
+        expect(aria2PathSetting.style.display).toBe('block');
+
+        backendSelect.value = 'python';
+        backendSelect.onchange();
+
+        expect(aria2PathSetting.style.display).toBe('none');
+        expect(saveSpy).toHaveBeenCalledWith('downloadBackend', 'download_backend');
+    });
 });

@@ -147,6 +147,11 @@ def test_environment_variable_overrides_settings(tmp_path, monkeypatch):
     assert mgr.get("civitai_api_key") == "secret"
 
 
+def test_default_download_backend_is_python(manager):
+    assert manager.get("download_backend") == "python"
+    assert manager.get("aria2c_path") == ""
+
+
 def _create_manager_with_settings(
     tmp_path, monkeypatch, initial_settings, *, save_spy=None
 ):
@@ -325,6 +330,43 @@ def test_auto_set_default_roots_keeps_valid_values(manager):
     assert manager.get("default_checkpoint_root") == "/checkpoints"
     assert manager.get("default_unet_root") == "/unet"
     assert manager.get("default_embedding_root") == "/embeddings"
+
+
+def test_auto_set_default_roots_keeps_valid_extra_values(manager):
+    manager.settings["default_lora_root"] = "/extra-loras"
+    manager.settings["default_checkpoint_root"] = "/extra-checkpoints"
+    manager.settings["default_embedding_root"] = "/extra-embeddings"
+    manager.settings["default_unet_root"] = "/extra-unet"
+
+    manager.settings["folder_paths"] = {
+        "loras": ["/loras"],
+        "checkpoints": ["/checkpoints"],
+        "unet": ["/unet"],
+        "embeddings": ["/embeddings"],
+    }
+    manager.settings["extra_folder_paths"] = {
+        "loras": ["/extra-loras"],
+        "checkpoints": ["/extra-checkpoints"],
+        "unet": ["/extra-unet"],
+        "embeddings": ["/extra-embeddings"],
+    }
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "/extra-loras"
+    assert manager.get("default_checkpoint_root") == "/extra-checkpoints"
+    assert manager.get("default_unet_root") == "/extra-unet"
+    assert manager.get("default_embedding_root") == "/extra-embeddings"
+
+
+def test_auto_set_default_roots_falls_back_to_extra_when_primary_missing(manager):
+    manager.settings["default_lora_root"] = ""
+    manager.settings["folder_paths"] = {"loras": []}
+    manager.settings["extra_folder_paths"] = {"loras": ["/extra-loras"]}
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "/extra-loras"
 
 
 def test_delete_setting(manager):

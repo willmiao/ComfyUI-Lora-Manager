@@ -26,20 +26,44 @@ logger = logging.getLogger(__name__)
 
 
 def _resolve_valid_default_root(
-    current: str, primary_paths: List[str], name: str
+    current: str, primary_paths: List[str], allowed_paths: List[str], name: str
 ) -> str:
-    """Return a valid default root from the current primary path set."""
+    """Return a valid default root from the current primary/extra path set."""
 
     valid_paths = [path for path in primary_paths if isinstance(path, str) and path.strip()]
-    if not valid_paths:
-        return ""
+    fallback_paths: List[str] = []
+    seen: Set[str] = set()
+    for path in allowed_paths:
+        if not isinstance(path, str):
+            continue
+        stripped = path.strip()
+        if not stripped or stripped in seen:
+            continue
+        seen.add(stripped)
+        fallback_paths.append(stripped)
 
-    if current in valid_paths:
+    allowed = set(fallback_paths)
+
+    if current and current in allowed:
         return current
+
+    if not valid_paths:
+        if not fallback_paths:
+            return ""
+        if current:
+            logger.info(
+                "Repaired stale %s from '%s' to '%s' because it is not present in primary or extra roots",
+                name,
+                current,
+                fallback_paths[0],
+            )
+        else:
+            logger.info("Auto-setting %s to '%s'", name, fallback_paths[0])
+        return fallback_paths[0]
 
     if current:
         logger.info(
-            "Repaired stale %s from '%s' to '%s'",
+            "Repaired stale %s from '%s' to '%s' because it is not present in primary or extra roots",
             name,
             current,
             valid_paths[0],
@@ -226,38 +250,75 @@ class Config:
             default_lora_root = _resolve_valid_default_root(
                 comfy_library.get("default_lora_root", ""),
                 list(self.loras_roots or []),
+                list(self.loras_roots or [])
+                + list(comfy_library.get("extra_folder_paths", {}).get("loras", []) or []),
                 "default_lora_root",
             )
 
             default_checkpoint_root = _resolve_valid_default_root(
                 comfy_library.get("default_checkpoint_root", ""),
                 list(self.checkpoints_roots or []),
+                list(self.checkpoints_roots or [])
+                + list(comfy_library.get("extra_folder_paths", {}).get("checkpoints", []) or []),
                 "default_checkpoint_root",
             )
 
             default_embedding_root = _resolve_valid_default_root(
                 comfy_library.get("default_embedding_root", ""),
                 list(self.embeddings_roots or []),
+                list(self.embeddings_roots or [])
+                + list(comfy_library.get("extra_folder_paths", {}).get("embeddings", []) or []),
                 "default_embedding_root",
             )
 
             metadata = dict(comfy_library.get("metadata", {}))
             metadata.setdefault("display_name", "ComfyUI")
             metadata["source"] = "comfyui"
+            extra_folder_paths = {}
+            if isinstance(comfy_library, Mapping):
+                existing_extra_paths = comfy_library.get("extra_folder_paths", {})
+                if isinstance(existing_extra_paths, Mapping):
+                    extra_folder_paths = {
+                        key: list(value) if isinstance(value, list) else []
+                        for key, value in existing_extra_paths.items()
+                    }
+
+            active_library_name = settings_service.get_active_library_name()
+            should_activate = (
+                active_library_name == "comfyui"
+                or self._should_activate_comfy_library(libraries, libraries_changed)
+            )
 
             settings_service.upsert_library(
                 "comfyui",
                 folder_paths=target_folder_paths,
+                extra_folder_paths=extra_folder_paths,
                 default_lora_root=default_lora_root,
                 default_checkpoint_root=default_checkpoint_root,
                 default_embedding_root=default_embedding_root,
                 metadata=metadata,
-                activate=True,
+                activate=should_activate,
             )
 
-            logger.info("Updated 'comfyui' library with current folder paths")
+            if should_activate:
+                logger.info("Updated 'comfyui' library with current folder paths")
+            else:
+                logger.info(
+                    "Updated 'comfyui' library with current folder paths without activating it"
+                )
         except Exception as e:
             logger.warning(f"Failed to save folder paths: {e}")
+
+    def _should_activate_comfy_library(
+        self, libraries: Mapping[str, Any], libraries_changed: bool
+    ) -> bool:
+        """Return whether startup sync should make the ComfyUI library active."""
+
+        if libraries_changed:
+            return True
+        if not libraries:
+            return True
+        return "comfyui" in libraries and len(libraries) == 1
 
     def _is_link(self, path: str) -> bool:
         try:

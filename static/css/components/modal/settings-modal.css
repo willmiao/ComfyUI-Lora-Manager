@@ -346,11 +346,13 @@
 .api-key-input input {
     width: 100%;
     padding: 6px 40px 6px 10px; /* Add left padding */
-    height: 20px;
+    height: 32px;
+    box-sizing: border-box;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
     color: var(--text-color);
+    font-size: 0.95em;
 }
 
 .api-key-input .toggle-visibility {
@@ -379,7 +381,8 @@
 .text-input-wrapper input {
     width: 100%;
     padding: 6px 10px;
-    height: 20px;
+    height: 32px;
+    box-sizing: border-box;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
@@ -760,10 +763,12 @@
 }
 
 .setting-control {
-    width: 60%; /* Decreased slightly from 65% */
+    flex: 0 0 60%;
+    max-width: 60%;
     margin-bottom: 0;
     display: flex;
     justify-content: flex-end; /* Right-align all controls */
+    min-width: 0;
 }
 
 /* Select Control Styles */
@@ -771,6 +776,13 @@
     width: 100%;
     display: flex;
     justify-content: flex-end;
+}
+
+.setting-control select,
+.setting-control input[type="text"],
+.setting-control input[type="password"],
+.setting-control input[type="number"] {
+    font-size: 0.95em;
 }
 
 .select-control select {
@@ -781,8 +793,8 @@
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
     color: var(--text-color);
-    font-size: 0.95em;
     height: 32px;
+    box-sizing: border-box;
 }
 
 /* Fix dark theme select dropdown text color */
@@ -888,8 +900,8 @@ input:checked + .toggle-slider:before {
     border: 1px solid var(--border-color);
     background-color: var(--lora-surface);
     color: var(--text-color);
-    font-size: 0.95em;
     height: 32px;
+    box-sizing: border-box;
 }
 
 /* Add warning text style for settings */

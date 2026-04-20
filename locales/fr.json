@@ -263,6 +263,19 @@
                 "red": "civitai.red (sans restriction)"
             }
         },
+        "downloadBackend": {
+            "label": "Moteur de téléchargement",
+            "help": "Choisissez comment les fichiers de modèles sont téléchargés. Python utilise le téléchargeur intégré. aria2 utilise le processus externe expérimental de téléchargement.",
+            "options": {
+                "python": "Python (intégré)",
+                "aria2": "aria2 (expérimental)"
+            }
+        },
+        "aria2cPath": {
+            "label": "Chemin vers aria2c",
+            "help": "Chemin facultatif vers l’exécutable aria2c. Laissez vide pour utiliser aria2c depuis le PATH système.",
+            "placeholder": "Laisser vide pour utiliser aria2c depuis le PATH"
+        },
         "civitaiHostBanner": {
             "title": "Préférence d’hôte Civitai disponible",
             "content": "Civitai utilise désormais civitai.com pour le contenu SFW et civitai.red pour le contenu sans restriction. Vous pouvez modifier dans les paramètres le site ouvert par défaut.",
@@ -278,6 +291,7 @@
         },
         "sections": {
             "contentFiltering": "Filtrage du contenu",
+            "downloads": "Téléchargements",
             "videoSettings": "Paramètres vidéo",
             "layoutSettings": "Paramètres d'affichage",
             "misc": "Divers",
