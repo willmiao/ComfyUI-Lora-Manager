@@ -22,6 +22,7 @@ from typing import Optional, Dict, Tuple, Callable, Union, Awaitable
 from ..services.settings_manager import get_settings_manager
 from .connectivity_guard import (
     OFFLINE_COOLDOWN_ERROR,
+    OFFLINE_FRIENDLY_MESSAGE,
     ConnectivityGuard,
 )
 from .errors import RateLimitError
@@ -803,7 +804,7 @@ class Downloader:
         """
         guard = await ConnectivityGuard.get_instance()
         if guard.should_block_request():
-            return False, OFFLINE_COOLDOWN_ERROR, None
+            return False, OFFLINE_FRIENDLY_MESSAGE, None
 
         try:
             session = await self.session
@@ -849,7 +850,7 @@ class Downloader:
             if guard.is_network_unreachable_error(e):
                 guard.register_network_failure(e)
                 if guard.should_block_request():
-                    return False, OFFLINE_COOLDOWN_ERROR, None
+                    return False, OFFLINE_FRIENDLY_MESSAGE, None
                 logger.debug("Network unavailable during memory download: %s", e)
                 return False, str(e), None
             logger.error(f"Error downloading to memory from {url}: {e}")

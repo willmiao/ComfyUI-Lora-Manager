@@ -6,6 +6,7 @@ import pytest
 
 from py.services.connectivity_guard import (
     OFFLINE_COOLDOWN_ERROR,
+    OFFLINE_FRIENDLY_MESSAGE,
     ConnectivityGuard,
 )
 from py.services.downloader import Downloader
@@ -66,7 +67,7 @@ async def test_downloader_short_circuits_all_request_helpers_during_cooldown():
 
     ok, payload, headers = await downloader.download_to_memory("https://example.invalid")
     assert ok is False
-    assert payload == OFFLINE_COOLDOWN_ERROR
+    assert payload == OFFLINE_FRIENDLY_MESSAGE
     assert headers is None
 
     ok, payload = await downloader.get_response_headers("https://example.invalid")
