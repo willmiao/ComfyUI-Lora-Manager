@@ -5,6 +5,7 @@ import pytest
 
 from py.services import civitai_client as civitai_client_module
 from py.services.civitai_client import CivitaiClient
+from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
 from py.services.errors import RateLimitError, ResourceNotFoundError
 from py.services.model_metadata_provider import ModelMetadataProviderManager
 
@@ -113,6 +114,20 @@ async def test_get_model_by_hash_handles_not_found(monkeypatch, downloader):
 
     assert result is None
     assert error == "Model not found"
+
+
+async def test_get_model_by_hash_handles_offline_cooldown(downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, OFFLINE_COOLDOWN_ERROR
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_hash("missing")
+
+    assert result is None
+    assert error == OFFLINE_FRIENDLY_MESSAGE
 
 
 async def test_get_model_by_hash_propagates_rate_limit(monkeypatch, downloader):

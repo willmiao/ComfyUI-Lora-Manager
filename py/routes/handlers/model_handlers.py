@@ -16,6 +16,10 @@ import jinja2
 
 from ...config import config
 from ...services.download_coordinator import DownloadCoordinator
+from ...services.connectivity_guard import (
+    OFFLINE_FRIENDLY_MESSAGE,
+    is_expected_offline_error,
+)
 from ...services.metadata_sync_service import MetadataSyncService
 from ...services.model_file_service import ModelMoveService
 from ...services.preview_asset_service import PreviewAssetService
@@ -504,6 +508,11 @@ class ModelManagementHandler:
             formatted_metadata = await self._service.format_response(model_data)
             return web.json_response({"success": True, "metadata": formatted_metadata})
         except Exception as exc:
+            if is_expected_offline_error(str(exc)):
+                return web.json_response(
+                    {"success": False, "error": OFFLINE_FRIENDLY_MESSAGE},
+                    status=503,
+                )
             self._logger.error("Error fetching from CivitAI: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
@@ -550,6 +559,11 @@ class ModelManagementHandler:
                 }
             )
         except Exception as exc:
+            if is_expected_offline_error(str(exc)):
+                return web.json_response(
+                    {"success": False, "error": OFFLINE_FRIENDLY_MESSAGE},
+                    status=503,
+                )
             self._logger.error("Error re-linking to CivitAI: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
@@ -1858,6 +1872,11 @@ class ModelUpdateHandler:
                 status=429,
             )
         except Exception as exc:  # pragma: no cover - defensive log
+            if is_expected_offline_error(str(exc)):
+                return web.json_response(
+                    {"success": False, "error": OFFLINE_FRIENDLY_MESSAGE},
+                    status=503,
+                )
             self._logger.error("Failed to fetch license info: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
@@ -1946,9 +1965,12 @@ class ModelUpdateHandler:
                 {"success": False, "error": str(exc) or "Rate limited"}, status=429
             )
         except Exception as exc:  # pragma: no cover - defensive logging
-            self._logger.error(
-                "Failed to refresh model updates: %s", exc, exc_info=True
-            )
+            if is_expected_offline_error(str(exc)):
+                return web.json_response(
+                    {"success": False, "error": OFFLINE_FRIENDLY_MESSAGE},
+                    status=503,
+                )
+            self._logger.error("Failed to refresh model updates: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
         serialized_records = []
