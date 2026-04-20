@@ -18,6 +18,7 @@ from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
+from urllib.parse import urlparse
 from typing import Optional, Dict, Tuple, Callable, Union, Awaitable
 from ..services.settings_manager import get_settings_manager
 from .connectivity_guard import (
@@ -802,7 +803,8 @@ class Downloader:
             Tuple[bool, Union[bytes, str], Optional[Dict]]: (success, content or error message, response headers if requested)
         """
         guard = await ConnectivityGuard.get_instance()
-        if guard.should_block_request():
+        destination = self._guard_destination(url)
+        if guard.should_block_request(destination):
             return False, OFFLINE_COOLDOWN_ERROR, None
 
         try:
@@ -827,7 +829,7 @@ class Downloader:
             ) as response:
                 if response.status == 200:
                     content = await response.read()
-                    guard.register_success()
+                    guard.register_success(destination)
                     if return_headers:
                         return True, content, dict(response.headers)
                     else:
@@ -847,8 +849,8 @@ class Downloader:
 
         except Exception as e:
             if guard.is_network_unreachable_error(e):
-                guard.register_network_failure(e)
-                if guard.should_block_request():
+                guard.register_network_failure(e, destination)
+                if guard.should_block_request(destination):
                     return False, OFFLINE_COOLDOWN_ERROR, None
                 logger.debug("Network unavailable during memory download: %s", e)
                 return False, str(e), None
@@ -873,7 +875,8 @@ class Downloader:
             Tuple[bool, Union[Dict, str]]: (success, headers dict or error message)
         """
         guard = await ConnectivityGuard.get_instance()
-        if guard.should_block_request():
+        destination = self._guard_destination(url)
+        if guard.should_block_request(destination):
             return False, OFFLINE_COOLDOWN_ERROR
 
         try:
@@ -897,15 +900,15 @@ class Downloader:
                 url, headers=headers, proxy=self.proxy_url
             ) as response:
                 if response.status == 200:
-                    guard.register_success()
+                    guard.register_success(destination)
                     return True, dict(response.headers)
                 else:
                     return False, f"Head request failed with status {response.status}"
 
         except Exception as e:
             if guard.is_network_unreachable_error(e):
-                guard.register_network_failure(e)
-                if guard.should_block_request():
+                guard.register_network_failure(e, destination)
+                if guard.should_block_request(destination):
                     return False, OFFLINE_COOLDOWN_ERROR
                 logger.debug("Network unavailable during header probe: %s", e)
                 return False, str(e)
@@ -934,7 +937,8 @@ class Downloader:
             Tuple[bool, Union[Dict, str]]: (success, response data or error message)
         """
         guard = await ConnectivityGuard.get_instance()
-        if guard.should_block_request():
+        destination = self._guard_destination(url)
+        if guard.should_block_request(destination):
             return False, OFFLINE_COOLDOWN_ERROR
 
         try:
@@ -960,7 +964,7 @@ class Downloader:
                 method, url, headers=headers, **kwargs
             ) as response:
                 if response.status == 200:
-                    guard.register_success()
+                    guard.register_success(destination)
                     # Try to parse as JSON, fall back to text
                     try:
                         data = await response.json()
@@ -992,8 +996,8 @@ class Downloader:
 
         except Exception as e:
             if guard.is_network_unreachable_error(e):
-                guard.register_network_failure(e)
-                if guard.should_block_request():
+                guard.register_network_failure(e, destination)
+                if guard.should_block_request(destination):
                     return False, OFFLINE_COOLDOWN_ERROR
                 logger.debug("Network unavailable for %s %s: %s", method, url, e)
                 return False, str(e)
@@ -1046,6 +1050,14 @@ class Downloader:
 
         delta = retry_datetime - datetime.now(tz=retry_datetime.tzinfo)
         return max(0.0, delta.total_seconds())
+
+    @staticmethod
+    def _guard_destination(url: str) -> str:
+        """Build per-destination connectivity guard scope from request URL."""
+        parsed_url = urlparse(url)
+        if parsed_url.hostname:
+            return parsed_url.hostname.lower()
+        return "unknown"
 
 
 # Global instance accessor
