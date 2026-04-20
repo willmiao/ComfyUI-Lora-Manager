@@ -27,6 +27,7 @@ from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider, get_metadata_provider
 from .downloader import get_downloader, DownloadProgress, DownloadStreamControl
 from .aria2_downloader import Aria2Error, get_aria2_downloader
+from .aria2_transfer_state import Aria2TransferStateStore
 
 # Download to temporary file first
 import tempfile
@@ -65,6 +66,9 @@ class DownloadManager:
         self._archive_executor = ThreadPoolExecutor(
             max_workers=2, thread_name_prefix="lm-archive"
         )
+        self._aria2_state_store = Aria2TransferStateStore()
+        self._restored_persisted_downloads = False
+        self._restore_lock = asyncio.Lock()
 
     @staticmethod
     def _get_model_download_backend() -> str:
@@ -179,6 +183,11 @@ class DownloadManager:
         self._active_downloads[task_id] = {
             "model_id": model_id,
             "model_version_id": model_version_id,
+            "save_dir": save_dir,
+            "relative_path": relative_path,
+            "use_default_paths": bool(use_default_paths),
+            "source": source,
+            "file_params": copy.deepcopy(file_params) if file_params is not None else None,
             "progress": 0,
             "status": "queued",
             "transfer_backend": self._get_model_download_backend(),
@@ -190,6 +199,9 @@ class DownloadManager:
 
         pause_control = DownloadStreamControl()
         self._pause_events[task_id] = pause_control
+
+        if self._active_downloads[task_id]["transfer_backend"] == "aria2":
+            await self._persist_aria2_state(task_id)
 
         # Create tracking task
         download_task = asyncio.create_task(
@@ -242,6 +254,8 @@ class DownloadManager:
         # Update status to waiting
         if task_id in self._active_downloads:
             self._active_downloads[task_id]["status"] = "waiting"
+            if self._active_downloads[task_id].get("transfer_backend") == "aria2":
+                await self._persist_aria2_state(task_id)
 
         # Wrap progress callback to track progress in active_downloads
         original_callback = progress_callback
@@ -276,11 +290,15 @@ class DownloadManager:
                     if task_id in self._active_downloads:
                         self._active_downloads[task_id]["status"] = "paused"
                         self._active_downloads[task_id]["bytes_per_second"] = 0.0
+                        if self._active_downloads[task_id].get("transfer_backend") == "aria2":
+                            await self._persist_aria2_state(task_id)
                     await pause_control.wait()
 
                 # Update status to downloading
                 if task_id in self._active_downloads:
                     self._active_downloads[task_id]["status"] = "downloading"
+                    if self._active_downloads[task_id].get("transfer_backend") == "aria2":
+                        await self._persist_aria2_state(task_id)
 
                 # Use original download implementation
                 try:
@@ -315,6 +333,8 @@ class DownloadManager:
                                 "error", "Unknown error"
                             )
                         self._active_downloads[task_id]["bytes_per_second"] = 0.0
+                        if self._active_downloads[task_id].get("transfer_backend") == "aria2":
+                            await self._persist_aria2_state(task_id)
 
                     return result
                 except asyncio.CancelledError:
@@ -322,6 +342,8 @@ class DownloadManager:
                     if task_id in self._active_downloads:
                         self._active_downloads[task_id]["status"] = "cancelled"
                         self._active_downloads[task_id]["bytes_per_second"] = 0.0
+                        if self._active_downloads[task_id].get("transfer_backend") == "aria2":
+                            await self._persist_aria2_state(task_id)
                     logger.info(f"Download cancelled for task {task_id}")
                     raise
                 except Exception as e:
@@ -333,16 +355,638 @@ class DownloadManager:
                         self._active_downloads[task_id]["status"] = "failed"
                         self._active_downloads[task_id]["error"] = str(e)
                         self._active_downloads[task_id]["bytes_per_second"] = 0.0
+                        if self._active_downloads[task_id].get("transfer_backend") == "aria2":
+                            await self._persist_aria2_state(task_id)
                     return {"success": False, "error": str(e)}
         finally:
             # Schedule cleanup of download record after delay
             asyncio.create_task(self._cleanup_download_record(task_id))
+
+    def _start_background_download_task(self, download_id: str, coroutine) -> asyncio.Task:
+        task = asyncio.create_task(coroutine)
+        self._download_tasks[download_id] = task
+
+        def _cleanup_done_task(done_task: asyncio.Task) -> None:
+            current_task = self._download_tasks.get(download_id)
+            if current_task is done_task:
+                self._download_tasks.pop(download_id, None)
+                self._pause_events.pop(download_id, None)
+
+        task.add_done_callback(_cleanup_done_task)
+        return task
 
     async def _cleanup_download_record(self, task_id: str):
         """Keep completed downloads in history for a short time"""
         await asyncio.sleep(600)  # Keep for 10 minutes
         if task_id in self._active_downloads:
             del self._active_downloads[task_id]
+
+    async def _delete_file_with_retries(
+        self,
+        path: Optional[str],
+        *,
+        retries: int = 5,
+        delay: float = 0.1,
+    ) -> bool:
+        if not path:
+            return False
+
+        for attempt in range(retries):
+            if not os.path.exists(path):
+                return True
+            try:
+                os.unlink(path)
+                return True
+            except FileNotFoundError:
+                return True
+            except Exception:
+                if attempt == retries - 1:
+                    return False
+                await asyncio.sleep(delay)
+        return False
+
+    async def _cleanup_cancelled_download_files(
+        self,
+        download_id: str,
+        download_info: Optional[Dict],
+    ) -> None:
+        target_files = set()
+        persisted = await self._aria2_state_store.get(download_id)
+
+        primary_path = None
+        if isinstance(download_info, dict):
+            primary_path = download_info.get("file_path")
+        if not primary_path and isinstance(persisted, dict):
+            primary_path = persisted.get("save_path") or persisted.get("file_path")
+        if primary_path:
+            target_files.add(primary_path)
+
+        if isinstance(download_info, dict):
+            for extra_path in download_info.get("extracted_paths", []):
+                if extra_path:
+                    target_files.add(extra_path)
+
+        for file_path in target_files:
+            deleted = await self._delete_file_with_retries(file_path)
+            if deleted:
+                logger.debug(f"Deleted cancelled download: {file_path}")
+            elif os.path.exists(file_path):
+                logger.error(f"Error deleting file: {file_path}")
+
+        part_path = None
+        if isinstance(download_info, dict):
+            part_path = download_info.get("part_path")
+        if part_path:
+            deleted = await self._delete_file_with_retries(part_path)
+            if deleted:
+                logger.debug(f"Deleted partial download: {part_path}")
+            elif os.path.exists(part_path):
+                logger.error(f"Error deleting part file: {part_path}")
+
+        aria2_control_path = None
+        if isinstance(download_info, dict):
+            aria2_control_path = download_info.get("aria2_control_path")
+        if not aria2_control_path and primary_path:
+            aria2_control_path = f"{primary_path}.aria2"
+        if aria2_control_path:
+            deleted = await self._delete_file_with_retries(aria2_control_path)
+            if deleted:
+                logger.debug(f"Deleted aria2 control file: {aria2_control_path}")
+            elif os.path.exists(aria2_control_path):
+                logger.warning(
+                    "Failed to delete aria2 control file after retries: %s",
+                    aria2_control_path,
+                )
+
+        for file_path in target_files:
+            metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+            deleted = await self._delete_file_with_retries(metadata_path)
+            if not deleted and os.path.exists(metadata_path):
+                logger.error(f"Error deleting metadata file: {metadata_path}")
+
+        preview_candidates = set()
+        if isinstance(download_info, dict):
+            preview_path_value = download_info.get("preview_path")
+            if preview_path_value:
+                preview_candidates.add(preview_path_value)
+
+        for preview_path in preview_candidates:
+            deleted = await self._delete_file_with_retries(preview_path)
+            if deleted and not os.path.exists(preview_path):
+                logger.debug(f"Deleted preview file: {preview_path}")
+            elif os.path.exists(preview_path):
+                logger.error(f"Error deleting preview file: {preview_path}")
+
+    async def _persist_aria2_state(
+        self,
+        download_id: str,
+        *,
+        extra: Optional[Dict] = None,
+    ) -> None:
+        info = self._active_downloads.get(download_id)
+        if not info:
+            return
+
+        payload = {
+            "download_id": download_id,
+            "model_id": info.get("model_id"),
+            "model_version_id": info.get("model_version_id"),
+            "save_dir": info.get("save_dir"),
+            "relative_path": info.get("relative_path", ""),
+            "use_default_paths": bool(info.get("use_default_paths", False)),
+            "source": info.get("source"),
+            "file_params": copy.deepcopy(info.get("file_params")),
+            "transfer_backend": info.get("transfer_backend", "aria2"),
+            "status": info.get("status", "queued"),
+            "progress": info.get("progress", 0),
+            "bytes_downloaded": info.get("bytes_downloaded", 0),
+            "total_bytes": info.get("total_bytes"),
+            "bytes_per_second": info.get("bytes_per_second", 0.0),
+            "file_path": info.get("file_path"),
+        }
+        if extra:
+            payload.update(extra)
+
+        await self._aria2_state_store.upsert(download_id, payload)
+
+    def _build_restored_download_info(self, record: Dict, save_path: str) -> Dict:
+        return {
+            "model_id": record.get("model_id"),
+            "model_version_id": record.get("model_version_id"),
+            "save_dir": record.get("save_dir"),
+            "relative_path": record.get("relative_path", ""),
+            "use_default_paths": bool(record.get("use_default_paths", False)),
+            "source": record.get("source"),
+            "file_params": copy.deepcopy(record.get("file_params")),
+            "progress": record.get("progress", 0),
+            "status": record.get("status", "paused"),
+            "transfer_backend": "aria2",
+            "bytes_downloaded": record.get("bytes_downloaded", 0),
+            "total_bytes": record.get("total_bytes"),
+            "bytes_per_second": record.get("bytes_per_second", 0.0),
+            "last_progress_timestamp": None,
+            "file_path": save_path,
+            "aria2_control_path": f"{save_path}.aria2",
+        }
+
+    def _is_same_aria2_download_request(
+        self,
+        current_info: Optional[Dict],
+        persisted_record: Dict,
+    ) -> bool:
+        if not isinstance(current_info, dict):
+            return False
+
+        current_version_id = current_info.get("model_version_id")
+        persisted_version_id = persisted_record.get("model_version_id")
+        if current_version_id is None or persisted_version_id is None:
+            return False
+
+        return current_version_id == persisted_version_id
+
+    def _build_download_urls_from_file_info(self, file_info: Dict, source: str = None) -> List[str]:
+        mirrors = file_info.get("mirrors") or []
+        download_urls: List[str] = []
+        if mirrors:
+            for mirror in mirrors:
+                if mirror.get("deletedAt") is None and mirror.get("url"):
+                    download_urls.append(normalize_civitai_download_url(mirror["url"]))
+
+            if source == "civarchive" and len(download_urls) > 1:
+                civitai_urls = [
+                    u for u in download_urls if u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
+                ]
+                non_civitai_urls = [
+                    u for u in download_urls if not u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
+                ]
+                download_urls = non_civitai_urls + civitai_urls
+        else:
+            download_url = file_info.get("downloadUrl")
+            if download_url:
+                download_urls.append(normalize_civitai_download_url(download_url))
+
+        return download_urls
+
+    def _build_metadata_for_resume(
+        self,
+        *,
+        model_type: str,
+        version_info: Dict,
+        file_info: Dict,
+        save_path: str,
+    ):
+        if model_type == "checkpoint":
+            return CheckpointMetadata.from_civitai_info(version_info, file_info, save_path)
+        if model_type == "embedding":
+            return EmbeddingMetadata.from_civitai_info(version_info, file_info, save_path)
+        return LoraMetadata.from_civitai_info(version_info, file_info, save_path)
+
+    def _resolve_save_path_from_persisted_record(self, record: Dict) -> Optional[str]:
+        save_path = record.get("save_path") or record.get("file_path")
+        if isinstance(save_path, str) and save_path:
+            return os.path.abspath(save_path)
+
+        resume_context = record.get("resume_context")
+        if not isinstance(resume_context, dict):
+            return None
+
+        save_dir = resume_context.get("save_dir")
+        file_info = resume_context.get("file_info")
+        if not isinstance(save_dir, str) or not save_dir:
+            return None
+        if not isinstance(file_info, dict):
+            return None
+
+        file_name = file_info.get("name")
+        if not isinstance(file_name, str) or not file_name:
+            return None
+
+        return os.path.abspath(os.path.join(save_dir, file_name))
+
+    async def _resume_restored_aria2_download(self, download_id: str, record: Dict) -> Dict:
+        try:
+            if download_id in self._active_downloads:
+                self._active_downloads[download_id]["status"] = "downloading"
+                self._active_downloads[download_id]["bytes_per_second"] = 0.0
+                if self._active_downloads[download_id].get("transfer_backend") == "aria2":
+                    await self._persist_aria2_state(download_id)
+
+            resume_context = record.get("resume_context")
+            if not isinstance(resume_context, dict):
+                result = {"success": False, "error": "Missing aria2 resume context"}
+            else:
+                version_info = copy.deepcopy(resume_context.get("version_info") or {})
+                file_info = copy.deepcopy(resume_context.get("file_info") or {})
+                model_type = (resume_context.get("model_type") or "").lower()
+                relative_path = resume_context.get("relative_path", "")
+                save_dir = resume_context.get("save_dir")
+                source = record.get("source")
+
+                if not version_info or not file_info or not model_type or not save_dir:
+                    result = {"success": False, "error": "Incomplete aria2 resume context"}
+                else:
+                    save_path = (
+                        record.get("save_path")
+                        or record.get("file_path")
+                        or os.path.join(save_dir, file_info.get("name", ""))
+                    )
+                    metadata = self._build_metadata_for_resume(
+                        model_type=model_type,
+                        version_info=version_info,
+                        file_info=file_info,
+                        save_path=save_path,
+                    )
+                    download_urls = resume_context.get("download_urls")
+                    if not isinstance(download_urls, list) or not download_urls:
+                        download_urls = self._build_download_urls_from_file_info(
+                            file_info, source=source
+                        )
+                    if not download_urls:
+                        result = {"success": False, "error": "No mirror URL found"}
+                    else:
+                        result = await self._execute_download(
+                            download_urls=download_urls,
+                            save_dir=save_dir,
+                            metadata=metadata,
+                            version_info=version_info,
+                            relative_path=relative_path,
+                            progress_callback=None,
+                            model_type=model_type,
+                            download_id=download_id,
+                            transfer_backend="aria2",
+                        )
+
+                        if result.get("success", False):
+                            resolved_model_id = (
+                                record.get("model_id")
+                                or version_info.get("modelId")
+                                or (version_info.get("model") or {}).get("id")
+                            )
+                            await self._record_downloaded_version_history(
+                                model_type,
+                                resolved_model_id,
+                                version_info,
+                                record.get("model_version_id"),
+                                record.get("save_path") or record.get("file_path"),
+                            )
+                            await self._sync_downloaded_version(
+                                model_type,
+                                resolved_model_id,
+                                version_info,
+                                record.get("model_version_id"),
+                            )
+
+            if download_id in self._active_downloads:
+                self._active_downloads[download_id]["status"] = (
+                    result.get("status", "completed")
+                    if result["success"]
+                    else "failed"
+                )
+                if not result["success"]:
+                    self._active_downloads[download_id]["error"] = result.get(
+                        "error", "Unknown error"
+                    )
+                self._active_downloads[download_id]["bytes_per_second"] = 0.0
+                if self._active_downloads[download_id].get("transfer_backend") == "aria2":
+                    await self._persist_aria2_state(download_id)
+
+            return result
+        except asyncio.CancelledError:
+            if download_id in self._active_downloads:
+                self._active_downloads[download_id]["status"] = "cancelled"
+                self._active_downloads[download_id]["bytes_per_second"] = 0.0
+                if self._active_downloads[download_id].get("transfer_backend") == "aria2":
+                    await self._persist_aria2_state(download_id)
+            logger.info(f"Download cancelled for task {download_id}")
+            raise
+        except Exception as exc:
+            logger.error(
+                f"Download error for task {download_id}: {str(exc)}", exc_info=True
+            )
+            if download_id in self._active_downloads:
+                self._active_downloads[download_id]["status"] = "failed"
+                self._active_downloads[download_id]["error"] = str(exc)
+                self._active_downloads[download_id]["bytes_per_second"] = 0.0
+                if self._active_downloads[download_id].get("transfer_backend") == "aria2":
+                    await self._persist_aria2_state(download_id)
+            return {"success": False, "error": str(exc)}
+        finally:
+            asyncio.create_task(self._cleanup_download_record(download_id))
+
+    async def _adopt_existing_aria2_download(
+        self,
+        previous_download_id: str,
+        new_download_id: str,
+        persisted_record: Dict,
+        save_path: str,
+    ) -> None:
+        aria2_downloader = await get_aria2_downloader()
+        await aria2_downloader.reassign_transfer(previous_download_id, new_download_id)
+
+        old_task = self._download_tasks.get(previous_download_id)
+        if old_task is not None and not old_task.done():
+            old_task.cancel()
+            old_pause_control = self._pause_events.get(previous_download_id)
+            if old_pause_control is not None:
+                old_pause_control.resume()
+            try:
+                await asyncio.wait_for(asyncio.shield(old_task), timeout=2.0)
+            except (asyncio.CancelledError, asyncio.TimeoutError):
+                pass
+
+        if previous_download_id != new_download_id:
+            self._active_downloads.pop(previous_download_id, None)
+            self._pause_events.pop(previous_download_id, None)
+            self._download_tasks.pop(previous_download_id, None)
+
+        reassigned = await self._aria2_state_store.reassign(
+            previous_download_id, new_download_id
+        )
+        merged_record = dict(persisted_record)
+        if reassigned:
+            merged_record.update(reassigned)
+
+        current_info = self._active_downloads.get(new_download_id)
+        if current_info is not None:
+            current_info.update(
+                {
+                    "model_id": merged_record.get("model_id", current_info.get("model_id")),
+                    "model_version_id": merged_record.get(
+                        "model_version_id", current_info.get("model_version_id")
+                    ),
+                    "save_dir": merged_record.get("save_dir", current_info.get("save_dir")),
+                    "relative_path": merged_record.get(
+                        "relative_path", current_info.get("relative_path", "")
+                    ),
+                    "source": merged_record.get("source", current_info.get("source")),
+                    "file_params": copy.deepcopy(
+                        merged_record.get("file_params", current_info.get("file_params"))
+                    ),
+                    "file_path": save_path,
+                    "aria2_control_path": f"{save_path}.aria2",
+                }
+            )
+        else:
+            self._active_downloads[new_download_id] = self._build_restored_download_info(
+                merged_record, save_path
+            )
+
+    async def _restore_persisted_downloads(self) -> None:
+        if self._restored_persisted_downloads:
+            return
+
+        async with self._restore_lock:
+            if self._restored_persisted_downloads:
+                return
+
+            persisted = await self._aria2_state_store.load_all()
+            if not persisted:
+                self._restored_persisted_downloads = True
+                return
+
+            aria2_downloader = await get_aria2_downloader()
+            for download_id, record in persisted.items():
+                if record.get("transfer_backend") != "aria2":
+                    continue
+
+                save_path = self._resolve_save_path_from_persisted_record(record)
+                if save_path is None:
+                    continue
+
+                if (
+                    record.get("save_path") != save_path
+                    or record.get("file_path") != save_path
+                ):
+                    await self._aria2_state_store.upsert(
+                        download_id,
+                        {
+                            "save_path": save_path,
+                            "file_path": save_path,
+                        },
+                    )
+                control_path = f"{save_path}.aria2"
+                gid = record.get("gid")
+                status_payload = None
+                if isinstance(gid, str) and gid:
+                    try:
+                        status_payload = await aria2_downloader.get_status_by_gid(gid)
+                    except Exception:
+                        status_payload = None
+
+                if status_payload is not None:
+                    remote_status = status_payload.get("status", "")
+                    if remote_status in {"active", "waiting", "paused"}:
+                        await aria2_downloader.restore_transfer(download_id, gid, save_path)
+                        restored = self._active_downloads.setdefault(
+                            download_id,
+                            self._build_restored_download_info(record, save_path),
+                        )
+                        restored["status"] = (
+                            "paused" if remote_status == "paused" else "downloading"
+                        )
+                        pause_control = self._pause_events.get(download_id)
+                        if pause_control is None:
+                            pause_control = DownloadStreamControl()
+                            self._pause_events[download_id] = pause_control
+                        if remote_status == "paused":
+                            pause_control.pause()
+                        else:
+                            pause_control.resume()
+                        await self._aria2_state_store.upsert(
+                            download_id,
+                            {
+                                "gid": gid,
+                                "save_path": save_path,
+                                "file_path": save_path,
+                                "status": restored["status"],
+                            },
+                        )
+                        if (
+                            remote_status in {"active", "waiting"}
+                            and download_id not in self._download_tasks
+                        ):
+                            resume_context = record.get("resume_context")
+                            if isinstance(resume_context, dict):
+                                self._start_background_download_task(
+                                    download_id,
+                                    self._resume_restored_aria2_download(
+                                        download_id,
+                                        dict(record),
+                                    )
+                                )
+                            else:
+                                self._start_background_download_task(
+                                    download_id,
+                                    self._download_with_semaphore(
+                                        download_id,
+                                        restored.get("model_id"),
+                                        restored.get("model_version_id"),
+                                        restored.get("save_dir"),
+                                        restored.get("relative_path", ""),
+                                        None,
+                                        bool(restored.get("use_default_paths", False)),
+                                        restored.get("source"),
+                                        restored.get("file_params"),
+                                    )
+                                )
+                        continue
+
+                    if remote_status == "complete" and not os.path.exists(control_path):
+                        await self._aria2_state_store.remove(download_id)
+                        continue
+
+                if os.path.exists(save_path) and os.path.exists(control_path):
+                    restored = self._active_downloads.setdefault(
+                        download_id,
+                        self._build_restored_download_info(record, save_path),
+                    )
+                    pause_control = self._pause_events.get(download_id)
+                    if pause_control is None:
+                        pause_control = DownloadStreamControl()
+                        self._pause_events[download_id] = pause_control
+
+                    # No live aria2 gid was found, so restore this partial as resumable-but-paused.
+                    pause_control.pause()
+                    restored["status"] = "paused"
+                    await self._aria2_state_store.upsert(
+                        download_id,
+                        {
+                            "save_path": save_path,
+                            "file_path": save_path,
+                            "status": "paused",
+                        },
+                    )
+                    continue
+
+                await self._aria2_state_store.remove(download_id)
+
+            self._restored_persisted_downloads = True
+
+    async def _resolve_download_target_path(
+        self,
+        save_dir: str,
+        metadata,
+        *,
+        transfer_backend: str,
+        download_id: Optional[str],
+    ) -> Tuple[bool, str]:
+        original_filename = os.path.basename(metadata.file_path)
+        base_name, extension = os.path.splitext(original_filename)
+        original_path = os.path.join(save_dir, original_filename)
+
+        if transfer_backend == "aria2":
+            control_path = f"{original_path}.aria2"
+            if os.path.exists(original_path) and os.path.exists(control_path):
+                persisted_record = None
+                if download_id:
+                    persisted_record = await self._aria2_state_store.get(download_id)
+                    if persisted_record:
+                        persisted_path = (
+                            persisted_record.get("save_path")
+                            or persisted_record.get("file_path")
+                        )
+                        if isinstance(persisted_path, str) and os.path.abspath(
+                            persisted_path
+                        ) == os.path.abspath(original_path):
+                            logger.info(
+                                "Reusing aria2 partial target %s for %s",
+                                original_path,
+                                download_id,
+                            )
+                            return True, original_path
+
+                conflict_record = await self._aria2_state_store.find_by_save_path(
+                    original_path, exclude_download_id=download_id
+                )
+                if conflict_record is not None:
+                    current_info = self._active_downloads.get(download_id) if download_id else None
+                    if download_id and self._is_same_aria2_download_request(
+                        current_info, conflict_record
+                    ):
+                        logger.info(
+                            "Reassigning aria2 partial target %s from %s to %s",
+                            original_path,
+                            conflict_record.get("download_id"),
+                            download_id,
+                        )
+                        await self._adopt_existing_aria2_download(
+                            conflict_record["download_id"],
+                            download_id,
+                            conflict_record,
+                            original_path,
+                        )
+                        return True, original_path
+
+                    return (
+                        False,
+                        f"Another aria2 download is already using '{original_filename}' for resume",
+                    )
+
+                if download_id:
+                    logger.info(
+                        "Reusing aria2 partial target %s for %s",
+                        original_path,
+                        download_id,
+                    )
+                    return True, original_path
+
+        def hash_provider():
+            return metadata.sha256
+
+        unique_filename = metadata.generate_unique_filename(
+            save_dir, base_name, extension, hash_provider=hash_provider
+        )
+
+        if unique_filename != original_filename:
+            logger.info(
+                f"Filename conflict detected. Changing '{original_filename}' to '{unique_filename}'"
+            )
+            save_path = os.path.join(save_dir, unique_filename)
+            metadata.file_path = save_path.replace(os.sep, "/")
+            metadata.file_name = os.path.splitext(unique_filename)[0]
+            return True, save_path
+
+        return True, metadata.file_path
 
     async def _execute_original_download(
         self,
@@ -756,6 +1400,23 @@ class DownloadManager:
                 logger.info(f"Creating EmbeddingMetadata for {file_name}")
 
             # 6. Start download process
+            if transfer_backend == "aria2" and download_id:
+                await self._persist_aria2_state(
+                    download_id,
+                    extra={
+                        "save_dir": save_dir,
+                        "relative_path": relative_path,
+                        "resume_context": {
+                            "version_info": copy.deepcopy(version_info),
+                            "file_info": copy.deepcopy(file_info),
+                            "model_type": model_type,
+                            "relative_path": relative_path,
+                            "save_dir": save_dir,
+                            "download_urls": copy.deepcopy(download_urls),
+                        },
+                    },
+                )
+
             execute_kwargs = {
                 "download_urls": download_urls,
                 "save_dir": save_dir,
@@ -1048,30 +1709,14 @@ class DownloadManager:
         preview_nsfw_level = 0
         transfer_backend = (transfer_backend or self._get_model_download_backend()).lower()
         try:
-            # Extract original filename details
-            original_filename = os.path.basename(metadata.file_path)
-            base_name, extension = os.path.splitext(original_filename)
-
-            # Check for filename conflicts and generate unique filename if needed
-            # Use the hash from metadata for conflict resolution
-            def hash_provider():
-                return metadata.sha256
-
-            unique_filename = metadata.generate_unique_filename(
-                save_dir, base_name, extension, hash_provider=hash_provider
+            resolved, save_path = await self._resolve_download_target_path(
+                save_dir,
+                metadata,
+                transfer_backend=transfer_backend,
+                download_id=download_id,
             )
-
-            # Update paths if filename changed
-            if unique_filename != original_filename:
-                logger.info(
-                    f"Filename conflict detected. Changing '{original_filename}' to '{unique_filename}'"
-                )
-                save_path = os.path.join(save_dir, unique_filename)
-                # Update metadata with new file path and name
-                metadata.file_path = save_path.replace(os.sep, "/")
-                metadata.file_name = os.path.splitext(unique_filename)[0]
-            else:
-                save_path = metadata.file_path
+            if not resolved:
+                return {"success": False, "error": save_path}
 
             part_path = save_path + ".part"
             metadata_path = os.path.splitext(save_path)[0] + ".metadata.json"
@@ -1081,7 +1726,12 @@ class DownloadManager:
             # Store file paths in active_downloads for potential cleanup
             if download_id and download_id in self._active_downloads:
                 self._active_downloads[download_id]["file_path"] = save_path
-                self._active_downloads[download_id]["part_path"] = part_path
+                if transfer_backend == "python":
+                    self._active_downloads[download_id]["part_path"] = part_path
+                if transfer_backend == "aria2":
+                    self._active_downloads[download_id]["aria2_control_path"] = (
+                        f"{save_path}.aria2"
+                    )
 
             # Download preview image if available
             images = version_info.get("images", [])
@@ -1205,6 +1855,8 @@ class DownloadManager:
                     preview_nsfw_level = nsfw_level
                     metadata.preview_url = preview_path.replace(os.sep, "/")
                     metadata.preview_nsfw_level = nsfw_level
+                    if download_id and download_id in self._active_downloads:
+                        self._active_downloads[download_id]["preview_path"] = preview_path
 
                 if progress_callback:
                     await progress_callback(3)  # 3% progress after preview download
@@ -1226,6 +1878,18 @@ class DownloadManager:
             for download_url in download_urls:
                 download_url = normalize_civitai_download_url(download_url)
                 use_auth = download_url.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
+                if transfer_backend == "aria2" and download_id:
+                    await self._persist_aria2_state(
+                        download_id,
+                        extra={
+                            "status": self._active_downloads.get(download_id, {}).get(
+                                "status", "downloading"
+                            ),
+                            "save_path": save_path,
+                            "file_path": save_path,
+                            "url": download_url,
+                        },
+                    )
                 success, result = await self._download_model_file(
                     download_url,
                     save_path,
@@ -1267,9 +1931,20 @@ class DownloadManager:
                         except Exception as e:
                             logger.warning(f"Failed to cleanup file {path}: {e}")
 
-                # Log but don't remove .part file to allow resume
-                if os.path.exists(part_path):
+                # Keep resumable partial state for the matching backend.
+                if transfer_backend == "python" and os.path.exists(part_path):
                     logger.info(f"Preserving partial download for resume: {part_path}")
+                elif transfer_backend == "aria2" and os.path.exists(f"{save_path}.aria2"):
+                    logger.info("Preserving aria2 partial download for resume: %s", save_path)
+                    if download_id:
+                        await self._persist_aria2_state(
+                            download_id,
+                            extra={
+                                "status": "failed",
+                                "save_path": save_path,
+                                "file_path": save_path,
+                            },
+                        )
 
                 return {
                     "success": False,
@@ -1383,6 +2058,9 @@ class DownloadManager:
 
                 if scanner is not None:
                     await scanner.add_model_to_cache(metadata_dict, relative_path)
+
+            if transfer_backend == "aria2" and download_id:
+                await self._aria2_state_store.remove(download_id)
 
             # Report 100% completion
             if progress_callback:
@@ -1586,11 +2264,22 @@ class DownloadManager:
         Returns:
             Dict: Status of the cancellation operation
         """
-        if download_id not in self._download_tasks:
+        await self._restore_persisted_downloads()
+
+        if download_id not in self._download_tasks and download_id not in self._active_downloads:
             return {"success": False, "error": "Download task not found"}
 
+        download_info = self._active_downloads.get(download_id)
+        task = self._download_tasks.get(download_id)
+        active_statuses = {"queued", "waiting", "downloading", "paused", "cancelling"}
+        if task is None and (
+            not isinstance(download_info, dict)
+            or download_info.get("status") not in active_statuses
+        ):
+            return {"success": False, "error": "Download task not found"}
+
+        should_cleanup_local_tracking = False
         try:
-            task = self._download_tasks[download_id]
             backend = (
                 self._active_downloads.get(download_id, {}).get("transfer_backend")
                 or "python"
@@ -1605,14 +2294,19 @@ class DownloadManager:
                         and cancel_result.get("error") != "Download task not found"
                     ):
                         return cancel_result
+                    should_cleanup_local_tracking = True
                 except Exception as exc:
                     logger.warning(
                         "Failed to cancel aria2 transfer for %s, continuing with local task cancellation: %s",
                         download_id,
                         exc,
                     )
+                    should_cleanup_local_tracking = True
+            else:
+                should_cleanup_local_tracking = True
 
-            task.cancel()
+            if task is not None:
+                task.cancel()
 
             pause_control = self._pause_events.get(download_id)
             if pause_control is not None:
@@ -1624,83 +2318,31 @@ class DownloadManager:
                 self._active_downloads[download_id]["bytes_per_second"] = 0.0
 
             # Wait briefly for the task to acknowledge cancellation
-            try:
-                await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
-            except (asyncio.CancelledError, asyncio.TimeoutError):
-                pass
+            if task is not None:
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
 
             # Clean up ALL files including .part when user cancels
             download_info = self._active_downloads.get(download_id)
-            if download_info:
-                target_files = set()
-                primary_path = download_info.get("file_path")
-                if primary_path:
-                    target_files.add(primary_path)
-
-                for extra_path in download_info.get("extracted_paths", []):
-                    if extra_path:
-                        target_files.add(extra_path)
-
-                for file_path in target_files:
-                    if os.path.exists(file_path):
-                        try:
-                            os.unlink(file_path)
-                            logger.debug(f"Deleted cancelled download: {file_path}")
-                        except Exception as e:
-                            logger.error(f"Error deleting file: {e}")
-
-                # Delete the .part file (only on user cancellation)
-                if "part_path" in download_info:
-                    part_path = download_info["part_path"]
-                    if os.path.exists(part_path):
-                        try:
-                            os.unlink(part_path)
-                            logger.debug(f"Deleted partial download: {part_path}")
-                        except Exception as e:
-                            logger.error(f"Error deleting part file: {e}")
-
-                # Delete metadata files for each resolved path
-                for file_path in target_files:
-                    metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
-                    if os.path.exists(metadata_path):
-                        try:
-                            os.unlink(metadata_path)
-                        except Exception as e:
-                            logger.error(f"Error deleting metadata file: {e}")
-
-                preview_path_value = download_info.get("preview_path")
-                if preview_path_value and os.path.exists(preview_path_value):
-                    try:
-                        os.unlink(preview_path_value)
-                        logger.debug(f"Deleted preview file: {preview_path_value}")
-                    except Exception as e:
-                        logger.error(
-                            f"Error deleting preview file: {preview_path_value}"
-                        )
-
-                # Delete preview file if exists (.webp or .mp4) for legacy paths
-                for file_path in target_files:
-                    for preview_ext in [".webp", ".mp4"]:
-                        preview_path = os.path.splitext(file_path)[0] + preview_ext
-                        if os.path.exists(preview_path):
-                            try:
-                                os.unlink(preview_path)
-                                logger.debug(f"Deleted preview file: {preview_path}")
-                            except Exception as e:
-                                logger.error(
-                                    f"Error deleting preview file: {preview_path}"
-                                )
+            await self._cleanup_cancelled_download_files(download_id, download_info)
             return {"success": True, "message": "Download cancelled successfully"}
         except Exception as e:
             logger.error(f"Error cancelling download: {e}", exc_info=True)
             return {"success": False, "error": str(e)}
         finally:
-            self._pause_events.pop(download_id, None)
+            if should_cleanup_local_tracking:
+                self._pause_events.pop(download_id, None)
+                self._download_tasks.pop(download_id, None)
+                await self._aria2_state_store.remove(download_id)
 
     async def pause_download(self, download_id: str) -> Dict:
         """Pause an active download without losing progress."""
 
-        if download_id not in self._download_tasks:
+        await self._restore_persisted_downloads()
+
+        if download_id not in self._download_tasks and download_id not in self._active_downloads:
             return {"success": False, "error": "Download task not found"}
 
         pause_control = self._pause_events.get(download_id)
@@ -1732,6 +2374,7 @@ class DownloadManager:
             if download_info is not None:
                 download_info["status"] = "paused"
                 download_info["bytes_per_second"] = 0.0
+                await self._persist_aria2_state(download_id)
             return {"success": True, "message": "Download paused successfully"}
 
         download_info = self._active_downloads.get(download_id)
@@ -1744,9 +2387,22 @@ class DownloadManager:
     async def resume_download(self, download_id: str) -> Dict:
         """Resume a previously paused download."""
 
+        await self._restore_persisted_downloads()
+
         pause_control = self._pause_events.get(download_id)
         if pause_control is None:
-            return {"success": False, "error": "Download task not found"}
+            persisted = await self._aria2_state_store.get(download_id)
+            if not persisted or persisted.get("transfer_backend") != "aria2":
+                return {"success": False, "error": "Download task not found"}
+
+            save_path = persisted.get("save_path") or persisted.get("file_path")
+            pause_control = DownloadStreamControl()
+            pause_control.pause()
+            self._pause_events[download_id] = pause_control
+            self._active_downloads[download_id] = self._build_restored_download_info(
+                persisted,
+                os.path.abspath(save_path),
+            )
 
         if pause_control.is_set():
             return {"success": False, "error": "Download is not paused"}
@@ -1758,11 +2414,39 @@ class DownloadManager:
         )
         if backend == "aria2":
             try:
+                persisted = None
+                if download_id not in self._download_tasks:
+                    persisted = await self._aria2_state_store.get(download_id)
                 aria2_downloader = await get_aria2_downloader()
                 if await aria2_downloader.has_transfer(download_id):
                     result = await aria2_downloader.resume_download(download_id)
                     if not result.get("success"):
                         return result
+                if download_id not in self._download_tasks and persisted:
+                    resume_context = persisted.get("resume_context")
+                    if isinstance(resume_context, dict):
+                        self._start_background_download_task(
+                            download_id,
+                            self._resume_restored_aria2_download(
+                                download_id,
+                                dict(persisted),
+                            ),
+                        )
+                    else:
+                        self._start_background_download_task(
+                            download_id,
+                            self._download_with_semaphore(
+                                download_id,
+                                persisted.get("model_id"),
+                                persisted.get("model_version_id"),
+                                persisted.get("save_dir"),
+                                persisted.get("relative_path", ""),
+                                None,
+                                bool(persisted.get("use_default_paths", False)),
+                                persisted.get("source"),
+                                persisted.get("file_params"),
+                            ),
+                        )
             except Exception as exc:
                 return {"success": False, "error": str(exc)}
 
@@ -1772,6 +2456,7 @@ class DownloadManager:
                 if download_info.get("status") == "paused":
                     download_info["status"] = "downloading"
                 download_info.setdefault("bytes_per_second", 0.0)
+                await self._persist_aria2_state(download_id)
             return {"success": True, "message": "Download resumed successfully"}
 
         force_reconnect = False
@@ -1849,6 +2534,7 @@ class DownloadManager:
         Returns:
             Dict: List of active downloads and their status
         """
+        await self._restore_persisted_downloads()
         return {
             "downloads": [
                 {

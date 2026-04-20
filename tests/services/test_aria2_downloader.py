@@ -1,11 +1,24 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 from unittest.mock import AsyncMock
 
 import pytest
 
 from py.services.aria2_downloader import Aria2Downloader, Aria2Error
+from py.services.aria2_transfer_state import Aria2TransferStateStore
+from py.services import aria2_transfer_state
+
+
+@pytest.fixture(autouse=True)
+def isolate_aria2_state(monkeypatch, tmp_path):
+    state_path = tmp_path / "cache" / "aria2" / "downloads.json"
+    monkeypatch.setattr(
+        aria2_transfer_state,
+        "get_aria2_state_path",
+        lambda: str(state_path),
+    )
 
 
 @pytest.mark.asyncio
@@ -77,6 +90,23 @@ async def test_download_file_polls_until_complete(tmp_path, monkeypatch):
     ]
     assert rpc_calls[0][1][1]["out"] == "model.safetensors"
     assert "header" not in rpc_calls[0][1][1]
+
+
+@pytest.mark.asyncio
+async def test_transfer_state_store_shares_lock_and_preserves_concurrent_updates(tmp_path):
+    state_path = tmp_path / "cache" / "aria2" / "downloads.json"
+    store_a = Aria2TransferStateStore(str(state_path))
+    store_b = Aria2TransferStateStore(str(state_path))
+
+    assert store_a._lock is store_b._lock
+
+    await asyncio.gather(
+        store_a.upsert("download-1", {"status": "downloading", "gid": "gid-1"}),
+        store_b.upsert("download-2", {"status": "paused", "gid": "gid-2"}),
+    )
+
+    assert await store_a.get("download-1") == {"status": "downloading", "gid": "gid-1"}
+    assert await store_b.get("download-2") == {"status": "paused", "gid": "gid-2"}
 
 
 @pytest.mark.asyncio
@@ -159,6 +189,61 @@ async def test_pause_resume_cancel_forward_to_rpc(monkeypatch):
         ("aria2.unpause", ["gid-1"]),
         ("aria2.forceRemove", ["gid-1"]),
     ]
+
+
+@pytest.mark.asyncio
+async def test_download_file_reuses_existing_transfer_without_add_uri(
+    tmp_path, monkeypatch
+):
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    downloader._transfers["download-1"] = type(
+        "Transfer", (), {"gid": "gid-1", "save_path": str(save_path)}
+    )()
+
+    rpc_calls = []
+    statuses = iter(
+        [
+            {
+                "gid": "gid-1",
+                "status": "active",
+                "completedLength": "5",
+                "totalLength": "10",
+                "downloadSpeed": "25",
+            },
+            {
+                "gid": "gid-1",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            },
+        ]
+    )
+
+    async def fake_rpc_call(method, params):
+        rpc_calls.append((method, params))
+        if method == "aria2.tellStatus":
+            return next(statuses)
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://example.com/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    assert [call[0] for call in rpc_calls] == ["aria2.tellStatus", "aria2.tellStatus"]
 
 
 def test_build_progress_snapshot_normalizes_numeric_fields():
