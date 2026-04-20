@@ -74,22 +74,29 @@ async def test_connectivity_guard_recovers_after_success():
 
 async def test_downloader_short_circuits_all_request_helpers_during_cooldown():
     guard = await ConnectivityGuard.get_instance()
-    guard.cooldown_until = datetime.now() + timedelta(seconds=30)
-    guard.online = False
-    guard.failure_count = 3
+    destination = "example.invalid"
+    guard.register_network_failure(
+        OSError(errno.ENETUNREACH, "unreachable"),
+        destination,
+    )
+    guard.register_network_failure(asyncio.TimeoutError("timeout"), destination)
+    guard.register_network_failure(
+        ConnectionRefusedError("refused"),
+        destination,
+    )
 
     downloader = Downloader()
 
-    ok, payload = await downloader.make_request("GET", "https://example.invalid")
+    ok, payload = await downloader.make_request("GET", f"https://{destination}")
     assert ok is False
     assert payload == OFFLINE_COOLDOWN_ERROR
 
-    ok, payload, headers = await downloader.download_to_memory("https://example.invalid")
+    ok, payload, headers = await downloader.download_to_memory(f"https://{destination}")
     assert ok is False
     assert payload == OFFLINE_COOLDOWN_ERROR
     assert headers is None
 
-    ok, payload = await downloader.get_response_headers("https://example.invalid")
+    ok, payload = await downloader.get_response_headers(f"https://{destination}")
     assert ok is False
     assert payload == OFFLINE_COOLDOWN_ERROR
 
