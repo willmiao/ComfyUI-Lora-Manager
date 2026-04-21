@@ -140,9 +140,11 @@
 
 /* Add specific styles for notes content */
 .info-item.notes .editable-field [contenteditable] {
+    height: 60px; /* Keep initial modal layout stable regardless of note length */
     min-height: 60px; /* Increase height for multiple lines */
-    max-height: 150px; /* Limit maximum height */
-    overflow-y: auto; /* Add scrolling for long content */
+    max-height: 420px; /* Limit maximum height */
+    overflow: auto; /* Enable scrolling and resize handle for long content */
+    resize: vertical; /* Allow manual vertical resizing */
     white-space: pre-wrap; /* Preserve line breaks */
     line-height: 1.5; /* Improve readability */
     padding: 8px 12px; /* Slightly increase padding */
