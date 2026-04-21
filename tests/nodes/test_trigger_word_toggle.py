@@ -99,6 +99,99 @@ def test_duplicate_groups_respect_active_state():
     assert filtered == "A, B"
 
 
+def test_group_mode_can_exclude_individual_tags_within_active_group():
+    node = TriggerWordToggleLM()
+    trigger_data = [
+        {
+            "text": "outfit red, outfit blue, smiling",
+            "active": True,
+            "strength": None,
+            "highlighted": False,
+            "items": [
+                {"text": "outfit red", "active": True, "highlighted": False},
+                {"text": "outfit blue", "active": False, "highlighted": False},
+                {"text": "smiling", "active": True, "highlighted": False},
+            ],
+        }
+    ]
+
+    (filtered,) = node.process_trigger_words(
+        id="node",
+        group_mode=True,
+        default_active=True,
+        allow_strength_adjustment=False,
+        orinalMessage="outfit red, outfit blue, smiling",
+        toggle_trigger_words=trigger_data,
+    )
+
+    assert filtered == "outfit red, smiling"
+
+
+def test_group_mode_keeps_group_strength_when_individual_tags_are_excluded():
+    node = TriggerWordToggleLM()
+    trigger_data = [
+        {
+            "text": "(outfit red, outfit blue, smiling:1.15)",
+            "active": True,
+            "strength": 1.15,
+            "highlighted": False,
+            "items": [
+                {"text": "outfit red", "active": True, "highlighted": False},
+                {"text": "outfit blue", "active": False, "highlighted": False},
+                {"text": "smiling", "active": True, "highlighted": False},
+            ],
+        }
+    ]
+
+    (filtered,) = node.process_trigger_words(
+        id="node",
+        group_mode=True,
+        default_active=True,
+        allow_strength_adjustment=True,
+        orinalMessage="outfit red, outfit blue, smiling",
+        toggle_trigger_words=trigger_data,
+    )
+
+    assert filtered == "(outfit red, smiling:1.15)"
+
+
+def test_group_mode_omits_group_when_all_children_are_disabled():
+    node = TriggerWordToggleLM()
+    trigger_data = [
+        {
+            "text": "A, B",
+            "active": True,
+            "strength": None,
+            "highlighted": False,
+            "items": [
+                {"text": "A", "active": False, "highlighted": False},
+                {"text": "B", "active": False, "highlighted": False},
+            ],
+        },
+        {
+            "text": "C, D",
+            "active": True,
+            "strength": None,
+            "highlighted": False,
+            "items": [
+                {"text": "C", "active": True, "highlighted": False},
+                {"text": "D", "active": True, "highlighted": False},
+            ],
+        },
+    ]
+
+    (filtered,) = node.process_trigger_words(
+        id="node",
+        group_mode=True,
+        default_active=True,
+        allow_strength_adjustment=False,
+        orinalMessage="A, B,, C, D",
+        toggle_trigger_words=trigger_data,
+    )
+
+    assert filtered == "C, D"
+
+
 def test_trigger_words_override_different_from_original():
     node = TriggerWordToggleLM()
     trigger_data = [

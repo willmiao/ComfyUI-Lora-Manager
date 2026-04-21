@@ -580,6 +580,38 @@ body.lm-lora-reordering * {
   margin: 6px 0;
 }
 
+.lm-trigger-count-badge {
+  font-variant-numeric: tabular-nums;
+}
+
+.lm-trigger-count-badge--edited {
+  color: rgba(226, 232, 240, 0.92);
+}
+
+.lm-trigger-group-edit-button {
+  transition: opacity 0.18s ease, color 0.18s ease;
+}
+
+.lm-trigger-group-edit-button:hover {
+  color: rgba(255, 255, 255, 0.98);
+}
+
+.lm-trigger-group-editor {
+  background: rgba(26, 32, 44, 0.95);
+  border: 1px solid rgba(66, 153, 225, 0.24);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(6px);
+}
+
+.lm-trigger-group-editor__title {
+  color: rgba(226, 232, 240, 0.96);
+}
+
+.lm-trigger-group-editor__subtitle,
+.lm-trigger-group-editor__empty {
+  color: rgba(226, 232, 240, 0.72);
+}
+
 /* Autocomplete styling */
 .lm-autocomplete-name {
   flex: 1;

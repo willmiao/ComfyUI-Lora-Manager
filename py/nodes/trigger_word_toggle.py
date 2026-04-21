@@ -76,6 +76,9 @@ class TriggerWordToggleLM:
         # Filter out empty strings and return as set
         return set(word for word in words if word)
 
+    def _group_has_child_items(self, item):
+        return isinstance(item, dict) and isinstance(item.get("items"), list)
+
     def process_trigger_words(
         self,
         id,
@@ -112,7 +115,11 @@ class TriggerWordToggleLM:
 
                 if isinstance(trigger_data, list):
                     if group_mode:
-                        if allow_strength_adjustment:
+                        if any(self._group_has_child_items(item) for item in trigger_data):
+                            filtered_groups = self._process_group_items(
+                                trigger_data, allow_strength_adjustment
+                            )
+                        elif allow_strength_adjustment:
                             parsed_items = [
                                 self._parse_trigger_item(
                                     item, allow_strength_adjustment
@@ -173,6 +180,41 @@ class TriggerWordToggleLM:
                 logger.error(f"Error processing trigger words: {e}")
 
         return (filtered_triggers,)
+
+    def _process_group_items(self, trigger_data, allow_strength_adjustment):
+        filtered_groups = []
+
+        for item in trigger_data:
+            group = self._parse_trigger_item(item, allow_strength_adjustment)
+            if not group["text"] or not group["active"]:
+                continue
+
+            raw_items = item.get("items") if isinstance(item, dict) else None
+            if isinstance(raw_items, list):
+                active_items = []
+                for raw_item in raw_items:
+                    child = self._parse_trigger_item(
+                        raw_item, allow_strength_adjustment=False
+                    )
+                    if child["text"] and child["active"]:
+                        active_items.append(child["text"])
+
+                if not active_items:
+                    continue
+
+                group_text = ", ".join(active_items)
+            else:
+                group_text = group["text"]
+
+            filtered_groups.append(
+                self._format_word_output(
+                    group_text,
+                    group["strength"],
+                    allow_strength_adjustment,
+                )
+            )
+
+        return filtered_groups
 
     def _parse_trigger_item(self, item, allow_strength_adjustment):
         text = (item.get("text") or "").strip()
