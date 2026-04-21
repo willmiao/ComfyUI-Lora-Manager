@@ -10,6 +10,7 @@ import { escapeAttribute, escapeHtml } from './utils.js';
 
 const MAX_WORDS_PER_TRIGGER_GROUP = 500;
 const MAX_TRIGGER_WORD_GROUPS = 100;
+const TRIGGER_WORD_CLICK_DELAY_MS = 220;
 
 /**
  * Fetch trained words for a model
@@ -226,7 +227,7 @@ export function renderTriggerWords(words, filePath) {
         const escapedWord = escapeHtml(word);
         const escapedAttr = escapeAttribute(word);
         return `
-                        <div class="trigger-word-tag" data-word="${escapedAttr}" onclick="copyTriggerWord(this.dataset.word)" title="${translate('modals.model.triggerWords.copyWord')}">
+                        <div class="trigger-word-tag" data-word="${escapedAttr}" title="${translate('modals.model.triggerWords.copyWord')}">
                             <span class="trigger-word-content">${escapedWord}</span>
                             <span class="trigger-word-copy">
                                 <i class="fas fa-copy"></i>
@@ -264,6 +265,8 @@ export function setupTriggerWordsEditMode() {
     const editBtn = document.querySelector('.edit-trigger-words-btn');
     if (!editBtn) return;
 
+    document.querySelectorAll('.trigger-word-tag').forEach(setupDisplayTriggerWordTag);
+
     editBtn.addEventListener('click', async function () {
         const triggerWordsSection = this.closest('.trigger-words');
         const isEditMode = triggerWordsSection.classList.toggle('edit-mode');
@@ -296,7 +299,7 @@ export function setupTriggerWordsEditMode() {
 
             // Disable click-to-copy and show delete buttons
             triggerWordTags.forEach(tag => {
-                tag.onclick = null;
+                teardownDisplayTriggerWordTag(tag);
                 tag.addEventListener('click', startEditTriggerWord);
                 tag.title = translate('modals.model.triggerWords.editWord');
                 const copyIcon = tag.querySelector('.trigger-word-copy');
@@ -341,6 +344,12 @@ export function setupTriggerWordsEditMode() {
 
             // Focus the input
             addForm.querySelector('input').focus();
+
+            const pendingEditTag = triggerWordsSection._pendingTriggerWordEditTag;
+            delete triggerWordsSection._pendingTriggerWordEditTag;
+            if (pendingEditTag && document.contains(pendingEditTag)) {
+                startEditTriggerWord.call(pendingEditTag, { target: pendingEditTag, preventDefault() { }, stopPropagation() { } });
+            }
 
         } else {
             this.innerHTML = '<i class="fas fa-pencil-alt"></i>'; // Change back to edit icon
@@ -445,7 +454,7 @@ function resetTriggerWordsUIState(section) {
 
         // Restore click-to-copy functionality
         tag.removeEventListener('click', startEditTriggerWord);
-        tag.onclick = () => copyTriggerWord(tag.dataset.word);
+        setupDisplayTriggerWordTag(tag);
         tag.title = translate('modals.model.triggerWords.copyWord');
 
         // Show copy icon, hide delete button
@@ -513,10 +522,88 @@ function createTriggerWordTag(word, isEditMode = false) {
     if (isEditMode) {
         tag.addEventListener('click', startEditTriggerWord);
     } else {
-        tag.onclick = () => copyTriggerWord(tag.dataset.word);
+        setupDisplayTriggerWordTag(tag);
     }
 
     return tag;
+}
+
+/**
+ * Set up display-mode click-to-copy and double-click-to-edit behavior
+ * @param {HTMLElement} tag - Trigger word tag
+ */
+function setupDisplayTriggerWordTag(tag) {
+    teardownDisplayTriggerWordTag(tag);
+
+    tag.addEventListener('click', handleDisplayTriggerWordClick);
+    tag.addEventListener('dblclick', handleDisplayTriggerWordDoubleClick);
+    tag.title = translate('modals.model.triggerWords.copyWord');
+}
+
+/**
+ * Remove display-mode handlers and pending copy action
+ * @param {HTMLElement} tag - Trigger word tag
+ */
+function teardownDisplayTriggerWordTag(tag) {
+    if (tag.dataset.copyTimerId) {
+        clearTimeout(Number(tag.dataset.copyTimerId));
+        delete tag.dataset.copyTimerId;
+    }
+    tag.onclick = null;
+    tag.removeEventListener('click', handleDisplayTriggerWordClick);
+    tag.removeEventListener('dblclick', handleDisplayTriggerWordDoubleClick);
+}
+
+/**
+ * Copy trigger word after a short delay so dblclick can cancel it
+ * @param {MouseEvent} e - Click event
+ */
+function handleDisplayTriggerWordClick(e) {
+    if (e.target.closest('.metadata-delete-btn') || e.target.closest('.trigger-word-edit-input')) return;
+
+    const tag = this.closest('.trigger-word-tag');
+    if (!tag || tag.closest('.trigger-words')?.classList.contains('edit-mode')) return;
+
+    e.stopPropagation();
+
+    if (tag.dataset.copyTimerId) {
+        clearTimeout(Number(tag.dataset.copyTimerId));
+    }
+
+    const timerId = window.setTimeout(() => {
+        delete tag.dataset.copyTimerId;
+        copyTriggerWord(tag.dataset.word);
+    }, TRIGGER_WORD_CLICK_DELAY_MS);
+    tag.dataset.copyTimerId = String(timerId);
+}
+
+/**
+ * Enter edit mode and start editing the double-clicked trigger word
+ * @param {MouseEvent} e - Double-click event
+ */
+function handleDisplayTriggerWordDoubleClick(e) {
+    if (e.target.closest('.metadata-delete-btn') || e.target.closest('.trigger-word-edit-input')) return;
+
+    const tag = this.closest('.trigger-word-tag');
+    const section = tag?.closest('.trigger-words');
+    const editBtn = section?.querySelector('.edit-trigger-words-btn');
+    if (!tag || !section || !editBtn) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (tag.dataset.copyTimerId) {
+        clearTimeout(Number(tag.dataset.copyTimerId));
+        delete tag.dataset.copyTimerId;
+    }
+
+    if (!section.classList.contains('edit-mode')) {
+        section._pendingTriggerWordEditTag = tag;
+        editBtn.click();
+        return;
+    }
+
+    startEditTriggerWord.call(tag, e);
 }
 
 /**

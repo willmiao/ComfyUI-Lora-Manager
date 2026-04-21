@@ -29,6 +29,7 @@ describe("TriggerWords inline editing", () => {
     let renderTriggerWords;
     let setupTriggerWordsEditMode;
     let showToast;
+    let copyToClipboard;
 
     beforeEach(async () => {
         document.body.innerHTML = '';
@@ -46,6 +47,7 @@ describe("TriggerWords inline editing", () => {
         renderTriggerWords = module.renderTriggerWords;
         setupTriggerWordsEditMode = module.setupTriggerWordsEditMode;
         showToast = uiHelpers.showToast;
+        copyToClipboard = uiHelpers.copyToClipboard;
     });
 
     async function enterEditMode(words = ["alpha", "beta"]) {
@@ -79,6 +81,24 @@ describe("TriggerWords inline editing", () => {
         expect(firstTag.dataset.word).toBe("gamma");
         expect(firstTag.querySelector('.trigger-word-content').textContent).toBe("gamma");
         expect(document.querySelector('.trigger-word-edit-input')).toBeNull();
+    });
+
+    it("enters edit mode and edits the double-clicked tag from display mode without copying", async () => {
+        document.body.innerHTML = renderTriggerWords(["alpha", "beta"], "test.safetensors");
+        setupTriggerWordsEditMode();
+
+        const firstTag = document.querySelector('.trigger-word-tag');
+        firstTag.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        firstTag.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+        firstTag.dispatchEvent(new MouseEvent('dblclick', { bubbles: true, cancelable: true }));
+
+        await vi.waitFor(() => {
+            expect(document.querySelector('.trigger-words').classList.contains('edit-mode')).toBe(true);
+            expect(firstTag.querySelector('.trigger-word-edit-input')).toBeTruthy();
+        });
+
+        await new Promise(resolve => setTimeout(resolve, 260));
+        expect(copyToClipboard).not.toHaveBeenCalled();
     });
 
     it("keeps the original word and shows a toast when editing to a duplicate", async () => {

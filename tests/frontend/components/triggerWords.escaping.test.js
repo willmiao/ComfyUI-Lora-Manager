@@ -49,7 +49,7 @@ describe("TriggerWords HTML Escaping", () => {
         expect(html).toContain('data-word="word&#39;with&#39;quotes"');
         expect(html).toContain('data-word="&lt;tag&gt;"');
 
-        // Check for the onclick handler
-        expect(html).toContain('onclick="copyTriggerWord(this.dataset.word)"');
+        // Copy/edit handlers are attached by setupTriggerWordsEditMode, not inline HTML.
+        expect(html).not.toContain('onclick="copyTriggerWord');
     });
 });
