@@ -75,6 +75,65 @@ class DownloadManager:
         backend = (get_settings_manager().get("download_backend") or "python").strip()
         return backend.lower() or "python"
 
+    async def _schedule_auto_example_images_download(
+        self,
+        *,
+        metadata,
+        model_type: str,
+    ) -> None:
+        settings_manager = get_settings_manager()
+        if not settings_manager.get("auto_download_example_images", False):
+            return
+
+        if not settings_manager.get("example_images_path"):
+            logger.debug(
+                "Skipping automatic example images download; example_images_path is not configured"
+            )
+            return
+
+        raw_hash = getattr(metadata, "sha256", "") or ""
+        model_hash = str(raw_hash).strip().lower()
+        if not model_hash:
+            logger.debug(
+                "Skipping automatic example images download for %s; missing sha256",
+                getattr(metadata, "file_path", ""),
+            )
+            return
+
+        optimize = bool(settings_manager.get("optimize_example_images", True))
+
+        async def _run_auto_example_images_download() -> None:
+            try:
+                from ..utils.example_images_download_manager import (
+                    DownloadInProgressError,
+                    get_default_download_manager,
+                )
+
+                ws_manager = await ServiceRegistry.get_websocket_manager()
+                example_images_manager = get_default_download_manager(ws_manager)
+                await example_images_manager.start_force_download(
+                    {
+                        "model_hashes": [model_hash],
+                        "optimize": optimize,
+                        "model_types": [model_type],
+                        "delay": 0,
+                    }
+                )
+            except DownloadInProgressError:
+                logger.info(
+                    "Skipping automatic example images download for %s; another example images download is already running",
+                    model_hash,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Automatic example images download failed for %s: %s",
+                    model_hash,
+                    exc,
+                    exc_info=True,
+                )
+
+        asyncio.create_task(_run_auto_example_images_download())
+
     async def _download_model_file(
         self,
         download_url: str,
@@ -1457,6 +1516,10 @@ class DownloadManager:
                     resolved_model_id,
                     version_info,
                     model_version_id,
+                )
+                await self._schedule_auto_example_images_download(
+                    metadata=metadata,
+                    model_type=model_type,
                 )
 
             # If early_access_msg exists and download failed, replace error message

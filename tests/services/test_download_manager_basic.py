@@ -234,6 +234,136 @@ async def test_successful_download_uses_defaults(
 
 
 @pytest.mark.asyncio
+async def test_successful_download_schedules_auto_example_images(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    manager = DownloadManager()
+    scheduled = []
+
+    async def fake_execute_download(
+        self,
+        *,
+        download_urls,
+        save_dir,
+        metadata,
+        version_info,
+        relative_path,
+        progress_callback,
+        model_type,
+        download_id,
+        transfer_backend=None,
+    ):
+        return {"success": True}
+
+    async def fake_schedule(self, *, metadata, model_type):
+        scheduled.append({"metadata": metadata, "model_type": model_type})
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+    monkeypatch.setattr(
+        DownloadManager,
+        "_schedule_auto_example_images_download",
+        fake_schedule,
+        raising=False,
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert len(scheduled) == 1
+    assert scheduled[0]["model_type"] == "lora"
+    assert scheduled[0]["metadata"].sha256 == "sha256"
+
+
+@pytest.mark.asyncio
+async def test_auto_example_images_download_uses_settings_payload(
+    monkeypatch, tmp_path
+):
+    manager = DownloadManager()
+    settings = get_settings_manager()
+    settings.settings["auto_download_example_images"] = True
+    settings.settings["example_images_path"] = str(tmp_path / "examples")
+    settings.settings["optimize_example_images"] = False
+
+    calls = []
+
+    class DummyExampleImagesManager:
+        async def start_force_download(self, payload):
+            calls.append(payload)
+            return {"success": True}
+
+    from py.utils import example_images_download_manager
+
+    monkeypatch.setattr(
+        ServiceRegistry,
+        "get_websocket_manager",
+        AsyncMock(return_value=object()),
+    )
+    monkeypatch.setattr(
+        example_images_download_manager,
+        "get_default_download_manager",
+        lambda _ws_manager: DummyExampleImagesManager(),
+    )
+
+    metadata = SimpleNamespace(sha256="ABCDEF", file_path="model.safetensors")
+    await manager._schedule_auto_example_images_download(
+        metadata=metadata,
+        model_type="lora",
+    )
+
+    for _ in range(10):
+        if calls:
+            break
+        await asyncio.sleep(0)
+
+    assert calls == [
+        {
+            "model_hashes": ["abcdef"],
+            "optimize": False,
+            "model_types": ["lora"],
+            "delay": 0,
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_auto_example_images_download_skips_without_configuration(
+    monkeypatch, tmp_path
+):
+    manager = DownloadManager()
+    settings = get_settings_manager()
+    settings.settings["auto_download_example_images"] = True
+    settings.settings["example_images_path"] = ""
+
+    get_ws_manager = AsyncMock(return_value=object())
+    monkeypatch.setattr(ServiceRegistry, "get_websocket_manager", get_ws_manager)
+
+    await manager._schedule_auto_example_images_download(
+        metadata=SimpleNamespace(sha256="abcdef", file_path="model.safetensors"),
+        model_type="lora",
+    )
+    await asyncio.sleep(0)
+
+    get_ws_manager.assert_not_called()
+
+    settings.settings["example_images_path"] = str(tmp_path / "examples")
+    await manager._schedule_auto_example_images_download(
+        metadata=SimpleNamespace(sha256="", file_path="model.safetensors"),
+        model_type="lora",
+    )
+    await asyncio.sleep(0)
+
+    get_ws_manager.assert_not_called()
+
+
+@pytest.mark.asyncio
 async def test_download_uses_active_mirrors(
     monkeypatch, scanners, metadata_provider, tmp_path
 ):
