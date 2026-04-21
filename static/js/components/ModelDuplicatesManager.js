@@ -121,6 +121,7 @@ export class ModelDuplicatesManager {
             }
 
             this.duplicateGroups = data.duplicates || [];
+            this._pruneVerificationState();
 
             // Update the badge with the current count
             this.updateDuplicatesBadge(this.duplicateGroups.length);
@@ -402,6 +403,44 @@ export class ModelDuplicatesManager {
             }
         });
     }
+
+    _getGroupFilePaths(group) {
+        return new Set((group?.models || []).map(model => model.file_path));
+    }
+
+    _clearMismatchStateForGroup(group) {
+        this._getGroupFilePaths(group).forEach(filePath => {
+            this.mismatchedFiles.delete(filePath);
+        });
+    }
+
+    _pruneVerificationState() {
+        const visiblePaths = new Set();
+        const visibleHashes = new Set();
+
+        this.duplicateGroups.forEach(group => {
+            visibleHashes.add(group.hash);
+            this._getGroupFilePaths(group).forEach(filePath => visiblePaths.add(filePath));
+        });
+
+        Array.from(this.mismatchedFiles.keys()).forEach(filePath => {
+            if (!visiblePaths.has(filePath)) {
+                this.mismatchedFiles.delete(filePath);
+            }
+        });
+
+        Array.from(this.selectedForDeletion).forEach(filePath => {
+            if (!visiblePaths.has(filePath)) {
+                this.selectedForDeletion.delete(filePath);
+            }
+        });
+
+        Array.from(this.verifiedGroups).forEach(hash => {
+            if (!visibleHashes.has(hash)) {
+                this.verifiedGroups.delete(hash);
+            }
+        });
+    }
     
     renderModelCard(model, groupHash) {
         // Create basic card structure
@@ -619,10 +658,11 @@ export class ModelDuplicatesManager {
     
     toggleSelectAllInGroup(hash) {
         const checkboxes = document.querySelectorAll(`.selector-checkbox[data-group-hash="${hash}"]`);
-        const allSelected = Array.from(checkboxes).every(checkbox => checkbox.checked);
+        const selectableCheckboxes = Array.from(checkboxes).filter(checkbox => !checkbox.disabled);
+        const allSelected = selectableCheckboxes.length > 0 && selectableCheckboxes.every(checkbox => checkbox.checked);
         
         // If all are selected, deselect all; otherwise select all
-        checkboxes.forEach(checkbox => {
+        selectableCheckboxes.forEach(checkbox => {
             checkbox.checked = !allSelected;
             const filePath = checkbox.dataset.filePath;
             const card = checkbox.closest('.model-card');
@@ -830,11 +870,14 @@ export class ModelDuplicatesManager {
             // Process verification results
             const verifiedAsDuplicates = data.verified_as_duplicates;
             const mismatchedFiles = data.mismatched_files || [];
+
+            this._clearMismatchStateForGroup(group);
             
             // Update mismatchedFiles map
             if (data.new_hash_map) {
                 Object.entries(data.new_hash_map).forEach(([path, hash]) => {
                     this.mismatchedFiles.set(path, hash);
+                    this.selectedForDeletion.delete(path);
                 });
             }
             
@@ -843,6 +886,7 @@ export class ModelDuplicatesManager {
             
             // Re-render the duplicate groups to show verification status
             this.renderDuplicateGroups();
+            this.updateSelectedCount();
             
             // Show appropriate toast message
             if (mismatchedFiles.length > 0) {
