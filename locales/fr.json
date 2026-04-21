@@ -1190,6 +1190,8 @@
                 "cancel": "Annuler la modification",
                 "save": "Sauvegarder les modifications",
                 "addPlaceholder": "Tapez pour ajouter ou cliquez sur les suggestions ci-dessous",
+                "editWord": "Modifier le mot déclencheur",
+                "editPlaceholder": "Modifier le mot déclencheur",
                 "copyWord": "Copier le mot-clé",
                 "deleteWord": "Supprimer le mot-clé",
                 "suggestions": {

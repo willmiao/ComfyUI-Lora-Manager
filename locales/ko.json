@@ -1190,6 +1190,8 @@
                 "cancel": "편집 취소",
                 "save": "변경사항 저장",
                 "addPlaceholder": "입력하거나 아래 제안을 클릭하세요",
+                "editWord": "트리거 단어 편집",
+                "editPlaceholder": "트리거 단어 편집",
                 "copyWord": "트리거 단어 복사",
                 "deleteWord": "트리거 단어 삭제",
                 "suggestions": {

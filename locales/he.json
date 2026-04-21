@@ -1190,6 +1190,8 @@
                 "cancel": "בטל עריכה",
                 "save": "שמור שינויים",
                 "addPlaceholder": "הקלד להוספה או לחץ על הצעות למטה",
+                "editWord": "עריכת מילת טריגר",
+                "editPlaceholder": "עריכת מילת טריגר",
                 "copyWord": "העתק מילת טריגר",
                 "deleteWord": "מחק מילת טריגר",
                 "suggestions": {

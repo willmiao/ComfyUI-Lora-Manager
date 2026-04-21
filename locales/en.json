@@ -1190,6 +1190,8 @@
                 "cancel": "Cancel editing",
                 "save": "Save changes",
                 "addPlaceholder": "Type to add or click suggestions below",
+                "editWord": "Edit trigger word",
+                "editPlaceholder": "Edit trigger word",
                 "copyWord": "Copy trigger word",
                 "deleteWord": "Delete trigger word",
                 "suggestions": {

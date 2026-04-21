@@ -1190,6 +1190,8 @@
                 "cancel": "Bearbeitung abbrechen",
                 "save": "Änderungen speichern",
                 "addPlaceholder": "Tippen zum Hinzufügen oder klicken Sie auf Vorschläge unten",
+                "editWord": "Trigger Word bearbeiten",
+                "editPlaceholder": "Trigger Word bearbeiten",
                 "copyWord": "Trigger Word kopieren",
                 "deleteWord": "Trigger Word löschen",
                 "suggestions": {

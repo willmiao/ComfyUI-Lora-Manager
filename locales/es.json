@@ -1190,6 +1190,8 @@
                 "cancel": "Cancelar edición",
                 "save": "Guardar cambios",
                 "addPlaceholder": "Escribe para añadir o haz clic en sugerencias de abajo",
+                "editWord": "Editar palabra de activación",
+                "editPlaceholder": "Editar palabra de activación",
                 "copyWord": "Copiar palabra clave",
                 "deleteWord": "Eliminar palabra clave",
                 "suggestions": {

@@ -1190,6 +1190,8 @@
                 "cancel": "編集をキャンセル",
                 "save": "変更を保存",
                 "addPlaceholder": "入力して追加するか、下の提案をクリック",
+                "editWord": "トリガーワードを編集",
+                "editPlaceholder": "トリガーワードを編集",
                 "copyWord": "トリガーワードをコピー",
                 "deleteWord": "トリガーワードを削除",
                 "suggestions": {

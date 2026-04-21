@@ -1190,6 +1190,8 @@
                 "cancel": "取消编辑",
                 "save": "保存更改",
                 "addPlaceholder": "输入或点击下方建议添加",
+                "editWord": "编辑触发词",
+                "editPlaceholder": "编辑触发词",
                 "copyWord": "复制触发词",
                 "deleteWord": "删除触发词",
                 "suggestions": {
