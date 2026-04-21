@@ -1761,8 +1761,8 @@
         },
         "triggerWords": {
             "loadFailed": "No se pudieron cargar palabras entrenadas",
-            "tooLong": "La palabra clave no debe exceder 100 palabras",
-            "tooMany": "Máximo 30 palabras clave permitidas",
+            "tooLong": "La palabra clave no debe exceder 500 palabras",
+            "tooMany": "Máximo 100 palabras clave permitidas",
             "alreadyExists": "Esta palabra clave ya existe",
             "updateSuccess": "Palabras clave actualizadas exitosamente",
             "updateFailed": "Error al actualizar palabras clave",

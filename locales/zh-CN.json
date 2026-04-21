@@ -1761,8 +1761,8 @@
         },
         "triggerWords": {
             "loadFailed": "无法加载训练词",
-            "tooLong": "触发词不能超过100个词",
-            "tooMany": "最多允许30个触发词",
+            "tooLong": "触发词不能超过500个词",
+            "tooMany": "最多允许100个触发词",
             "alreadyExists": "该触发词已存在",
             "updateSuccess": "触发词更新成功",
             "updateFailed": "触发词更新失败",

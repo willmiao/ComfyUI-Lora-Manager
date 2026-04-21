@@ -1761,8 +1761,8 @@
         },
         "triggerWords": {
             "loadFailed": "Impossible de charger les mots entraînés",
-            "tooLong": "Le mot-clé ne doit pas dépasser 100 mots",
-            "tooMany": "Maximum 30 mots-clés autorisés",
+            "tooLong": "Le mot-clé ne doit pas dépasser 500 mots",
+            "tooMany": "Maximum 100 mots-clés autorisés",
             "alreadyExists": "Ce mot-clé existe déjà",
             "updateSuccess": "Mots-clés mis à jour avec succès",
             "updateFailed": "Échec de la mise à jour des mots-clés",

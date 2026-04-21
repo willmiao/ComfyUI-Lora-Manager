@@ -8,6 +8,9 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { escapeAttribute, escapeHtml } from './utils.js';
 
+const MAX_WORDS_PER_TRIGGER_GROUP = 500;
+const MAX_TRIGGER_WORD_GROUPS = 100;
+
 /**
  * Fetch trained words for a model
  * @param {string} filePath - Path to the model file
@@ -523,14 +526,14 @@ function addNewTriggerWord(word) {
     }
 
     // Validation: Check length
-    if (word.split(/\s+/).length > 100) {
+    if (word.split(/\s+/).length > MAX_WORDS_PER_TRIGGER_GROUP) {
         showToast('toast.triggerWords.tooLong', {}, 'error');
         return;
     }
 
     // Validation: Check total number
     const currentTags = tagsContainer.querySelectorAll('.trigger-word-tag');
-    if (currentTags.length >= 100) {
+    if (currentTags.length >= MAX_TRIGGER_WORD_GROUPS) {
         showToast('toast.triggerWords.tooMany', {}, 'error');
         return;
     }
