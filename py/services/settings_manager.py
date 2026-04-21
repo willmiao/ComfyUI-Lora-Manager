@@ -2,6 +2,7 @@ import asyncio
 import copy
 import json
 import os
+import posixpath
 import shutil
 import tempfile
 import logging
@@ -101,6 +102,15 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "backup_auto_enabled": True,
     "backup_retention_count": 5,
 }
+
+
+def _normalize_root_identity(path: str) -> str:
+    """Normalize a root path for equality checks across slash styles."""
+
+    normalized = posixpath.normpath(path.strip().replace("\\", "/"))
+    if len(normalized) >= 2 and normalized[1] == ":":
+        return normalized.lower()
+    return normalized
 
 
 class SettingsManager:
@@ -773,7 +783,7 @@ class SettingsManager:
                 return False
 
             allowed_roots = self._get_allowed_roots(key)
-            if current and current in allowed_roots:
+            if current and _normalize_root_identity(current) in allowed_roots:
                 return False
 
             self.settings[setting_key] = primary_candidates[0]
@@ -824,16 +834,19 @@ class SettingsManager:
                 if not isinstance(value, str):
                     continue
                 normalized = value.strip()
-                if not normalized or normalized in seen:
+                if not normalized:
                     continue
-                seen.add(normalized)
+                identity = _normalize_root_identity(normalized)
+                if identity in seen:
+                    continue
+                seen.add(identity)
                 candidates.append(normalized)
         return candidates
 
     def _get_allowed_roots(self, key: str) -> set[str]:
         """Return all valid roots for a model type, including extra roots."""
 
-        return set(self._get_valid_root_candidates(key))
+        return {_normalize_root_identity(path) for path in self._get_valid_root_candidates(key)}
 
     def _check_environment_variables(self) -> None:
         """Check for environment variables and update settings if needed"""

@@ -1,5 +1,6 @@
 import os
 import platform
+import posixpath
 import threading
 from pathlib import Path
 import folder_paths  # type: ignore
@@ -25,6 +26,15 @@ standalone_mode = (
 logger = logging.getLogger(__name__)
 
 
+def _normalize_root_identity(path: str) -> str:
+    """Normalize a root path for comparisons across slash styles."""
+
+    normalized = posixpath.normpath(path.strip().replace("\\", "/"))
+    if len(normalized) >= 2 and normalized[1] == ":":
+        return normalized.lower()
+    return normalized
+
+
 def _resolve_valid_default_root(
     current: str, primary_paths: List[str], allowed_paths: List[str], name: str
 ) -> str:
@@ -37,14 +47,17 @@ def _resolve_valid_default_root(
         if not isinstance(path, str):
             continue
         stripped = path.strip()
-        if not stripped or stripped in seen:
+        if not stripped:
             continue
-        seen.add(stripped)
+        identity = _normalize_root_identity(stripped)
+        if identity in seen:
+            continue
+        seen.add(identity)
         fallback_paths.append(stripped)
 
-    allowed = set(fallback_paths)
+    allowed = {_normalize_root_identity(path) for path in fallback_paths}
 
-    if current and current in allowed:
+    if current and _normalize_root_identity(current) in allowed:
         return current
 
     if not valid_paths:

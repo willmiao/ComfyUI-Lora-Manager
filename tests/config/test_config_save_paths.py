@@ -402,6 +402,49 @@ def test_save_paths_keeps_default_roots_in_extra_paths(monkeypatch: pytest.Monke
     assert fake_settings.payload["activate"] is True
 
 
+def test_save_paths_keeps_default_roots_in_extra_paths_with_windows_slash_mismatch(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+):
+    folder_paths = _setup_config_environment(monkeypatch, tmp_path)
+
+    class FakeSettingsService:
+        active_library = "comfyui"
+
+        def get_libraries(self):
+            return {
+                "comfyui": {
+                    "folder_paths": {key: list(value) for key, value in folder_paths.items()},
+                    "extra_folder_paths": {
+                        "loras": ["U:\\Lora7\\Loras"],
+                        "checkpoints": ["U:\\Lora7\\Models"],
+                        "embeddings": [],
+                    },
+                    "default_lora_root": "U:/Lora7/Loras",
+                    "default_checkpoint_root": "U:/Lora7/Models",
+                    "default_embedding_root": folder_paths["embeddings"][0],
+                }
+            }
+
+        def rename_library(self, *_):
+            raise AssertionError("rename_library should not be invoked")
+
+        def get_active_library_name(self):
+            return self.active_library
+
+        def upsert_library(self, name: str, **payload):
+            self.name = name
+            self.payload = payload
+
+    fake_settings = FakeSettingsService()
+    monkeypatch.setattr(settings_manager_module, "settings", fake_settings)
+
+    config_module.Config()
+
+    assert fake_settings.name == "comfyui"
+    assert fake_settings.payload["default_lora_root"] == "U:/Lora7/Loras"
+    assert fake_settings.payload["default_checkpoint_root"] == "U:/Lora7/Models"
+
+
 def test_save_paths_repairs_empty_default_roots_to_extra_paths_when_primary_missing(
     monkeypatch: pytest.MonkeyPatch, tmp_path
 ):

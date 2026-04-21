@@ -359,6 +359,25 @@ def test_auto_set_default_roots_keeps_valid_extra_values(manager):
     assert manager.get("default_embedding_root") == "/extra-embeddings"
 
 
+def test_auto_set_default_roots_keeps_valid_extra_values_with_windows_slash_mismatch(manager):
+    manager.settings["default_lora_root"] = "U:/Lora7/Loras"
+    manager.settings["default_checkpoint_root"] = "U:/Lora7/Models"
+
+    manager.settings["folder_paths"] = {
+        "loras": ["R:/ComfyUI/models/loras"],
+        "checkpoints": ["R:/ComfyUI/models/checkpoints"],
+    }
+    manager.settings["extra_folder_paths"] = {
+        "loras": ["U:\\Lora7\\Loras"],
+        "checkpoints": ["U:\\Lora7\\Models"],
+    }
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_lora_root") == "U:/Lora7/Loras"
+    assert manager.get("default_checkpoint_root") == "U:/Lora7/Models"
+
+
 def test_auto_set_default_roots_falls_back_to_extra_when_primary_missing(manager):
     manager.settings["default_lora_root"] = ""
     manager.settings["folder_paths"] = {"loras": []}
