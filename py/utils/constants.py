@@ -100,6 +100,7 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
 # These model types are incorrectly labeled as "checkpoint" by CivitAI but are actually diffusion models
 DIFFUSION_MODEL_BASE_MODELS = frozenset(
     [
+        "Anima",
         "ZImageTurbo",
         "ZImageBase",
         "Wan Video 1.3B t2v",
