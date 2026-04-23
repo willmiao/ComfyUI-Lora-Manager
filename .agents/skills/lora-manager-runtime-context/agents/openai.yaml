@@ -1,0 +1,4 @@
+interface:
+  display_name: "LoRA Manager Runtime Context"
+  short_description: "Inspect LoRA Manager runtime state"
+  default_prompt: "Use $lora-manager-runtime-context to inspect LoRA Manager settings, metadata paths, and caches for debugging."
