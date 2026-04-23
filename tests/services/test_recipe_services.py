@@ -491,6 +491,9 @@ async def test_save_recipe_from_widget_allows_empty_lora(tmp_path):
         async def get_local_lora(self, name):  # pragma: no cover - no lookups expected
             return None
 
+        async def get_local_checkpoint(self, name):
+            return None
+
         async def add_recipe(self, recipe_data):
             self.added.append(recipe_data)
 
@@ -518,7 +521,88 @@ async def test_save_recipe_from_widget_allows_empty_lora(tmp_path):
 
     assert stored["loras"] == []
     assert stored["title"] == "recipe"
+    assert stored["checkpoint"] == {
+        "type": "checkpoint",
+        "name": "base-model.safetensors",
+        "file_name": "base-model",
+        "hash": "",
+    }
     assert scanner.added and scanner.added[0]["loras"] == []
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_from_widget_enriches_checkpoint_from_local_cache(tmp_path):
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+            self.added = []
+            self.checkpoint_queries = []
+
+        async def get_local_lora(self, name):  # pragma: no cover - no loras
+            return None
+
+        async def get_local_checkpoint(self, name):
+            self.checkpoint_queries.append(name)
+            if name != "matched-model":
+                return None
+            return {
+                "file_name": "matched-model",
+                "file_path": "/models/checkpoints/folder/matched-model.safetensors",
+                "sha256": "ABC123",
+                "base_model": "Illustrious",
+                "civitai": {
+                    "id": 456,
+                    "name": "v1.0",
+                    "baseModel": "Illustrious",
+                    "model": {
+                        "id": 123,
+                        "name": "Matched Model",
+                    },
+                },
+            }
+
+        async def add_recipe(self, recipe_data):
+            self.added.append(recipe_data)
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await service.save_recipe_from_widget(
+        recipe_scanner=scanner,
+        metadata={
+            "loras": "",
+            "checkpoint": "folder/matched-model.safetensors",
+            "prompt": "a calm scene",
+        },
+        image_bytes=b"image-bytes",
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+
+    assert scanner.checkpoint_queries == [
+        "folder/matched-model.safetensors",
+        "matched-model.safetensors",
+        "matched-model",
+    ]
+    assert stored["base_model"] == "Illustrious"
+    assert stored["checkpoint"] == {
+        "type": "checkpoint",
+        "modelId": 123,
+        "modelVersionId": 456,
+        "name": "Matched Model",
+        "version": "v1.0",
+        "hash": "abc123",
+        "file_name": "matched-model",
+        "modelName": "Matched Model",
+        "modelVersionName": "v1.0",
+        "baseModel": "Illustrious",
+    }
 
 
 @pytest.mark.asyncio

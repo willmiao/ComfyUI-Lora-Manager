@@ -1815,6 +1815,15 @@ class RecipeScanner:
 
         return await self._lora_scanner.get_model_info_by_name(name)
 
+    async def get_local_checkpoint(self, name: str) -> Optional[Dict[str, Any]]:
+        """Lookup a local checkpoint model by name."""
+
+        checkpoint_scanner = getattr(self, "_checkpoint_scanner", None)
+        if not checkpoint_scanner or not name:
+            return None
+
+        return await checkpoint_scanner.get_model_info_by_name(name)
+
     async def get_paginated_data(
         self,
         page: int,

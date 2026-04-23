@@ -354,3 +354,33 @@ def test_lora_manager_cache_updates_when_loras_removed(metadata_registry):
     metadata = metadata_registry.get_metadata("prompt3")
 
     assert "lora_node" not in metadata[LORAS]
+
+
+def test_lora_manager_checkpoint_and_unet_loaders_extract_models(metadata_registry):
+    metadata_registry.start_collection("prompt1")
+
+    metadata_registry.record_node_execution(
+        "checkpoint_node",
+        "CheckpointLoaderLM",
+        {"ckpt_name": ["models/checkpoint.safetensors"]},
+        None,
+    )
+    metadata_registry.record_node_execution(
+        "unet_node",
+        "UNETLoaderLM",
+        {"unet_name": ["models/diffusion_model.safetensors"], "weight_dtype": ["default"]},
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt1")
+
+    assert metadata[MODELS]["checkpoint_node"] == {
+        "name": "models/checkpoint.safetensors",
+        "type": "checkpoint",
+        "node_id": "checkpoint_node",
+    }
+    assert metadata[MODELS]["unet_node"] == {
+        "name": "models/diffusion_model.safetensors",
+        "type": "checkpoint",
+        "node_id": "unet_node",
+    }

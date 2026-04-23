@@ -780,8 +780,10 @@ NODE_EXTRACTORS = {
     "GGUFLoaderKJ": KJNodesModelLoaderExtractor,  # KJNodes
     "DiffusionModelLoaderKJ": KJNodesModelLoaderExtractor,  # KJNodes
     "CheckpointLoaderKJ": CheckpointLoaderExtractor,  # KJNodes
+    "CheckpointLoaderLM": CheckpointLoaderExtractor,  # LoRA Manager
     "UNETLoader": UNETLoaderExtractor,          # Updated to use dedicated extractor
     "UnetLoaderGGUF": UNETLoaderExtractor,  # Updated to use dedicated extractor
+    "UNETLoaderLM": UNETLoaderExtractor,  # LoRA Manager
     "LoraLoader": LoraLoaderExtractor,
     "LoraLoaderLM": LoraLoaderManagerExtractor,
     "RgthreePowerLoraLoader": RgthreePowerLoraLoaderExtractor,
