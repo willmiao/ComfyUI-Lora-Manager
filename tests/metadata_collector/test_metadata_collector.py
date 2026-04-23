@@ -177,6 +177,169 @@ def test_attention_bias_clip_text_encode_prompts_are_collected(metadata_registry
     assert prompt_results["negative_prompt"] == "low quality"
 
 
+def test_myoriginalwaifu_text_provider_uses_processed_prompt_outputs(
+    metadata_registry, monkeypatch
+):
+    prompt_graph = {
+        "text_provider": {
+            "class_type": "TextProvider",
+            "inputs": {
+                "positive": "raw positive",
+                "negative": "raw negative",
+            },
+        },
+        "encode_pos": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": ["text_provider", 0], "clip": ["clip", 0]},
+        },
+        "encode_neg": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": ["text_provider", 1], "clip": ["clip", 0]},
+        },
+        "sampler": {
+            "class_type": "KSampler",
+            "inputs": {
+                "seed": 123,
+                "steps": 20,
+                "cfg": 7.0,
+                "sampler_name": "Euler",
+                "scheduler": "karras",
+                "denoise": 1.0,
+                "positive": ["encode_pos", 0],
+                "negative": ["encode_neg", 0],
+                "latent_image": {"samples": types.SimpleNamespace(shape=(1, 4, 16, 16))},
+            },
+        },
+    }
+    prompt = SimpleNamespace(original_prompt=prompt_graph)
+
+    pos_conditioning = object()
+    neg_conditioning = object()
+
+    monkeypatch.setattr(metadata_processor, "standalone_mode", False)
+
+    metadata_registry.start_collection("prompt-myoriginalwaifu-text")
+    metadata_registry.set_current_prompt(prompt)
+
+    metadata_registry.record_node_execution(
+        "text_provider",
+        "TextProvider",
+        {"positive": "raw positive", "negative": "raw negative"},
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "text_provider",
+        "TextProvider",
+        [("processed positive", "processed negative")],
+    )
+    metadata_registry.record_node_execution(
+        "encode_pos", "CLIPTextEncode", {"text": "processed positive"}, None
+    )
+    metadata_registry.update_node_execution(
+        "encode_pos", "CLIPTextEncode", [(pos_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "encode_neg", "CLIPTextEncode", {"text": "processed negative"}, None
+    )
+    metadata_registry.update_node_execution(
+        "encode_neg", "CLIPTextEncode", [(neg_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "sampler",
+        "KSampler",
+        {
+            "seed": 123,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "Euler",
+            "scheduler": "karras",
+            "denoise": 1.0,
+            "positive": pos_conditioning,
+            "negative": neg_conditioning,
+            "latent_image": {"samples": types.SimpleNamespace(shape=(1, 4, 16, 16))},
+        },
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-myoriginalwaifu-text")
+    params = MetadataProcessor.extract_generation_params(metadata)
+
+    assert metadata[PROMPTS]["text_provider"]["positive_text"] == "processed positive"
+    assert metadata[PROMPTS]["text_provider"]["negative_text"] == "processed negative"
+    assert params["prompt"] == "processed positive"
+    assert params["negative_prompt"] == "processed negative"
+
+
+def test_myoriginalwaifu_clip_provider_prompts_are_collected_without_clip_text_encode(
+    metadata_registry, monkeypatch
+):
+    prompt_graph = {
+        "clip_provider": {
+            "class_type": "ClipProvider",
+            "inputs": {
+                "positive": "direct positive",
+                "negative": "direct negative",
+                "clip": ["clip", 0],
+            },
+        },
+        "sampler": {
+            "class_type": "KSampler",
+            "inputs": {
+                "seed": 123,
+                "steps": 20,
+                "cfg": 7.0,
+                "sampler_name": "Euler",
+                "scheduler": "karras",
+                "denoise": 1.0,
+                "positive": ["clip_provider", 0],
+                "negative": ["clip_provider", 1],
+                "latent_image": {"samples": types.SimpleNamespace(shape=(1, 4, 16, 16))},
+            },
+        },
+    }
+    prompt = SimpleNamespace(original_prompt=prompt_graph)
+
+    pos_conditioning = object()
+    neg_conditioning = object()
+
+    monkeypatch.setattr(metadata_processor, "standalone_mode", False)
+
+    metadata_registry.start_collection("prompt-myoriginalwaifu-clip")
+    metadata_registry.set_current_prompt(prompt)
+
+    metadata_registry.record_node_execution(
+        "clip_provider",
+        "ClipProvider",
+        {"positive": "direct positive", "negative": "direct negative"},
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "clip_provider", "ClipProvider", [(pos_conditioning, neg_conditioning)]
+    )
+    metadata_registry.record_node_execution(
+        "sampler",
+        "KSampler",
+        {
+            "seed": 123,
+            "steps": 20,
+            "cfg": 7.0,
+            "sampler_name": "Euler",
+            "scheduler": "karras",
+            "denoise": 1.0,
+            "positive": pos_conditioning,
+            "negative": neg_conditioning,
+            "latent_image": {"samples": types.SimpleNamespace(shape=(1, 4, 16, 16))},
+        },
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-myoriginalwaifu-clip")
+    params = MetadataProcessor.extract_generation_params(metadata)
+
+    assert params["prompt"] == "direct positive"
+    assert params["negative_prompt"] == "direct negative"
+
+
 def test_conditioning_provenance_recovers_combined_controlnet_prompts(
     metadata_registry, monkeypatch
 ):

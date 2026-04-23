@@ -164,6 +164,64 @@ class CLIPTextEncodeExtractor(NodeMetadataExtractor):
                 metadata[PROMPTS][node_id]["conditioning"] = conditioning
 
 
+class MyOriginalWaifuTextExtractor(NodeMetadataExtractor):
+    """Extractor for ComfyUI-MyOriginalWaifu TextProvider nodes."""
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        positive_text = inputs.get("positive", "")
+        negative_text = inputs.get("negative", "")
+
+        if positive_text or negative_text:
+            metadata[PROMPTS][node_id] = {
+                "positive_text": positive_text,
+                "negative_text": negative_text,
+                "node_id": node_id,
+            }
+
+    @staticmethod
+    def update(node_id, outputs, metadata):
+        output_tuple = _first_output_tuple(outputs)
+        if not output_tuple or len(output_tuple) < 2:
+            return
+
+        prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
+        prompt_metadata["positive_text"] = output_tuple[0]
+        prompt_metadata["negative_text"] = output_tuple[1]
+
+
+class MyOriginalWaifuClipExtractor(NodeMetadataExtractor):
+    """Extractor for ComfyUI-MyOriginalWaifu ClipProvider nodes."""
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        positive_text = inputs.get("positive", "")
+        negative_text = inputs.get("negative", "")
+
+        if positive_text or negative_text:
+            metadata[PROMPTS][node_id] = {
+                "positive_text": positive_text,
+                "negative_text": negative_text,
+                "node_id": node_id,
+            }
+
+    @staticmethod
+    def update(node_id, outputs, metadata):
+        output_tuple = _first_output_tuple(outputs)
+        if not output_tuple or len(output_tuple) < 2:
+            return
+
+        prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
+        prompt_metadata["positive_encoded"] = output_tuple[0]
+        prompt_metadata["negative_encoded"] = output_tuple[1]
+
+
 def _ensure_prompt_metadata(metadata, node_id):
     if node_id not in metadata[PROMPTS]:
         metadata[PROMPTS][node_id] = {"node_id": node_id}
@@ -985,6 +1043,8 @@ NODE_EXTRACTORS = {
     "smZ_CLIPTextEncode": CLIPTextEncodeExtractor,  # From https://github.com/shiimizu/ComfyUI_smZNodes
     "CR_ApplyControlNetStack": CR_ApplyControlNetStackExtractor,  # Add CR_ApplyControlNetStack
     "PCTextEncode": CLIPTextEncodeExtractor,  # From https://github.com/asagi4/comfyui-prompt-control
+    "TextProvider": MyOriginalWaifuTextExtractor,  # ComfyUI-MyOriginalWaifu
+    "ClipProvider": MyOriginalWaifuClipExtractor,  # ComfyUI-MyOriginalWaifu
     "ControlNetApplyAdvanced": ControlNetApplyAdvancedExtractor,
     "ConditioningCombine": ConditioningCombineExtractor,
     "SetNode": SetNodeExtractor,
