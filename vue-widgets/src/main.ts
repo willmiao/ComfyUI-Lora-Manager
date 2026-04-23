@@ -5,6 +5,7 @@ import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
 import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
 import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
 import AutocompleteTextWidget from '@/components/AutocompleteTextWidget.vue'
+import { createVueWidgetCleanup } from './vue-widget-cleanup'
 import type { LoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
 import {
   setupModeChangeHandler,
@@ -66,6 +67,12 @@ function forwardMiddleMouseToCanvas(container: HTMLElement) {
 }
 
 const vueApps = new Map<number, VueApp>()
+let autocompleteTextWidgetInstanceId = 0
+
+export function createAutocompleteTextWidgetInstanceId() {
+  autocompleteTextWidgetInstanceId += 1
+  return autocompleteTextWidgetInstanceId
+}
 
 // Cache for dynamically loaded addLorasWidget module
 let addLorasWidgetCache: any = null
@@ -562,8 +569,9 @@ function createAutocompleteTextWidgetFactory(
   inputOptions: { placeholder?: string } = {}
 ) {
   const metadataWidgetName = `__lm_autocomplete_meta_${widgetName}`
+  const instanceId = createAutocompleteTextWidgetInstanceId()
   const container = document.createElement('div')
-  container.id = `autocomplete-text-widget-${node.id}-${widgetName}`
+  container.id = `autocomplete-text-widget-${instanceId}`
   container.style.width = '100%'
   container.style.height = '100%'
   container.style.display = 'flex'
@@ -644,17 +652,12 @@ function createAutocompleteTextWidgetFactory(
   })
 
   vueApp.mount(container)
-  // Use a unique key combining node.id and widget name to avoid collisions
-  const appKey = node.id * 100000 + widgetName.charCodeAt(0)
+  const appKey = instanceId
   vueApps.set(appKey, vueApp)
 
-  widget.onRemove = () => {
-    const vueApp = vueApps.get(appKey)
-    if (vueApp) {
-      vueApp.unmount()
-      vueApps.delete(appKey)
-    }
-  }
+  widget.onRemove = createVueWidgetCleanup(vueApp, () => {
+    vueApps.delete(appKey)
+  })
 
   return { widget }
 }

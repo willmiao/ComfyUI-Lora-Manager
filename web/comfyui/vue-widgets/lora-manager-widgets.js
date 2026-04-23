@@ -14933,6 +14933,17 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
   }
 });
 const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-76ce0f19"]]);
+function createVueWidgetCleanup(vueApp, onCleanup) {
+  let didUnmount = false;
+  return () => {
+    if (didUnmount) {
+      return;
+    }
+    vueApp.unmount();
+    didUnmount = true;
+    onCleanup == null ? void 0 : onCleanup();
+  };
+}
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
@@ -15274,6 +15285,11 @@ function forwardMiddleMouseToCanvas(container) {
   });
 }
 const vueApps = /* @__PURE__ */ new Map();
+let autocompleteTextWidgetInstanceId = 0;
+function createAutocompleteTextWidgetInstanceId() {
+  autocompleteTextWidgetInstanceId += 1;
+  return autocompleteTextWidgetInstanceId;
+}
 let addLorasWidgetCache = null;
 function createLoraPoolWidget(node) {
   const container = document.createElement("div");
@@ -15653,8 +15669,9 @@ if ((_a = app$1.ui) == null ? void 0 : _a.settings) {
 function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputOptions = {}) {
   var _a2, _b, _c;
   const metadataWidgetName = `__lm_autocomplete_meta_${widgetName}`;
+  const instanceId = createAutocompleteTextWidgetInstanceId();
   const container = document.createElement("div");
-  container.id = `autocomplete-text-widget-${node.id}-${widgetName}`;
+  container.id = `autocomplete-text-widget-${instanceId}`;
   container.style.width = "100%";
   container.style.height = "100%";
   container.style.display = "flex";
@@ -15721,15 +15738,11 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
     ripple: false
   });
   vueApp.mount(container);
-  const appKey = node.id * 1e5 + widgetName.charCodeAt(0);
+  const appKey = instanceId;
   vueApps.set(appKey, vueApp);
-  widget.onRemove = () => {
-    const vueApp2 = vueApps.get(appKey);
-    if (vueApp2) {
-      vueApp2.unmount();
-      vueApps.delete(appKey);
-    }
-  };
+  widget.onRemove = createVueWidgetCleanup(vueApp, () => {
+    vueApps.delete(appKey);
+  });
   return { widget };
 }
 app$1.registerExtension({
@@ -15834,4 +15847,7 @@ app$1.registerExtension({
     }
   }
 });
+export {
+  createAutocompleteTextWidgetInstanceId
+};
 //# sourceMappingURL=lora-manager-widgets.js.map
