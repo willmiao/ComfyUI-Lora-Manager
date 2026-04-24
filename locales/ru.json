@@ -668,7 +668,7 @@
             "autoOrganize": "Автоматически организовать выбранные",
             "skipMetadataRefresh": "Пропустить обновление метаданных для выбранных",
             "resumeMetadataRefresh": "Возобновить обновление метаданных для выбранных",
-            "deleteAll": "Удалить все модели",
+            "deleteAll": "Удалить выбранные",
             "downloadMissingLoras": "Скачать отсутствующие LoRAs",
             "clear": "Очистить выбор",
             "skipMetadataRefreshCount": "Пропустить（{count} моделей）",

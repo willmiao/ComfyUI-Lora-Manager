@@ -668,7 +668,7 @@
             "autoOrganize": "Automatisch organisieren",
             "skipMetadataRefresh": "Metadaten-Aktualisierung für ausgewählte Modelle überspringen",
             "resumeMetadataRefresh": "Metadaten-Aktualisierung für ausgewählte Modelle fortsetzen",
-            "deleteAll": "Alle Modelle löschen",
+            "deleteAll": "Ausgewählte löschen",
             "downloadMissingLoras": "Fehlende LoRAs herunterladen",
             "clear": "Auswahl löschen",
             "skipMetadataRefreshCount": "Überspringen（{count} Modelle）",

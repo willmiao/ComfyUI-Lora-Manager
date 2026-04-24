@@ -668,7 +668,7 @@
             "autoOrganize": "ארגן אוטומטית נבחרים",
             "skipMetadataRefresh": "דילוג על רענון מטא-נתונים לנבחרים",
             "resumeMetadataRefresh": "המשך רענון מטא-נתונים לנבחרים",
-            "deleteAll": "מחק את כל המודלים",
+            "deleteAll": "מחק נבחרים",
             "downloadMissingLoras": "הורדת LoRAs חסרים",
             "clear": "נקה בחירה",
             "skipMetadataRefreshCount": "דילוג（{count} מודלים）",

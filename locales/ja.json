@@ -668,7 +668,7 @@
             "autoOrganize": "自動整理を実行",
             "skipMetadataRefresh": "選択したモデルのメタデータ更新をスキップ",
             "resumeMetadataRefresh": "選択したモデルのメタデータ更新を再開",
-            "deleteAll": "すべてのモデルを削除",
+            "deleteAll": "選択したものを削除",
             "downloadMissingLoras": "不足している LoRA をダウンロード",
             "clear": "選択をクリア",
             "skipMetadataRefreshCount": "スキップ（{count}モデル）",

@@ -668,7 +668,7 @@
             "autoOrganize": "Auto-organizar seleccionados",
             "skipMetadataRefresh": "Omitir actualización de metadatos para seleccionados",
             "resumeMetadataRefresh": "Reanudar actualización de metadatos para seleccionados",
-            "deleteAll": "Eliminar todos los modelos",
+            "deleteAll": "Eliminar seleccionados",
             "downloadMissingLoras": "Descargar LoRAs faltantes",
             "clear": "Limpiar selección",
             "skipMetadataRefreshCount": "Omitir（{count} modelos）",

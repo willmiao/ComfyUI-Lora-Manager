@@ -668,7 +668,7 @@
             "autoOrganize": "자동 정리 선택",
             "skipMetadataRefresh": "선택한 모델의 메타데이터 새로고침 건너뛰기",
             "resumeMetadataRefresh": "선택한 모델의 메타데이터 새로고침 재개",
-            "deleteAll": "모든 모델 삭제",
+            "deleteAll": "선택된 항목 삭제",
             "downloadMissingLoras": "누락된 LoRA 다운로드",
             "clear": "선택 지우기",
             "skipMetadataRefreshCount": "건너뛰기（{count}개 모델）",

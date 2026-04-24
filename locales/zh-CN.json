@@ -668,7 +668,7 @@
             "autoOrganize": "自动整理所选模型",
             "skipMetadataRefresh": "跳过所选模型的元数据刷新",
             "resumeMetadataRefresh": "恢复所选模型的元数据刷新",
-            "deleteAll": "删除选中模型",
+            "deleteAll": "删除已选",
             "downloadMissingLoras": "下载缺失的 LoRAs",
             "clear": "清除选择",
             "skipMetadataRefreshCount": "跳过（{count} 个模型）",

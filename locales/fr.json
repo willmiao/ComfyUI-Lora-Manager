@@ -668,7 +668,7 @@
             "autoOrganize": "Auto-organiser la sélection",
             "skipMetadataRefresh": "Ignorer l'actualisation des métadonnées pour la sélection",
             "resumeMetadataRefresh": "Reprendre l'actualisation des métadonnées pour la sélection",
-            "deleteAll": "Supprimer tous les modèles",
+            "deleteAll": "Supprimer la sélection",
             "downloadMissingLoras": "Télécharger les LoRAs manquants",
             "clear": "Effacer la sélection",
             "skipMetadataRefreshCount": "Ignorer（{count} modèles）",

@@ -668,7 +668,7 @@
             "autoOrganize": "Auto-Organize Selected",
             "skipMetadataRefresh": "Skip Metadata Refresh for Selected",
             "resumeMetadataRefresh": "Resume Metadata Refresh for Selected",
-            "deleteAll": "Delete Selected Models",
+            "deleteAll": "Delete Selected",
             "downloadMissingLoras": "Download Missing LoRAs",
             "clear": "Clear Selection",
             "skipMetadataRefreshCount": "Skip ({count} models)",
