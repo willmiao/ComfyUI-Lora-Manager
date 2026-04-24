@@ -1,15 +1,142 @@
-import piexif
 import json
 import logging
-from typing import Optional
-from io import BytesIO
 import os
+from io import BytesIO
+from typing import Any, Optional
+
+import piexif
 from PIL import Image, PngImagePlugin
 
 logger = logging.getLogger(__name__)
 
 class ExifUtils:
     """Utility functions for working with EXIF data in images"""
+
+    @staticmethod
+    def _decode_user_comment(user_comment: Any) -> Optional[str]:
+        if user_comment is None:
+            return None
+        if isinstance(user_comment, bytes):
+            if user_comment.startswith(b"UNICODE\0"):
+                return user_comment[8:].decode("utf-16be", errors="ignore")
+            return user_comment.decode("utf-8", errors="ignore")
+        if isinstance(user_comment, str):
+            return user_comment
+        return str(user_comment)
+
+    @staticmethod
+    def _decode_exif_text(value: Any) -> Optional[str]:
+        if value is None:
+            return None
+        if isinstance(value, bytes):
+            return value.decode("utf-8", errors="ignore")
+        if isinstance(value, str):
+            return value
+        return str(value)
+
+    @staticmethod
+    def _load_structured_metadata(image_path: str) -> dict[str, Optional[str]]:
+        metadata = {
+            "parameters": None,
+            "prompt": None,
+            "workflow": None,
+            "comment": None,
+        }
+
+        with Image.open(image_path) as img:
+            info = getattr(img, "info", {}) or {}
+
+            if "parameters" in info:
+                metadata["parameters"] = info["parameters"]
+            if "prompt" in info:
+                metadata["prompt"] = info["prompt"]
+            if "workflow" in info:
+                metadata["workflow"] = info["workflow"]
+
+            if img.format not in ["JPEG", "TIFF", "WEBP"]:
+                exif = img.getexif()
+                if exif and piexif.ExifIFD.UserComment in exif:
+                    metadata["comment"] = ExifUtils._decode_user_comment(
+                        exif[piexif.ExifIFD.UserComment]
+                    )
+
+            try:
+                exif_dict = piexif.load(image_path)
+            except Exception as e:
+                logger.debug(f"Error loading EXIF data: {e}")
+                exif_dict = {}
+
+            if piexif.ExifIFD.UserComment in exif_dict.get("Exif", {}):
+                metadata["comment"] = ExifUtils._decode_user_comment(
+                    exif_dict["Exif"][piexif.ExifIFD.UserComment]
+                )
+
+            image_description = ExifUtils._decode_exif_text(
+                exif_dict.get("0th", {}).get(piexif.ImageIFD.ImageDescription)
+            )
+            if image_description:
+                if image_description.startswith("Workflow:"):
+                    metadata["workflow"] = image_description[len("Workflow:") :]
+                elif not metadata["prompt"]:
+                    metadata["prompt"] = image_description
+
+        if not metadata["parameters"] and metadata["comment"]:
+            metadata["parameters"] = metadata["comment"]
+
+        return metadata
+
+    @staticmethod
+    def _build_pnginfo(img: Image.Image, metadata_fields: dict[str, Optional[str]]) -> PngImagePlugin.PngInfo:
+        png_info = PngImagePlugin.PngInfo()
+        existing_info = getattr(img, "info", {}) or {}
+        managed_keys = {"parameters", "prompt", "workflow"}
+
+        for key, value in existing_info.items():
+            if key in {"exif", "dpi", "transparency", "gamma", "aspect"}:
+                continue
+            if key in managed_keys:
+                continue
+            if isinstance(value, str):
+                png_info.add_text(key, value)
+
+        for key in managed_keys:
+            value = metadata_fields.get(key)
+            if value:
+                png_info.add_text(key, value)
+
+        return png_info
+
+    @staticmethod
+    def _build_exif_bytes(
+        metadata_fields: dict[str, Optional[str]], existing_exif: bytes | None = None
+    ) -> bytes:
+        try:
+            exif_dict = piexif.load(existing_exif or b"")
+        except Exception:
+            exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "Interop": {}, "1st": {}}
+
+        exif_dict.setdefault("0th", {})
+        exif_dict.setdefault("Exif", {})
+
+        parameters = metadata_fields.get("parameters")
+        workflow = metadata_fields.get("workflow")
+        prompt = metadata_fields.get("prompt")
+
+        if parameters:
+            exif_dict["Exif"][piexif.ExifIFD.UserComment] = (
+                b"UNICODE\0" + parameters.encode("utf-16be")
+            )
+        else:
+            exif_dict["Exif"].pop(piexif.ExifIFD.UserComment, None)
+
+        if workflow:
+            exif_dict["0th"][piexif.ImageIFD.ImageDescription] = f"Workflow:{workflow}"
+        elif prompt:
+            exif_dict["0th"][piexif.ImageIFD.ImageDescription] = prompt
+        else:
+            exif_dict["0th"].pop(piexif.ImageIFD.ImageDescription, None)
+
+        return piexif.dump(exif_dict)
     
     @staticmethod
     def extract_image_metadata(image_path: str) -> Optional[str]:
@@ -28,48 +155,12 @@ class ExifUtils:
                 if ext in ['.mp4', '.webm']:
                     return None
 
-            # First try to open the image
-            with Image.open(image_path) as img:
-                # Method 1: Check for parameters in image info
-                if hasattr(img, 'info') and 'parameters' in img.info:
-                    return img.info['parameters']
-                
-                # Method 2: Check EXIF UserComment field
-                if img.format not in ['JPEG', 'TIFF', 'WEBP']:
-                    # For non-JPEG/TIFF/WEBP images, try to get EXIF through PIL
-                    exif = img.getexif()
-                    if exif and piexif.ExifIFD.UserComment in exif:
-                        user_comment = exif[piexif.ExifIFD.UserComment]
-                        if isinstance(user_comment, bytes):
-                            if user_comment.startswith(b'UNICODE\0'):
-                                return user_comment[8:].decode('utf-16be')
-                            return user_comment.decode('utf-8', errors='ignore')
-                        return user_comment
-                
-                # For JPEG/TIFF/WEBP, use piexif
-                try:
-                    exif_dict = piexif.load(image_path)
-                    
-                    if piexif.ExifIFD.UserComment in exif_dict.get('Exif', {}):
-                        user_comment = exif_dict['Exif'][piexif.ExifIFD.UserComment]
-                        if isinstance(user_comment, bytes):
-                            if user_comment.startswith(b'UNICODE\0'):
-                                user_comment = user_comment[8:].decode('utf-16be')
-                            else:
-                                user_comment = user_comment.decode('utf-8', errors='ignore')
-                        return user_comment
-                except Exception as e:
-                    logger.debug(f"Error loading EXIF data: {e}")
-                
-                # Method 3: Check PNG metadata for workflow info (for ComfyUI images)
-                if img.format == 'PNG':
-                    # Look for workflow or prompt metadata in PNG chunks
-                    for key in img.info:
-                        if key in ['workflow', 'prompt', 'parameters']:
-                            return img.info[key]
-                
-                return None
-                
+            metadata = ExifUtils._load_structured_metadata(image_path)
+            return (
+                metadata.get("parameters")
+                or metadata.get("prompt")
+                or metadata.get("workflow")
+            )
         except Exception as e:
             logger.error(f"Error extracting image metadata: {e}", exc_info=True)
             return None
@@ -92,50 +183,26 @@ class ExifUtils:
                 if ext in ['.mp4', '.webm']:
                     return image_path
 
-            # Load the image and check its format
+            metadata_fields = ExifUtils._load_structured_metadata(image_path)
+            metadata_fields["parameters"] = metadata
+
             with Image.open(image_path) as img:
                 img_format = img.format
-                
-                # For PNG, try to update parameters directly
-                if img_format == 'PNG':
-                    # Use PngInfo instead of plain dictionary
-                    png_info = PngImagePlugin.PngInfo()
-                    png_info.add_text("parameters", metadata)
-                    img.save(image_path, format='PNG', pnginfo=png_info)
+
+                if img_format == "PNG":
+                    png_info = ExifUtils._build_pnginfo(img, metadata_fields)
+                    img.save(image_path, format="PNG", pnginfo=png_info)
                     return image_path
-                
-                # For WebP format, use PIL's exif parameter directly
-                elif img_format == 'WEBP':
-                    exif_dict = {'Exif': {piexif.ExifIFD.UserComment: b'UNICODE\0' + metadata.encode('utf-16be')}}
-                    exif_bytes = piexif.dump(exif_dict)
-                    
-                    # Save with the exif data
-                    img.save(image_path, format='WEBP', exif=exif_bytes, quality=85)
-                    return image_path
-                
-                # For other formats, use standard EXIF approach
-                else:
-                    try:
-                        exif_dict = piexif.load(img.info.get('exif', b''))
-                    except:
-                        exif_dict = {'0th':{}, 'Exif':{}, 'GPS':{}, 'Interop':{}, '1st':{}}
-                    
-                    # If no Exif dictionary exists, create one
-                    if 'Exif' not in exif_dict:
-                        exif_dict['Exif'] = {}
-                    
-                    # Update the UserComment field - use UNICODE format
-                    unicode_bytes = metadata.encode('utf-16be')
-                    metadata_bytes = b'UNICODE\0' + unicode_bytes
-                    
-                    exif_dict['Exif'][piexif.ExifIFD.UserComment] = metadata_bytes
-                    
-                    # Convert EXIF dict back to bytes
-                    exif_bytes = piexif.dump(exif_dict)
-                    
-                    # Save the image with updated EXIF data
-                    img.save(image_path, exif=exif_bytes)
-                    
+
+                exif_bytes = ExifUtils._build_exif_bytes(
+                    metadata_fields, img.info.get("exif")
+                )
+                save_kwargs = {"exif": exif_bytes}
+                if img_format == "WEBP":
+                    save_kwargs["quality"] = 85
+
+                img.save(image_path, format=img_format, **save_kwargs)
+
             return image_path
         except Exception as e:
             logger.error(f"Error updating metadata in {image_path}: {e}")
@@ -297,12 +364,12 @@ class ExifUtils:
                     raise ValueError(f"Cannot process corrupt image data: {e}")
 
             # Extract metadata if needed and valid
-            metadata = None
+            metadata_fields = None
             if preserve_metadata:
                 try:
                     if isinstance(image_data, str) and os.path.exists(image_data):
                         # For file path, extract directly
-                        metadata = ExifUtils.extract_image_metadata(image_data)
+                        metadata_fields = ExifUtils._load_structured_metadata(image_data)
                     else:
                         # For binary data, save to temp file first
                         import tempfile
@@ -310,7 +377,7 @@ class ExifUtils:
                             temp_path = temp_file.name
                             temp_file.write(image_data)
                         try:
-                            metadata = ExifUtils.extract_image_metadata(temp_path)
+                            metadata_fields = ExifUtils._load_structured_metadata(temp_path)
                         except Exception as e:
                             logger.warning(f"Failed to extract metadata from temp file: {e}")
                         finally:
@@ -363,14 +430,13 @@ class ExifUtils:
             optimized_data = output.getvalue()
             
             # Handle metadata preservation if requested and available
-            if preserve_metadata and metadata:
+            if preserve_metadata and metadata_fields:
                 try:
                     if save_format == 'WEBP':
                         # For WebP format, directly save with metadata
                         try:
                             output_with_metadata = BytesIO()
-                            exif_dict = {'Exif': {piexif.ExifIFD.UserComment: b'UNICODE\0' + metadata.encode('utf-16be')}}
-                            exif_bytes = piexif.dump(exif_dict)
+                            exif_bytes = ExifUtils._build_exif_bytes(metadata_fields)
                             resized_img.save(output_with_metadata, format='WEBP', exif=exif_bytes, quality=quality)
                             optimized_data = output_with_metadata.getvalue()
                         except Exception as e:
@@ -383,8 +449,9 @@ class ExifUtils:
                             temp_file.write(optimized_data)
                         
                         try:
-                            # Add metadata
-                            ExifUtils.update_image_metadata(temp_path, metadata)
+                            ExifUtils.update_image_metadata(
+                                temp_path, metadata_fields.get("parameters") or ""
+                            )
                             # Read back the file
                             with open(temp_path, 'rb') as f:
                                 optimized_data = f.read()

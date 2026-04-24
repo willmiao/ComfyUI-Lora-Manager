@@ -1,10 +1,13 @@
 import json
 import logging
 import os
+from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
 
+import piexif
 import pytest
+from PIL import Image, PngImagePlugin
 
 from py.services.recipes.analysis_service import RecipeAnalysisService
 from py.services.recipes.errors import (
@@ -13,6 +16,7 @@ from py.services.recipes.errors import (
     RecipeValidationError,
 )
 from py.services.recipes.persistence_service import RecipePersistenceService
+from py.utils.exif_utils import ExifUtils
 
 
 class DummyExifUtils:
@@ -418,6 +422,56 @@ async def test_save_recipe_derives_allowed_fields_from_raw_metadata(tmp_path):
         "size": "1024x1024",
         "clip_skip": 2,
     }
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_preserves_workflow_when_png_is_converted_to_webp(tmp_path):
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("parameters", "prompt text\nSteps: 20")
+    png_info.add_text("workflow", '{"nodes":[{"id":1}]}')
+
+    image_buffer = BytesIO()
+    Image.new("RGB", (96, 48), color="purple").save(
+        image_buffer, format="PNG", pnginfo=png_info
+    )
+
+    service = RecipePersistenceService(
+        exif_utils=ExifUtils,
+        card_preview_width=64,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await service.save_recipe(
+        recipe_scanner=DummyScanner(tmp_path),
+        image_bytes=image_buffer.getvalue(),
+        image_base64=None,
+        name="Workflow Recipe",
+        tags=["workflow"],
+        metadata={"base_model": "sd", "loras": []},
+        extension=".png",
+    )
+
+    image_path = Path(result.payload["image_path"])
+    exif_dict = piexif.load(str(image_path))
+    assert (
+        exif_dict["0th"][piexif.ImageIFD.ImageDescription].decode("utf-8")
+        == 'Workflow:{"nodes":[{"id":1}]}'
+    )
+
+    user_comment = exif_dict["Exif"][piexif.ExifIFD.UserComment]
+    decoded_comment = user_comment[8:].decode("utf-16be")
+    assert "prompt text" in decoded_comment
+    assert "Recipe metadata:" in decoded_comment
 
 
 @pytest.mark.asyncio
