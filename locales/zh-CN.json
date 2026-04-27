@@ -552,6 +552,7 @@
             "uriTemplateHelp": "使用自定义深链接，例如文件 URI 或 Shortcuts 链接。",
             "uriTemplatePlaceholder": "例如：shortcuts://run-shortcut?name=Open%20Finder&input=text&text={{encoded_local_path}}",
             "uriTemplatePlaceholders": "可用占位符：{{local_path}}、{{encoded_local_path}}、{{relative_path}}、{{encoded_relative_path}}、{{file_uri}}、{{encoded_file_uri}}",
+            "openModeWikiLink": "了解远程打开模式",
             "optimizeImages": "优化下载图片",
             "optimizeImagesHelp": "优化示例图片以减少文件大小并提升加载速度（保留元数据）",
             "download": "下载",

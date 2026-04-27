@@ -552,6 +552,7 @@
             "uriTemplateHelp": "השתמש בקישור עומק מותאם אישית כמו URI של קובץ או קישור Shortcuts.",
             "uriTemplatePlaceholder": "דוגמה: shortcuts://run-shortcut?name=Open%20Finder&input=text&text={{encoded_local_path}}",
             "uriTemplatePlaceholders": "מצייני מקום זמינים: {{local_path}}, {{encoded_local_path}}, {{relative_path}}, {{encoded_relative_path}}, {{file_uri}}, {{encoded_file_uri}}",
+            "openModeWikiLink": "למידע נוסף על מצבי פתיחה מרחוק",
             "optimizeImages": "מטב תמונות שהורדו",
             "optimizeImagesHelp": "מטב תמונות דוגמה כדי להקטין את גודל הקובץ ולשפר את מהירות הטעינה (מטא-דאטה תישמר)",
             "download": "הורד",

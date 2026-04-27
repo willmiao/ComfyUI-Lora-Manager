@@ -552,6 +552,7 @@
             "uriTemplateHelp": "Verwenden Sie einen benutzerdefinierten Deeplink wie eine Datei-URI oder einen Shortcuts-Link.",
             "uriTemplatePlaceholder": "Beispiel: shortcuts://run-shortcut?name=Open%20Finder&input=text&text={{encoded_local_path}}",
             "uriTemplatePlaceholders": "Verfügbare Platzhalter: {{local_path}}, {{encoded_local_path}}, {{relative_path}}, {{encoded_relative_path}}, {{file_uri}}, {{encoded_file_uri}}",
+            "openModeWikiLink": "Mehr über Remote-Open-Modi erfahren",
             "optimizeImages": "Heruntergeladene Bilder optimieren",
             "optimizeImagesHelp": "Beispielbilder optimieren, um Dateigröße zu reduzieren und Ladegeschwindigkeit zu verbessern (Metadaten bleiben erhalten)",
             "download": "Herunterladen",

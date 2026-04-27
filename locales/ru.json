@@ -552,6 +552,7 @@
             "uriTemplateHelp": "Используйте пользовательскую deep link-ссылку, например file URI или ссылку Shortcuts.",
             "uriTemplatePlaceholder": "Пример: shortcuts://run-shortcut?name=Open%20Finder&input=text&text={{encoded_local_path}}",
             "uriTemplatePlaceholders": "Доступные плейсхолдеры: {{local_path}}, {{encoded_local_path}}, {{relative_path}}, {{encoded_relative_path}}, {{file_uri}}, {{encoded_file_uri}}",
+            "openModeWikiLink": "Подробнее об удаленных режимах открытия",
             "optimizeImages": "Оптимизировать загруженные изображения",
             "optimizeImagesHelp": "Оптимизировать примеры изображений для уменьшения размера файла и улучшения скорости загрузки (метаданные будут сохранены)",
             "download": "Загрузить",

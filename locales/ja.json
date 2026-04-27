@@ -552,6 +552,7 @@
             "uriTemplateHelp": "ファイル URI や Shortcuts リンクなどのカスタムディープリンクを使用します。",
             "uriTemplatePlaceholder": "例: shortcuts://run-shortcut?name=Open%20Finder&input=text&text={{encoded_local_path}}",
             "uriTemplatePlaceholders": "使用可能なプレースホルダー: {{local_path}}, {{encoded_local_path}}, {{relative_path}}, {{encoded_relative_path}}, {{file_uri}}, {{encoded_file_uri}}",
+            "openModeWikiLink": "リモートオープンモードの詳細",
             "optimizeImages": "ダウンロード画像の最適化",
             "optimizeImagesHelp": "例画像を最適化してファイルサイズを縮小し、読み込み速度を向上させます（メタデータは保持されます）",
             "download": "ダウンロード",
