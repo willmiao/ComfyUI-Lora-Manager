@@ -914,6 +914,23 @@ export class SettingsManager {
             autoDownloadExampleImagesCheckbox.checked = state.global.settings.auto_download_example_images || false;
         }
 
+        const exampleImagesOpenModeSelect = document.getElementById('exampleImagesOpenMode');
+        if (exampleImagesOpenModeSelect) {
+            exampleImagesOpenModeSelect.value = state.global.settings.example_images_open_mode || 'system';
+        }
+
+        const exampleImagesLocalRootInput = document.getElementById('exampleImagesLocalRoot');
+        if (exampleImagesLocalRootInput) {
+            exampleImagesLocalRootInput.value = state.global.settings.example_images_local_root || '';
+        }
+
+        const exampleImagesOpenUriTemplateInput = document.getElementById('exampleImagesOpenUriTemplate');
+        if (exampleImagesOpenUriTemplateInput) {
+            exampleImagesOpenUriTemplateInput.value = state.global.settings.example_images_open_uri_template || '';
+        }
+
+        this.updateExampleImagesOpenSettingsVisibility();
+
         // Load download path templates
         this.loadDownloadPathTemplates();
 
@@ -2013,6 +2030,25 @@ export class SettingsManager {
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
+    }
+
+    updateExampleImagesOpenSettingsVisibility() {
+        const openMode = state.global.settings.example_images_open_mode || 'system';
+        const localRootSetting = document.getElementById('exampleImagesLocalRootSetting');
+        const uriTemplateSetting = document.getElementById('exampleImagesUriTemplateSetting');
+
+        if (localRootSetting) {
+            localRootSetting.style.display = openMode === 'system' ? 'none' : 'block';
+        }
+
+        if (uriTemplateSetting) {
+            uriTemplateSetting.style.display = openMode === 'uri_template' ? 'block' : 'none';
+        }
+    }
+
+    async handleExampleImagesOpenModeChange() {
+        await this.saveSelectSetting('exampleImagesOpenMode', 'example_images_open_mode');
+        this.updateExampleImagesOpenSettingsVisibility();
     }
 
     async loadMetadataArchiveSettings() {

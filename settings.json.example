@@ -15,5 +15,8 @@
       "C:/path/to/another/embeddings_folder"
     ]
   },
+  "example_images_open_mode": "system",
+  "example_images_local_root": "",
+  "example_images_open_uri_template": "",
   "auto_organize_exclusions": []
 }

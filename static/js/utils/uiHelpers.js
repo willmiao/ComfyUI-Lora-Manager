@@ -64,6 +64,33 @@ export function openCivitaiUrl(url) {
   return window.open(url, '_blank', 'noopener,noreferrer');
 }
 
+async function copyExampleImagesValue(value, successKey, fallbackKey, paramsKey = 'path') {
+  if (!value) {
+    return false;
+  }
+
+  const params = { [paramsKey]: value };
+  try {
+    await navigator.clipboard.writeText(value);
+    showToast(successKey, params, 'success');
+    return true;
+  } catch (clipboardErr) {
+    console.warn('Clipboard API not available:', clipboardErr);
+    showToast(fallbackKey, params, 'info');
+    return false;
+  }
+}
+
+function tryOpenExternalUri(uri) {
+  try {
+    const openedWindow = window.open(uri, '_blank', 'noopener,noreferrer');
+    return openedWindow !== null;
+  } catch (error) {
+    console.warn('Failed to open external URI:', error);
+    return false;
+  }
+}
+
 /**
  * Utility function to copy text to clipboard with fallback for older browsers
  * @param {string} text - The text to copy to clipboard
@@ -1088,7 +1115,31 @@ export async function openExampleImagesFolder(modelHash) {
     const result = await response.json();
 
     if (result.success) {
-      const message = translate('uiHelpers.exampleImages.openingFolder', {}, 'Opening example images folder');
+      if (result.mode === 'clipboard' && result.path) {
+        await copyExampleImagesValue(
+          result.path,
+          'uiHelpers.exampleImages.copiedPath',
+          'uiHelpers.exampleImages.clipboardFallback',
+          'path'
+        );
+        return true;
+      }
+
+      if (result.mode === 'uri' && result.uri) {
+        const opened = tryOpenExternalUri(result.uri);
+        if (!opened) {
+          await copyExampleImagesValue(
+            result.uri,
+            'uiHelpers.exampleImages.copiedUri',
+            'uiHelpers.exampleImages.uriClipboardFallback',
+            'uri'
+          );
+        } else {
+          showToast('uiHelpers.exampleImages.opened', {}, 'success');
+        }
+        return true;
+      }
+
       showToast('uiHelpers.exampleImages.opened', {}, 'success');
       return true;
     } else {

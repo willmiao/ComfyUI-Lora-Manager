@@ -66,6 +66,97 @@ async def test_open_folder_requires_existing_model_directory(monkeypatch: pytest
         assert model_hash in popen_calls[0][-1]
 
 
+async def test_open_folder_returns_clipboard_mode_with_mapped_local_path(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+    settings_manager.settings["example_images_open_mode"] = "clipboard"
+    settings_manager.settings["example_images_local_root"] = "/Volumes/ComfyUI/examples"
+    model_hash = "d" * 64
+    model_folder = tmp_path / "library-a" / model_hash
+    model_folder.mkdir(parents=True)
+    (model_folder / "image.png").write_text("data", encoding="utf-8")
+
+    popen_calls: list[list[str]] = []
+
+    class DummyPopen:
+        def __init__(self, cmd, *_args, **_kwargs):
+            popen_calls.append(cmd)
+
+    monkeypatch.setattr("subprocess.Popen", DummyPopen)
+    monkeypatch.setattr("py.utils.example_images_file_manager.get_model_folder", lambda _hash: str(model_folder))
+
+    request = JsonRequest({"model_hash": model_hash})
+    response = await ExampleImagesFileManager.open_folder(request)
+    body = json.loads(response.text)
+
+    assert response.status == 200
+    assert body == {
+        "success": True,
+        "mode": "clipboard",
+        "path": f"/Volumes/ComfyUI/examples/library-a/{model_hash}",
+        "relative_path": f"library-a/{model_hash}",
+    }
+    assert popen_calls == []
+
+
+async def test_open_folder_returns_uri_mode_with_rendered_template(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+    settings_manager.settings["example_images_open_mode"] = "uri_template"
+    settings_manager.settings["example_images_local_root"] = "/Volumes/ComfyUI/examples"
+    settings_manager.settings["example_images_open_uri_template"] = (
+        "shortcuts://run-shortcut?name=OpenFinder&input=text&text={{encoded_local_path}}"
+    )
+    model_hash = "e" * 64
+    model_folder = tmp_path / model_hash
+    model_folder.mkdir()
+    (model_folder / "image.png").write_text("data", encoding="utf-8")
+
+    popen_calls: list[list[str]] = []
+
+    class DummyPopen:
+        def __init__(self, cmd, *_args, **_kwargs):
+            popen_calls.append(cmd)
+
+    monkeypatch.setattr("subprocess.Popen", DummyPopen)
+
+    request = JsonRequest({"model_hash": model_hash})
+    response = await ExampleImagesFileManager.open_folder(request)
+    body = json.loads(response.text)
+
+    assert response.status == 200
+    assert body["success"] is True
+    assert body["mode"] == "uri"
+    assert body["path"] == f"/Volumes/ComfyUI/examples/{model_hash}"
+    assert body["relative_path"] == model_hash
+    assert body["uri"] == (
+        "shortcuts://run-shortcut?name=OpenFinder&input=text&text="
+        f"%2FVolumes%2FComfyUI%2Fexamples%2F{model_hash}"
+    )
+    assert popen_calls == []
+
+
+async def test_open_folder_rejects_missing_uri_template(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+    settings_manager.settings["example_images_open_mode"] = "uri_template"
+    model_hash = "f" * 64
+    model_folder = tmp_path / model_hash
+    model_folder.mkdir()
+    (model_folder / "image.png").write_text("data", encoding="utf-8")
+
+    response = await ExampleImagesFileManager.open_folder(JsonRequest({"model_hash": model_hash}))
+    body = json.loads(response.text)
+
+    assert response.status == 400
+    assert body["success"] is False
+    assert body["error"] == "No example image open URI template configured."
+
+
 async def test_open_folder_rejects_invalid_paths(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:
     settings_manager = get_settings_manager()
     settings_manager.settings["example_images_path"] = str(tmp_path)

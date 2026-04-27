@@ -84,6 +84,8 @@ describe('UI helper DOM utilities', () => {
   afterEach(() => {
     vi.useRealTimers();
     delete global.fetch;
+    delete navigator.clipboard;
+    delete window.open;
   });
 
   it('creates toast elements and cleans them up after timeout', async () => {
@@ -226,6 +228,51 @@ describe('UI helper DOM utilities', () => {
     expect(registerBannerMock).not.toHaveBeenCalled();
     expect(openSpy).toHaveBeenCalledWith(
       'https://civitai.red/models?query=Demo%20Model',
+      '_blank',
+      'noopener,noreferrer'
+    );
+  });
+
+  it('copies mapped local example-image paths when the backend requests clipboard mode', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => ({
+        success: true,
+        mode: 'clipboard',
+        path: '/Volumes/ComfyUI/examples/demo',
+      }),
+    });
+    navigator.clipboard = {
+      writeText: vi.fn().mockResolvedValue(),
+    };
+
+    const { openExampleImagesFolder } = await import(UI_HELPERS_MODULE);
+
+    const result = await openExampleImagesFolder('abc123');
+
+    expect(result).toBe(true);
+    expect(navigator.clipboard.writeText).toHaveBeenCalledWith('/Volumes/ComfyUI/examples/demo');
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/open-example-images-folder', expect.objectContaining({
+      method: 'POST',
+    }));
+  });
+
+  it('opens custom URIs for example-image folders when requested by the backend', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => ({
+        success: true,
+        mode: 'uri',
+        uri: 'shortcuts://run-shortcut?name=OpenFinder',
+      }),
+    });
+    window.open = vi.fn(() => ({}));
+
+    const { openExampleImagesFolder } = await import(UI_HELPERS_MODULE);
+
+    const result = await openExampleImagesFolder('abc123');
+
+    expect(result).toBe(true);
+    expect(window.open).toHaveBeenCalledWith(
+      'shortcuts://run-shortcut?name=OpenFinder',
       '_blank',
       'noopener,noreferrer'
     );

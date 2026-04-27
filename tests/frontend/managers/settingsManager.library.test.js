@@ -340,4 +340,52 @@ describe('SettingsManager library controls', () => {
         expect(aria2PathSetting.style.display).toBe('none');
         expect(saveSpy).toHaveBeenCalledWith('downloadBackend', 'download_backend');
     });
+
+    it('loads example image remote-open settings and updates field visibility', async () => {
+        const manager = createManager();
+        document.body.innerHTML = `
+            <select id="exampleImagesOpenMode">
+                <option value="system">System</option>
+                <option value="clipboard">Clipboard</option>
+                <option value="uri_template">URI</option>
+            </select>
+            <div id="exampleImagesLocalRootSetting" style="display: none;"></div>
+            <div id="exampleImagesUriTemplateSetting" style="display: none;"></div>
+            <input id="exampleImagesLocalRoot" />
+            <input id="exampleImagesOpenUriTemplate" />
+        `;
+
+        vi.spyOn(manager, 'loadMetadataArchiveSettings').mockResolvedValue();
+        vi.spyOn(manager, 'loadBackupSettings').mockResolvedValue();
+        vi.spyOn(manager, 'loadLibraries').mockResolvedValue();
+        vi.spyOn(manager, 'loadLoraRoots').mockResolvedValue();
+        vi.spyOn(manager, 'loadCheckpointRoots').mockResolvedValue();
+        vi.spyOn(manager, 'loadUnetRoots').mockResolvedValue();
+        vi.spyOn(manager, 'loadEmbeddingRoots').mockResolvedValue();
+
+        state.global.settings = {
+            example_images_open_mode: 'uri_template',
+            example_images_local_root: '/Volumes/ComfyUI/examples',
+            example_images_open_uri_template: 'shortcuts://run-shortcut?text={{encoded_local_path}}',
+        };
+
+        await manager.loadSettingsToUI();
+
+        expect(document.getElementById('exampleImagesOpenMode').value).toBe('uri_template');
+        expect(document.getElementById('exampleImagesLocalRoot').value).toBe('/Volumes/ComfyUI/examples');
+        expect(document.getElementById('exampleImagesOpenUriTemplate').value)
+            .toBe('shortcuts://run-shortcut?text={{encoded_local_path}}');
+        expect(document.getElementById('exampleImagesLocalRootSetting').style.display).toBe('block');
+        expect(document.getElementById('exampleImagesUriTemplateSetting').style.display).toBe('block');
+
+        state.global.settings.example_images_open_mode = 'clipboard';
+        manager.updateExampleImagesOpenSettingsVisibility();
+        expect(document.getElementById('exampleImagesLocalRootSetting').style.display).toBe('block');
+        expect(document.getElementById('exampleImagesUriTemplateSetting').style.display).toBe('none');
+
+        state.global.settings.example_images_open_mode = 'system';
+        manager.updateExampleImagesOpenSettingsVisibility();
+        expect(document.getElementById('exampleImagesLocalRootSetting').style.display).toBe('none');
+        expect(document.getElementById('exampleImagesUriTemplateSetting').style.display).toBe('none');
+    });
 });

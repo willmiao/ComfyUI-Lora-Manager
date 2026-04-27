@@ -1081,7 +1081,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
@@ -1096,6 +1096,60 @@
                                                    onchange="settingsManager.saveToggleSetting('optimizeExampleImages', 'optimize_example_images')">
                                             <span class="toggle-slider"></span>
                                         </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="exampleImagesOpenMode">
+                                            {{ t('settings.exampleImages.openMode') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.openModeHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="exampleImagesOpenMode" onchange="settingsManager.handleExampleImagesOpenModeChange()">
+                                            <option value="system">{{ t('settings.exampleImages.openModeOptions.system') }}</option>
+                                            <option value="clipboard">{{ t('settings.exampleImages.openModeOptions.clipboard') }}</option>
+                                            <option value="uri_template">{{ t('settings.exampleImages.openModeOptions.uriTemplate') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item" id="exampleImagesLocalRootSetting" style="display: none;">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="exampleImagesLocalRoot">
+                                            {{ t('settings.exampleImages.localRoot') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.localRootHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control path-control">
+                                        <input
+                                            type="text"
+                                            id="exampleImagesLocalRoot"
+                                            placeholder="{{ t('settings.exampleImages.localRootPlaceholder') }}"
+                                            onchange="settingsManager.saveInputSetting('exampleImagesLocalRoot', 'example_images_local_root')" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item" id="exampleImagesUriTemplateSetting" style="display: none;">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="exampleImagesOpenUriTemplate">
+                                            {{ t('settings.exampleImages.uriTemplate') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.uriTemplateHelp') }} {{ t('settings.exampleImages.uriTemplatePlaceholders') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control path-control">
+                                        <input
+                                            type="text"
+                                            id="exampleImagesOpenUriTemplate"
+                                            placeholder="{{ t('settings.exampleImages.uriTemplatePlaceholder') }}"
+                                            onchange="settingsManager.saveInputSetting('exampleImagesOpenUriTemplate', 'example_images_open_uri_template')" />
                                     </div>
                                 </div>
                             </div>
