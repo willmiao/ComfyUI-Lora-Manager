@@ -209,6 +209,8 @@ class ModelUpdateRecord:
 class ModelUpdateService:
     """Persist and query remote model version metadata."""
 
+    _SQLITE_MAX_VARIABLES = 500
+
     _SCHEMA = """
         PRAGMA foreign_keys = ON;
         CREATE TABLE IF NOT EXISTS model_update_status (
@@ -1439,32 +1441,40 @@ class ModelUpdateService:
         if not model_ids:
             return {}
 
-        params = tuple(model_ids)
-        placeholders = ",".join("?" for _ in params)
+        ids = list(model_ids)
+        status_rows: list = []
+        version_rows: list = []
 
         with self._connect() as conn:
-            status_rows = conn.execute(
-                f"""
-                SELECT model_id, model_type, last_checked_at, should_ignore_model
-                FROM model_update_status
-                WHERE model_id IN ({placeholders})
-                """,
-                params,
-            ).fetchall()
+            for start in range(0, len(ids), self._SQLITE_MAX_VARIABLES):
+                chunk = tuple(ids[start : start + self._SQLITE_MAX_VARIABLES])
+                placeholders = ",".join("?" for _ in chunk)
+
+                chunk_status = conn.execute(
+                    f"""
+                    SELECT model_id, model_type, last_checked_at, should_ignore_model
+                    FROM model_update_status
+                    WHERE model_id IN ({placeholders})
+                    """,
+                    chunk,
+                ).fetchall()
+                status_rows.extend(chunk_status)
+
+                chunk_versions = conn.execute(
+                    f"""
+                    SELECT model_id, version_id, sort_index, name, base_model, released_at,
+                           size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
+                           is_early_access
+                    FROM model_update_versions
+                    WHERE model_id IN ({placeholders})
+                    ORDER BY model_id ASC, sort_index ASC, version_id ASC
+                    """,
+                    chunk,
+                ).fetchall()
+                version_rows.extend(chunk_versions)
+
             if not status_rows:
                 return {}
-
-            version_rows = conn.execute(
-                f"""
-                SELECT model_id, version_id, sort_index, name, base_model, released_at,
-                       size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
-                       is_early_access
-                FROM model_update_versions
-                WHERE model_id IN ({placeholders})
-                ORDER BY model_id ASC, sort_index ASC, version_id ASC
-                """,
-                params,
-            ).fetchall()
 
         versions_by_model: Dict[int, List[ModelVersionRecord]] = {}
         for row in version_rows:

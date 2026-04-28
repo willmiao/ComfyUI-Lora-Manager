@@ -443,6 +443,42 @@ async def test_has_updates_bulk_returns_mapping(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_has_updates_bulk_handles_more_than_sqlite_max_variables(tmp_path):
+    """Bulk query with >999 model IDs must not raise 'too many SQL variables'."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+
+    model_ids = list(range(1, 1201))
+    with sqlite3.connect(str(db_path)) as conn:
+        conn.execute("INSERT INTO model_update_status (model_id, model_type) VALUES (?, ?)", (1, "lora"))
+        conn.execute("INSERT INTO model_update_versions (model_id, version_id, sort_index, name) VALUES (?, ?, ?, ?)", (1, 10, 0, "v1"))
+
+    mapping = await service.has_updates_bulk("lora", model_ids)
+
+    assert mapping[1] is True
+    assert len(mapping) == len(model_ids)
+    assert all(v is False for k, v in mapping.items() if k != 1)
+
+
+@pytest.mark.asyncio
+async def test_get_records_bulk_handles_more_than_sqlite_max_variables(tmp_path):
+    """Bulk record fetch with >999 model IDs must not raise 'too many SQL variables'."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+
+    model_ids = list(range(1, 1201))
+    with sqlite3.connect(str(db_path)) as conn:
+        conn.execute("INSERT INTO model_update_status (model_id, model_type) VALUES (?, ?)", (1, "lora"))
+        conn.execute("INSERT INTO model_update_versions (model_id, version_id, sort_index, name) VALUES (?, ?, ?, ?)", (1, 10, 0, "v1"))
+
+    records = await service.get_records_bulk("lora", model_ids)
+
+    assert 1 in records
+    assert records[1].model_id == 1
+    assert len(records) == 1
+
+
+@pytest.mark.asyncio
 async def test_refresh_allows_duplicate_version_ids_across_models(tmp_path):
     db_path = tmp_path / "updates.sqlite"
     service = ModelUpdateService(str(db_path), ttl_seconds=0)
