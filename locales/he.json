@@ -276,6 +276,7 @@
             "help": "נתיב אופציונלי לקובץ ההפעלה aria2c. השאר ריק כדי להשתמש ב-aria2c מתוך ה-PATH של המערכת.",
             "placeholder": "השאר ריק כדי להשתמש ב-aria2c מתוך ה-PATH"
         },
+        "aria2HelpLink": "למד כיצד להגדיר את מנוע ההורדה aria2",
         "civitaiHostBanner": {
             "title": "העדפת מארח Civitai זמינה",
             "content": "Civitai משתמש כעת ב-civitai.com עבור תוכן SFW וב-civitai.red עבור תוכן ללא הגבלות. ניתן לשנות בהגדרות איזה אתר ייפתח כברירת מחדל.",

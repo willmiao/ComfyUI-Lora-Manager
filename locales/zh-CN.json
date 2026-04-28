@@ -276,6 +276,7 @@
             "help": "可选的 aria2c 可执行文件路径。留空则使用系统 PATH 中的 aria2c。",
             "placeholder": "留空则使用 PATH 中的 aria2c"
         },
+        "aria2HelpLink": "了解如何配置 aria2 下载后端",
         "civitaiHostBanner": {
             "title": "已提供 Civitai 站点偏好设置",
             "content": "Civitai 现在使用 civitai.com 提供 SFW 内容，使用 civitai.red 提供无限制内容。你可以在设置中更改默认打开的站点。",

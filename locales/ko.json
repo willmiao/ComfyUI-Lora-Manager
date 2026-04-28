@@ -276,6 +276,7 @@
             "help": "aria2c 실행 파일의 선택적 경로입니다. 비워 두면 시스템 PATH의 aria2c를 사용합니다.",
             "placeholder": "비워 두면 PATH의 aria2c를 사용합니다"
         },
+        "aria2HelpLink": "aria2 다운로드 백엔드 설정 방법 알아보기",
         "civitaiHostBanner": {
             "title": "Civitai 호스트 기본 설정 사용 가능",
             "content": "이제 Civitai는 SFW 콘텐츠에 civitai.com을, 무제한 콘텐츠에 civitai.red를 사용합니다. 설정에서 기본으로 열 사이트를 변경할 수 있습니다.",

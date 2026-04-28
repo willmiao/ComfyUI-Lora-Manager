@@ -276,6 +276,7 @@
             "help": "Optionaler Pfad zur ausführbaren aria2c-Datei. Leer lassen, um aria2c aus dem System-PATH zu verwenden.",
             "placeholder": "Leer lassen, um aria2c aus dem PATH zu verwenden"
         },
+        "aria2HelpLink": "Erfahren Sie, wie Sie das aria2-Download-Backend einrichten",
         "civitaiHostBanner": {
             "title": "Civitai-Host-Einstellung verfügbar",
             "content": "Civitai verwendet jetzt civitai.com für SFW-Inhalte und civitai.red für uneingeschränkte Inhalte. In den Einstellungen können Sie ändern, welche Seite standardmäßig geöffnet wird.",

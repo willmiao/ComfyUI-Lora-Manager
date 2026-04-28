@@ -276,6 +276,7 @@
             "help": "Ruta opcional al ejecutable aria2c. Déjalo vacío para usar aria2c desde el PATH del sistema.",
             "placeholder": "Déjalo vacío para usar aria2c desde el PATH"
         },
+        "aria2HelpLink": "Aprende a configurar el backend de descarga aria2",
         "civitaiHostBanner": {
             "title": "Preferencia de host de Civitai disponible",
             "content": "Civitai ahora usa civitai.com para contenido SFW y civitai.red para contenido sin restricciones. Puedes cambiar en Ajustes qué sitio se abre por defecto.",

@@ -276,6 +276,7 @@
             "help": "aria2c 実行ファイルへの任意のパスです。空欄のままにすると、システム PATH 上の aria2c を使用します。",
             "placeholder": "空欄のままにすると PATH 上の aria2c を使用します"
         },
+        "aria2HelpLink": "aria2 ダウンロードバックエンドの設定方法",
         "civitaiHostBanner": {
             "title": "Civitai ホスト設定を利用できます",
             "content": "Civitai は現在、SFW コンテンツには civitai.com、制限なしコンテンツには civitai.red を使用しています。設定で既定で開くサイトを変更できます。",

@@ -276,6 +276,7 @@
             "help": "Optional path to the aria2c executable. Leave empty to use aria2c from your system PATH.",
             "placeholder": "Leave empty to use aria2c from PATH"
         },
+        "aria2HelpLink": "Learn how to set up the aria2 download backend",
         "civitaiHostBanner": {
             "title": "Civitai host preference available",
             "content": "Civitai now uses civitai.com for SFW content and civitai.red for unrestricted content. You can change which site opens by default in Settings.",
