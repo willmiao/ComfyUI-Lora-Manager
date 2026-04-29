@@ -428,6 +428,8 @@
                 "hover": "Mostrar al pasar el ratón"
             },
             "cardInfoDisplayHelp": "Elige cuándo mostrar información del modelo y botones de acción",
+            "showVersionOnCard": "Mostrar versión en la tarjeta",
+            "showVersionOnCardHelp": "Mostrar u ocultar el nombre de versión en las tarjetas de modelo",
             "modelCardFooterAction": "Acción del botón de tarjeta de modelo",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Abrir imágenes de ejemplo",

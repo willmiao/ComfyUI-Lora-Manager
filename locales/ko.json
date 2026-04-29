@@ -428,6 +428,8 @@
                 "hover": "호버 시 표시"
             },
             "cardInfoDisplayHelp": "모델 정보 및 액션 버튼을 언제 표시할지 선택하세요",
+            "showVersionOnCard": "카드에 버전 표시",
+            "showVersionOnCardHelp": "모델 카드에 버전 이름 표시 여부를 전환합니다",
             "modelCardFooterAction": "모델 카드 버튼 동작",
             "modelCardFooterActionOptions": {
                 "exampleImages": "예시 이미지 열기",

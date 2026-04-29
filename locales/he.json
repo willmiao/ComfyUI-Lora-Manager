@@ -428,6 +428,8 @@
                 "hover": "חשוף בריחוף"
             },
             "cardInfoDisplayHelp": "בחר מתי להציג מידע על המודל וכפתורי פעולה",
+            "showVersionOnCard": "הצג גרסה בכרטיס",
+            "showVersionOnCardHelp": "הצג או הסתר את שם הגרסה בכרטיסי המודל",
             "modelCardFooterAction": "פעולת כפתור כרטיס מודל",
             "modelCardFooterActionOptions": {
                 "exampleImages": "פתח תמונות דוגמה",

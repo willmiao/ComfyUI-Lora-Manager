@@ -428,6 +428,8 @@
                 "hover": "Bei Hover anzeigen"
             },
             "cardInfoDisplayHelp": "Wählen Sie, wann Modellinformationen und Aktionsschaltflächen angezeigt werden sollen",
+            "showVersionOnCard": "Version auf Karte anzeigen",
+            "showVersionOnCardHelp": "Den Versionsnamen auf Modellkarten ein- oder ausblenden",
             "modelCardFooterAction": "Aktion der Modellkarten-Schaltfläche",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Beispielbilder öffnen",

@@ -428,6 +428,8 @@
                 "hover": "ホバー時に表示"
             },
             "cardInfoDisplayHelp": "モデル情報とアクションボタンの表示タイミングを選択",
+            "showVersionOnCard": "カードにバージョンを表示",
+            "showVersionOnCardHelp": "モデルカード上のバージョン名の表示/非表示を切り替えます",
             "modelCardFooterAction": "モデルカードボタンのアクション",
             "modelCardFooterActionOptions": {
                 "exampleImages": "例画像を開く",

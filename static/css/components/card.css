@@ -507,6 +507,11 @@
     font-size: 0.75em;
 }
 
+/* Hide civitai version name when setting is disabled */
+body.hide-card-version .civitai-version {
+    display: none;
+}
+
 /* Prevent text selection on cards and interactive elements */
 .model-card,
 .model-card *,

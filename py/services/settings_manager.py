@@ -97,6 +97,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
     "model_card_footer_action": "replace_preview",
+    "show_version_on_card": True,
     "update_flag_strategy": "same_base",
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],

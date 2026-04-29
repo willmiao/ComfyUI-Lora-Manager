@@ -557,6 +557,24 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
+                                        <label for="showVersionOnCard">
+                                        {{ t('settings.layoutSettings.showVersionOnCard') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.showVersionOnCardHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="showVersionOnCard"
+                                                   onchange="settingsManager.saveToggleSetting('showVersionOnCard', 'show_version_on_card')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
                                         <label for="modelCardFooterAction">
                                         {{ t('settings.layoutSettings.modelCardFooterAction') }}
                                         <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.modelCardFooterActionHelp') }}"></i>

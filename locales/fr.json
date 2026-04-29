@@ -428,6 +428,8 @@
                 "hover": "Révéler au survol"
             },
             "cardInfoDisplayHelp": "Choisissez quand afficher les informations du modèle et les boutons d'action",
+            "showVersionOnCard": "Afficher la version sur la carte",
+            "showVersionOnCardHelp": "Afficher ou masquer le nom de version sur les cartes de modèle",
             "modelCardFooterAction": "Action du bouton de carte de modèle",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Ouvrir les images d'exemple",

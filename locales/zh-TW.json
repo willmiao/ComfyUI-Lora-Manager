@@ -428,6 +428,8 @@
                 "hover": "滑鼠懸停顯示"
             },
             "cardInfoDisplayHelp": "選擇何時顯示模型資訊與操作按鈕",
+            "showVersionOnCard": "在卡片上顯示版本",
+            "showVersionOnCardHelp": "在模型卡片上顯示或隱藏版本名稱",
             "modelCardFooterAction": "模型卡片按鈕操作",
             "modelCardFooterActionOptions": {
                 "exampleImages": "開啟範例圖片",

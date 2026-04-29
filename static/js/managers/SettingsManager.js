@@ -879,6 +879,12 @@ export class SettingsManager {
             modelCardFooterActionSelect.value = state.global.settings.model_card_footer_action || 'example_images';
         }
 
+        // Set show version on card
+        const showVersionOnCardCheckbox = document.getElementById('showVersionOnCard');
+        if (showVersionOnCardCheckbox) {
+            showVersionOnCardCheckbox.checked = state.global.settings.show_version_on_card !== false;
+        }
+
         // Set model name display setting
         const modelNameDisplaySelect = document.getElementById('modelNameDisplay');
         if (modelNameDisplaySelect) {
@@ -2889,6 +2895,10 @@ export class SettingsManager {
         // Apply card info display setting
         const cardInfoDisplay = state.global.settings.card_info_display || 'always';
         document.body.classList.toggle('hover-reveal', cardInfoDisplay === 'hover');
+
+        // Apply show version on card setting
+        const showVersionOnCard = state.global.settings.show_version_on_card !== false;
+        document.body.classList.toggle('hide-card-version', !showVersionOnCard);
 
         const shouldShowSidebar = state.global.settings.show_folder_sidebar !== false;
         if (sidebarManager && typeof sidebarManager.setSidebarEnabled === 'function') {

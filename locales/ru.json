@@ -428,6 +428,8 @@
                 "hover": "Показать при наведении"
             },
             "cardInfoDisplayHelp": "Выберите когда отображать информацию о модели и кнопки действий",
+            "showVersionOnCard": "Показывать версию на карточке",
+            "showVersionOnCardHelp": "Показать или скрыть название версии на карточках моделей",
             "modelCardFooterAction": "Действие кнопки карточки модели",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Открыть примеры изображений",

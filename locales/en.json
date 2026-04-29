@@ -428,6 +428,8 @@
                 "hover": "Reveal on Hover"
             },
             "cardInfoDisplayHelp": "Choose when to display model information and action buttons",
+            "showVersionOnCard": "Show Version on Card",
+            "showVersionOnCardHelp": "Show or hide the version name on model cards",
             "modelCardFooterAction": "Model Card Button Action",
             "modelCardFooterActionOptions": {
                 "exampleImages": "Open Example Images",
