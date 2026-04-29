@@ -176,7 +176,7 @@ onMounted(() => {
     ;(textareaRef.value as any)._autocompleteHostWidget = props.widget
     ;(textareaRef.value as any)._autocompleteMetadataWidget = props.widget.metadataWidget
     ;(textareaRef.value as any)._autocompleteTextWidgetName = props.widget.name ?? 'text'
-    
+
     // Also store on the container element for cloned widgets (subgraph promotion)
     // When widgets are promoted to subgraph nodes, the cloned widget shares the same
     // DOM element but has its own inputEl property. We store the reference on the
@@ -185,10 +185,24 @@ onMounted(() => {
     if (container && (container as any).__widgetInputEl) {
       (container as any).__widgetInputEl.inputEl = textareaRef.value
     }
-    
-    // Initialize hasText state
-    hasText.value = textareaRef.value.value.length > 0
-    
+
+    // Apply pending value from setValue if exists (workflow loading before Vue mount)
+    const pendingValue = (props.widget as any)._pendingValue
+    if (pendingValue !== undefined) {
+      textareaRef.value.value = pendingValue
+      hasText.value = pendingValue.length > 0
+      delete (props.widget as any)._pendingValue
+      // Dispatch event to notify autocomplete of value change
+      textareaRef.value.dispatchEvent(new CustomEvent('lora-manager:autocomplete-value-changed', {
+        detail: { value: pendingValue }
+      }))
+    }
+
+    // Initialize hasText state (already done if pendingValue was applied, but safe to re-check)
+    if (pendingValue === undefined) {
+      hasText.value = textareaRef.value.value.length > 0
+    }
+
     // Listen for external value change events from setValue
     textareaRef.value.addEventListener('lora-manager:autocomplete-value-changed', onExternalValueChange as EventListener)
   }

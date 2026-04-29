@@ -432,7 +432,7 @@ function shouldBypassAutocompleteWidgetMigration(
   }
 
   const originalWidgetsInputs = Object.values(inputDefs).filter((input: any) =>
-    widgetNames.has(input.name)
+    widgetNames.has(input.name) || input.forceInput
   )
 
   const widgetIndexHasForceInput = originalWidgetsInputs.flatMap((input: any) =>
@@ -441,10 +441,12 @@ function shouldBypassAutocompleteWidgetMigration(
       : [!!input.forceInput]
   )
 
-  return (
+  const result = (
     widgetIndexHasForceInput.some(Boolean) &&
     widgetIndexHasForceInput.length === widgetValues.length
   )
+
+  return result
 }
 
 function remapWidgetValuesByName(
@@ -459,9 +461,22 @@ function remapWidgetValuesByName(
     }
   })
 
+  const currentWidgetNameSet = new Set(currentWidgetNames)
   const remappedValues: unknown[] = []
   for (const name of currentWidgetNames) {
     if (valueByName.has(name)) {
+      remappedValues.push(valueByName.get(name))
+    }
+  }
+
+  // Append values for saved widget names that are NOT in the current widget
+  // list (e.g. forceInput widgets like "seed" that haven't been converted
+  // back to DOM widgets yet at configure time).  Without these, the
+  // resulting array may accidentally match the length of ComfyUI's
+  // widgetIndexHasForceInput array, causing migrateWidgetsValues to
+  // incorrectly filter out the wrong values and drop real widget content.
+  for (const name of savedWidgetNames) {
+    if (!currentWidgetNameSet.has(name) && valueByName.has(name)) {
       remappedValues.push(valueByName.get(name))
     }
   }
@@ -498,6 +513,7 @@ function normalizeAutocompleteWidgetValues(node: any, info: any) {
   }
 
   const currentWidgetNames = getSerializableWidgetNames(node)
+
   if (currentWidgetNames.length === 0) {
     return
   }
@@ -615,6 +631,8 @@ function createAutocompleteTextWidgetFactory(
           inputEl.dispatchEvent(new CustomEvent('lora-manager:autocomplete-value-changed', {
             detail: { value: v ?? '' }
           }))
+        } else {
+          ;(widget as any)._pendingValue = v ?? ''
         }
         // Also call onSetValue if defined (for Vue component integration)
         if (typeof widget.onSetValue === 'function') {
@@ -751,10 +769,16 @@ app.registerExtension({
 
       nodeType.prototype.configure = function (info: any) {
         normalizeAutocompleteWidgetValues(this, info)
-        if (shouldBypassAutocompleteWidgetMigration(this, info?.widgets_values ?? [])) {
+
+        const bypassResult = shouldBypassAutocompleteWidgetMigration(this, info?.widgets_values ?? [])
+
+        if (bypassResult) {
           info.widgets_values = [...(info.widgets_values ?? []), null]
         }
-        return originalConfigure?.apply(this, arguments)
+
+        const result = originalConfigure?.apply(this, arguments)
+
+        return result
       }
     }
 

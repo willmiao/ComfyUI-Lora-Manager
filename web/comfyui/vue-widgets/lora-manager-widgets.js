@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-76ce0f19] {
+.autocomplete-text-widget[data-v-5514bf46] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-76ce0f19] {
+.input-wrapper[data-v-5514bf46] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-76ce0f19] {
+.text-input[data-v-5514bf46] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2150,7 +2150,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-76ce0f19] {
+.text-input.vue-dom-mode[data-v-5514bf46] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2159,12 +2159,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-76ce0f19]:focus {
+.text-input[data-v-5514bf46]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-76ce0f19] {
+.clear-button[data-v-5514bf46] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2187,31 +2187,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-76ce0f19] {
+.input-wrapper:hover .clear-button[data-v-5514bf46] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-76ce0f19]:hover {
+.clear-button[data-v-5514bf46]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-76ce0f19] {
+.clear-button svg[data-v-5514bf46] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-76ce0f19] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-5514bf46] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-76ce0f19]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-5514bf46]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-76ce0f19] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-5514bf46] {
   width: 14px;
   height: 14px;
 }`));
@@ -14864,7 +14864,18 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
         if (container && container.__widgetInputEl) {
           container.__widgetInputEl.inputEl = textareaRef.value;
         }
-        hasText.value = textareaRef.value.value.length > 0;
+        const pendingValue = props.widget._pendingValue;
+        if (pendingValue !== void 0) {
+          textareaRef.value.value = pendingValue;
+          hasText.value = pendingValue.length > 0;
+          delete props.widget._pendingValue;
+          textareaRef.value.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
+            detail: { value: pendingValue }
+          }));
+        }
+        if (pendingValue === void 0) {
+          hasText.value = textareaRef.value.value.length > 0;
+        }
         textareaRef.value.addEventListener("lora-manager:autocomplete-value-changed", onExternalValueChange);
       }
       if (textareaRef.value && typeof props.widget.callback === "function") {
@@ -14932,7 +14943,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-76ce0f19"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-5514bf46"]]);
 function createVueWidgetCleanup(vueApp, onCleanup) {
   let didUnmount = false;
   return () => {
@@ -15573,12 +15584,13 @@ function shouldBypassAutocompleteWidgetMigration(node, widgetValues) {
     return false;
   }
   const originalWidgetsInputs = Object.values(inputDefs).filter(
-    (input) => widgetNames.has(input.name)
+    (input) => widgetNames.has(input.name) || input.forceInput
   );
   const widgetIndexHasForceInput = originalWidgetsInputs.flatMap(
     (input) => input.control_after_generate ? [!!input.forceInput, false] : [!!input.forceInput]
   );
-  return widgetIndexHasForceInput.some(Boolean) && widgetIndexHasForceInput.length === widgetValues.length;
+  const result = widgetIndexHasForceInput.some(Boolean) && widgetIndexHasForceInput.length === widgetValues.length;
+  return result;
 }
 function remapWidgetValuesByName(widgetValues, savedWidgetNames, currentWidgetNames) {
   const valueByName = /* @__PURE__ */ new Map();
@@ -15587,9 +15599,15 @@ function remapWidgetValuesByName(widgetValues, savedWidgetNames, currentWidgetNa
       valueByName.set(name, widgetValues[index]);
     }
   });
+  const currentWidgetNameSet = new Set(currentWidgetNames);
   const remappedValues = [];
   for (const name of currentWidgetNames) {
     if (valueByName.has(name)) {
+      remappedValues.push(valueByName.get(name));
+    }
+  }
+  for (const name of savedWidgetNames) {
+    if (!currentWidgetNameSet.has(name) && valueByName.has(name)) {
       remappedValues.push(valueByName.get(name));
     }
   }
@@ -15707,6 +15725,8 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
           inputEl.dispatchEvent(new CustomEvent("lora-manager:autocomplete-value-changed", {
             detail: { value: v2 ?? "" }
           }));
+        } else {
+          widget._pendingValue = v2 ?? "";
         }
         if (typeof widget.onSetValue === "function") {
           widget.onSetValue(v2 ?? "");
@@ -15823,10 +15843,12 @@ app$1.registerExtension({
       };
       nodeType.prototype.configure = function(info) {
         normalizeAutocompleteWidgetValues(this, info);
-        if (shouldBypassAutocompleteWidgetMigration(this, (info == null ? void 0 : info.widgets_values) ?? [])) {
+        const bypassResult = shouldBypassAutocompleteWidgetMigration(this, (info == null ? void 0 : info.widgets_values) ?? []);
+        if (bypassResult) {
           info.widgets_values = [...info.widgets_values ?? [], null];
         }
-        return originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
+        const result = originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
+        return result;
       };
     }
     if (LORA_CHAIN_NODE_TYPES$1.includes(comfyClass)) {
