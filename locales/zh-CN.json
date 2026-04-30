@@ -1906,7 +1906,9 @@
             "repairSuccess": "缓存重建完成。",
             "repairFailed": "缓存重建失败：{message}",
             "exportSuccess": "诊断包已导出。",
-            "exportFailed": "导出诊断包失败：{message}"
+            "exportFailed": "导出诊断包失败：{message}",
+            "conflictsResolved": "已解决 {count} 个文件名冲突。",
+            "conflictsResolveFailed": "解决文件名冲突失败：{message}"
         }
     },
     "banners": {

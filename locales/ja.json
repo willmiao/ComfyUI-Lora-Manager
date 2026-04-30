@@ -1906,7 +1906,9 @@
             "repairSuccess": "キャッシュの再構築が完了しました。",
             "repairFailed": "キャッシュの再構築に失敗しました: {message}",
             "exportSuccess": "診断パッケージをエクスポートしました。",
-            "exportFailed": "診断パッケージのエクスポートに失敗しました: {message}"
+            "exportFailed": "診断パッケージのエクスポートに失敗しました: {message}",
+            "conflictsResolved": "{count} 件のファイル名競合が解決されました。",
+            "conflictsResolveFailed": "ファイル名競合の解決に失敗しました: {message}"
         }
     },
     "banners": {

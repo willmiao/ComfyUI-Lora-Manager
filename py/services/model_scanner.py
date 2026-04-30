@@ -1072,14 +1072,6 @@ class ModelScanner:
             excluded_models.append(model_data['file_path'])
             return None
 
-        # Check for duplicate filename before adding to hash index
-        # filename = os.path.splitext(os.path.basename(file_path))[0]
-        # existing_hash = hash_index.get_hash_by_filename(filename)
-        # if existing_hash and existing_hash != model_data.get('sha256', '').lower():
-        #     existing_path = hash_index.get_path(existing_hash)
-        #     if existing_path and existing_path != file_path:
-        #         logger.warning(f"Duplicate filename detected: '{filename}' - files: '{existing_path}' and '{file_path}'")
-
         return model_data
 
     async def _apply_scan_result(self, scan_result: CacheBuildResult) -> None:
@@ -1104,6 +1096,31 @@ class ModelScanner:
         self._cache.rebuild_version_index()
 
         await self._cache.resort()
+
+        self._log_duplicate_filename_summary()
+
+    def _log_duplicate_filename_summary(self) -> None:
+        """Log a batched summary of duplicate filename conflicts once per scan."""
+        if self._hash_index is None:
+            return
+
+        duplicates = self._hash_index.get_duplicate_filenames()
+        if not duplicates:
+            return
+
+        total_files = sum(len(paths) for paths in duplicates.values())
+        conflict_count = len(duplicates)
+        model_type_label = self.model_type or "model"
+
+        logger.warning(
+            "Duplicate filename conflict detected: %d %s filename(s) "
+            "are shared by %d files total, causing ambiguity in %s resolution. "
+            "Open the Doctor panel to resolve one-click.",
+            conflict_count,
+            model_type_label,
+            total_files,
+            model_type_label.capitalize(),
+        )
 
     async def _sync_download_history(
         self,

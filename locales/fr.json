@@ -1906,7 +1906,9 @@
             "repairSuccess": "Reconstruction du cache terminée.",
             "repairFailed": "Échec de la reconstruction du cache : {message}",
             "exportSuccess": "Lot de diagnostics exporté.",
-            "exportFailed": "Échec de l'export du lot de diagnostics : {message}"
+            "exportFailed": "Échec de l'export du lot de diagnostics : {message}",
+            "conflictsResolved": "{count} conflit(s) de nom de fichier résolu(s).",
+            "conflictsResolveFailed": "Échec de la résolution des conflits de nom de fichier : {message}"
         }
     },
     "banners": {

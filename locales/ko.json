@@ -1906,7 +1906,9 @@
             "repairSuccess": "캐시 재구성이 완료되었습니다.",
             "repairFailed": "캐시 재구성 실패: {message}",
             "exportSuccess": "진단 번들이 내보내졌습니다.",
-            "exportFailed": "진단 번들 내보내기 실패: {message}"
+            "exportFailed": "진단 번들 내보내기 실패: {message}",
+            "conflictsResolved": "{count}개 파일명 충돌이 해결되었습니다.",
+            "conflictsResolveFailed": "파일명 충돌 해결 실패: {message}"
         }
     },
     "banners": {

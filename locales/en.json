@@ -1906,7 +1906,9 @@
             "repairSuccess": "Cache rebuild completed.",
             "repairFailed": "Cache rebuild failed: {message}",
             "exportSuccess": "Diagnostics bundle exported.",
-            "exportFailed": "Failed to export diagnostics bundle: {message}"
+            "exportFailed": "Failed to export diagnostics bundle: {message}",
+            "conflictsResolved": "{count} filename conflict(s) resolved.",
+            "conflictsResolveFailed": "Failed to resolve filename conflicts: {message}"
         }
     },
     "banners": {

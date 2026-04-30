@@ -1906,7 +1906,9 @@
             "repairSuccess": "快取重建完成。",
             "repairFailed": "快取重建失敗：{message}",
             "exportSuccess": "診斷套件已匯出。",
-            "exportFailed": "匯出診斷套件失敗：{message}"
+            "exportFailed": "匯出診斷套件失敗：{message}",
+            "conflictsResolved": "已解決 {count} 個檔案名稱衝突。",
+            "conflictsResolveFailed": "解決檔案名稱衝突失敗：{message}"
         }
     },
     "banners": {

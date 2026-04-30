@@ -1906,7 +1906,9 @@
             "repairSuccess": "Reconstrucción de caché completada.",
             "repairFailed": "Error al reconstruir la caché: {message}",
             "exportSuccess": "Paquete de diagnósticos exportado.",
-            "exportFailed": "Error al exportar el paquete de diagnósticos: {message}"
+            "exportFailed": "Error al exportar el paquete de diagnósticos: {message}",
+            "conflictsResolved": "{count} conflicto(s) de nombre de archivo resuelto(s).",
+            "conflictsResolveFailed": "Error al resolver conflictos de nombre de archivo: {message}"
         }
     },
     "banners": {

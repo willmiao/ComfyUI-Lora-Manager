@@ -2,6 +2,7 @@ import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { escapeHtml } from '../components/shared/utils.js';
+import { state } from '../state/index.js';
 
 const MAX_CONSOLE_ENTRIES = 200;
 
@@ -258,6 +259,15 @@ export class DoctorManager {
     }
 
     renderInlineDetail(detail) {
+        if (detail.conflict_groups || detail.total_conflict_files) {
+            return `
+                <div class="doctor-inline-detail">
+                    <strong>${escapeHtml(translate('doctor.status.warning', {}, 'Conflicts'))}</strong>
+                    <div>${escapeHtml(`${detail.conflict_groups || 0} filenames, ${detail.total_conflict_files || 0} files`)}</div>
+                </div>
+            `;
+        }
+
         if (detail.client_version || detail.server_version) {
             return `
                 <div class="doctor-inline-detail">
@@ -317,6 +327,9 @@ export class DoctorManager {
             case 'repair-cache':
                 await this.repairCache();
                 break;
+            case 'resolve-filename-conflicts':
+                await this.resolveFilenameConflicts();
+                break;
             case 'reload-page':
                 this.reloadUi();
                 break;
@@ -340,6 +353,47 @@ export class DoctorManager {
         } catch (error) {
             console.error('Doctor cache repair failed:', error);
             showToast('doctor.toast.repairFailed', { message: error.message }, 'error');
+        } finally {
+            this.setLoading(false);
+        }
+    }
+
+    async resolveFilenameConflicts() {
+        try {
+            this.setLoading(true);
+            const response = await fetch('/api/lm/doctor/resolve-filename-conflicts', { method: 'POST' });
+            const payload = await response.json();
+
+            if (!response.ok || payload.success === false) {
+                throw new Error(payload.error || 'Failed to resolve filename conflicts.');
+            }
+
+            const renamedCount = payload.count || 0;
+            showToast(
+                'doctor.toast.conflictsResolved',
+                { count: renamedCount },
+                'success'
+            );
+
+            // Update scroller items so model cards reflect new filenames immediately
+            if (state.virtualScroller && payload.renamed) {
+                for (const renamed of payload.renamed) {
+                    const baseName = renamed.new_filename.replace(/\.[^.]+$/, '');
+                    state.virtualScroller.updateSingleItem(renamed.old_path, {
+                        file_name: baseName,
+                        file_path: renamed.new_path,
+                    });
+                }
+            }
+
+            await this.refreshDiagnostics({ silent: true });
+        } catch (error) {
+            console.error('Doctor filename conflict resolution failed:', error);
+            showToast(
+                'doctor.toast.conflictsResolveFailed',
+                { message: error.message },
+                'error'
+            );
         } finally {
             this.setLoading(false);
         }

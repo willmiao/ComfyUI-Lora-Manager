@@ -1906,7 +1906,9 @@
             "repairSuccess": "Cache-Neuaufbau abgeschlossen.",
             "repairFailed": "Cache-Neuaufbau fehlgeschlagen: {message}",
             "exportSuccess": "Diagnosepaket exportiert.",
-            "exportFailed": "Export des Diagnosepakets fehlgeschlagen: {message}"
+            "exportFailed": "Export des Diagnosepakets fehlgeschlagen: {message}",
+            "conflictsResolved": "{count} Dateinamenskonflikt(e) gelöst.",
+            "conflictsResolveFailed": "Auflösung der Dateinamenskonflikte fehlgeschlagen: {message}"
         }
     },
     "banners": {

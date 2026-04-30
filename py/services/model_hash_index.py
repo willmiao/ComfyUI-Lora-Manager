@@ -79,6 +79,12 @@ class ModelHashIndex:
                     hash_val = h
                     break
         
+        if hash_val is None:
+            for h, paths in self._duplicate_hashes.items():
+                if file_path in paths:
+                    hash_val = h
+                    break
+        
         # If we didn't find a hash, nothing to do
         if not hash_val:
             return

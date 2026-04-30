@@ -38,10 +38,12 @@ from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...services.errors import ResourceNotFoundError
 from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
+from ...utils.models import BaseModelMetadata
 from ...utils.constants import (
     CIVITAI_USER_MODEL_TYPES,
     DEFAULT_NODE_COLOR,
     NODE_TYPES,
+    PREVIEW_EXTENSIONS,
     SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
 )
@@ -617,6 +619,7 @@ class DoctorHandler:
             diagnostics = [
                 await self._check_civitai_api_key(),
                 await self._check_cache_health(),
+                await self._check_filename_conflicts(),
                 self._check_ui_version(client_version, app_version),
             ]
 
@@ -680,6 +683,145 @@ class DoctorHandler:
             },
             status=status,
         )
+
+    async def resolve_filename_conflicts(self, request: web.Request) -> web.Response:
+        renamed: list[dict[str, Any]] = []
+
+        try:
+            for model_type, label, factory in self._scanner_factories:
+                try:
+                    scanner = await factory()
+                    hash_index = getattr(scanner, "_hash_index", None)
+                    if hash_index is None:
+                        continue
+                    duplicates = {
+                        filename: list(paths)
+                        for filename, paths in hash_index.get_duplicate_filenames().items()
+                    }
+                    if not duplicates:
+                        continue
+
+                    cache = await scanner.get_cached_data()
+                    path_to_model = {m["file_path"]: m for m in cache.raw_data}
+
+                    used_basenames: set[str] = set()
+                    for paths in duplicates.values():
+                        if paths:
+                            used_basenames.add(
+                                os.path.splitext(os.path.basename(paths[0]))[0]
+                            )
+
+                    for filename, paths in duplicates.items():
+                        for idx, path in enumerate(paths):
+                            if idx == 0:
+                                continue
+                            dirname = os.path.dirname(path)
+                            base_name = os.path.splitext(os.path.basename(path))[0]
+                            ext = os.path.splitext(path)[1]
+                            if not ext:
+                                continue
+
+                            model_data = path_to_model.get(path)
+                            sha256 = (
+                                model_data.get("sha256", "") if model_data else ""
+                            )
+                            hash_provider = (
+                                lambda s=sha256: s if s else "0000"
+                            )
+
+                            new_filename = (
+                                BaseModelMetadata.generate_unique_filename(
+                                    dirname,
+                                    base_name,
+                                    ext,
+                                    hash_provider=hash_provider,
+                                )
+                            )
+
+                            candidate_base = os.path.splitext(new_filename)[0]
+                            counter = 1
+                            original_base = candidate_base
+                            while candidate_base in used_basenames:
+                                candidate_base = f"{original_base}-{counter}"
+                                new_filename = f"{candidate_base}{ext}"
+                                counter += 1
+                            used_basenames.add(candidate_base)
+
+                            new_path = os.path.join(dirname, new_filename)
+
+                            if new_filename == os.path.basename(path):
+                                continue
+
+                            if not os.path.exists(path):
+                                continue
+
+                            old_base_no_ext = os.path.splitext(path)[0]
+                            new_base_no_ext = (
+                                os.path.splitext(new_path)[0]
+                            )
+
+                            os.rename(path, new_path)
+
+                            for suffix in (".metadata.json", ".civitai.info"):
+                                old_sidecar = old_base_no_ext + suffix
+                                new_sidecar = new_base_no_ext + suffix
+                                if os.path.exists(old_sidecar):
+                                    os.rename(old_sidecar, new_sidecar)
+
+                            for preview_ext in PREVIEW_EXTENSIONS:
+                                old_preview = old_base_no_ext + preview_ext
+                                new_preview = new_base_no_ext + preview_ext
+                                if os.path.exists(old_preview):
+                                    os.rename(old_preview, new_preview)
+
+                            entry = path_to_model.get(path)
+                            if entry:
+                                entry = dict(entry)
+                                entry["file_name"] = os.path.splitext(new_filename)[0]
+                                if entry.get("preview_url"):
+                                    old_preview_url = entry["preview_url"].replace("\\", "/")
+                                    preview_ext = os.path.splitext(old_preview_url)[1]
+                                    if preview_ext:
+                                        entry["preview_url"] = (new_base_no_ext + preview_ext).replace(os.sep, "/")
+                                await scanner.update_single_model_cache(
+                                    path, new_path, entry
+                                )
+
+                            logger.info(
+                                "Resolved duplicate filename '%s': "
+                                "renamed '%s' to '%s'",
+                                filename,
+                                path,
+                                new_path,
+                            )
+                            renamed.append({
+                                "model_type": model_type,
+                                "label": label,
+                                "filename": filename,
+                                "old_path": path,
+                                "new_path": new_path,
+                                "new_filename": new_filename,
+                            })
+                except Exception as exc:  # pragma: no cover - defensive
+                    logger.error(
+                        "Failed to resolve filename conflicts for %s: %s",
+                        model_type,
+                        exc,
+                        exc_info=True,
+                    )
+
+            return web.json_response({
+                "success": True,
+                "renamed": renamed,
+                "count": len(renamed),
+            })
+        except Exception as exc:
+            logger.error(
+                "Error resolving filename conflicts: %s", exc, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
 
     async def export_doctor_bundle(self, request: web.Request) -> web.Response:
         try:
@@ -844,6 +986,79 @@ class DoctorHandler:
             "summary": summary,
             "details": details,
             "actions": [{"id": "repair-cache", "label": "Rebuild Cache"}],
+        }
+
+    async def _check_filename_conflicts(self) -> dict[str, Any]:
+        all_conflicts: list[dict[str, Any]] = []
+        total_conflict_groups = 0
+        total_conflict_files = 0
+
+        for model_type, label, factory in self._scanner_factories:
+            try:
+                scanner = await factory()
+                hash_index = getattr(scanner, "_hash_index", None)
+                if hash_index is None:
+                    continue
+                duplicates = hash_index.get_duplicate_filenames()
+                if not duplicates:
+                    continue
+
+                total_conflict_groups += len(duplicates)
+                for filename, paths in duplicates.items():
+                    total_conflict_files += len(paths)
+                    all_conflicts.append({
+                        "model_type": model_type,
+                        "label": label,
+                        "filename": filename,
+                        "paths": paths,
+                    })
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.error(
+                    "Doctor filename conflict check failed for %s: %s",
+                    model_type,
+                    exc,
+                    exc_info=True,
+                )
+
+        if not all_conflicts:
+            return {
+                "id": "filename_conflicts",
+                "title": "Duplicate Filename Conflicts",
+                "status": "ok",
+                "summary": "No duplicate filenames found across model directories.",
+                "details": [],
+                "actions": [],
+            }
+
+        summary = (
+            f"{total_conflict_groups} filename(s) shared by "
+            f"{total_conflict_files} files across your library. "
+            f"This causes ambiguity when loading LoRAs by name."
+        )
+        details: list[str | dict[str, Any]] = [
+            {
+                "conflict_groups": total_conflict_groups,
+                "total_conflict_files": total_conflict_files,
+            }
+        ]
+        for conflict in all_conflicts:
+            details.append(
+                f"[{conflict['label']}] '{conflict['filename']}' "
+                f"found in {len(conflict['paths'])} locations"
+            )
+
+        return {
+            "id": "filename_conflicts",
+            "title": "Duplicate Filename Conflicts",
+            "status": "warning",
+            "summary": summary,
+            "details": details,
+            "actions": [
+                {
+                    "id": "resolve-filename-conflicts",
+                    "label": "Resolve Conflicts",
+                }
+            ],
         }
 
     def _check_ui_version(self, client_version: str, app_version: str) -> dict[str, Any]:
@@ -2796,6 +3011,7 @@ class MiscHandlerSet:
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
             "repair_doctor_cache": self.doctor.repair_doctor_cache,
+            "resolve_doctor_filename_conflicts": self.doctor.resolve_filename_conflicts,
             "export_doctor_bundle": self.doctor.export_doctor_bundle,
             "get_priority_tags": self.settings.get_priority_tags,
             "get_settings_libraries": self.settings.get_libraries,

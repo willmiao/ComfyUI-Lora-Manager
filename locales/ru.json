@@ -1906,7 +1906,9 @@
             "repairSuccess": "Перестройка кэша завершена.",
             "repairFailed": "Не удалось перестроить кэш: {message}",
             "exportSuccess": "Диагностический пакет экспортирован.",
-            "exportFailed": "Не удалось экспортировать диагностический пакет: {message}"
+            "exportFailed": "Не удалось экспортировать диагностический пакет: {message}",
+            "conflictsResolved": "Разрешено конфликтов имён файлов: {count}.",
+            "conflictsResolveFailed": "Не удалось разрешить конфликты имён файлов: {message}"
         }
     },
     "banners": {

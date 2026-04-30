@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock
 import pytest
 from aiohttp import web
 
+from py.services.model_hash_index import ModelHashIndex
 from py.routes.handlers.misc_handlers import (
     BackupHandler,
     DoctorHandler,
@@ -78,10 +79,11 @@ async def dummy_downloader_factory():
 
 
 class DummyDoctorScanner:
-    def __init__(self, *, model_type='lora', raw_data=None, rebuild_error=None):
+    def __init__(self, *, model_type='lora', raw_data=None, rebuild_error=None, hash_index=None):
         self.model_type = model_type
         self._raw_data = list(raw_data or [])
         self._rebuild_error = rebuild_error
+        self._hash_index = hash_index
         self._persistent_cache = SimpleNamespace(
             load_cache=lambda _model_type: SimpleNamespace(raw_data=list(self._raw_data))
         )
@@ -90,6 +92,16 @@ class DummyDoctorScanner:
         if rebuild_cache and self._rebuild_error:
             raise self._rebuild_error
         return SimpleNamespace(raw_data=list(self._raw_data))
+
+    async def update_single_model_cache(self, original_path, new_path, metadata):
+        for item in self._raw_data:
+            if item.get("file_path") == original_path:
+                item["file_path"] = new_path
+                item["file_name"] = metadata.get("file_name", item.get("file_name", ""))
+                if metadata.get("preview_url"):
+                    item["preview_url"] = metadata["preview_url"]
+                break
+        return True
 
 
 class DummyCivitaiClient:
@@ -1582,3 +1594,107 @@ def test_wsl_to_windows_path_returns_none_on_subprocess_error(tmp_path):
     ):
         result = _wsl_to_windows_path("/mnt/c/test")
         assert result is None
+
+
+# ── DoctorHandler filename conflict tests ──────────────────────────────
+
+
+@pytest.mark.asyncio
+async def test_check_filename_conflicts_returns_ok_when_no_duplicates():
+    hash_index = ModelHashIndex()
+    async def scanner_factory():
+        return DummyDoctorScanner(
+            model_type="lora", raw_data=[], hash_index=hash_index
+        )
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "token"}),
+        scanner_factories=(("lora", "LoRAs", scanner_factory),),
+    )
+
+    response = await handler.get_doctor_diagnostics(FakeRequest(method="GET"))
+    payload = json.loads(response.text)
+
+    diagnostic_map = {item["id"]: item for item in payload["diagnostics"]}
+    assert diagnostic_map["filename_conflicts"]["status"] == "ok"
+    assert "No duplicate filenames" in diagnostic_map["filename_conflicts"]["summary"]
+
+
+@pytest.mark.asyncio
+async def test_check_filename_conflicts_detects_duplicates():
+    hash_index = ModelHashIndex()
+    hash_index.add_entry("abc123", "/a/lora.safetensors")
+    hash_index.add_entry("def456", "/b/lora.safetensors")
+
+    async def scanner_factory():
+        return DummyDoctorScanner(
+            model_type="lora",
+            raw_data=[
+                {"file_path": "/a/lora.safetensors"},
+                {"file_path": "/b/lora.safetensors"},
+            ],
+            hash_index=hash_index,
+        )
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "token"}),
+        scanner_factories=(("lora", "LoRAs", scanner_factory),),
+    )
+
+    response = await handler.get_doctor_diagnostics(FakeRequest(method="GET"))
+    payload = json.loads(response.text)
+
+    diagnostic_map = {item["id"]: item for item in payload["diagnostics"]}
+    conflict_diag = diagnostic_map["filename_conflicts"]
+    assert conflict_diag["status"] == "warning"
+    assert "1 filename(s)" in conflict_diag["summary"]
+    assert any("resolve-filename-conflicts" in str(a) for a in conflict_diag.get("actions", []))
+
+
+@pytest.mark.asyncio
+async def test_resolve_filename_conflicts_returns_renamed_list():
+    hash_index = ModelHashIndex()
+    hash_index.add_entry("abc123", "lora.safetensors")
+    hash_index.add_entry("def456", "lora.safetensors")
+
+    async def scanner_factory():
+        return DummyDoctorScanner(
+            model_type="lora",
+            raw_data=[],
+            hash_index=hash_index,
+        )
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "token"}),
+        scanner_factories=(("lora", "LoRAs", scanner_factory),),
+    )
+
+    response = await handler.resolve_filename_conflicts(FakeRequest(method="POST"))
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    # Files don't exist on disk, so nothing gets renamed
+    assert payload["count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_resolve_filename_conflicts_handles_scanner_error_gracefully():
+    class ErrorScanner:
+        model_type = "lora"
+
+        async def get_cached_data(self):
+            raise RuntimeError("scanner unavailable")
+
+    async def scanner_factory():
+        return ErrorScanner()
+
+    handler = DoctorHandler(
+        settings_service=DummySettings({"civitai_api_key": "token"}),
+        scanner_factories=(("lora", "LoRAs", scanner_factory),),
+    )
+
+    response = await handler.resolve_filename_conflicts(FakeRequest(method="POST"))
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert payload["count"] == 0

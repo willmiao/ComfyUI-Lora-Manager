@@ -1906,7 +1906,9 @@
             "repairSuccess": "בניית המטמון מחדש הושלמה.",
             "repairFailed": "בניית המטמון מחדש נכשלה: {message}",
             "exportSuccess": "חבילת האבחון יוצאה.",
-            "exportFailed": "ייצוא חבילת האבחון נכשל: {message}"
+            "exportFailed": "ייצוא חבילת האבחון נכשל: {message}",
+            "conflictsResolved": "נפתרו {count} התנגשויות בשמות קבצים.",
+            "conflictsResolveFailed": "פתרון התנגשויות שמות קבצים נכשל: {message}"
         }
     },
     "banners": {

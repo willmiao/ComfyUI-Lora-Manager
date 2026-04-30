@@ -624,3 +624,42 @@ async def test_reconcile_cache_removes_duplicate_alias_when_same_real_file_seen_
     cache = await scanner.get_cached_data()
     cached_paths = {item["file_path"] for item in cache.raw_data}
     assert cached_paths == {_normalize_path(loras_root / "link" / "one.txt")}
+
+
+@pytest.mark.asyncio
+async def test_log_duplicate_filename_summary_logs_warning(tmp_path: Path, caplog):
+    """When duplicate filenames exist, _log_duplicate_filename_summary should emit
+    a single warning log with the conflict count and total file count."""
+    import logging
+    caplog.set_level(logging.WARNING)
+
+    root = tmp_path / "loras"
+    root.mkdir()
+    scanner = DummyScanner(root)
+
+    # Simulate duplicate filenames in the hash index
+    scanner._hash_index.add_entry("aaa111", str(root / "model.safetensors"))
+    scanner._hash_index.add_entry("bbb222", str(root / "dir" / "model.safetensors"))
+
+    scanner._log_duplicate_filename_summary()
+
+    assert len(caplog.records) >= 1
+    log_msg = caplog.records[-1].message
+    assert "Duplicate filename conflict detected" in log_msg
+    assert "1 dummy filename(s)" in log_msg
+    assert "2 files total" in log_msg
+
+
+@pytest.mark.asyncio
+async def test_log_duplicate_filename_summary_silent_when_no_duplicates(tmp_path: Path, caplog):
+    import logging
+    caplog.set_level(logging.WARNING)
+
+    root = tmp_path / "loras"
+    root.mkdir()
+    scanner = DummyScanner(root)
+    scanner._log_duplicate_filename_summary()
+
+    # No warning should be logged when there are no duplicates
+    for record in caplog.records:
+        assert "Duplicate filename conflict detected" not in record.message
