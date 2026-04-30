@@ -1364,7 +1364,7 @@ class DownloadManager:
                             f
                             for f in files
                             if f.get("primary")
-                            and f.get("type") in ("Model", "Negative")
+                            and f.get("type") in ("Model", "Negative", "Diffusion Model")
                         ),
                         None,
                     )
@@ -1395,7 +1395,7 @@ class DownloadManager:
                     (
                         f
                         for f in files
-                        if f.get("primary") and f.get("type") in ("Model", "Negative")
+                        if f.get("primary") and f.get("type") in ("Model", "Negative", "Diffusion Model")
                     ),
                     None,
                 )

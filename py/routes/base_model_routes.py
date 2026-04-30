@@ -251,7 +251,7 @@ class BaseModelRoutes(ABC):
 
     def _find_model_file(self, files):
         """Find the appropriate model file from the files list - can be overridden by subclasses."""
-        return next((file for file in files if file.get("type") == "Model" and file.get("primary") is True), None)
+        return next((file for file in files if file.get("type") in ("Model", "Diffusion Model") and file.get("primary") is True), None)
 
     def get_handler(self, name: str) -> Callable[[web.Request], web.StreamResponse]:
         """Expose handlers for subclasses or tests."""
