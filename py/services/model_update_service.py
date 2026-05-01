@@ -69,6 +69,7 @@ class ModelVersionRecord:
     early_access_ends_at: Optional[str] = None
     sort_index: int = 0
     is_early_access: bool = False
+    usage_control: Optional[str] = None  # "Download", "Generation", "InternalGeneration"
 
 
 @dataclass
@@ -101,11 +102,14 @@ class ModelUpdateRecord:
 
         return [version.version_id for version in self.versions if version.is_in_library]
 
-    def has_update(self, hide_early_access: bool = False) -> bool:
+    def has_update(
+        self, hide_early_access: bool = False, hide_non_downloadable: bool = True
+    ) -> bool:
         """Return True when a non-ignored remote version newer than the newest local copy is available.
 
         Args:
             hide_early_access: If True, exclude early access versions from update check.
+            hide_non_downloadable: If True, exclude versions that don't allow downloads.
         """
 
         if self.should_ignore_model:
@@ -121,6 +125,7 @@ class ModelUpdateRecord:
                 not version.is_in_library
                 and not version.should_ignore
                 and not (hide_early_access and ModelUpdateRecord._is_early_access_active(version))
+                and not (hide_non_downloadable and not ModelUpdateRecord._is_downloadable(version))
                 for version in self.versions
             )
 
@@ -128,6 +133,8 @@ class ModelUpdateRecord:
             if version.is_in_library or version.should_ignore:
                 continue
             if hide_early_access and ModelUpdateRecord._is_early_access_active(version):
+                continue
+            if hide_non_downloadable and not ModelUpdateRecord._is_downloadable(version):
                 continue
             if version.version_id > max_in_library:
                 return True
@@ -155,11 +162,18 @@ class ModelUpdateRecord:
         # Phase 1: Basic EA flag from bulk API
         return version.is_early_access
 
+    @staticmethod
+    def _is_downloadable(version: ModelVersionRecord) -> bool:
+        if version.usage_control is None:
+            return True
+        return version.usage_control == "Download"
+
     def has_update_for_base(
         self,
         local_version_id: Optional[int],
         local_base_model: Optional[str],
         hide_early_access: bool = False,
+        hide_non_downloadable: bool = True,
     ) -> bool:
         """Return True when a newer remote version with the same base model exists.
 
@@ -167,6 +181,7 @@ class ModelUpdateRecord:
             local_version_id: The current local version id.
             local_base_model: The base model to filter by.
             hide_early_access: If True, exclude early access versions from update check.
+            hide_non_downloadable: If True, exclude versions that don't allow downloads.
         """
 
         if self.should_ignore_model:
@@ -196,6 +211,8 @@ class ModelUpdateRecord:
             if version.is_in_library or version.should_ignore:
                 continue
             if hide_early_access and ModelUpdateRecord._is_early_access_active(version):
+                continue
+            if hide_non_downloadable and not ModelUpdateRecord._is_downloadable(version):
                 continue
             version_base = _normalize_base_model(version.base_model)
             if version_base != normalized_base:
@@ -230,6 +247,7 @@ class ModelUpdateService:
             preview_url TEXT,
             is_in_library INTEGER NOT NULL DEFAULT 0,
             should_ignore INTEGER NOT NULL DEFAULT 0,
+            usage_control TEXT,
             PRIMARY KEY (model_id, version_id),
             FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
         );
@@ -464,6 +482,10 @@ class ModelUpdateService:
             "is_early_access": (
                 "ALTER TABLE model_update_versions "
                 "ADD COLUMN is_early_access INTEGER NOT NULL DEFAULT 0"
+            ),
+            "usage_control": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN usage_control TEXT"
             ),
         }
 
@@ -1337,6 +1359,7 @@ class ModelUpdateService:
         # Check availability field from bulk API for basic EA detection
         availability = _normalize_string(entry.get("availability"))
         is_early_access = availability == "EarlyAccess"
+        usage_control = _normalize_string(entry.get("usageControl"))
 
         return ModelVersionRecord(
             version_id=version_id,
@@ -1350,6 +1373,7 @@ class ModelUpdateService:
             early_access_ends_at=early_access_ends_at,
             sort_index=index,
             is_early_access=is_early_access,
+            usage_control=usage_control,
         )
 
     def _extract_size_bytes(self, files) -> Optional[int]:
@@ -1464,7 +1488,7 @@ class ModelUpdateService:
                     f"""
                     SELECT model_id, version_id, sort_index, name, base_model, released_at,
                            size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
-                           is_early_access
+                           is_early_access, usage_control
                     FROM model_update_versions
                     WHERE model_id IN ({placeholders})
                     ORDER BY model_id ASC, sort_index ASC, version_id ASC
@@ -1492,6 +1516,7 @@ class ModelUpdateService:
                     early_access_ends_at=row["early_access_ends_at"],
                     sort_index=_normalize_int(row["sort_index"]) or 0,
                     is_early_access=bool(row["is_early_access"]),
+                    usage_control=row["usage_control"],
                 )
             )
 
@@ -1548,8 +1573,8 @@ class ModelUpdateService:
                     INSERT INTO model_update_versions (
                         version_id, model_id, sort_index, name, base_model, released_at,
                         size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
-                        is_early_access
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        is_early_access, usage_control
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         version.version_id,
@@ -1564,6 +1589,7 @@ class ModelUpdateService:
                         1 if version.should_ignore else 0,
                         version.early_access_ends_at,
                         1 if version.is_early_access else 0,
+                        version.usage_control,
                     ),
                 )
             conn.commit()

@@ -1292,12 +1292,15 @@
                     "earlyAccess": "얼리 액세스",
                     "earlyAccessTooltip": "이 버전은 현재 Civitai 얼리 액세스가 필요합니다",
                     "ignored": "무시됨",
-                    "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다"
+                    "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다",
+                    "onSiteOnly": "사이트 내 전용",
+                    "onSiteOnlyTooltip": "이 버전은 Civitai 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다"
                 },
                 "actions": {
                     "download": "다운로드",
                     "downloadTooltip": "이 버전 다운로드",
                     "downloadEarlyAccessTooltip": "Civitai에서 이 얼리 액세스 버전 다운로드",
+                    "downloadNotAllowedTooltip": "이 버전은 Civitai 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
                     "delete": "삭제",
                     "deleteTooltip": "이 로컬 버전 삭제",
                     "ignore": "무시",

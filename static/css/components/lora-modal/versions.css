@@ -374,6 +374,14 @@
     background: color-mix(in oklch, var(--lora-surface) 35%, transparent);
 }
 
+.version-action-disabled {
+    background: transparent;
+    border-color: var(--border-color);
+    color: var(--text-muted);
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 .version-action:disabled {
     opacity: 0.6;
     cursor: not-allowed;

@@ -181,6 +181,13 @@ function isEarlyAccessActive(version) {
     }
 }
 
+function isDownloadAllowed(version) {
+    if (!version.usageControl) {
+        return true;
+    }
+    return version.usageControl === 'Download';
+}
+
 function buildMetaMarkup(version, options = {}) {
     const segments = [];
     if (version.baseModel) {
@@ -230,11 +237,16 @@ function buildBadge(label, tone, options = {}) {
 function buildActionButton(label, variant, action, options = {}) {
     const attributes = [
         `class="version-action ${variant}"`,
-        `data-version-action="${escapeHtml(action)}"`,
     ];
+    if (action) {
+        attributes.push(`data-version-action="${escapeHtml(action)}"`);
+    }
     if (options.title) {
         attributes.push(`title="${escapeHtml(options.title)}"`);
         attributes.push(`aria-label="${escapeHtml(options.title)}"`);
+    }
+    if (options.disabled) {
+        attributes.push('disabled');
     }
     if (options.extraAttributes) {
         attributes.push(options.extraAttributes);
@@ -371,6 +383,9 @@ function resolveUpdateAvailability(record, baseModel, currentVersionId) {
         if (hideEarlyAccess && isEarlyAccessActive(version)) {
             return false;
         }
+        if (!isDownloadAllowed(version)) {
+            return false;
+        }
         const versionBase = normalizeBaseModelName(version.baseModel);
         if (versionBase !== normalizedBase) {
             return false;
@@ -502,6 +517,17 @@ function renderRow(version, options) {
         }));
     }
 
+    if (!isDownloadAllowed(version)) {
+        const onSiteOnlyBadgeLabel = translate('modals.model.versions.badges.onSiteOnly', {}, 'On-Site Only');
+        badges.push(buildBadge(onSiteOnlyBadgeLabel, 'info', {
+            title: translate(
+                'modals.model.versions.badges.onSiteOnlyTooltip',
+                {},
+                'This version is only available for on-site generation on Civitai'
+            ),
+        }));
+    }
+
     if (version.shouldIgnore) {
         badges.push(buildBadge(ignoredBadgeLabel, 'muted', {
             title: translate(
@@ -524,25 +550,36 @@ function renderRow(version, options) {
 
     const actions = [];
     if (!version.isInLibrary) {
-        // Download button with optional EA bolt icon
+        const canDownload = isDownloadAllowed(version);
         const downloadIcon = isEarlyAccess ? '<i class="fas fa-bolt"></i> ' : '';
+        let downloadTitle;
+        if (!canDownload) {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadNotAllowedTooltip',
+                {},
+                'This version is only available for on-site generation on Civitai'
+            );
+        } else if (isEarlyAccess) {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadEarlyAccessTooltip',
+                {},
+                'Download this early access version from Civitai'
+            );
+        } else {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadTooltip',
+                {},
+                'Download this version'
+            );
+        }
         actions.push(buildActionButton(
             downloadLabel,
-            'version-action-primary',
-            'download',
+            canDownload ? 'version-action-primary' : 'version-action-disabled',
+            canDownload ? 'download' : '',
             {
-                title: isEarlyAccess
-                    ? translate(
-                        'modals.model.versions.actions.downloadEarlyAccessTooltip',
-                        {},
-                        'Download this early access version from Civitai'
-                    )
-                    : translate(
-                        'modals.model.versions.actions.downloadTooltip',
-                        {},
-                        'Download this version'
-                    ),
+                title: downloadTitle,
                 iconMarkup: downloadIcon,
+                disabled: !canDownload,
             }
         ));
     } else if (version.filePath) {

@@ -1292,12 +1292,15 @@
                     "earlyAccess": "Accès anticipé",
                     "earlyAccessTooltip": "Cette version nécessite actuellement l'accès anticipé Civitai",
                     "ignored": "Ignorée",
-                    "ignoredTooltip": "Les notifications de mise à jour sont désactivées pour cette version"
+                    "ignoredTooltip": "Les notifications de mise à jour sont désactivées pour cette version",
+                    "onSiteOnly": "Uniquement sur Site",
+                    "onSiteOnlyTooltip": "Cette version n'est disponible que pour la génération sur le site Civitai"
                 },
                 "actions": {
                     "download": "Télécharger",
                     "downloadTooltip": "Télécharger cette version",
                     "downloadEarlyAccessTooltip": "Télécharger cette version en accès anticipé depuis Civitai",
+                    "downloadNotAllowedTooltip": "Cette version n'est disponible que pour la génération sur le site Civitai",
                     "delete": "Supprimer",
                     "deleteTooltip": "Supprimer cette version locale",
                     "ignore": "Ignorer",

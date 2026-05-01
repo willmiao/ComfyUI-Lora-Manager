@@ -1292,12 +1292,15 @@
                     "earlyAccess": "Ранний доступ",
                     "earlyAccessTooltip": "Для этой версии сейчас требуется ранний доступ Civitai",
                     "ignored": "Игнорируется",
-                    "ignoredTooltip": "Уведомления об обновлениях для этой версии отключены"
+                    "ignoredTooltip": "Уведомления об обновлениях для этой версии отключены",
+                    "onSiteOnly": "Только на Сайте",
+                    "onSiteOnlyTooltip": "Эта версия доступна только для генерации на сайте Civitai"
                 },
                 "actions": {
                     "download": "Скачать",
                     "downloadTooltip": "Скачать эту версию",
                     "downloadEarlyAccessTooltip": "Скачать эту версию раннего доступа с Civitai",
+                    "downloadNotAllowedTooltip": "Эта версия доступна только для генерации на сайте Civitai",
                     "delete": "Удалить",
                     "deleteTooltip": "Удалить эту локальную версию",
                     "ignore": "Игнорировать",

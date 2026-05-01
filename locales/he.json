@@ -1292,12 +1292,15 @@
                     "earlyAccess": "גישה מוקדמת",
                     "earlyAccessTooltip": "גרסה זו דורשת כרגע גישת Early Access של Civitai",
                     "ignored": "התעלם",
-                    "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו"
+                    "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו",
+                    "onSiteOnly": "רק באתר",
+                    "onSiteOnlyTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai"
                 },
                 "actions": {
                     "download": "הורדה",
                     "downloadTooltip": "הורד את הגרסה הזו",
                     "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-Civitai",
+                    "downloadNotAllowedTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai",
                     "delete": "מחיקה",
                     "deleteTooltip": "מחק את הגרסה המקומית הזו",
                     "ignore": "התעלם",

@@ -1292,12 +1292,15 @@
                     "earlyAccess": "Early Access",
                     "earlyAccessTooltip": "This version currently requires Civitai early access",
                     "ignored": "Ignored",
-                    "ignoredTooltip": "Update notifications are disabled for this version"
+                    "ignoredTooltip": "Update notifications are disabled for this version",
+                    "onSiteOnly": "On-Site Only",
+                    "onSiteOnlyTooltip": "This version is only available for on-site generation on Civitai"
                 },
                 "actions": {
                     "download": "Download",
                     "downloadTooltip": "Download this version",
                     "downloadEarlyAccessTooltip": "Download this early access version from Civitai",
+                    "downloadNotAllowedTooltip": "This version is only available for on-site generation on Civitai",
                     "delete": "Delete",
                     "deleteTooltip": "Delete this local version",
                     "ignore": "Ignore",

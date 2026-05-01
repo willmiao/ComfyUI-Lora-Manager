@@ -1292,12 +1292,15 @@
                     "earlyAccess": "早期アクセス",
                     "earlyAccessTooltip": "このバージョンは現在 Civitai の早期アクセスが必要です",
                     "ignored": "無視中",
-                    "ignoredTooltip": "このバージョンの更新通知は無効です"
+                    "ignoredTooltip": "このバージョンの更新通知は無効です",
+                    "onSiteOnly": "サイト内のみ",
+                    "onSiteOnlyTooltip": "このバージョンはCivitaiサイト内でのみ利用可能で、ダウンロードはできません"
                 },
                 "actions": {
                     "download": "ダウンロード",
                     "downloadTooltip": "このバージョンをダウンロード",
                     "downloadEarlyAccessTooltip": "Civitai からこの早期アクセス版をダウンロード",
+                    "downloadNotAllowedTooltip": "このバージョンはCivitaiサイト内でのみ利用可能で、ダウンロードはできません",
                     "delete": "削除",
                     "deleteTooltip": "このローカルバージョンを削除",
                     "ignore": "無視",

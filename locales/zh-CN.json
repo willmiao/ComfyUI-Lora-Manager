@@ -1292,12 +1292,15 @@
                     "earlyAccess": "抢先体验",
                     "earlyAccessTooltip": "此版本当前需要 Civitai 抢先体验权限",
                     "ignored": "已忽略",
-                    "ignoredTooltip": "此版本已关闭更新通知"
+                    "ignoredTooltip": "此版本已关闭更新通知",
+                    "onSiteOnly": "仅站内生成",
+                    "onSiteOnlyTooltip": "此版本仅在 Civitai 站内可用，无法下载"
                 },
                 "actions": {
                     "download": "下载",
                     "downloadTooltip": "下载此版本",
                     "downloadEarlyAccessTooltip": "从 Civitai 下载此抢先体验版本",
+                    "downloadNotAllowedTooltip": "此版本仅在 Civitai 站内可用，无法下载",
                     "delete": "删除",
                     "deleteTooltip": "删除此本地版本",
                     "ignore": "忽略",

@@ -2423,6 +2423,7 @@ class ModelUpdateHandler:
             "shouldIgnore": version.should_ignore,
             "earlyAccessEndsAt": version.early_access_ends_at,
             "isEarlyAccess": is_early_access,
+            "usageControl": version.usage_control,
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
         }
