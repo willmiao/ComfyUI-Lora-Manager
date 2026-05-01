@@ -21,7 +21,7 @@
     top: -54px;
     z-index: calc(var(--z-header) - 1);
     background: var(--bg-color);
-    padding: var(--space-2) 0;
+    padding: var(--space-1) 0;
     box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
@@ -395,6 +395,33 @@
     margin-right: 8px;
     width: 16px;
     text-align: center;
+}
+
+/* Intermediate breakpoint: wrap controls-right to prevent overflow */
+@media (max-width: 1500px) {
+    .actions {
+        flex-wrap: wrap;
+        gap: var(--space-2);
+    }
+
+    .action-buttons {
+        flex-wrap: wrap;
+        gap: var(--space-1);
+    }
+
+    .controls-right {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 8px;
+        padding-left: 0;
+    }
+
+    /* Reduce button sizes to fit better */
+    .control-group button {
+        min-width: 80px;
+        padding: 4px 8px;
+        font-size: 0.8em;
+    }
 }
 
 @media (max-width: 768px) {

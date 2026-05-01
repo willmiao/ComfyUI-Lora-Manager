@@ -271,11 +271,16 @@
 
 /* Enhanced Sidebar Breadcrumb Styles */
 .sidebar-breadcrumb-container {
-    margin-top: 8px;
     padding: 8px 0;
     border-bottom: 1px solid var(--border-color);
     background: var(--bg-color);
     border-radius: var(--border-radius-xs);
+    /* Sticky positioning to stick below header when scrolling
+       top: 0 means stick at the top of the scroll container (page-content)
+       which is at header height (48px) from the viewport */
+    position: sticky;
+    top: 0;
+    z-index: calc(var(--z-header) - 1);
 }
 
 .sidebar-breadcrumb-nav {
@@ -284,7 +289,6 @@
     flex-wrap: wrap;
     gap: 4px;
     font-size: 0.85em;
-    padding: 0 8px;
 }
 
 .sidebar-breadcrumb-item {
