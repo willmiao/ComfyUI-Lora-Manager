@@ -15,7 +15,8 @@
             "settings": "Settings",
             "help": "Help",
             "add": "Add",
-            "close": "Close"
+            "close": "Close",
+            "menu": "Menu"
         },
         "status": {
             "loading": "Loading...",

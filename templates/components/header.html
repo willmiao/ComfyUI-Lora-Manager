@@ -1,50 +1,53 @@
 <header class="app-header">
   <div class="header-container">
-    <div class="header-branding">
-      <a href="/loras" class="logo-link">
-        <img src="/loras_static/images/favicon-32x32.png" alt="LoRA Manager" class="app-logo">
-        <span class="app-title">{{ t('header.appTitle') }}</span>
-      </a>
+    <!-- Left section: Logo + Navigation -->
+    <div class="header-left">
+      <div class="header-branding">
+        <a href="/loras" class="logo-link">
+          <img src="/loras_static/images/favicon-32x32.png" alt="LoRA Manager" class="app-logo">
+          <span class="app-title">{{ t('header.appTitle') }}</span>
+        </a>
+      </div>
+      {% set current_path = request.path %}
+      {% if current_path.startswith('/loras/recipes') %}
+      {% set current_page = 'recipes' %}
+      {% elif current_path.startswith('/checkpoints') %}
+      {% set current_page = 'checkpoints' %}
+      {% elif current_path.startswith('/embeddings') %}
+      {% set current_page = 'embeddings' %}
+      {% elif current_path.startswith('/statistics') %}
+      {% set current_page = 'statistics' %}
+      {% else %}
+      {% set current_page = 'loras' %}
+      {% endif %}
+      <nav class="main-nav">
+        <a href="/loras" class="nav-item{% if current_path == '/loras' %} active{% endif %}" id="lorasNavItem">
+          <i class="fas fa-layer-group"></i> <span>{{ t('header.navigation.loras') }}</span>
+        </a>
+        <a href="/loras/recipes" class="nav-item{% if current_path.startswith('/loras/recipes') %} active{% endif %}"
+          id="recipesNavItem">
+          <i class="fas fa-book-open"></i> <span>{{ t('header.navigation.recipes') }}</span>
+        </a>
+        <a href="/checkpoints" class="nav-item{% if current_path.startswith('/checkpoints') %} active{% endif %}"
+          id="checkpointsNavItem">
+          <i class="fas fa-check-circle"></i> <span>{{ t('header.navigation.checkpoints') }}</span>
+        </a>
+        <a href="/embeddings" class="nav-item{% if current_path.startswith('/embeddings') %} active{% endif %}"
+          id="embeddingsNavItem">
+          <i class="fas fa-code"></i> <span>{{ t('header.navigation.embeddings') }}</span>
+        </a>
+        <a href="/statistics" class="nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
+          id="statisticsNavItem">
+          <i class="fas fa-chart-bar"></i> <span>{{ t('header.navigation.statistics') }}</span>
+        </a>
+      </nav>
     </div>
-    {% set current_path = request.path %}
-    {% if current_path.startswith('/loras/recipes') %}
-    {% set current_page = 'recipes' %}
-    {% elif current_path.startswith('/checkpoints') %}
-    {% set current_page = 'checkpoints' %}
-    {% elif current_path.startswith('/embeddings') %}
-    {% set current_page = 'embeddings' %}
-    {% elif current_path.startswith('/statistics') %}
-    {% set current_page = 'statistics' %}
-    {% else %}
-    {% set current_page = 'loras' %}
-    {% endif %}
+
+    <!-- Center section: Search -->
     {% set search_disabled = current_page == 'statistics' %}
     {% set search_placeholder_key = 'header.search.notAvailable' if search_disabled else 'header.search.placeholders.' ~
     current_page %}
     {% set header_search_class = 'header-search disabled' if search_disabled else 'header-search' %}
-    <nav class="main-nav">
-      <a href="/loras" class="nav-item{% if current_path == '/loras' %} active{% endif %}" id="lorasNavItem">
-        <i class="fas fa-layer-group"></i> <span>{{ t('header.navigation.loras') }}</span>
-      </a>
-      <a href="/loras/recipes" class="nav-item{% if current_path.startswith('/loras/recipes') %} active{% endif %}"
-        id="recipesNavItem">
-        <i class="fas fa-book-open"></i> <span>{{ t('header.navigation.recipes') }}</span>
-      </a>
-      <a href="/checkpoints" class="nav-item{% if current_path.startswith('/checkpoints') %} active{% endif %}"
-        id="checkpointsNavItem">
-        <i class="fas fa-check-circle"></i> <span>{{ t('header.navigation.checkpoints') }}</span>
-      </a>
-      <a href="/embeddings" class="nav-item{% if current_path.startswith('/embeddings') %} active{% endif %}"
-        id="embeddingsNavItem">
-        <i class="fas fa-code"></i> <span>{{ t('header.navigation.embeddings') }}</span>
-      </a>
-      <a href="/statistics" class="nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
-        id="statisticsNavItem">
-        <i class="fas fa-chart-bar"></i> <span>{{ t('header.navigation.statistics') }}</span>
-      </a>
-    </nav>
-
-    <!-- Context-aware search container -->
     <div class="{{ header_search_class }}" id="headerSearch">
       <div class="search-container">
         <input type="text" id="searchInput" placeholder="{{ t(search_placeholder_key) }}" {% if search_disabled %}
@@ -62,9 +65,9 @@
       </div>
     </div>
 
-    <div class="header-actions">
-      <!-- Integrated corner controls -->
-      <div class="header-controls">
+    <!-- Right section: Controls -->
+    <div class="header-right">
+      <div class="header-controls" id="headerControls">
         <div class="theme-toggle" title="{{ t('header.theme.toggle') }}">
           <i class="fas fa-moon dark-icon"></i>
           <i class="fas fa-sun light-icon"></i>
@@ -83,6 +86,34 @@
         </div>
         <div class="support-toggle" id="supportToggleBtn" title="{{ t('header.actions.support') }}">
           <i class="fas fa-heart"></i>
+        </div>
+      </div>
+      <!-- Hamburger menu button (visible on mobile) -->
+      <button class="hamburger-menu-btn" id="hamburgerMenuBtn" title="{{ t('common.actions.menu') }}">
+        <i class="fas fa-bars"></i>
+      </button>
+      <!-- Hamburger dropdown menu -->
+      <div class="hamburger-dropdown" id="hamburgerDropdown">
+        <div class="dropdown-item theme-toggle-item" data-action="theme">
+          <i class="fas fa-moon"></i>
+          <span>{{ t('header.theme.toggle') }}</span>
+        </div>
+        <div class="dropdown-item" data-action="settings">
+          <i class="fas fa-cog"></i>
+          <span>{{ t('common.actions.settings') }}</span>
+        </div>
+        <div class="dropdown-item" data-action="help">
+          <i class="fas fa-question-circle"></i>
+          <span>{{ t('common.actions.help') }}</span>
+        </div>
+        <div class="dropdown-item" data-action="notifications">
+          <i class="fas fa-bell"></i>
+          <span>{{ t('header.actions.notifications') }}</span>
+        </div>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item" data-action="support">
+          <i class="fas fa-heart"></i>
+          <span>{{ t('header.actions.support') }}</span>
         </div>
       </div>
     </div>

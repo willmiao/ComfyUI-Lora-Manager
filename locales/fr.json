@@ -15,7 +15,8 @@
             "settings": "Paramètres",
             "help": "Aide",
             "add": "Ajouter",
-            "close": "Fermer"
+            "close": "Fermer",
+            "menu": "Menu"
         },
         "status": {
             "loading": "Chargement...",

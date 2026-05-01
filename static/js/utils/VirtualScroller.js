@@ -104,69 +104,74 @@ export class VirtualScroller {
         // Get display density setting
         const displayDensity = state.global.settings?.display_density || 'default';
 
-        // Set exact column counts and grid widths to match CSS container widths
-        let maxColumns, maxGridWidth;
+        // Base gap between cards
+        const baseGap = 12;
+        this.columnGap = baseGap;
 
-        // Match exact column counts and CSS container width values based on density
+        // Define minimum card width based on density setting to ensure usability
+        // Cards smaller than this become hard to interact with and view
+        const minCardWidths = {
+            'default': 240,  // Default: comfortable minimum
+            'medium': 200,   // Medium: slightly smaller
+            'compact': 170   // Compact: smallest usable size
+        };
+        const minCardWidth = minCardWidths[displayDensity] || 240;
+
+        // Calculate maximum possible columns that fit in available width
+        // Formula: maxColumns = floor((availableWidth + gap) / (minCardWidth + gap))
+        const maxPossibleColumns = Math.floor((availableContentWidth + this.columnGap) / (minCardWidth + this.columnGap));
+
+        // Ensure at least 1 column
+        const maxColumns = Math.max(1, maxPossibleColumns);
+
+        // Define preferred maximum columns based on display density and screen size
+        // These are upper limits to prevent too many columns on ultra-wide screens
+        let preferredMaxColumns;
         if (window.innerWidth >= 3000) { // 4K
             if (displayDensity === 'default') {
-                maxColumns = 8;
+                preferredMaxColumns = 8;
             } else if (displayDensity === 'medium') {
-                maxColumns = 9;
+                preferredMaxColumns = 10;
             } else { // compact
-                maxColumns = 10;
+                preferredMaxColumns = 12;
             }
-            maxGridWidth = 2400; // Match exact CSS container width for 4K
         } else if (window.innerWidth >= 2150) { // 2K/1440p
             if (displayDensity === 'default') {
-                maxColumns = 6;
+                preferredMaxColumns = 6;
             } else if (displayDensity === 'medium') {
-                maxColumns = 7;
+                preferredMaxColumns = 8;
             } else { // compact
-                maxColumns = 8;
+                preferredMaxColumns = 10;
             }
-            maxGridWidth = 1800; // Match exact CSS container width for 2K
-        } else {
-            // 1080p
+        } else { // 1080p and smaller
             if (displayDensity === 'default') {
-                maxColumns = 5;
+                preferredMaxColumns = 5;
             } else if (displayDensity === 'medium') {
-                maxColumns = 6;
+                preferredMaxColumns = 6;
             } else { // compact
-                maxColumns = 7;
+                preferredMaxColumns = 8;
             }
-            maxGridWidth = 1400; // Match exact CSS container width for 1080p
         }
 
-        // Calculate baseCardWidth based on desired column count and available space
-        // Formula: (maxGridWidth - (columns-1)*gap) / columns
-        const baseCardWidth = (maxGridWidth - ((maxColumns - 1) * this.columnGap)) / maxColumns;
+        // Use the smaller of: max columns that fit, or preferred max
+        // This ensures cards are never smaller than minCardWidth
+        this.columnsCount = Math.min(maxColumns, preferredMaxColumns);
 
-        // Use the smaller of available content width or max grid width
-        const actualGridWidth = Math.min(availableContentWidth, maxGridWidth);
+        // Calculate card width to perfectly fill available space
+        // Formula: (availableWidth - totalGap) / columns
+        const totalGap = (this.columnsCount - 1) * this.columnGap;
+        this.itemWidth = (availableContentWidth - totalGap) / this.columnsCount;
 
-        // Set exact column count based on screen size and mode
-        this.columnsCount = maxColumns;
-
-        // When available width is smaller than maxGridWidth, recalculate columns
-        if (availableContentWidth < maxGridWidth) {
-            // Calculate how many columns can fit in the available space
-            this.columnsCount = Math.max(1, Math.floor(
-                (availableContentWidth + this.columnGap) / (baseCardWidth + this.columnGap)
-            ));
-        }
-
-        // Calculate actual item width
-        this.itemWidth = (actualGridWidth - (this.columnsCount - 1) * this.columnGap) / this.columnsCount;
-
-        // Calculate height based on aspect ratio
+        // Calculate height based on aspect ratio (896/1152)
         this.itemHeight = this.itemWidth / this.itemAspectRatio;
 
-        // Calculate the left offset to center the grid within the content area
-        this.leftOffset = Math.max(0, (availableContentWidth - actualGridWidth) / 2);
+        // Edge-to-edge layout: no offset, grid fills container
+        this.leftOffset = 0;
+        const actualGridWidth = this.itemWidth * this.columnsCount + totalGap;
 
-        // Update grid element max-width to match available width
+        // Update grid element to fill available width
         this.gridElement.style.maxWidth = `${actualGridWidth}px`;
+        this.gridElement.style.width = `${actualGridWidth}px`;
 
         // Add or remove density classes for style adjustments
         this.gridElement.classList.remove('default-density', 'medium-density', 'compact-density');
@@ -477,6 +482,12 @@ export class VirtualScroller {
         element.style.top = `${topPos}px`;
         element.style.width = `${this.itemWidth}px`;
         element.style.height = `${this.itemHeight}px`;
+
+        // Remove max-width constraint from model-card to allow dynamic sizing
+        const modelCard = element.querySelector('.model-card');
+        if (modelCard) {
+            modelCard.style.maxWidth = 'none';
+        }
 
         return element;
     }

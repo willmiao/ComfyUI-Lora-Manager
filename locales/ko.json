@@ -15,7 +15,8 @@
             "settings": "설정",
             "help": "도움말",
             "add": "추가",
-            "close": "닫기"
+            "close": "닫기",
+            "menu": "메뉴"
         },
         "status": {
             "loading": "로딩 중...",

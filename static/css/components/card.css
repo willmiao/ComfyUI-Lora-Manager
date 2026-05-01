@@ -22,6 +22,7 @@
     transition: transform 160ms ease-out;
     aspect-ratio: 896/1152; /* Preserve aspect ratio */
     max-width: 260px; /* Base size */
+    min-width: 200px; /* Prevent cards from becoming too narrow */
     width: 100%;
     margin: 0 auto;
     cursor: pointer;
@@ -370,7 +371,16 @@
     text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
 }
 
-/* 响应式设计 */
+@media (max-width: 1200px) {
+    .card-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+    
+    .model-card {
+        max-width: 240px;
+        min-width: 180px;
+    }
+}
 @media (max-width: 768px) {
     .card-grid {
         grid-template-columns: minmax(260px, 1fr); /* Adjusted minimum size for mobile */
@@ -378,6 +388,7 @@
     
     .model-card {
         max-width: 100%; /* Allow cards to fill available space on mobile */
+        min-width: 200px;
     }
 }
 
@@ -563,8 +574,13 @@ body.hide-card-version .civitai-version {
     position: absolute;
     box-sizing: border-box;
     transition: transform 160ms ease-out;
-    margin: 0; /* Remove margins, positioning is handled by VirtualScroller */
-    width: 100%; /* Allow width to be set by the VirtualScroller */
+    margin: 0;
+    width: 100%;
+}
+
+/* Allow cards to grow beyond 260px in virtual scroll mode */
+.virtual-scroll-item.model-card {
+    max-width: none;
 }
 
 .virtual-scroll-item:hover {
@@ -576,11 +592,11 @@ body.hide-card-version .civitai-version {
 .card-grid.virtual-scroll {
     display: block;
     position: relative;
-    margin: 0 auto;
+    margin: 0; /* Remove auto margins - positioning handled by VirtualScroller leftOffset */
     padding: 4px 0; /* Add top/bottom padding equivalent to card padding */
     height: auto;
     width: 100%;
-    max-width: 1400px; /* Keep the max-width from original grid */
+    max-width: none; /* Remove max-width constraint - handled by VirtualScroller */
     box-sizing: border-box; /* Include padding in width calculation */
     overflow-x: hidden; /* Prevent horizontal overflow */
 }

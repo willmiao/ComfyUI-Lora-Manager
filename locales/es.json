@@ -15,7 +15,8 @@
             "settings": "Configuración",
             "help": "Ayuda",
             "add": "Añadir",
-            "close": "Cerrar"
+            "close": "Cerrar",
+            "menu": "Menú"
         },
         "status": {
             "loading": "Cargando...",

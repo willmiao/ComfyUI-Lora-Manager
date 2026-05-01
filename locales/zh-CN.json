@@ -15,7 +15,8 @@
             "settings": "设置",
             "help": "帮助",
             "add": "添加",
-            "close": "关闭"
+            "close": "关闭",
+            "menu": "菜单"
         },
         "status": {
             "loading": "加载中...",

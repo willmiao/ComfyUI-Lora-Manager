@@ -129,6 +129,126 @@ export class HeaderManager {
       
       // Hide search functionality on Statistics page
       this.updateHeaderForPage();
+
+      // Initialize hamburger menu for mobile
+      this.initializeHamburgerMenu();
+    }
+
+    initializeHamburgerMenu() {
+      const hamburgerBtn = document.getElementById('hamburgerMenuBtn');
+      const hamburgerDropdown = document.getElementById('hamburgerDropdown');
+
+      if (!hamburgerBtn || !hamburgerDropdown) return;
+
+      // Toggle dropdown on hamburger button click
+      hamburgerBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        hamburgerDropdown.classList.toggle('active');
+        const icon = hamburgerBtn.querySelector('i');
+        if (hamburgerDropdown.classList.contains('active')) {
+          icon.classList.remove('fa-bars');
+          icon.classList.add('fa-times');
+        } else {
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        }
+      });
+
+      // Handle dropdown item clicks
+      const dropdownItems = hamburgerDropdown.querySelectorAll('.dropdown-item');
+      dropdownItems.forEach(item => {
+        item.addEventListener('click', (e) => {
+          const action = item.dataset.action;
+          this.handleHamburgerAction(action);
+          hamburgerDropdown.classList.remove('active');
+          const icon = hamburgerBtn.querySelector('i');
+          icon.classList.remove('fa-times');
+          icon.classList.add('fa-bars');
+        });
+      });
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', (e) => {
+        if (!hamburgerDropdown.contains(e.target) && !hamburgerBtn.contains(e.target)) {
+          hamburgerDropdown.classList.remove('active');
+          const icon = hamburgerBtn.querySelector('i');
+          if (icon) {
+            icon.classList.remove('fa-times');
+            icon.classList.add('fa-bars');
+          }
+        }
+      });
+
+      // Update theme icon in hamburger menu based on current theme
+      this.updateHamburgerThemeIcon();
+    }
+
+    handleHamburgerAction(action) {
+      switch (action) {
+        case 'theme':
+          if (typeof toggleTheme === 'function') {
+            const newTheme = toggleTheme();
+            // Update theme toggle in header if it exists
+            const themeToggle = document.querySelector('.theme-toggle');
+            if (themeToggle) {
+              themeToggle.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+              themeToggle.classList.add(`theme-${newTheme}`);
+              this.updateThemeTooltip(themeToggle, newTheme);
+            }
+            this.updateHamburgerThemeIcon();
+          }
+          break;
+        case 'settings':
+          if (window.settingsManager) {
+            window.settingsManager.toggleSettings();
+          }
+          break;
+        case 'help':
+          const helpToggle = document.getElementById('helpToggleBtn');
+          if (helpToggle) {
+            helpToggle.click();
+          }
+          break;
+        case 'notifications':
+          updateService.toggleUpdateModal();
+          break;
+        case 'support':
+          if (window.modalManager) {
+            window.modalManager.toggleModal('supportModal');
+            renderSupporters().catch(error => {
+              console.error('Error loading supporters:', error);
+            });
+          }
+          break;
+      }
+    }
+
+    updateHamburgerThemeIcon() {
+      const themeItem = document.querySelector('.dropdown-item[data-action="theme"]');
+      if (!themeItem) return;
+
+      const currentTheme = getStorageItem('theme') || 'auto';
+      const icon = themeItem.querySelector('i');
+      const text = themeItem.querySelector('span');
+
+      if (icon) {
+        icon.classList.remove('fa-moon', 'fa-sun', 'fa-adjust');
+        if (currentTheme === 'light') {
+          icon.classList.add('fa-sun');
+        } else if (currentTheme === 'dark') {
+          icon.classList.add('fa-moon');
+        } else {
+          icon.classList.add('fa-adjust');
+        }
+      }
+
+      // Update text based on current theme
+      if (text) {
+        const key = currentTheme === 'light' ? 'header.theme.switchToDark' :
+                    currentTheme === 'dark' ? 'header.theme.switchToLight' :
+                    'header.theme.toggle';
+        updateElementAttribute(themeItem, 'aria-label', key, {}, '');
+      }
     }
 
     updateHeaderForPage() {
