@@ -413,7 +413,7 @@ app.registerExtension({
           const savedItem = consumeQueuedState(itemState, itemText);
           return {
             text: itemText,
-            active: savedItem ? savedItem.active : defaultActive,
+            active: savedItem ? savedItem.active : true,
             highlighted: false,
             strength: null,
           };
