@@ -560,8 +560,14 @@ class MetadataProcessor:
         
         params["loras"] = " ".join(lora_parts)
         
-        # Set default clip_skip value
-        params["clip_skip"] = "1"  # Common default
+        # Extract clip_skip from any SAMPLING node that provides it
+        for sampler_info in metadata.get(SAMPLING, {}).values():
+            clip_skip = sampler_info.get("parameters", {}).get("clip_skip")
+            if clip_skip is not None:
+                params["clip_skip"] = clip_skip
+                break
+        if params["clip_skip"] is None:
+            params["clip_skip"] = "1"
         
         return params
     

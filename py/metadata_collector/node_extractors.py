@@ -144,6 +144,118 @@ class TSCCheckpointLoaderExtractor(NodeMetadataExtractor):
                 metadata[PROMPTS][node_id]["positive_encoded"] = positive_conditioning
                 metadata[PROMPTS][node_id]["negative_encoded"] = negative_conditioning
 
+
+class EasyComfyLoaderExtractor(NodeMetadataExtractor):
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        if "ckpt_name" in inputs:
+            _store_checkpoint_metadata(metadata, node_id, inputs["ckpt_name"])
+
+        # Only extract from optional_lora_stack — skip the single lora_name to
+        # avoid double-counting LoRAs that come through the LORA_STACK path.
+        active_loras = []
+        optional_lora_stack = inputs.get("optional_lora_stack")
+        if optional_lora_stack is not None and isinstance(optional_lora_stack, (list, tuple)):
+            for item in optional_lora_stack:
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    lora_path = item[0]
+                    model_strength = item[1]
+                    lora_name = os.path.splitext(os.path.basename(lora_path))[0]
+                    active_loras.append({
+                        "name": lora_name,
+                        "strength": model_strength
+                    })
+
+        if active_loras:
+            metadata[LORAS][node_id] = {
+                "lora_list": active_loras,
+                "node_id": node_id
+            }
+
+        positive_text = inputs.get("positive", "")
+        negative_text = inputs.get("negative", "")
+
+        if positive_text or negative_text:
+            if node_id not in metadata[PROMPTS]:
+                metadata[PROMPTS][node_id] = {"node_id": node_id}
+            metadata[PROMPTS][node_id]["positive_text"] = positive_text
+            metadata[PROMPTS][node_id]["negative_text"] = negative_text
+
+        if "clip_skip" in inputs:
+            clip_skip = inputs["clip_skip"]
+            if node_id not in metadata[SAMPLING]:
+                metadata[SAMPLING][node_id] = {"parameters": {}, "node_id": node_id}
+            metadata[SAMPLING][node_id]["parameters"]["clip_skip"] = clip_skip
+
+        width = inputs.get("empty_latent_width")
+        height = inputs.get("empty_latent_height")
+        if width is not None and height is not None:
+            if SIZE not in metadata:
+                metadata[SIZE] = {}
+            metadata[SIZE][node_id] = {
+                "width": int(width),
+                "height": int(height),
+                "node_id": node_id
+            }
+
+    @staticmethod
+    def update(node_id, outputs, metadata):
+        # outputs: [(pipe_dict, model, vae), ...]
+        if not outputs or not isinstance(outputs, list) or len(outputs) == 0:
+            return
+        first_output = outputs[0]
+        if not isinstance(first_output, tuple) or len(first_output) < 1:
+            return
+        pipe = first_output[0]
+        if not isinstance(pipe, dict):
+            return
+
+        positive_conditioning = pipe.get("positive")
+        negative_conditioning = pipe.get("negative")
+
+        if positive_conditioning is not None or negative_conditioning is not None:
+            if node_id not in metadata[PROMPTS]:
+                metadata[PROMPTS][node_id] = {"node_id": node_id}
+            if positive_conditioning is not None:
+                metadata[PROMPTS][node_id]["positive_encoded"] = positive_conditioning
+            if negative_conditioning is not None:
+                metadata[PROMPTS][node_id]["negative_encoded"] = negative_conditioning
+
+
+class EasyPreSamplingExtractor(NodeMetadataExtractor):
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        sampling_params = {}
+        for key in ("steps", "cfg", "sampler_name", "scheduler", "denoise", "seed"):
+            if key in inputs:
+                sampling_params[key] = inputs[key]
+
+        metadata[SAMPLING][node_id] = {
+            "parameters": sampling_params,
+            "node_id": node_id,
+            IS_SAMPLER: True
+        }
+
+
+class EasySeedExtractor(NodeMetadataExtractor):
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs or "seed" not in inputs:
+            return
+
+        metadata[SAMPLING][node_id] = {
+            "parameters": {"seed": inputs["seed"]},
+            "node_id": node_id,
+            IS_SAMPLER: False
+        }
+
+
 class CLIPTextEncodeExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -1013,9 +1125,12 @@ NODE_EXTRACTORS = {
     "KSamplerSelect": KSamplerSelectExtractor,  # Add KSamplerSelect
     "BasicScheduler": BasicSchedulerExtractor,  # Add BasicScheduler
     "AlignYourStepsScheduler": BasicSchedulerExtractor,  # Add AlignYourStepsScheduler
+    # ComfyUI-Easy-Use pre-sampling / seed
+    "samplerSettings": EasyPreSamplingExtractor,  # easy preSampling
+    "easySeed": EasySeedExtractor,  # easy seed
     # Loaders
     "CheckpointLoaderSimple": CheckpointLoaderExtractor,
-    "comfyLoader": CheckpointLoaderExtractor,  # easy comfyLoader
+    "comfyLoader": EasyComfyLoaderExtractor,  # ComfyUI-Easy-Use easy comfyLoader
     "CheckpointLoaderSimpleWithImages": CheckpointLoaderExtractor,  # CheckpointLoader|pysssss
     "TSC_EfficientLoader": TSCCheckpointLoaderExtractor,  # Efficient Nodes
     "NunchakuFluxDiTLoader": NunchakuFluxDiTLoaderExtractor,  # ComfyUI-Nunchaku
