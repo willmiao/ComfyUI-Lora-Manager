@@ -1,10 +1,22 @@
-import folder_paths # type: ignore
-from ..utils.utils import get_lora_info
+import os
+from ..utils.utils import get_lora_info_absolute
+from ..config import config
 from .utils import any_type 
 import logging
 
 # 初始化日志记录器
 logger = logging.getLogger(__name__)
+
+
+def _relpath_within_loras(abs_path):
+    """Return abs_path relative to the first matching lora root, or basename as fallback."""
+    all_roots = list(config.loras_roots or []) + list(config.extra_loras_roots or [])
+    for root in all_roots:
+        try:
+            return os.path.relpath(abs_path, root)
+        except ValueError:
+            continue
+    return os.path.basename(abs_path)
 
 # 定义新节点的类
 class WanVideoLoraTextSelectLM:
@@ -87,12 +99,12 @@ class WanVideoLoraTextSelectLM:
             else:
                 continue
 
-            lora_path, trigger_words = get_lora_info(lora_name_raw)
+            lora_path, trigger_words = get_lora_info_absolute(lora_name_raw)
 
             lora_item = {
-                "path": folder_paths.get_full_path("loras", lora_path),
+                "path": lora_path,
                 "strength": model_strength,
-                "name": lora_path.split(".")[0],
+                "name": os.path.splitext(_relpath_within_loras(lora_path))[0],
                 "blocks": selected_blocks,
                 "layer_filter": layer_filter,
                 "low_mem_load": low_mem_load,
