@@ -1791,29 +1791,33 @@ class ModelLibraryHandler:
                     exists = True
                     model_type = "embedding"
 
+                if exists:
+                    return web.json_response(
+                        {
+                            "success": True,
+                            "exists": True,
+                            "modelType": model_type,
+                            "hasBeenDownloaded": False,
+                        }
+                    )
+
                 history_service = await self._get_download_history_service()
                 has_been_downloaded = False
-                history_type = model_type
-                if history_type:
-                    has_been_downloaded = await history_service.has_been_downloaded(
-                        history_type,
+                history_type = None
+                for candidate_type in ("lora", "checkpoint", "embedding"):
+                    if await history_service.has_been_downloaded(
+                        candidate_type,
                         model_version_id,
-                    )
-                else:
-                    for candidate_type in ("lora", "checkpoint", "embedding"):
-                        if await history_service.has_been_downloaded(
-                            candidate_type,
-                            model_version_id,
-                        ):
-                            has_been_downloaded = True
-                            history_type = candidate_type
-                            break
+                    ):
+                        has_been_downloaded = True
+                        history_type = candidate_type
+                        break
 
                 return web.json_response(
                     {
                         "success": True,
-                        "exists": exists,
-                        "modelType": model_type if exists else history_type,
+                        "exists": False,
+                        "modelType": history_type,
                         "hasBeenDownloaded": has_been_downloaded,
                     }
                 )
@@ -1833,40 +1837,46 @@ class ModelLibraryHandler:
             model_type = None
             versions = []
             downloaded_version_ids = []
-            history_service = await self._get_download_history_service()
             if lora_versions:
-                model_type = "lora"
-                versions = self._with_downloaded_flag(lora_versions)
-                downloaded_version_ids = await history_service.get_downloaded_version_ids(
-                    model_type,
-                    model_id,
+                return web.json_response(
+                    {
+                        "success": True,
+                        "modelType": "lora",
+                        "versions": self._with_downloaded_flag(lora_versions),
+                        "downloadedVersionIds": [],
+                    }
                 )
-            elif checkpoint_versions:
-                model_type = "checkpoint"
-                versions = self._with_downloaded_flag(checkpoint_versions)
-                downloaded_version_ids = await history_service.get_downloaded_version_ids(
-                    model_type,
-                    model_id,
+            if checkpoint_versions:
+                return web.json_response(
+                    {
+                        "success": True,
+                        "modelType": "checkpoint",
+                        "versions": self._with_downloaded_flag(checkpoint_versions),
+                        "downloadedVersionIds": [],
+                    }
                 )
-            elif embedding_versions:
-                model_type = "embedding"
-                versions = self._with_downloaded_flag(embedding_versions)
-                downloaded_version_ids = await history_service.get_downloaded_version_ids(
-                    model_type,
-                    model_id,
+            if embedding_versions:
+                return web.json_response(
+                    {
+                        "success": True,
+                        "modelType": "embedding",
+                        "versions": self._with_downloaded_flag(embedding_versions),
+                        "downloadedVersionIds": [],
+                    }
                 )
-            else:
-                for candidate_type in ("lora", "checkpoint", "embedding"):
-                    candidate_downloaded_version_ids = (
-                        await history_service.get_downloaded_version_ids(
-                            candidate_type,
-                            model_id,
-                        )
+
+            history_service = await self._get_download_history_service()
+            for candidate_type in ("lora", "checkpoint", "embedding"):
+                candidate_downloaded_version_ids = (
+                    await history_service.get_downloaded_version_ids(
+                        candidate_type,
+                        model_id,
                     )
-                    if candidate_downloaded_version_ids:
-                        model_type = candidate_type
-                        downloaded_version_ids = candidate_downloaded_version_ids
-                        break
+                )
+                if candidate_downloaded_version_ids:
+                    model_type = candidate_type
+                    downloaded_version_ids = candidate_downloaded_version_ids
+                    break
 
             return web.json_response(
                 {
