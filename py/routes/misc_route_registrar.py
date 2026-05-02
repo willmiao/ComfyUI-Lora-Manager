@@ -43,6 +43,7 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/update-node-widget", "update_node_widget"),
     RouteDefinition("GET", "/api/lm/get-registry", "get_registry"),
     RouteDefinition("GET", "/api/lm/check-model-exists", "check_model_exists"),
+    RouteDefinition("GET", "/api/lm/check-models-exist", "check_models_exist"),
     RouteDefinition(
         "GET",
         "/api/lm/model-version-download-status",
