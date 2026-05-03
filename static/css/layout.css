@@ -371,6 +371,14 @@
     display: block;
 }
 
+/* Elevate the controls stacking context above breadcrumb nav when a dropdown is open,
+   so the dropdown menu isn't obscured. Only active when dropdown is shown to avoid
+   the entire controls bar (which can wrap to 2 rows on narrow viewports) covering
+   the sticky breadcrumb. */
+.controls:has(.dropdown-group.active) {
+    z-index: var(--z-header);
+}
+
 .dropdown-item {
     display: block;
     padding: 6px 15px;
