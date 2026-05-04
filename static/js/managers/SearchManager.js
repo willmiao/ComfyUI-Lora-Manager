@@ -301,7 +301,7 @@ export class SearchManager {
       
       // Call the appropriate manager's load method based on page type
       if (this.currentPage === 'recipes' && window.recipeManager) {
-        window.recipeManager.loadRecipes(true); // true to reset pagination
+        window.recipeManager.loadRecipes({ preserveScroll: true });
       } else if (this.currentPage === 'loras' || this.currentPage === 'embeddings' || this.currentPage === 'checkpoints') {
         // For models page, reset the page and reload
         getModelApiClient().loadMoreWithVirtualScroll(true, false);

@@ -2863,7 +2863,7 @@ export class SettingsManager {
             await resetAndReload(false);
         } else if (this.currentPage === 'recipes') {
             // Reload the recipes without updating folders
-            await window.recipeManager.loadRecipes();
+            await window.recipeManager.loadRecipes({ preserveScroll: true });
         } else if (this.currentPage === 'checkpoints') {
             // Reload the checkpoints without updating folders
             await resetAndReload(false);
