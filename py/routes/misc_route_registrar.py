@@ -91,6 +91,9 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/base-models/cache-status", "get_base_model_cache_status"
     ),
+    RouteDefinition(
+        "GET", "/api/lm/delete-model-version", "delete_model_version"
+    ),
 )
 
 

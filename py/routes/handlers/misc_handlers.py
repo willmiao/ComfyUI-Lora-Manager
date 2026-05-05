@@ -33,6 +33,7 @@ from ...services.metadata_service import (
     update_metadata_providers,
 )
 from ...services.service_registry import ServiceRegistry
+from ...services.model_lifecycle_service import delete_model_artifacts
 from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
@@ -2082,6 +2083,78 @@ class ModelLibraryHandler:
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def delete_model_version(self, request: web.Request) -> web.Response:
+        try:
+            model_version_id_str = request.query.get("modelVersionId")
+            if not model_version_id_str:
+                return web.json_response(
+                    {"success": False, "error": "Missing required parameter: modelVersionId"},
+                    status=400,
+                )
+            try:
+                model_version_id = int(model_version_id_str)
+            except ValueError:
+                return web.json_response(
+                    {"success": False, "error": "Parameter modelVersionId must be an integer"},
+                    status=400,
+                )
+
+            lora_scanner = await self._service_registry.get_lora_scanner()
+            checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
+            embedding_scanner = await self._service_registry.get_embedding_scanner()
+
+            found_type = None
+            file_path = None
+            found_cache = None
+
+            for model_type, scanner in (
+                ("lora", lora_scanner),
+                ("checkpoint", checkpoint_scanner),
+                ("embedding", embedding_scanner),
+            ):
+                cache = await scanner.get_cached_data()
+                if cache and model_version_id in cache.version_index:
+                    found_type = model_type
+                    found_cache = cache
+                    entry = cache.version_index[model_version_id]
+                    file_path = entry.get("file_path")
+                    break
+
+            if not file_path:
+                return web.json_response(
+                    {"success": False, "error": "Model version not found in any scanner cache"},
+                    status=404,
+                )
+
+            target_dir = os.path.dirname(file_path)
+            base_name = os.path.basename(file_path)
+            file_name, extension = os.path.splitext(base_name)
+            await delete_model_artifacts(target_dir, file_name, main_extension=extension)
+
+            if found_cache:
+                found_cache.raw_data = [
+                    item
+                    for item in found_cache.raw_data
+                    if item.get("file_path") != file_path
+                ]
+                await found_cache.resort()
+
+            history_service = await self._get_download_history_service()
+            await history_service.mark_not_downloaded(found_type, model_version_id)
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "modelType": found_type,
+                    "modelVersionId": model_version_id,
+                }
+            )
+        except Exception as exc:
+            logger.error(
+                "Failed to delete model version: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def get_model_versions_status(self, request: web.Request) -> web.Response:
         try:
             model_id_str = request.query.get("modelId")
@@ -3118,6 +3191,7 @@ class MiscHandlerSet:
             "check_models_exist": self.model_library.check_models_exist,
             "get_model_version_download_status": self.model_library.get_model_version_download_status,
             "set_model_version_download_status": self.model_library.set_model_version_download_status,
+            "delete_model_version": self.model_library.delete_model_version,
             "get_civitai_user_models": self.model_library.get_civitai_user_models,
             "download_metadata_archive": self.metadata_archive.download_metadata_archive,
             "remove_metadata_archive": self.metadata_archive.remove_metadata_archive,
