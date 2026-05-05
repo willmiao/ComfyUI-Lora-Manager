@@ -232,9 +232,13 @@ export function initDrag(
         onDragEnd();
       }
 
-      // Now do the re-render after drag is complete
-      if (renderFunction) {
-        renderFunction(widget.value, widget);
+      // Commit final value through options.setValue so external observers are notified.
+      // During drag, handleStrengthDrag mutates widgetValue in-place (updateWidget=false),
+      // bypassing widget.value setter and options.setValue entirely. This assignment
+      // flushes the in-place mutation through the setter so any setValue wrappers fire.
+      widget.value = widget.value;
+      if (typeof widget.callback === 'function') {
+        widget.callback(widget.value);
       }
     }
   };
@@ -349,11 +353,15 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     document.body.classList.remove('lm-lora-strength-dragging');
 
     // Only re-render if we actually dragged
-    if (wasDragging && renderFunction) {
-      renderFunction(widget.value, widget);
+    if (wasDragging) {
+      // Commit final value through options.setValue so external observers are notified.
+      widget.value = widget.value;
+      if (typeof widget.callback === 'function') {
+        widget.callback(widget.value);
+      }
     }
   };
-  
+
   // Handle pointer up to end dragging
   headerEl.addEventListener('pointerup', endDrag);
   
