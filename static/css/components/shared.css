@@ -67,7 +67,6 @@
 
 .early-access-info {
     display: none;
-    position: absolute;
     top: 100%;
     right: 0;
     background: var(--card-bg);
@@ -97,7 +96,6 @@
 
 .local-path {
     display: none;
-    position: absolute;
     top: 100%;
     right: 0;
     background: var(--card-bg);

@@ -87,7 +87,7 @@
 
 .checkbox-label input[type="checkbox"]:checked + .checkmark::after {
     content: '\f00c';
-    font-family: 'Font Awesome 6 Free';
+    font-family: 'Font Awesome 6 Free', sans-serif;
     font-weight: 900;
     color: var(--lora-text);
     font-size: 12px;

@@ -329,7 +329,6 @@
 }
 
 .card-actions i {
-    margin-left: var(--space-1);
     cursor: pointer;
     color: white;
     transition: opacity 0.2s, transform 0.15s ease;
