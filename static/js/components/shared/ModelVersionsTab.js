@@ -241,7 +241,7 @@ function buildActionButton(label, variant, action, options = {}) {
     if (action) {
         attributes.push(`data-version-action="${escapeHtml(action)}"`);
     }
-    if (options.title) {
+    if (!options.disabled && options.title) {
         attributes.push(`title="${escapeHtml(options.title)}"`);
         attributes.push(`aria-label="${escapeHtml(options.title)}"`);
     }
@@ -251,7 +251,11 @@ function buildActionButton(label, variant, action, options = {}) {
     if (options.extraAttributes) {
         attributes.push(options.extraAttributes);
     }
-    return `<button ${attributes.join(' ')}>${options.iconMarkup || ''}${escapeHtml(label)}</button>`;
+    const buttonHtml = `<button ${attributes.join(' ')}>${options.iconMarkup || ''}${escapeHtml(label)}</button>`;
+    if (options.disabled && options.title) {
+        return `<span class="version-action-disabled-wrapper" title="${escapeHtml(options.title)}" aria-label="${escapeHtml(options.title)}">${buttonHtml}</span>`;
+    }
+    return buttonHtml;
 }
 
 const DISPLAY_FILTER_MODES = Object.freeze({

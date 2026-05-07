@@ -577,6 +577,59 @@ class CivitaiClient:
             logger.error(error_msg)
             return None
 
+    async def get_model_versions_by_hashes(
+        self, hashes: List[str]
+    ) -> Optional[List[Dict]]:
+        """Fetch full version details for up to 100 SHA256 hashes via the batch endpoint.
+
+        Uses POST /api/v1/model-versions/by-hash which returns full version
+        details including ``usageControl`` and ``earlyAccessEndsAt`` that are
+        not available from the model-level API.
+
+        Args:
+            hashes: List of SHA256 hashes (max 100 per batch; auto-split).
+
+        Returns:
+            List of version dicts or None on failure.
+        """
+        if not hashes:
+            return []
+
+        BATCH_SIZE = 100
+        all_versions: List[Dict] = []
+
+        for start in range(0, len(hashes), BATCH_SIZE):
+            batch = hashes[start : start + BATCH_SIZE]
+            try:
+                success, result = await self._make_request(
+                    "POST",
+                    f"{self.base_url}/model-versions/by-hash",
+                    use_auth=True,
+                    json=batch,
+                )
+                if not success:
+                    logger.warning(
+                        "Batch by-hash request failed for %d hashes: %s",
+                        len(batch),
+                        result,
+                    )
+                    continue
+
+                if isinstance(result, list):
+                    all_versions.extend(result)
+                else:
+                    logger.debug(
+                        "Unexpected by-hash response type: %s", type(result)
+                    )
+            except RateLimitError:
+                raise
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.error(
+                    "Error fetching model versions by hashes: %s", exc
+                )
+
+        return all_versions if all_versions else None
+
     async def get_user_models(self, username: str) -> Optional[List[Dict]]:
         """Fetch all models for a specific Civitai user."""
         if not username:

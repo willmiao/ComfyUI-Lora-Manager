@@ -387,6 +387,10 @@
     cursor: not-allowed;
 }
 
+.version-action-disabled-wrapper {
+    display: inline-flex;
+}
+
 .versions-loading-state,
 .versions-empty,
 .versions-error {

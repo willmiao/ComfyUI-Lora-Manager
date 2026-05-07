@@ -108,6 +108,18 @@ class ModelMetadataProvider(ABC):
     ) -> Optional[Dict[int, Dict]]:
         """Fetch model versions for multiple model ids when supported."""
         raise NotImplementedError
+
+    async def get_model_versions_by_hashes(
+        self, hashes: List[str]
+    ) -> Optional[List[Dict]]:
+        """Fetch full version details for multiple SHA256 hashes.
+
+        Used specifically to retrieve ``usageControl`` which is only
+        available from the per-version / by-hash API, not from model-level
+        responses.  Providers that cannot resolve hashes should let the
+        default ``NotImplementedError`` propagate.
+        """
+        raise NotImplementedError
         
     @abstractmethod
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
@@ -140,6 +152,11 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
         self, model_ids: Sequence[int]
     ) -> Optional[Dict[int, Dict]]:
         return await self.client.get_model_versions_bulk(model_ids)
+
+    async def get_model_versions_by_hashes(
+        self, hashes: List[str]
+    ) -> Optional[List[Dict]]:
+        return await self.client.get_model_versions_by_hashes(hashes)
         
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
         return await self.client.get_model_version(model_id, version_id)
@@ -519,6 +536,32 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None, "No provider could retrieve the data"
 
+    async def get_model_versions_by_hashes(
+        self, hashes: List[str]
+    ) -> Optional[List[Dict]]:
+        for provider, label in self._iter_providers():
+            try:
+                result = await self._call_with_rate_limit(
+                    label,
+                    provider.get_model_versions_by_hashes,
+                    hashes,
+                )
+                if result is not None:
+                    return result
+            except NotImplementedError:
+                continue
+            except RateLimitError as exc:
+                exc.provider = exc.provider or label
+                raise exc
+            except Exception as e:
+                logger.debug(
+                    "Provider %s failed for get_model_versions_by_hashes: %s",
+                    label,
+                    e,
+                )
+                continue
+        return None
+
     async def get_user_models(self, username: str) -> Optional[List[Dict]]:
         for provider, label in self._iter_providers():
             try:
@@ -591,6 +634,15 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
             self._label,
             self._provider.get_model_versions_bulk,
             model_ids,
+        )
+
+    async def get_model_versions_by_hashes(
+        self, hashes: List[str]
+    ) -> Optional[List[Dict]]:
+        return await self._rate_limit_helper.run(
+            self._label,
+            self._provider.get_model_versions_by_hashes,
+            hashes,
         )
 
     async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
@@ -668,6 +720,17 @@ class ModelMetadataProviderManager:
         """Fetch model version info using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_version_info(version_id)
+
+    async def get_model_versions_by_hashes(
+        self,
+        hashes: List[str],
+        provider_name: str = None,
+    ) -> Optional[List[Dict]]:
+        provider = self._get_provider(provider_name)
+        try:
+            return await provider.get_model_versions_by_hashes(hashes)
+        except NotImplementedError:
+            return None
 
     async def get_user_models(self, username: str, provider_name: str = None) -> Optional[List[Dict]]:
         """Fetch models owned by the specified user"""

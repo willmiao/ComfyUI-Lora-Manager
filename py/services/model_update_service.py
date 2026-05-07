@@ -989,6 +989,11 @@ class ModelUpdateService:
                 fallback_attempted = True
                 try:
                     response = await metadata_provider.get_model_versions(model_id)
+                    if response is not None:
+                        await self._enrich_version_entries(
+                            metadata_provider,
+                            {model_id: response},
+                        )
                 except RateLimitError:
                     raise
                 except ResourceNotFoundError as exc:
@@ -1083,6 +1088,136 @@ class ModelUpdateService:
             self._upsert_record(record)
             return record
 
+    async def _enrich_version_entries(
+        self,
+        metadata_provider,
+        responses_by_model_id: Dict[int, Mapping],
+    ) -> None:
+        """Enrich version entries with ``usageControl`` via batch hash endpoint.
+
+        The model-level API does not include ``usageControl`` on version
+        entries. This method collects SHA256 hashes from every version's
+        primary model file, calls ``POST /api/v1/model-versions/by-hash``
+        (up to 100 hashes per request), and injects ``usageControl`` +
+        ``earlyAccessEndsAt`` into each version entry dict in-place.
+        """
+        if not metadata_provider or not responses_by_model_id:
+            return
+
+        hashes_by_version: Dict[int, str] = {}
+        for response in responses_by_model_id.values():
+            hashes_by_version.update(
+                self._collect_hashes_from_response(response)
+            )
+
+        if not hashes_by_version:
+            return
+
+        version_ids_by_hash: Dict[str, List[int]] = {}
+        for version_id, sha256 in hashes_by_version.items():
+            version_ids_by_hash.setdefault(sha256, []).append(version_id)
+
+        all_hashes = list(version_ids_by_hash.keys())
+        BATCH_SIZE = 100
+
+        enrichment: Dict[int, Dict] = {}
+        try:
+            for start in range(0, len(all_hashes), BATCH_SIZE):
+                batch = all_hashes[start : start + BATCH_SIZE]
+                try:
+                    enriched = await metadata_provider.get_model_versions_by_hashes(
+                        batch
+                    )
+                except NotImplementedError:
+                    return
+                except RateLimitError:
+                    raise
+                except Exception:
+                    continue
+
+                if not enriched:
+                    continue
+
+                for entry in enriched:
+                    if not isinstance(entry, dict):
+                        continue
+                    version_id = entry.get("id")
+                    if version_id is None:
+                        continue
+                    enrichment[version_id] = {
+                        "usageControl": _normalize_string(
+                            entry.get("usageControl")
+                        ),
+                        "earlyAccessEndsAt": _normalize_string(
+                            entry.get("earlyAccessEndsAt")
+                        ),
+                    }
+        except RateLimitError:
+            raise
+
+        if not enrichment:
+            return
+
+        for response in responses_by_model_id.values():
+            versions = response.get("modelVersions")
+            if not isinstance(versions, list):
+                continue
+            for version in versions:
+                if not isinstance(version, dict):
+                    continue
+                version_id = version.get("id")
+                if version_id not in enrichment:
+                    continue
+                extra = enrichment[version_id]
+                if extra.get("usageControl") and not version.get("usageControl"):
+                    version["usageControl"] = extra["usageControl"]
+                if extra.get("earlyAccessEndsAt") and not version.get(
+                    "earlyAccessEndsAt"
+                ):
+                    version["earlyAccessEndsAt"] = extra["earlyAccessEndsAt"]
+
+    @staticmethod
+    def _collect_hashes_from_response(response: Mapping) -> Dict[int, str]:
+        """Extract ``{version_id: sha256}`` from a model-level API response.
+
+        Returns an empty dict if the response structure is unexpected.
+        """
+        result: Dict[int, str] = {}
+        versions = response.get("modelVersions")
+        if not isinstance(versions, list):
+            return result
+        for entry in versions:
+            if not isinstance(entry, dict):
+                continue
+            version_id = _normalize_int(entry.get("id"))
+            if version_id is None:
+                continue
+            sha256 = ModelUpdateService._extract_sha256_from_version_entry(entry)
+            if sha256:
+                result[version_id] = sha256
+        return result
+
+    @staticmethod
+    def _extract_sha256_from_version_entry(entry: Mapping) -> Optional[str]:
+        """Return the SHA256 hash from the primary model file of a version entry."""
+        files = entry.get("files")
+        if not isinstance(files, list):
+            return None
+        for file_info in files:
+            if not isinstance(file_info, dict):
+                continue
+            if file_info.get("type") != "Model":
+                continue
+            primary = file_info.get("primary")
+            if primary is not True and str(primary).strip().lower() != "true":
+                continue
+            hashes = file_info.get("hashes")
+            if isinstance(hashes, dict):
+                sha256 = hashes.get("SHA256")
+                if sha256:
+                    return sha256
+        return None
+
     async def _fetch_model_versions_bulk(
         self,
         metadata_provider,
@@ -1134,6 +1269,7 @@ class ModelUpdateService:
             len(aggregated),
             provider_name,
         )
+        await self._enrich_version_entries(metadata_provider, aggregated)
         return aggregated
 
     async def _collect_local_versions(
@@ -1261,6 +1397,7 @@ class ModelUpdateService:
                     sort_index=sort_map.get(version_id, index),
                     early_access_ends_at=remote_version.early_access_ends_at,
                     is_early_access=remote_version.is_early_access,
+                    usage_control=remote_version.usage_control,
                 )
             )
 
