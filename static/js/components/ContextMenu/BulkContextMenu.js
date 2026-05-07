@@ -74,6 +74,34 @@ export class BulkContextMenu extends BaseContextMenu {
         if (setContentRatingItem) {
             setContentRatingItem.style.display = config.setContentRating ? 'flex' : 'none';
         }
+
+        const setFavoriteItem = this.menu.querySelector('[data-action="set-favorite"]');
+
+        if (setFavoriteItem && config.setFavorite) {
+            setFavoriteItem.style.display = 'flex';
+
+            const total = state.selectedModels.size;
+            const favoritedCount = this.countFavoritedInSelection();
+            const allFavorited = total > 0 && favoritedCount === total;
+
+            const icon = setFavoriteItem.querySelector('i');
+            const label = setFavoriteItem.querySelector('span');
+
+            if (allFavorited) {
+                if (icon) { icon.className = 'far fa-star'; }
+                if (label) { label.textContent = translate('loras.bulkOperations.unfavorite'); }
+            } else {
+                if (icon) { icon.className = 'fas fa-star'; }
+                if (label) {
+                    label.textContent = favoritedCount > 0
+                        ? translate('loras.bulkOperations.setFavoriteCount', { favorited: favoritedCount, total })
+                        : translate('loras.bulkOperations.setFavorite');
+                }
+            }
+        } else if (setFavoriteItem) {
+            setFavoriteItem.style.display = 'none';
+        }
+
         if (downloadMissingLorasItem) {
             // Only show for recipes page
             downloadMissingLorasItem.style.display = currentModelType === 'recipes' ? 'flex' : 'none';
@@ -138,6 +166,20 @@ export class BulkContextMenu extends BaseContextMenu {
         return count;
     }
 
+    countFavoritedInSelection() {
+        let count = 0;
+        for (const filePath of state.selectedModels) {
+            const escapedPath = window.CSS && typeof window.CSS.escape === 'function'
+                ? window.CSS.escape(filePath)
+                : filePath.replace(/["\\]/g, '\\$&');
+            const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
+            if (card && card.dataset.favorite === 'true') {
+                count++;
+            }
+        }
+        return count;
+    }
+
     showMenu(x, y, card) {
         this.updateMenuItemsForModelType();
         this.updateSelectedCountHeader();
@@ -185,6 +227,11 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();
                 break;
+            case 'set-favorite': {
+                const allFavorited = this.countFavoritedInSelection() === state.selectedModels.size;
+                bulkManager.setBulkFavorites(!allFavorited);
+                break;
+            }
             case 'download-missing-loras':
                 this.handleDownloadMissingLoras();
                 break;

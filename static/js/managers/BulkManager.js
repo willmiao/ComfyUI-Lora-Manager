@@ -3,7 +3,7 @@ import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax, getNSF
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
-import { RecipeSidebarApiClient } from '../api/recipeApi.js';
+import { RecipeSidebarApiClient, updateRecipeMetadata } from '../api/recipeApi.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
 import { BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
@@ -41,7 +41,9 @@ export class BulkManager {
                 autoOrganize: true,
                 deleteAll: true,
                 setContentRating: true,
-                skipMetadataRefresh: true
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true
             },
             [MODEL_TYPES.EMBEDDING]: {
                 addTags: true,
@@ -53,7 +55,9 @@ export class BulkManager {
                 autoOrganize: true,
                 deleteAll: true,
                 setContentRating: false,
-                skipMetadataRefresh: true
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true
             },
             [MODEL_TYPES.CHECKPOINT]: {
                 addTags: true,
@@ -65,7 +69,9 @@ export class BulkManager {
                 autoOrganize: true,
                 deleteAll: true,
                 setContentRating: true,
-                skipMetadataRefresh: true
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true
             },
             recipes: {
                 addTags: false,
@@ -77,7 +83,9 @@ export class BulkManager {
                 autoOrganize: false,
                 deleteAll: true,
                 setContentRating: false,
-                skipMetadataRefresh: false
+                skipMetadataRefresh: false,
+                setFavorite: true,
+                unfavorite: true
             }
         };
 
@@ -1087,6 +1095,60 @@ export class BulkManager {
             if (dropdown) {
                 dropdown.remove();
             }
+        }
+    }
+
+    async setBulkFavorites(value) {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
+            return;
+        }
+
+        const totalCount = state.selectedModels.size;
+        const isRecipesPage = state.currentPageType === 'recipes';
+
+        state.loadingManager.showSimpleLoading(
+            translate(value ? 'toast.models.bulkFavoriteUpdating' : 'toast.models.bulkUnfavoriteUpdating', { count: totalCount })
+        );
+        let cancelled = false;
+        state.loadingManager.showCancelButton(() => {
+            cancelled = true;
+        });
+
+        let successCount = 0;
+        let failureCount = 0;
+
+        try {
+            for (const filePath of state.selectedModels) {
+                if (cancelled) {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    break;
+                }
+                try {
+                    if (isRecipesPage) {
+                        await updateRecipeMetadata(filePath, { favorite: value });
+                    } else {
+                        const apiClient = getModelApiClient();
+                        await apiClient.saveModelMetadata(filePath, { favorite: value });
+                    }
+                    successCount++;
+                } catch (error) {
+                    failureCount++;
+                    console.error(`Failed to set favorite=${value} for ${filePath}:`, error);
+                }
+            }
+        } finally {
+            state.loadingManager?.hide?.();
+        }
+
+        if (successCount === totalCount) {
+            const toastKey = value ? 'modelCard.favorites.added' : 'modelCard.favorites.removed';
+            showToast(toastKey, {}, 'success');
+        } else if (successCount > 0) {
+            const toastKey = value ? 'toast.models.bulkFavoritePartialAdded' : 'toast.models.bulkFavoritePartialRemoved';
+            showToast(toastKey, { success: successCount, failed: failureCount }, 'warning');
+        } else {
+            showToast('toast.models.bulkFavoriteFailed', {}, 'error');
         }
     }
 
