@@ -114,7 +114,8 @@ describe('LoRA widget drag interactions', () => {
     dragEl.dispatchEvent(new PointerEvent('pointerup', { pointerId: 1 }));
     expect(document.body.classList.contains('lm-lora-strength-dragging')).toBe(false);
     expect(onDragEnd).toHaveBeenCalledTimes(1);
-    expect(renderSpy).toHaveBeenCalledWith(widget.value, widget);
+    // 454210a4 replaced renderFunction() with widget.value setter + widget.callback()
+    expect(widget.callback).toHaveBeenCalledWith(widget.value);
   });
 
   it('deletes the selected LoRA when backspace is pressed outside of strength inputs', async () => {
