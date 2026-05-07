@@ -193,6 +193,9 @@ class CivitaiBaseModelService:
             "zimageturbo": "ZIT",
             "zimagebase": "ZIB",
             "anima": "ANI",
+            "ernie": "ERNI",
+            "ernie turbo": "ETRB",
+            "nucleus": "NUCL",
             "svd": "SVD",
             "ltxv": "LTXV",
             "ltxv2": "LTV2",
@@ -418,6 +421,9 @@ class CivitaiBaseModelService:
                 "Kolors",
                 "NoobAI",
                 "Anima",
+                "Ernie",
+                "Ernie Turbo",
+                "Nucleus",
             ],
         }
 

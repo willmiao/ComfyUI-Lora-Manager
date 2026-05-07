@@ -178,5 +178,8 @@ SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS = frozenset(
         "Wan Video 2.5 I2V",
         "Hunyuan Video",
         "Anima",
+        "Ernie",
+        "Ernie Turbo",
+        "Nucleus",
     ]
 )
