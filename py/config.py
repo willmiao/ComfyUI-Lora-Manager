@@ -172,12 +172,108 @@ class Config:
         self.extra_unet_roots: List[str] = []
         self.extra_embeddings_roots: List[str] = []
         self.recipes_path: str = ""
+
+        # Load extra folder paths from active library settings before symlink scan
+        # so both primary and extra paths are discovered in a single pass.
+        if not standalone_mode:
+            self._load_extra_paths_from_settings()
+
         # Scan symbolic links during initialization
         self._initialize_symlink_mappings()
 
         if not standalone_mode:
             # Save the paths to settings.json when running in ComfyUI mode
             self.save_folder_paths_to_settings()
+
+    def _load_extra_paths_from_settings(self) -> None:
+        """Read extra folder paths from the active library and apply them.
+
+        Called during ``Config.__init__`` before the symlink scan so both primary and
+        extra paths are discovered in a single pass.  Mirrors the extra-path
+        portion of ``_apply_library_paths`` without replacing the primary roots
+        that were already resolved from ComfyUI's ``folder_paths``.
+        """
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            settings_manager = get_settings_manager()
+            library_name = settings_manager.get_active_library_name()
+            libraries = settings_manager.get_libraries()
+
+            if not library_name or library_name not in libraries:
+                return
+
+            library_config = libraries[library_name]
+            if not isinstance(library_config, dict):
+                return
+
+            extra_folder_paths = library_config.get("extra_folder_paths")
+            if not isinstance(extra_folder_paths, dict):
+                return
+
+            extra_lora = extra_folder_paths.get("loras", []) or []
+            extra_checkpoint = extra_folder_paths.get("checkpoints", []) or []
+            extra_unet = extra_folder_paths.get("unet", []) or []
+            extra_embedding = extra_folder_paths.get("embeddings", []) or []
+
+            if not any([extra_lora, extra_checkpoint, extra_unet, extra_embedding]):
+                return
+
+            filtered_extra_lora = self._filter_overlapping_extra_lora_paths(
+                self.loras_roots, extra_lora
+            )
+            self.extra_loras_roots = self._prepare_lora_paths(filtered_extra_lora)
+            (
+                _,
+                self.extra_checkpoints_roots,
+                self.extra_unet_roots,
+            ) = self._prepare_checkpoint_paths(extra_checkpoint, extra_unet)
+            self.extra_embeddings_roots = self._prepare_embedding_paths(
+                extra_embedding
+            )
+
+            recipes_path = library_config.get("recipes_path", "")
+            if isinstance(recipes_path, str) and recipes_path:
+                self.recipes_path = recipes_path
+
+            if self.extra_loras_roots:
+                logger.info(
+                    "Found extra LoRA roots:"
+                    + "\n - "
+                    + "\n - ".join(self.extra_loras_roots)
+                )
+            if self.extra_checkpoints_roots:
+                logger.info(
+                    "Found extra checkpoint roots:"
+                    + "\n - "
+                    + "\n - ".join(self.extra_checkpoints_roots)
+                )
+            if self.extra_unet_roots:
+                logger.info(
+                    "Found extra diffusion model roots:"
+                    + "\n - "
+                    + "\n - ".join(self.extra_unet_roots)
+                )
+            if self.extra_embeddings_roots:
+                logger.info(
+                    "Found extra embedding roots:"
+                    + "\n - "
+                    + "\n - ".join(self.extra_embeddings_roots)
+                )
+
+            logger.info(
+                "Applied library settings for '%s' with extra paths: loras=%s, "
+                "checkpoints=%s, embeddings=%s",
+                library_name,
+                extra_lora,
+                extra_checkpoint,
+                extra_embedding,
+            )
+
+        except Exception as exc:
+            logger.debug(
+                "Could not load extra paths from library settings: %s", exc
+            )
 
     def save_folder_paths_to_settings(self):
         """Persist ComfyUI-derived folder paths to the multi-library settings."""
