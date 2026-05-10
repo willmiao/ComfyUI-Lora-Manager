@@ -6,6 +6,7 @@ import { setSessionItem, removeSessionItem } from '../utils/storageHelpers.js';
 import { fetchRecipeDetails, updateRecipeMetadata } from '../api/recipeApi.js';
 import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
+import { openMediaViewer } from './shared/MediaViewer.js';
 
 const ALLOWED_GEN_PARAM_KEYS = new Set([
     'prompt',
@@ -112,6 +113,23 @@ class RecipeModal {
 
         // Set up document click handler to close edit fields
         document.addEventListener('click', (event) => {
+            const recipeModal = document.getElementById('recipeModal');
+            if (recipeModal && recipeModal.style.display !== 'none') {
+                const mediaEl = event.target.closest('.recipe-preview-media');
+                if (mediaEl && mediaEl.tagName) {
+                    event.stopPropagation();
+                    const isVideo = mediaEl.tagName === 'VIDEO';
+                    const url = mediaEl.src || mediaEl.currentSrc;
+                    if (url) {
+                        openMediaViewer(url, {
+                            type: isVideo ? 'video' : 'image',
+                            title: document.getElementById('recipeModalTitle')?.textContent || ''
+                        });
+                    }
+                    return;
+                }
+            }
+
             // Handle title edit
             const titleEditor = document.getElementById('recipeTitleEditor');
             if (titleEditor && titleEditor.classList.contains('active') &&

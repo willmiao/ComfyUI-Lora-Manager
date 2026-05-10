@@ -17,6 +17,7 @@ import {
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
 import { getShowcaseUrl } from '../../../utils/civitaiUtils.js';
+import { openMediaViewer } from '../MediaViewer.js';
 
 export const showcaseListenerMetrics = {
     wheelListeners: 0,
@@ -639,6 +640,27 @@ export function initShowcaseContent(carousel) {
     initMetadataPanelHandlers(carousel);
     initMediaControlHandlers(carousel);
     positionAllMediaControls(carousel);
+
+    // Click-to-view: open full-size media viewer when clicking showcase images/videos
+    const viewerElements = carousel.querySelectorAll('.media-wrapper img, .media-wrapper video');
+    const allItems = [];
+    const elementIndexMap = new Map();
+    viewerElements.forEach((el) => {
+        const isVideo = el.tagName === 'VIDEO';
+        const url = el.src || el.dataset.localSrc || el.dataset.remoteSrc;
+        if (url) {
+            elementIndexMap.set(el, allItems.length);
+            allItems.push({ url, type: isVideo ? 'video' : 'image' });
+        }
+    });
+    viewerElements.forEach((mediaEl) => {
+        const idx = elementIndexMap.get(mediaEl);
+        if (idx === undefined) return;
+        mediaEl.addEventListener('click', (e) => {
+            e.stopPropagation();
+            openMediaViewer(allItems, idx);
+        });
+    });
 
     // Bind scroll-indicator click events
     bindScrollIndicatorEvents(carousel);

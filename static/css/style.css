@@ -39,6 +39,7 @@
 @import 'components/keyboard-nav.css'; /* Add keyboard navigation component */
 @import 'components/statistics.css'; /* Add statistics component */
 @import 'components/sidebar.css'; /* Add sidebar component */
+@import 'components/media-viewer.css';
 
 .initialization-notice {
     display: flex;

@@ -1,0 +1,124 @@
+.media-viewer-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.media-viewer-overlay.active {
+  background: rgba(0, 0, 0, 0.92);
+}
+
+.media-viewer-close {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  font-size: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10001;
+  transition: background 0.2s ease;
+  opacity: 0;
+}
+
+.media-viewer-overlay.active .media-viewer-close {
+  opacity: 1;
+}
+
+.media-viewer-close:hover {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.media-viewer-content-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 95vh;
+  cursor: default;
+}
+
+.media-viewer-media {
+  display: block;
+  max-width: 90vw;
+  max-height: 85vh;
+  object-fit: contain;
+  border-radius: 4px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+}
+
+.media-viewer-video {
+  max-height: 80vh;
+}
+
+.media-viewer-counter {
+  margin-top: 8px;
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.85em;
+  text-align: center;
+  min-height: 1.2em;
+}
+
+.media-viewer-title {
+  margin-top: 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 0.9em;
+  text-align: center;
+  max-width: 90vw;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.media-viewer-nav {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 80px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.06);
+  border: none;
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 10001;
+  opacity: 0;
+  transition: opacity 0.2s ease, background 0.2s ease;
+}
+
+.media-viewer-overlay.active .media-viewer-nav {
+  opacity: 1;
+}
+
+.media-viewer-nav:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.media-viewer-prev {
+  left: 16px;
+}
+
+.media-viewer-next {
+  right: 16px;
+}
