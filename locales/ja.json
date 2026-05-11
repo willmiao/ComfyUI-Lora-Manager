@@ -692,6 +692,7 @@
             "unfavorite": "お気に入りから削除",
             "deleteAll": "選択したものを削除",
             "downloadMissingLoras": "不足している LoRA をダウンロード",
+            "downloadExamples": "例画像をダウンロード",
             "clear": "選択をクリア",
             "skipMetadataRefreshCount": "スキップ（{count}モデル）",
             "resumeMetadataRefreshCount": "再開（{count}モデル）",

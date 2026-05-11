@@ -692,6 +692,7 @@
             "unfavorite": "Quitar de favoritos",
             "deleteAll": "Eliminar seleccionados",
             "downloadMissingLoras": "Descargar LoRAs faltantes",
+            "downloadExamples": "Descargar imágenes de ejemplo",
             "clear": "Limpiar selección",
             "skipMetadataRefreshCount": "Omitir（{count} modelos）",
             "resumeMetadataRefreshCount": "Reanudar（{count} modelos）",

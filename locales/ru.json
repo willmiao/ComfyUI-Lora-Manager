@@ -692,6 +692,7 @@
             "unfavorite": "Удалить из избранного",
             "deleteAll": "Удалить выбранные",
             "downloadMissingLoras": "Скачать отсутствующие LoRAs",
+            "downloadExamples": "Загрузить примеры изображений",
             "clear": "Очистить выбор",
             "skipMetadataRefreshCount": "Пропустить（{count} моделей）",
             "resumeMetadataRefreshCount": "Возобновить（{count} моделей）",

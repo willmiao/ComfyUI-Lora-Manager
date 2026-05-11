@@ -692,6 +692,7 @@
             "unfavorite": "Remove from Favorites",
             "deleteAll": "Delete Selected",
             "downloadMissingLoras": "Download Missing LoRAs",
+            "downloadExamples": "Download Example Images",
             "clear": "Clear Selection",
             "skipMetadataRefreshCount": "Skip ({count} models)",
             "resumeMetadataRefreshCount": "Resume ({count} models)",

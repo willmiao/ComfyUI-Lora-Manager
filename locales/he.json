@@ -692,6 +692,7 @@
             "unfavorite": "הסר ממועדפים",
             "deleteAll": "מחק נבחרים",
             "downloadMissingLoras": "הורדת LoRAs חסרים",
+            "downloadExamples": "הורד תמונות דוגמה",
             "clear": "נקה בחירה",
             "skipMetadataRefreshCount": "דילוג（{count} מודלים）",
             "resumeMetadataRefreshCount": "המשך（{count} מודלים）",

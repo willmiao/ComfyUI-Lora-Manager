@@ -692,6 +692,7 @@
             "unfavorite": "즐겨찾기 해제",
             "deleteAll": "선택된 항목 삭제",
             "downloadMissingLoras": "누락된 LoRA 다운로드",
+            "downloadExamples": "예시 이미지 다운로드",
             "clear": "선택 지우기",
             "skipMetadataRefreshCount": "건너뛰기（{count}개 모델）",
             "resumeMetadataRefreshCount": "재개（{count}개 모델）",

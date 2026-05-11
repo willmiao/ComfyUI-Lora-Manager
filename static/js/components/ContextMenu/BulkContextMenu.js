@@ -4,6 +4,7 @@ import { bulkManager } from '../../managers/BulkManager.js';
 import { updateElementText, translate } from '../../utils/i18nHelpers.js';
 import { bulkMissingLoraDownloadManager } from '../../managers/BulkMissingLoraDownloadManager.js';
 import { showToast } from '../../utils/uiHelpers.js';
+import { getModelApiClient } from '../../api/modelApiFactory.js';
 
 export class BulkContextMenu extends BaseContextMenu {
     constructor() {
@@ -105,6 +106,13 @@ export class BulkContextMenu extends BaseContextMenu {
         if (downloadMissingLorasItem) {
             // Only show for recipes page
             downloadMissingLorasItem.style.display = currentModelType === 'recipes' ? 'flex' : 'none';
+        }
+
+        const downloadExampleImagesItem = this.menu.querySelector('[data-action="download-example-images"]');
+        if (downloadExampleImagesItem) {
+            // Show on model pages (loras, checkpoints, embeddings), hide on recipes
+            const modelPages = ['loras', 'checkpoints', 'embeddings'];
+            downloadExampleImagesItem.style.display = modelPages.includes(currentModelType) ? 'flex' : 'none';
         }
 
         const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');
@@ -235,6 +243,9 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'download-missing-loras':
                 this.handleDownloadMissingLoras();
                 break;
+            case 'download-example-images':
+                this.handleDownloadExampleImages();
+                break;
             case 'clear':
                 bulkManager.clearSelection();
                 break;
@@ -276,5 +287,32 @@ export class BulkContextMenu extends BaseContextMenu {
         }
 
         await bulkMissingLoraDownloadManager.downloadMissingLoras(selectedRecipes);
+    }
+
+    async handleDownloadExampleImages() {
+        if (state.selectedModels.size === 0) {
+            return;
+        }
+
+        const hashes = new Set();
+        for (const filePath of state.selectedModels) {
+            const escapedPath = CSS.escape(filePath);
+            const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
+            if (card?.dataset?.sha256) {
+                hashes.add(card.dataset.sha256);
+            }
+        }
+
+        if (hashes.size === 0) {
+            showToast('No valid model hashes found in selection', {}, 'warning');
+            return;
+        }
+
+        try {
+            const apiClient = getModelApiClient();
+            await apiClient.downloadExampleImages([...hashes]);
+        } catch (error) {
+            console.error('Bulk download example images failed:', error);
+        }
     }
 }

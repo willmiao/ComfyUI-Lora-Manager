@@ -692,6 +692,7 @@
             "unfavorite": "取消收藏",
             "deleteAll": "删除已选",
             "downloadMissingLoras": "下载缺失的 LoRAs",
+            "downloadExamples": "下载示例图片",
             "clear": "清除选择",
             "skipMetadataRefreshCount": "跳过（{count} 个模型）",
             "resumeMetadataRefreshCount": "恢复（{count} 个模型）",
