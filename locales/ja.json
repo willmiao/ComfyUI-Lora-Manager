@@ -696,6 +696,14 @@
             "clear": "選択をクリア",
             "skipMetadataRefreshCount": "スキップ（{count}モデル）",
             "resumeMetadataRefreshCount": "再開（{count}モデル）",
+            "sendToWorkflow": "ワークフローに送信",
+            "sections": {
+                "workflow": "ワークフロー",
+                "metadata": "メタデータ",
+                "attributes": "属性",
+                "organize": "整理",
+                "download": "ダウンロード"
+            },
             "autoOrganizeProgress": {
                 "initializing": "自動整理を初期化中...",
                 "starting": "{type}の自動整理を開始中...",

@@ -696,6 +696,14 @@
             "clear": "선택 지우기",
             "skipMetadataRefreshCount": "건너뛰기（{count}개 모델）",
             "resumeMetadataRefreshCount": "재개（{count}개 모델）",
+            "sendToWorkflow": "워크플로우로 보내기",
+            "sections": {
+                "workflow": "워크플로우",
+                "metadata": "메타데이터",
+                "attributes": "속성",
+                "organize": "정리",
+                "download": "다운로드"
+            },
             "autoOrganizeProgress": {
                 "initializing": "자동 정리 초기화 중...",
                 "starting": "{type}에 대한 자동 정리 시작...",

@@ -696,6 +696,14 @@
             "clear": "清除選取",
             "skipMetadataRefreshCount": "跳過（{count} 個模型）",
             "resumeMetadataRefreshCount": "恢復（{count} 個模型）",
+            "sendToWorkflow": "發送到工作流",
+            "sections": {
+                "workflow": "工作流",
+                "metadata": "元數據",
+                "attributes": "屬性",
+                "organize": "整理",
+                "download": "下載"
+            },
             "autoOrganizeProgress": {
                 "initializing": "正在初始化自動整理...",
                 "starting": "正在開始自動整理 {type}...",

@@ -41,6 +41,63 @@
     text-align: center;
 }
 
+/* Section Headers */
+.context-menu-section-header {
+    padding: 6px 12px 2px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-muted);
+    cursor: default;
+    user-select: none;
+}
+
+/* Submenu */
+.context-menu-item.has-submenu {
+    position: relative;
+    justify-content: space-between;
+}
+
+.submenu-arrow {
+    margin-left: auto;
+    font-size: 10px;
+    width: auto !important;
+}
+
+.context-submenu {
+    position: absolute;
+    left: calc(100% - 4px);
+    top: -1px;
+    display: none;
+    background: var(--lora-surface);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    padding: 0;
+    min-width: 200px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1001;
+    backdrop-filter: blur(10px);
+}
+
+.context-submenu .context-menu-item {
+    white-space: nowrap;
+    margin: 0;
+}
+
+.context-submenu .context-menu-item:first-child {
+    padding-top: 9px;
+}
+
+.context-submenu .context-menu-item:last-child {
+    padding-bottom: 9px;
+}
+
+.context-submenu.flip-left {
+    left: auto;
+    right: 100%;
+}
+
 /* NSFW Level Selector */
 .nsfw-level-selector {
     position: fixed;

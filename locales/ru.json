@@ -696,6 +696,14 @@
             "clear": "Очистить выбор",
             "skipMetadataRefreshCount": "Пропустить（{count} моделей）",
             "resumeMetadataRefreshCount": "Возобновить（{count} моделей）",
+            "sendToWorkflow": "Отправить в Workflow",
+            "sections": {
+                "workflow": "Workflow",
+                "metadata": "Метаданные",
+                "attributes": "Атрибуты",
+                "organize": "Организовать",
+                "download": "Скачать"
+            },
             "autoOrganizeProgress": {
                 "initializing": "Инициализация автоматической организации...",
                 "starting": "Запуск автоматической организации для {type}...",

@@ -696,6 +696,14 @@
             "clear": "Limpiar selección",
             "skipMetadataRefreshCount": "Omitir（{count} modelos）",
             "resumeMetadataRefreshCount": "Reanudar（{count} modelos）",
+            "sendToWorkflow": "Enviar al workflow",
+            "sections": {
+                "workflow": "Workflow",
+                "metadata": "Metadatos",
+                "attributes": "Atributos",
+                "organize": "Organizar",
+                "download": "Descargar"
+            },
             "autoOrganizeProgress": {
                 "initializing": "Inicializando auto-organización...",
                 "starting": "Iniciando auto-organización para {type}...",

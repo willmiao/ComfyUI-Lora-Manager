@@ -696,6 +696,14 @@
             "clear": "נקה בחירה",
             "skipMetadataRefreshCount": "דילוג（{count} מודלים）",
             "resumeMetadataRefreshCount": "המשך（{count} מודלים）",
+            "sendToWorkflow": "שלח ל-Workflow",
+            "sections": {
+                "workflow": "Workflow",
+                "metadata": "מטא-נתונים",
+                "attributes": "מאפיינים",
+                "organize": "ארגן",
+                "download": "הורדה"
+            },
             "autoOrganizeProgress": {
                 "initializing": "מאתחל ארגון אוטומטי...",
                 "starting": "מתחיל ארגון אוטומטי עבור {type}...",

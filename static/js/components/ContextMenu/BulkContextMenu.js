@@ -51,6 +51,14 @@ export class BulkContextMenu extends BaseContextMenu {
         if (copyAllItem) {
             copyAllItem.style.display = config.copyAll ? 'flex' : 'none';
         }
+
+        // Submenu parent visibility
+        const sendToWorkflowSubmenu = this.menu.querySelector('[data-has-submenu="send-to-workflow"]');
+        if (sendToWorkflowSubmenu) {
+            const hasWorkflowActions = config.sendToWorkflow || config.copyAll;
+            sendToWorkflowSubmenu.style.display = hasWorkflowActions ? 'flex' : 'none';
+        }
+
         if (refreshAllItem) {
             refreshAllItem.style.display = config.refreshAll ? 'flex' : 'none';
         }
@@ -148,6 +156,14 @@ export class BulkContextMenu extends BaseContextMenu {
                 );
             }
         }
+
+        // Hide empty sections
+        this.menu.querySelectorAll('.context-menu-section').forEach(section => {
+            const items = Array.from(section.querySelectorAll('.context-menu-item'))
+                .filter(item => !item.closest('.context-submenu'));
+            const allHidden = items.length > 0 && items.every(item => item.style.display === 'none');
+            section.style.display = allHidden ? 'none' : '';
+        });
     }
 
     updateSelectedCountHeader() {

@@ -53,52 +53,74 @@
         <span>{{ t('loras.bulkOperations.selected', {'count': 0}) }}</span>
     </div>
     <div class="context-menu-separator"></div>
-    <div class="context-menu-item" data-action="refresh-all">
-        <i class="fas fa-sync-alt"></i> <span>{{ t('loras.bulkOperations.refreshAll') }}</span>
+    <div class="context-menu-section" data-section="workflow">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.workflow') }}</div>
+        <div class="context-menu-item has-submenu" data-has-submenu="send-to-workflow">
+            <i class="fas fa-paper-plane"></i>
+            <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
+            <i class="fas fa-chevron-right submenu-arrow"></i>
+            <div class="context-submenu">
+                <div class="context-menu-item" data-action="send-to-workflow-append">
+                    <i class="fas fa-paper-plane"></i> <span>{{ t('loras.contextMenu.sendToWorkflowAppend') }}</span>
+                </div>
+                <div class="context-menu-item" data-action="send-to-workflow-replace">
+                    <i class="fas fa-exchange-alt"></i> <span>{{ t('loras.contextMenu.sendToWorkflowReplace') }}</span>
+                </div>
+                <div class="context-menu-item" data-action="copy-all">
+                    <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
+                </div>
+            </div>
+        </div>
     </div>
-    <div class="context-menu-item" data-action="check-updates">
-        <i class="fas fa-bell"></i> <span>{{ t('loras.bulkOperations.checkUpdates') }}</span>
+    <div class="context-menu-section" data-section="metadata">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.metadata') }}</div>
+        <div class="context-menu-item" data-action="refresh-all">
+            <i class="fas fa-sync-alt"></i> <span>{{ t('loras.bulkOperations.refreshAll') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="check-updates">
+            <i class="fas fa-bell"></i> <span>{{ t('loras.bulkOperations.checkUpdates') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="skip-metadata-refresh">
+            <i class="fas fa-ban"></i> <span>{{ t('loras.bulkOperations.skipMetadataRefresh') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="resume-metadata-refresh">
+            <i class="fas fa-redo"></i> <span>{{ t('loras.bulkOperations.resumeMetadataRefresh') }}</span>
+        </div>
     </div>
-    <div class="context-menu-item" data-action="copy-all">
-        <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
+    <div class="context-menu-section" data-section="attributes">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.attributes') }}</div>
+        <div class="context-menu-item" data-action="add-tags">
+            <i class="fas fa-tags"></i> <span>{{ t('loras.bulkOperations.addTags') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="set-base-model">
+            <i class="fas fa-layer-group"></i> <span>{{ t('loras.bulkOperations.setBaseModel') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="set-favorite">
+            <i class="fas fa-star"></i> <span>{{ t('loras.bulkOperations.setFavorite') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="set-content-rating">
+            <i class="fas fa-exclamation-triangle"></i> <span>{{ t('loras.bulkOperations.setContentRating') }}</span>
+        </div>
     </div>
-    <div class="context-menu-item" data-action="send-to-workflow-append">
-        <i class="fas fa-paper-plane"></i> <span>{{ t('loras.contextMenu.sendToWorkflowAppend') }}</span>
+    <div class="context-menu-section" data-section="organize">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.organize') }}</div>
+        <div class="context-menu-item" data-action="auto-organize">
+            <i class="fas fa-magic"></i> <span>{{ t('loras.bulkOperations.autoOrganize') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="move-all">
+            <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
+        </div>
     </div>
-    <div class="context-menu-item" data-action="send-to-workflow-replace">
-        <i class="fas fa-exchange-alt"></i> <span>{{ t('loras.contextMenu.sendToWorkflowReplace') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="auto-organize">
-        <i class="fas fa-magic"></i> <span>{{ t('loras.bulkOperations.autoOrganize') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="download-example-images">
-        <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadExamples') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="add-tags">
-        <i class="fas fa-tags"></i> <span>{{ t('loras.bulkOperations.addTags') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="set-base-model">
-        <i class="fas fa-layer-group"></i> <span>{{ t('loras.bulkOperations.setBaseModel') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="set-favorite">
-        <i class="fas fa-star"></i> <span>{{ t('loras.bulkOperations.setFavorite') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="set-content-rating">
-        <i class="fas fa-exclamation-triangle"></i> <span>{{ t('loras.bulkOperations.setContentRating') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="skip-metadata-refresh">
-        <i class="fas fa-ban"></i> <span>{{ t('loras.bulkOperations.skipMetadataRefresh') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="resume-metadata-refresh">
-        <i class="fas fa-redo"></i> <span>{{ t('loras.bulkOperations.resumeMetadataRefresh') }}</span>
+    <div class="context-menu-section" data-section="download">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.download') }}</div>
+        <div class="context-menu-item" data-action="download-example-images">
+            <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadExamples') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="download-missing-loras">
+            <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingLoras') }}</span>
+        </div>
     </div>
     <div class="context-menu-separator"></div>
-    <div class="context-menu-item" data-action="download-missing-loras">
-        <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingLoras') }}</span>
-    </div>
-    <div class="context-menu-item" data-action="move-all">
-        <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
-    </div>
     <div class="context-menu-item delete-item" data-action="delete-all">
         <i class="fas fa-trash"></i> <span>{{ t('loras.bulkOperations.deleteAll') }}</span>
     </div>
