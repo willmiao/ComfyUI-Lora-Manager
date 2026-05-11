@@ -640,8 +640,6 @@
             },
             "refresh": {
                 "title": "Actualiser la liste des modèles",
-                "quick": "Synchroniser les changements",
-                "quickTooltip": "Analyse les nouveaux fichiers de modèle ou les fichiers manquants pour garder la liste à jour.",
                 "full": "Reconstruire le cache",
                 "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers metadata — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles."
             },
@@ -816,8 +814,6 @@
             },
             "refresh": {
                 "title": "Actualiser la liste des recipes",
-                "quick": "Synchroniser les changements",
-                "quickTooltip": "Synchroniser les changements - actualisation rapide sans reconstruire le cache",
                 "full": "Reconstruire le cache",
                 "fullTooltip": "Reconstruire le cache - rescan complet de tous les fichiers de recipes"
             },

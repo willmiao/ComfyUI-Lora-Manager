@@ -640,8 +640,6 @@
             },
             "refresh": {
                 "title": "Refresh model list",
-                "quick": "Sync Changes",
-                "quickTooltip": "Scan for new or missing model files so the list stays current.",
                 "full": "Rebuild Cache",
                 "fullTooltip": "Reload all model details from metadata files—use if the library looks out of date or after manual edits."
             },
@@ -816,8 +814,6 @@
             },
             "refresh": {
                 "title": "Refresh recipe list",
-                "quick": "Sync Changes",
-                "quickTooltip": "Sync changes - quick refresh without rebuilding cache",
                 "full": "Rebuild Cache",
                 "fullTooltip": "Rebuild cache - full rescan of all recipe files"
             },

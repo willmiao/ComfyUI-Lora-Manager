@@ -166,17 +166,6 @@ export class PageControls {
             });
         });
         
-        // Handle quick refresh option
-        const quickRefreshOption = document.querySelector('[data-action="quick-refresh"]');
-        if (quickRefreshOption) {
-            quickRefreshOption.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.refreshModels(false);
-                // Close the dropdown
-                document.querySelector('.dropdown-group.active')?.classList.remove('active');
-            });
-        }
-        
         // Handle full rebuild option
         const fullRebuildOption = document.querySelector('[data-action="full-rebuild"]');
         if (fullRebuildOption) {

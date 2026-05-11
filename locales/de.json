@@ -640,8 +640,6 @@
             },
             "refresh": {
                 "title": "Modelliste aktualisieren",
-                "quick": "Änderungen synchronisieren",
-                "quickTooltip": "Nach neuen oder fehlenden Modelldateien suchen, damit die Liste aktuell bleibt.",
                 "full": "Cache neu aufbauen",
                 "fullTooltip": "Alle Modelldetails aus Metadatendateien neu laden – nutzen, wenn die Bibliothek veraltet wirkt oder nach manuellen Änderungen."
             },
@@ -816,8 +814,6 @@
             },
             "refresh": {
                 "title": "Rezeptliste aktualisieren",
-                "quick": "Änderungen synchronisieren",
-                "quickTooltip": "Änderungen synchronisieren - schnelle Aktualisierung ohne Cache-Neubau",
                 "full": "Cache neu aufbauen",
                 "fullTooltip": "Cache neu aufbauen - vollständiger Rescan aller Rezeptdateien"
             },

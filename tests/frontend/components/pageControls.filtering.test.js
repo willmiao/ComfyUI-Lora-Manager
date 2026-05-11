@@ -135,7 +135,6 @@ function renderControlsDom(pageKey) {
             <button data-action="refresh" class="dropdown-main"></button>
             <button class="dropdown-toggle"></button>
             <div class="dropdown-menu">
-              <div class="dropdown-item" data-action="quick-refresh"></div>
               <div class="dropdown-item" data-action="full-rebuild"></div>
             </div>
           </div>

@@ -286,16 +286,6 @@ class RecipeManager {
             });
         });
 
-        // Handle quick refresh option (Sync Changes)
-        const quickRefreshOption = document.querySelector('[data-action="quick-refresh"]');
-        if (quickRefreshOption) {
-            quickRefreshOption.addEventListener('click', (e) => {
-                e.stopPropagation();
-                this.pageControls.refreshModels(false);
-                this.closeDropdowns();
-            });
-        }
-
         // Handle full rebuild option (Rebuild Cache)
         const fullRebuildOption = document.querySelector('[data-action="full-rebuild"]');
         if (fullRebuildOption) {
