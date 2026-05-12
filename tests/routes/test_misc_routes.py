@@ -903,7 +903,7 @@ class FakeDownloadHistoryService:
             (model_type, version_id, model_id, source, file_path)
         )
 
-    async def mark_not_downloaded(self, model_type, version_id):
+    async def mark_as_deleted(self, model_type, version_id):
         self.marked_not_downloaded.append((model_type, version_id))
 
 

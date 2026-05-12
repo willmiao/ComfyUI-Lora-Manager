@@ -30,7 +30,7 @@ async def test_download_history_roundtrip_and_manual_override(tmp_path: Path) ->
     assert await service.has_been_downloaded("lora", 101) is True
     assert await service.get_downloaded_version_ids("lora", 11) == [101]
 
-    await service.mark_not_downloaded("lora", 101)
+    await service.mark_as_deleted("lora", 101)
     assert await service.has_been_downloaded("lora", 101) is False
     assert await service.get_downloaded_version_ids("lora", 11) == []
 

@@ -79,7 +79,7 @@ class FakeDownloadHistoryService:
     async def mark_downloaded(self, *_args, **_kwargs):
         return None
 
-    async def mark_not_downloaded(self, *_args, **_kwargs):
+    async def mark_as_deleted(self, *_args, **_kwargs):
         return None
 
 

@@ -2065,7 +2065,7 @@ class ModelLibraryHandler:
                     file_path=file_path if isinstance(file_path, str) else None,
                 )
             else:
-                await history_service.mark_not_downloaded(model_type, model_version_id)
+                await history_service.mark_as_deleted(model_type, model_version_id)
 
             return web.json_response(
                 {
@@ -2151,7 +2151,7 @@ class ModelLibraryHandler:
                     await persist()
 
             history_service = await self._get_download_history_service()
-            await history_service.mark_not_downloaded(found_type, model_version_id)
+            await history_service.mark_as_deleted(found_type, model_version_id)
 
             return web.json_response(
                 {

@@ -206,7 +206,7 @@ class DownloadedVersionHistoryService:
             )
             conn.commit()
 
-    async def mark_not_downloaded(self, model_type: str, version_id: int) -> None:
+    async def mark_as_deleted(self, model_type: str, version_id: int) -> None:
         normalized_type = _normalize_model_type(model_type)
         normalized_version_id = _normalize_int(version_id)
         if normalized_type is None or normalized_version_id is None:
