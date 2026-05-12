@@ -70,6 +70,10 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
         "POST", "/api/lm/recipes/batch-import/directory", "start_directory_import"
     ),
     RouteDefinition("POST", "/api/lm/recipes/browse-directory", "browse_directory"),
+    RouteDefinition(
+        "GET", "/api/lm/recipes/check-image-exists", "check_image_exists"
+    ),
+    RouteDefinition("GET", "/api/lm/recipes/import-from-url", "import_from_url"),
 )
 
 

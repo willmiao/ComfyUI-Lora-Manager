@@ -38,6 +38,7 @@ class PersistentRecipeCache:
         "json_path",
         "title",
         "folder",
+        "source_path",
         "base_model",
         "fingerprint",
         "created_date",
@@ -334,6 +335,7 @@ class PersistentRecipeCache:
                             json_path TEXT,
                             title TEXT,
                             folder TEXT,
+                            source_path TEXT,
                             base_model TEXT,
                             fingerprint TEXT,
                             created_date REAL,
@@ -358,6 +360,13 @@ class PersistentRecipeCache:
                         );
                         """
                     )
+                    # Migration: add source_path column to existing databases
+                    try:
+                        conn.execute(
+                            "ALTER TABLE recipes ADD COLUMN source_path TEXT"
+                        )
+                    except Exception:
+                        pass  # column already exists
                     conn.commit()
                 self._schema_initialized = True
             except Exception as exc:
@@ -406,6 +415,7 @@ class PersistentRecipeCache:
             json_path,
             recipe.get("title"),
             recipe.get("folder"),
+            recipe.get("source_path"),
             recipe.get("base_model"),
             recipe.get("fingerprint"),
             float(recipe.get("created_date") or 0.0),
@@ -456,6 +466,7 @@ class PersistentRecipeCache:
             "file_path": row["file_path"] or "",
             "title": row["title"] or "",
             "folder": row["folder"] or "",
+            "source_path": row["source_path"] or "",
             "base_model": row["base_model"] or "",
             "fingerprint": row["fingerprint"] or "",
             "created_date": row["created_date"] or 0.0,

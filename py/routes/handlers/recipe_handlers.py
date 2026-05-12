@@ -93,6 +93,8 @@ class RecipeHandlerSet:
             "cancel_batch_import": self.batch_import.cancel_batch_import,
             "start_directory_import": self.batch_import.start_directory_import,
             "browse_directory": self.batch_import.browse_directory,
+            "check_image_exists": self.management.check_image_exists,
+            "import_from_url": self.management.import_from_url,
         }
 
 
@@ -541,7 +543,7 @@ class RecipeQueryHandler:
                     )
                     response_data.append(
                         {
-                            "type": "source_url",
+                            "type": "source_path",
                             "fingerprint": url,
                             "count": len(recipes),
                             "recipes": recipes,
@@ -772,12 +774,8 @@ class RecipeManagementHandler:
                 "base_model": params.get("base_model", "") or "",
                 "loras": lora_entries,
                 "gen_params": gen_params_request or {},
-                "source_url": image_url,
+                "source_path": params.get("source_path") or image_url,
             }
-
-            source_path = params.get("source_path")
-            if source_path:
-                metadata["source_path"] = source_path
 
             # Checkpoint handling
             if checkpoint_entry:
@@ -1288,6 +1286,170 @@ class RecipeManagementHandler:
             )
 
         return ""
+
+    async def check_image_exists(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            image_ids_raw = request.query.get("image_ids", "")
+            if not image_ids_raw:
+                return web.json_response({"success": True, "results": {}})
+
+            requested_ids = set()
+            for raw in image_ids_raw.split(","):
+                stripped = raw.strip()
+                if stripped and stripped.isdigit():
+                    requested_ids.add(stripped)
+
+            if not requested_ids:
+                return web.json_response({"success": True, "results": {}})
+
+            cache = await recipe_scanner.get_cached_data()
+
+            # Build lookup: image_id -> recipe_id from stored source_path
+            image_to_recipe = {}
+            for recipe in getattr(cache, "raw_data", []):
+                source = recipe.get("source_path")
+                if not source:
+                    continue
+                image_id = extract_civitai_image_id(source)
+                if image_id and image_id not in image_to_recipe:
+                    image_to_recipe[image_id] = recipe.get("id")
+
+            results = {}
+            for img_id in requested_ids:
+                recipe_id = image_to_recipe.get(img_id)
+                results[img_id] = {
+                    "in_library": recipe_id is not None,
+                    "recipe_id": recipe_id,
+                }
+
+            return web.json_response({"success": True, "results": results})
+        except Exception as exc:
+            self._logger.error(
+                "Error checking image existence: %s", exc, exc_info=True
+            )
+            return web.json_response({"error": str(exc)}, status=500)
+
+    async def import_from_url(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            image_url = request.query.get("image_url")
+            if not image_url:
+                raise RecipeValidationError("Missing required field: image_url")
+
+            image_id = extract_civitai_image_id(image_url)
+            if not image_id:
+                raise RecipeValidationError(
+                    "Could not extract Civitai image ID from URL"
+                )
+
+            # Check for duplicate
+            cache = await recipe_scanner.get_cached_data()
+            for recipe in getattr(cache, "raw_data", []):
+                source = recipe.get("source_path")
+                if source:
+                    existing_id = extract_civitai_image_id(source)
+                    if existing_id == image_id:
+                        return web.json_response({
+                            "success": True,
+                            "recipe_id": recipe.get("id"),
+                            "name": recipe.get("title", ""),
+                            "already_exists": True,
+                        })
+
+            # Download image and extract metadata
+            image_bytes, extension, civitai_meta = (
+                await self._download_remote_media(image_url)
+            )
+
+            # Extract embedded EXIF metadata
+            embedded_gen_params = {}
+            try:
+                with tempfile.NamedTemporaryFile(
+                    suffix=extension, delete=False
+                ) as temp_img:
+                    temp_img.write(image_bytes)
+                    temp_img_path = temp_img.name
+
+                try:
+                    raw_embedded = ExifUtils.extract_image_metadata(temp_img_path)
+                    if raw_embedded:
+                        parser = (
+                            self._analysis_service._recipe_parser_factory.create_parser(
+                                raw_embedded
+                            )
+                        )
+                        if parser:
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_embedded, recipe_scanner=recipe_scanner
+                            )
+                            if parsed_embedded and "gen_params" in parsed_embedded:
+                                embedded_gen_params = parsed_embedded["gen_params"]
+                finally:
+                    if os.path.exists(temp_img_path):
+                        os.unlink(temp_img_path)
+            except Exception as exc:
+                self._logger.warning(
+                    "Failed to extract embedded metadata: %s", exc
+                )
+
+            # Build metadata
+            metadata: Dict[str, Any] = {
+                "base_model": "",
+                "loras": [],
+                "gen_params": embedded_gen_params or {},
+                "source_path": image_url,
+            }
+
+            # Enrich via Civitai API
+            civitai_client = self._civitai_client_getter()
+            await RecipeEnricher.enrich_recipe(
+                recipe=metadata,
+                civitai_client=civitai_client,
+                request_params={},
+            )
+
+            # Auto-generate name from prompt or fallback
+            prompt = (
+                metadata.get("gen_params", {}).get("prompt")
+                or metadata.get("gen_params", {}).get("positivePrompt")
+                or ""
+            )
+            if prompt:
+                name = " ".join(str(prompt).split()[:10])
+            else:
+                name = f"Civitai Image {image_id}"
+
+            # Parse tags from params if available
+            tags = self._parse_tags(request.query.get("tags"))
+
+            result = await self._persistence_service.save_recipe(
+                recipe_scanner=recipe_scanner,
+                image_bytes=image_bytes,
+                image_base64=None,
+                name=name,
+                tags=tags,
+                metadata=metadata,
+                extension=extension,
+            )
+            return web.json_response(result.payload, status=result.status)
+        except RecipeValidationError as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        except RecipeDownloadError as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error(
+                "Error importing recipe from URL: %s", exc, exc_info=True
+            )
+            return web.json_response({"error": str(exc)}, status=500)
 
 
 class RecipeAnalysisHandler:

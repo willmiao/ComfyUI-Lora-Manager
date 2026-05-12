@@ -224,7 +224,7 @@ class BatchImportService:
                 return False
 
             for recipe in getattr(cache, "raw_data", []):
-                source_path = recipe.get("source_path") or recipe.get("source_url")
+                source_path = recipe.get("source_path")
                 if source_path and source_path == source:
                     return True
             return False

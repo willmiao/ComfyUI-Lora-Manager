@@ -7,7 +7,7 @@ from typing import Any, Dict, Iterable, Mapping, Sequence
 from urllib.parse import parse_qs, urlparse, urlunparse
 
 
-_SUPPORTED_CIVITAI_PAGE_HOSTS = frozenset({"civitai.com", "civitai.red"})
+_SUPPORTED_CIVITAI_PAGE_HOSTS = frozenset({"civitai.com", "civitai.red", "civitai.green"})
 DEFAULT_CIVITAI_PAGE_HOST = "civitai.com"
 _DEFAULT_ALLOW_COMMERCIAL_USE: Sequence[str] = ("Sell",)
 _LICENSE_DEFAULTS: Dict[str, Any] = {

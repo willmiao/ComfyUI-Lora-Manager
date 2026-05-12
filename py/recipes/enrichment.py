@@ -36,14 +36,14 @@ class RecipeEnricher:
         civitai_meta = None
         model_version_id = None
         
-        source_url = recipe.get("source_url") or recipe.get("source_path", "")
+        source_path = recipe.get("source_path", "")
         
         # Check if it's a Civitai image URL
-        image_id = extract_civitai_image_id(str(source_url))
+        image_id = extract_civitai_image_id(str(source_path))
         if image_id:
             try:
                 image_info = await civitai_client.get_image_info(
-                    image_id, source_url=str(source_url)
+                    image_id, source_url=str(source_path)
                 )
                 if image_info:
                     # Handle nested meta often found in Civitai API responses

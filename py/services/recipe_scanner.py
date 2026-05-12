@@ -504,6 +504,9 @@ class RecipeScanner:
                     self._cache.raw_data = recipes
                     self._update_folder_metadata(self._cache)
                     self._sort_cache_sync()
+                    # Backfill source_path from JSON files if missing (schema migration)
+                    if self._backfill_source_path_if_needed(recipes, json_paths):
+                        self._persistent_cache.save_cache(recipes, json_paths)
                     return self._cache
                 else:
                     # Partial update: some files changed
@@ -514,6 +517,8 @@ class RecipeScanner:
                     self._cache.raw_data = recipes
                     self._update_folder_metadata(self._cache)
                     self._sort_cache_sync()
+                    # Backfill source_path from JSON files if missing (schema migration)
+                    self._backfill_source_path_if_needed(recipes, json_paths)
                     # Persist updated cache
                     self._persistent_cache.save_cache(recipes, json_paths)
                     return self._cache
@@ -641,6 +646,34 @@ class RecipeScanner:
                 logger.debug("Recipe file deleted: %s", json_path)
 
         return recipes, changed, json_paths
+
+    def _backfill_source_path_if_needed(
+        self,
+        recipes: List[Dict],
+        json_paths: Dict[str, str],
+    ) -> bool:
+        """Backfill source_path from recipe JSON files if missing from cache.
+
+        Returns True if any recipes were updated (caller should persist cache).
+        """
+        updated = False
+        for recipe in recipes:
+            if recipe.get("source_path"):
+                continue
+            recipe_id = str(recipe.get("id", ""))
+            json_path = json_paths.get(recipe_id)
+            if not json_path or not os.path.exists(json_path):
+                continue
+            try:
+                with open(json_path, "r", encoding="utf-8") as f:
+                    json_data = json.load(f)
+                file_source_path = json_data.get("source_path")
+                if file_source_path:
+                    recipe["source_path"] = file_source_path
+                    updated = True
+            except Exception:
+                pass
+        return updated
 
     def _full_directory_scan_sync(
         self, recipes_dir: str
