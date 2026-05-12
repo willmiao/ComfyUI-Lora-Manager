@@ -2139,6 +2139,17 @@ class ModelLibraryHandler:
                 ]
                 await found_cache.resort()
 
+            scanner_map = {
+                "lora": lora_scanner,
+                "checkpoint": checkpoint_scanner,
+                "embedding": embedding_scanner,
+            }
+            scanner = scanner_map.get(found_type)
+            if scanner:
+                persist = getattr(scanner, "_persist_current_cache", None)
+                if callable(persist):
+                    await persist()
+
             history_service = await self._get_download_history_service()
             await history_service.mark_not_downloaded(found_type, model_version_id)
 

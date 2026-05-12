@@ -111,6 +111,11 @@ class ModelLifecycleService:
             self._scanner._hash_index.remove_by_path(file_path)
 
         await self._sync_update_for_model(model_id)
+
+        persist_current_cache = getattr(self._scanner, "_persist_current_cache", None)
+        if callable(persist_current_cache):
+            await persist_current_cache()
+
         return {"success": True, "deleted_files": deleted_files}
 
     @staticmethod
