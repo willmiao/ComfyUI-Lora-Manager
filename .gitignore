@@ -15,6 +15,7 @@ model_cache/
 # agent
 .opencode/
 .claude/
+.sisyphus/
 .codex
 
 # Vue widgets development cache (but keep build output)
