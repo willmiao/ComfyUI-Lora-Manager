@@ -22,7 +22,16 @@
                 </div>
                 
                 <div class="info-section recipe-gen-params">
-                    <h3>Generation Parameters</h3>
+                    <div class="gen-params-header-row">
+                        <h3>Generation Parameters</h3>
+                        <label class="inline-toggle-container lora-strip-toggle" title="When enabled, &lt;lora:...&gt; tags are removed from prompt text when copying">
+                            <span class="inline-toggle-label">Strip &lt;lora:&gt;</span>
+                            <div class="toggle-switch">
+                                <input type="checkbox" id="stripLoraOnCopyToggle">
+                                <span class="toggle-slider"></span>
+                            </div>
+                        </label>
+                    </div>
                     
                     <div class="gen-params-container">
                         <!-- Prompt -->

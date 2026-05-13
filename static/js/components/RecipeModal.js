@@ -2,7 +2,7 @@
 import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
-import { setSessionItem, removeSessionItem } from '../utils/storageHelpers.js';
+import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { fetchRecipeDetails, updateRecipeMetadata } from '../api/recipeApi.js';
 import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
@@ -105,6 +105,7 @@ class RecipeModal {
 
     init() {
         this.setupCopyButtons();
+        this.setupStripLoraToggle();
         this.setupPromptEditors();
         // Set up tooltip positioning handlers after DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
@@ -1350,14 +1351,20 @@ class RecipeModal {
 
         if (copyPromptBtn) {
             copyPromptBtn.addEventListener('click', () => {
-                const promptText = this.currentRecipe?.gen_params?.prompt || '';
+                let promptText = this.currentRecipe?.gen_params?.prompt || '';
+                if (this.shouldStripLoraOnCopy()) {
+                    promptText = RecipeModal.stripLoraTags(promptText);
+                }
                 this.copyToClipboard(promptText, 'Prompt copied to clipboard');
             });
         }
 
         if (copyNegativePromptBtn) {
             copyNegativePromptBtn.addEventListener('click', () => {
-                const negativePromptText = this.currentRecipe?.gen_params?.negative_prompt || '';
+                let negativePromptText = this.currentRecipe?.gen_params?.negative_prompt || '';
+                if (this.shouldStripLoraOnCopy()) {
+                    negativePromptText = RecipeModal.stripLoraTags(negativePromptText);
+                }
                 this.copyToClipboard(negativePromptText, 'Negative prompt copied to clipboard');
             });
         }
@@ -1375,6 +1382,43 @@ class RecipeModal {
                 this.sendRecipeToWorkflow();
             });
         }
+    }
+
+    /**
+     * Strip <lora:...> tags from prompt text and clean up residual punctuation/whitespace.
+     * Handles both unescaped (<lora:...>) and HTML-escaped (&lt;lora:...&gt;) variants.
+     * Cleans up artifacts like leading ", ", double commas, and extra whitespace.
+     */
+    static stripLoraTags(text) {
+        return text
+            .replace(/<lora:[^>]*>/gi, '')
+            .replace(/&lt;lora:[^&]*&gt;/gi, '')
+            .replace(/,(\s*,)+/g, ',')
+            .replace(/^,\s*/, '')
+            .replace(/,\s*$/, '')
+            .replace(/\s{2,}/g, ' ')
+            .trim();
+    }
+
+    shouldStripLoraOnCopy() {
+        const toggle = document.getElementById('stripLoraOnCopyToggle');
+        return toggle ? toggle.checked : false;
+    }
+
+    setupStripLoraToggle() {
+        const toggle = document.getElementById('stripLoraOnCopyToggle');
+        if (!toggle) return;
+
+        const stored = getStorageItem('strip_lora_on_copy');
+        if (stored !== null) {
+            toggle.checked = stored === true;
+        }
+
+        toggle.addEventListener('change', () => {
+            const checked = toggle.checked;
+            setStorageItem('strip_lora_on_copy', checked);
+            state.global.settings.strip_lora_on_copy = checked;
+        });
     }
 
     // Fetch recipe syntax from backend and copy to clipboard

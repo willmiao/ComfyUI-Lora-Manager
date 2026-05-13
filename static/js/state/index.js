@@ -50,6 +50,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     download_skip_base_models: [],
     backup_auto_enabled: true,
     backup_retention_count: 5,
+    strip_lora_on_copy: false,
 });
 
 export function createDefaultSettings() {
