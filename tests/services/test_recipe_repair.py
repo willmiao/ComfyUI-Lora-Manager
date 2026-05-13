@@ -77,7 +77,7 @@ async def test_repair_all_recipes_with_enriched_checkpoint_id(setup_scanner):
     recipe = {
         "id": "r1",
         "title": "Old Recipe",
-        "source_url": "https://civitai.com/images/12345",
+        "source_path": "https://civitai.com/images/12345",
         "checkpoint": None,
         "gen_params": {"prompt": ""}
     }
@@ -127,7 +127,7 @@ async def test_repair_all_recipes_supports_civitai_red_source_url(setup_scanner)
     recipe = {
         "id": "r1",
         "title": "Red Recipe",
-        "source_url": "https://civitai.red/images/12345",
+        "source_path": "https://civitai.red/images/12345",
         "checkpoint": None,
         "gen_params": {"prompt": ""},
     }
