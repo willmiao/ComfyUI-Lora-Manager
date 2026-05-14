@@ -452,3 +452,111 @@ class MetadataUpdater:
         except Exception as e:
             logger.error(f"Error parsing image metadata: {e}", exc_info=True)
             return None
+
+    @staticmethod
+    async def prune_stale_example_images(metadata) -> bool:
+        """Remove example-image metadata entries whose files no longer exist on disk.
+
+        Checks ``civitai.customImages`` (by ``id``) and ``civitai.images`` entries
+        that have an empty ``url`` (no remote fallback) against actual files in
+        the model's example-image folder.  Stale entries are removed in-place so
+        the caller can persist the cleaned metadata afterwards.
+
+        Args:
+            metadata: A ``BaseModelMetadata`` instance (modified in place).
+
+        Returns:
+            True if at least one entry was removed.
+        """
+        from ..utils.example_images_paths import get_model_folder
+
+        model_hash = getattr(metadata, "sha256", None)
+        if not model_hash:
+            return False
+
+        model_folder = get_model_folder(model_hash)
+        if not model_folder:
+            return False
+
+        civitai = getattr(metadata, "civitai", None)
+        if not isinstance(civitai, dict):
+            return False
+
+        has_changes = False
+
+        custom_images = civitai.get("customImages")
+        if isinstance(custom_images, list) and custom_images:
+            stale: list[int] = []
+
+            for idx, img in enumerate(custom_images):
+                img_id = img.get("id", "")
+                if not img_id:
+                    continue
+
+                if not os.path.isdir(model_folder):
+                    stale.append(idx)
+                else:
+                    found = False
+                    try:
+                        prefix = f"custom_{img_id}"
+                        for fname in os.listdir(model_folder):
+                            if fname.startswith(prefix) and os.path.isfile(
+                                os.path.join(model_folder, fname)
+                            ):
+                                found = True
+                                break
+                    except OSError:
+                        stale.append(idx)
+                        continue
+
+                    if not found:
+                        stale.append(idx)
+
+            if stale:
+                for idx in reversed(stale):
+                    custom_images.pop(idx)
+                has_changes = True
+                logger.info(
+                    "Pruned %d stale custom image(s) for %s",
+                    len(stale),
+                    getattr(metadata, "model_name", model_hash),
+                )
+
+        images = civitai.get("images")
+        if isinstance(images, list) and images:
+            stale: list[int] = []
+
+            for idx, img in enumerate(images):
+                if img.get("url", ""):
+                    # Has a remote fallback – keep it even if the local copy
+                    # is gone.
+                    continue
+
+                if not os.path.isdir(model_folder):
+                    stale.append(idx)
+                else:
+                    found = False
+                    try:
+                        prefix = f"image_{idx}."
+                        for fname in os.listdir(model_folder):
+                            if fname.startswith(prefix):
+                                found = True
+                                break
+                    except OSError:
+                        stale.append(idx)
+                        continue
+
+                    if not found:
+                        stale.append(idx)
+
+            if stale:
+                for idx in reversed(stale):
+                    images.pop(idx)
+                has_changes = True
+                logger.info(
+                    "Pruned %d stale image entry(ies) for %s",
+                    len(stale),
+                    getattr(metadata, "model_name", model_hash),
+                )
+
+        return has_changes

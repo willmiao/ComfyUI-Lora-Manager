@@ -908,6 +908,17 @@ class BaseModelService(ABC):
         )
         if should_skip or metadata is None:
             return None
+
+        # Prune stale example-image metadata entries whose files no longer
+        # exist on disk (e.g. a user deleted the files manually).
+        from ..utils.example_images_metadata import MetadataUpdater
+
+        was_modified = await MetadataUpdater.prune_stale_example_images(metadata)
+        if was_modified:
+            asyncio.create_task(
+                MetadataManager.save_metadata(file_path, metadata)
+            )
+
         return self.filter_civitai_data(metadata.to_dict().get("civitai", {}))
 
     async def get_model_description(self, file_path: str) -> Optional[str]:
