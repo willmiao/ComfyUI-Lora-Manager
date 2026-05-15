@@ -609,6 +609,7 @@ class RecipeManagementHandler:
         self._downloader_factory = downloader_factory
         self._civitai_client_getter = civitai_client_getter
         self._ws_manager = ws_manager
+        self._import_semaphore = asyncio.Semaphore(2)
 
     async def save_recipe(self, request: web.Request) -> web.Response:
         try:
@@ -769,114 +770,18 @@ class RecipeManagementHandler:
                 sorted(checkpoint_entry.keys()) if isinstance(checkpoint_entry, dict) else [],
             )
 
-            # 2. Initial Metadata Construction
-            metadata: Dict[str, Any] = {
-                "base_model": params.get("base_model", "") or "",
-                "loras": lora_entries,
-                "gen_params": gen_params_request or {},
-                "source_path": params.get("source_path") or image_url,
-            }
-
-            # Checkpoint handling
-            if checkpoint_entry:
-                metadata["checkpoint"] = checkpoint_entry
-                # Ensure checkpoint is also in gen_params for consistency if needed by enricher?
-                # Actually enricher looks at metadata['checkpoint'], so this is fine.
-
-                # Try to resolve base model from checkpoint if not explicitly provided
-                if not metadata["base_model"]:
-                    base_model_from_metadata = (
-                        await self._resolve_base_model_from_checkpoint(checkpoint_entry)
-                    )
-                    if base_model_from_metadata:
-                        metadata["base_model"] = base_model_from_metadata
-
-            tags = self._parse_tags(params.get("tags"))
-
-            # 3. Download Image
-            (
-                image_bytes,
-                extension,
-                civitai_meta_from_download,
-            ) = await self._download_remote_media(image_url)
-
-            # 4. Extract Embedded Metadata
-            # Note: We still extract this here because Enricher currently expects 'gen_params' to already be populated
-            # with embedded data if we want it to merge it.
-            # However, logic in Enricher merges: request > civitai > embedded.
-            # So we should gather embedded params and put them into the recipe's gen_params (as initial state)
-            # OR pass them to enricher to handle?
-            # The interface of Enricher.enrich_recipe takes `recipe` (with gen_params) and `request_params`.
-            # So let's extract embedded and put it into recipe['gen_params'] but careful not to overwrite request params.
-            # Actually, `GenParamsMerger` which `Enricher` uses handles 3 layers.
-            # But `Enricher` interface is: recipe['gen_params'] (as embedded) + request_params + civitai (fetched internally).
-            # Wait, `Enricher` fetches Civitai info internally based on URL.
-            # `civitai_meta_from_download` is returned by `_download_remote_media` which might be useful if URL didn't have ID.
-
-            # Let's extract embedded metadata first
-            embedded_gen_params = {}
-            try:
-                with tempfile.NamedTemporaryFile(
-                    suffix=extension, delete=False
-                ) as temp_img:
-                    temp_img.write(image_bytes)
-                    temp_img_path = temp_img.name
-
-                try:
-                    raw_embedded = ExifUtils.extract_image_metadata(temp_img_path)
-                    if raw_embedded:
-                        parser = (
-                            self._analysis_service._recipe_parser_factory.create_parser(
-                                raw_embedded
-                            )
-                        )
-                        if parser:
-                            parsed_embedded = await parser.parse_metadata(
-                                raw_embedded, recipe_scanner=recipe_scanner
-                            )
-                            if parsed_embedded and "gen_params" in parsed_embedded:
-                                embedded_gen_params = parsed_embedded["gen_params"]
-                        else:
-                            embedded_gen_params = {"raw_metadata": raw_embedded}
-                finally:
-                    if os.path.exists(temp_img_path):
-                        os.unlink(temp_img_path)
-            except Exception as exc:
-                self._logger.warning(
-                    "Failed to extract embedded metadata during import: %s", exc
+            # Throttle concurrent imports to avoid starving ComfyUI's event loop
+            async with self._import_semaphore:
+                return await self._do_import_remote_recipe(
+                    image_url=image_url,
+                    name=name,
+                    lora_entries=lora_entries,
+                    checkpoint_entry=checkpoint_entry,
+                    gen_params_request=gen_params_request,
+                    tags=self._parse_tags(params.get("tags")),
+                    base_model=params.get("base_model", "") or "",
+                    source_path=params.get("source_path") or image_url,
                 )
-
-            # Pre-populate gen_params with embedded data so Enricher treats it as the "base" layer
-            if embedded_gen_params:
-                # Merge embedded into existing gen_params (which currently only has request params if any)
-                # But wait, we want request params to override everything.
-                # So we should set recipe['gen_params'] = embedded, and pass request params to enricher.
-                metadata["gen_params"] = embedded_gen_params
-
-            # 5. Enrich with unified logic
-            # This will fetch Civitai info (if URL matches) and merge: request > civitai > embedded
-            civitai_client = self._civitai_client_getter()
-            await RecipeEnricher.enrich_recipe(
-                recipe=metadata,
-                civitai_client=civitai_client,
-                request_params=gen_params_request,  # Pass explicit request params here to override
-            )
-
-            # If we got civitai_meta from download but Enricher didn't fetch it (e.g. not a civitai URL or failed),
-            # we might want to manually merge it?
-            # But usually `import_remote_recipe` is used with Civitai URLs.
-            # For now, relying on Enricher's internal fetch is consistent with repair.
-
-            result = await self._persistence_service.save_recipe(
-                recipe_scanner=recipe_scanner,
-                image_bytes=image_bytes,
-                image_base64=None,
-                name=name,
-                tags=tags,
-                metadata=metadata,
-                extension=extension,
-            )
-            return web.json_response(result.payload, status=result.status)
         except RecipeValidationError as exc:
             return web.json_response({"error": str(exc)}, status=400)
         except RecipeDownloadError as exc:
@@ -886,6 +791,105 @@ class RecipeManagementHandler:
                 "Error importing recipe from remote source: %s", exc, exc_info=True
             )
             return web.json_response({"error": str(exc)}, status=500)
+
+    async def _do_import_remote_recipe(
+        self,
+        *,
+        image_url: str,
+        name: str,
+        lora_entries: list,
+        checkpoint_entry: dict,
+        gen_params_request: dict,
+        tags: list,
+        base_model: str,
+        source_path: str,
+    ) -> web.Response:
+        recipe_scanner = self._recipe_scanner_getter()
+        if recipe_scanner is None:
+            raise RuntimeError("Recipe scanner unavailable")
+
+        metadata: Dict[str, Any] = {
+            "base_model": base_model,
+            "loras": lora_entries,
+            "gen_params": gen_params_request or {},
+            "source_path": source_path,
+        }
+
+        if checkpoint_entry:
+            metadata["checkpoint"] = checkpoint_entry
+            if not metadata["base_model"]:
+                base_model_from_metadata = (
+                    await self._resolve_base_model_from_checkpoint(checkpoint_entry)
+                )
+                if base_model_from_metadata:
+                    metadata["base_model"] = base_model_from_metadata
+
+        # Download image
+        (
+            image_bytes,
+            extension,
+            civitai_meta_raw,
+            model_version_id,
+        ) = await self._download_remote_media(image_url)
+
+        # Extract embedded EXIF metadata (offloaded to thread pool in this call)
+        embedded_gen_params = {}
+        try:
+            with tempfile.NamedTemporaryFile(
+                suffix=extension, delete=False
+            ) as temp_img:
+                temp_img.write(image_bytes)
+                temp_img_path = temp_img.name
+
+            try:
+                raw_embedded = await asyncio.to_thread(
+                    ExifUtils.extract_image_metadata, temp_img_path
+                )
+                if raw_embedded:
+                    parser = (
+                        self._analysis_service._recipe_parser_factory.create_parser(
+                            raw_embedded
+                        )
+                    )
+                    if parser:
+                        parsed_embedded = await parser.parse_metadata(
+                            raw_embedded, recipe_scanner=recipe_scanner
+                        )
+                        if parsed_embedded and "gen_params" in parsed_embedded:
+                            embedded_gen_params = parsed_embedded["gen_params"]
+                    else:
+                        embedded_gen_params = {"raw_metadata": raw_embedded}
+            finally:
+                if os.path.exists(temp_img_path):
+                    os.unlink(temp_img_path)
+        except Exception as exc:
+            self._logger.warning(
+                "Failed to extract embedded metadata during import: %s", exc
+            )
+
+        if embedded_gen_params:
+            metadata["gen_params"] = embedded_gen_params
+
+        # Enrich with Civitai API and merge gen_params
+        civitai_client = self._civitai_client_getter()
+        await RecipeEnricher.enrich_recipe(
+            recipe=metadata,
+            civitai_client=civitai_client,
+            request_params=gen_params_request,
+            prefetched_civitai_meta_raw=civitai_meta_raw,
+            prefetched_model_version_id=model_version_id,
+        )
+
+        result = await self._persistence_service.save_recipe(
+            recipe_scanner=recipe_scanner,
+            image_bytes=image_bytes,
+            image_base64=None,
+            name=name,
+            tags=tags,
+            metadata=metadata,
+            extension=extension,
+        )
+        return web.json_response(result.payload, status=result.status)
 
     async def delete_recipe(self, request: web.Request) -> web.Response:
         try:
@@ -1240,6 +1244,7 @@ class RecipeManagementHandler:
                     file_obj.read(),
                     extension,
                     image_info.get("meta") if civitai_image_id and image_info else None,
+                    image_info.get("modelVersionId") if civitai_image_id and image_info else None,
                 )
         except RecipeDownloadError:
             raise
@@ -1351,7 +1356,7 @@ class RecipeManagementHandler:
                     "Could not extract Civitai image ID from URL"
                 )
 
-            # Check for duplicate
+            # Check for duplicate (fast, before acquiring semaphore)
             cache = await recipe_scanner.get_cached_data()
             for recipe in getattr(cache, "raw_data", []):
                 source = recipe.get("source_path")
@@ -1365,82 +1370,8 @@ class RecipeManagementHandler:
                             "already_exists": True,
                         })
 
-            # Download image and extract metadata
-            image_bytes, extension, civitai_meta = (
-                await self._download_remote_media(image_url)
-            )
-
-            # Extract embedded EXIF metadata
-            embedded_gen_params = {}
-            try:
-                with tempfile.NamedTemporaryFile(
-                    suffix=extension, delete=False
-                ) as temp_img:
-                    temp_img.write(image_bytes)
-                    temp_img_path = temp_img.name
-
-                try:
-                    raw_embedded = ExifUtils.extract_image_metadata(temp_img_path)
-                    if raw_embedded:
-                        parser = (
-                            self._analysis_service._recipe_parser_factory.create_parser(
-                                raw_embedded
-                            )
-                        )
-                        if parser:
-                            parsed_embedded = await parser.parse_metadata(
-                                raw_embedded, recipe_scanner=recipe_scanner
-                            )
-                            if parsed_embedded and "gen_params" in parsed_embedded:
-                                embedded_gen_params = parsed_embedded["gen_params"]
-                finally:
-                    if os.path.exists(temp_img_path):
-                        os.unlink(temp_img_path)
-            except Exception as exc:
-                self._logger.warning(
-                    "Failed to extract embedded metadata: %s", exc
-                )
-
-            # Build metadata
-            metadata: Dict[str, Any] = {
-                "base_model": "",
-                "loras": [],
-                "gen_params": embedded_gen_params or {},
-                "source_path": image_url,
-            }
-
-            # Enrich via Civitai API
-            civitai_client = self._civitai_client_getter()
-            await RecipeEnricher.enrich_recipe(
-                recipe=metadata,
-                civitai_client=civitai_client,
-                request_params={},
-            )
-
-            # Auto-generate name from prompt or fallback
-            prompt = (
-                metadata.get("gen_params", {}).get("prompt")
-                or metadata.get("gen_params", {}).get("positivePrompt")
-                or ""
-            )
-            if prompt:
-                name = " ".join(str(prompt).split()[:10])
-            else:
-                name = f"Civitai Image {image_id}"
-
-            # Parse tags from params if available
-            tags = self._parse_tags(request.query.get("tags"))
-
-            result = await self._persistence_service.save_recipe(
-                recipe_scanner=recipe_scanner,
-                image_bytes=image_bytes,
-                image_base64=None,
-                name=name,
-                tags=tags,
-                metadata=metadata,
-                extension=extension,
-            )
-            return web.json_response(result.payload, status=result.status)
+            async with self._import_semaphore:
+                return await self._do_import_from_url(image_url, recipe_scanner)
         except RecipeValidationError as exc:
             return web.json_response({"error": str(exc)}, status=400)
         except RecipeDownloadError as exc:
@@ -1450,6 +1381,91 @@ class RecipeManagementHandler:
                 "Error importing recipe from URL: %s", exc, exc_info=True
             )
             return web.json_response({"error": str(exc)}, status=500)
+
+    async def _do_import_from_url(
+        self,
+        image_url: str,
+        recipe_scanner: Any,
+    ) -> web.Response:
+        image_id = extract_civitai_image_id(image_url)
+        if not image_id:
+            raise RecipeValidationError(
+                "Could not extract Civitai image ID from URL"
+            )
+
+        image_bytes, extension, civitai_meta_raw, model_version_id = (
+            await self._download_remote_media(image_url)
+        )
+
+        # Extract embedded EXIF metadata
+        embedded_gen_params = {}
+        try:
+            with tempfile.NamedTemporaryFile(
+                suffix=extension, delete=False
+            ) as temp_img:
+                temp_img.write(image_bytes)
+                temp_img_path = temp_img.name
+
+            try:
+                raw_embedded = await asyncio.to_thread(
+                    ExifUtils.extract_image_metadata, temp_img_path
+                )
+                if raw_embedded:
+                    parser = (
+                        self._analysis_service._recipe_parser_factory.create_parser(
+                            raw_embedded
+                        )
+                    )
+                    if parser:
+                        parsed_embedded = await parser.parse_metadata(
+                            raw_embedded, recipe_scanner=recipe_scanner
+                        )
+                        if parsed_embedded and "gen_params" in parsed_embedded:
+                            embedded_gen_params = parsed_embedded["gen_params"]
+            finally:
+                if os.path.exists(temp_img_path):
+                    os.unlink(temp_img_path)
+        except Exception as exc:
+            self._logger.warning(
+                "Failed to extract embedded metadata: %s", exc
+            )
+
+        metadata: Dict[str, Any] = {
+            "base_model": "",
+            "loras": [],
+            "gen_params": embedded_gen_params or {},
+            "source_path": image_url,
+        }
+
+        civitai_client = self._civitai_client_getter()
+        await RecipeEnricher.enrich_recipe(
+            recipe=metadata,
+            civitai_client=civitai_client,
+            request_params={},
+            prefetched_civitai_meta_raw=civitai_meta_raw,
+            prefetched_model_version_id=model_version_id,
+        )
+
+        prompt = (
+            metadata.get("gen_params", {}).get("prompt")
+            or metadata.get("gen_params", {}).get("positivePrompt")
+            or ""
+        )
+        if prompt:
+            name = " ".join(str(prompt).split()[:10])
+        else:
+            name = f"Civitai Image {image_id}"
+
+        result = await self._persistence_service.save_recipe(
+            recipe_scanner=recipe_scanner,
+            image_bytes=image_bytes,
+            image_base64=None,
+            name=name,
+            tags=[],
+            metadata=metadata,
+            extension=extension,
+        )
+        return web.json_response(result.payload, status=result.status)
 
 
 class RecipeAnalysisHandler:

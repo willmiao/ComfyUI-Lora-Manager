@@ -16,55 +16,65 @@ class RecipeEnricher:
     async def enrich_recipe(
         recipe: Dict[str, Any],
         civitai_client: Any,
-        request_params: Optional[Dict[str, Any]] = None
+        request_params: Optional[Dict[str, Any]] = None,
+        prefetched_civitai_meta_raw: Optional[Dict[str, Any]] = None,
+        prefetched_model_version_id: Optional[int] = None,
     ) -> bool:
         """
         Enrich a recipe dictionary in-place with metadata from Civitai and embedded params.
-        
+
         Args:
             recipe: The recipe dictionary to enrich. Must have 'gen_params' initialized.
             civitai_client: Authenticated Civitai client instance.
             request_params: (Optional) Parameters from a user request (e.g. import).
-            
+            prefetched_civitai_meta_raw: (Optional) Pre-fetched raw meta from Civitai
+                get_image_info, avoiding a duplicate API call.
+            prefetched_model_version_id: (Optional) Pre-fetched model version ID.
+
         Returns:
             bool: True if the recipe was modified, False otherwise.
         """
         updated = False
         gen_params = recipe.get("gen_params", {})
-        
-        # 1. Fetch Civitai Info if available
+
+        # 1. Obtain Civitai metadata
         civitai_meta = None
-        model_version_id = None
-        
+        model_version_id = prefetched_model_version_id
+
         source_path = recipe.get("source_path", "")
-        
-        # Check if it's a Civitai image URL
-        image_id = extract_civitai_image_id(str(source_path))
-        if image_id:
-            try:
-                image_info = await civitai_client.get_image_info(
-                    image_id, source_url=str(source_path)
-                )
-                if image_info:
-                    # Handle nested meta often found in Civitai API responses
-                    raw_meta = image_info.get("meta")
-                    if isinstance(raw_meta, dict):
-                        if "meta" in raw_meta and isinstance(raw_meta["meta"], dict):
-                            civitai_meta = raw_meta["meta"]
-                        else:
-                            civitai_meta = raw_meta
-                    
-                    model_version_id = image_info.get("modelVersionId")
-                    
-                    # If not at top level, check resources in meta
-                    if not model_version_id and civitai_meta:
-                        resources = civitai_meta.get("civitaiResources", [])
-                        for res in resources:
-                            if res.get("type") == "checkpoint":
-                                model_version_id = res.get("modelVersionId")
-                                break
-            except Exception as e:
-                logger.warning(f"Failed to fetch Civitai image info: {e}")
+
+        if prefetched_civitai_meta_raw is not None:
+            raw_meta = prefetched_civitai_meta_raw
+            if isinstance(raw_meta, dict):
+                if "meta" in raw_meta and isinstance(raw_meta["meta"], dict):
+                    civitai_meta = raw_meta["meta"]
+                else:
+                    civitai_meta = raw_meta
+        else:
+            image_id = extract_civitai_image_id(str(source_path))
+            if image_id:
+                try:
+                    image_info = await civitai_client.get_image_info(
+                        image_id, source_url=str(source_path)
+                    )
+                    if image_info:
+                        raw_meta = image_info.get("meta")
+                        if isinstance(raw_meta, dict):
+                            if "meta" in raw_meta and isinstance(raw_meta["meta"], dict):
+                                civitai_meta = raw_meta["meta"]
+                            else:
+                                civitai_meta = raw_meta
+
+                        model_version_id = image_info.get("modelVersionId")
+                except Exception as e:
+                    logger.warning(f"Failed to fetch Civitai image info: {e}")
+
+        if not model_version_id and civitai_meta:
+            resources = civitai_meta.get("civitaiResources", [])
+            for res in resources:
+                if res.get("type") == "checkpoint":
+                    model_version_id = res.get("modelVersionId")
+                    break
 
         # 2. Merge Parameters
         # Priority: request_params > civitai_meta > embedded (existing gen_params)

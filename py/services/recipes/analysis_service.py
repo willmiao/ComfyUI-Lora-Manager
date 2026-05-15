@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import base64
 import io
 import os
@@ -170,7 +171,9 @@ class RecipeAnalysisService:
                 await self._download_image(url, temp_path)
 
             if metadata is None and not is_video:
-                metadata = self._exif_utils.extract_image_metadata(temp_path)
+                metadata = await asyncio.to_thread(
+                    self._exif_utils.extract_image_metadata, temp_path
+                )
 
             return await self._parse_metadata(
                 metadata or {},
@@ -199,7 +202,9 @@ class RecipeAnalysisService:
         if not os.path.isfile(normalized_path):
             raise RecipeNotFoundError("File not found")
 
-        metadata = self._exif_utils.extract_image_metadata(normalized_path)
+        metadata = await asyncio.to_thread(
+            self._exif_utils.extract_image_metadata, normalized_path
+        )
         if not metadata:
             return self._metadata_not_found_response(normalized_path)
 
