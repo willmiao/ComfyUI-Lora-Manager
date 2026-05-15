@@ -15,6 +15,7 @@ from PIL import Image
 
 from ...utils.utils import calculate_recipe_fingerprint
 from ...utils.civitai_utils import extract_civitai_image_id, rewrite_preview_url
+from ...recipes.enrichment import RecipeEnricher
 from .errors import (
     RecipeDownloadError,
     RecipeNotFoundError,
@@ -175,7 +176,7 @@ class RecipeAnalysisService:
                     self._exif_utils.extract_image_metadata, temp_path
                 )
 
-            return await self._parse_metadata(
+            result = await self._parse_metadata(
                 metadata or {},
                 recipe_scanner=recipe_scanner,
                 image_path=temp_path,
@@ -183,6 +184,37 @@ class RecipeAnalysisService:
                 is_video=is_video,
                 extension=extension,
             )
+
+            if civitai_image_id and image_info and not result.payload.get("error"):
+                mvid = image_info.get("modelVersionId")
+                if not mvid:
+                    mvids = image_info.get("modelVersionIds")
+                    if isinstance(mvids, list) and mvids:
+                        mvid = mvids[0]
+
+                recipe_for_enrich = {
+                    "gen_params": result.payload.get("gen_params", {}),
+                    "loras": result.payload.get("loras", []),
+                    "base_model": result.payload.get("base_model", "") or "",
+                    "checkpoint": result.payload.get("checkpoint") or result.payload.get("model"),
+                    "source_path": url,
+                }
+
+                await RecipeEnricher.enrich_recipe(
+                    recipe=recipe_for_enrich,
+                    civitai_client=civitai_client,
+                    request_params=None,
+                    prefetched_civitai_meta_raw=image_info.get("meta"),
+                    prefetched_model_version_id=mvid,
+                )
+
+                result.payload["gen_params"] = recipe_for_enrich["gen_params"]
+                if recipe_for_enrich.get("checkpoint"):
+                    result.payload["checkpoint"] = recipe_for_enrich["checkpoint"]
+                if recipe_for_enrich.get("base_model"):
+                    result.payload["base_model"] = recipe_for_enrich["base_model"]
+
+            return result
         finally:
             if temp_path:
                 self._safe_cleanup(temp_path)
