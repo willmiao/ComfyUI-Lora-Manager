@@ -1085,6 +1085,12 @@
             "countMessage": "模型将被永久删除。",
             "action": "全部删除"
         },
+        "bulkDeleteRecipes": {
+            "title": "删除多个配方",
+            "message": "你确定要删除所有选中的配方及其相关文件吗？",
+            "countMessage": "配方将被永久删除。",
+            "action": "全部删除"
+        },
         "checkUpdates": {
             "title": "检查所有 {type} 的更新？",
             "message": "这会为库中的每个 {type} 检查更新，大型集合可能需要一些时间。",

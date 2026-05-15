@@ -1085,6 +1085,12 @@
             "countMessage": "Modelle werden dauerhaft gelöscht.",
             "action": "Alle löschen"
         },
+        "bulkDeleteRecipes": {
+            "title": "Mehrere Rezepte löschen",
+            "message": "Sind Sie sicher, dass Sie alle ausgewählten Rezepte und ihre zugehörigen Dateien löschen möchten?",
+            "countMessage": "Rezepte werden dauerhaft gelöscht.",
+            "action": "Alle löschen"
+        },
         "checkUpdates": {
             "title": "Alle {typePlural} auf Updates prüfen?",
             "message": "Damit werden alle {typePlural} in deiner Bibliothek auf Updates geprüft. Bei großen Sammlungen kann das etwas länger dauern.",

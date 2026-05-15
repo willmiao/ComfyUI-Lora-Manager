@@ -1085,6 +1085,12 @@
             "countMessage": "models will be permanently deleted.",
             "action": "Delete All"
         },
+        "bulkDeleteRecipes": {
+            "title": "Delete Multiple Recipes",
+            "message": "Are you sure you want to delete all selected recipes and their associated files?",
+            "countMessage": "recipes will be permanently deleted.",
+            "action": "Delete All"
+        },
         "checkUpdates": {
             "title": "Check updates for all {typePlural}?",
             "message": "This checks every {typePlural} in your library for updates. Large collections may take a little longer.",

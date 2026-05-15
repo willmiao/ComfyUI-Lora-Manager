@@ -1085,6 +1085,12 @@
             "countMessage": "modèles seront définitivement supprimés.",
             "action": "Tout supprimer"
         },
+        "bulkDeleteRecipes": {
+            "title": "Supprimer plusieurs recipes",
+            "message": "Êtes-vous sûr de vouloir supprimer toutes les recipes sélectionnées et leurs fichiers associés ?",
+            "countMessage": "recipes seront définitivement supprimées.",
+            "action": "Tout supprimer"
+        },
         "checkUpdates": {
             "title": "Vérifier les mises à jour pour tous les {typePlural} ?",
             "message": "Cette action vérifie les mises à jour pour tous les {typePlural} de votre bibliothèque. Les grandes collections peuvent prendre un peu plus de temps.",

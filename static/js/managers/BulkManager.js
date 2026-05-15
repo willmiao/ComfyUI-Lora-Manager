@@ -546,9 +546,23 @@ export class BulkManager {
             return;
         }
 
-        const countElement = document.getElementById('bulkDeleteCount');
-        if (countElement) {
-            countElement.textContent = state.selectedModels.size;
+        const count = state.selectedModels.size;
+        const isRecipes = state.currentPageType === 'recipes';
+        const keyPrefix = isRecipes ? 'modals.bulkDeleteRecipes' : 'modals.bulkDelete';
+
+        const titleEl = document.querySelector('#bulkDeleteModal h2');
+        if (titleEl) {
+            titleEl.textContent = translate(`${keyPrefix}.title`);
+        }
+
+        const messageEl = document.querySelector('#bulkDeleteModal .delete-message');
+        if (messageEl) {
+            messageEl.textContent = translate(`${keyPrefix}.message`);
+        }
+
+        const countInfoEl = document.querySelector('#bulkDeleteModal .delete-model-info p');
+        if (countInfoEl) {
+            countInfoEl.innerHTML = `<span id="bulkDeleteCount">${count}</span> ${translate(`${keyPrefix}.countMessage`)}`;
         }
 
         modalManager.showModal('bulkDeleteModal');
