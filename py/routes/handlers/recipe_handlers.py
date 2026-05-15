@@ -763,10 +763,13 @@ class RecipeManagementHandler:
             gen_params_request = self._parse_gen_params(params.get("gen_params"))
 
             self._logger.info(
-                "Remote recipe import received: url=%s, request_gen_params_keys=%s, lora_count=%d, checkpoint_keys=%s",
+                "Remote recipe import received: url=%s, lora_count=%d",
                 image_url,
-                sorted(gen_params_request.keys()) if gen_params_request else [],
                 len(lora_entries),
+            )
+            self._logger.debug(
+                "  gen_params_keys=%s, checkpoint_keys=%s",
+                sorted(gen_params_request.keys()) if gen_params_request else [],
                 sorted(checkpoint_entry.keys()) if isinstance(checkpoint_entry, dict) else [],
             )
 
