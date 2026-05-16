@@ -257,7 +257,7 @@ class CivitaiClient:
                 "GET",
                 f"{self.base_url}/models",
                 use_auth=True,
-                params={"ids": query},
+                params={"ids": query, "nsfw": "true"},
             )
             if not success:
                 return None
@@ -640,7 +640,7 @@ class CivitaiClient:
                 "GET",
                 f"{self.base_url}/models",
                 use_auth=True,
-                params={"username": username},
+                params={"username": username, "nsfw": "true"},
             )
 
             if not success:
