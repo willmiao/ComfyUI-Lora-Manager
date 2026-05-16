@@ -785,10 +785,16 @@ async def test_import_remote_recipe_merges_metadata(
         async def parse_metadata(self, raw, recipe_scanner=None):
             return json.loads(raw[len("Recipe metadata: ") :])
 
+    class MockApiParser:
+        async def parse_metadata(self, raw, recipe_scanner=None):
+            return {"gen_params": raw, "loras": []}
+
     class MockFactory:
         def create_parser(self, raw):
-            if raw.startswith("Recipe metadata: "):
+            if isinstance(raw, str) and raw.startswith("Recipe metadata: "):
                 return MockParser()
+            if isinstance(raw, dict):
+                return MockApiParser()
             return None
 
     # 4. Setup Harness and run test

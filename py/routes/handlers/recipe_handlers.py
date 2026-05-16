@@ -871,28 +871,47 @@ class RecipeManagementHandler:
                 "Failed to extract embedded metadata during import: %s", exc
             )
 
-        # Fallback: if EXIF extraction yielded nothing, parse Civitai API meta directly
-        # (same approach as analyze_remote_image — downloaded Civitai images often
-        # have no embedded EXIF but the API meta contains resources/hashes)
-        if parsed_embedded is None and civitai_meta_raw:
+        # Parse CivitAI API meta to discover all resources from modelVersionIds
+        # (modelVersionIds is injected at root level by _download_remote_media).
+        # Run unconditionally — EXIF parsing may succeed for gen_params but miss
+        # LoRAs since modelVersionIds is NOT embedded in the image EXIF.
+        civitai_parsed = None
+        if civitai_meta_raw:
             civitai_inner_meta = civitai_meta_raw
             if isinstance(civitai_meta_raw, dict) and "meta" in civitai_meta_raw:
                 civitai_inner_meta = civitai_meta_raw["meta"]
+                # modelVersionIds lives at outer meta level; propagate after unwrap
+                _mvids = civitai_meta_raw.get("modelVersionIds")
+                if _mvids and isinstance(civitai_inner_meta, dict):
+                    civitai_inner_meta["modelVersionIds"] = _mvids
             if isinstance(civitai_inner_meta, dict):
                 parser = self._analysis_service._recipe_parser_factory.create_parser(
                     civitai_inner_meta
                 )
                 if parser:
-                    parsed_embedded = await parser.parse_metadata(
+                    civitai_parsed = await parser.parse_metadata(
                         civitai_inner_meta, recipe_scanner=recipe_scanner
                     )
-                    if parsed_embedded and "gen_params" in parsed_embedded:
-                        embedded_gen_params = parsed_embedded["gen_params"]
+                    if civitai_parsed and "gen_params" in civitai_parsed:
+                        # Merge: API gen_params override EXIF at field level,
+                        # EXIF fills in fields the API doesn't have.
+                        embedded_gen_params = {
+                            **(embedded_gen_params or {}),
+                            **civitai_parsed["gen_params"],
+                        }
 
         if embedded_gen_params:
             metadata["gen_params"] = embedded_gen_params
 
-        if parsed_embedded:
+        # Merge LoRAs: prefer frontend resources, supplement with CivitAI modelVersionIds
+        if civitai_parsed:
+            civitai_loras = civitai_parsed.get("loras", [])
+            if civitai_loras and not metadata.get("loras"):
+                metadata["loras"] = civitai_loras
+            civitai_model = civitai_parsed.get("model")
+            if civitai_model and not metadata.get("checkpoint"):
+                metadata["checkpoint"] = civitai_model
+        elif parsed_embedded:
             parsed_loras = parsed_embedded.get("loras")
             if parsed_loras and not metadata.get("loras"):
                 metadata["loras"] = parsed_loras
@@ -1270,16 +1289,29 @@ class RecipeManagementHandler:
 
             with open(temp_path, "rb") as file_obj:
                 model_ver_id = None
+                civitai_meta_raw = (
+                    image_info.get("meta") if civitai_image_id and image_info else None
+                )
                 if civitai_image_id and image_info:
                     model_ver_id = image_info.get("modelVersionId")
                     if not model_ver_id:
                         ids = image_info.get("modelVersionIds")
                         if isinstance(ids, list) and ids:
                             model_ver_id = ids[0]
+
+                    # Inject root-level modelVersionIds into meta so downstream
+                    # parsers (CivitaiApiMetadataParser) can discover ALL resources
+                    # (checkpoint + LoRAs), not just the first model version ID.
+                    # CivitAI API returns modelVersionIds at the root level of
+                    # the image response, NOT inside the meta object.
+                    mvids = image_info.get("modelVersionIds")
+                    if mvids and isinstance(civitai_meta_raw, dict):
+                        civitai_meta_raw["modelVersionIds"] = mvids
+
                 return (
                     file_obj.read(),
                     extension,
-                    image_info.get("meta") if civitai_image_id and image_info else None,
+                    civitai_meta_raw,
                     model_ver_id,
                 )
         except RecipeDownloadError:
@@ -1467,20 +1499,34 @@ class RecipeManagementHandler:
                 "Failed to extract embedded metadata: %s", exc
             )
 
-        if parsed_embedded is None and civitai_meta_raw:
+        # Parse CivitAI API meta to discover all resources from modelVersionIds.
+        # Run unconditionally — EXIF parsing succeeds for gen_params but misses
+        # LoRAs (modelVersionIds is NOT in the image EXIF).
+        civitai_parsed = None
+        if civitai_meta_raw:
             civitai_inner_meta = civitai_meta_raw
             if isinstance(civitai_meta_raw, dict) and "meta" in civitai_meta_raw:
                 civitai_inner_meta = civitai_meta_raw["meta"]
+                # Propagate modelVersionIds into unwrapped meta — it lives
+                # at the outer meta level in the CivitAI API response.
+                _mvids = civitai_meta_raw.get("modelVersionIds")
+                if _mvids and isinstance(civitai_inner_meta, dict):
+                    civitai_inner_meta["modelVersionIds"] = _mvids
             if isinstance(civitai_inner_meta, dict):
                 parser = self._analysis_service._recipe_parser_factory.create_parser(
                     civitai_inner_meta
                 )
                 if parser:
-                    parsed_embedded = await parser.parse_metadata(
+                    civitai_parsed = await parser.parse_metadata(
                         civitai_inner_meta, recipe_scanner=recipe_scanner
                     )
-                    if parsed_embedded and "gen_params" in parsed_embedded:
-                        embedded_gen_params = parsed_embedded["gen_params"]
+                    if civitai_parsed and "gen_params" in civitai_parsed:
+                        # Merge: API gen_params override EXIF at field level,
+                        # EXIF fills in fields the API doesn't have.
+                        embedded_gen_params = {
+                            **(embedded_gen_params or {}),
+                            **civitai_parsed["gen_params"],
+                        }
 
         metadata: Dict[str, Any] = {
             "base_model": "",
@@ -1489,7 +1535,14 @@ class RecipeManagementHandler:
             "source_path": image_url,
         }
 
-        if parsed_embedded:
+        if civitai_parsed:
+            civitai_loras = civitai_parsed.get("loras", [])
+            if civitai_loras and not metadata.get("loras"):
+                metadata["loras"] = civitai_loras
+            civitai_model = civitai_parsed.get("model")
+            if civitai_model and not metadata.get("checkpoint"):
+                metadata["checkpoint"] = civitai_model
+        elif parsed_embedded:
             parsed_loras = parsed_embedded.get("loras")
             if parsed_loras and not metadata.get("loras"):
                 metadata["loras"] = parsed_loras
