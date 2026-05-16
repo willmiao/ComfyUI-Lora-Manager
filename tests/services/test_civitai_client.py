@@ -222,7 +222,7 @@ async def test_get_model_versions_raises_on_other_errors(monkeypatch, downloader
 async def test_get_model_versions_bulk_success(monkeypatch, downloader):
     async def fake_make_request(method, url, use_auth=True, **kwargs):
         assert url.endswith("/models")
-        assert kwargs.get("params") == {"ids": "1,2"}
+        assert kwargs.get("params") == {"ids": "1,2", "nsfw": "true"}
         return True, {
             "items": [
                 {
