@@ -383,6 +383,7 @@ class RecipeModal {
 
         this.syncGenerationParams(hydratedRecipe.gen_params);
         this.syncResourcesSection(hydratedRecipe);
+        this.syncSourceUrlAction();
 
         // Show the modal
         modalManager.showModal('recipeModal');
@@ -515,6 +516,7 @@ class RecipeModal {
         } else {
             this.updateSourceUrlDisplay(this.currentRecipe.source_path || '');
         }
+        this.syncSourceUrlAction();
     }
 
     getPreviewMediaUrl(recipe = {}) {
@@ -580,6 +582,30 @@ class RecipeModal {
         if (titleInput) {
             titleInput.value = title || '';
         }
+    }
+
+    syncSourceUrlAction() {
+        const actionsContainer = document.getElementById('recipeHeaderActions');
+        if (!actionsContainer) {
+            return;
+        }
+
+        actionsContainer.innerHTML = '';
+
+        const sourcePath = this.currentRecipe?.source_path || '';
+        const isValidUrl = sourcePath.startsWith('http://') || sourcePath.startsWith('https://');
+        if (!isValidUrl) {
+            return;
+        }
+
+        const btn = document.createElement('button');
+        btn.className = 'recipe-source-url-btn';
+        btn.title = sourcePath;
+        btn.innerHTML = '<i class="fas fa-globe"></i> Open Source URL';
+        btn.addEventListener('click', () => {
+            window.open(sourcePath, '_blank');
+        });
+        actionsContainer.appendChild(btn);
     }
 
     syncTagsDisplay(tags) {
@@ -1316,6 +1342,7 @@ class RecipeModal {
                         // Update source URL in the UI
                         this.commitField('source_path');
                         this.updateSourceUrlDisplay(newSourceUrl, { forceInputSync: true });
+                        this.syncSourceUrlAction();
 
                         // Update the current recipe object
                         this.currentRecipe.source_path = newSourceUrl;
