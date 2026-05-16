@@ -303,8 +303,19 @@ app.registerExtension({
           return;
         }
 
+        const groupMode = groupModeWidget?.value ?? false;
+
         const updatedTags = node.tagWidget.value.map((tag) => {
           if (!Array.isArray(tag.items)) {
+            return {
+              ...tag,
+              active: value,
+            };
+          }
+
+          // In group mode, default_active only controls the group-level switch.
+          // Children's individual active states are managed exclusively via the group editor.
+          if (groupMode) {
             return {
               ...tag,
               active: value,
@@ -320,7 +331,6 @@ app.registerExtension({
             })),
           };
         });
-
         node.tagWidget.value = updatedTags;
         node.applyTriggerHighlightState?.();
       };

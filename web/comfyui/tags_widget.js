@@ -658,32 +658,34 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       textEl.style.maxWidth = "140px";
     }
 
-    const countBadge = document.createElement("span");
-    countBadge.className = "lm-trigger-count-badge";
-    countBadge.textContent = `${groupState.activeChildren}/${groupState.totalChildren}`;
-    Object.assign(countBadge.style, {
-      fontSize: "11px",
-      padding: "1px 6px",
-      borderRadius: "999px",
-      backgroundColor: "rgba(255,255,255,0.12)",
-      color: "inherit",
-      flexShrink: "0",
-      boxSizing: "border-box",
-      minWidth: "42px",
-      display: "inline-flex",
-      alignItems: "center",
-      justifyContent: "center",
-      lineHeight: "1",
-      fontVariantNumeric: "tabular-nums",
-    });
-    if (groupState.hasInactiveChildren) {
-      countBadge.classList.add("lm-trigger-count-badge--edited");
+    if (tagData.items.length > 1) {
+      const countBadge = document.createElement("span");
+      countBadge.className = "lm-trigger-count-badge";
+      countBadge.textContent = `${groupState.activeChildren}/${groupState.totalChildren}`;
       Object.assign(countBadge.style, {
-        backgroundColor: "rgba(255,255,255,0.08)",
-        boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)",
+        fontSize: "11px",
+        padding: "1px 6px",
+        borderRadius: "999px",
+        backgroundColor: "rgba(255,255,255,0.12)",
+        color: "inherit",
+        flexShrink: "0",
+        boxSizing: "border-box",
+        minWidth: "42px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        lineHeight: "1",
+        fontVariantNumeric: "tabular-nums",
       });
+      if (groupState.hasInactiveChildren) {
+        countBadge.classList.add("lm-trigger-count-badge--edited");
+        Object.assign(countBadge.style, {
+          backgroundColor: "rgba(255,255,255,0.08)",
+          boxShadow: "inset 0 0 0 1px rgba(255,255,255,0.28)",
+        });
+      }
+      groupChip.appendChild(countBadge);
     }
-    groupChip.appendChild(countBadge);
 
     if (showStrengthInfo) {
       const strengthBadge = createStrengthBadge();
@@ -697,39 +699,43 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       groupChip.title = activePreview ? `${tagData.text}\nActive: ${activePreview}` : tagData.text;
     }
 
-    const editButton = document.createElement("button");
-    editButton.type = "button";
-    editButton.className = "lm-trigger-group-edit-button";
-    editButton.textContent = "⋯";
-    Object.assign(editButton.style, {
-      border: "none",
-      background: "transparent",
-      color: "inherit",
-      cursor: "pointer",
-      fontSize: "14px",
-      lineHeight: "1",
-      padding: "0 2px",
-      marginLeft: "2px",
-      opacity: groupState.hasInactiveChildren ? "0.9" : "0.72",
-      flexShrink: "0",
-    });
-    editButton.title = "Edit group tags";
+    let editButton = null;
 
-    const openEditor = (event) => {
-      event.preventDefault();
-      event.stopPropagation();
-      toggleGroupEditor(widget, index, groupChip);
-      renderGroupEditor(widget, tagData, index);
-    };
+    if (tagData.items.length > 1) {
+      editButton = document.createElement("button");
+      editButton.type = "button";
+      editButton.className = "lm-trigger-group-edit-button";
+      editButton.textContent = "⋯";
+      Object.assign(editButton.style, {
+        border: "none",
+        background: "transparent",
+        color: "inherit",
+        cursor: "pointer",
+        fontSize: "14px",
+        lineHeight: "1",
+        padding: "0 2px",
+        marginLeft: "2px",
+        opacity: groupState.hasInactiveChildren ? "0.9" : "0.72",
+        flexShrink: "0",
+      });
+      editButton.title = "Edit group tags";
 
-    editButton.addEventListener("click", openEditor);
-    groupChip.addEventListener("contextmenu", openEditor);
+      const openEditor = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        toggleGroupEditor(widget, index, groupChip);
+        renderGroupEditor(widget, tagData, index);
+      };
 
-    groupChip.appendChild(editButton);
+      editButton.addEventListener("click", openEditor);
+      groupChip.addEventListener("contextmenu", openEditor);
+
+      groupChip.appendChild(editButton);
+    }
 
     groupChip.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (e.target === editButton) {
+      if (editButton && e.target === editButton) {
         return;
       }
       updateWidgetValue(widget, (updatedTags) => {
@@ -740,7 +746,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
 
     if (showStrengthInfo) {
       groupChip.addEventListener("wheel", (e) => {
-        if (e.target === editButton) {
+        if (editButton && e.target === editButton) {
           return;
         }
         e.preventDefault();
