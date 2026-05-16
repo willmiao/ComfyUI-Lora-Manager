@@ -1,0 +1,319 @@
+<!-- Batch Import Modal Component -->
+<div id="batchImportModal" class="modal" style="display: none;">
+    <div class="modal-content batch-import-modal">
+        <div class="modal-header">
+            <button class="close" onclick="batchImportManager.closeBatchImportModal()">&times;</button>
+            <h2>{{ t('recipes.controls.batchImport.title', {}, 'Batch Import Recipes') }}</h2>
+            <p class="modal-subtitle">{{ t('recipes.controls.batchImport.description', {}, 'Import multiple recipes from a directory or list of URLs') }}</p>
+        </div>
+
+        <div class="modal-body">
+            <!-- Tab Navigation -->
+            <div class="batch-tabs">
+                <button class="batch-tab active" data-tab="directory">
+                    <i class="fas fa-folder"></i>
+                    {{ t('recipes.controls.batchImport.fromDirectory', {}, 'From Directory') }}
+                </button>
+                <button class="batch-tab" data-tab="urls">
+                    <i class="fas fa-link"></i>
+                    {{ t('recipes.controls.batchImport.fromUrls', {}, 'From URLs') }}
+                </button>
+            </div>
+
+            <!-- Directory Import Tab -->
+            <div class="batch-tab-content active" id="directoryTab">
+                <div class="input-group">
+                    <label for="batchDirectoryPath">
+                        {{ t('recipes.controls.batchImport.directoryPath', {}, 'Directory Path') }}
+                    </label>
+                    <div class="input-with-button">
+                        <input 
+                            type="text" 
+                            id="batchDirectoryPath" 
+                            placeholder="{{ t('recipes.controls.batchImport.directoryPathPlaceholder', {}, 'E.g., D:\\path\\to\\images') }}"
+                            value="">
+                        <button class="primary-btn" onclick="batchImportManager.importFromDirectory()">
+                            <i class="fas fa-play"></i>
+                            {{ t('recipes.controls.batchImport.startImport', {}, 'Start Import') }}
+                        </button>
+                    </div>
+                    <small class="help-text">{{ t('recipes.controls.batchImport.directoryHelp', {}, 'Supported formats: JPG, PNG, WebP, GIF, BMP') }}</small>
+                </div>
+
+                <div class="import-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoGenerateTags" checked>
+                        {{ t('recipes.controls.batchImport.autoGenerateTags', {}, 'Auto-generate tags from metadata') }}
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="autoOrganize" checked>
+                        {{ t('recipes.controls.batchImport.autoOrganize', {}, 'Auto-organize by base model') }}
+                    </label>
+                </div>
+            </div>
+
+            <!-- URLs Import Tab -->
+            <div class="batch-tab-content" id="urlsTab" style="display: none;">
+                <div class="input-group">
+                    <label for="batchUrls">
+                        {{ t('recipes.controls.batchImport.imageUrls', {}, 'Image URLs') }}
+                    </label>
+                    <textarea 
+                        id="batchUrls" 
+                        class="batch-urls-input"
+                        placeholder="{{ t('recipes.controls.batchImport.urlsPlaceholder', {}, 'Enter one URL per line:\nhttps://example.com/image1.jpg\nhttps://civitai.com/images/12345\nhttps://example.com/image3.png') }}"
+                        rows="6"></textarea>
+                    <small class="help-text">{{ t('recipes.controls.batchImport.urlsHelp', {}, 'Supports Civitai image URLs, direct image URLs, and web accessible images') }}</small>
+                </div>
+
+                <div class="import-options">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="urlAutoGenerateTags" checked>
+                        {{ t('recipes.controls.batchImport.autoGenerateTags', {}, 'Auto-generate tags from metadata') }}
+                    </label>
+                </div>
+
+                <button class="primary-btn full-width" onclick="batchImportManager.importFromUrls()">
+                    <i class="fas fa-play"></i>
+                    {{ t('recipes.controls.batchImport.startImport', {}, 'Start Import') }}
+                </button>
+            </div>
+
+            <!-- Status Message -->
+            <div id="batchMessage" class="batch-message" style="display: none;"></div>
+
+            <!-- Results Container -->
+            <div id="batchResults" class="batch-results-container" style="display: none;"></div>
+        </div>
+
+        <div class="modal-actions">
+            <button class="secondary-btn" onclick="batchImportManager.closeBatchImportModal()">
+                {{ t('common.actions.close', {}, 'Close') }}
+            </button>
+            <button class="tertiary-btn" id="exportBtn" onclick="batchImportManager.exportBatchResults()" style="display: none;">
+                <i class="fas fa-download"></i>
+                {{ t('recipes.controls.batchImport.exportResults', {}, 'Export Results') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<style>
+    .batch-import-modal {
+        max-width: 600px;
+    }
+
+    .batch-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #ddd;
+    }
+
+    .batch-tab {
+        padding: 10px 20px;
+        border: none;
+        background: none;
+        cursor: pointer;
+        font-size: 14px;
+        color: #666;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+    }
+
+    .batch-tab.active {
+        color: #0066cc;
+        border-bottom-color: #0066cc;
+    }
+
+    .batch-tab:hover {
+        color: #0066cc;
+    }
+
+    .batch-tab-content {
+        display: none;
+    }
+
+    .batch-tab-content.active {
+        display: block;
+    }
+
+    .batch-urls-input {
+        width: 100%;
+        padding: 10px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        font-family: monospace;
+        font-size: 12px;
+        resize: vertical;
+    }
+
+    .import-options {
+        margin: 15px 0;
+        padding: 10px;
+        background: #f5f5f5;
+        border-radius: 4px;
+    }
+
+    .checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 8px 0;
+        cursor: pointer;
+    }
+
+    .checkbox-label input[type="checkbox"] {
+        cursor: pointer;
+    }
+
+    .batch-message {
+        padding: 12px;
+        border-radius: 4px;
+        margin: 15px 0;
+        display: block;
+    }
+
+    .batch-message.info {
+        background: #e3f2fd;
+        color: #1976d2;
+        border-left: 4px solid #1976d2;
+    }
+
+    .batch-message.success {
+        background: #e8f5e9;
+        color: #388e3c;
+        border-left: 4px solid #388e3c;
+    }
+
+    .batch-message.error {
+        background: #ffebee;
+        color: #d32f2f;
+        border-left: 4px solid #d32f2f;
+    }
+
+    .batch-message.warning {
+        background: #fff3e0;
+        color: #f57c00;
+        border-left: 4px solid #f57c00;
+    }
+
+    .batch-results-container {
+        display: block;
+        margin-top: 20px;
+        border-top: 2px solid #ddd;
+        padding-top: 15px;
+    }
+
+    .batch-results-summary {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin-bottom: 20px;
+    }
+
+    .result-stat {
+        padding: 12px;
+        background: #f5f5f5;
+        border-radius: 4px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .result-stat.success {
+        background: #e8f5e9;
+    }
+
+    .result-stat.error {
+        background: #ffebee;
+    }
+
+    .result-stat.warning {
+        background: #fff3e0;
+    }
+
+    .result-stat .label {
+        font-weight: 500;
+    }
+
+    .result-stat .value {
+        font-size: 18px;
+        font-weight: bold;
+    }
+
+    .batch-detailed-results,
+    .batch-errors {
+        margin-top: 15px;
+    }
+
+    .batch-detailed-results h4,
+    .batch-errors h4 {
+        margin: 10px 0;
+        font-size: 13px;
+        font-weight: 600;
+    }
+
+    .batch-detailed-results ul,
+    .batch-errors ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .batch-detailed-results li,
+    .batch-errors li {
+        padding: 8px;
+        margin: 4px 0;
+        border-radius: 3px;
+        font-size: 13px;
+    }
+
+    .success-item {
+        background: #e8f5e9;
+        color: #2e7d32;
+    }
+
+    .error-item {
+        background: #ffebee;
+        color: #c62828;
+    }
+
+    .help-text {
+        display: block;
+        margin-top: 6px;
+        color: #666;
+        font-size: 12px;
+    }
+
+    .full-width {
+        width: 100%;
+    }
+
+    .batch-import-button {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 16px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 14px;
+        font-weight: 500;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .batch-import-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+    }
+
+    .modal-subtitle {
+        margin: 8px 0 0 0;
+        color: #666;
+        font-size: 13px;
+        font-weight: normal;
+    }
+</style>
