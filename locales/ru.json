@@ -233,6 +233,7 @@
             "noCreditRequired": "Без указания авторства",
             "allowSellingGeneratedContent": "Продажа разрешена",
             "noTags": "Без тегов",
+            "autoTags": "Авто-теги",
             "noBaseModelMatches": "Нет базовых моделей, соответствующих текущему поиску.",
             "clearAll": "Очистить все фильтры",
             "any": "Любой",

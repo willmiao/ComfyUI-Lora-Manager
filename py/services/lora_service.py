@@ -5,6 +5,7 @@ from typing import Dict, List, Optional
 
 from .base_model_service import BaseModelService
 from .model_query import resolve_sub_type
+from .auto_tag_service import extract_auto_tags
 from ..utils.models import LoraMetadata
 from ..config import config
 
@@ -57,6 +58,7 @@ class LoraService(BaseModelService):
             "civitai": self.filter_civitai_data(
                 lora_data.get("civitai", {}), minimal=True
             ),
+            "auto_tags": lora_data.get("auto_tags") or extract_auto_tags(lora_data),
         }
 
     async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:

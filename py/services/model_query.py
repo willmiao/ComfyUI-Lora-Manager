@@ -96,6 +96,7 @@ class FilterCriteria:
     folder_exclude: Optional[Sequence[str]] = None
     base_models: Optional[Sequence[str]] = None
     tags: Optional[Dict[str, str]] = None
+    auto_tags: Optional[Dict[str, str]] = None
     favorites_only: bool = False
     search_options: Optional[Dict[str, Any]] = None
     model_types: Optional[Sequence[str]] = None
@@ -359,10 +360,37 @@ class ModelFilterSet:
                 ]
             model_types_duration = time.perf_counter() - t0
 
+        auto_tags_duration = 0
+        auto_tag_filters = criteria.auto_tags or {}
+        if auto_tag_filters:
+            t0 = time.perf_counter()
+            include_at = set()
+            exclude_at = set()
+            for tag, state in auto_tag_filters.items():
+                if not tag:
+                    continue
+                if state == "exclude":
+                    exclude_at.add(tag)
+                else:
+                    include_at.add(tag)
+
+            if include_at:
+                items = [
+                    item for item in items
+                    if any(tag in include_at for tag in (item.get("auto_tags") or []))
+                ]
+
+            if exclude_at:
+                items = [
+                    item for item in items
+                    if not any(tag in exclude_at for tag in (item.get("auto_tags") or []))
+                ]
+            auto_tags_duration = time.perf_counter() - t0
+
         duration = time.perf_counter() - overall_start
         if duration > 0.1:  # Only log if it's potentially slow
             logger.debug(
-                "ModelFilterSet.apply took %.3fs (sfw: %.3fs, fav: %.3fs, folder: %.3fs, base: %.3fs, tags: %.3fs, types: %.3fs). "
+                "ModelFilterSet.apply took %.3fs (sfw: %.3fs, fav: %.3fs, folder: %.3fs, base: %.3fs, tags: %.3fs, types: %.3fs, auto_tags: %.3fs). "
                 "Count: %d -> %d",
                 duration,
                 sfw_duration,
@@ -371,6 +399,7 @@ class ModelFilterSet:
                 base_models_duration,
                 tags_duration,
                 model_types_duration,
+                auto_tags_duration,
                 initial_count,
                 len(items),
             )

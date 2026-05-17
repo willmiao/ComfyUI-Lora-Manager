@@ -978,6 +978,16 @@ export class BaseModelApiClient {
                 });
             }
 
+            if (pageState.filters.autoTags && Object.keys(pageState.filters.autoTags).length > 0) {
+                Object.entries(pageState.filters.autoTags).forEach(([tag, state]) => {
+                    if (state === 'include') {
+                        params.append('auto_tag_include', tag);
+                    } else if (state === 'exclude') {
+                        params.append('auto_tag_exclude', tag);
+                    }
+                });
+            }
+
             if (pageState.filters.baseModel && pageState.filters.baseModel.length > 0) {
                 // Check for empty wildcard marker - if present, no models should match
                 const EMPTY_WILDCARD_MARKER = '__EMPTY_WILDCARD_RESULT__';

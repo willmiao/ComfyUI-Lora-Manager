@@ -3,6 +3,7 @@ import logging
 from typing import Dict
 
 from .base_model_service import BaseModelService
+from .auto_tag_service import extract_auto_tags
 from ..utils.models import CheckpointMetadata
 from ..config import config
 
@@ -45,7 +46,8 @@ class CheckpointService(BaseModelService):
             "exclude": bool(checkpoint_data.get("exclude", False)),
             "update_available": bool(checkpoint_data.get("update_available", False)),
             "skip_metadata_refresh": bool(checkpoint_data.get("skip_metadata_refresh", False)),
-            "civitai": self.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True)
+            "civitai": self.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True),
+            "auto_tags": checkpoint_data.get("auto_tags") or extract_auto_tags(checkpoint_data),
         }
     
     def find_duplicate_hashes(self) -> Dict:

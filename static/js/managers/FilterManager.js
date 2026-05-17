@@ -70,6 +70,9 @@ export class FilterManager {
         // Initialize tag logic toggle
         this.initializeTagLogicToggle();
 
+        // Create auto-tag filter section (I2V, T2V, TI2V, Lightning, Turbo)
+        this.createAutoTagFilters();
+
         // Add click handler for filter button
         if (this.filterButton) {
             this.filterButton.addEventListener('click', () => {
@@ -480,6 +483,58 @@ export class FilterManager {
         }
     }
 
+    AUTO_TAG_FILTER_TAGS = ['I2V', 'T2V', 'TI2V', 'Lightning', 'Turbo'];
+
+    createAutoTagFilters() {
+        const container = document.getElementById('autoTagFilterTags');
+        if (container) return;
+
+        const modelTypeSection = document.getElementById('modelTypeTags')?.closest('.filter-section');
+        if (!modelTypeSection) return;
+
+        const section = document.createElement('div');
+        section.className = 'filter-section';
+        section.innerHTML = `
+            <h4>${translate('header.filter.autoTags', {}, 'Auto Tags')}</h4>
+            <div class="filter-tags" id="autoTagFilterTags"></div>
+        `;
+        modelTypeSection.parentNode.insertBefore(section, modelTypeSection.nextSibling);
+
+        const tagsContainer = document.getElementById('autoTagFilterTags');
+        this.AUTO_TAG_FILTER_TAGS.forEach(tag => {
+            const el = document.createElement('div');
+            el.className = 'filter-tag auto-tag-filter';
+            el.dataset.autoTag = tag;
+            el.textContent = tag;
+
+            // Restore previous state
+            const state = (this.filters.autoTags && this.filters.autoTags[tag]) || 'none';
+            this._applyTriState(el, state);
+
+            el.addEventListener('click', async () => {
+                const current = (this.filters.autoTags && this.filters.autoTags[tag]) || 'none';
+                const next = current === 'none' ? 'include' : current === 'include' ? 'exclude' : 'none';
+                if (!this.filters.autoTags) this.filters.autoTags = {};
+                if (next === 'none') {
+                    delete this.filters.autoTags[tag];
+                } else {
+                    this.filters.autoTags[tag] = next;
+                }
+                this._applyTriState(el, next);
+                this.updateActiveFiltersCount();
+                await this.applyFilters(false);
+            });
+
+            tagsContainer.appendChild(el);
+        });
+    }
+
+    _applyTriState(el, state) {
+        el.classList.remove('active', 'exclude');
+        if (state === 'include') el.classList.add('active');
+        else if (state === 'exclude') el.classList.add('exclude');
+    }
+
     toggleFilterPanel() {
         if (this.filterPanel) {
             const isHidden = this.filterPanel.classList.contains('hidden');
@@ -540,6 +595,13 @@ export class FilterManager {
             this.updateLicenseSelections();
         }
         this.updateModelTypeSelections();
+
+        const autoTagEls = document.querySelectorAll('.auto-tag-filter');
+        autoTagEls.forEach(el => {
+            const tag = el.dataset.autoTag;
+            const state = (this.filters.autoTags && this.filters.autoTags[tag]) || 'none';
+            this._applyTriState(el, state);
+        });
     }
 
     updateModelTypeSelections() {
@@ -556,11 +618,12 @@ export class FilterManager {
 
     updateActiveFiltersCount() {
         const tagFilterCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
+        const autoTagFilterCount = this.filters.autoTags ? Object.keys(this.filters.autoTags).length : 0;
         const licenseFilterCount = this.filters.license ? Object.keys(this.filters.license).length : 0;
         const modelTypeFilterCount = this.filters.modelTypes.length;
         // Exclude EMPTY_WILDCARD_MARKER from base model count
         const baseModelCount = this.filters.baseModel.filter(m => m !== EMPTY_WILDCARD_MARKER).length;
-        const totalActiveFilters = baseModelCount + tagFilterCount + licenseFilterCount + modelTypeFilterCount;
+        const totalActiveFilters = baseModelCount + tagFilterCount + autoTagFilterCount + licenseFilterCount + modelTypeFilterCount;
 
         if (this.activeFiltersCount) {
             if (totalActiveFilters > 0) {
@@ -652,6 +715,7 @@ export class FilterManager {
             ...this.filters,
             baseModel: [],
             tags: {},
+            autoTags: {},
             license: {},
             modelTypes: [],
             tagLogic: 'any'
@@ -721,6 +785,7 @@ export class FilterManager {
 
     hasActiveFilters() {
         const tagCount = this.filters.tags ? Object.keys(this.filters.tags).length : 0;
+        const autoTagCount = this.filters.autoTags ? Object.keys(this.filters.autoTags).length : 0;
         const licenseCount = this.filters.license ? Object.keys(this.filters.license).length : 0;
         const modelTypeCount = this.filters.modelTypes.length;
         // Exclude EMPTY_WILDCARD_MARKER from base model count
@@ -728,6 +793,7 @@ export class FilterManager {
         return (
             baseModelCount > 0 ||
             tagCount > 0 ||
+            autoTagCount > 0 ||
             licenseCount > 0 ||
             modelTypeCount > 0
         );
@@ -739,6 +805,7 @@ export class FilterManager {
             ...source,
             baseModel: Array.isArray(source.baseModel) ? [...source.baseModel] : [],
             tags: this.normalizeTagFilters(source.tags),
+            autoTags: this.normalizeTagFilters(source.autoTags),
             license: this.shouldShowLicenseFilters() ? this.normalizeLicenseFilters(source.license) : {},
             modelTypes: this.normalizeModelTypeFilters(source.modelTypes),
             tagLogic: source.tagLogic || 'any'
@@ -822,6 +889,7 @@ export class FilterManager {
             ...this.filters,
             baseModel: [...(this.filters.baseModel || [])],
             tags: { ...(this.filters.tags || {}) },
+            autoTags: { ...(this.filters.autoTags || {}) },
             license: { ...(this.filters.license || {}) },
             modelTypes: [...(this.filters.modelTypes || [])],
             tagLogic: this.filters.tagLogic || 'any'

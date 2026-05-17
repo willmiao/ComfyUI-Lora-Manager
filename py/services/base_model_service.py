@@ -77,6 +77,7 @@ class BaseModelService(ABC):
         base_models: list = None,
         model_types: list = None,
         tags: Optional[Dict[str, str]] = None,
+        auto_tags: Optional[Dict[str, str]] = None,
         search_options: dict = None,
         hash_filters: dict = None,
         favorites_only: bool = False,
@@ -95,6 +96,11 @@ class BaseModelService(ABC):
             sorted_data = await self._fetch_with_usage_sort(sort_params)
         else:
             sorted_data = await self.cache_repository.fetch_sorted(sort_params)
+        # Pre-compute auto_tags for every item — needed for both filtering
+        # and display. Computation is cheap (string regex on 2-3 fields).
+        from .auto_tag_service import extract_auto_tags
+        for item in sorted_data:
+            item["auto_tags"] = extract_auto_tags(item)
         fetch_duration = time.perf_counter() - t0
         initial_count = len(sorted_data)
 
@@ -110,6 +116,7 @@ class BaseModelService(ABC):
                 base_models=base_models,
                 model_types=model_types,
                 tags=tags,
+                auto_tags=auto_tags,
                 favorites_only=favorites_only,
                 search_options=search_options,
                 tag_logic=tag_logic,
@@ -354,6 +361,7 @@ class BaseModelService(ABC):
         base_models: list = None,
         model_types: list = None,
         tags: Optional[Dict[str, str]] = None,
+        auto_tags: Optional[Dict[str, str]] = None,
         favorites_only: bool = False,
         search_options: dict = None,
         tag_logic: str = "any",
@@ -367,6 +375,7 @@ class BaseModelService(ABC):
             base_models=base_models,
             model_types=model_types,
             tags=tags,
+            auto_tags=auto_tags,
             favorites_only=favorites_only,
             search_options=normalized_options,
             tag_logic=tag_logic,

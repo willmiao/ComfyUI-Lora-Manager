@@ -233,6 +233,7 @@
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",
             "noTags": "タグなし",
+            "autoTags": "自動タグ",
             "noBaseModelMatches": "現在の検索に一致するベースモデルはありません。",
             "clearAll": "すべてのフィルタをクリア",
             "any": "いずれか",

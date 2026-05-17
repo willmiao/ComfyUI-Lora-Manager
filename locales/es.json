@@ -233,6 +233,7 @@
             "noCreditRequired": "Sin crédito requerido",
             "allowSellingGeneratedContent": "Venta permitida",
             "noTags": "Sin etiquetas",
+            "autoTags": "Etiquetas automáticas",
             "noBaseModelMatches": "Ningún modelo base coincide con la búsqueda actual.",
             "clearAll": "Limpiar todos los filtros",
             "any": "Cualquiera",

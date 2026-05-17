@@ -233,6 +233,7 @@
             "noCreditRequired": "無需署名",
             "allowSellingGeneratedContent": "允許銷售",
             "noTags": "無標籤",
+            "autoTags": "自動標籤",
             "noBaseModelMatches": "沒有基礎模型符合目前的搜尋。",
             "clearAll": "清除所有篩選",
             "any": "任一",

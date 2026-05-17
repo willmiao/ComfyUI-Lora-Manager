@@ -507,9 +507,34 @@
     background: rgba(0,0,0,0.18); /* Optional: subtle background for contrast */
 }
 
+/* Version row — flex container for badges + version names */
+.version-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+    margin-top: 2px;
+}
+
+/* Badge + version-name binding: they wrap as a single unit */
+.badge-version-unit {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    min-width: 0;
+    flex-shrink: 0;
+}
+
 /* Medium density adjustments for version name */
 .medium-density .version-name {
     font-size: 0.8em;
+}
+
+.medium-density .badge-version-unit .version-name {
+    max-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 /* Compact density adjustments for version name */
@@ -517,9 +542,59 @@
     font-size: 0.75em;
 }
 
-/* Hide civitai version name when setting is disabled */
-body.hide-card-version .civitai-version {
+.compact-density .badge-version-unit .version-name {
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.medium-density .version-row {
+    gap: 2px;
+}
+
+/* HIGH / LOW badges — shown inline before version name in card footer */
+.hl-badge {
+    display: inline-block;
+    font-size: 0.7em;
+    font-weight: 600;
+    line-height: 1.1;
+    padding: 1px 5px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    white-space: nowrap;
+}
+
+.hl-badge--high {
+    color: oklch(75% 0.12 230);
+    background: oklch(55% 0.15 240 / 0.25);
+    border-color: oklch(60% 0.18 250 / 0.3);
+}
+
+.hl-badge--low {
+    color: oklch(78% 0.10 185);
+    background: oklch(50% 0.10 190 / 0.25);
+    border-color: oklch(55% 0.12 195 / 0.3);
+}
+
+.medium-density .hl-badge {
+    font-size: 0.65em;
+}
+
+.compact-density .hl-badge {
+    font-size: 0.62em;
+    padding: 0px 4px;
+}
+
+/* Hide version-related elements when setting is disabled */
+body.hide-card-version .civitai-version,
+body.hide-card-version .hl-badge {
     display: none;
+}
+
+/* Compact density adjustments for version name */
+.compact-density .version-name {
+    font-size: 0.75em;
 }
 
 /* Prevent text selection on cards and interactive elements */

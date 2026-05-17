@@ -233,6 +233,7 @@
             "noCreditRequired": "No Credit Required",
             "allowSellingGeneratedContent": "Allow Selling",
             "noTags": "No tags",
+            "autoTags": "Auto Tags",
             "noBaseModelMatches": "No base models match the current search.",
             "clearAll": "Clear All Filters",
             "any": "Any",

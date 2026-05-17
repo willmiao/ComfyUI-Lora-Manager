@@ -644,8 +644,23 @@ export function createModelCard(model, modelType) {
             <div class="card-footer">
                 <div class="model-info">
                     <span class="model-name" title="${getDisplayName(model).replace(/"/g, '&quot;')}">${getDisplayName(model)}</span>
-                    <div>
-                        ${model.civitai?.name ? `<span class="version-name civitai-version">${model.civitai.name}</span>` : ''}
+                    <div class="version-row">
+                        ${(() => {
+                            const autoTags = model.auto_tags || [];
+                            const hlTags = autoTags.filter(t => t === 'HIGH' || t === 'LOW');
+                            const hasVersionName = model.civitai?.name;
+                            if (!hlTags.length && !hasVersionName) return '';
+                            const density = state.global.settings.display_density || 'default';
+                            const shortLabels = density === 'medium' || density === 'compact';
+                            const badges = hlTags.map(t => {
+                                const cls = t === 'HIGH' ? 'hl-badge hl-badge--high' : 'hl-badge hl-badge--low';
+                                const label = shortLabels ? (t === 'HIGH' ? 'H' : 'L') : t;
+                                const titleAttr = shortLabels ? ` title="${t}"` : '';
+                                return `<span class="${cls}"${titleAttr}>${label}</span>`;
+                            }).join('');
+                            const versionHtml = hasVersionName ? `<span class="version-name civitai-version">${model.civitai.name}</span>` : '';
+                            return `<span class="badge-version-unit">${badges}${versionHtml}</span>`;
+                        })()}
                         ${hasUsageCount ? `<span class="version-name" title="${translate('modelCard.usage.timesUsed', {}, 'Times used')}">${model.usage_count}×</span>` : ''}
                     </div>
                 </div>

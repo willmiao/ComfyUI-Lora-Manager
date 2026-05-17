@@ -233,6 +233,7 @@
             "noCreditRequired": "ללא קרדיט נדרש",
             "allowSellingGeneratedContent": "אפשר מכירה",
             "noTags": "ללא תגיות",
+            "autoTags": "תגיות אוטומטיות",
             "noBaseModelMatches": "אין מודלי בסיס התואמים לחיפוש הנוכחי.",
             "clearAll": "נקה את כל המסננים",
             "any": "כלשהו",

@@ -500,6 +500,18 @@ export function clearDynamicBaseModels() {
     dynamicBaseModelsTimestamp = null;
 }
 
+export const AUTO_TAG_GROUPS = {
+    mode: new Set(['HIGH', 'LOW']),
+    video: new Set(['I2V', 'T2V', 'TI2V']),
+    speed: new Set(['Lightning', 'Turbo']),
+};
+
+export const AUTO_TAG_GROUP_LABELS = {
+    mode: 'High / Low',
+    video: 'I2V / T2V / TI2V',
+    speed: 'Lightning / Turbo',
+};
+
 /**
  * Check if dynamic base models cache is valid
  * @returns {boolean}

@@ -301,6 +301,15 @@ class ModelListingHandler:
         for tag in exclude_tags:
             if tag:
                 tag_filters[tag] = "exclude"
+
+        auto_tag_filters: Dict[str, str] = {}
+        for tag in request.query.getall("auto_tag_include", []):
+            if tag:
+                auto_tag_filters[tag] = "include"
+        for tag in request.query.getall("auto_tag_exclude", []):
+            if tag:
+                auto_tag_filters[tag] = "exclude"
+
         favorites_only = request.query.get("favorites_only", "false").lower() == "true"
 
         search_options = {
@@ -367,6 +376,7 @@ class ModelListingHandler:
             "fuzzy_search": fuzzy_search,
             "base_models": base_models,
             "tags": tag_filters,
+            "auto_tags": auto_tag_filters,
             "tag_logic": tag_logic,
             "search_options": search_options,
             "hash_filters": hash_filters,
