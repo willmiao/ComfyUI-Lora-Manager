@@ -1101,7 +1101,10 @@ class ModelScanner:
 
     def _log_duplicate_filename_summary(self) -> None:
         """Log a batched summary of duplicate filename conflicts once per scan."""
-        if self._hash_index is None:
+        # Duplicate filename detection is only relevant for LoRAs, which use
+        # basename-only syntax (<lora:name:strength>). Checkpoints and embeddings
+        # use full relative paths for resolution, so conflicts are not ambiguous.
+        if self._hash_index is None or self.model_type != "lora":
             return
 
         duplicates = self._hash_index.get_duplicate_filenames()

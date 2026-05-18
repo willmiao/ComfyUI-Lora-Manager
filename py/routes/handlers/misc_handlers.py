@@ -995,6 +995,12 @@ class DoctorHandler:
         total_conflict_files = 0
 
         for model_type, label, factory in self._scanner_factories:
+            # Duplicate filename detection targets LoRAs which use basename-only
+            # syntax (<lora:name:strength>). Checkpoints/embeddings reference
+            # models via relative paths with extensions, so conflicts there would
+            # be false positives.
+            if model_type != "lora":
+                continue
             try:
                 scanner = await factory()
                 hash_index = getattr(scanner, "_hash_index", None)

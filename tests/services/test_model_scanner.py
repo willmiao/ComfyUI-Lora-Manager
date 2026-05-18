@@ -636,6 +636,8 @@ async def test_log_duplicate_filename_summary_logs_warning(tmp_path: Path, caplo
     root = tmp_path / "loras"
     root.mkdir()
     scanner = DummyScanner(root)
+    # Duplicate filename detection is only active for LoRAs
+    scanner.model_type = "lora"
 
     # Simulate duplicate filenames in the hash index
     scanner._hash_index.add_entry("aaa111", str(root / "model.safetensors"))
@@ -646,7 +648,7 @@ async def test_log_duplicate_filename_summary_logs_warning(tmp_path: Path, caplo
     assert len(caplog.records) >= 1
     log_msg = caplog.records[-1].message
     assert "Duplicate filename conflict detected" in log_msg
-    assert "1 dummy filename(s)" in log_msg
+    assert "1 lora filename(s)" in log_msg
     assert "2 files total" in log_msg
 
 
