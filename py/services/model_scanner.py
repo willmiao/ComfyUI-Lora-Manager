@@ -9,7 +9,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Set,
 
 from ..utils.models import BaseModelMetadata
 from ..config import config
-from ..utils.file_utils import find_preview_file, get_preview_extension
+from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256
 from ..utils.metadata_manager import MetadataManager
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
@@ -1067,6 +1067,19 @@ class ModelScanner:
 
         model_data = self._build_cache_entry(metadata, folder=normalized_folder)
 
+        # Compute SHA256 hash when metadata provided none (e.g., CivitAI API response has empty hashes)
+        if not model_data.get('sha256') and file_path:
+            try:
+                logger.info(f"Computing SHA256 hash for {file_path} (was empty from metadata)")
+                sha256 = await calculate_sha256(file_path)
+                if sha256:
+                    model_data['sha256'] = sha256.lower()
+                    if isinstance(metadata, BaseModelMetadata):
+                        metadata.sha256 = sha256.lower()
+                    await MetadataManager.save_metadata(file_path, metadata)
+            except Exception as e:
+                logger.error(f"Failed to compute SHA256 for {file_path}: {e}")
+
         # Skip excluded models
         if model_data.get('exclude', False):
             excluded_models.append(model_data['file_path'])
@@ -1475,6 +1488,15 @@ class ModelScanner:
                 folder=folder_value,
                 file_path_override=normalized_new_path,
             )
+
+            # Ensure sha256 is populated even when metadata doesn't have it
+            if not cache_entry.get('sha256') and normalized_new_path and os.path.exists(normalized_new_path):
+                try:
+                    sha256 = await calculate_sha256(normalized_new_path)
+                    if sha256:
+                        cache_entry['sha256'] = sha256.lower()
+                except Exception as e:
+                    logger.error(f"Failed to compute SHA256 for {normalized_new_path}: {e}")
 
             if recalculate_type:
                 cache_entry = self.adjust_cached_entry(cache_entry)

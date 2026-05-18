@@ -18,6 +18,7 @@ from ..utils.constants import (
     VALID_LORA_TYPES,
 )
 from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
+from ..utils.file_utils import calculate_sha256
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
@@ -2239,8 +2240,11 @@ class DownloadManager:
             entry.file_name = os.path.splitext(os.path.basename(file_path))[0]
             # Update size to actual downloaded file size
             entry.size = os.path.getsize(file_path)
-            # Use SHA256 from API metadata (already set in from_civitai_info)
-            # Do not recalculate to avoid blocking during ComfyUI execution
+            # Compute SHA256 locally when the API response didn't include it
+            if not entry.sha256:
+                sha256 = await calculate_sha256(file_path)
+                if sha256:
+                    entry.sha256 = sha256.lower()
             entries.append(entry)
 
         return entries
