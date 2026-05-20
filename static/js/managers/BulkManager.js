@@ -3,7 +3,7 @@ import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax, getNSF
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
-import { RecipeSidebarApiClient, updateRecipeMetadata } from '../api/recipeApi.js';
+import { RecipeSidebarApiClient, updateRecipeMetadata, extractRecipeId } from '../api/recipeApi.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
 import { BASE_MODEL_CATEGORIES } from '../utils/constants.js';
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
@@ -74,7 +74,7 @@ export class BulkManager {
                 unfavorite: true
             },
             recipes: {
-                addTags: false,
+                addTags: true,
                 sendToWorkflow: false,
                 copyAll: false,
                 refreshAll: false,
@@ -1043,6 +1043,8 @@ export class BulkManager {
                 cancelled = true;
             });
 
+            const isRecipes = state.currentPageType === 'recipes';
+
             // Add or replace tags for each selected model based on mode
             for (const filePath of filePaths) {
                 if (cancelled) {
@@ -1050,7 +1052,9 @@ export class BulkManager {
                     break;
                 }
                 try {
-                    if (mode === 'replace') {
+                    if (isRecipes) {
+                        await this._saveRecipeTags(filePath, tags, mode);
+                    } else if (mode === 'replace') {
                         await apiClient.saveModelMetadata(filePath, { tags: tags });
                     } else {
                         await apiClient.addTags(filePath, { tags: tags });
@@ -1087,6 +1091,35 @@ export class BulkManager {
             state.loadingManager.hide();
             state.loadingManager.restoreProgressBar();
         }
+    }
+
+    async _saveRecipeTags(filePath, newTags, mode) {
+        const recipeId = extractRecipeId(filePath);
+        if (!recipeId) throw new Error('Unable to determine recipe ID');
+
+        let finalTags = newTags;
+        if (mode === 'append') {
+            const recipeItem = state.virtualScroller?.items?.find(
+                item => item.file_path === filePath
+            );
+            const existingTags = recipeItem?.tags || [];
+            finalTags = [...new Set([...existingTags, ...newTags])];
+        }
+
+        const response = await fetch(
+            `/api/lm/recipe/${encodeURIComponent(recipeId)}/update`,
+            {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tags: finalTags }),
+            }
+        );
+        const data = await response.json();
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to update recipe tags');
+        }
+
+        state.virtualScroller.updateSingleItem(filePath, { tags: finalTags });
     }
 
     cleanupBulkAddTagsModal() {
