@@ -1,11 +1,41 @@
 import pytest
 
 from py.services.settings_manager import SettingsManager, get_settings_manager
+from py.services.service_registry import ServiceRegistry
 from py.utils.utils import (
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
+    get_lora_info,
+    get_lora_info_absolute,
     sanitize_folder_name,
 )
+
+
+class _FakeCache:
+    def __init__(self, items):
+        self.raw_data = list(items)
+
+
+class _FakeScanner:
+    def __init__(self, items):
+        self._cache = _FakeCache(items)
+
+    async def get_cached_data(self):
+        return self._cache
+
+
+@pytest.fixture
+def mock_lora_scanner(monkeypatch):
+    def _setup(items):
+        scanner = _FakeScanner(items)
+
+        async def get_scanner():
+            return scanner
+
+        monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", get_scanner)
+        return scanner
+
+    return _setup
 
 
 @pytest.fixture
@@ -114,3 +144,114 @@ def test_calculate_recipe_fingerprint_empty_input():
 )
 def test_sanitize_folder_name(original, expected):
     assert sanitize_folder_name(original) == expected
+
+
+def test_get_lora_info_absolute_bare_name(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL", "file_path": "/models/Lora/SDXL/mylora.safetensors", "civitai": {"trainedWords": ["trigger1"]}},
+    ])
+
+    path, triggers = get_lora_info_absolute("mylora")
+
+    assert path == "/models/Lora/SDXL/mylora.safetensors"
+    assert triggers == ["trigger1"]
+
+
+def test_get_lora_info_absolute_with_path(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL/Styles", "file_path": "/models/Lora/SDXL/Styles/mylora.safetensors", "civitai": {"trainedWords": ["artistic"]}},
+        {"file_name": "other", "folder": "", "file_path": "/models/Lora/other.safetensors", "civitai": {}},
+    ])
+
+    path, triggers = get_lora_info_absolute("SDXL/Styles/mylora")
+
+    assert path == "/models/Lora/SDXL/Styles/mylora.safetensors"
+    assert triggers == ["artistic"]
+
+
+def test_get_lora_info_absolute_path_fallback_to_basename(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "RenamedFolder", "file_path": "/models/Lora/RenamedFolder/mylora.safetensors", "civitai": {"trainedWords": ["trigger1"]}},
+    ])
+
+    path, triggers = get_lora_info_absolute("OldFolder/mylora")
+
+    assert path == "/models/Lora/RenamedFolder/mylora.safetensors"
+    assert triggers == ["trigger1"]
+
+
+def test_get_lora_info_absolute_prefers_folder_match(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "V1", "file_path": "/models/Lora/V1/mylora.safetensors", "civitai": {"trainedWords": ["v1"]}},
+        {"file_name": "mylora", "folder": "V2", "file_path": "/models/Lora/V2/mylora.safetensors", "civitai": {"trainedWords": ["v2"]}},
+    ])
+
+    path, triggers = get_lora_info_absolute("V2/mylora")
+
+    assert path == "/models/Lora/V2/mylora.safetensors"
+    assert triggers == ["v2"]
+
+
+def test_get_lora_info_absolute_no_folder_in_cache_no_path_in_name(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "", "file_path": "/models/Lora/mylora.safetensors", "civitai": {}},
+    ])
+
+    path, triggers = get_lora_info_absolute("mylora")
+
+    assert path == "/models/Lora/mylora.safetensors"
+    assert triggers == []
+
+
+def test_get_lora_info_absolute_strips_extension(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL", "file_path": "/models/Lora/SDXL/mylora.safetensors", "civitai": {"trainedWords": ["hello"]}},
+    ])
+
+    path, triggers = get_lora_info_absolute("SDXL/mylora.safetensors")
+
+    assert path == "/models/Lora/SDXL/mylora.safetensors"
+    assert triggers == ["hello"]
+
+
+def test_get_lora_info_absolute_not_found_returns_original(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL", "file_path": "/models/Lora/SDXL/mylora.safetensors", "civitai": {}},
+    ])
+
+    path, triggers = get_lora_info_absolute("nonexistent")
+
+    assert path == "nonexistent"
+    assert triggers == []
+
+
+def test_get_lora_info_bare_name(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL", "file_path": "/models/Lora/SDXL/mylora.safetensors", "civitai": {"trainedWords": ["trigger1"]}},
+    ])
+
+    path, triggers = get_lora_info("mylora")
+
+    assert triggers == ["trigger1"]
+
+
+def test_get_lora_info_with_path(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL/Styles", "file_path": "/models/Lora/SDXL/Styles/mylora.safetensors", "civitai": {"trainedWords": ["artistic"]}},
+        {"file_name": "other", "folder": "", "file_path": "/models/Lora/other.safetensors", "civitai": {}},
+    ])
+
+    path, triggers = get_lora_info("SDXL/Styles/mylora")
+
+    assert triggers == ["artistic"]
+
+
+def test_get_lora_info_not_found_returns_original(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "mylora", "folder": "SDXL", "file_path": "/models/Lora/SDXL/mylora.safetensors", "civitai": {}},
+    ])
+
+    path, triggers = get_lora_info("nonexistent")
+
+    assert path == "nonexistent"
+    assert triggers == []

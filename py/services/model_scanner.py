@@ -1597,12 +1597,39 @@ class ModelScanner:
         """Get model information by name"""
         try:
             cache = await self.get_cached_data()
-            
+
+            name_normalized = name.replace("\\", "/")
+            name_no_ext = name_normalized
+            for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if name_no_ext.lower().endswith(ext):
+                    name_no_ext = name_no_ext[: -len(ext)]
+                    break
+
+            has_path = "/" in name_no_ext
+            basename = os.path.basename(name_no_ext) if has_path else name_no_ext
+            best_fallback = None
+
             for model in cache.raw_data:
-                if model.get("file_name") == name:
+                file_name = model.get("file_name", "")
+                folder = model.get("folder", "")
+                file_name_no_ext = file_name
+                for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                    if file_name_no_ext.lower().endswith(ext):
+                        file_name_no_ext = file_name_no_ext[: -len(ext)]
+                        break
+                path_name = f"{folder}/{file_name_no_ext}".replace("\\", "/") if folder else file_name_no_ext
+
+                if name_no_ext == file_name_no_ext or name_no_ext == path_name:
                     return model
-                    
-            return None
+
+                if has_path and file_name_no_ext == basename:
+                    if folder and name_no_ext.startswith(folder.replace("\\", "/") + "/"):
+                        best_fallback = model
+                    elif best_fallback is None:
+                        best_fallback = model
+
+            return best_fallback
+
         except Exception as e:
             logger.error(f"Error getting model info by name: {e}", exc_info=True)
             return None

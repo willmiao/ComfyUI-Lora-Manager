@@ -45,10 +45,13 @@ logger = logging.getLogger(__name__)
 
 
 def extract_lora_name(lora_path):
-    """Extract the lora name from a lora path (e.g., 'IL\\aorunIllstrious.safetensors' -> 'aorunIllstrious')"""
-    # Get the basename without extension
-    basename = os.path.basename(lora_path)
-    return os.path.splitext(basename)[0]
+    normalized = lora_path.replace("\\", "/")
+    basename = os.path.basename(normalized)
+    name_no_ext = os.path.splitext(basename)[0]
+    dirname = os.path.dirname(normalized)
+    if dirname and dirname not in (".", "/") and not normalized.startswith("/"):
+        return f"{dirname}/{name_no_ext}"
+    return name_no_ext
 
 
 def get_loras_list(kwargs):

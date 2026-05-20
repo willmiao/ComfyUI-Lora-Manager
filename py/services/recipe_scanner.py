@@ -2517,6 +2517,7 @@ class RecipeScanner:
                 continue
 
             file_name = None
+            folder = ""
             hash_value = (lora.get("hash") or "").lower()
             if (
                 hash_value
@@ -2526,6 +2527,11 @@ class RecipeScanner:
                 file_path = self._lora_scanner._hash_index.get_path(hash_value)
                 if file_path:
                     file_name = os.path.splitext(os.path.basename(file_path))[0]
+                    if lora_cache is not None:
+                        for cached_lora in getattr(lora_cache, "raw_data", []):
+                            if cached_lora.get("file_path") == file_path:
+                                folder = cached_lora.get("folder", "")
+                                break
 
             if not file_name and lora.get("modelVersionId") and lora_cache is not None:
                 for cached_lora in getattr(lora_cache, "raw_data", []):
@@ -2540,13 +2546,16 @@ class RecipeScanner:
                             file_name = os.path.splitext(os.path.basename(cached_path))[
                                 0
                             ]
+                            folder = cached_lora.get("folder", "")
                         break
 
             if not file_name:
                 file_name = lora.get("file_name", "unknown-lora")
+                folder = lora.get("folder", "")
 
+            lora_name = f"{folder}/{file_name}" if folder else file_name
             strength = lora.get("strength", 1.0)
-            syntax_parts.append(f"<lora:{file_name}:{strength}>")
+            syntax_parts.append(f"<lora:{lora_name}:{strength}>")
 
         return syntax_parts
 

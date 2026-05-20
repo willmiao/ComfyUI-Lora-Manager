@@ -209,7 +209,9 @@ class ModelHashIndex:
         return self._filename_to_hash.get(filename)
     
     def get_hash_by_filename(self, filename: str) -> Optional[str]:
-        """Get hash for a filename without extension"""
+        """Get hash for a filename (bare basename or path-prefixed name)"""
+        if "/" in filename or "\\" in filename:
+            filename = os.path.splitext(os.path.basename(filename.replace("\\", "/")))[0]
         return self._filename_to_hash.get(filename)
     
     def clear(self) -> None:

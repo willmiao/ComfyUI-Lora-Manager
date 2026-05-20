@@ -312,8 +312,23 @@ class LoraService(BaseModelService):
         """Return cached raw metadata for a LoRA matching the given filename."""
         cache = await self.scanner.get_cached_data(force_refresh=False)
 
+        fn_normalized = filename.replace("\\", "/")
+        fn_no_ext = fn_normalized
+        for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+            if fn_no_ext.lower().endswith(ext):
+                fn_no_ext = fn_no_ext[: -len(ext)]
+                break
+
         for lora in cache.raw_data if cache else []:
-            if lora.get("file_name") == filename:
+            file_name = lora.get("file_name", "")
+            folder = lora.get("folder", "")
+            file_name_no_ext = file_name
+            for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if file_name_no_ext.lower().endswith(ext):
+                    file_name_no_ext = file_name_no_ext[: -len(ext)]
+                    break
+            path_name = f"{folder}/{file_name_no_ext}".replace("\\", "/") if folder else file_name_no_ext
+            if fn_no_ext in (file_name_no_ext, path_name):
                 return lora
 
         return None
@@ -401,7 +416,10 @@ class LoraService(BaseModelService):
             locked_loras = locked_loras[:target_count]
 
         # Filter out locked LoRAs from available pool
-        locked_names = {lora["name"] for lora in locked_loras}
+        locked_names = {
+            os.path.basename(lora["name"]) if "/" in str(lora.get("name", "")) else lora["name"]
+            for lora in locked_loras
+        }
         available_pool = [
             l for l in available_loras if l["file_name"] not in locked_names
         ]
@@ -456,7 +474,7 @@ class LoraService(BaseModelService):
 
             result_loras.append(
                 {
-                    "name": lora["file_name"],
+                    "name": f"{lora['folder']}/{lora['file_name']}" if lora.get("folder") else lora["file_name"],
                     "strength": model_str,
                     "clipStrength": clip_str,
                     "active": True,
@@ -672,8 +690,9 @@ class LoraService(BaseModelService):
         # Return minimal data needed for cycling
         return [
             {
-                "file_name": lora["file_name"],
+                "file_name": f"{lora['folder']}/{lora['file_name']}" if lora.get("folder") else lora["file_name"],
                 "model_name": lora.get("model_name", lora["file_name"]),
+                "folder": lora.get("folder", ""),
             }
             for lora in available_loras
         ]

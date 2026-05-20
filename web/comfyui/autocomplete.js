@@ -226,7 +226,10 @@ const MODEL_BEHAVIORS = {
             }
         },
         async getInsertText(_instance, relativePath) {
-            const fileName = removeLoraExtension(splitRelativePath(relativePath).fileName);
+            const { directories, fileName } = splitRelativePath(relativePath);
+            const baseName = removeLoraExtension(fileName);
+            const folder = directories.length ? directories.join('/') + '/' : '';
+            const loraName = folder + baseName;
 
             let strength = 1.0;
             let hasStrength = false;
@@ -262,9 +265,9 @@ const MODEL_BEHAVIORS = {
             }
 
             if (clipStrength !== null) {
-                return formatAutocompleteInsertion(`<lora:${fileName}:${strength}:${clipStrength}>`);
+                return formatAutocompleteInsertion(`<lora:${loraName}:${strength}:${clipStrength}>`);
             }
-            return formatAutocompleteInsertion(`<lora:${fileName}:${strength}>`);
+            return formatAutocompleteInsertion(`<lora:${loraName}:${strength}>`);
         }
     },
     embeddings: {

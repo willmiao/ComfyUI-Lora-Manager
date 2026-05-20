@@ -430,7 +430,9 @@ export function buildLoraSyntax(fileName, usageTips = {}) {
 
 export function copyLoraSyntax(card) {
   const usageTips = JSON.parse(card.dataset.usage_tips || "{}");
-  const baseSyntax = buildLoraSyntax(card.dataset.file_name, usageTips);
+  const folder = card.dataset.folder || '';
+  const loraName = folder ? `${folder}/${card.dataset.file_name}` : card.dataset.file_name;
+  const baseSyntax = buildLoraSyntax(loraName, usageTips);
 
   // Check if trigger words should be included
   const includeTriggerWords = state.global.settings.include_trigger_words;

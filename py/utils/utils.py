@@ -15,30 +15,64 @@ def get_lora_info(lora_name):
         scanner = await ServiceRegistry.get_lora_scanner()
         cache = await scanner.get_cached_data()
 
+        lora_name_normalized = lora_name.replace("\\", "/")
+        lora_name_no_ext = lora_name_normalized
+        for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+            if lora_name_no_ext.lower().endswith(ext):
+                lora_name_no_ext = lora_name_no_ext[: -len(ext)]
+                break
+
+        has_path = "/" in lora_name_no_ext
+        basename = os.path.basename(lora_name_no_ext) if has_path else lora_name_no_ext
+        best_fallback = None
+
         for item in cache.raw_data:
-            if item.get("file_name") == lora_name:
-                file_path = item.get("file_path")
-                if file_path:
-                    # Check all lora roots including extra paths
-                    all_roots = list(config.loras_roots or []) + list(
-                        config.extra_loras_roots or []
+            file_name = item.get("file_name", "")
+            folder = item.get("folder", "")
+            file_name_no_ext = file_name
+            for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if file_name_no_ext.lower().endswith(ext):
+                    file_name_no_ext = file_name_no_ext[: -len(ext)]
+                    break
+            path_name = f"{folder}/{file_name_no_ext}".replace("\\", "/") if folder else file_name_no_ext
+
+            if lora_name_no_ext not in (file_name_no_ext, path_name):
+                if has_path and file_name_no_ext == basename:
+                    if folder and lora_name_no_ext.startswith(folder.replace("\\", "/") + "/"):
+                        best_fallback = item
+                    elif best_fallback is None:
+                        best_fallback = item
+                continue
+
+            file_path = item.get("file_path")
+            if not file_path:
+                continue
+
+            all_roots = list(config.loras_roots or []) + list(
+                config.extra_loras_roots or []
+            )
+            for root in all_roots:
+                root = root.replace(os.sep, "/")
+                if file_path.startswith(root):
+                    relative_path = os.path.relpath(file_path, root).replace(
+                        os.sep, "/"
                     )
-                    for root in all_roots:
-                        root = root.replace(os.sep, "/")
-                        if file_path.startswith(root):
-                            relative_path = os.path.relpath(file_path, root).replace(
-                                os.sep, "/"
-                            )
-                            # Get trigger words from civitai metadata
-                            civitai = item.get("civitai", {})
-                            trigger_words = (
-                                civitai.get("trainedWords", []) if civitai else []
-                            )
-                            return relative_path, trigger_words
-                    # If not found in any root, return path with trigger words from cache
                     civitai = item.get("civitai", {})
-                    trigger_words = civitai.get("trainedWords", []) if civitai else []
-                    return file_path, trigger_words
+                    trigger_words = (
+                        civitai.get("trainedWords", []) if civitai else []
+                    )
+                    return relative_path, trigger_words
+            civitai = item.get("civitai", {})
+            trigger_words = civitai.get("trainedWords", []) if civitai else []
+            return file_path, trigger_words
+
+        if best_fallback:
+            file_path = best_fallback.get("file_path")
+            if file_path:
+                civitai = best_fallback.get("civitai", {})
+                trigger_words = civitai.get("trainedWords", []) if civitai else []
+                return file_path, trigger_words
+
         return lora_name, []
 
     try:
@@ -77,15 +111,54 @@ def get_lora_info_absolute(lora_name):
         scanner = await ServiceRegistry.get_lora_scanner()
         cache = await scanner.get_cached_data()
 
+        lora_name_normalized = lora_name.replace("\\", "/")
+        lora_name_no_ext = lora_name_normalized
+        for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+            if lora_name_no_ext.lower().endswith(ext):
+                lora_name_no_ext = lora_name_no_ext[: -len(ext)]
+                break
+
+        has_path = "/" in lora_name_no_ext
+        basename = os.path.basename(lora_name_no_ext) if has_path else lora_name_no_ext
+        best_fallback = None
+
         for item in cache.raw_data:
-            if item.get("file_name") == lora_name:
+            file_name = item.get("file_name", "")
+            folder = item.get("folder", "")
+            file_name_no_ext = file_name
+            for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if file_name_no_ext.lower().endswith(ext):
+                    file_name_no_ext = file_name_no_ext[: -len(ext)]
+                    break
+            path_name = f"{folder}/{file_name_no_ext}".replace("\\", "/") if folder else file_name_no_ext
+
+            if lora_name_no_ext == file_name_no_ext:
                 file_path = item.get("file_path")
                 if file_path:
-                    # Return absolute path directly
-                    # Get trigger words from civitai metadata
                     civitai = item.get("civitai", {})
                     trigger_words = civitai.get("trainedWords", []) if civitai else []
                     return file_path, trigger_words
+
+            if lora_name_no_ext == path_name:
+                file_path = item.get("file_path")
+                if file_path:
+                    civitai = item.get("civitai", {})
+                    trigger_words = civitai.get("trainedWords", []) if civitai else []
+                    return file_path, trigger_words
+
+            if has_path and file_name_no_ext == basename:
+                if folder and lora_name_no_ext.startswith(folder.replace("\\", "/") + "/"):
+                    best_fallback = item
+                elif best_fallback is None:
+                    best_fallback = item
+
+        if best_fallback:
+            file_path = best_fallback.get("file_path")
+            if file_path:
+                civitai = best_fallback.get("civitai", {})
+                trigger_words = civitai.get("trainedWords", []) if civitai else []
+                return file_path, trigger_words
+
         return lora_name, []
 
     try:

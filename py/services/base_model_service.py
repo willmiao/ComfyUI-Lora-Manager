@@ -870,13 +870,46 @@ class BaseModelService(ABC):
         """Get the static preview URL for a model file"""
         cache = await self.scanner.get_cached_data()
 
+        name_normalized = model_name.replace("\\", "/")
+        name_no_ext = name_normalized
+        for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+            if name_no_ext.lower().endswith(ext):
+                name_no_ext = name_no_ext[: -len(ext)]
+                break
+
+        has_path = "/" in name_no_ext
+        basename = os.path.basename(name_no_ext) if has_path else name_no_ext
+        best_fallback = None
+
         for model in cache.raw_data:
-            if model["file_name"] == model_name:
+            file_name = model.get("file_name", "")
+            folder = model.get("folder", "")
+            file_name_no_ext = file_name
+            for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if file_name_no_ext.lower().endswith(ext):
+                    file_name_no_ext = file_name_no_ext[: -len(ext)]
+                    break
+            path_name = f"{folder}/{file_name_no_ext}".replace("\\", "/") if folder else file_name_no_ext
+
+            if name_no_ext == file_name_no_ext or name_no_ext == path_name:
                 preview_url = model.get("preview_url")
                 if preview_url:
                     from ..config import config
 
                     return config.get_preview_static_url(preview_url)
+
+            if has_path and file_name_no_ext == basename:
+                if folder and name_no_ext.startswith(folder.replace("\\", "/") + "/"):
+                    best_fallback = model
+                elif best_fallback is None:
+                    best_fallback = model
+
+        if best_fallback:
+            preview_url = best_fallback.get("preview_url")
+            if preview_url:
+                from ..config import config
+
+                return config.get_preview_static_url(preview_url)
 
         return "/loras_static/images/no-preview.png"
 
@@ -884,8 +917,28 @@ class BaseModelService(ABC):
         """Get the Civitai URL for a model file"""
         cache = await self.scanner.get_cached_data()
 
+        name_normalized = model_name.replace("\\", "/")
+        name_no_ext = name_normalized
+        for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+            if name_no_ext.lower().endswith(ext):
+                name_no_ext = name_no_ext[: -len(ext)]
+                break
+
+        has_path = "/" in name_no_ext
+        basename = os.path.basename(name_no_ext) if has_path else name_no_ext
+        best_fallback = None
+
         for model in cache.raw_data:
-            if model["file_name"] == model_name:
+            file_name = model.get("file_name", "")
+            folder = model.get("folder", "")
+            file_name_no_ext = file_name
+            for ext in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if file_name_no_ext.lower().endswith(ext):
+                    file_name_no_ext = file_name_no_ext[: -len(ext)]
+                    break
+            path_name = f"{folder}/{file_name_no_ext}".replace("\\", "/") if folder else file_name_no_ext
+
+            if name_no_ext == file_name_no_ext or name_no_ext == path_name:
                 civitai_data = model.get("civitai", {})
                 model_id = civitai_data.get("modelId")
                 version_id = civitai_data.get("id")
@@ -903,6 +956,27 @@ class BaseModelService(ABC):
                         "model_id": str(model_id),
                         "version_id": str(version_id) if version_id else None,
                     }
+
+            if has_path and file_name_no_ext == basename:
+                if folder and name_no_ext.startswith(folder.replace("\\", "/") + "/"):
+                    best_fallback = model
+                elif best_fallback is None:
+                    best_fallback = model
+
+        if best_fallback:
+            civitai_data = best_fallback.get("civitai", {})
+            model_id = civitai_data.get("modelId")
+            if model_id:
+                version_id = civitai_data.get("id")
+                civitai_host = self.settings.get("civitai_host", "civitai.com")
+                civitai_url = build_civitai_model_page_url(
+                    model_id, version_id, host=civitai_host
+                )
+                return {
+                    "civitai_url": civitai_url,
+                    "model_id": str(model_id),
+                    "version_id": str(version_id) if version_id else None,
+                }
 
         return {"civitai_url": None, "model_id": None, "version_id": None}
 

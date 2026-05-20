@@ -17,6 +17,7 @@ model_cache/
 .claude/
 .sisyphus/
 .codex
+.omo
 
 # Vue widgets development cache (but keep build output)
 vue-widgets/node_modules/
