@@ -422,8 +422,12 @@ export class BaseModelApiClient {
                 throw new Error('Failed to save metadata');
             }
 
-            state.virtualScroller.updateSingleItem(filePath, data);
-            return response.json();
+            const result = await response.json();
+            state.virtualScroller.updateSingleItem(filePath, {
+                ...data,
+                auto_tags: result.auto_tags,
+            });
+            return result;
         } finally {
             state.loadingManager.hide();
         }
@@ -448,7 +452,10 @@ export class BaseModelApiClient {
             const result = await response.json();
 
             if (result.success && result.tags) {
-                state.virtualScroller.updateSingleItem(filePath, { tags: result.tags });
+                state.virtualScroller.updateSingleItem(filePath, {
+                    tags: result.tags,
+                    auto_tags: result.auto_tags,
+                });
             }
 
             return result;

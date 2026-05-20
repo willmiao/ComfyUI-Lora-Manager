@@ -76,46 +76,64 @@ def _collect_sources(model_data: Dict) -> List[str]:
 def extract_auto_tags(model_data: Dict) -> List[str]:
     """Extract auto-detected tags from model metadata.
 
-    Matches predefined patterns against filename, base_model, and
-    CivitAI version name. Returns a sorted, deduplicated list of tag labels.
+    Uses a two-layer approach:
+      Layer 1 — Regex-based detection against filename, base_model, and
+                CivitAI version name.
+      Layer 2 — Merge in any user-defined tags that overlap with known
+                auto-tag categories. This provides a manual fallback when
+                auto-detection fails (e.g. "I2V HN" or unlabeled models).
 
     HIGH/LOW tags are only returned when the base_model indicates a Wan
     family model — no other model architecture uses this distinction.
 
     Args:
         model_data: Model metadata dict with keys:
-            file_name, base_model, civitai (with optional 'name' field).
+            file_name, base_model, civitai (with optional 'name' field),
+            tags (user-defined tag list, used as fallback).
 
     Returns:
         Sorted list of unique auto-tag strings (e.g. ["I2V"]).
     """
     sources = _collect_sources(model_data)
-    if not sources:
-        return []
-
     base_model = model_data.get("base_model", "")
     is_wan = "wan" in base_model.lower()
 
     found: Set[str] = set()
 
-    for label, pattern in AUTO_TAG_CATEGORIES.items():
-        # HIGH/LOW are Wan-specific — skip for non-Wan to avoid noise
-        if label in ("HIGH", "LOW"):
-            if not is_wan:
-                continue
-            # Use case-insensitive character class + case-sensitive boundary,
-            # so "HighNoise" (camelCase) matches but "highlight" doesn't.
-            # Boundary: not followed by lowercase letter (= word has ended).
-            ci = "".join(f"[{c.lower()}{c.upper()}]" for c in label)
-            if label == "LOW":
-                regex = re.compile(r"(?<![Ff])" + ci + r"(?![a-z])")
+    # ── Layer 1: regex-based detection ────────────────────────────
+    if sources:
+        for label, pattern in AUTO_TAG_CATEGORIES.items():
+            # HIGH/LOW are Wan-specific — skip for non-Wan to avoid noise
+            if label in ("HIGH", "LOW"):
+                if not is_wan:
+                    continue
+                # Use case-insensitive character class + case-sensitive boundary,
+                # so "HighNoise" (camelCase) matches but "highlight" doesn't.
+                # Boundary: not followed by lowercase letter (= word has ended).
+                ci = "".join(f"[{c.lower()}{c.upper()}]" for c in label)
+                if label == "LOW":
+                    regex = re.compile(r"(?<![Ff])" + ci + r"(?![a-z])")
+                else:
+                    regex = re.compile(ci + r"(?![a-z])")
             else:
-                regex = re.compile(ci + r"(?![a-z])")
-        else:
-            regex = re.compile(pattern, re.IGNORECASE)
-        for source in sources:
-            if regex.search(source):
-                found.add(label)
-                break
+                regex = re.compile(pattern, re.IGNORECASE)
+            for source in sources:
+                if regex.search(source):
+                    found.add(label)
+                    break
+
+    # ── Layer 2: user-defined tags as manual fallback ─────────────
+    # When auto-detection fails (abbreviated names like "Hi"/"Lo",
+    # "I2V HN", or unlabeled models), users can add canonical tags
+    # (HIGH, LOW, I2V, etc.) to the model's regular tags for correct
+    # badge display and filtering. Matching is case-insensitive so
+    # "high"/"High"/"HIGH" all resolve to the canonical label.
+    user_tags = model_data.get("tags")
+    if user_tags:
+        label_map = {label.lower(): label for label in AUTO_TAG_CATEGORIES}
+        for t in user_tags:
+            canonical = label_map.get(t.lower())
+            if canonical:
+                found.add(canonical)
 
     return sorted(found)

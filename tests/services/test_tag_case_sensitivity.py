@@ -43,7 +43,7 @@ async def test_tag_update_service_handles_case_insensitive_tags(tmp_path: Path) 
         return True
 
     # Try to add "Test" (different case) - should not be added since "test" already exists
-    tags = await service.add_tags(
+    tags, auto_tags = await service.add_tags(
         file_path=str(tmp_path / "model.safetensors"),
         new_tags=["Test"],
         metadata_loader=loader,
@@ -52,6 +52,7 @@ async def test_tag_update_service_handles_case_insensitive_tags(tmp_path: Path) 
 
     # Should still only have "test" (lowercase) in the tags
     assert tags == ["test"]
+    assert auto_tags == []  # no file_name/base_model in metadata, so no auto-detection
     assert len(manager.saved) == 1
     saved_metadata = manager.saved[0][1]
     assert saved_metadata["tags"] == ["test"]
@@ -76,7 +77,7 @@ async def test_tag_update_service_adds_new_tags_in_lowercase(tmp_path: Path) -> 
         return True
 
     # Add new tags with mixed case
-    tags = await service.add_tags(
+    tags, auto_tags = await service.add_tags(
         file_path=str(tmp_path / "model.safetensors"),
         new_tags=["NewTag", "ANOTHER_TAG"],
         metadata_loader=loader,
@@ -87,6 +88,7 @@ async def test_tag_update_service_adds_new_tags_in_lowercase(tmp_path: Path) -> 
     assert "existing" in tags
     assert "newtag" in tags
     assert "another_tag" in tags
+    assert auto_tags == []
     assert len(manager.saved) == 1
     saved_metadata = manager.saved[0][1]
     assert "newtag" in saved_metadata["tags"]

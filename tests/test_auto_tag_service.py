@@ -126,6 +126,80 @@ class TestExtractAutoTags:
         })
         assert set(result) == {"HIGH", "I2V"}
 
+    # ── Layer 2: user-defined tags as manual fallback ───────────
+
+    def test_user_tags_fallback_when_detection_fails(self):
+        result = extract_auto_tags({
+            "file_name": "BOTH-v1.0",
+            "base_model": "Wan 2.2",
+            "civitai": {},
+            "tags": ["HIGH", "I2V", "T2V"],
+        })
+        assert set(result) == {"HIGH", "I2V", "T2V"}
+
+    def test_user_tags_augment_partial_detection(self):
+        result = extract_auto_tags({
+            "file_name": "wan_i2v_hn_v2",
+            "base_model": "Wan 2.2 I2V",
+            "civitai": {},
+            "tags": ["HIGH"],
+        })
+        assert set(result) == {"HIGH", "I2V"}
+
+    def test_user_tags_non_auto_tag_ignored(self):
+        result = extract_auto_tags({
+            "file_name": "model_v1",
+            "base_model": "Wan 2.2",
+            "civitai": {},
+            "tags": ["HIGH", "character", "style", "nsfw"],
+        })
+        assert set(result) == {"HIGH"}
+
+    def test_user_tags_overrides_non_wan_gate(self):
+        result = extract_auto_tags({
+            "file_name": "flux_model_v1",
+            "base_model": "Flux.1 D",
+            "civitai": {},
+            "tags": ["HIGH", "LOW", "Turbo"],
+        })
+        assert set(result) == {"HIGH", "LOW", "Turbo"}
+
+    def test_user_tags_no_duplication(self):
+        result = extract_auto_tags({
+            "file_name": "wan_i2v_high_v3",
+            "base_model": "Wan 2.2",
+            "civitai": {},
+            "tags": ["HIGH", "I2V"],
+        })
+        assert set(result) == {"HIGH", "I2V"}
+
+    def test_user_tags_lightning_turbo_manual(self):
+        result = extract_auto_tags({
+            "file_name": "sdxl_model_v1",
+            "base_model": "SDXL",
+            "civitai": {},
+            "tags": ["Lightning"],
+        })
+        assert set(result) == {"Lightning"}
+
+    def test_user_tags_case_insensitive_lowercase(self):
+        result = extract_auto_tags({
+            "file_name": "wan_masterpieces_v2",
+            "base_model": "Wan Video 14B t2v",
+            "civitai": {},
+            "tags": ["high"],
+        })
+        assert set(result) == {"HIGH", "T2V"}
+
+    def test_user_tags_case_insensitive_mixed(self):
+        result = extract_auto_tags({
+            "file_name": "model_v1",
+            "base_model": "SDXL",
+            "civitai": {},
+            "tags": ["lightning", "turbo", "i2v"],
+        })
+        assert set(result) == {"Lightning", "Turbo", "I2V"}
+
 
 class TestAutoTagCategories:
     def test_all_patterns_compile(self):

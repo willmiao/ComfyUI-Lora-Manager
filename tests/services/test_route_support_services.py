@@ -255,7 +255,7 @@ def test_tag_update_service_adds_unique_tags(tmp_path: Path) -> None:
         cache_updates.append(metadata)
         return True
 
-    tags = asyncio.run(
+    tags, auto_tags = asyncio.run(
         service.add_tags(
             file_path=str(tmp_path / "model.safetensors"),
             new_tags=["new", "existing"],
@@ -265,5 +265,6 @@ def test_tag_update_service_adds_unique_tags(tmp_path: Path) -> None:
     )
 
     assert tags == ["existing", "new"]
+    assert auto_tags == []
     assert manager.saved
     assert cache_updates

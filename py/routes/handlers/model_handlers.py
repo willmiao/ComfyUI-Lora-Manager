@@ -788,7 +788,7 @@ class ModelManagementHandler:
 
             metadata_updates = {k: v for k, v in data.items() if k != "file_path"}
 
-            await self._metadata_sync.save_metadata_updates(
+            updated_metadata = await self._metadata_sync.save_metadata_updates(
                 file_path=file_path,
                 updates=metadata_updates,
                 metadata_loader=self._metadata_sync.load_local_metadata,
@@ -799,7 +799,12 @@ class ModelManagementHandler:
                 cache = await self._service.scanner.get_cached_data()
                 await cache.resort()
 
-            return web.json_response({"success": True})
+            from ...services.auto_tag_service import extract_auto_tags
+            auto_tags = extract_auto_tags(updated_metadata)
+
+            return web.json_response(
+                {"success": True, "auto_tags": auto_tags}
+            )
         except Exception as exc:
             self._logger.error("Error saving metadata: %s", exc, exc_info=True)
             return web.Response(text=str(exc), status=500)
@@ -816,14 +821,16 @@ class ModelManagementHandler:
             if not isinstance(new_tags, list):
                 return web.Response(text="Tags must be a list", status=400)
 
-            tags = await self._tag_update_service.add_tags(
+            tags, auto_tags = await self._tag_update_service.add_tags(
                 file_path=file_path,
                 new_tags=new_tags,
                 metadata_loader=self._metadata_sync.load_local_metadata,
                 update_cache=self._service.scanner.update_single_model_cache,
             )
 
-            return web.json_response({"success": True, "tags": tags})
+            return web.json_response(
+                {"success": True, "tags": tags, "auto_tags": auto_tags}
+            )
         except Exception as exc:
             self._logger.error("Error adding tags: %s", exc, exc_info=True)
             return web.Response(text=str(exc), status=500)

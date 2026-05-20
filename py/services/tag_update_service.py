@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import os
 
-from typing import Awaitable, Callable, Dict, List, Sequence
+from typing import Awaitable, Callable, Dict, List, Sequence, Tuple
+
+from .auto_tag_service import extract_auto_tags
 
 
 class TagUpdateService:
@@ -20,9 +22,8 @@ class TagUpdateService:
         new_tags: Sequence[str],
         metadata_loader: Callable[[str], Awaitable[Dict[str, object]]],
         update_cache: Callable[[str, str, Dict[str, object]], Awaitable[bool]],
-    ) -> List[str]:
-        """Add tags to a metadata entry while keeping case-insensitive uniqueness."""
-
+    ) -> Tuple[List[str], List[str]]:
+        """Add tags to a metadata entry and return updated tags and auto_tags."""
         base, _ = os.path.splitext(file_path)
         metadata_path = f"{base}.metadata.json"
         metadata = await metadata_loader(metadata_path)
@@ -44,5 +45,6 @@ class TagUpdateService:
         await self._metadata_manager.save_metadata(file_path, metadata)
         await update_cache(file_path, file_path, metadata)
 
-        return existing_tags
+        auto_tags = extract_auto_tags(metadata)
+        return existing_tags, auto_tags
 
