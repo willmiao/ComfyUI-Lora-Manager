@@ -274,7 +274,17 @@ async function saveTags() {
     
     const filePath = editBtn.dataset.filePath;
     const tagElements = document.querySelectorAll('.metadata-item');
-    const tags = Array.from(tagElements).map(tag => tag.dataset.tag);
+    let tags = Array.from(tagElements).map(tag => tag.dataset.tag);
+    
+    // Flush uncommitted input as a tag so it's not silently lost on save
+    const tagInput = document.querySelector('.metadata-input');
+    if (tagInput) {
+        const pendingTag = tagInput.value.trim().toLowerCase();
+        if (pendingTag && !tags.includes(pendingTag)) {
+            tags.push(pendingTag);
+        }
+        tagInput.value = '';
+    }
 
     // Get original tags to compare
     const originalTagElements = document.querySelectorAll('.tooltip-tag');
@@ -465,6 +475,7 @@ function setupTagInput() {
     const tagInput = document.querySelector('.metadata-input');
     
     if (tagInput) {
+        tagInput.focus();
         tagInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();

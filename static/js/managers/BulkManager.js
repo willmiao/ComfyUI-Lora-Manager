@@ -785,6 +785,7 @@ export class BulkManager {
         // Setup tag input behavior
         const tagInput = document.querySelector('.bulk-metadata-input');
         if (tagInput) {
+            tagInput.focus();
             tagInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1008,7 +1009,17 @@ export class BulkManager {
 
     async saveBulkTags(mode = 'append') {
         const tagElements = document.querySelectorAll('#bulkTagsItems .metadata-item');
-        const tags = Array.from(tagElements).map(tag => tag.dataset.tag);
+        let tags = Array.from(tagElements).map(tag => tag.dataset.tag);
+
+        // Flush uncommitted input as a tag so it's not silently lost on save
+        const tagInput = document.querySelector('.bulk-metadata-input');
+        if (tagInput) {
+            const pendingTag = tagInput.value.trim().toLowerCase();
+            if (pendingTag && !tags.includes(pendingTag)) {
+                tags.push(pendingTag);
+            }
+            tagInput.value = '';
+        }
 
         if (tags.length === 0) {
             showToast('toast.models.noTagsToAdd', {}, 'warning');
