@@ -353,9 +353,11 @@
 }
 
 .card-actions {
+    flex-shrink: 0;
     display: flex;
-    gap: var(--space-1); /* Use gap instead of margin for spacing between icons */
-    align-items: center;
+    gap: var(--space-1);
+    align-items: flex-end;
+    align-self: flex-end;
 }
 
 .card-actions i:hover {
@@ -364,10 +366,9 @@
     background-color: rgba(255, 255, 255, 0.1);
 }
 
-/* Style for active favorites */
 .favorite-active {
-    color: #ffc107 !important; /* Gold color for favorites */
-    text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    color: #d4a017 !important;
+    text-shadow: 0 0 5px rgba(212, 160, 23, 0.5);
 }
 
 @media (max-width: 1200px) {
@@ -389,14 +390,6 @@
         max-width: 100%; /* Allow cards to fill available space on mobile */
         min-width: 200px;
     }
-}
-
-.card-actions {
-    flex-shrink: 0;  /* Prevent actions from shrinking */
-    display: flex;
-    gap: var(--space-1);
-    align-items: flex-end; /* 将图标靠下对齐 */
-    align-self: flex-end; /* 将整个actions容器靠下对齐 */
 }
 
 .model-link {
@@ -438,7 +431,7 @@
 
 .base-model {
     display: inline-block;
-    background: #f0f0f0;
+    background: var(--surface-hover, oklch(95% 0 0));
     padding: 2px 6px;
     border-radius: var(--border-radius-xs);
     margin-right: 6px;

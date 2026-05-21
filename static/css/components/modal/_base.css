@@ -29,10 +29,7 @@ body.modal-open {
     border-radius: var(--border-radius-base);
     padding: var(--space-3);
     border: 1px solid var(--lora-border);
-    box-shadow: 
-        0 4px 6px -1px rgba(0, 0, 0, 0.1),
-        0 2px 4px -1px rgba(0, 0, 0, 0.06),
-        0 10px 15px -3px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-md);
     overflow-y: auto;
     overflow-x: hidden; /* 防止水平滚动条 */
     scrollbar-gutter: stable both-edges; /* Reserve space to prevent layout shift when scrollbar toggles */
@@ -67,12 +64,18 @@ body.modal-open {
 }
 
 .cancel-btn, .delete-btn, .exclude-btn, .confirm-btn {
-    padding: 8px var(--space-2);
-    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    border-radius: var(--border-radius-sm);
     border: none;
     cursor: pointer;
     font-weight: 500;
+    font-size: 0.95em;
     min-width: 100px;
+    transition: background-color 0.2s, opacity 0.2s;
 }
 
 .cancel-btn {
@@ -97,11 +100,10 @@ body.modal-open {
 }
 
 .delete-btn:hover {
-    opacity: 0.9;
+    background: oklch(from var(--lora-error) l c h / 85%);
 }
 
 .exclude-btn:hover, .confirm-btn:hover {
-    opacity: 0.9;
     background: oklch(from var(--lora-accent, #4f46e5) l c h / 85%);
 }
 
@@ -135,8 +137,8 @@ body.modal-open {
 .update-info,
 .info-item,
 .path-preview {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--surface-hover);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
 }
@@ -147,21 +149,11 @@ body.modal-open {
     border: 1px solid var(--lora-border);
 }
 
-[data-theme="dark"] .support-section,
-[data-theme="dark"] .changelog-section,
-[data-theme="dark"] .update-info,
-[data-theme="dark"] .info-item,
-[data-theme="dark"] .path-preview,
-[data-theme="dark"] #bulkDownloadMissingLorasModal .bulk-download-loras-preview {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--lora-border);
-}
-
 .primary-btn {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--lora-accent);
     color: var(--lora-text);
     border: none;
@@ -181,9 +173,9 @@ body.modal-open {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--card-bg);
-    color: var (--text-color);
+    color: var(--text-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     cursor: pointer;
@@ -244,7 +236,7 @@ button:disabled,
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
+    padding: var(--space-1) var(--space-2);
     background-color: var(--lora-error);
     color: white;
     border: none;
@@ -261,16 +253,11 @@ button:disabled,
 
 /* Metadata archive status styles */
 .metadata-archive-status {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--surface-hover);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
     margin-bottom: var(--space-2);
-}
-
-[data-theme="dark"] .metadata-archive-status {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--lora-border);
 }
 
 .archive-status-item {
@@ -312,15 +299,10 @@ button:disabled,
 }
 
 .backup-status {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--surface-hover);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);
-}
-
-[data-theme="dark"] .backup-status {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--lora-border);
 }
 
 .backup-summary-grid {
@@ -331,15 +313,10 @@ button:disabled,
 }
 
 .backup-summary-card {
-    background: rgba(255, 255, 255, 0.5);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
-}
-
-[data-theme="dark"] .backup-summary-card {
-    background: rgba(255, 255, 255, 0.02);
-    border-color: rgba(255, 255, 255, 0.05);
 }
 
 .backup-summary-label {
@@ -404,14 +381,9 @@ button:disabled,
 }
 
 .backup-location-details {
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
-    background: rgba(0, 0, 0, 0.02);
-}
-
-[data-theme="dark"] .backup-location-details {
-    border-color: var(--lora-border);
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--surface-hover);
 }
 
 .backup-location-details summary {
@@ -442,14 +414,10 @@ button:disabled,
     max-width: 100%;
     padding: 6px 8px;
     border-radius: var(--border-radius-sm);
-    background: rgba(0, 0, 0, 0.05);
+    background: var(--surface-hover);
     color: var(--text-color);
     overflow-wrap: anywhere;
     word-break: break-word;
-}
-
-[data-theme="dark"] .backup-location-path {
-    background: rgba(255, 255, 255, 0.05);
 }
 
 @media (max-width: 768px) {
@@ -519,8 +487,8 @@ button:disabled,
 }
 
 #bulkDownloadMissingLorasModal .bulk-download-loras-preview {
-    background: rgba(0, 0, 0, 0.03);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    background: var(--surface-hover);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);
     margin-bottom: var(--space-3);
@@ -578,7 +546,7 @@ button:disabled,
     align-items: flex-start;
     gap: var(--space-2);
     padding: var(--space-2);
-    background: rgba(59, 130, 246, 0.1);
+    background: oklch(from var(--lora-accent) l c h / 0.1);
     border-radius: var(--border-radius-sm);
     font-size: 0.9em;
     color: var(--text-color);
