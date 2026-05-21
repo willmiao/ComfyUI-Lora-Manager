@@ -1,0 +1,8 @@
+:root {
+  --bp-mobile: 768px;
+  --bp-tablet: 1024px;
+  --bp-desktop: 1400px;
+  --bp-wide: 1920px;
+  --bp-ultrawide: 2150px;
+  --bp-4k: 3000px;
+}

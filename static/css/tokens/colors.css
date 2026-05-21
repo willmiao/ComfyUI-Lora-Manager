@@ -1,0 +1,113 @@
+:root {
+  --color-accent-l: 68%;
+  --color-accent-c: 0.28;
+  --color-accent-h: 256;
+  --color-warning-l: 75%;
+  --color-warning-c: 0.25;
+  --color-warning-h: 80;
+  --color-success-l: 70%;
+  --color-success-c: 0.2;
+  --color-success-h: 140;
+  --color-error-l: 75%;
+  --color-error-c: 0.32;
+  --color-error-h: 29;
+  --color-info-l: 72%;
+  --color-info-c: 0.2;
+  --color-info-h: 220;
+  --color-neutral-h: 250;
+}
+
+:root {
+  --color-accent: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
+  --color-accent-hover: oklch(58% var(--color-accent-c) var(--color-accent-h));
+  --color-accent-subtle: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.12);
+  --color-accent-border: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.25);
+  --color-accent-transparent: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.6);
+
+  --color-warning: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
+  --color-warning-bg: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.15);
+  --color-warning-border: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.3);
+
+  --color-success: oklch(var(--color-success-l) var(--color-success-c) var(--color-success-h));
+  --color-success-bg: oklch(var(--color-success-l) var(--color-success-c) var(--color-success-h) / 0.2);
+  --color-success-border: oklch(var(--color-success-l) var(--color-success-c) var(--color-success-h) / 0.3);
+
+  --color-error: oklch(var(--color-error-l) var(--color-error-c) var(--color-error-h));
+  --color-error-bg: color-mix(in oklch, var(--color-error) 20%, transparent);
+  --color-error-border: color-mix(in oklch, var(--color-error) 50%, transparent);
+
+  --color-info: oklch(var(--color-info-l) var(--color-info-c) var(--color-info-h));
+  --color-info-bg: oklch(72% 0.2 220);
+  --color-info-text: oklch(28% 0.03 220);
+  --color-info-glow: oklch(72% 0.2 220 / 0.28);
+
+  --color-skip-refresh-bg: oklch(82% 0.12 45);
+  --color-skip-refresh-text: oklch(35% 0.02 45);
+  --color-skip-refresh-glow: oklch(82% 0.12 45 / 0.15);
+}
+
+:root {
+  --bg-base: #ffffff;
+  --bg-elevated: oklch(97% 0 0 / 0.95);
+  --bg-overlay: oklch(0% 0 0 / 0.75);
+  --bg-hover: oklch(95% 0.02 256);
+  --bg-disabled: #f5f5f5;
+
+  --text-primary: #333333;
+  --text-secondary: #6c757d;
+  --text-inverse: #ffffff;
+  --text-muted-on-dark: rgba(255, 255, 255, 0.8);
+
+  --surface-base: #ffffff;
+  --surface-elevated: oklch(97% 0 0 / 0.95);
+  --surface-hover: oklch(95% 0.02 256);
+
+  --border-base: #e0e0e0;
+  --border-subtle: oklch(72% 0.03 256 / 0.45);
+  --border-inverse: rgba(255, 255, 255, 0.25);
+
+  --status-success-text: oklch(75% 0.12 230);
+  --status-success-bg: oklch(55% 0.15 240 / 0.25);
+  --status-success-border: oklch(60% 0.18 250 / 0.3);
+  --status-info-text: oklch(78% 0.10 185);
+  --status-info-bg: oklch(50% 0.10 190 / 0.25);
+  --status-info-border: oklch(55% 0.12 195 / 0.3);
+
+  --favorite-color: #d4a017;
+  --favorite-glow: oklch(75% 0.15 85 / 0.5);
+}
+
+[data-theme="dark"] {
+  --bg-base: #1a1a1a;
+  --bg-elevated: oklch(25% 0.02 256 / 0.98);
+  --bg-overlay: oklch(0% 0 0 / 0.75);
+  --bg-hover: oklch(35% 0.02 256);
+  --bg-disabled: #3a3a3a;
+
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-inverse: #1a1a1a;
+  --text-muted-on-dark: rgba(255, 255, 255, 0.8);
+
+  --surface-base: #2d2d2d;
+  --surface-elevated: oklch(25% 0.02 256 / 0.98);
+  --surface-hover: oklch(35% 0.02 256);
+
+  --border-base: #404040;
+  --border-subtle: oklch(90% 0.02 256 / 0.15);
+  --border-inverse: rgba(255, 255, 255, 0.25);
+
+  --status-success-text: oklch(75% 0.12 230);
+  --status-success-bg: oklch(55% 0.15 240 / 0.25);
+  --status-success-border: oklch(60% 0.18 250 / 0.3);
+  --status-info-text: oklch(78% 0.10 185);
+  --status-info-bg: oklch(50% 0.10 190 / 0.25);
+  --status-info-border: oklch(55% 0.12 195 / 0.3);
+
+  --color-info-bg: oklch(62% 0.18 220);
+  --color-info-text: oklch(98% 0.02 240);
+  --color-info-glow: oklch(62% 0.18 220 / 0.4);
+
+  --color-error-bg: color-mix(in oklch, var(--color-error) 15%, transparent);
+  --color-error-border: color-mix(in oklch, var(--color-error) 40%, transparent);
+}
