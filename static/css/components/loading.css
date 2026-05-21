@@ -18,7 +18,7 @@
     border-radius: var(--border-radius-base);
     text-align: center;
     border: 1px solid var(--lora-border);
-    width: min(400px, 90vw); /* 固定最大宽度，但保持响应式 */
+    width: min(400px, 90vw);
 }
 
 .loading-spinner {
@@ -33,7 +33,7 @@
 
 .loading-status {
     margin-bottom: 1rem;
-    color: var(--text-color); /* 使用主题文本颜色 */
+    color: var(--text-color);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -42,11 +42,11 @@
 }
 
 .progress-container {
-    width: 280px; /* 固定进度条宽度 */
-    background-color: var(--lora-border); /* 使用主题边框颜色 */
+    width: 280px;
+    background-color: var(--lora-border);
     border-radius: 4px;
     overflow: hidden;
-    margin: 0 auto; /* 居中显示 */
+    margin: 0 auto;
 }
 
 .progress-bar {

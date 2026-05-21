@@ -258,7 +258,7 @@
     color: white; /* Icon color changes to white on hover */
 }
 
-/* 增强hover状态的视觉反馈 */
+/* Enhanced hover visual feedback */
 .social-link:hover,
 .update-link:hover,
 .folder-item:hover {

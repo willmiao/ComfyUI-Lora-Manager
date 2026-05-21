@@ -67,9 +67,17 @@
     position: relative;
 }
 
-.icon-button:hover {
-    opacity: 1;
-    background: rgba(0, 0, 0, 0.05);
+.icon-button:hover,
+.icon-button:focus-visible {
+    background: var(--lora-surface-hover, oklch(95% 0.02 256));
+    color: var(--lora-accent);
+    transform: scale(1.05);
+    outline: none;
+}
+
+[data-theme="dark"] .icon-button:hover,
+[data-theme="dark"] .icon-button:focus-visible {
+    background: oklch(35% 0.02 256 / 0.98);
 }
 
 [data-theme="dark"] .icon-button:hover {

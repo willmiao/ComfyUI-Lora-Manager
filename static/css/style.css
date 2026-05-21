@@ -54,7 +54,7 @@
     text-align: center;
 }
 
-/* 使用已有的loading-spinner样式 */
+/* Reuse existing loading-spinner styles */
 .initialization-notice .loading-spinner {
     margin-bottom: var(--space-2);
 }

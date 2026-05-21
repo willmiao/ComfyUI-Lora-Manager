@@ -1,14 +1,14 @@
 /* Update Trigger Words styles */
 .info-item.trigger-words {
   padding: var(--space-2);
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--surface-subtle);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: var(--border-radius-sm);
 }
 
-/* 调整 trigger words 样式 */
+/* Trigger words styles */
 [data-theme="dark"] .info-item.trigger-words {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-subtle);
   border: 1px solid var(--lora-border);
 }
 

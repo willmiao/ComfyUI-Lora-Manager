@@ -186,7 +186,7 @@
     height: 88px;
     border-radius: var(--border-radius-xs);
     overflow: hidden;
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-hover);
     display: flex;
     align-items: center;
     justify-content: center;

@@ -124,6 +124,17 @@ body {
     display: none !important;
 }
 
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+    outline: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -131,5 +142,9 @@ body {
         animation-duration: 0.01ms !important;
         animation-iteration-count: 1 !important;
         transition-duration: 0.01ms !important;
+    }
+
+    html {
+        scroll-behavior: auto !important;
     }
 }

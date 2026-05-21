@@ -1,4 +1,4 @@
-/* modal 基础样式 */
+/* Modal base styles */
 .modal {
     display: none;
     position: fixed;
@@ -6,19 +6,19 @@
     left: 0;
     width: 100%;
     height: calc(100% - var(--header-height, 48px)); /* Adjust height to exclude header */
-    background: rgba(0, 0, 0, 0.2); /* 调整为更淡的半透明黑色 */
+    background: rgba(0, 0, 0, 0.2);
     z-index: var(--z-modal);
     overflow: auto; /* Change from hidden to auto to allow scrolling */
 }
 
-/* 当模态窗口打开时，禁止body滚动 */
+/* Prevent body scroll when modal is open */
 body.modal-open {
     position: fixed;
     width: 100%;
-    padding-right: var(--scrollbar-width, 0px); /* 补偿滚动条消失导致的页面偏移 */
+    padding-right: var(--scrollbar-width, 0px);
 }
 
-/* modal-content 样式 */
+/* Modal content styles */
 .modal-content {
     position: relative;
     max-width: 800px;
@@ -31,7 +31,7 @@ body.modal-open {
     border: 1px solid var(--lora-border);
     box-shadow: var(--shadow-md);
     overflow-y: auto;
-    overflow-x: hidden; /* 防止水平滚动条 */
+    overflow-x: hidden;
     scrollbar-gutter: stable both-edges; /* Reserve space to prevent layout shift when scrollbar toggles */
 }
 
@@ -39,10 +39,10 @@ body.modal-open {
     min-height: 480px;
 }
 
-/* 当 modal 打开时锁定 body */
+/* Lock body when modal is open */
 body.modal-open {
-    overflow: hidden !important; /* 覆盖 base.css 中的 scroll */
-    padding-right: var(--scrollbar-width, 8px); /* 使用滚动条宽度作为补偿 */
+    overflow: hidden !important;
+    padding-right: var(--scrollbar-width, 8px);
 }
 
 @keyframes modalFadeIn {
@@ -95,15 +95,20 @@ body.modal-open {
     color: white;
 }
 
-.cancel-btn:hover {
+.cancel-btn:hover,
+.cancel-btn:focus-visible {
     background: var(--lora-border);
 }
 
-.delete-btn:hover {
+.delete-btn:hover,
+.delete-btn:focus-visible {
     background: oklch(from var(--lora-error) l c h / 85%);
 }
 
-.exclude-btn:hover, .confirm-btn:hover {
+.exclude-btn:hover,
+.exclude-btn:focus-visible,
+.confirm-btn:hover,
+.confirm-btn:focus-visible {
     background: oklch(from var(--lora-accent, #4f46e5) l c h / 85%);
 }
 
@@ -127,23 +132,27 @@ body.modal-open {
     z-index: 10;
 }
 
-.close:hover {
+.close:hover,
+.close:focus-visible {
     opacity: 1;
+    outline: 2px solid var(--lora-accent);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-xs);
 }
 
-/* 统一各个 section 的样式 */
+/* Unified section styles */
 .support-section,
 .changelog-section,
 .update-info,
 .info-item,
 .path-preview {
-    background: var(--surface-hover);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
 }
 
-/* 深色主题统一样式 */
+/* Dark theme unified styles */
 [data-theme="dark"] .modal-content {
     background: var(--lora-surface);
     border: 1px solid var(--lora-border);
@@ -163,9 +172,11 @@ body.modal-open {
     font-size: 0.95em;
 }
 
-.primary-btn:hover {
+.primary-btn:hover,
+.primary-btn:focus-visible {
     background-color: oklch(from var(--lora-accent) l c h / 85%);
     color: var(--lora-text);
+    outline: none;
 }
 
 /* Secondary button styles */
@@ -183,9 +194,11 @@ body.modal-open {
     font-size: 0.95em;
 }
 
-.secondary-btn:hover {
+.secondary-btn:hover,
+.secondary-btn:focus-visible {
     background-color: var(--border-color);
     color: var(--text-color);
+    outline: none;
 }
 
 /* Disabled button styles */
@@ -246,14 +259,16 @@ button:disabled,
     font-size: 0.95em;
 }
 
-.danger-btn:hover {
+.danger-btn:hover,
+.danger-btn:focus-visible {
     background-color: oklch(from var(--lora-error) l c h / 85%);
     color: white;
+    outline: none;
 }
 
 /* Metadata archive status styles */
 .metadata-archive-status {
-    background: var(--surface-hover);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
@@ -299,7 +314,7 @@ button:disabled,
 }
 
 .backup-status {
-    background: var(--surface-hover);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);
@@ -383,7 +398,7 @@ button:disabled,
 .backup-location-details {
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
-    background: var(--surface-hover);
+    background: var(--surface-subtle);
 }
 
 .backup-location-details summary {
@@ -414,7 +429,7 @@ button:disabled,
     max-width: 100%;
     padding: 6px 8px;
     border-radius: var(--border-radius-sm);
-    background: var(--surface-hover);
+    background: var(--surface-subtle);
     color: var(--text-color);
     overflow-wrap: anywhere;
     word-break: break-word;
@@ -487,7 +502,7 @@ button:disabled,
 }
 
 #bulkDownloadMissingLorasModal .bulk-download-loras-preview {
-    background: var(--surface-hover);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);

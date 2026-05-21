@@ -48,8 +48,7 @@
     padding: var(--space-3);
     border-radius: var(--border-radius-sm);
     border: 1px solid var(--lora-border);
-    background: rgba(0, 0, 0, 0.03);
-    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
 }
 
 .doctor-kicker {
@@ -128,7 +127,7 @@
 
 .doctor-issue-card {
     border: 1px solid rgba(0, 0, 0, 0.1);
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-subtle);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);
     box-shadow: none;
@@ -242,7 +241,7 @@
 
 [data-theme="dark"] .doctor-hero,
 [data-theme="dark"] .doctor-issue-card {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
     border-color: var(--lora-border);
     box-shadow: none;
 }

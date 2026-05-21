@@ -83,11 +83,13 @@
     box-shadow: var(--shadow-xs);
 }
 
-.control-group button:hover {
+.control-group button:hover,
+.control-group button:focus-visible {
     border-color: var(--lora-accent);
     background: var(--bg-color);
     transform: translateY(-1px);
     box-shadow: var(--shadow-lg);
+    outline: none;
 }
 
 .control-group button:active {
@@ -100,7 +102,8 @@
     transition: opacity 0.2s ease;
 }
 
-.control-group button:hover i {
+.control-group button:hover i,
+.control-group button:focus-visible i {
     opacity: 1;
 }
 
@@ -131,7 +134,7 @@
 
 .control-group button.favorite-filter i {
     margin-right: 4px;
-    color: #ffc107;
+    color: var(--favorite-color);
 }
 
 .control-group button.update-filter i {

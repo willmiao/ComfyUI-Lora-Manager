@@ -191,9 +191,11 @@
 }
 
 .header-search .search-options-toggle:hover,
-.header-search .search-filter-toggle:hover {
-  background: var(--lora-surface-hover, oklch(95% 0.02 256));
-  color: var(--lora-accent);
+.header-search .search-filter-toggle:hover,
+.header-search .search-filter-toggle:focus-visible {
+    background: var(--lora-surface-hover, oklch(95% 0.02 256));
+    color: var(--lora-accent);
+    outline: none;
 }
 
 .header-search .filter-badge {
@@ -366,9 +368,18 @@
   flex-shrink: 0;
 }
 
-.hamburger-menu-btn:hover {
-  background: var(--lora-accent);
-  color: white;
+.hamburger-menu-btn:hover,
+.hamburger-menu-btn:focus-visible {
+    background: var(--lora-surface-hover, oklch(95% 0.02 256));
+    color: var(--lora-accent);
+    outline: none;
+}
+
+.hamburger-dropdown .dropdown-item:hover,
+.hamburger-dropdown .dropdown-item:focus-visible {
+    background: var(--lora-surface-hover, oklch(95% 0.02 256));
+    color: var(--lora-accent);
+    outline: none;
 }
 
 /* Hamburger dropdown menu */
