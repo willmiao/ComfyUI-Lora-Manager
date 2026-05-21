@@ -1000,12 +1000,11 @@ class ModelUpdateService:
                     fallback_error_message = str(exc) or "resource not found"
                     mark_model_as_ignored = True
                 except Exception as exc:  # pragma: no cover - defensive log
-                    logger.error(
+                    logger.warning(
                         "Failed to fetch versions for model %s (%s): %s",
                         model_id,
                         model_type,
                         exc,
-                        exc_info=True,
                     )
                     fallback_error_message = str(exc)
             if response is not None:

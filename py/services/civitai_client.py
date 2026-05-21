@@ -201,6 +201,29 @@ class CivitaiClient:
 
         return _from_value(payload)
 
+    @staticmethod
+    def _is_transient_server_error(message: str) -> bool:
+        """Return True when the message indicates a transient upstream failure.
+
+        Recognises Cloudflare 524, generic 5xx, and connectivity-level flakiness
+        that should not be treated as a permanent failure.
+        """
+        normalized = message.lower()
+        if "status 5" in normalized or "status 524" in normalized:
+            return True
+        if any(
+            keyword in normalized
+            for keyword in (
+                "connection refused",
+                "connection reset",
+                "temporary failure",
+                "name resolution",
+                "connection closed",
+            )
+        ):
+            return True
+        return False
+
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
         """Get all versions of a model with local availability info"""
         try:
@@ -223,6 +246,13 @@ class CivitaiClient:
                 logger.info("Civitai request skipped: %s", OFFLINE_FRIENDLY_MESSAGE)
                 return None
             if message:
+                if self._is_transient_server_error(message):
+                    logger.info(
+                        "Transient server error for model %s: %s",
+                        model_id,
+                        message,
+                    )
+                    return None
                 raise RuntimeError(message)
             return None
         except RateLimitError:
