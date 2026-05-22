@@ -1177,6 +1177,12 @@ class ModelQueryHandler:
 
     async def find_filename_conflicts(self, request: web.Request) -> web.Response:
         try:
+            settings = get_settings_manager()
+            if settings.get("lora_syntax_format", "legacy") == "full":
+                return web.json_response(
+                    {"success": True, "conflicts": [], "count": 0}
+                )
+
             duplicates = self._service.find_duplicate_filenames()
             result = []
             cache = await self._service.scanner.get_cached_data()

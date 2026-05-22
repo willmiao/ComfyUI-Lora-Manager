@@ -686,6 +686,9 @@ class DoctorHandler:
         )
 
     async def resolve_filename_conflicts(self, request: web.Request) -> web.Response:
+        if self._settings.get("lora_syntax_format", "legacy") == "full":
+            return web.json_response({"success": True, "renamed": [], "count": 0})
+
         renamed: list[dict[str, Any]] = []
 
         try:
@@ -990,6 +993,18 @@ class DoctorHandler:
         }
 
     async def _check_filename_conflicts(self) -> dict[str, Any]:
+        # When full path syntax is active, duplicate filenames across subfolders
+        # are not ambiguous (<lora:subfolder/name:strength>), so skip the check.
+        if self._settings.get("lora_syntax_format", "legacy") == "full":
+            return {
+                "id": "filename_conflicts",
+                "title": "Duplicate Filename Conflicts",
+                "status": "ok",
+                "summary": "Full path syntax is active — duplicate filenames across folders are not ambiguous.",
+                "details": [],
+                "actions": [],
+            }
+
         all_conflicts: list[dict[str, Any]] = []
         total_conflict_groups = 0
         total_conflict_files = 0

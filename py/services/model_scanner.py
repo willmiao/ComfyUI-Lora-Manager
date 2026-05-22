@@ -1120,6 +1120,11 @@ class ModelScanner:
         if self._hash_index is None or self.model_type != "lora":
             return
 
+        # When full path syntax is active, duplicate filenames across subfolders
+        # are fully qualified, so there is no ambiguity — skip the warning.
+        if get_settings_manager().get("lora_syntax_format", "legacy") == "full":
+            return
+
         duplicates = self._hash_index.get_duplicate_filenames()
         if not duplicates:
             return
