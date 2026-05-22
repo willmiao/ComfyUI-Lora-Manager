@@ -1461,6 +1461,11 @@ class AutoComplete {
                 box-sizing: border-box;
             `;
 
+            // Prevent textarea from losing focus - same fix as createItemElement
+            itemEl.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+            });
+
             itemEl.addEventListener('mouseenter', () => {
                 this.selectItem(index, { manual: true });
             });
@@ -2188,6 +2193,16 @@ class AutoComplete {
             `;
             item.appendChild(nameSpan);
         }
+
+        // Prevent textarea from losing focus when clicking dropdown items.
+        // Without this, the blur event fires before click, and the blur handler's
+        // formatAutocompleteTextOnBlur() modifies the text and triggers hide()
+        // via suppressAutocompleteOnce, removing this item from the DOM before
+        // the click handler can execute. This specifically breaks the case where
+        // the text has a comma not followed by a space (e.g. "<lora:X:1>,search").
+        item.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+        });
 
         // Hover and selection handlers
         item.addEventListener('mouseenter', () => {
