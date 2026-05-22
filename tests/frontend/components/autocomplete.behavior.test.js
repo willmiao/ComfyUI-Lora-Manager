@@ -185,7 +185,7 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith(
       '/lm/loras/usage-tips-by-path?relative_path=models%2Fexample.safetensors',
     );
-    expect(input.value).toContain('<lora:models/example:1.5:0.9>,');
+    expect(input.value).toContain('<lora:example:1.5:0.9>,');
     expect(autoComplete.dropdown.style.display).toBe('none');
     expect(input.focus).toHaveBeenCalled();
     expect(input.setSelectionRange).toHaveBeenCalled();
@@ -1624,8 +1624,8 @@ describe('AutoComplete widget interactions', () => {
 
     await autoComplete.insertSelection('models/example.safetensors');
 
-    expect(input.value).toContain('<lora:models/example:1.2>');
-    expect(input.value).not.toContain('<lora:models/example:1.2>,');
+    expect(input.value).toContain('<lora:example:1.2>');
+    expect(input.value).not.toContain('<lora:example:1.2>,');
   });
 
   it('replaces entire phrase when selected tag ends with underscore version of search term (suffix match)', async () => {
