@@ -1,6 +1,6 @@
 import os
 from ..utils.utils import get_lora_info
-from .utils import FlexibleOptionalInputType, any_type, extract_lora_name, get_loras_list
+from .utils import FlexibleOptionalInputType, any_type, apply_lora_syntax_format, extract_lora_name, get_loras_list
 
 import logging
 
@@ -48,7 +48,7 @@ class LoraStackerLM:
             if not lora.get('active', False):
                 continue
                 
-            lora_name = lora['name']
+            lora_name = apply_lora_syntax_format(lora['name'])
             model_strength = float(lora['strength'])
             # Get clip strength - use model strength as default if not specified
             clip_strength = float(lora.get('clipStrength', model_strength))

@@ -420,12 +420,16 @@ export function getLoraStrengthsFromUsageTips(usageTips = {}) {
 export function buildLoraSyntax(fileName, usageTips = {}) {
   const { strength, hasStrength, clipStrength, hasClipStrength } = getLoraStrengthsFromUsageTips(usageTips);
 
+  const effectiveName = state.global.settings?.lora_syntax_format === 'legacy'
+    ? fileName.split('/').pop()
+    : fileName;
+
   if (hasClipStrength) {
     const modelStrength = hasStrength ? strength : 1;
-    return `<lora:${fileName}:${modelStrength}:${clipStrength}>`;
+    return `<lora:${effectiveName}:${modelStrength}:${clipStrength}>`;
   }
 
-  return `<lora:${fileName}:${strength}>`;
+  return `<lora:${effectiveName}:${strength}>`;
 }
 
 export function copyLoraSyntax(card) {

@@ -104,6 +104,30 @@ function removeLoraExtension(fileName = '') {
     return fileName.replace(/\.(safetensors|ckpt|pt|bin)$/i, '');
 }
 
+let _loraSyntaxFormatCache = null;
+
+function _getLoraSyntaxFormat() {
+    if (typeof _loraSyntaxFormatCache !== 'undefined' && _loraSyntaxFormatCache !== null) {
+        return _loraSyntaxFormatCache;
+    }
+    return 'legacy';
+}
+async function _initLoraSyntaxFormat() {
+    try {
+        const response = await api.fetchApi('/lm/settings');
+        if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.settings) {
+                _loraSyntaxFormatCache = data.settings.lora_syntax_format || 'legacy';
+                return;
+            }
+        }
+    } catch (e) {
+    }
+    _loraSyntaxFormatCache = 'legacy';
+}
+_initLoraSyntaxFormat();
+
 function parseSearchTokens(term = '') {
     const include = [];
     const exclude = [];
@@ -231,6 +255,10 @@ const MODEL_BEHAVIORS = {
             const folder = directories.length ? directories.join('/') + '/' : '';
             const loraName = folder + baseName;
 
+            const resultName = _getLoraSyntaxFormat() === 'legacy'
+                ? baseName
+                : loraName;
+
             let strength = 1.0;
             let hasStrength = false;
             let clipStrength = null;
@@ -265,9 +293,9 @@ const MODEL_BEHAVIORS = {
             }
 
             if (clipStrength !== null) {
-                return formatAutocompleteInsertion(`<lora:${loraName}:${strength}:${clipStrength}>`);
+                return formatAutocompleteInsertion(`<lora:${resultName}:${strength}:${clipStrength}>`);
             }
-            return formatAutocompleteInsertion(`<lora:${loraName}:${strength}>`);
+            return formatAutocompleteInsertion(`<lora:${resultName}:${strength}>`);
         }
     },
     embeddings: {

@@ -577,7 +577,13 @@
         },
         "misc": {
             "includeTriggerWords": "在 LoRA 語法中包含觸發詞",
-            "includeTriggerWordsHelp": "複製 LoRA 語法到剪貼簿時包含訓練觸發詞"
+            "includeTriggerWordsHelp": "複製 LoRA 語法到剪貼簿時包含訓練觸發詞",
+            "loraSyntaxFormat": "LoRA 語法格式",
+            "loraSyntaxFormatHelp": "LoRA 語法格式。完整路徑（Full）包含子資料夾路徑 (<lora:style/anime/x:1.0>)，解析精確無歧義。舊版（Legacy）僅使用檔名 (<lora:x:1.0>)——A1111 原始約定，同名檔案跨資料夾時可能產生歧義。",
+            "loraSyntaxFormatOptions": {
+                "full": "完整路徑（子資料夾/名稱）",
+                "legacy": "舊版 A1111（僅名稱）"
+            }
         },
         "metadataArchive": {
             "enableArchiveDb": "啟用中繼資料封存資料庫",

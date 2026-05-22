@@ -577,7 +577,13 @@
         },
         "misc": {
             "includeTriggerWords": "Inclure les mots-clés dans la syntaxe LoRA",
-            "includeTriggerWordsHelp": "Inclure les mots-clés d'entraînement lors de la copie de la syntaxe LoRA dans le presse-papiers"
+            "includeTriggerWordsHelp": "Inclure les mots-clés d'entraînement lors de la copie de la syntaxe LoRA dans le presse-papiers",
+            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
+            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormatOptions": {
+                "full": "[TODO: Translate] Full path (subfolder/name)",
+                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+            }
         },
         "metadataArchive": {
             "enableArchiveDb": "Activer la base de données d'archive des métadonnées",

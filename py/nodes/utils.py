@@ -44,14 +44,29 @@ import folder_paths  # type: ignore
 logger = logging.getLogger(__name__)
 
 
+def get_lora_syntax_format():
+    try:
+        from ..services.settings_manager import get_settings_manager
+        return get_settings_manager().get("lora_syntax_format", "legacy")
+    except Exception:
+        return "legacy"
+
+
+def apply_lora_syntax_format(name):
+    fmt = get_lora_syntax_format()
+    if fmt == "legacy":
+        return name.replace("\\", "/").rstrip("/").split("/")[-1]
+    return name
+
+
 def extract_lora_name(lora_path):
     normalized = lora_path.replace("\\", "/")
     basename = os.path.basename(normalized)
     name_no_ext = os.path.splitext(basename)[0]
     dirname = os.path.dirname(normalized)
     if dirname and dirname not in (".", "/") and not normalized.startswith("/"):
-        return f"{dirname}/{name_no_ext}"
-    return name_no_ext
+        return apply_lora_syntax_format(f"{dirname}/{name_no_ext}")
+    return apply_lora_syntax_format(name_no_ext)
 
 
 def get_loras_list(kwargs):

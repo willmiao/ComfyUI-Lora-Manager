@@ -96,6 +96,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),
     "model_name_display": "model_name",
+    "lora_syntax_format": "legacy",
     "model_card_footer_action": "replace_preview",
     "show_version_on_card": True,
     "update_flag_strategy": "same_base",

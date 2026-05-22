@@ -536,7 +536,7 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
@@ -594,6 +594,22 @@
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
                                 <h4>{{ t('settings.sections.misc') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="loraSyntaxFormat">
+                                        {{ t('settings.misc.loraSyntaxFormat') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.misc.loraSyntaxFormatHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="loraSyntaxFormat" onchange="settingsManager.saveSelectSetting('loraSyntaxFormat', 'lora_syntax_format')">
+                                            <option value="full">{{ t('settings.misc.loraSyntaxFormatOptions.full') }}</option>
+                                            <option value="legacy">{{ t('settings.misc.loraSyntaxFormatOptions.legacy') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-row">

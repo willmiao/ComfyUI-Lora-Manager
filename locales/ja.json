@@ -577,7 +577,13 @@
         },
         "misc": {
             "includeTriggerWords": "LoRA構文にトリガーワードを含める",
-            "includeTriggerWordsHelp": "LoRA構文をクリップボードにコピーする際、学習済みトリガーワードを含めます"
+            "includeTriggerWordsHelp": "LoRA構文をクリップボードにコピーする際、学習済みトリガーワードを含めます",
+            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
+            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormatOptions": {
+                "full": "[TODO: Translate] Full path (subfolder/name)",
+                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+            }
         },
         "metadataArchive": {
             "enableArchiveDb": "メタデータアーカイブデータベースを有効化",

@@ -577,7 +577,13 @@
         },
         "misc": {
             "includeTriggerWords": "Include Trigger Words in LoRA Syntax",
-            "includeTriggerWordsHelp": "Include trained trigger words when copying LoRA syntax to clipboard"
+            "includeTriggerWordsHelp": "Include trained trigger words when copying LoRA syntax to clipboard",
+            "loraSyntaxFormat": "LoRA Syntax Format",
+            "loraSyntaxFormatHelp": "LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormatOptions": {
+                "full": "Full path (subfolder/name)",
+                "legacy": "Legacy A1111 (name only)"
+            }
         },
         "metadataArchive": {
             "enableArchiveDb": "Enable Metadata Archive Database",
