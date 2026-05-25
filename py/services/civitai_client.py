@@ -562,6 +562,13 @@ class CivitaiClient:
             if not success:
                 if is_expected_offline_error(result):
                     return None
+                if self._is_transient_server_error(str(result)):
+                    logger.info(
+                        "Transient server error fetching image info for ID %s: %s",
+                        image_id,
+                        result,
+                    )
+                    return None
                 logger.error(
                     "Failed to fetch image info for ID %s from civitai.red: %s",
                     image_id,
