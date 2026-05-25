@@ -1945,6 +1945,8 @@
         "title": "Dateinamenskonflikte auflösen",
         "message": "Umbenennen durch Anhängen eines 4-stelligen Hashs an jeden doppelten Dateinamen.",
         "note": "Dieser Vorgang benennt Dateien auf der Festplatte um. Modellreferenzen in vorhandenen Workflows müssen möglicherweise aktualisiert werden, wenn Sie das A1111-Syntaxformat verwenden.",
+        "detail": "Beispiel: <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "Benennt <strong>{count}</strong> Datei(en) in <strong>{groups}</strong> Duplikatgruppe(n) um",
         "confirm": "Dateien umbenennen",
         "cancel": "Abbrechen"
     },

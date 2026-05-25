@@ -1945,6 +1945,8 @@
         "title": "解决文件名冲突",
         "message": "通过在每个重复文件名后附加 4 位哈希值来重命名文件。",
         "note": "此操作会重命名磁盘上的文件。如果使用 A1111 语法格式，现有工作流中的模型引用可能需要更新。",
+        "detail": "示例：<code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "将重命名 <strong>{count}</strong> 个文件（共 <strong>{groups}</strong> 组重复）",
         "confirm": "重命名文件",
         "cancel": "取消"
     },

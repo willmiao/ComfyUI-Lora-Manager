@@ -1945,6 +1945,8 @@
         "title": "解決檔案名稱衝突",
         "message": "通過在每個重複檔案名稱後附加 4 位元哈希值來重新命名檔案。",
         "note": "此操作會重新命名磁碟上的檔案。如果使用 A1111 語法格式，現有工作流程中的模型參考可能需要更新。",
+        "detail": "示例：<code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "將重新命名 <strong>{count}</strong> 個檔案（共 <strong>{groups}</strong> 組重複）",
         "confirm": "重新命名檔案",
         "cancel": "取消"
     },

@@ -1945,6 +1945,8 @@
         "title": "파일명 충돌 해결",
         "message": "중복 파일명에 4자리 해시를 추가하여 이름을 변경합니다.",
         "note": "이 작업은 디스크에 있는 파일의 이름을 변경합니다. A1111 구문 형식을 사용하는 경우 기존 워크플로우의 모델 참조를 업데이트해야 할 수 있습니다.",
+        "detail": "예시: <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "<strong>{groups}</strong>개 중복 그룹에서 <strong>{count}</strong>개 파일 이름을 변경합니다",
         "confirm": "파일 이름 변경",
         "cancel": "취소"
     },

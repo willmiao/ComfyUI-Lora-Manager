@@ -1945,6 +1945,8 @@
         "title": "Resolver conflictos de nombres de archivo",
         "message": "Renombrar añadiendo un hash de 4 caracteres a cada nombre de archivo duplicado.",
         "note": "Esta operación renombra archivos en el disco. Es posible que las referencias a modelos en flujos de trabajo existentes deban actualizarse si usas el formato de sintaxis A1111.",
+        "detail": "Ejemplo: <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "Renombrará <strong>{count}</strong> archivo(s) en <strong>{groups}</strong> grupo(s) de duplicados",
         "confirm": "Renombrar archivos",
         "cancel": "Cancelar"
     },

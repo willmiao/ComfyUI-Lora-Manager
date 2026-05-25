@@ -1945,6 +1945,8 @@
         "title": "Resolve Filename Conflicts",
         "message": "Renaming by appending a 4-character hash to each duplicate filename.",
         "note": "This operation renames files on disk. Model references in existing workflows may need updating if you use the A1111 syntax format.",
+        "detail": "Example: <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "Will rename <strong>{count}</strong> file(s) across <strong>{groups}</strong> duplicate group(s).",
         "confirm": "Rename Files",
         "cancel": "Cancel"
     },

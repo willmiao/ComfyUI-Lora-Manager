@@ -1945,6 +1945,8 @@
         "title": "Résoudre les conflits de noms de fichiers",
         "message": "Renommer en ajoutant un hachage de 4 caractères à chaque nom de fichier en double.",
         "note": "Cette opération renomme les fichiers sur le disque. Les références de modèle dans les workflows existants peuvent nécessiter une mise à jour si vous utilisez le format de syntaxe A1111.",
+        "detail": "Exemple : <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
+        "impact": "Renommera <strong>{count}</strong> fichier(s) dans <strong>{groups}</strong> groupe(s) de doublons",
         "confirm": "Renommer les fichiers",
         "cancel": "Annuler"
     },
