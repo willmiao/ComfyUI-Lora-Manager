@@ -580,11 +580,11 @@
         "misc": {
             "includeTriggerWords": "LoRA 문법에 트리거 단어 포함",
             "includeTriggerWordsHelp": "LoRA 문법을 클립보드에 복사할 때 학습된 트리거 단어를 포함합니다",
-            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
-            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormat": "LoRA 구문 형식",
+            "loraSyntaxFormatHelp": "LoRA 구문 형식. 전체 경로는 하위 폴더 경로(<lora:style/anime/x:1.0>)를 포함하여 손실 없는 모델 해상도를 제공합니다. 레거시는 파일 이름만(<lora:x:1.0>) 사용 — A1111 규칙이지만, 폴더 간 파일명 중복 시 모호할 수 있습니다.",
             "loraSyntaxFormatOptions": {
-                "full": "[TODO: Translate] Full path (subfolder/name)",
-                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+                "full": "전체 경로(하위 폴더/이름)",
+                "legacy": "레거시 A1111(이름만)"
             }
         },
         "metadataArchive": {

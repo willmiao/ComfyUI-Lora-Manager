@@ -580,11 +580,11 @@
         "misc": {
             "includeTriggerWords": "Включать триггерные слова в синтаксис LoRA",
             "includeTriggerWordsHelp": "Включать обученные триггерные слова при копировании синтаксиса LoRA в буфер обмена",
-            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
-            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormat": "Формат синтаксиса LoRA",
+            "loraSyntaxFormatHelp": "Формат синтаксиса LoRA. Полный путь включает подпапку (<lora:style/anime/x:1.0>) для безпотерьного разрешения модели. Устаревший использует только имя файла (<lora:x:1.0>) — соглашение A1111, может быть неоднозначным при дублировании имён файлов в разных папках.",
             "loraSyntaxFormatOptions": {
-                "full": "[TODO: Translate] Full path (subfolder/name)",
-                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+                "full": "Полный путь (подпапка/имя)",
+                "legacy": "Устаревший A1111 (только имя)"
             }
         },
         "metadataArchive": {

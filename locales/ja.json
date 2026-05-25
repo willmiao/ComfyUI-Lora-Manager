@@ -580,11 +580,11 @@
         "misc": {
             "includeTriggerWords": "LoRA構文にトリガーワードを含める",
             "includeTriggerWordsHelp": "LoRA構文をクリップボードにコピーする際、学習済みトリガーワードを含めます",
-            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
-            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormat": "LoRA構文形式",
+            "loraSyntaxFormatHelp": "LoRA構文形式。フルパスはサブフォルダパスを含み（<lora:style/anime/x:1.0>）、モデルをロスレスで解決します。レガシーはファイル名のみ（<lora:x:1.0>）— A1111規約ですが、フォルダ間でファイル名が重複する場合に曖昧になる可能性があります。",
             "loraSyntaxFormatOptions": {
-                "full": "[TODO: Translate] Full path (subfolder/name)",
-                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+                "full": "フルパス（サブフォルダ/名前）",
+                "legacy": "レガシーA1111（名前のみ）"
             }
         },
         "metadataArchive": {

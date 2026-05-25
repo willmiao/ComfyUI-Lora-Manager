@@ -580,11 +580,11 @@
         "misc": {
             "includeTriggerWords": "כלול מילות טריגר בתחביר LoRA",
             "includeTriggerWordsHelp": "כלול מילות טריגר מאומנות בעת העתקת תחביר LoRA ללוח",
-            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
-            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormat": "פורמט תחביר LoRA",
+            "loraSyntaxFormatHelp": "פורמט תחביר LoRA. נתיב מלא כולל תת-תיקייה (<lora:style/anime/x:1.0>) לפתרון מודל ללא אובדן. גרסה ישנה משתמשת בשם קובץ בלבד (<lora:x:1.0>) — מוסכמת A1111, עלולה להיות לא חד משמעית עם שמות קבצים כפולים בתיקיות שונות.",
             "loraSyntaxFormatOptions": {
-                "full": "[TODO: Translate] Full path (subfolder/name)",
-                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+                "full": "נתיב מלא (תת-תיקייה/שם)",
+                "legacy": "A1111 ישן (שם בלבד)"
             }
         },
         "metadataArchive": {

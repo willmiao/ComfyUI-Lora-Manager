@@ -580,11 +580,11 @@
         "misc": {
             "includeTriggerWords": "Trigger Words in LoRA-Syntax einschließen",
             "includeTriggerWordsHelp": "Trainierte Trigger Words beim Kopieren der LoRA-Syntax in die Zwischenablage einschließen",
-            "loraSyntaxFormat": "[TODO: Translate] LoRA Syntax Format",
-            "loraSyntaxFormatHelp": "[TODO: Translate] LoRA syntax format. Full includes subfolder path (<lora:style/anime/x:1.0>) for lossless model resolution. Legacy uses filename only (<lora:x:1.0>) — A1111 convention, may be ambiguous with duplicate filenames across folders.",
+            "loraSyntaxFormat": "LoRA-Syntaxformat",
+            "loraSyntaxFormatHelp": "LoRA-Syntaxformat. Der vollständige Pfad enthält den Unterordnerpfad (<lora:style/anime/x:1.0>) für verlustfreie Modellauflösung. Legacy verwendet nur den Dateinamen (<lora:x:1.0>) — A1111-Konvention, kann bei doppelten Dateinamen in verschiedenen Ordnern zu Mehrdeutigkeiten führen.",
             "loraSyntaxFormatOptions": {
-                "full": "[TODO: Translate] Full path (subfolder/name)",
-                "legacy": "[TODO: Translate] Legacy A1111 (name only)"
+                "full": "Vollständiger Pfad (Unterordner/Name)",
+                "legacy": "Legacy A1111 (nur Name)"
             }
         },
         "metadataArchive": {
