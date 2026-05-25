@@ -1927,9 +1927,32 @@
             "warning": "דורש תשומת לב",
             "error": "נדרשת פעולה"
         },
+        "issues": {
+            "civitai_api_key": {
+                "title": "Civitai API Key"
+            },
+            "cache_health": {
+                "title": "Model Cache Health"
+            },
+            "filename_conflicts": {
+                "title": "Duplicate Filename Conflicts"
+            },
+            "ui_version": {
+                "title": "UI Version"
+            }
+        },
         "actions": {
             "runAgain": "הפעל שוב",
-            "exportBundle": "ייצוא חבילה"
+            "exportBundle": "ייצוא חבילה",
+            "open-settings": "Open Settings",
+            "open-settings-syntax-format": "Switch to Full Path Syntax",
+            "repair-cache": "Rebuild Cache",
+            "resolve-filename-conflicts": "Resolve Conflicts",
+            "reload-page": "Reload UI"
+        },
+        "labels": {
+            "conflicts": "Conflicts",
+            "version": "Version"
         },
         "toast": {
             "loadFailed": "טעינת האבחון נכשלה: {message}",

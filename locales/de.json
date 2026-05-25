@@ -1927,9 +1927,32 @@
             "warning": "Handlungsbedarf",
             "error": "Aktion erforderlich"
         },
+        "issues": {
+            "civitai_api_key": {
+                "title": "Civitai API Key"
+            },
+            "cache_health": {
+                "title": "Model Cache Health"
+            },
+            "filename_conflicts": {
+                "title": "Duplicate Filename Conflicts"
+            },
+            "ui_version": {
+                "title": "UI Version"
+            }
+        },
         "actions": {
             "runAgain": "Erneut ausführen",
-            "exportBundle": "Paket exportieren"
+            "exportBundle": "Paket exportieren",
+            "open-settings": "Open Settings",
+            "open-settings-syntax-format": "Switch to Full Path Syntax",
+            "repair-cache": "Rebuild Cache",
+            "resolve-filename-conflicts": "Resolve Conflicts",
+            "reload-page": "Reload UI"
+        },
+        "labels": {
+            "conflicts": "Conflicts",
+            "version": "Version"
         },
         "toast": {
             "loadFailed": "Diagnose konnte nicht geladen werden: {message}",

@@ -1927,9 +1927,32 @@
             "warning": "要注意",
             "error": "対応が必要"
         },
+        "issues": {
+            "civitai_api_key": {
+                "title": "Civitai API キー"
+            },
+            "cache_health": {
+                "title": "モデルキャッシュの健全性"
+            },
+            "filename_conflicts": {
+                "title": "ファイル名重複競合"
+            },
+            "ui_version": {
+                "title": "UI バージョン"
+            }
+        },
         "actions": {
             "runAgain": "再実行",
-            "exportBundle": "パッケージをエクスポート"
+            "exportBundle": "パッケージをエクスポート",
+            "open-settings": "設定を開く",
+            "open-settings-syntax-format": "フルパス構文に切り替え",
+            "repair-cache": "キャッシュを再構築",
+            "resolve-filename-conflicts": "競合を解決",
+            "reload-page": "UI をリロード"
+        },
+        "labels": {
+            "conflicts": "競合",
+            "version": "バージョン"
         },
         "toast": {
             "loadFailed": "診断の読み込みに失敗しました: {message}",

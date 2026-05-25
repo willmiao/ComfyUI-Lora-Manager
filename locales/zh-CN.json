@@ -1927,9 +1927,32 @@
             "warning": "需要关注",
             "error": "需要处理"
         },
+        "issues": {
+            "civitai_api_key": {
+                "title": "Civitai API 密钥"
+            },
+            "cache_health": {
+                "title": "模型缓存健康状态"
+            },
+            "filename_conflicts": {
+                "title": "文件名重复冲突"
+            },
+            "ui_version": {
+                "title": "UI 版本"
+            }
+        },
         "actions": {
             "runAgain": "重新检查",
-            "exportBundle": "导出诊断包"
+            "exportBundle": "导出诊断包",
+            "open-settings": "打开设置",
+            "open-settings-syntax-format": "切换为完整路径语法",
+            "repair-cache": "重建缓存",
+            "resolve-filename-conflicts": "解决冲突",
+            "reload-page": "刷新 UI"
+        },
+        "labels": {
+            "conflicts": "冲突详情",
+            "version": "版本信息"
         },
         "toast": {
             "loadFailed": "加载诊断结果失败：{message}",

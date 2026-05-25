@@ -225,6 +225,13 @@ export class DoctorManager {
     renderIssueCard(item) {
         const status = item.status || 'ok';
         const tagLabel = this.getStatusLabel(status);
+
+        const titleKey = `doctor.issues.${item.id || ''}.title`;
+        const displayTitle = translate(titleKey, {}, item.title || '');
+
+        const summaryKey = `doctor.issues.${item.id || ''}.summary.${status}`;
+        const displaySummary = translate(summaryKey, {}, item.summary || '');
+
         const details = Array.isArray(item.details) ? item.details : [];
         const listItems = details
             .filter((detail) => typeof detail === 'string')
@@ -235,19 +242,22 @@ export class DoctorManager {
             .map((detail) => this.renderInlineDetail(detail))
             .join('');
         const actions = (item.actions || [])
-            .map((action) => `
+            .map((action) => {
+                const actionLabel = translate(`doctor.actions.${action.id}`, {}, action.label);
+                return `
                 <button class="${action.id === 'repair-cache' || action.id === 'reload-page' ? 'primary-btn' : 'secondary-btn'}" data-doctor-action="${escapeHtml(action.id)}">
-                    ${escapeHtml(action.label)}
+                    ${escapeHtml(actionLabel)}
                 </button>
-            `)
+            `;
+            })
             .join('');
 
         return `
             <section class="doctor-issue-card" data-status="${escapeHtml(status)}" data-issue-id="${escapeHtml(item.id || '')}">
                 <div class="doctor-issue-header">
                     <div>
-                        <h3>${escapeHtml(item.title || '')}</h3>
-                        <p class="doctor-issue-summary">${escapeHtml(item.summary || '')}</p>
+                        <h3>${escapeHtml(displayTitle)}</h3>
+                        <p class="doctor-issue-summary">${escapeHtml(displaySummary)}</p>
                     </div>
                     <span class="doctor-issue-tag">${escapeHtml(tagLabel)}</span>
                 </div>
@@ -262,7 +272,7 @@ export class DoctorManager {
         if (detail.conflict_groups || detail.total_conflict_files) {
             return `
                 <div class="doctor-inline-detail">
-                    <strong>${escapeHtml(translate('doctor.status.warning', {}, 'Conflicts'))}</strong>
+                    <strong>${escapeHtml(translate('doctor.labels.conflicts', {}, 'Conflicts'))}</strong>
                     <div>${escapeHtml(`${detail.conflict_groups || 0} filenames, ${detail.total_conflict_files || 0} files`)}</div>
                 </div>
             `;

@@ -1927,9 +1927,32 @@
             "warning": "주의 필요",
             "error": "조치 필요"
         },
+        "issues": {
+            "civitai_api_key": {
+                "title": "Civitai API 키"
+            },
+            "cache_health": {
+                "title": "모델 캐시 상태"
+            },
+            "filename_conflicts": {
+                "title": "파일명 중복 충돌"
+            },
+            "ui_version": {
+                "title": "UI 버전"
+            }
+        },
         "actions": {
             "runAgain": "다시 실행",
-            "exportBundle": "번들 내보내기"
+            "exportBundle": "번들 내보내기",
+            "open-settings": "설정 열기",
+            "open-settings-syntax-format": "전체 경로 구문으로 전환",
+            "repair-cache": "캐시 재구축",
+            "resolve-filename-conflicts": "충돌 해결",
+            "reload-page": "UI 새로고침"
+        },
+        "labels": {
+            "conflicts": "충돌",
+            "version": "버전"
         },
         "toast": {
             "loadFailed": "진단 로드 실패: {message}",

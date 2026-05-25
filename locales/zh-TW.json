@@ -1927,9 +1927,32 @@
             "warning": "需要注意",
             "error": "需要處理"
         },
+        "issues": {
+            "civitai_api_key": {
+                "title": "Civitai API 金鑰"
+            },
+            "cache_health": {
+                "title": "模型快取健康狀態"
+            },
+            "filename_conflicts": {
+                "title": "檔案名稱重複衝突"
+            },
+            "ui_version": {
+                "title": "UI 版本"
+            }
+        },
         "actions": {
             "runAgain": "重新執行",
-            "exportBundle": "匯出套件"
+            "exportBundle": "匯出套件",
+            "open-settings": "開啟設定",
+            "open-settings-syntax-format": "切換為完整路徑語法",
+            "repair-cache": "重建快取",
+            "resolve-filename-conflicts": "解決衝突",
+            "reload-page": "重新載入 UI"
+        },
+        "labels": {
+            "conflicts": "衝突詳情",
+            "version": "版本"
         },
         "toast": {
             "loadFailed": "載入診斷失敗：{message}",
