@@ -232,6 +232,8 @@
             "license": "许可证",
             "noCreditRequired": "无需署名",
             "allowSellingGeneratedContent": "允许销售",
+            "allowSellingGeneratedContentTooltip": "允许出售生成的图片",
+            "noCreditRequiredTooltip": "使用模型时无需注明原作者",
             "noTags": "无标签",
             "autoTags": "自动标签",
             "noBaseModelMatches": "没有基础模型符合当前搜索。",

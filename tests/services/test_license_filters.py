@@ -65,32 +65,26 @@ async def test_allow_selling_filter():
     """Test the allow selling generated content filtering logic."""
     service = DummyModelService()
     
-    # Create test data with different license flags
+    # CommercialUse values are independent — Sell does NOT imply Image.
     test_data = [
-        # Model allowing selling (contains Image in allowCommercialUse)
         {"file_path": "model1.safetensors", "license_flags": build_license_flags({"allowCommercialUse": ["Image"]})},
-        # Model not allowing selling (doesn't contain Image in allowCommercialUse)
         {"file_path": "model2.safetensors", "license_flags": build_license_flags({"allowCommercialUse": ["RentCivit"]})},
-        # Model with default license flags (includes Sell by default, which implies Image)
         {"file_path": "model3.safetensors", "license_flags": build_license_flags(None)},
-        # Model allowing selling (contains Sell in allowCommercialUse, which implies Image)
         {"file_path": "model4.safetensors", "license_flags": build_license_flags({"allowCommercialUse": ["Sell"]})},
-        # Model with empty allowCommercialUse (doesn't allow selling)
         {"file_path": "model5.safetensors", "license_flags": build_license_flags({"allowCommercialUse": []})},
     ]
     
-    # Test allow_selling=True (should return models that allow selling - have Image permission)
-    # Default and Sell permissions both include Image, so model3 and model4 will be included
+    # Test allow_selling=True (should return only models with the Image permission)
     filtered = await service._apply_allow_selling_filter(test_data, allow_selling=True)
-    assert len(filtered) == 3  # model1, model3 (default includes Sell which implies Image), model4
+    assert len(filtered) == 1  # only model1 has Image permission
     file_paths = {item["file_path"] for item in filtered}
-    assert file_paths == {"model1.safetensors", "model3.safetensors", "model4.safetensors"}
+    assert file_paths == {"model1.safetensors"}
     
-    # Test allow_selling=False (should return models that don't allow selling - don't have Image permission)
+    # Test allow_selling=False (should return models without the Image permission)
     filtered = await service._apply_allow_selling_filter(test_data, allow_selling=False)
-    assert len(filtered) == 2  # model2 and model5
+    assert len(filtered) == 4  # model2, model3, model4, model5
     file_paths = {item["file_path"] for item in filtered}
-    assert file_paths == {"model2.safetensors", "model5.safetensors"}
+    assert file_paths == {"model2.safetensors", "model3.safetensors", "model4.safetensors", "model5.safetensors"}
 
 
 @pytest.mark.asyncio

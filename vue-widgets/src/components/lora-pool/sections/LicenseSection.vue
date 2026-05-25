@@ -5,7 +5,7 @@
     </div>
     <div class="section__toggles">
       <label class="toggle-item">
-        <span class="toggle-item__label">No Credit Required</span>
+        <span class="toggle-item__label" title="Use the model without crediting the creator">No Credit Required</span>
         <button
           type="button"
           class="toggle-switch"
@@ -20,7 +20,7 @@
       </label>
 
       <label class="toggle-item">
-        <span class="toggle-item__label">Allow Selling</span>
+        <span class="toggle-item__label" title="Allow selling generated images">Allow Selling</span>
         <button
           type="button"
           class="toggle-switch"

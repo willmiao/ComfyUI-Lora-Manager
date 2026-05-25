@@ -131,13 +131,12 @@ async def test_pool_filter_allow_selling_true(lora_service, sample_loras):
     filtered = await lora_service._apply_pool_filters(sample_loras, pool_config)
 
     # Should keep models with Image permission (allowSelling)
-    # Models: no_credit_required_for_selling, credit_required_for_selling, default_license
-    assert len(filtered) == 3
+    # Sell alone does not imply Image, so default_license is excluded.
+    assert len(filtered) == 2
     file_names = {lora["file_name"] for lora in filtered}
     assert file_names == {
         "no_credit_required_for_selling.safetensors",
         "credit_required_for_selling.safetensors",
-        "default_license.safetensors",
     }
 
 
@@ -178,12 +177,11 @@ async def test_pool_filter_both_license_filters(lora_service, sample_loras):
     # Should keep models where both conditions are met:
     # - allowNoCredit=True (no credit required)
     # - Image permission exists (allow selling)
-    # Models: no_credit_required_for_selling, default_license
-    assert len(filtered) == 2
+    # default_license has ["Sell"] without Image, so it's excluded.
+    assert len(filtered) == 1
     file_names = {lora["file_name"] for lora in filtered}
     assert file_names == {
         "no_credit_required_for_selling.safetensors",
-        "default_license.safetensors",
     }
 
 

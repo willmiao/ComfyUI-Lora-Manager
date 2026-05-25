@@ -398,13 +398,13 @@
   align-items: center;
 }
 
-.section[data-v-dea4adf6] {
+.section[data-v-07ddd3df] {
   margin-bottom: 16px;
 }
-.section__header[data-v-dea4adf6] {
+.section__header[data-v-07ddd3df] {
   margin-bottom: 8px;
 }
-.section__title[data-v-dea4adf6] {
+.section__title[data-v-07ddd3df] {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -412,21 +412,21 @@
   color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.section__toggles[data-v-dea4adf6] {
+.section__toggles[data-v-07ddd3df] {
   display: flex;
   gap: 16px;
 }
-.toggle-item[data-v-dea4adf6] {
+.toggle-item[data-v-07ddd3df] {
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
 }
-.toggle-item__label[data-v-dea4adf6] {
+.toggle-item__label[data-v-07ddd3df] {
   font-size: 12px;
   color: var(--fg-color, #fff);
 }
-.toggle-switch[data-v-dea4adf6] {
+.toggle-switch[data-v-07ddd3df] {
   position: relative;
   width: 36px;
   height: 20px;
@@ -435,7 +435,7 @@
   border: none;
   cursor: pointer;
 }
-.toggle-switch__track[data-v-dea4adf6] {
+.toggle-switch__track[data-v-07ddd3df] {
   position: absolute;
   inset: 0;
   background: var(--comfy-input-bg, #333);
@@ -443,11 +443,11 @@
   border-radius: 10px;
   transition: all 0.2s;
 }
-.toggle-switch--active .toggle-switch__track[data-v-dea4adf6] {
+.toggle-switch--active .toggle-switch__track[data-v-07ddd3df] {
   background: rgba(66, 153, 225, 0.3);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.toggle-switch__thumb[data-v-dea4adf6] {
+.toggle-switch__thumb[data-v-07ddd3df] {
   position: absolute;
   top: 3px;
   left: 2px;
@@ -458,12 +458,12 @@
   transition: all 0.2s;
   opacity: 0.6;
 }
-.toggle-switch--active .toggle-switch__thumb[data-v-dea4adf6] {
+.toggle-switch--active .toggle-switch__thumb[data-v-07ddd3df] {
   transform: translateX(16px);
   background: #4299e1;
   opacity: 1;
 }
-.toggle-switch:hover .toggle-switch__thumb[data-v-dea4adf6] {
+.toggle-switch:hover .toggle-switch__thumb[data-v-07ddd3df] {
   opacity: 1;
 }
 
@@ -2223,7 +2223,7 @@ to { transform: rotate(360deg);
 })();
 var _a;
 import { app as app$1 } from "../../../scripts/app.js";
-import { api } from "../../../scripts/api.js";
+import { api as api$1 } from "../../../scripts/api.js";
 /**
 * @vue/shared v3.5.26
 * (c) 2018-present Yuxi (Evan) You and Vue contributors
@@ -11094,7 +11094,10 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
         ], -1)),
         createBaseVNode("div", _hoisted_2$e, [
           createBaseVNode("label", _hoisted_3$c, [
-            _cache[3] || (_cache[3] = createBaseVNode("span", { class: "toggle-item__label" }, "No Credit Required", -1)),
+            _cache[3] || (_cache[3] = createBaseVNode("span", {
+              class: "toggle-item__label",
+              title: "Use the model without crediting the creator"
+            }, "No Credit Required", -1)),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.noCreditRequired }]),
@@ -11107,7 +11110,10 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
             ])], 10, _hoisted_4$a)
           ]),
           createBaseVNode("label", _hoisted_5$8, [
-            _cache[5] || (_cache[5] = createBaseVNode("span", { class: "toggle-item__label" }, "Allow Selling", -1)),
+            _cache[5] || (_cache[5] = createBaseVNode("span", {
+              class: "toggle-item__label",
+              title: "Allow selling generated images"
+            }, "Allow Selling", -1)),
             createBaseVNode("button", {
               type: "button",
               class: normalizeClass(["toggle-switch", { "toggle-switch--active": __props.allowSelling }]),
@@ -11124,7 +11130,7 @@ const _sfc_main$i = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-dea4adf6"]]);
+const LicenseSection = /* @__PURE__ */ _export_sfc(_sfc_main$i, [["__scopeId", "data-v-07ddd3df"]]);
 const _hoisted_1$e = { class: "preview" };
 const _hoisted_2$d = { class: "preview__title" };
 const _hoisted_3$b = ["disabled"];
@@ -15031,6 +15037,54 @@ function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCa
   };
 }
 const app = {};
+const api = {
+  fetchApi: (...args) => fetch(...args),
+  addEventListener: (eventName, handler) => document.addEventListener(eventName, handler),
+  removeEventListener: (eventName, handler) => document.removeEventListener(eventName, handler)
+};
+let _loraSyntaxFormatCache = null;
+let _loraSyntaxFormatRefreshPromise = null;
+async function _fetchLoraSyntaxFormat() {
+  try {
+    const response = await api.fetchApi("/lm/settings");
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success && data.settings) {
+        _loraSyntaxFormatCache = data.settings.lora_syntax_format || "legacy";
+        return;
+      }
+    }
+  } catch (e) {
+  }
+  if (_loraSyntaxFormatCache === null) {
+    _loraSyntaxFormatCache = "legacy";
+  }
+}
+function _triggerBackgroundRefresh() {
+  if (_loraSyntaxFormatRefreshPromise) {
+    return;
+  }
+  _loraSyntaxFormatRefreshPromise = _fetchLoraSyntaxFormat().finally(() => {
+    _loraSyntaxFormatRefreshPromise = null;
+  });
+}
+function _initLoraSyntaxFormat() {
+  _triggerBackgroundRefresh();
+}
+_initLoraSyntaxFormat();
+function _initLoraSyntaxFormatReactive() {
+  window.addEventListener("storage", (e) => {
+    if (e.key === "lm:lora-syntax-format-changed") {
+      _triggerBackgroundRefresh();
+    }
+  });
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") {
+      _triggerBackgroundRefresh();
+    }
+  });
+}
+_initLoraSyntaxFormatReactive();
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
@@ -15407,7 +15461,7 @@ function createLoraRandomizerWidget(node) {
   const vueApp = createApp(LoraRandomizerWidget, {
     widget,
     node,
-    api
+    api: api$1
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
@@ -15482,7 +15536,7 @@ function createLoraCyclerWidget(node) {
   const vueApp = createApp(LoraCyclerWidget, {
     widget,
     node,
-    api
+    api: api$1
   });
   vueApp.use(PrimeVue, {
     unstyled: true,

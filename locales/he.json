@@ -232,6 +232,8 @@
             "license": "רישיון",
             "noCreditRequired": "ללא קרדיט נדרש",
             "allowSellingGeneratedContent": "אפשר מכירה",
+            "allowSellingGeneratedContentTooltip": "אפשר מכירת תמונות שנוצרו",
+            "noCreditRequiredTooltip": "שימוש במודל ללא מתן קרדיט ליוצר",
             "noTags": "ללא תגיות",
             "autoTags": "תגיות אוטומטיות",
             "noBaseModelMatches": "אין מודלי בסיס התואמים לחיפוש הנוכחי.",

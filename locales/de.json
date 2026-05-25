@@ -232,6 +232,8 @@
             "license": "Lizenz",
             "noCreditRequired": "Kein Credit erforderlich",
             "allowSellingGeneratedContent": "Verkauf erlaubt",
+            "allowSellingGeneratedContentTooltip": "Verkauf generierter Bilder erlauben",
+            "noCreditRequiredTooltip": "Modell ohne Nennung des Erstellers verwenden",
             "noTags": "Keine Tags",
             "autoTags": "Auto-Tags",
             "noBaseModelMatches": "Keine Basismodelle entsprechen der aktuellen Suche.",

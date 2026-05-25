@@ -232,6 +232,8 @@
             "license": "라이선스",
             "noCreditRequired": "크레딧 표기 없음",
             "allowSellingGeneratedContent": "판매 허용",
+            "allowSellingGeneratedContentTooltip": "생성된 이미지 판매 허용",
+            "noCreditRequiredTooltip": "크리에이터 저작자 표시 없이 모델 사용 가능",
             "noTags": "태그 없음",
             "autoTags": "자동 태그",
             "noBaseModelMatches": "현재 검색과 일치하는 베이스 모델이 없습니다.",

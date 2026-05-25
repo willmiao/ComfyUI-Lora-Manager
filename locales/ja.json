@@ -232,6 +232,8 @@
             "license": "ライセンス",
             "noCreditRequired": "クレジット不要",
             "allowSellingGeneratedContent": "販売許可",
+            "allowSellingGeneratedContentTooltip": "生成した画像の販売を許可",
+            "noCreditRequiredTooltip": "クレジット表記なしでモデルを使用可能",
             "noTags": "タグなし",
             "autoTags": "自動タグ",
             "noBaseModelMatches": "現在の検索に一致するベースモデルはありません。",

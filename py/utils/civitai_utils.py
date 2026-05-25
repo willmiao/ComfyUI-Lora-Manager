@@ -239,9 +239,9 @@ def _resolve_commercial_bits(values: Sequence[str]) -> int:
             normalized_values.add(normalized)
 
     has_sell = "sell" in normalized_values
-    has_rent = has_sell or "rent" in normalized_values
-    has_rentcivit = has_rent or "rentcivit" in normalized_values
-    has_image = has_sell or "image" in normalized_values
+    has_rent = "rent" in normalized_values
+    has_rentcivit = "rentcivit" in normalized_values
+    has_image = "image" in normalized_values
 
     commercial_bits = (
         (1 if has_sell else 0) << 3

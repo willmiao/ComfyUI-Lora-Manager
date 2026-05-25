@@ -16,7 +16,9 @@ def test_resolve_license_payload_defaults():
     assert payload["allowDerivatives"] is True
     assert payload["allowDifferentLicense"] is True
     assert payload["allowCommercialUse"] == ["Sell"]
-    assert flags == 127
+    # Default ["Sell"] only sets the Sell bit (16), plus NoCredit (1),
+    # Derivatives (32) and DifferentLicense (64) = 113.
+    assert flags == 113
 
 
 def test_build_license_flags_custom_values():
@@ -34,11 +36,10 @@ def test_build_license_flags_custom_values():
     assert payload["allowDifferentLicense"] is False
 
     flags = build_license_flags(source)
-    # Sell automatically enables all commercial bits including image.
-    assert flags == 30
+    assert flags == 18
 
 
-def test_build_license_flags_respects_commercial_hierarchy():
+def test_build_license_flags_independent_values():
     base = {
         "allowNoCredit": False,
         "allowDerivatives": False,
@@ -46,14 +47,10 @@ def test_build_license_flags_respects_commercial_hierarchy():
     }
 
     assert build_license_flags({**base, "allowCommercialUse": []}) == 0
-    # Rent adds rent and rentcivit permissions.
-    assert build_license_flags({**base, "allowCommercialUse": ["Rent"]}) == 12
-    # RentCivit alone should only set its own bit.
+    assert build_license_flags({**base, "allowCommercialUse": ["Rent"]}) == 8
     assert build_license_flags({**base, "allowCommercialUse": ["RentCivit"]}) == 4
-    # Image only toggles the image bit.
     assert build_license_flags({**base, "allowCommercialUse": ["Image"]}) == 2
-    # Sell forces all commercial bits regardless of image listing.
-    assert build_license_flags({**base, "allowCommercialUse": ["Sell"]}) == 30
+    assert build_license_flags({**base, "allowCommercialUse": ["Sell"]}) == 16
 
 
 def test_build_license_flags_parses_aggregate_string():

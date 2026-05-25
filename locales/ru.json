@@ -232,6 +232,8 @@
             "license": "Лицензия",
             "noCreditRequired": "Без указания авторства",
             "allowSellingGeneratedContent": "Продажа разрешена",
+            "allowSellingGeneratedContentTooltip": "Разрешить продажу сгенерированных изображений",
+            "noCreditRequiredTooltip": "Использование модели без указания автора",
             "noTags": "Без тегов",
             "autoTags": "Авто-теги",
             "noBaseModelMatches": "Нет базовых моделей, соответствующих текущему поиску.",

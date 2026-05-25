@@ -132,7 +132,8 @@ async def test_initialize_cache_populates_cache(tmp_path: Path):
         _normalize_path(tmp_path / "one.txt"),
         _normalize_path(tmp_path / "nested" / "two.txt"),
     }
-    assert {item["license_flags"] for item in cache.raw_data} == {DEFAULT_LICENSE_FLAGS}
+    # build_license_flags({}) returns 113 (defaults: allowNoCredit + ["Sell"] + derivatives + differentLicense)
+    assert {item["license_flags"] for item in cache.raw_data} == {113}
 
     assert scanner._hash_index.get_path("hash-one") == _normalize_path(tmp_path / "one.txt")
     assert scanner._hash_index.get_path("hash-two") == _normalize_path(tmp_path / "nested" / "two.txt")
@@ -190,7 +191,8 @@ async def test_initialize_in_background_applies_scan_result(tmp_path: Path, monk
         _normalize_path(tmp_path / "one.txt"),
         _normalize_path(tmp_path / "nested" / "two.txt"),
     }
-    assert {item["license_flags"] for item in cache.raw_data} == {DEFAULT_LICENSE_FLAGS}
+    # build_license_flags({}) returns 113 (defaults: allowNoCredit + ["Sell"] + derivatives + differentLicense)
+    assert {item["license_flags"] for item in cache.raw_data} == {113}
     assert scanner._hash_index.get_path("hash-two") == _normalize_path(tmp_path / "nested" / "two.txt")
     assert scanner._tags_count == {"alpha": 1, "beta": 1}
     assert scanner._excluded_models == [_normalize_path(tmp_path / "skip-file.txt")]
