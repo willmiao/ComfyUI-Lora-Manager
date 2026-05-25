@@ -295,6 +295,13 @@ export class SettingsManager {
         // Update state
         state.global.settings[settingKey] = value;
 
+        if (settingKey === 'lora_syntax_format') {
+            try {
+                localStorage.setItem('lm:lora-syntax-format-changed', Date.now().toString());
+            } catch (_) {
+            }
+        }
+
         if (!this.isBackendSetting(settingKey)) {
             return;
         }

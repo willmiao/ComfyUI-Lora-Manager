@@ -105,14 +105,16 @@ function removeLoraExtension(fileName = '') {
 }
 
 let _loraSyntaxFormatCache = null;
+let _loraSyntaxFormatRefreshPromise = null;
 
 function _getLoraSyntaxFormat() {
-    if (typeof _loraSyntaxFormatCache !== 'undefined' && _loraSyntaxFormatCache !== null) {
+    if (_loraSyntaxFormatCache !== null) {
         return _loraSyntaxFormatCache;
     }
     return 'legacy';
 }
-async function _initLoraSyntaxFormat() {
+
+async function _fetchLoraSyntaxFormat() {
     try {
         const response = await api.fetchApi('/lm/settings');
         if (response.ok) {
@@ -124,9 +126,43 @@ async function _initLoraSyntaxFormat() {
         }
     } catch (e) {
     }
-    _loraSyntaxFormatCache = 'legacy';
+    if (_loraSyntaxFormatCache === null) {
+        _loraSyntaxFormatCache = 'legacy';
+    }
+}
+
+function _triggerBackgroundRefresh() {
+    if (_loraSyntaxFormatRefreshPromise) {
+        return;
+    }
+    _loraSyntaxFormatRefreshPromise = _fetchLoraSyntaxFormat().finally(() => {
+        _loraSyntaxFormatRefreshPromise = null;
+    });
+}
+
+async function refreshLoraSyntaxFormat() {
+    await _fetchLoraSyntaxFormat();
+}
+
+function _initLoraSyntaxFormat() {
+    _triggerBackgroundRefresh();
 }
 _initLoraSyntaxFormat();
+
+function _initLoraSyntaxFormatReactive() {
+    window.addEventListener('storage', (e) => {
+        if (e.key === 'lm:lora-syntax-format-changed') {
+            _triggerBackgroundRefresh();
+        }
+    });
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') {
+            _triggerBackgroundRefresh();
+        }
+    });
+}
+_initLoraSyntaxFormatReactive();
 
 function parseSearchTokens(term = '') {
     const include = [];
@@ -2791,4 +2827,4 @@ class AutoComplete {
     }
 }
 
-export { AutoComplete };
+export { AutoComplete, refreshLoraSyntaxFormat };
