@@ -949,6 +949,12 @@ export class SettingsManager {
             includeTriggerWordsCheckbox.checked = state.global.settings.include_trigger_words || false;
         }
 
+        // Set lora syntax format
+        const loraSyntaxFormatSelect = document.getElementById('loraSyntaxFormat');
+        if (loraSyntaxFormatSelect) {
+            loraSyntaxFormatSelect.value = state.global.settings.lora_syntax_format || 'legacy';
+        }
+
         // Load metadata archive settings
         await this.loadMetadataArchiveSettings();
 
