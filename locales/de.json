@@ -1941,6 +1941,13 @@
             "conflictsResolveFailed": "Auflösung der Dateinamenskonflikte fehlgeschlagen: {message}"
         }
     },
+    "conflictConfirm": {
+        "title": "Dateinamenskonflikte auflösen",
+        "message": "Umbenennen durch Anhängen eines 4-stelligen Hashs an jeden doppelten Dateinamen.",
+        "note": "Dieser Vorgang benennt Dateien auf der Festplatte um. Modellreferenzen in vorhandenen Workflows müssen möglicherweise aktualisiert werden, wenn Sie das A1111-Syntaxformat verwenden.",
+        "confirm": "Dateien umbenennen",
+        "cancel": "Abbrechen"
+    },
     "banners": {
         "versionMismatch": {
             "title": "Anwendungs-Update erkannt",

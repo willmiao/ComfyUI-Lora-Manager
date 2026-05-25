@@ -316,6 +316,19 @@ export class ModalManager {
             });
         }
 
+        // Register resolveFilenameConflictsModal
+        const resolveFilenameConflictsModal = document.getElementById('resolveFilenameConflictsModal');
+        if (resolveFilenameConflictsModal) {
+            this.registerModal('resolveFilenameConflictsModal', {
+                element: resolveFilenameConflictsModal,
+                onClose: () => {
+                    this.getModal('resolveFilenameConflictsModal').element.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         document.addEventListener('keydown', this.boundHandleEscape);
         this.initialized = true;
     }
@@ -396,7 +409,8 @@ export class ModalManager {
           id === "modelDuplicateDeleteModal" ||
           id === "clearCacheModal" ||
           id === "bulkDeleteModal" ||
-          id === "checkUpdatesConfirmModal"
+          id === "checkUpdatesConfirmModal" ||
+          id === "resolveFilenameConflictsModal"
         ) {
           modal.element.classList.add("show");
         } else {

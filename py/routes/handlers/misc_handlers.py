@@ -1063,10 +1063,20 @@ class DoctorHandler:
                 "total_conflict_files": total_conflict_files,
             }
         ]
-        for conflict in all_conflicts:
+
+        # Show at most 5 conflict groups inline; note any remainder.
+        MAX_VISIBLE_CONFLICTS = 5
+        visible_conflicts = all_conflicts[:MAX_VISIBLE_CONFLICTS]
+        for conflict in visible_conflicts:
             details.append(
-                f"[{conflict['label']}] '{conflict['filename']}' "
+                f"'{conflict['filename']}' "
                 f"found in {len(conflict['paths'])} locations"
+            )
+
+        hidden_count = len(all_conflicts) - MAX_VISIBLE_CONFLICTS
+        if hidden_count > 0:
+            details.append(
+                f"...and {hidden_count} more duplicate filename group(s)"
             )
 
         return {
@@ -1079,7 +1089,11 @@ class DoctorHandler:
                 {
                     "id": "resolve-filename-conflicts",
                     "label": "Resolve Conflicts",
-                }
+                },
+                {
+                    "id": "open-settings-syntax-format",
+                    "label": "Switch to Full Path Syntax",
+                },
             ],
         }
 

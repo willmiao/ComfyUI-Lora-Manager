@@ -109,3 +109,20 @@
         </div>
     </div>
 </div>
+
+<!-- Resolve Filename Conflicts Confirmation Modal -->
+<div id="resolveFilenameConflictsModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2>{{ t('conflictConfirm.title') }}</h2>
+        <p class="confirmation-message">{{ t('conflictConfirm.message') }}</p>
+        <p class="resolve-conflicts-detail" id="resolveConflictsDetail"></p>
+        <div class="resolve-conflicts-impact" id="resolveConflictsImpact"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="modalManager.closeModal('resolveFilenameConflictsModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" id="resolveConflictsConfirmBtn" onclick="doctorManager.confirmResolveConflicts()">
+                <i class="fas fa-check"></i>
+                {{ t('conflictConfirm.confirm') }}
+            </button>
+        </div>
+    </div>
+</div>

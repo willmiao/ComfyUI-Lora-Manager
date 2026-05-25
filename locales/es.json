@@ -1941,6 +1941,13 @@
             "conflictsResolveFailed": "Error al resolver conflictos de nombre de archivo: {message}"
         }
     },
+    "conflictConfirm": {
+        "title": "Resolver conflictos de nombres de archivo",
+        "message": "Renombrar añadiendo un hash de 4 caracteres a cada nombre de archivo duplicado.",
+        "note": "Esta operación renombra archivos en el disco. Es posible que las referencias a modelos en flujos de trabajo existentes deban actualizarse si usas el formato de sintaxis A1111.",
+        "confirm": "Renombrar archivos",
+        "cancel": "Cancelar"
+    },
     "banners": {
         "versionMismatch": {
             "title": "Actualización de la aplicación detectada",

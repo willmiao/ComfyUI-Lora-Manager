@@ -324,11 +324,42 @@ export class DoctorManager {
                     }
                 }, 100);
                 break;
+            case 'open-settings-syntax-format':
+                modalManager.showModal('settingsModal');
+                window.setTimeout(() => {
+                    // Switch to Interface section
+                    document.querySelectorAll('.settings-section').forEach((s) => s.classList.remove('active'));
+                    const interfaceSection = document.getElementById('section-interface');
+                    if (interfaceSection) {
+                        interfaceSection.classList.add('active');
+                    }
+                    document.querySelectorAll('.settings-nav-item').forEach((n) => n.classList.remove('active'));
+                    const interfaceNav = document.querySelector('.settings-nav-item[data-section="interface"]');
+                    if (interfaceNav) {
+                        interfaceNav.classList.add('active');
+                    }
+
+                    // Focus and scroll to the LoRA Syntax Format dropdown
+                    const select = document.getElementById('loraSyntaxFormat');
+                    if (select) {
+                        select.focus();
+                        select.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        // Add temporary highlight animation
+                        const settingItem = select.closest('.setting-item');
+                        if (settingItem) {
+                            settingItem.classList.add('settings-setting-highlight');
+                            setTimeout(() => {
+                                settingItem.classList.remove('settings-setting-highlight');
+                            }, 4500);
+                        }
+                    }
+                }, 100);
+                break;
             case 'repair-cache':
                 await this.repairCache();
                 break;
             case 'resolve-filename-conflicts':
-                await this.resolveFilenameConflicts();
+                await this.promptResolveConflicts();
                 break;
             case 'reload-page':
                 this.reloadUi();
@@ -356,6 +387,62 @@ export class DoctorManager {
         } finally {
             this.setLoading(false);
         }
+    }
+
+    _getConflictStats() {
+        const conflict = (this.lastDiagnostics?.diagnostics || []).find(
+            (d) => d.id === 'filename_conflicts'
+        );
+        if (!conflict || !Array.isArray(conflict.details)) {
+            return { groups: 0, files: 0 };
+        }
+        const summary = conflict.details.find(
+            (d) => d && typeof d === 'object' && d.conflict_groups !== undefined
+        );
+        return {
+            groups: summary?.conflict_groups || 0,
+            files: summary?.total_conflict_files || 0,
+        };
+    }
+
+    async promptResolveConflicts() {
+        const stats = this._getConflictStats();
+        if (stats.groups === 0) {
+            return;
+        }
+
+        const detailEl = document.getElementById('resolveConflictsDetail');
+        if (detailEl) {
+            detailEl.innerHTML = translate(
+                'conflictConfirm.detail',
+                {},
+                'Example: <code>Add_Details_v1.2</code> \u2192 <code>Add_Details_v1.2-a3f7</code>'
+            );
+        }
+
+        const impactEl = document.getElementById('resolveConflictsImpact');
+        if (impactEl) {
+            impactEl.innerHTML = translate(
+                'conflictConfirm.impact',
+                { count: stats.files, groups: stats.groups },
+                `Will rename <strong>${stats.files}</strong> file(s) across <strong>${stats.groups}</strong> duplicate group(s).`
+            );
+        }
+
+        this._confirmResolveResolve = null;
+        modalManager.showModal('resolveFilenameConflictsModal');
+        return new Promise((resolve) => {
+            this._confirmResolveResolve = resolve;
+        });
+    }
+
+    async confirmResolveConflicts() {
+        modalManager.closeModal('resolveFilenameConflictsModal');
+        if (this._confirmResolveResolve) {
+            this._confirmResolveResolve(true);
+            this._confirmResolveResolve = null;
+        }
+        await this.resolveFilenameConflicts();
     }
 
     async resolveFilenameConflicts() {
@@ -449,3 +536,8 @@ export class DoctorManager {
 }
 
 export const doctorManager = new DoctorManager();
+
+// Make available globally for HTML onclick handlers
+if (typeof window !== 'undefined') {
+    window.doctorManager = doctorManager;
+}

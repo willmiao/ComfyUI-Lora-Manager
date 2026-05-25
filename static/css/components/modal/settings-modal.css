@@ -1369,3 +1369,14 @@ input:checked + .toggle-slider:before {
     background: var(--lora-error);
     color: white;
 }
+
+/* Highlight animation for setting items targeted from Doctor actions */
+@keyframes settings-highlight-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(from var(--lora-accent) r g b / 0.4); }
+    50% { box-shadow: 0 0 0 4px rgba(from var(--lora-accent) r g b / 0.2); }
+}
+
+.settings-setting-highlight {
+    animation: settings-highlight-pulse 1.5s ease-in-out 3;
+    border-radius: var(--border-radius-xs);
+}

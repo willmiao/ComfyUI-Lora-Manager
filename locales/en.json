@@ -1941,6 +1941,13 @@
             "conflictsResolveFailed": "Failed to resolve filename conflicts: {message}"
         }
     },
+    "conflictConfirm": {
+        "title": "Resolve Filename Conflicts",
+        "message": "Renaming by appending a 4-character hash to each duplicate filename.",
+        "note": "This operation renames files on disk. Model references in existing workflows may need updating if you use the A1111 syntax format.",
+        "confirm": "Rename Files",
+        "cancel": "Cancel"
+    },
     "banners": {
         "versionMismatch": {
             "title": "Application Update Detected",

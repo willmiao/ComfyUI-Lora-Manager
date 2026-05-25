@@ -33,6 +33,39 @@
     animation: modalFadeIn 0.2s ease-out;
 }
 
+#resolveFilenameConflictsModal .confirmation-message {
+    color: var(--text-color);
+    margin: var(--space-2) 0;
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+#resolveFilenameConflictsModal .resolve-conflicts-detail {
+    color: var(--text-color);
+    margin: var(--space-2) 0;
+    font-size: 0.95em;
+    line-height: 1.5;
+}
+
+#resolveFilenameConflictsModal .resolve-conflicts-detail code {
+    background: var(--lora-surface);
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    border: 1px solid var(--lora-border);
+}
+
+#resolveFilenameConflictsModal .resolve-conflicts-impact {
+    background: var(--lora-surface);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-2);
+    margin: var(--space-2) 0;
+    color: var(--text-color);
+    text-align: left;
+    line-height: 1.5;
+}
+
 .delete-model-info,
 .exclude-model-info {
     /* Update info display styling */
