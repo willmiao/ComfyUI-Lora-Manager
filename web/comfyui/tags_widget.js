@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { forwardMiddleMouseToCanvas, forwardWheelToCanvas } from "./utils.js";
+import { copyToClipboard } from "./loras_widget_utils.js";
 
 const MIN_HEIGHT = 150;
 const GROUP_EDITOR_ID = "lm-trigger-group-editor";
@@ -568,6 +569,56 @@ function toggleGroupEditor(widget, index, anchorEl) {
   openGroupEditor(widget, index, anchorEl);
 }
 
+function showTagContextMenu(event, tagData, index, widget, anchorEl) {
+  event.preventDefault();
+  event.stopPropagation();
+
+  closeGroupEditor(widget);
+
+  const existingMenu = document.querySelector('.lm-lora-context-menu');
+  if (existingMenu) {
+    existingMenu.remove();
+  }
+
+  const menu = document.createElement('div');
+  menu.className = 'lm-lora-context-menu';
+  menu.style.left = `${event.clientX}px`;
+  menu.style.top = `${event.clientY}px`;
+
+  const copyOption = document.createElement('div');
+  copyOption.className = 'lm-lora-menu-item';
+  copyOption.innerHTML = `<span class="lm-lora-menu-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></span>Copy`;
+  copyOption.addEventListener('click', () => {
+    menu.remove();
+    document.removeEventListener('click', closeMenu);
+    copyToClipboard(tagData.text, 'Copied to clipboard');
+  });
+  menu.appendChild(copyOption);
+
+  if (isGroupTag(tagData) && Array.isArray(tagData.items) && tagData.items.length > 1) {
+    const editOption = document.createElement('div');
+    editOption.className = 'lm-lora-menu-item';
+    editOption.innerHTML = `<span class="lm-lora-menu-item-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg></span>Edit Group`;
+    editOption.addEventListener('click', () => {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+      toggleGroupEditor(widget, index, anchorEl);
+      renderGroupEditor(widget, tagData, index);
+    });
+    menu.appendChild(editOption);
+  }
+
+  document.body.appendChild(menu);
+
+  const closeMenu = (e) => {
+    if (!menu.contains(e.target)) {
+      menu.remove();
+      document.removeEventListener('click', closeMenu);
+    }
+  };
+  setTimeout(() => document.addEventListener('click', closeMenu), 0);
+}
+
 export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02, options = {}) {
   const container = document.createElement("div");
   container.className = "comfy-tags-container";
@@ -616,6 +667,10 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
         updatedTags[index].active = !updatedTags[index].active;
         return updatedTags;
       });
+    });
+
+    tagEl.addEventListener("contextmenu", (e) => {
+      showTagContextMenu(e, tagData, index, widget, tagEl);
     });
 
     if (showStrengthInfo) {
@@ -728,10 +783,12 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
       };
 
       editButton.addEventListener("click", openEditor);
-      groupChip.addEventListener("contextmenu", openEditor);
-
       groupChip.appendChild(editButton);
     }
+
+    groupChip.addEventListener("contextmenu", (e) => {
+      showTagContextMenu(e, tagData, index, widget, groupChip);
+    });
 
     groupChip.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -771,6 +828,11 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
   const renderTags = (tagsData, widget) => {
     while (container.firstChild) {
       container.removeChild(container.firstChild);
+    }
+
+    const existingMenu = document.querySelector('.lm-lora-context-menu');
+    if (existingMenu) {
+      existingMenu.remove();
     }
 
     const normalizedTags = Array.isArray(tagsData) ? tagsData : [];
