@@ -1180,6 +1180,7 @@
                 "editModelName": "Edit model name",
                 "editFileName": "Edit file name",
                 "editBaseModel": "Edit base model",
+                "editVersionName": "Edit version name",
                 "viewOnCivitai": "View on Civitai",
                 "viewOnCivitaiText": "View on Civitai",
                 "viewCreatorProfile": "View Creator Profile",

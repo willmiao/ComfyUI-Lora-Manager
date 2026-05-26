@@ -255,25 +255,28 @@
     transform: translateY(-2px);
 }
 
-/* File name copy styles */
-.file-name-wrapper {
+/* Editable inline field styles (file name, version name, etc.) */
+.file-name-wrapper,
+.version-name-wrapper {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 4px;
+    padding: 4px 0;
     border-radius: var(--border-radius-xs);
     transition: background-color 0.2s;
     position: relative;
 }
 
-.file-name-content {
-    padding: 2px 4px;
+.file-name-content,
+.version-name-content {
+    padding: 2px 4px 2px 0;
     border-radius: var(--border-radius-xs);
     border: 1px solid transparent;
     flex: 1;
 }
 
-.file-name-wrapper.editing .file-name-content {
+.file-name-wrapper.editing .file-name-content,
+.version-name-wrapper.editing .version-name-content {
     border: 1px solid var(--lora-accent);
     background: var(--bg-color);
     outline: none;
@@ -283,7 +286,8 @@
 .edit-model-name-btn,
 .edit-file-name-btn,
 .edit-base-model-btn,
-.edit-model-description-btn {
+.edit-model-description-btn,
+.edit-version-name-btn {
     background: transparent;
     border: none;
     color: var(--text-color);
@@ -299,9 +303,11 @@
 .edit-file-name-btn.visible,
 .edit-base-model-btn.visible,
 .edit-model-description-btn.visible,
+.edit-version-name-btn.visible,
 .model-name-header:hover .edit-model-name-btn,
 .file-name-wrapper:hover .edit-file-name-btn,
 .base-model-display:hover .edit-base-model-btn,
+.version-name-wrapper:hover .edit-version-name-btn,
 .model-name-header:hover .edit-model-description-btn {
     opacity: 0.5;
 }
@@ -309,14 +315,16 @@
 .edit-model-name-btn:hover,
 .edit-file-name-btn:hover,
 .edit-base-model-btn:hover,
-.edit-model-description-btn:hover {
+.edit-model-description-btn:hover,
+.edit-version-name-btn:hover {
     opacity: 0.8 !important;
     background: rgba(0, 0, 0, 0.05);
 }
 
 [data-theme="dark"] .edit-model-name-btn:hover,
 [data-theme="dark"] .edit-file-name-btn:hover,
-[data-theme="dark"] .edit-base-model-btn:hover {
+[data-theme="dark"] .edit-base-model-btn:hover,
+[data-theme="dark"] .edit-version-name-btn:hover {
     background: rgba(255, 255, 255, 0.05);
 }
 
@@ -338,7 +346,7 @@
 }
 
 .base-model-content {
-    padding: 2px 4px;
+    padding: 2px 4px 2px 0;
     border-radius: var(--border-radius-xs);
     border: 1px solid transparent;
     color: var(--text-color);

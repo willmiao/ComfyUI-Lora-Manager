@@ -66,6 +66,12 @@ function updateModalFilePathReferences(newFilePath) {
         fileNameContent.setAttribute('data-file-path', newFilePath);
     }
 
+    const versionNameContent = scopedQuery('.version-name-content');
+    if (versionNameContent && versionNameContent.dataset) {
+        versionNameContent.dataset.filePath = newFilePath;
+        versionNameContent.setAttribute('data-file-path', newFilePath);
+    }
+
     const editTagsBtn = scopedQuery('.edit-tags-btn');
     if (editTagsBtn) {
         editTagsBtn.dataset.filePath = newFilePath;
@@ -513,6 +519,130 @@ export function setupFileNameEditing(filePath) {
     function exitEditMode() {
         fileNameContent.removeAttribute('contenteditable');
         fileNameWrapper.classList.remove('editing');
+        editBtn.classList.remove('visible');
+    }
+}
+
+/**
+ * Set up version name editing functionality
+ * @param {string} filePath - File path
+ */
+export function setupVersionNameEditing(filePath) {
+    const versionNameContent = document.querySelector('.version-name-content');
+    const editBtn = document.querySelector('.edit-version-name-btn');
+
+    if (!versionNameContent || !editBtn) return;
+
+    // Store the file path in a data attribute for later use
+    versionNameContent.dataset.filePath = filePath;
+
+    // Show edit button on hover
+    const versionNameWrapper = document.querySelector('.version-name-wrapper');
+    versionNameWrapper.addEventListener('mouseenter', () => {
+        editBtn.classList.add('visible');
+    });
+
+    versionNameWrapper.addEventListener('mouseleave', () => {
+        if (!versionNameWrapper.classList.contains('editing')) {
+            editBtn.classList.remove('visible');
+        }
+    });
+
+    // Handle edit button click
+    editBtn.addEventListener('click', () => {
+        versionNameWrapper.classList.add('editing');
+        versionNameContent.setAttribute('contenteditable', 'true');
+        // Store original value for comparison later
+        versionNameContent.dataset.originalValue = versionNameContent.textContent.trim();
+        versionNameContent.focus();
+
+        // Place cursor at the end
+        const range = document.createRange();
+        const sel = window.getSelection();
+        if (versionNameContent.childNodes.length > 0) {
+            range.setStart(versionNameContent.childNodes[0], versionNameContent.textContent.length);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+        }
+
+        editBtn.classList.add('visible');
+    });
+
+    // Handle keyboard events in edit mode
+    versionNameContent.addEventListener('keydown', function(e) {
+        if (!this.getAttribute('contenteditable')) return;
+
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            this.blur(); // Trigger save on Enter
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            // Restore original value
+            this.textContent = this.dataset.originalValue;
+            exitEditMode();
+        }
+    });
+
+    // Limit version name length
+    versionNameContent.addEventListener('input', function() {
+        if (!this.getAttribute('contenteditable')) return;
+
+        if (this.textContent.length > 100) {
+            this.textContent = this.textContent.substring(0, 100);
+            // Place cursor at the end
+            const range = document.createRange();
+            const sel = window.getSelection();
+            range.setStart(this.childNodes[0], 100);
+            range.collapse(true);
+            sel.removeAllRanges();
+            sel.addRange(range);
+
+            showToast('toast.models.nameTooLong', {}, 'warning');
+        }
+    });
+
+    // Handle focus out - save changes
+    versionNameContent.addEventListener('blur', async function() {
+        if (!this.getAttribute('contenteditable')) return;
+
+        const newVersionName = this.textContent.trim();
+        const originalValue = this.dataset.originalValue;
+
+        // Basic validation
+        if (!newVersionName) {
+            // Restore original value if empty
+            this.textContent = originalValue;
+            showToast('toast.models.nameCannotBeEmpty', {}, 'error');
+            exitEditMode();
+            return;
+        }
+
+        if (newVersionName === originalValue) {
+            // No changes, just exit edit mode
+            exitEditMode();
+            return;
+        }
+
+        try {
+            // Resolve current file path from modal state
+            const filePath = getActiveModalFilePath(this.dataset.filePath);
+
+            await getModelApiClient().saveModelMetadata(filePath, { civitai: { name: newVersionName } });
+
+            showToast('toast.models.nameUpdatedSuccessfully', {}, 'success');
+        } catch (error) {
+            console.error('Error updating version name:', error);
+            this.textContent = originalValue; // Restore original version name
+            showToast('toast.models.nameUpdateFailed', {}, 'error');
+        } finally {
+            exitEditMode();
+        }
+    });
+
+    function exitEditMode() {
+        versionNameContent.removeAttribute('contenteditable');
+        versionNameWrapper.classList.remove('editing');
         editBtn.classList.remove('visible');
     }
 }

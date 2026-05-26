@@ -11,7 +11,8 @@ import { setupTabSwitching } from './ModelDescription.js';
 import {
     setupModelNameEditing,
     setupBaseModelEditing,
-    setupFileNameEditing
+    setupFileNameEditing,
+    setupVersionNameEditing
 } from './ModelMetadata.js';
 import { setupTagEditMode } from './ModelTags.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
@@ -466,7 +467,12 @@ export async function showModelModal(model, modelType) {
                     <div class="info-grid">
                         <div class="info-item">
                             <label>${translate('modals.model.metadata.version', {}, 'Version')}</label>
-                            <span>${modelWithFullData.civitai?.name || 'N/A'}</span>
+                            <div class="version-name-wrapper">
+                                <span class="version-name-content">${modelWithFullData.civitai?.name || 'N/A'}</span>
+                                <button class="edit-version-name-btn" title="${translate('modals.model.actions.editVersionName', {}, 'Edit version name')}">
+                                    <i class="fas fa-pencil-alt"></i>
+                                </button>
+                            </div>
                         </div>
                         <div class="info-item">
                             <label>${translate('modals.model.metadata.fileName', {}, 'File Name')}</label>
@@ -660,6 +666,7 @@ export async function showModelModal(model, modelType) {
     setupTagTooltip();
     setupTagEditMode(modelType);
     setupModelNameEditing(modelWithFullData.file_path);
+    setupVersionNameEditing(modelWithFullData.file_path);
     setupBaseModelEditing(modelWithFullData.file_path);
     setupFileNameEditing(modelWithFullData.file_path);
     setupEventHandlers(modelWithFullData.file_path, modelType);

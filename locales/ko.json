@@ -1180,6 +1180,7 @@
                 "editModelName": "모델명 편집",
                 "editFileName": "파일명 편집",
                 "editBaseModel": "베이스 모델 편집",
+                "editVersionName": "버전명 편집",
                 "viewOnCivitai": "Civitai에서 보기",
                 "viewOnCivitaiText": "Civitai에서 보기",
                 "viewCreatorProfile": "제작자 프로필 보기",

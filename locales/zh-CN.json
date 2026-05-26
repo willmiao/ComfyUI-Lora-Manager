@@ -1180,6 +1180,7 @@
                 "editModelName": "编辑模型名称",
                 "editFileName": "编辑文件名",
                 "editBaseModel": "编辑基础模型",
+                "editVersionName": "编辑版本名称",
                 "viewOnCivitai": "在 Civitai 查看",
                 "viewOnCivitaiText": "在 Civitai 查看",
                 "viewCreatorProfile": "查看创作者主页",
