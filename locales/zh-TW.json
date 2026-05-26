@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "下載後端",
-            "help": "選擇模型檔案的下載方式。Python 使用內建下載器。aria2 使用實驗性的外部下載程序。",
+            "help": "選擇模型檔案的下載方式。Python 使用內建下載器。aria2 使用推薦的外部下載程序。",
             "options": {
                 "python": "Python（內建）",
-                "aria2": "aria2（實驗性）"
+                "aria2": "aria2（推薦）"
             }
         },
         "aria2cPath": {

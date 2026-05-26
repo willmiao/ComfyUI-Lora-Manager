@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "下载后端",
-            "help": "选择模型文件的下载方式。Python 使用内置下载器。aria2 使用实验性的外部下载进程。",
+            "help": "选择模型文件的下载方式。Python 使用内置下载器。aria2 使用推荐的外部下载进程。",
             "options": {
                 "python": "Python（内置）",
-                "aria2": "aria2（实验性）"
+                "aria2": "aria2（推荐）"
             }
         },
         "aria2cPath": {

@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "다운로드 백엔드",
-            "help": "모델 파일을 다운로드하는 방식을 선택합니다. Python은 내장 다운로더를 사용하고, aria2는 실험적인 외부 다운로더 프로세스를 사용합니다.",
+            "help": "모델 파일을 다운로드하는 방식을 선택합니다. Python은 내장 다운로더를 사용하고, aria2는 권장되는 외부 다운로더 프로세스를 사용합니다.",
             "options": {
                 "python": "Python(내장)",
-                "aria2": "aria2(실험적)"
+                "aria2": "aria2(권장)"
             }
         },
         "aria2cPath": {

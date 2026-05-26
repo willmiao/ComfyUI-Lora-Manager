@@ -39,7 +39,7 @@ class Aria2Transfer:
 
 
 class Aria2Downloader:
-    """Manage an aria2 RPC daemon for experimental model downloads."""
+    """Manage an aria2 RPC daemon for recommended model downloads."""
 
     _instance = None
     _lock = asyncio.Lock()

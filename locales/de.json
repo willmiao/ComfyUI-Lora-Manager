@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "Download-Backend",
-            "help": "Wähle aus, wie Modelldateien heruntergeladen werden. Python verwendet den eingebauten Downloader. aria2 verwendet den experimentellen externen Downloader-Prozess.",
+            "help": "Wähle aus, wie Modelldateien heruntergeladen werden. Python verwendet den eingebauten Downloader. aria2 verwendet den empfohlenen externen Downloader-Prozess.",
             "options": {
                 "python": "Python (integriert)",
-                "aria2": "aria2 (experimentell)"
+                "aria2": "aria2 (empfohlen)"
             }
         },
         "aria2cPath": {

@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "Moteur de téléchargement",
-            "help": "Choisissez comment les fichiers de modèles sont téléchargés. Python utilise le téléchargeur intégré. aria2 utilise le processus externe expérimental de téléchargement.",
+            "help": "Choisissez comment les fichiers de modèles sont téléchargés. Python utilise le téléchargeur intégré. aria2 utilise le processus externe recommandé de téléchargement.",
             "options": {
                 "python": "Python (intégré)",
-                "aria2": "aria2 (expérimental)"
+                "aria2": "aria2 (recommandé)"
             }
         },
         "aria2cPath": {

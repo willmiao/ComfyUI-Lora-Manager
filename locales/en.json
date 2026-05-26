@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "Download backend",
-            "help": "Choose how model files are downloaded. Python uses the built-in downloader. aria2 uses the experimental external downloader process.",
+            "help": "Choose how model files are downloaded. Python uses the built-in downloader. aria2 uses the recommended external downloader process.",
             "options": {
                 "python": "Python (built-in)",
-                "aria2": "aria2 (experimental)"
+                "aria2": "aria2 (recommended)"
             }
         },
         "aria2cPath": {

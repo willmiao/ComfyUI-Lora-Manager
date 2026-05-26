@@ -269,10 +269,10 @@
         },
         "downloadBackend": {
             "label": "Backend de descarga",
-            "help": "Elige cómo se descargan los archivos del modelo. Python usa el descargador integrado. aria2 usa el proceso externo experimental de descarga.",
+            "help": "Elige cómo se descargan los archivos del modelo. Python usa el descargador integrado. aria2 usa el proceso externo recomendado de descarga.",
             "options": {
                 "python": "Python (integrado)",
-                "aria2": "aria2 (experimental)"
+                "aria2": "aria2 (recomendado)"
             }
         },
         "aria2cPath": {
