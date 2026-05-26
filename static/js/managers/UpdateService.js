@@ -731,8 +731,15 @@ export class UpdateService {
     }
     
     // Simple markdown parser for changelog items
+    // Simple markdown parser for changelog items
+    // Escape HTML entities first so angle brackets in content (e.g. `<lora:x>`)
+    // aren't swallowed by innerHTML's HTML parser as invalid tags
     parseMarkdown(text) {
         if (!text) return '';
+        
+        text = text.replace(/&/g, '&amp;');
+        text = text.replace(/</g, '&lt;');
+        text = text.replace(/>/g, '&gt;');
         
         // Handle bold text (**text**)
         text = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
