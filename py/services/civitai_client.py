@@ -410,6 +410,25 @@ class CivitaiClient:
             return None
 
         target_version = self._select_target_version(model_data, model_id, version_id)
+
+        # If modelVersions is empty (e.g. CivitAI cache lag for newly published
+        # models) but a specific version_id is known, fall back to fetching the
+        # version directly via the individual model-versions endpoint, then
+        # enrich it with the model-level data we already have.
+        if target_version is None and version_id is not None:
+            logger.info(
+                "modelVersions empty for model %s; falling back to direct "
+                "version lookup for %s",
+                model_id,
+                version_id,
+            )
+            version = await self._fetch_version_by_id(version_id)
+            if version:
+                self._enrich_version_with_model_data(version, model_data)
+                self._remove_comfy_metadata(version)
+                return version
+            return None
+
         if target_version is None:
             return None
 
