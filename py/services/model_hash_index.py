@@ -7,6 +7,7 @@ class ModelHashIndex:
     def __init__(self):
         self._hash_to_path: Dict[str, str] = {}
         self._filename_to_hash: Dict[str, str] = {}
+        self._autov2_to_path: Dict[str, str] = {}
         # New data structures for tracking duplicates
         self._duplicate_hashes: Dict[str, List[str]] = {}  # sha256 -> list of paths
         self._duplicate_filenames: Dict[str, List[str]] = {}  # filename -> list of paths
@@ -63,6 +64,9 @@ class ModelHashIndex:
         # Add new mappings
         self._hash_to_path[sha256] = file_path
         self._filename_to_hash[filename] = sha256
+        # AutoV2 = first 10 chars of SHA256
+        if len(sha256) >= 10:
+            self._autov2_to_path[sha256[:10]] = file_path
     
     def _get_filename_from_path(self, file_path: str) -> str:
         """Extract filename without extension from path"""
@@ -157,7 +161,12 @@ class ModelHashIndex:
                 del self._duplicate_filenames[filename]
                 if filename in self._filename_to_hash:
                     del self._filename_to_hash[filename]
-    
+
+        # Remove from AutoV2 index
+        autov2_keys_to_remove = [k for k, v in self._autov2_to_path.items() if v == file_path]
+        for k in autov2_keys_to_remove:
+            del self._autov2_to_path[k]
+
     def remove_by_hash(self, sha256: str) -> None:
         """Remove entry by hash"""
         sha256 = sha256.lower()
@@ -195,13 +204,24 @@ class ModelHashIndex:
                     # If only one entry remains, it's no longer a duplicate
                     del self._duplicate_filenames[fname]
     
-    def has_hash(self, sha256: str) -> bool:
-        """Check if hash exists in index"""
-        return sha256.lower() in self._hash_to_path
-    
-    def get_path(self, sha256: str) -> Optional[str]:
-        """Get file path for a hash"""
-        return self._hash_to_path.get(sha256.lower())
+    def has_hash(self, hash_value: str) -> bool:
+        """Check if hash exists in index (SHA256 or AutoV2)"""
+        normalized = hash_value.lower()
+        if normalized in self._hash_to_path:
+            return True
+        if len(normalized) == 10:
+            return normalized in self._autov2_to_path
+        return False
+
+    def get_path(self, hash_value: str) -> Optional[str]:
+        """Get file path for a hash (SHA256 or AutoV2)"""
+        normalized = hash_value.lower()
+        path = self._hash_to_path.get(normalized)
+        if path is not None:
+            return path
+        if len(normalized) == 10:
+            return self._autov2_to_path.get(normalized)
+        return None
     
     def get_hash(self, file_path: str) -> Optional[str]:
         """Get hash for a file path"""
@@ -218,6 +238,7 @@ class ModelHashIndex:
         """Clear all entries"""
         self._hash_to_path.clear()
         self._filename_to_hash.clear()
+        self._autov2_to_path.clear()
         self._duplicate_hashes.clear()
         self._duplicate_filenames.clear()
     
