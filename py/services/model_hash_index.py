@@ -186,6 +186,10 @@ class ModelHashIndex:
         # Remove hash-to-path mapping
         del self._hash_to_path[sha256]
         
+        autov2_key = sha256[:10]
+        if autov2_key in self._autov2_to_path:
+            del self._autov2_to_path[autov2_key]
+        
         # Update filename-to-hash and duplicate filenames for all paths
         for path_to_remove in paths_to_remove:
             fname = self._get_filename_from_path(path_to_remove)
