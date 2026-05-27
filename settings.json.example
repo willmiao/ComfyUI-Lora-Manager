@@ -10,13 +10,14 @@
       "C:/path/to/your/checkpoints_folder",
       "C:/path/to/another/checkpoints_folder"
     ],
+    "unet": [
+      "C:/path/to/your/diffusion_models_folder",
+      "C:/path/to/another/diffusion_models_folder"
+    ],
     "embeddings": [
       "C:/path/to/your/embeddings_folder",
       "C:/path/to/another/embeddings_folder"
     ]
   },
-  "example_images_open_mode": "system",
-  "example_images_local_root": "",
-  "example_images_open_uri_template": "",
   "auto_organize_exclusions": []
 }
