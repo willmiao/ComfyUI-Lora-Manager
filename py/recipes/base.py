@@ -7,7 +7,7 @@ import re
 from typing import Dict, List, Any, Optional, Tuple
 from abc import ABC, abstractmethod
 from ..config import config
-from ..utils.constants import VALID_LORA_TYPES
+from ..utils.constants import VALID_LORA_TYPES, VALID_CHECKPOINT_SUB_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 
 logger = logging.getLogger(__name__)
@@ -171,6 +171,20 @@ class RecipeMetadataParser(ABC):
 
             if not civitai_data or error_msg == "Model not found":
                 checkpoint['isDeleted'] = True
+                return checkpoint
+
+            # Validate that the model type is actually a checkpoint.
+            # Unlike populate_lora_from_civitai which has this check,
+            # this function was missing type validation — allowing LoRA
+            # version data to be saved as the recipe's checkpoint when the
+            # wrong version ID was passed downstream (fixed in v2.7+).
+            model_type = civitai_data.get('model', {}).get('type', '').lower()
+            if model_type not in VALID_CHECKPOINT_SUB_TYPES:
+                logger.warning(
+                    f"Cannot populate checkpoint: model version {civitai_data.get('id')} "
+                    f"has type '{model_type}', expected one of {VALID_CHECKPOINT_SUB_TYPES}. "
+                    f"Skipping checkpoint enrichment."
+                )
                 return checkpoint
 
             if 'model' in civitai_data and 'name' in civitai_data['model']:

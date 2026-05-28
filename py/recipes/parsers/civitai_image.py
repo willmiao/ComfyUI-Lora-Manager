@@ -185,8 +185,67 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             # Process standard resources array
             if "resources" in metadata and isinstance(metadata["resources"], list):
                 for resource in metadata["resources"]:
+                    resource_type = resource.get("type", "lora")
+
+                    # Track resources with type "model" — these are checkpoint models.
+                    # The resources array is the most reliable source for checkpoint
+                    # identification because it has an explicit type field and hash,
+                    # unlike modelVersionIds which is a flat list with no type info.
+                    if resource_type == "model":
+                        checkpoint_entry = {
+                            "id": 0,
+                            "modelId": 0,
+                            "name": resource.get("name", "Unknown Model"),
+                            "version": "",
+                            "type": resource.get("type", "model"),
+                            "existsLocally": False,
+                            "localPath": None,
+                            "file_name": resource.get("name", ""),
+                            "hash": resource.get("hash", "") or "",
+                            "thumbnailUrl": "/loras_static/images/no-preview.png",
+                            "baseModel": "",
+                            "size": 0,
+                            "downloadUrl": "",
+                            "isDeleted": False,
+                        }
+
+                        # Try to look up base model from the checkpoint hash
+                        if checkpoint_entry["hash"] and metadata_provider:
+                            try:
+                                civitai_info = (
+                                    await metadata_provider.get_model_by_hash(
+                                        checkpoint_entry["hash"]
+                                    )
+                                )
+                                civitai_data, error_msg = (
+                                    (civitai_info, None)
+                                    if not isinstance(civitai_info, tuple)
+                                    else civitai_info
+                                )
+                                if civitai_data and error_msg != "Model not found":
+                                    if 'model' in civitai_data and 'name' in civitai_data['model']:
+                                        checkpoint_entry['name'] = civitai_data['model']['name']
+                                    checkpoint_entry['id'] = civitai_data.get('id', 0)
+                                    checkpoint_entry['modelId'] = civitai_data.get('modelId', 0)
+                                    if 'name' in civitai_data:
+                                        checkpoint_entry['version'] = civitai_data['name']
+                                    base_model = civitai_data.get('baseModel', '')
+                                    if base_model:
+                                        checkpoint_entry['baseModel'] = base_model
+                                        if not result['base_model']:
+                                            result['base_model'] = base_model
+                            except Exception as e:
+                                logger.error(
+                                    f"Error fetching checkpoint info for hash "
+                                    f"{checkpoint_entry['hash']}: {e}"
+                                )
+
+                        if result["model"] is None:
+                            result["model"] = checkpoint_entry
+                        continue
+
                     # Modified to process resources without a type field as potential LoRAs
-                    if resource.get("type", "lora") == "lora":
+                    if resource_type == "lora":
                         lora_hash = resource.get("hash", "")
 
                         # Try to get hash from the hashes field if not present in resource

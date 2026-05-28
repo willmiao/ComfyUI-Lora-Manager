@@ -94,7 +94,7 @@ async def test_repair_all_recipes_with_enriched_checkpoint_id(setup_scanner):
         "id": 5678,
         "modelId": 1234,
         "name": "v1.0",
-        "model": {"name": "Full Model Name"},
+        "model": {"name": "Full Model Name", "type": "Checkpoint"},
         "baseModel": "SDXL 1.0",
         "images": [{"url": "https://image.url/thumb.jpg"}],
         "files": [{"type": "Model", "hashes": {"SHA256": "ABCDEF"}, "name": "full_filename.safetensors"}]
@@ -142,7 +142,7 @@ async def test_repair_all_recipes_supports_civitai_red_source_url(setup_scanner)
             "id": 5678,
             "modelId": 1234,
             "name": "v1.0",
-            "model": {"name": "Full Model Name"},
+            "model": {"name": "Full Model Name", "type": "Checkpoint"},
             "baseModel": "SDXL 1.0",
             "images": [{"url": "https://image.url/thumb.jpg"}],
             "files": [
@@ -183,7 +183,7 @@ async def test_repair_all_recipes_with_enriched_checkpoint_hash(setup_scanner):
         "id": 999,
         "modelId": 888,
         "name": "v2.0",
-        "model": {"name": "Hashed Model"},
+        "model": {"name": "Hashed Model", "type": "Checkpoint"},
         "baseModel": "SD 1.5",
         "files": [{"type": "Model", "hashes": {"SHA256": "hash123"}, "name": "hashed.safetensors"}]
     }, None)

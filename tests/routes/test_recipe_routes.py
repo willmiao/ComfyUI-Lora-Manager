@@ -467,7 +467,10 @@ async def test_import_remote_recipe(monkeypatch, tmp_path: Path) -> None:
     class Provider:
         async def get_model_version_info(self, model_version_id):
             provider_calls.append(model_version_id)
-            return {"baseModel": "Flux Provider"}, None
+            return {
+                "baseModel": "Flux Provider",
+                "model": {"type": "Checkpoint", "name": "Flux"},
+            }, None
 
     async def fake_get_default_metadata_provider():
         return Provider()

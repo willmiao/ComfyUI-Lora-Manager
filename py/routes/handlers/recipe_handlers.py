@@ -1293,11 +1293,18 @@ class RecipeManagementHandler:
                     image_info.get("meta") if civitai_image_id and image_info else None
                 )
                 if civitai_image_id and image_info:
+                    # modelVersionId (singular) — the primary version for this
+                    # image on CivitAI.  May be absent, or may *not* be the
+                    # checkpoint (e.g. when the image was generated with a LoRA
+                    # as the primary subject).  When absent, DO NOT fall back to
+                    # modelVersionIds[0] — that array mixes checkpoints, LoRAs,
+                    # and other model version IDs without ordering guarantees.
+                    # The downstream enrichment flow will find the real
+                    # checkpoint via meta.resources (type:"model" hash) or
+                    # meta.civitaiResources (type:"checkpoint" version ID), so
+                    # leaving model_ver_id as None is safe and avoids the bug
+                    # where a LoRA version ID was treated as the checkpoint.
                     model_ver_id = image_info.get("modelVersionId")
-                    if not model_ver_id:
-                        ids = image_info.get("modelVersionIds")
-                        if isinstance(ids, list) and ids:
-                            model_ver_id = ids[0]
 
                     # Inject root-level modelVersionIds into meta so downstream
                     # parsers (CivitaiApiMetadataParser) can discover ALL resources
