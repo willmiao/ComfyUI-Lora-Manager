@@ -127,33 +127,38 @@ export class BulkContextMenu extends BaseContextMenu {
         const resumeMetadataRefreshItem = this.menu.querySelector('[data-action="resume-metadata-refresh"]');
 
         if (skipMetadataRefreshItem && resumeMetadataRefreshItem) {
-            const skipCount = this.countSkipStatus(true);
-            const resumeCount = this.countSkipStatus(false);
-            const totalCount = skipCount + resumeCount;
-
-            if (skipCount === totalCount) {
+            if (!config.skipMetadataRefresh) {
                 skipMetadataRefreshItem.style.display = 'none';
-                resumeMetadataRefreshItem.style.display = 'flex';
-                resumeMetadataRefreshItem.querySelector('span').textContent = translate(
-                    'loras.bulkOperations.resumeMetadataRefresh'
-                );
-            } else if (resumeCount === totalCount) {
-                skipMetadataRefreshItem.style.display = 'flex';
                 resumeMetadataRefreshItem.style.display = 'none';
-                skipMetadataRefreshItem.querySelector('span').textContent = translate(
-                    'loras.bulkOperations.skipMetadataRefresh'
-                );
             } else {
-                skipMetadataRefreshItem.style.display = 'flex';
-                resumeMetadataRefreshItem.style.display = 'flex';
-                skipMetadataRefreshItem.querySelector('span').textContent = translate(
-                    'loras.bulkOperations.skipMetadataRefreshCount',
-                    { count: resumeCount }
-                );
-                resumeMetadataRefreshItem.querySelector('span').textContent = translate(
-                    'loras.bulkOperations.resumeMetadataRefreshCount',
-                    { count: skipCount }
-                );
+                const skipCount = this.countSkipStatus(true);
+                const resumeCount = this.countSkipStatus(false);
+                const totalCount = skipCount + resumeCount;
+
+                if (skipCount === totalCount) {
+                    skipMetadataRefreshItem.style.display = 'none';
+                    resumeMetadataRefreshItem.style.display = 'flex';
+                    resumeMetadataRefreshItem.querySelector('span').textContent = translate(
+                        'loras.bulkOperations.resumeMetadataRefresh'
+                    );
+                } else if (resumeCount === totalCount) {
+                    skipMetadataRefreshItem.style.display = 'flex';
+                    resumeMetadataRefreshItem.style.display = 'none';
+                    skipMetadataRefreshItem.querySelector('span').textContent = translate(
+                        'loras.bulkOperations.skipMetadataRefresh'
+                    );
+                } else {
+                    skipMetadataRefreshItem.style.display = 'flex';
+                    resumeMetadataRefreshItem.style.display = 'flex';
+                    skipMetadataRefreshItem.querySelector('span').textContent = translate(
+                        'loras.bulkOperations.skipMetadataRefreshCount',
+                        { count: resumeCount }
+                    );
+                    resumeMetadataRefreshItem.querySelector('span').textContent = translate(
+                        'loras.bulkOperations.resumeMetadataRefreshCount',
+                        { count: skipCount }
+                    );
+                }
             }
         }
 
