@@ -397,13 +397,12 @@ class DownloadManager:
 
             models_with_hash = len(all_models_with_hash)
 
-            # Calculate pending count: check which models actually need processing
-            # A model is pending if it has a hash, is not in processed_models,
-            # and its folder doesn't exist or is empty
+            # Calculate pending count: check which models actually need processing.
+            # A model is pending if it has a hash, is not already processed or known-failed,
+            # and its folder doesn't exist or is empty.
             pending_hashes = set()
             for model_hash, model_name in all_models_with_hash:
-                if model_hash not in processed_models:
-                    # Check if model folder exists with files
+                if model_hash not in processed_models and model_hash not in failed_models:
                     model_dir = ExampleImagePathResolver.get_model_folder(
                         model_hash, active_library
                     )
