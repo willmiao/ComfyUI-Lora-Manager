@@ -87,6 +87,7 @@ class RecipeHandlerSet:
             "repair_recipes": self.management.repair_recipes,
             "cancel_repair": self.management.cancel_repair,
             "repair_recipe": self.management.repair_recipe,
+            "repair_recipes_bulk": self.management.repair_recipes_bulk,
             "get_repair_progress": self.management.get_repair_progress,
             "start_batch_import": self.batch_import.start_batch_import,
             "get_batch_import_progress": self.batch_import.get_batch_import_progress,
@@ -705,6 +706,69 @@ class RecipeManagementHandler:
         except Exception as exc:
             self._logger.error("Error cancelling recipe repair: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def repair_recipes_bulk(self, request: web.Request) -> web.Response:
+        """Bulk repair metadata for multiple recipes by their IDs.
+
+        Accepts a JSON body with a "recipe_ids" array and iterates
+        repair_recipe_by_id over each entry, collecting statistics.
+        """
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
+
+            data = await request.json()
+            recipe_ids = data.get("recipe_ids", [])
+            if not recipe_ids:
+                return web.json_response(
+                    {"success": False, "error": "recipe_ids are required"},
+                    status=400,
+                )
+
+            total = len(recipe_ids)
+            repaired = 0
+            skipped = 0
+            errors = 0
+            recipes = []
+
+            for recipe_id in recipe_ids:
+                try:
+                    result = await recipe_scanner.repair_recipe_by_id(recipe_id)
+                    if result.get("success"):
+                        repaired += result.get("repaired", 0)
+                        skipped += result.get("skipped", 0)
+                        if result.get("recipe"):
+                            recipes.append(result["recipe"])
+                    else:
+                        errors += 1
+                except RecipeNotFoundError:
+                    skipped += 1
+                except Exception as exc:
+                    self._logger.error(
+                        "Error repairing recipe %s: %s", recipe_id, exc
+                    )
+                    errors += 1
+
+            return web.json_response({
+                "success": True,
+                "total": total,
+                "repaired": repaired,
+                "skipped": skipped,
+                "errors": errors,
+                "recipes": recipes,
+            })
+        except Exception as exc:
+            self._logger.error(
+                "Error performing bulk repair: %s", exc, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
 
     async def repair_recipe(self, request: web.Request) -> web.Response:
         try:

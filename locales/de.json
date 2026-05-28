@@ -689,6 +689,7 @@
             "setContentRating": "Inhaltsbewertung für alle festlegen",
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
+            "repairMetadata": "Metadaten der Auswahl reparieren",
             "checkUpdates": "Auswahl auf Updates prüfen",
             "moveAll": "Alle in Ordner verschieben",
             "autoOrganize": "Automatisch organisieren",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "Keine Rezepte ausgewählt",
+            "repairBulkComplete": "Reparatur abgeschlossen: {repaired} repariert, {skipped} übersprungen (von {total})",
+            "repairBulkSkipped": "Keine Reparatur für die {total} ausgewählten Rezepte erforderlich",
+            "repairBulkFailed": "Reparatur der ausgewählten Rezepte fehlgeschlagen: {message}",
             "noMissingLorasInSelection": "Keine fehlenden LoRAs in ausgewählten Rezepten gefunden",
             "noLoraRootConfigured": "Kein LoRA-Stammverzeichnis konfiguriert. Bitte legen Sie ein Standard-LoRA-Stammverzeichnis in den Einstellungen fest."
         },

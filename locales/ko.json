@@ -689,6 +689,7 @@
             "setContentRating": "모든 모델에 콘텐츠 등급 설정",
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
+            "repairMetadata": "선택한 레시피 메타데이터 복구",
             "checkUpdates": "선택 항목 업데이트 확인",
             "moveAll": "모두 폴더로 이동",
             "autoOrganize": "자동 정리 선택",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "선택한 레시피가 없습니다",
+            "repairBulkComplete": "복구 완료: {repaired}개 복구, {skipped}개 건너뜀 (총 {total}개)",
+            "repairBulkSkipped": "선택한 {total}개 레시피는 복구가 필요하지 않습니다",
+            "repairBulkFailed": "선택한 레시피 복구 실패: {message}",
             "noMissingLorasInSelection": "선택한 레시피에서 누락된 LoRA를 찾을 수 없습니다",
             "noLoraRootConfigured": "LoRA 루트 디렉토리가 구성되지 않았습니다. 설정에서 기본 LoRA 루트를 설정하세요."
         },

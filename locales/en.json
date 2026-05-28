@@ -689,6 +689,7 @@
             "setContentRating": "Set Content Rating for Selected",
             "copyAll": "Copy Selected Syntax",
             "refreshAll": "Refresh Selected Metadata",
+            "repairMetadata": "Repair Metadata for Selected",
             "checkUpdates": "Check Updates for Selected",
             "moveAll": "Move Selected to Folder",
             "autoOrganize": "Auto-Organize Selected",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "No recipes selected",
+            "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
+            "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
+            "repairBulkFailed": "Failed to repair selected recipes: {message}",
             "noMissingLorasInSelection": "No missing LoRAs found in selected recipes",
             "noLoraRootConfigured": "No LoRA root directory configured. Please set a default LoRA root in settings."
         },

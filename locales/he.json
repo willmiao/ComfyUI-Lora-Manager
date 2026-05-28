@@ -689,6 +689,7 @@
             "setContentRating": "הגדר דירוג תוכן לכל המודלים",
             "copyAll": "העתק את כל התחבירים",
             "refreshAll": "רענן את כל המטא-דאטה",
+            "repairMetadata": "תקן מטא-דאטה עבור הנבחרים",
             "checkUpdates": "בדוק עדכונים לבחירה",
             "moveAll": "העבר הכל לתיקייה",
             "autoOrganize": "ארגן אוטומטית נבחרים",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "לא נבחרו מתכונים",
+            "repairBulkComplete": "התיקון הושלם: {repaired} תוקנו, {skipped} דולגו (מתוך {total})",
+            "repairBulkSkipped": "אין צורך בתיקון עבור {total} המתכונים הנבחרים",
+            "repairBulkFailed": "תיקון המתכונים הנבחרים נכשל: {message}",
             "noMissingLorasInSelection": "לא נמצאו LoRAs חסרים במתכונים שנבחרו",
             "noLoraRootConfigured": "תיקיית השורש של LoRA לא מוגדרת. אנא הגדר תיקיית שורש LoRA ברירת מחדל בהגדרות."
         },

@@ -689,6 +689,7 @@
             "setContentRating": "すべてのモデルのコンテンツレーティングを設定",
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
+            "repairMetadata": "選択したレシピのメタデータを修復",
             "checkUpdates": "選択項目の更新を確認",
             "moveAll": "すべてをフォルダに移動",
             "autoOrganize": "自動整理を実行",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "レシピが選択されていません",
+            "repairBulkComplete": "修復完了：{repaired} 件修復、{skipped} 件スキップ（合計 {total} 件）",
+            "repairBulkSkipped": "選択した {total} 件のレシピは修復不要です",
+            "repairBulkFailed": "選択したレシピの修復に失敗しました：{message}",
             "noMissingLorasInSelection": "選択したレシピに不足している LoRA が見つかりませんでした",
             "noLoraRootConfigured": "LoRA ルートディレクトリが設定されていません。設定でデフォルトの LoRA ルートを設定してください。"
         },

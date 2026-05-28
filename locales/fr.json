@@ -689,6 +689,7 @@
             "setContentRating": "Définir la classification du contenu pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
+            "repairMetadata": "Réparer les métadonnées de la sélection",
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
             "moveAll": "Déplacer tout vers un dossier",
             "autoOrganize": "Auto-organiser la sélection",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "Aucune recette sélectionnée",
+            "repairBulkComplete": "Réparation terminée : {repaired} réparée(s), {skipped} ignorée(s) (sur {total})",
+            "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} recettes sélectionnées",
+            "repairBulkFailed": "Échec de la réparation des recettes sélectionnées : {message}",
             "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les recettes sélectionnées",
             "noLoraRootConfigured": "Aucun répertoire racine LoRA configuré. Veuillez définir un répertoire racine LoRA par défaut dans les paramètres."
         },

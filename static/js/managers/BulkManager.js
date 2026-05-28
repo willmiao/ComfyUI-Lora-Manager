@@ -85,7 +85,8 @@ export class BulkManager {
                 setContentRating: false,
                 skipMetadataRefresh: false,
                 setFavorite: true,
-                unfavorite: true
+                unfavorite: true,
+                repairMetadata: true
             }
         };
 
@@ -653,6 +654,76 @@ export class BulkManager {
 
         if (this.isStripVisible) {
             this.updateThumbnailStrip();
+        }
+    }
+
+    async repairSelectedRecipes() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.recipes.noRecipesSelected', {}, 'warning');
+            return;
+        }
+
+        if (state.currentPageType !== 'recipes') {
+            showToast('This operation is only available for recipes', {}, 'warning');
+            return;
+        }
+
+        try {
+            const apiClient = this.getActiveApiClient();
+            const filePaths = Array.from(state.selectedModels);
+
+            if (typeof apiClient.repairBulkModels !== 'function') {
+                showToast('Bulk repair is not supported for this model type', {}, 'error');
+                return;
+            }
+
+            state.loadingManager.showSimpleLoading('Repairing recipe metadata...');
+
+            const result = await apiClient.repairBulkModels(filePaths);
+
+            if (result.success) {
+                const total = result.total || filePaths.length;
+                const repaired = result.repaired || 0;
+                const skipped = result.skipped || 0;
+
+                const recipes = result.recipes || [];
+                for (const recipe of recipes) {
+                    if (recipe.file_path) {
+                        state.virtualScroller.updateSingleItem(
+                            recipe.file_path,
+                            recipe
+                        );
+                    }
+                }
+
+                if (repaired > 0) {
+                    showToast(
+                        'toast.recipes.repairBulkComplete',
+                        { repaired, skipped, total },
+                        'success'
+                    );
+                } else {
+                    showToast(
+                        'toast.recipes.repairBulkSkipped',
+                        { total },
+                        'info'
+                    );
+                }
+
+                this.clearSelection();
+            } else {
+                throw new Error(result.error || 'Bulk repair failed');
+            }
+        } catch (error) {
+            console.error('Error during bulk recipe repair:', error);
+            showToast('toast.recipes.repairBulkFailed', { message: error.message }, 'error');
+        } finally {
+            if (state.loadingManager?.hide) {
+                state.loadingManager.hide();
+            }
+            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+                state.loadingManager.restoreProgressBar();
+            }
         }
     }
 

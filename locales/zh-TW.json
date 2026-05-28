@@ -689,6 +689,7 @@
             "setContentRating": "為全部設定內容分級",
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
+            "repairMetadata": "修復所選中元數據",
             "checkUpdates": "檢查所選更新",
             "moveAll": "全部移動到資料夾",
             "autoOrganize": "自動整理所選模型",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "瀏覽目錄失敗：{message}",
             "batchImportDirectorySelected": "已選擇目錄：{path}",
             "noRecipesSelected": "未選取任何食譜",
+            "repairBulkComplete": "修復完成：{repaired} 個已修復，{skipped} 個已跳過（共 {total} 個）",
+            "repairBulkSkipped": "所選 {total} 個配方無需修復",
+            "repairBulkFailed": "修復所選配方失敗：{message}",
             "noMissingLorasInSelection": "在選取的食譜中未找到缺失的 LoRAs",
             "noLoraRootConfigured": "未配置 LoRA 根目錄。請在設定中設定預設的 LoRA 根目錄。"
         },

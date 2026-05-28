@@ -689,6 +689,7 @@
             "setContentRating": "为所选中设置内容评级",
             "copyAll": "复制所选中语法",
             "refreshAll": "刷新所选中元数据",
+            "repairMetadata": "修复所选中元数据",
             "checkUpdates": "检查所选更新",
             "moveAll": "移动所选中到文件夹",
             "autoOrganize": "自动整理所选模型",
@@ -1693,6 +1694,9 @@
             "batchImportBrowseFailed": "浏览目录失败：{message}",
             "batchImportDirectorySelected": "已选择目录：{path}",
             "noRecipesSelected": "未选择任何配方",
+            "repairBulkComplete": "修复完成：{repaired} 个已修复，{skipped} 个已跳过（共 {total} 个）",
+            "repairBulkSkipped": "所选 {total} 个配方无需修复",
+            "repairBulkFailed": "修复所选配方失败：{message}",
             "noMissingLorasInSelection": "在选定的配方中未找到缺失的 LoRAs",
             "noLoraRootConfigured": "未配置 LoRA 根目录。请在设置中设置默认的 LoRA 根目录。"
         },

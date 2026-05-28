@@ -41,6 +41,11 @@ export class BulkContextMenu extends BaseContextMenu {
         const autoOrganizeItem = this.menu.querySelector('[data-action="auto-organize"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
+        const repairMetadataItem = this.menu.querySelector('[data-action="repair-metadata"]');
+
+        if (repairMetadataItem) {
+            repairMetadataItem.style.display = config.repairMetadata ? 'flex' : 'none';
+        }
 
         if (sendToWorkflowAppendItem) {
             sendToWorkflowAppendItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
@@ -255,6 +260,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();
+                break;
+            case 'repair-metadata':
+                bulkManager.repairSelectedRecipes();
                 break;
             case 'set-favorite': {
                 const allFavorited = this.countFavoritedInSelection() === state.selectedModels.size;
