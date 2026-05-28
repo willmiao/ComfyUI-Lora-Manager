@@ -65,7 +65,7 @@ class RecipeScanner:
             cls._instance._civitai_client = None  # Will be lazily initialized
         return cls._instance
 
-    REPAIR_VERSION = 3
+    REPAIR_VERSION = 4
 
     def __init__(
         self,
@@ -291,6 +291,32 @@ class RecipeScanner:
         # 1. Skip if already at latest repair version
         if recipe.get("repair_version", 0) >= self.REPAIR_VERSION:
             return False
+
+        # 1.5 Detect and clear corrupted checkpoint (LoRA data saved as checkpoint).
+        #     A checkpoint whose modelVersionId also appears in a LoRA entry is
+        #     definitely wrong — the CivitAI import code used to pick
+        #     modelVersionIds[0] as the checkpoint, which was often a LoRA.
+        #     Clearing it lets the enrichment flow re-resolve the correct
+        #     checkpoint from CivitAI image metadata.
+        cp = recipe.get("checkpoint")
+        lora_mvids = {
+            l.get("modelVersionId")
+            for l in recipe.get("loras", [])
+            if l.get("modelVersionId")
+        }
+        if cp and cp.get("modelVersionId") and cp["modelVersionId"] in lora_mvids:
+            cp_mvid = cp["modelVersionId"]
+            logger.info(
+                "Recipe %s: checkpoint modelVersionId %s matches a LoRA — "
+                "clearing corrupted checkpoint and removing matching LoRA entry",
+                recipe.get("id"),
+                cp_mvid,
+            )
+            recipe["checkpoint"] = None
+            recipe["loras"] = [
+                l for l in recipe.get("loras", [])
+                if l.get("modelVersionId") != cp_mvid
+            ]
 
         # 2. Identification: Is repair needed?
         has_checkpoint = (
