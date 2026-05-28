@@ -5,7 +5,7 @@ import logging
 import random
 from typing import Optional, Dict, Tuple, Any, List, Sequence
 from .downloader import get_downloader
-from .errors import RateLimitError
+from .errors import RateLimitError, ResourceNotFoundError
 
 try:
     from bs4 import BeautifulSoup
@@ -482,6 +482,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None, "Model not found"
 
     async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+        not_found_confirmed = False
         for provider, label in self._iter_providers():
             try:
                 result = await self._call_with_rate_limit(
@@ -492,8 +493,24 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result
             except RateLimitError as exc:
+                if not_found_confirmed:
+                    logger.debug(
+                        "Suppressing rate limit from %s for model %s: "
+                        "already confirmed as not found by another provider",
+                        label,
+                        model_id,
+                    )
+                    return None
                 exc.provider = exc.provider or label
                 raise exc
+            except ResourceNotFoundError:
+                not_found_confirmed = True
+                logger.debug(
+                    "Provider %s reports model %s as not found",
+                    label,
+                    model_id,
+                )
+                continue
             except Exception as e:
                 logger.debug("Provider %s failed for get_model_versions: %s", label, e)
                 continue
