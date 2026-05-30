@@ -20,6 +20,24 @@ from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
+def _try_certifi_ca_path() -> str | None:
+    """Return the certifi CA bundle path if available, else None."""
+    try:
+        import certifi  # type: ignore[import-untyped]
+
+        path = certifi.where()
+        if os.path.isfile(path):
+            logger.debug(
+                "aria2 --ca-certificate: using certifi CA bundle at %s", path
+            )
+            return path
+    except ImportError:
+        pass
+
+    logger.debug("aria2 --ca-certificate: certifi not available")
+    return None
+
+
 CIVITAI_DOWNLOAD_URL_PREFIXES = (
     "https://civitai.com/api/download/",
     "https://civitai.red/api/download/",
@@ -423,6 +441,11 @@ class Aria2Downloader:
                 f"--rpc-listen-port={self._rpc_port}",
                 f"--rpc-secret={self._rpc_secret}",
                 "--check-certificate=true",
+                # Point aria2 at certifi's CA bundle when available so it uses
+                # the same certificate store as Python downloads.
+                *((
+                    f"--ca-certificate={ca_cert}",
+                ) if (ca_cert := _try_certifi_ca_path()) else ()),
                 "--allow-overwrite=true",
                 "--auto-file-renaming=false",
                 "--file-allocation=none",
