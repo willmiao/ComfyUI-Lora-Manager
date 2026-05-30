@@ -13,6 +13,7 @@ This module provides a centralized download service with:
 import os
 import logging
 import asyncio
+import ssl
 import aiohttp
 from collections import deque
 from dataclasses import dataclass
@@ -29,6 +30,20 @@ from .connectivity_guard import (
 from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
+
+
+def is_ssl_cert_verify_error(exc: BaseException) -> bool:
+    """Check if an exception represents an SSL certificate verification failure.
+
+    Matches ``ssl.SSLCertVerificationError``, ``aiohttp.ClientConnectorCertificateError``
+    (which wraps the former), and falls back to the standard OpenSSL error text.
+    """
+    if isinstance(exc, ssl.SSLCertVerificationError):
+        return True
+    cert_error = getattr(exc, "certificate_error", None)
+    if isinstance(cert_error, ssl.SSLCertVerificationError):
+        return True
+    return "CERTIFICATE_VERIFY_FAILED" in str(exc)
 
 
 @dataclass(frozen=True)
@@ -265,9 +280,22 @@ class Downloader:
             logger.debug(
                 "Proxy mode: system-level proxy (trust_env) will be used if configured in environment."
             )
+        # Build SSL context: prefer certifi's CA bundle for broader
+        # CA coverage across different Python environments (especially
+        # embedded/compatibility Python builds).
+        try:
+            import certifi  # type: ignore[import-untyped]
+
+            ca_path = certifi.where()
+            ssl_context = ssl.create_default_context(cafile=ca_path)
+            logger.debug("SSL: using certifi CA bundle at %s", ca_path)
+        except (ImportError, FileNotFoundError, ValueError, OSError):
+            ssl_context = ssl.create_default_context()
+            logger.debug("SSL: certifi unavailable; using system default CA bundle")
+
         # Optimize TCP connection parameters
         connector = aiohttp.TCPConnector(
-            ssl=True,
+            ssl=ssl_context,
             limit=8,  # Concurrent connections
             ttl_dns_cache=300,  # DNS cache timeout
             force_close=False,  # Keep connections for reuse
@@ -736,6 +764,17 @@ class Downloader:
                 DownloadRestartRequested,
             ) as e:
                 retry_count += 1
+
+                if is_ssl_cert_verify_error(e):
+                    logger.error(
+                        "SSL certificate verification failed when connecting to %s. "
+                        "This is usually caused by an outdated CA certificate bundle "
+                        "in the Python environment. Recommended fixes:\n"
+                        "  1. pip install --upgrade certifi\n"
+                        "  2. pip install pip-system-certs",
+                        url,
+                    )
+
                 logger.warning(
                     f"Network error during download (attempt {retry_count}/{self.max_retries + 1}): {e}"
                 )

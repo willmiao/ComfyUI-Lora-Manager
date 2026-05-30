@@ -14,7 +14,7 @@ from typing import Any, Dict, Optional, Tuple
 
 import aiohttp
 
-from .downloader import DownloadProgress, get_downloader
+from .downloader import DownloadProgress, get_downloader, is_ssl_cert_verify_error
 from .aria2_transfer_state import Aria2TransferStateStore
 from .settings_manager import get_settings_manager
 
@@ -391,6 +391,15 @@ class Aria2Downloader:
                     f"Failed to resolve authenticated Civitai redirect: status={response.status} body={body[:300]}"
                 )
         except aiohttp.ClientError as exc:
+            if is_ssl_cert_verify_error(exc):
+                logger.error(
+                    "SSL certificate verification failed during Civitai redirect "
+                    "resolution for %s. This is usually caused by an outdated CA "
+                    "certificate bundle. Recommended fixes:\n"
+                    "  1. pip install --upgrade certifi\n"
+                    "  2. pip install pip-system-certs",
+                    url,
+                )
             raise Aria2Error(
                 f"Failed to resolve authenticated Civitai redirect: {exc}"
             ) from exc
