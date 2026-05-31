@@ -64,6 +64,27 @@ def _build_log_file_path(settings_file: str | None, started_at: datetime) -> str
     return os.path.join(log_dir, f"standalone-session-{timestamp}.log")
 
 
+_KEEP_LOG_COUNT = 3
+
+
+def _prune_old_logs(log_dir: str) -> None:
+    """Remove older session log files, keeping only the ``_KEEP_LOG_COUNT`` newest."""
+    try:
+        files = [
+            os.path.join(log_dir, name)
+            for name in os.listdir(log_dir)
+            if name.startswith("standalone-session-") and name.endswith(".log")
+        ]
+    except OSError:
+        return
+    files.sort(key=os.path.getmtime, reverse=True)
+    for path in files[_KEEP_LOG_COUNT:]:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+
 def setup_standalone_session_logging(settings_file: str | None) -> StandaloneSessionLogState:
     global _session_state
 
@@ -90,6 +111,7 @@ def setup_standalone_session_logging(settings_file: str | None) -> StandaloneSes
             file_handler.set_name(_FILE_HANDLER_NAME)
             file_handler.setFormatter(formatter)
             root_logger.addHandler(file_handler)
+            _prune_old_logs(os.path.dirname(log_file_path))
 
         _session_state = StandaloneSessionLogState(
             started_at=started_at,
