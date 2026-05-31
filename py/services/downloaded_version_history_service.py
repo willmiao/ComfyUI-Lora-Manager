@@ -96,6 +96,21 @@ class DownloadedVersionHistoryService:
     def get_database_path(self) -> str:
         return self._db_path
 
+    def close(self) -> None:
+        """Close the persistent SQLite connection, if open.
+
+        This is called before plugin update operations to release the
+        database file lock on Windows, allowing ``shutil.rmtree()`` to
+        succeed when the cache resides inside the plugin directory.
+        """
+        if self._conn is not None:
+            try:
+                self._conn.close()
+            except Exception:
+                pass
+            finally:
+                self._conn = None
+
     def _get_active_library_name(self) -> str | None:
         try:
             value = self._settings.get_active_library_name()

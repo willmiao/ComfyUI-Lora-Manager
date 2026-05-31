@@ -11,6 +11,7 @@ from typing import Dict, List
 
 from ..utils.settings_paths import ensure_settings_file
 from ..services.downloader import get_downloader
+from ..services.service_registry import ServiceRegistry
 
 logger = logging.getLogger(__name__)
 
@@ -212,8 +213,19 @@ class UpdateRoutes:
 
             zip_path = tmp_zip_path
 
-            # Skip both settings.json, civitai and model cache folder
-            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json', 'civitai', 'model_cache'])
+            # Close the downloaded-versions SQLite connection before cleaning,
+            # so that shutil.rmtree() does not fail on Windows (the process
+            # cannot delete a file with an outstanding open handle).
+            try:
+                history_svc = ServiceRegistry._services.get("downloaded_version_history_service")
+                if history_svc is not None:
+                    history_svc.close()
+                    logger.info("Closed downloaded-version history database connection")
+            except Exception:
+                logger.debug("Could not close downloaded-version history database", exc_info=True)
+
+            # Skip settings.json, civitai, model cache and runtime cache folders
+            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json', 'civitai', 'model_cache', 'cache'])
 
             # Extract ZIP to temp dir
             with tempfile.TemporaryDirectory() as tmp_dir:
