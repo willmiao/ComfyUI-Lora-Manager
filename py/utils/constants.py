@@ -101,8 +101,34 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
 DIFFUSION_MODEL_BASE_MODELS = frozenset(
     [
         "Anima",
-        "ZImageTurbo",
-        "ZImageBase",
+        # Flux series — DiT architecture, loaded via UNETLoader in ComfyUI
+        "Flux.1 D",
+        "Flux.1 S",
+        "Flux.1 Krea",
+        "Flux.1 Kontext",
+        "Flux.2 D",
+        "Flux.2 Klein 9B",
+        "Flux.2 Klein 9B-base",
+        "Flux.2 Klein 4B",
+        "Flux.2 Klein 4B-base",
+        # Non-UNet / DiT image diffusion models
+        "AuraFlow",
+        "Chroma",
+        "HiDream",
+        "Hunyuan 1",
+        "Kolors",
+        "Lumina",
+        "PixArt a",
+        "PixArt E",
+        # Video diffusion models
+        "CogVideoX",
+        "Hunyuan Video",
+        "LTXV",
+        "LTXV2",
+        "LTXV 2.3",
+        "Mochi",
+        "SVD",
+        "Wan Video",
         "Wan Video 1.3B t2v",
         "Wan Video 14B t2v",
         "Wan Video 14B i2v 480p",
@@ -112,9 +138,13 @@ DIFFUSION_MODEL_BASE_MODELS = frozenset(
         "Wan Video 2.2 T2V-A14B",
         "Wan Video 2.5 T2V",
         "Wan Video 2.5 I2V",
-        "CogVideoX",
-        "Mochi",
+        # Other diffusion models
+        "Ernie",
+        "Ernie Turbo",
+        "Nucleus",
         "Qwen",
+        "ZImageBase",
+        "ZImageTurbo",
     ]
 )
 
