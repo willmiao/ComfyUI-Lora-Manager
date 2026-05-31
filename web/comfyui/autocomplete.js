@@ -183,6 +183,13 @@ function parseSearchTokens(term = '') {
     return { include, exclude };
 }
 
+function escapePromptParentheses(text) {
+    // In ComfyUI's CLIP text encoder, bare parentheses are weight adjustment syntax.
+    // Tags containing literal parentheses must be escaped with backslash to prevent
+    // them from being interpreted as weight modifiers. e.g. "foo (bar)" → "foo \(bar\)"
+    return text.replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+}
+
 function formatAutocompleteInsertion(text = '') {
     const trimmed = typeof text === 'string' ? text.trim() : '';
     if (!trimmed) {
@@ -253,7 +260,7 @@ function createDefaultBehavior(modelType) {
             if (!trimmed) {
                 return '';
             }
-            return formatAutocompleteInsertion(trimmed);
+            return formatAutocompleteInsertion(escapePromptParentheses(trimmed));
         },
     };
 }
@@ -352,7 +359,7 @@ const MODEL_BEHAVIORS = {
     custom_words: {
         enablePreview: false,
         async getInsertText(_instance, relativePath) {
-            return formatAutocompleteInsertion(relativePath);
+            return formatAutocompleteInsertion(escapePromptParentheses(relativePath));
         },
     },
     prompt: {
@@ -398,6 +405,8 @@ const MODEL_BEHAVIORS = {
                 if (getTagSpaceReplacementPreference()) {
                     tagText = tagText.replace(/_/g, ' ');
                 }
+
+                tagText = escapePromptParentheses(tagText);
 
                 return formatAutocompleteInsertion(tagText);
             }
