@@ -190,27 +190,42 @@ class RecipeEnricher:
             existing_cp = recipe.get("checkpoint")
             if existing_cp is None:
                 existing_cp = {}
+
+            # Extract baseModel from raw civitai_info before populate_checkpoint_from_civitai
+            # (populate may reject non-checkpoint types and lose this data)
+            base_model_from_civitai: str = ""
+            if isinstance(civitai_info, dict):
+                base_model_from_civitai = civitai_info.get("baseModel", "") or ""
+            elif isinstance(civitai_info, tuple) and len(civitai_info) > 0 and isinstance(civitai_info[0], dict):
+                base_model_from_civitai = civitai_info[0].get("baseModel", "") or ""
+
             checkpoint_data = await RecipeMetadataParser.populate_checkpoint_from_civitai(existing_cp, civitai_info)
-            # 1. First, resolve base_model using full data before we format it away
+
+            # 1. Resolve base_model from checkpoint_data first, then fall back to raw civitai_info
             current_base_model = recipe.get("base_model")
-            resolved_base_model = checkpoint_data.get("baseModel")
+            resolved_base_model = checkpoint_data.get("baseModel") or base_model_from_civitai
             if resolved_base_model:
-                # Update if empty OR if it matches our generic prefix but is less specific
                 is_generic = not current_base_model or current_base_model.lower() in ["flux", "sdxl", "sd15"]
                 if is_generic and resolved_base_model != current_base_model:
                     recipe["base_model"] = resolved_base_model
-            
-            # 2. Format according to requirements: type, modelId, modelVersionId, modelName, modelVersionName
-            formatted_checkpoint = {
-                "type": "checkpoint",
-                "modelId": checkpoint_data.get("modelId"),
-                "modelVersionId": checkpoint_data.get("id") or checkpoint_data.get("modelVersionId"),
-                "modelName": checkpoint_data.get("name"), # In base.py, 'name' is populated from civitai_data['model']['name']
-                "modelVersionName": checkpoint_data.get("version") # In base.py, 'version' is populated from civitai_data['name']
-            }
-            # Remove None values
-            recipe["checkpoint"] = {k: v for k, v in formatted_checkpoint.items() if v is not None}
-            
+
+            # 2. Only format and save checkpoint if it has real data (not just type after type rejection)
+            has_checkpoint_data = any([
+                checkpoint_data.get("modelId"),
+                checkpoint_data.get("id") or checkpoint_data.get("modelVersionId"),
+                checkpoint_data.get("name"),
+                checkpoint_data.get("version"),
+            ])
+            if has_checkpoint_data:
+                formatted_checkpoint = {
+                    "type": "checkpoint",
+                    "modelId": checkpoint_data.get("modelId"),
+                    "modelVersionId": checkpoint_data.get("id") or checkpoint_data.get("modelVersionId"),
+                    "modelName": checkpoint_data.get("name"),
+                    "modelVersionName": checkpoint_data.get("version"),
+                }
+                recipe["checkpoint"] = {k: v for k, v in formatted_checkpoint.items() if v is not None}
+
             return True
         else:
             # Fallback to name extraction if we don't already have one

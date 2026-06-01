@@ -975,6 +975,9 @@ class RecipeManagementHandler:
             civitai_model = civitai_parsed.get("model")
             if civitai_model and not metadata.get("checkpoint"):
                 metadata["checkpoint"] = civitai_model
+            civitai_base_model = civitai_parsed.get("base_model")
+            if civitai_base_model and not metadata.get("base_model"):
+                metadata["base_model"] = civitai_base_model
         elif parsed_embedded:
             parsed_loras = parsed_embedded.get("loras")
             if parsed_loras and not metadata.get("loras"):
@@ -982,6 +985,8 @@ class RecipeManagementHandler:
             parsed_model = parsed_embedded.get("model")
             if parsed_model and not metadata.get("checkpoint"):
                 metadata["checkpoint"] = parsed_model
+            if parsed_embedded.get("base_model") and not metadata.get("base_model"):
+                metadata["base_model"] = parsed_embedded["base_model"]
 
         civitai_client = self._civitai_client_getter()
         await RecipeEnricher.enrich_recipe(
@@ -1489,25 +1494,28 @@ class RecipeManagementHandler:
             if not image_url:
                 raise RecipeValidationError("Missing required field: image_url")
 
+            force = request.query.get("force", "false").lower() == "true"
+
             image_id = extract_civitai_image_id(image_url)
             if not image_id:
                 raise RecipeValidationError(
                     "Could not extract Civitai image ID from URL"
                 )
 
-            # Check for duplicate (fast, before acquiring semaphore)
-            cache = await recipe_scanner.get_cached_data()
-            for recipe in getattr(cache, "raw_data", []):
-                source = recipe.get("source_path")
-                if source:
-                    existing_id = extract_civitai_image_id(source)
-                    if existing_id == image_id:
-                        return web.json_response({
-                            "success": True,
-                            "recipe_id": recipe.get("id"),
-                            "name": recipe.get("title", ""),
-                            "already_exists": True,
-                        })
+            # Check for duplicate (fast, before acquiring semaphore), unless force
+            if not force:
+                cache = await recipe_scanner.get_cached_data()
+                for recipe in getattr(cache, "raw_data", []):
+                    source = recipe.get("source_path")
+                    if source:
+                        existing_id = extract_civitai_image_id(source)
+                        if existing_id == image_id:
+                            return web.json_response({
+                                "success": True,
+                                "recipe_id": recipe.get("id"),
+                                "name": recipe.get("title", ""),
+                                "already_exists": True,
+                            })
 
             async with self._import_semaphore:
                 return await self._do_import_from_url(image_url, recipe_scanner)
@@ -1613,6 +1621,9 @@ class RecipeManagementHandler:
             civitai_model = civitai_parsed.get("model")
             if civitai_model and not metadata.get("checkpoint"):
                 metadata["checkpoint"] = civitai_model
+            civitai_base_model = civitai_parsed.get("base_model")
+            if civitai_base_model and not metadata.get("base_model"):
+                metadata["base_model"] = civitai_base_model
         elif parsed_embedded:
             parsed_loras = parsed_embedded.get("loras")
             if parsed_loras and not metadata.get("loras"):
@@ -1620,6 +1631,8 @@ class RecipeManagementHandler:
             parsed_model = parsed_embedded.get("model")
             if parsed_model and not metadata.get("checkpoint"):
                 metadata["checkpoint"] = parsed_model
+            if parsed_embedded.get("base_model") and not metadata.get("base_model"):
+                metadata["base_model"] = parsed_embedded["base_model"]
 
         civitai_client = self._civitai_client_getter()
         await RecipeEnricher.enrich_recipe(
