@@ -28,6 +28,7 @@ class RecipeCard {
         card.dataset.created = this.recipe.created_date;
         card.dataset.id = this.recipe.id || '';
         card.dataset.folder = this.recipe.folder || '';
+        card.dataset.favorite = this.recipe.favorite ? 'true' : 'false';
 
         // Get base model with fallback
         const baseModelLabel = (this.recipe.base_model || '').trim() || 'Unknown';
@@ -161,6 +162,7 @@ class RecipeCard {
 
         // Update early to provide instant feedback and avoid race conditions with re-renders
         this.recipe.favorite = newFavoriteState;
+        card.dataset.favorite = newFavoriteState ? 'true' : 'false';
 
         // Function to update icon state
         const updateIconUI = (icon, state) => {
