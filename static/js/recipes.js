@@ -19,7 +19,7 @@ class RecipePageControls {
     }
 
     async resetAndReload() {
-        await refreshVirtualScroll({ preserveScroll: true });
+        await refreshVirtualScroll();
     }
 
     async refreshModels(fullRebuild = false) {

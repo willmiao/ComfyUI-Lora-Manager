@@ -177,9 +177,7 @@ describe('RecipeSidebarApiClient bulk operations', () => {
     );
   });
 
-  it('preserves scroll position for recipe reloads when requested', async () => {
-    const scrollSnapshot = { scrollContainer: { scrollTop: 480 }, scrollTop: 480 };
-    captureScrollPositionMock.mockReturnValue(scrollSnapshot);
+  it('reloads recipes without preserving scroll', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -189,18 +187,18 @@ describe('RecipeSidebarApiClient bulk operations', () => {
       }),
     });
 
-    await resetAndReload(false, { preserveScroll: true });
+    await resetAndReload(false);
 
-    expect(captureScrollPositionMock).toHaveBeenCalledTimes(1);
+    expect(captureScrollPositionMock).not.toHaveBeenCalled();
     expect(virtualScrollerMock.refreshWithData).toHaveBeenCalledWith(
       [{ id: 'recipe-1' }],
       1,
       false
     );
-    expect(restoreScrollPositionMock).toHaveBeenCalledWith(scrollSnapshot);
+    expect(restoreScrollPositionMock).not.toHaveBeenCalled();
   });
 
-  it('uses scroll-preserving reloads for syncChanges', async () => {
+  it('uses scroll-free reloads for syncChanges', async () => {
     global.fetch.mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -212,8 +210,8 @@ describe('RecipeSidebarApiClient bulk operations', () => {
 
     await syncChanges();
 
-    expect(captureScrollPositionMock).toHaveBeenCalledTimes(1);
-    expect(restoreScrollPositionMock).toHaveBeenCalledTimes(1);
+    expect(captureScrollPositionMock).not.toHaveBeenCalled();
+    expect(restoreScrollPositionMock).not.toHaveBeenCalled();
     expect(loadingManagerMock.restoreProgressBar).toHaveBeenCalledTimes(1);
   });
 });

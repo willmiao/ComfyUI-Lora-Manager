@@ -301,7 +301,7 @@ export async function syncChanges() {
         state.loadingManager.showSimpleLoading('Syncing changes...');
 
         // Simply reload the recipes without rebuilding cache
-        await resetAndReload(false, { preserveScroll: true });
+        await resetAndReload(false);
 
         showToast('toast.recipes.syncComplete', {}, 'success');
     } catch (error) {
@@ -329,7 +329,7 @@ export async function refreshRecipes() {
         }
 
         // After successful cache rebuild, reload the recipes
-        await resetAndReload(false, { preserveScroll: true });
+        await resetAndReload(false);
 
         showToast('toast.recipes.refreshComplete', {}, 'success');
     } catch (error) {

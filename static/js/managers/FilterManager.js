@@ -662,7 +662,7 @@ export class FilterManager {
 
         // Call the appropriate manager's load method based on page type
         if (this.currentPage === 'recipes' && window.recipeManager) {
-            await window.recipeManager.loadRecipes({ preserveScroll: true });
+            await window.recipeManager.loadRecipes(true);
         } else if (this.currentPage === 'loras' || this.currentPage === 'embeddings' || this.currentPage === 'checkpoints') {
             // For models page, reset the page and reload
             await getModelApiClient().loadMoreWithVirtualScroll(true, false);
@@ -746,7 +746,7 @@ export class FilterManager {
 
         // Reload data using the appropriate method for the current page
         if (this.currentPage === 'recipes' && window.recipeManager) {
-            await window.recipeManager.loadRecipes({ preserveScroll: true });
+            await window.recipeManager.loadRecipes(true);
         } else if (this.currentPage === 'loras' || this.currentPage === 'checkpoints' || this.currentPage === 'embeddings') {
             await getModelApiClient().loadMoreWithVirtualScroll(true, true);
         }

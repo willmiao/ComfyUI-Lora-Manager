@@ -309,9 +309,22 @@ export class BulkMissingLoraDownloadManager {
             }, 'warning');
         }
 
-        // Refresh the recipes list to update LoRA status
-        if (window.recipeManager) {
-            window.recipeManager.loadRecipes({ preserveScroll: true });
+        // Update each affected recipe card with fresh data (LoRA inLibrary flags changed)
+        if (state.virtualScroller) {
+            const { extractRecipeId } = await import('../api/recipeApi.js');
+            for (const recipe of this.pendingRecipes) {
+                const recipeId = extractRecipeId(recipe.file_path);
+                if (!recipeId) continue;
+                try {
+                    const detailRes = await fetch(`/api/lm/recipe/${encodeURIComponent(recipeId)}`);
+                    if (detailRes.ok) {
+                        const updated = await detailRes.json();
+                        state.virtualScroller.updateSingleItem(recipe.file_path, updated);
+                    }
+                } catch (e) {
+                    console.warn('Failed to update recipe card after LoRA download:', e);
+                }
+            }
         }
     }
 

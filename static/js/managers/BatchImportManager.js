@@ -432,7 +432,7 @@ export class BatchImportManager {
         
         // Refresh recipes list to show newly imported recipes
         if (window.recipeManager && typeof window.recipeManager.loadRecipes === 'function') {
-            window.recipeManager.loadRecipes({ preserveScroll: true });
+            window.recipeManager.loadRecipes(true);
         }
         
         // Show results step

@@ -306,8 +306,14 @@ export class RecipeContextMenu extends BaseContextMenu {
             if (result.success) {
                 if (result.repaired > 0) {
                     showToast('recipes.contextMenu.repair.success', {}, 'success');
-                    // Refresh the current card or reload
-                    this.resetAndReload();
+                    const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
+                    if (detailResponse.ok) {
+                        const updatedRecipe = await detailResponse.json();
+                        const filePath = this.currentCard?.dataset?.filepath;
+                        if (filePath && state.virtualScroller) {
+                            state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
+                        }
+                    }
                 } else {
                     showToast('recipes.contextMenu.repair.skipped', {}, 'info');
                 }
