@@ -461,7 +461,11 @@ class RecipeQueryHandler:
             if recipe_scanner is None:
                 raise RuntimeError("Recipe scanner unavailable")
 
-            self._logger.info("Manually triggering recipe cache rebuild")
+            full_rebuild = request.query.get("full_rebuild", "true").lower() == "true"
+            self._logger.info(
+                "Manually triggering recipe cache %s",
+                "full rebuild" if full_rebuild else "refresh",
+            )
             await recipe_scanner.get_cached_data(force_refresh=True)
             return web.json_response(
                 {"success": True, "message": "Recipe cache refreshed successfully"}

@@ -294,47 +294,37 @@ export async function resetAndReload(updateFolders = false, options = {}) {
 }
 
 /**
- * Sync changes - quick refresh without rebuilding cache (similar to models page)
+ * Refreshes the recipe list by triggering a backend scan, then reloading.
+ * @param {boolean} fullRebuild - If true, fully rebuild the cache; if false, incremental scan
  */
-export async function syncChanges() {
+export async function refreshRecipes(fullRebuild = true) {
+    const actionLabel = fullRebuild ? 'Rebuilding recipe cache' : 'Refreshing recipes';
+    const actionToast = fullRebuild ? 'Full rebuild' : 'Refresh';
+
     try {
-        state.loadingManager.showSimpleLoading('Syncing changes...');
+        state.loadingManager.show(`${actionLabel}...`, 0);
 
-        // Simply reload the recipes without rebuilding cache
-        await resetAndReload(false);
+        const url = new URL(RECIPE_ENDPOINTS.scan, window.location.origin);
+        url.searchParams.append('full_rebuild', fullRebuild);
 
-        showToast('toast.recipes.syncComplete', {}, 'success');
-    } catch (error) {
-        console.error('Error syncing recipes:', error);
-        showToast('toast.recipes.syncFailed', { message: error.message }, 'error');
-    } finally {
-        state.loadingManager.hide();
-        state.loadingManager.restoreProgressBar();
-    }
-}
-
-/**
- * Refreshes the recipe list by first rebuilding the cache and then loading recipes
- */
-export async function refreshRecipes() {
-    try {
-        state.loadingManager.showSimpleLoading('Refreshing recipes...');
-
-        // Call the API endpoint to rebuild the recipe cache
-        const response = await fetch(RECIPE_ENDPOINTS.scan);
+        const response = await fetch(url);
 
         if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.error || 'Failed to refresh recipe cache');
+            throw new Error(`Failed to refresh recipe cache: ${response.status} ${response.statusText}`);
         }
 
-        // After successful cache rebuild, reload the recipes
+        const data = await response.json();
+        if (data.status === 'cancelled') {
+            showToast('toast.api.operationCancelled', {}, 'info');
+            return;
+        }
+
         await resetAndReload(false);
 
-        showToast('toast.recipes.refreshComplete', {}, 'success');
+        showToast('toast.api.refreshComplete', { action: actionToast }, 'success');
     } catch (error) {
         console.error('Error refreshing recipes:', error);
-        showToast('toast.recipes.refreshFailed', { message: error.message }, 'error');
+        showToast('toast.api.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', type: 'recipe' }, 'error');
     } finally {
         state.loadingManager.hide();
         state.loadingManager.restoreProgressBar();
