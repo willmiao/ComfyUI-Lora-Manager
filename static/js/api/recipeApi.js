@@ -197,8 +197,8 @@ export async function resetAndReloadWithVirtualScroll(options = {}) {
         // Reset page counter
         pageState.currentPage = 1;
 
-        // Fetch the first page
-        const result = await fetchPageFunction(1, pageState.pageSize || 50);
+        const pageSize = state.virtualScroller?.pageSize || pageState.pageSize || 100;
+        const result = await fetchPageFunction(1, pageSize);
 
         // Update the virtual scroller
         state.virtualScroller.refreshWithData(
@@ -251,8 +251,8 @@ export async function loadMoreWithVirtualScroll(options = {}) {
             pageState.currentPage = 1;
         }
 
-        // Fetch the first page of data
-        const result = await fetchPageFunction(pageState.currentPage, pageState.pageSize || 50);
+        const pageSize = state.virtualScroller?.pageSize || pageState.pageSize || 100;
+        const result = await fetchPageFunction(pageState.currentPage, pageSize);
 
         // Update virtual scroller with the new data
         state.virtualScroller.refreshWithData(
