@@ -7,6 +7,7 @@ import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
 import { showToast } from '../utils/uiHelpers.js';
+import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
 
 export class SidebarManager {
@@ -41,6 +42,7 @@ export class SidebarManager {
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
+        this.handleTreeContextMenu = this.handleTreeContextMenu.bind(this);
         this.handleBreadcrumbClick = this.handleBreadcrumbClick.bind(this);
         this.handleDocumentClick = this.handleDocumentClick.bind(this);
         this.handleSidebarHeaderClick = this.handleSidebarHeaderClick.bind(this);
@@ -185,6 +187,8 @@ export class SidebarManager {
         }
         if (folderTree) {
             folderTree.removeEventListener('click', this.handleTreeClick);
+            folderTree.removeEventListener('contextmenu', this.handleTreeContextMenu);
+            folderTree.removeEventListener('dragover', this.handleFolderDragOver);
         }
         if (sidebarBreadcrumbNav) {
             sidebarBreadcrumbNav.removeEventListener('click', this.handleBreadcrumbClick);
@@ -977,6 +981,7 @@ export class SidebarManager {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (folderTree) {
             folderTree.addEventListener('click', this.handleTreeClick);
+            folderTree.addEventListener('contextmenu', this.handleTreeContextMenu);
         }
 
         // Breadcrumb click handler
@@ -1026,6 +1031,19 @@ export class SidebarManager {
         const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
         if (displayModeToggleBtn) {
             displayModeToggleBtn.addEventListener('click', this.handleDisplayModeToggle);
+        }
+
+        // Sidebar folder context menu click handler
+        const sidebarFolderMenu = document.getElementById('sidebarFolderContextMenu');
+        if (sidebarFolderMenu) {
+            sidebarFolderMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item) return;
+                const action = item.dataset.action;
+                if (action) {
+                    this.handleFolderContextMenuAction(action);
+                }
+            });
         }
     }
 
@@ -1395,6 +1413,82 @@ export class SidebarManager {
             const treeNode = nodeContent.closest('.sidebar-tree-node');
             const path = treeNode.dataset.path;
             this.selectFolder(path);
+        }
+    }
+
+    handleTreeContextMenu(event) {
+        const nodeContent = event.target.closest('.sidebar-tree-node, .sidebar-folder-item');
+        if (!nodeContent) return;
+
+        event.preventDefault();
+        event.stopPropagation();
+
+        const path = nodeContent.dataset.path;
+        if (path === undefined || path === null || path === '') return;
+
+        this._showFolderContextMenu(event.clientX, event.clientY, path);
+    }
+
+    _showFolderContextMenu(x, y, path) {
+        this._closeFolderContextMenu();
+
+        const menu = document.getElementById('sidebarFolderContextMenu');
+        if (!menu) return;
+
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+        menu.style.display = 'block';
+        menu.dataset.folderPath = path;
+
+        this._folderContextOpen = true;
+
+        // Close on next click outside
+        this._folderContextCloseHandler = (e) => {
+            if (!menu.contains(e.target)) {
+                this._closeFolderContextMenu();
+            }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', this._folderContextCloseHandler);
+        }, 0);
+    }
+
+    _closeFolderContextMenu() {
+        const menu = document.getElementById('sidebarFolderContextMenu');
+        if (menu) {
+            menu.style.display = 'none';
+            delete menu.dataset.folderPath;
+        }
+        if (this._folderContextCloseHandler) {
+            document.removeEventListener('click', this._folderContextCloseHandler);
+            this._folderContextCloseHandler = null;
+        }
+        this._folderContextOpen = false;
+    }
+
+    handleFolderContextMenuAction(action) {
+        const menu = document.getElementById('sidebarFolderContextMenu');
+        if (!menu) return;
+
+        const path = menu.dataset.folderPath;
+        this._closeFolderContextMenu();
+
+        if (!path) return;
+
+        this._performFolderAction(action, path);
+    }
+
+    async _performFolderAction(action, path) {
+        switch (action) {
+            case 'check-folder-updates':
+                try {
+                    await performFolderUpdateCheck(path);
+                } catch (error) {
+                    console.error('Folder update check failed:', error);
+                }
+                break;
+            default:
+                console.warn('Unknown folder action:', action);
         }
     }
 

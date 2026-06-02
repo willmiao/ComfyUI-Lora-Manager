@@ -689,6 +689,7 @@ class ModelUpdateService:
         *,
         force_refresh: bool = False,
         target_model_ids: Optional[Sequence[int]] = None,
+        folder_path: Optional[str] = None,
     ) -> Dict[int, ModelUpdateRecord]:
         """Refresh update information for every model present in the cache."""
         scanner.reset_cancellation()
@@ -703,6 +704,7 @@ class ModelUpdateService:
         local_versions = await self._collect_local_versions(
             scanner,
             target_model_ids=target_filter,
+            folder_path=folder_path,
         )
         total_models = len(local_versions)
         if total_models == 0:
@@ -1276,6 +1278,7 @@ class ModelUpdateService:
         scanner,
         *,
         target_model_ids: Optional[Sequence[int]] = None,
+        folder_path: Optional[str] = None,
     ) -> Dict[int, List[int]]:
         cache = await scanner.get_cached_data()
         mapping: Dict[int, set[int]] = {}
@@ -1288,7 +1291,19 @@ class ModelUpdateService:
             if not target_set:
                 return {}
 
+        normalized_folder = None
+        if folder_path is not None:
+            normalized_folder = folder_path.replace("\\", "/").strip("/")
+
         for item in cache.raw_data:
+            # Apply folder filter first (cheapest check)
+            if normalized_folder is not None:
+                if not isinstance(item, dict):
+                    continue
+                item_folder = (item.get("folder") or "").replace("\\", "/").strip("/")
+                if item_folder != normalized_folder and not item_folder.startswith(normalized_folder + "/"):
+                    continue
+
             civitai = item.get("civitai") if isinstance(item, dict) else None
             if not isinstance(civitai, dict):
                 continue

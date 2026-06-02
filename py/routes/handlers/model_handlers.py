@@ -1960,6 +1960,10 @@ class ModelUpdateHandler:
         if target_model_ids:
             target_model_ids = sorted(set(target_model_ids))
 
+        folder_path: Optional[str] = payload.get("folder_path")
+        if folder_path is not None and not isinstance(folder_path, str):
+            folder_path = None
+
         provider = await self._get_civitai_provider()
         if provider is None:
             return web.json_response(
@@ -1974,6 +1978,7 @@ class ModelUpdateHandler:
                 provider,
                 force_refresh=force_refresh,
                 target_model_ids=target_model_ids or None,
+                folder_path=folder_path,
             )
             if self._service.scanner.is_cancelled():
                 return web.json_response(

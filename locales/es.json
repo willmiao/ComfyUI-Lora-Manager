@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "No se encontraron carpetas",
             "dragHint": "Arrastra elementos aquí para crear carpetas"
+        },
+        "folderUpdateCheck": {
+            "label": "Buscar actualizaciones en esta carpeta",
+            "loading": "Buscando actualizaciones de {type} en esta carpeta...",
+            "success": "Se encontraron {count} actualización(es) para {type}s en esta carpeta",
+            "none": "Todos los {type}s en esta carpeta están actualizados",
+            "error": "Error al buscar actualizaciones de {type} en la carpeta: {message}"
         }
     },
     "statistics": {

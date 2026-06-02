@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "Keine Ordner gefunden",
             "dragHint": "Elemente hierher ziehen, um Ordner zu erstellen"
+        },
+        "folderUpdateCheck": {
+            "label": "Auf Updates in diesem Ordner prüfen",
+            "loading": "Prüfe {type}-Updates in diesem Ordner...",
+            "success": "{count} Update(s) für {type}s in diesem Ordner gefunden",
+            "none": "Alle {type}s in diesem Ordner sind aktuell",
+            "error": "Fehler beim Prüfen des Ordners auf {type}-Updates: {message}"
         }
     },
     "statistics": {

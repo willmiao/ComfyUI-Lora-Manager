@@ -766,6 +766,49 @@ export class BaseModelApiClient {
         }
     }
 
+    async refreshUpdatesForFolder(folderPath, { force = false } = {}) {
+        if (!folderPath) {
+            throw new Error('No folder path provided');
+        }
+
+        try {
+            state.loadingManager.show('Checking for updates...', 0);
+            state.loadingManager.showCancelButton(() => this.cancelTask());
+
+            const response = await fetch(this.apiConfig.endpoints.refreshUpdates, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    folder_path: folderPath,
+                    force
+                })
+            });
+
+            let payload = {};
+            try {
+                payload = await response.json();
+            } catch (error) {
+                console.warn('Unable to parse refresh updates response as JSON', error);
+            }
+
+            if (!response.ok || payload?.success !== true) {
+                if (payload?.status === 'cancelled') {
+                    showToast('toast.api.operationCancelled', {}, 'info');
+                    return null;
+                }
+                const message = payload?.error || response.statusText || 'Failed to refresh updates';
+                throw new Error(message);
+            }
+
+            return payload;
+        } catch (error) {
+            console.error('Error refreshing updates for folder:', error);
+            throw error;
+        } finally {
+            state.loadingManager.hide();
+        }
+    }
+
     async fetchCivitaiVersions(modelId, source = null) {
         try {
             let requestUrl = `${this.apiConfig.endpoints.civitaiVersions}/${modelId}`;

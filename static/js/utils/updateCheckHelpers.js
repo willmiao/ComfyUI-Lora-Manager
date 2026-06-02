@@ -100,6 +100,90 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
     return { status, displayName, records, error };
 }
 
+/**
+ * Perform a model update check scoped to a specific folder.
+ * @param {string} folderPath - The relative folder path to check.
+ * @param {Object} [options]
+ * @param {Function} [options.onComplete] - Callback invoked after the request settles.
+ * @returns {Promise<{status: string, records: Array, error: Error | null}>}
+ */
+export async function performFolderUpdateCheck(folderPath, { onComplete } = {}) {
+    const modelType = getCurrentModelType();
+    const apiConfig = getCompleteApiConfig(modelType);
+    const apiClient = getModelApiClient(modelType);
+    const displayName = apiConfig?.config?.displayName ?? 'Model';
+
+    if (!apiConfig?.endpoints?.refreshUpdates) {
+        console.warn('Refresh updates endpoint not configured for model type:', modelType);
+        onComplete?.({ status: 'unsupported', records: [], error: null });
+        return { status: 'unsupported', records: [], error: null };
+    }
+
+    const loadingMessage = translate(
+        'sidebar.folderUpdateCheck.loading',
+        { type: displayName },
+        `Checking ${displayName} updates for this folder...`
+    );
+
+    state.loadingManager?.showSimpleLoading?.(loadingMessage);
+    state.loadingManager?.showCancelButton?.(() => apiClient.cancelTask());
+
+    let status = 'success';
+    let records = [];
+    let error = null;
+
+    try {
+        const response = await fetch(apiConfig.endpoints.refreshUpdates, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ folder_path: folderPath, force: false })
+        });
+
+        let payload = {};
+        try {
+            payload = await response.json();
+        } catch {
+            payload = {};
+        }
+
+        if (!response.ok || payload.success !== true) {
+            if (payload?.status === 'cancelled') {
+                showToast('toast.api.operationCancelled', {}, 'info');
+                return { status: 'cancelled', records: [], error: null };
+            }
+            const errorMessage = payload?.error || response.statusText || 'Unknown error';
+            throw new Error(errorMessage);
+        }
+
+        records = Array.isArray(payload.records) ? payload.records : [];
+
+        if (records.length > 0) {
+            showToast('sidebar.folderUpdateCheck.success', { count: records.length, type: displayName }, 'success');
+        } else {
+            showToast('sidebar.folderUpdateCheck.none', { type: displayName }, 'info');
+        }
+
+        await resetAndReload(false);
+    } catch (err) {
+        status = 'error';
+        error = err instanceof Error ? err : new Error(String(err));
+        console.error('Error checking folder model updates:', error);
+        showToast(
+            'sidebar.folderUpdateCheck.error',
+            { message: error?.message ?? 'Unknown error', type: displayName },
+            'error'
+        );
+    } finally {
+        state.loadingManager?.hide?.();
+        if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+            state.loadingManager.restoreProgressBar();
+        }
+        onComplete?.({ status, records, error });
+    }
+
+    return { status, records, error };
+}
+
 function getTypePlural(displayName) {
     if (!displayName) {
         return 'models';

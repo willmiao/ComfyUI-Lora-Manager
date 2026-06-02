@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "Aucun dossier trouvé",
             "dragHint": "Faites glisser des éléments ici pour créer des dossiers"
+        },
+        "folderUpdateCheck": {
+            "label": "Vérifier les mises à jour dans ce dossier",
+            "loading": "Vérification des mises à jour {type} dans ce dossier...",
+            "success": "{count} mise(s) à jour trouvée(s) pour les {type}s dans ce dossier",
+            "none": "Tous les {type}s dans ce dossier sont à jour",
+            "error": "Échec de la vérification des mises à jour {type} dans ce dossier : {message}"
         }
     },
     "statistics": {

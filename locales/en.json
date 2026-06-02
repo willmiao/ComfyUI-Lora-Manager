@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "No folders found",
             "dragHint": "Drag items here to create folders"
+        },
+        "folderUpdateCheck": {
+            "label": "Check for updates in this folder",
+            "loading": "Checking {type} updates for this folder...",
+            "success": "Found {count} update(s) for {type}s in this folder",
+            "none": "All {type}s in this folder are up to date",
+            "error": "Failed to check folder for {type} updates: {message}"
         }
     },
     "statistics": {

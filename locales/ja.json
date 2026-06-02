@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "フォルダが見つかりません",
             "dragHint": "ここへアイテムをドラッグしてフォルダを作成します"
+        },
+        "folderUpdateCheck": {
+            "label": "このフォルダのアップデートを確認",
+            "loading": "このフォルダの{type}アップデートを確認中...",
+            "success": "このフォルダの{type}sに{count}件のアップデートが見つかりました",
+            "none": "このフォルダのすべての{type}sは最新です",
+            "error": "フォルダの{type}アップデート確認に失敗しました: {message}"
         }
     },
     "statistics": {

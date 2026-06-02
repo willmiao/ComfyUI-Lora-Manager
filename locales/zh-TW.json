@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "未找到資料夾",
             "dragHint": "將項目拖到此處以建立資料夾"
+        },
+        "folderUpdateCheck": {
+            "label": "檢查此資料夾的更新",
+            "loading": "正在檢查此資料夾中的{type}更新...",
+            "success": "在此資料夾中找到 {count} 個{type}更新",
+            "none": "此資料夾中的所有{type}都是最新版本",
+            "error": "檢查資料夾{type}更新失敗: {message}"
         }
     },
     "statistics": {

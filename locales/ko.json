@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "폴더를 찾을 수 없습니다",
             "dragHint": "항목을 여기로 드래그하여 폴더를 만듭니다"
+        },
+        "folderUpdateCheck": {
+            "label": "이 폴더의 업데이트 확인",
+            "loading": "이 폴더의 {type} 업데이트를 확인하는 중...",
+            "success": "이 폴더에서 {type}s에 대한 {count}개 업데이트를 찾았습니다",
+            "none": "이 폴더의 모든 {type}s가 최신 상태입니다",
+            "error": "폴더의 {type} 업데이트 확인 실패: {message}"
         }
     },
     "statistics": {

@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "לא נמצאו תיקיות",
             "dragHint": "גרור פריטים לכאן כדי ליצור תיקיות"
+        },
+        "folderUpdateCheck": {
+            "label": "בדוק עדכונים בתיקייה זו",
+            "loading": "בודק עדכוני {type} בתיקייה זו...",
+            "success": "נמצאו {count} עדכון/ים עבור {type}s בתיקייה זו",
+            "none": "כל ה-{type}s בתיקייה זו מעודכנים",
+            "error": "נכשל בבדיקת עדכוני {type} בתיקייה: {message}"
         }
     },
     "statistics": {

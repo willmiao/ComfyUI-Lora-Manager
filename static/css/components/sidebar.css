@@ -745,3 +745,8 @@
 .sidebar-tree-container {
     position: relative;
 }
+
+/* Folder context menu - positioned relative to sidebar */
+#sidebarFolderContextMenu {
+    z-index: var(--z-modal, 1002);
+}

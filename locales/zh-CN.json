@@ -963,6 +963,13 @@
         "empty": {
             "noFolders": "未找到文件夹",
             "dragHint": "拖拽项目到此处以创建文件夹"
+        },
+        "folderUpdateCheck": {
+            "label": "检查此文件夹的更新",
+            "loading": "正在检查此文件夹中的{type}更新...",
+            "success": "在此文件夹中找到 {count} 个{type}更新",
+            "none": "此文件夹中的所有{type}都是最新版本",
+            "error": "检查文件夹{type}更新失败: {message}"
         }
     },
     "statistics": {
