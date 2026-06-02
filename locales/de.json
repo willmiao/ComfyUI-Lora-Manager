@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "Zuvor heruntergeladen, aber derzeit nicht in Ihrer Bibliothek.",
             "alreadyInLibrary": "Bereits in Bibliothek",
             "autoOrganizedPath": "[Automatisch organisiert durch Pfadvorlage]",
+            "fileSelection": {
+                "title": "Dateiformat auswählen",
+                "files": "Dateien",
+                "select": "Datei auswählen"
+            },
             "errors": {
                 "invalidUrl": "Ungültiges Civitai URL-Format",
                 "noVersions": "Keine Versionen für dieses Modell verfügbar"

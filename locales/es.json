@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "Descargado anteriormente, pero actualmente no está en tu biblioteca.",
             "alreadyInLibrary": "Ya en la biblioteca",
             "autoOrganizedPath": "[Auto-organizado por plantilla de ruta]",
+            "fileSelection": {
+                "title": "Seleccionar formato de archivo",
+                "files": "archivos",
+                "select": "Seleccionar archivo"
+            },
             "errors": {
                 "invalidUrl": "Formato de URL de Civitai inválido",
                 "noVersions": "No hay versiones disponibles para este modelo"

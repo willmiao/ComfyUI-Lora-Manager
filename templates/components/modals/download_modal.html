@@ -29,6 +29,21 @@
             </div>
         </div>
 
+        <!-- Step 2.5: File Selection (optional - only when version has multiple model files) -->
+        <div class="download-step" id="fileSelectionStep" style="display: none;">
+            <div class="file-selection-header">
+                <h3 id="fileSelectionTitle">{{ t('modals.download.fileSelection.title') }}</h3>
+                <div class="file-selection-version-name" id="fileSelectionVersionName"></div>
+            </div>
+            <div class="file-selection-list" id="fileSelectionList">
+                <!-- File options will be rendered here dynamically -->
+            </div>
+            <div class="modal-actions">
+                <button class="secondary-btn" id="backToVersionFromFilesBtn">{{ t('common.actions.back') }}</button>
+                <button class="primary-btn" id="confirmFileSelection">{{ t('modals.download.fileSelection.select') }}</button>
+            </div>
+        </div>
+
         <!-- Step 3: Location Selection -->
         <div class="download-step" id="locationStep" style="display: none;">
             <div class="location-selection">

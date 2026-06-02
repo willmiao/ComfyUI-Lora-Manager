@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "Ранее загружено, но сейчас этого нет в вашей библиотеке.",
             "alreadyInLibrary": "Уже в библиотеке",
             "autoOrganizedPath": "[Автоматически организовано по шаблону пути]",
+            "fileSelection": {
+                "title": "Выбрать формат файла",
+                "files": "файлов",
+                "select": "Выбрать файл"
+            },
             "errors": {
                 "invalidUrl": "Неверный формат URL Civitai",
                 "noVersions": "Нет доступных версий для этой модели"

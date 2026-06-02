@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "הורד בעבר, אך הוא אינו נמצא כרגע בספרייה שלך.",
             "alreadyInLibrary": "כבר בספרייה",
             "autoOrganizedPath": "[מאורגן אוטומטית לפי תבנית נתיב]",
+            "fileSelection": {
+                "title": "בחר פורמט קובץ",
+                "files": "קבצים",
+                "select": "בחר קובץ"
+            },
             "errors": {
                 "invalidUrl": "פורמט URL של Civitai לא חוקי",
                 "noVersions": "אין גרסאות זמינות למודל זה"

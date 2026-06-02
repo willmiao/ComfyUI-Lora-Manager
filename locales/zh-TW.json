@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "先前已下載，但目前不在你的庫中。",
             "alreadyInLibrary": "已在庫存",
             "autoOrganizedPath": "[依路徑範本自動整理]",
+            "fileSelection": {
+                "title": "選擇檔案格式",
+                "files": "個檔案",
+                "select": "選擇檔案"
+            },
             "errors": {
                 "invalidUrl": "Civitai 網址格式無效",
                 "noVersions": "此模型無可用版本"

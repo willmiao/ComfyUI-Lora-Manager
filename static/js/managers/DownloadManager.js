@@ -33,6 +33,8 @@ export class DownloadManager {
         this.handleStartDownload = this.startDownload.bind(this);
         this.handleBackToUrl = this.backToUrl.bind(this);
         this.handleBackToVersions = this.backToVersions.bind(this);
+        this.handleBackToVersionFromFiles = this.backToVersionFromFiles.bind(this);
+        this.handleConfirmFileSelection = this.confirmFileSelection.bind(this);
         this.handleCloseModal = this.closeModal.bind(this);
         this.handleToggleDefaultPath = this.toggleDefaultPath.bind(this);
     }
@@ -79,6 +81,10 @@ export class DownloadManager {
         document.getElementById('backToUrlBtn').addEventListener('click', this.handleBackToUrl);
         document.getElementById('backToVersionsBtn').addEventListener('click', this.handleBackToVersions);
         document.getElementById('closeDownloadModal').addEventListener('click', this.handleCloseModal);
+
+        // File selection step buttons
+        document.getElementById('backToVersionFromFilesBtn').addEventListener('click', this.handleBackToVersionFromFiles);
+        document.getElementById('confirmFileSelection').addEventListener('click', this.handleConfirmFileSelection);
 
         // Default path toggle handler
         document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
@@ -129,6 +135,7 @@ export class DownloadManager {
         this.modelId = null;
         this.modelVersionId = null;
         this.source = null;
+        this.selectedFile = null;
 
         this.selectedFolder = '';
 
@@ -247,9 +254,12 @@ export class DownloadManager {
             const firstImage = version.images?.find(img => !img.url.endsWith('.mp4'));
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
 
+            // Count model-type files per version
+            const modelFiles = (version.files || []).filter(f => f.type === 'Model');
+            const primaryFile = modelFiles.find(f => f.primary) || modelFiles[0] || {};
             const fileSize = version.modelSizeKB ?
                 (version.modelSizeKB / 1024).toFixed(2) :
-                (version.files[0]?.sizeKB / 1024).toFixed(2);
+                ((primaryFile.sizeKB || 0) / 1024).toFixed(2);
 
             const existsLocally = version.existsLocally;
             const hasBeenDownloaded = version.hasBeenDownloaded && !existsLocally;
@@ -282,6 +292,12 @@ export class DownloadManager {
                  </div>`;
             }
 
+            const fileBadge = modelFiles.length > 1 && !existsLocally
+                ? `<span class="file-select-badge" data-version-id="${version.id}">
+                     <i class="fas fa-th-list"></i> ${modelFiles.length} ${translate('modals.download.fileSelection.files')} <i class="fas fa-chevron-right badge-arrow"></i>
+                   </span>`
+                : '';
+
             return `
                 <div class="version-item ${this.currentVersion?.id === version.id ? 'selected' : ''} 
                      ${existsLocally ? 'exists-locally' : ''} 
@@ -302,14 +318,23 @@ export class DownloadManager {
                         <div class="version-meta">
                             <span><i class="fas fa-calendar"></i> ${new Date(version.createdAt).toLocaleDateString()}</span>
                             <span><i class="fas fa-file-archive"></i> ${fileSize} MB</span>
+                            ${fileBadge}
                         </div>
                     </div>
                 </div>
             `;
         }).join('');
 
-        // Add click handlers for version selection
+        // Add click handlers for version selection and file badge
         versionList.addEventListener('click', (event) => {
+            const badge = event.target.closest('.file-select-badge');
+            if (badge) {
+                event.stopPropagation();
+                const versionId = badge.dataset.versionId;
+                this.selectVersion(versionId);
+                this.showFileSelectionStep(versionId);
+                return;
+            }
             const versionItem = event.target.closest('.version-item');
             if (versionItem) {
                 this.selectVersion(versionItem.dataset.versionId);
@@ -352,6 +377,80 @@ export class DownloadManager {
         }
     }
 
+    showFileSelectionStep(versionId) {
+        const version = this.versions.find(v => v.id.toString() === versionId.toString());
+        if (!version) return;
+
+        this.currentVersion = version;
+        const modelFiles = (version.files || []).filter(f => f.type === 'Model');
+
+        document.getElementById('versionStep').style.display = 'none';
+        document.getElementById('fileSelectionStep').style.display = 'block';
+
+        const nameEl = document.getElementById('fileSelectionVersionName');
+        if (nameEl) {
+            nameEl.textContent = `${version.name} · ${version.baseModel || ''}`;
+        }
+
+        const container = document.getElementById('fileSelectionList');
+        container.innerHTML = modelFiles.map(file => {
+            const meta = file.metadata || {};
+            const sizeGB = file.sizeKB ? (file.sizeKB / (1024 * 1024)).toFixed(2) : '--';
+            const isSelected = this.selectedFile?.id === file.id;
+
+            const tags = [];
+            if (meta.size) tags.push(`<span class="file-tag size">${meta.size}</span>`);
+            if (meta.format) tags.push(`<span class="file-tag format">${meta.format}</span>`);
+            if (meta.fp) tags.push(`<span class="file-tag fp">${meta.fp}</span>`);
+
+            const fileName = file.name || '';
+
+            return `
+                <div class="file-option ${isSelected ? 'selected' : ''}" data-file-id="${file.id}">
+                    <div class="file-option-radio">
+                        <input type="radio" name="fileSelection" value="${file.id}" ${isSelected ? 'checked' : ''}>
+                    </div>
+                    <div class="file-option-info">
+                        <div class="file-option-tags">
+                            ${tags.join(' ')}
+                        </div>
+                        <div class="file-option-name">${fileName}</div>
+                    </div>
+                    <div class="file-option-size">${sizeGB} GB</div>
+                </div>
+            `;
+        }).join('');
+
+        container.querySelectorAll('.file-option').forEach(el => {
+            el.addEventListener('click', () => {
+                container.querySelectorAll('.file-option').forEach(o => o.classList.remove('selected'));
+                el.classList.add('selected');
+                const radio = el.querySelector('input[type="radio"]');
+                if (radio) radio.checked = true;
+            });
+        });
+    }
+
+    confirmFileSelection() {
+        const selectedRadio = document.querySelector('#fileSelectionList input[type="radio"]:checked');
+        if (!selectedRadio) return;
+
+        const version = this.currentVersion;
+        if (!version) return;
+
+        const modelFiles = (version.files || []).filter(f => f.type === 'Model');
+        this.selectedFile = modelFiles.find(f => f.id.toString() === selectedRadio.value);
+
+        document.getElementById('fileSelectionStep').style.display = 'none';
+        document.getElementById('locationStep').style.display = 'block';
+        this.proceedToLocationContent();
+    }
+
+    backToVersionFromFiles() {
+        document.getElementById('fileSelectionStep').style.display = 'none';
+        document.getElementById('versionStep').style.display = 'block';
+    }
+
     async proceedToLocation() {
         if (!this.currentVersion) {
             showToast('toast.loras.pleaseSelectVersion', {}, 'error');
@@ -366,6 +465,10 @@ export class DownloadManager {
 
         document.getElementById('versionStep').style.display = 'none';
         document.getElementById('locationStep').style.display = 'block';
+        await this.proceedToLocationContent();
+    }
+
+    async proceedToLocationContent() {
 
         try {
             // Fetch model roots
@@ -450,6 +553,7 @@ export class DownloadManager {
         targetFolder = '',
         useDefaultPaths = false,
         source = null,
+        fileParams = null,
         closeModal = false,
     }) {
         const config = this.apiClient?.apiConfig?.config;
@@ -513,7 +617,8 @@ export class DownloadManager {
                 targetFolder,
                 useDefaultPaths,
                 downloadId,
-                source
+                source,
+                fileParams
             );
 
             if (response?.skipped) {
@@ -632,6 +737,13 @@ export class DownloadManager {
         } else {
             targetFolder = this.folderTreeManager.getSelectedPath();
         }
+        const fileParams = this.selectedFile ? {
+            type: 'Model',
+            format: this.selectedFile.metadata?.format || 'SafeTensor',
+            size: this.selectedFile.metadata?.size || 'full',
+            fp: this.selectedFile.metadata?.fp,
+        } : null;
+
         return this.executeDownloadWithProgress({
             modelId: this.modelId,
             versionId: this.currentVersion.id,
@@ -640,6 +752,7 @@ export class DownloadManager {
             targetFolder,
             useDefaultPaths,
             source: this.source,
+            fileParams,
             closeModal: true,
         });
     }

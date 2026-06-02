@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "이전에 다운로드했지만 현재 라이브러리에 없습니다.",
             "alreadyInLibrary": "이미 라이브러리에 있음",
             "autoOrganizedPath": "[경로 템플릿으로 자동 정리됨]",
+            "fileSelection": {
+                "title": "파일 형식 선택",
+                "files": "개 파일",
+                "select": "파일 선택"
+            },
             "errors": {
                 "invalidUrl": "잘못된 Civitai URL 형식",
                 "noVersions": "이 모델에 사용 가능한 버전이 없습니다"

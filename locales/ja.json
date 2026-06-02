@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "以前にダウンロード済みですが、現在はライブラリにありません。",
             "alreadyInLibrary": "既にライブラリ内",
             "autoOrganizedPath": "[パステンプレートによる自動整理]",
+            "fileSelection": {
+                "title": "ファイル形式を選択",
+                "files": "ファイル",
+                "select": "ファイルを選択"
+            },
             "errors": {
                 "invalidUrl": "無効なCivitai URL形式",
                 "noVersions": "このモデルの利用可能なバージョンがありません"

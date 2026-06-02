@@ -503,3 +503,169 @@
     pointer-events: none;
     user-select: none;
 }
+
+/* File Count Badge on Version Items */
+.file-select-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    background: oklch(var(--lora-accent) / 0.18);
+    color: var(--lora-accent);
+    font-size: inherit;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid oklch(var(--lora-accent) / 0.35);
+    user-select: none;
+    box-shadow: 0 1px 2px oklch(var(--lora-accent) / 0.1);
+}
+
+.file-select-badge:hover {
+    background: oklch(var(--lora-accent) / 0.3);
+    border-color: var(--lora-accent);
+    transform: scale(1.05);
+    box-shadow: 0 2px 6px oklch(var(--lora-accent) / 0.2);
+}
+
+.file-select-badge:active {
+    transform: scale(0.98);
+}
+
+.file-select-badge i {
+    font-size: 0.9em;
+}
+
+.file-select-badge .badge-arrow {
+    margin-left: 2px;
+    font-size: 0.65em;
+    opacity: 0.7;
+}
+
+/* File Selection Step */
+.file-selection-header {
+    margin-bottom: var(--space-3);
+}
+
+.file-selection-header h3 {
+    margin: 0 0 4px 0;
+    font-size: 1.1em;
+    color: var(--text-color);
+}
+
+.file-selection-version-name {
+    font-size: 0.9em;
+    color: var(--text-color);
+    opacity: 0.7;
+}
+
+.file-selection-list {
+    max-height: 360px;
+    overflow-y: auto;
+    margin: var(--space-2) 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.file-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: var(--bg-color);
+}
+
+.file-option:hover {
+    border-color: var(--lora-accent);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+}
+
+.file-option.selected {
+    border: 2px solid var(--lora-accent);
+    background: oklch(var(--lora-accent) / 0.05);
+}
+
+.file-option-radio {
+    flex-shrink: 0;
+}
+
+.file-option-radio input[type="radio"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--lora-accent);
+    cursor: pointer;
+}
+
+.file-option-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.file-option-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 4px;
+}
+
+.file-tag {
+    display: inline-block;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: 500;
+    line-height: 1.4;
+}
+
+.file-tag.format {
+    background: oklch(var(--lora-accent) / 0.1);
+    color: var(--lora-accent);
+}
+
+.file-tag.fp {
+    background: oklch(0.6 0.15 250 / 0.1);
+    color: oklch(0.55 0.15 250);
+}
+
+.file-tag.size {
+    background: oklch(0.55 0.1 160 / 0.1);
+    color: oklch(0.5 0.12 160);
+}
+
+.file-option-name {
+    font-size: 0.8em;
+    color: var(--text-color);
+    opacity: 0.6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 2px;
+}
+
+.file-option-size {
+    font-size: 0.9em;
+    color: var(--text-color);
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .file-option {
+    background: var(--lora-surface);
+}
+
+[data-theme="dark"] .file-tag.fp {
+    background: oklch(0.55 0.12 250 / 0.15);
+    color: oklch(0.7 0.12 250);
+}
+
+[data-theme="dark"] .file-tag.size {
+    background: oklch(0.5 0.08 160 / 0.15);
+    color: oklch(0.65 0.08 160);
+}

@@ -1031,6 +1031,11 @@
             "downloadedTooltip": "之前已下载，但当前不在你的库中。",
             "alreadyInLibrary": "已存在于库中",
             "autoOrganizedPath": "【已按路径模板自动整理】",
+            "fileSelection": {
+                "title": "选择文件格式",
+                "files": "个文件",
+                "select": "选择文件"
+            },
             "errors": {
                 "invalidUrl": "无效的 Civitai URL 格式",
                 "noVersions": "此模型没有可用版本"
