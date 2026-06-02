@@ -297,6 +297,10 @@ export async function resetAndReload(updateFolders = false, options = {}) {
  * Refreshes the recipe list by triggering a backend scan, then reloading.
  * @param {boolean} fullRebuild - If true, fully rebuild the cache; if false, incremental scan
  */
+export async function syncChanges() {
+    return refreshRecipes(false);
+}
+
 export async function refreshRecipes(fullRebuild = true) {
     const actionLabel = fullRebuild ? 'Rebuilding recipe cache' : 'Refreshing recipes';
     const actionToast = fullRebuild ? 'Full rebuild' : 'Refresh';

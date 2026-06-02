@@ -3,6 +3,7 @@ import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
 const showToastMock = vi.hoisted(() => vi.fn());
 const loadingManagerMock = vi.hoisted(() => ({
   showSimpleLoading: vi.fn(),
+  show: vi.fn(),
   hide: vi.fn(),
   restoreProgressBar: vi.fn(),
 }));
