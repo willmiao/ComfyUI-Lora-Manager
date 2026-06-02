@@ -46,6 +46,7 @@ class DummyUpdateService:
         *,
         force_refresh=False,
         target_model_ids=None,
+        folder_path=None,
     ):
         self.calls.append(
             {
@@ -54,6 +55,7 @@ class DummyUpdateService:
                 "provider": provider,
                 "force_refresh": force_refresh,
                 "target_model_ids": target_model_ids,
+                "folder_path": folder_path,
             }
         )
         return self.records
