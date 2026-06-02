@@ -110,6 +110,23 @@ class DownloadCoordinator:
 
         return result
 
+    async def skip_download(self, download_id: str) -> Dict[str, Any]:
+        """Skip a download while preserving all partial files on disk."""
+        download_manager = await self._download_manager_factory()
+        result = await download_manager.skip_download(download_id)
+
+        await self._ws_manager.broadcast_download_progress(
+            download_id,
+            {
+                "status": "skipped",
+                "progress": 0,
+                "download_id": download_id,
+                "message": "Download skipped by user (partial files preserved)",
+            },
+        )
+
+        return result
+
     async def pause_download(self, download_id: str) -> Dict[str, Any]:
         """Pause an active download and notify listeners."""
 

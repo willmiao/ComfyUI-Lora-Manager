@@ -1472,6 +1472,21 @@ class ModelDownloadHandler:
             )
             return web.Response(status=500, text=str(exc))
 
+    async def skip_download_get(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response(
+                    {"success": False, "error": "Download ID is required"}, status=400
+                )
+            result = await self._download_coordinator.skip_download(download_id)
+            return web.json_response(result)
+        except Exception as exc:
+            self._logger.error(
+                "Error skipping download via GET: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def cancel_download_get(self, request: web.Request) -> web.Response:
         try:
             download_id = request.query.get("download_id")
@@ -2566,6 +2581,7 @@ class ModelHandlerSet:
             "download_model": self.download.download_model,
             "download_model_get": self.download.download_model_get,
             "cancel_download_get": self.download.cancel_download_get,
+            "skip_download_get": self.download.skip_download_get,
             "pause_download_get": self.download.pause_download_get,
             "resume_download_get": self.download.resume_download_get,
             "get_download_progress": self.download.get_download_progress,

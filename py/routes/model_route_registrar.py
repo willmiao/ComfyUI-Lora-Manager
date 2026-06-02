@@ -101,6 +101,7 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/download-model", "download_model"),
     RouteDefinition("GET", "/api/lm/download-model-get", "download_model_get"),
     RouteDefinition("GET", "/api/lm/cancel-download-get", "cancel_download_get"),
+    RouteDefinition("GET", "/api/lm/skip-download", "skip_download_get"),
     RouteDefinition("GET", "/api/lm/pause-download", "pause_download_get"),
     RouteDefinition("GET", "/api/lm/resume-download", "resume_download_get"),
     RouteDefinition(

@@ -2404,6 +2404,89 @@ class DownloadManager:
                 self._download_tasks.pop(download_id, None)
                 await self._aria2_state_store.remove(download_id)
 
+    async def skip_download(self, download_id: str) -> Dict:
+        """Skip a download while preserving all partial files on disk.
+
+        Removes all in-memory tracking (asyncio task, semaphore, active/pause
+        state) but keeps partial files (.part / .aria2) on disk so that a
+        subsequent download-model-get request for the same save path can
+        auto-resume from the preserved partial download.
+
+        Args:
+            download_id: The unique identifier of the download task
+
+        Returns:
+            Dict: Status of the skip operation
+        """
+        await self._restore_persisted_downloads()
+
+        if download_id not in self._download_tasks and download_id not in self._active_downloads:
+            return {"success": False, "error": "Download task not found"}
+
+        download_info = self._active_downloads.get(download_id)
+        task = self._download_tasks.get(download_id)
+        active_statuses = {"queued", "waiting", "downloading", "paused", "cancelling"}
+        if task is None and (
+            not isinstance(download_info, dict)
+            or download_info.get("status") not in active_statuses
+        ):
+            return {"success": False, "error": "Download task not found"}
+
+        backend = (
+            self._active_downloads.get(download_id, {}).get("transfer_backend")
+            or "python"
+        )
+
+        try:
+            # For aria2: pause the transfer rather than force-removing it, so
+            # the .aria2 control file stays on disk for future resume
+            if backend == "aria2":
+                try:
+                    aria2_downloader = await get_aria2_downloader()
+                    pause_result = await aria2_downloader.pause_download(download_id)
+                    if not pause_result.get("success"):
+                        logger.warning(
+                            "Failed to pause aria2 transfer for %s during skip: %s",
+                            download_id,
+                            pause_result.get("error"),
+                        )
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to pause aria2 transfer for %s during skip: %s",
+                        download_id,
+                        exc,
+                    )
+
+            # Cancel the asyncio task so the semaphore slot is released
+            if task is not None:
+                task.cancel()
+
+            # Resume pause event so the task can exit cleanly
+            pause_control = self._pause_events.get(download_id)
+            if pause_control is not None:
+                pause_control.resume()
+
+            # Wait briefly for task to acknowledge cancellation
+            if task is not None:
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
+
+            logger.info(f"Download skipped for task {download_id} (partial files preserved)")
+            return {"success": True, "message": "Download skipped successfully"}
+        except Exception as e:
+            logger.error(f"Error skipping download: {e}", exc_info=True)
+            return {"success": False, "error": str(e)}
+        finally:
+            # Clean up local in-memory tracking only - NO file deletion
+            self._pause_events.pop(download_id, None)
+            self._download_tasks.pop(download_id, None)
+            if download_id in self._active_downloads:
+                del self._active_downloads[download_id]
+            # Preserve aria2 state store entry so the partial download
+            # info survives restarts and can be resumed later
+
     async def pause_download(self, download_id: str) -> Dict:
         """Pause an active download without losing progress."""
 
