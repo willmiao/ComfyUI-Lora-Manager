@@ -183,6 +183,9 @@ function renderMediaItem(img, index, exampleFiles) {
         Math.min(maxHeightPercent, aspectRatio)
     );
     
+    // Extract CivitAI image ID from CDN URL for import status check
+    const cdnImageId = (img.url || '').match(/\/(\d+)\.(?:jpeg|jpg|png|webp|gif)(?:\?|#|$)/)?.[1] || '';
+
     // Check if media should be blurred
     const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
     const matureBlurThreshold = getMatureBlurThreshold(state.settings);
@@ -224,12 +227,25 @@ function renderMediaItem(img, index, exampleFiles) {
     // Determine if this is a custom image (has id property)
     const isCustomImage = Boolean(typeof img.id === 'string' && img.id);
     
+    const hasGenMeta = img.hasMeta || (img.meta && (img.meta.prompt || img.meta.seed || img.meta.resources));
+
     // Create the media control buttons HTML
     const mediaControlsHtml = `
         <div class="media-controls">
             <button class="media-control-btn set-preview-btn" title="Set as preview">
                 <i class="fas fa-image"></i>
             </button>
+            ${hasGenMeta ? `
+            <button class="media-control-btn create-recipe-btn"
+                    title="Create As Recipe"
+                    data-image-meta="${encodeURIComponent(JSON.stringify(img.meta || {}))}"
+                    data-image-url="${img.url || ''}"
+                    data-image-nsfw="${img.nsfwLevel ?? ''}"
+                    data-image-id="${cdnImageId}"
+                    data-local-path="${localFile ? localFile.path : ''}">
+                <i class="fas fa-book-open"></i>
+            </button>
+            ` : ''}
             <button class="media-control-btn set-nsfw-btn" 
                     title="Set content rating"
                     data-media-index="${index}"

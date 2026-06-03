@@ -115,6 +115,10 @@ class RecipePersistenceService:
         if metadata.get("source_path"):
             recipe_data["source_path"] = metadata.get("source_path")
 
+        nsfw_level = metadata.get("preview_nsfw_level")
+        if nsfw_level is not None and isinstance(nsfw_level, int):
+            recipe_data["preview_nsfw_level"] = nsfw_level
+
         json_filename = f"{recipe_id}.recipe.json"
         json_path = os.path.join(recipes_dir, json_filename)
         json_path = os.path.normpath(json_path)

@@ -66,6 +66,46 @@ def build_civitai_model_page_url(
     return None
 
 
+_RE_CDN_IMAGE_ID = re.compile(r"/(\d+)\.(?:jpeg|jpg|png|webp|gif)(?:\?|#|$)")
+
+
+def extract_civitai_image_id_from_cdn_url(url: str | None) -> str | None:
+    """Extract the numeric image ID from a Cloudflare CDN image URL.
+
+    CivitAI image CDN URLs follow the pattern::
+
+        https://image.civitai.com/{cf_uuid}/{params}/{image_id}.{ext}
+
+    The image database ID is always the last path segment (minus extension)
+    because ``getEdgeUrl(…, name=id.toString())`` embeds it explicitly
+    in the model-versions REST API response.
+    """
+    if not url:
+        return None
+    match = _RE_CDN_IMAGE_ID.search(url)
+    return match.group(1) if match else None
+
+
+def build_civitai_image_page_url(
+    image_id: str | int | None,
+    *,
+    host: str | None = None,
+) -> str | None:
+    """Build a Civitai image page URL.
+
+    Returns something like ``https://civitai.com/images/12345``.
+    The host is resolved through :func:`normalize_civitai_page_host` and
+    therefore respects the user's ``civitai_host`` setting.
+    """
+    if not image_id:
+        return None
+    normalized_host = normalize_civitai_page_host(host)
+    normalized_id = str(image_id).strip()
+    if not normalized_id:
+        return None
+    return urlunparse(("https", normalized_host, f"/images/{normalized_id}", "", "", ""))
+
+
 def _parse_supported_civitai_page_url(url: str | None):
     if not url:
         return None
@@ -328,8 +368,10 @@ def rewrite_preview_url(
 
 
 __all__ = [
+    "build_civitai_image_page_url",
     "build_license_flags",
     "extract_civitai_image_id",
+    "extract_civitai_image_id_from_cdn_url",
     "extract_civitai_page_host",
     "extract_civitai_model_url_parts",
     "is_supported_civitai_page_host",

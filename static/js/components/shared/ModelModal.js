@@ -522,7 +522,7 @@ export async function showModelModal(model, modelType) {
                     </div>
                 </div>
 
-                <div class="showcase-section" data-model-hash="${modelWithFullData.sha256 || ''}" data-filepath="${escapedFilePathAttr}">
+                <div class="showcase-section" data-model-hash="${modelWithFullData.sha256 || ''}" data-model-name="${escapeAttribute(modelWithFullData.file_name || modelWithFullData.model_name || '')}" data-model-type="${modelType}" data-filepath="${escapedFilePathAttr}">
                     <div class="showcase-tabs">
                         ${tabsContent}
                     </div>
