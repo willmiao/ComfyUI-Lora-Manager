@@ -1718,49 +1718,75 @@ class RecipeManagementHandler:
             parsed_input = {**image_data, **inner_meta}
             parsed_input.pop("meta", None)
 
+            # Build a local cache of {hash → cache_item} so the parser can
+            # skip CivitAI API calls for models that exist on disk.
+            local_cache: Dict[str, Dict[str, Any]] = {}
+            lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
+            if lora_scanner and model_hash:
+                try:
+                    parent_cache_data = await lora_scanner.get_cached_data()
+                    for item in getattr(parent_cache_data, "raw_data", []):
+                        if item.get("sha256", "").lower() == model_hash.lower():
+                            local_cache[model_hash.lower()] = item
+                            # Compute AutoV3 so the parser can also match on
+                            # that hash type (CivitAI metadata resources use
+                            # AutoV3).
+                            file_path = item.get("file_path")
+                            if file_path and os.path.exists(file_path):
+                                try:
+                                    from ...utils.file_utils import (
+                                        calculate_autov3,
+                                    )
+                                    autov3 = calculate_autov3(file_path)
+                                    if autov3:
+                                        local_cache[autov3.lower()] = item
+                                except Exception:
+                                    pass
+                            break
+                except Exception:
+                    pass
+
             parser = self._analysis_service._recipe_parser_factory.create_parser(
                 parsed_input
             )
             if not parser:
                 raise RecipeValidationError("Unable to parse image metadata")
 
-            parsed = await parser.parse_metadata(
-                parsed_input, recipe_scanner=recipe_scanner
-            )
+            from ...recipes.parsers.civitai_image import CivitaiApiMetadataParser
+
+            if isinstance(parser, CivitaiApiMetadataParser):
+                parsed = await parser.parse_metadata(
+                    parsed_input,
+                    recipe_scanner=recipe_scanner,
+                    local_cache=local_cache,
+                )
+            else:
+                parsed = await parser.parse_metadata(
+                    parsed_input, recipe_scanner=recipe_scanner
+                )
 
             loras = list(parsed.get("loras") or [])
             checkpoint = parsed.get("model")
             is_lora_type = model_type.startswith("lora")
             is_ckpt_type = model_type.startswith("checkpoint")
 
-            # Look up parent model's cached CivitAI metadata (version ID,
-            # version name, model ID) from the scanner cache. Used to fix
-            # isDeleted entries and enrich auto-populated ones.
+            # Extract parent model metadata from local_cache (used below to
+            # reconcile isDeleted entries and enrich auto-populated ones).
             parent_civitai_id: int | None = None
             parent_model_id: int | None = None
             parent_version_name: str | None = None
             parent_model_name: str | None = None
-            lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
-            if lora_scanner and model_hash:
-                try:
-                    parent_cache = await lora_scanner.get_cached_data()
-                    for item in getattr(parent_cache, "raw_data", []):
-                        if item.get("sha256", "").lower() == model_hash.lower():
-                            civ = item.get("civitai") or {}
-                            if isinstance(civ, dict):
-                                parent_civitai_id = civ.get("id")
-                                parent_model_id = civ.get("modelId")
-                                parent_version_name = civ.get("name")
-                                # model_name is a flat SQLite column holding the
-                                # CivitAI model display name (not nested under
-                                # civitai.model which only stores type).
-                                parent_model_name = item.get("model_name")
-
-                            break
-                    else:
-                        pass
-                except Exception:
-                    pass
+            # Prefer sha256 key; fall back to any cached entry.
+            parent_item = local_cache.get(model_hash.lower()) if model_hash else None
+            if parent_item is None and local_cache:
+                parent_item = next(iter(local_cache.values()))
+            if parent_item:
+                civ = parent_item.get("civitai") or {}
+                if isinstance(civ, dict):
+                    parent_civitai_id = civ.get("id")
+                    parent_model_id = civ.get("modelId")
+                    parent_version_name = civ.get("name")
+                parent_model_name = parent_item.get("model_name")
 
             # Reconcile isDeleted entries against the parent model.
             # When the CivitAI hash lookup fails (known issue — hashes not
