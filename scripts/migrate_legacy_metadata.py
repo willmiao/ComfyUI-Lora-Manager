@@ -34,6 +34,8 @@ import sys
 from pathlib import Path
 from typing import Any
 
+from platformdirs import user_config_dir
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s",
@@ -53,10 +55,7 @@ def resolve_settings_path() -> Path:
         if isinstance(payload, dict) and payload.get("use_portable_settings") is True:
             return portable
 
-    config_home = os.environ.get("XDG_CONFIG_HOME")
-    if config_home:
-        return Path(config_home).expanduser() / APP_NAME / "settings.json"
-    return Path.home() / ".config" / APP_NAME / "settings.json"
+    return Path(user_config_dir(APP_NAME, appauthor=False)) / "settings.json"
 
 
 def load_json(path: Path) -> dict[str, Any]:
