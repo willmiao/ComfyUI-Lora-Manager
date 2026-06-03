@@ -141,8 +141,9 @@
   border-color: var(--lora-error);
 }
 
-/* Disabled state for delete button */
-.media-control-btn.example-delete-btn.disabled {
+/* Disabled state for delete and create-recipe buttons */
+.media-control-btn.example-delete-btn.disabled,
+.media-control-btn.create-recipe-btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

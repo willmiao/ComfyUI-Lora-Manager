@@ -157,9 +157,9 @@ async function checkImportedRecipes(container) {
         recipeButtons.forEach(btn => {
             const id = btn.dataset.imageId;
             if (id && data.results[id]?.in_library) {
-                btn.disabled = true;
                 btn.title = 'Already imported as recipe';
                 btn.classList.add('disabled');
+                btn.setAttribute('aria-disabled', 'true');
             }
         });
     } catch (err) {
@@ -509,6 +509,11 @@ export function initMediaControlHandlers(container) {
     recipeButtons.forEach(btn => {
         btn.addEventListener('click', async function(e) {
             e.stopPropagation();
+            
+            // Ignore clicks when disabled
+            if (this.classList.contains('disabled')) {
+                return;
+            }
             
             const imageMetaRaw = this.dataset.imageMeta;
             const imageUrl = this.dataset.imageUrl;

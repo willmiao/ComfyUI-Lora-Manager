@@ -256,7 +256,7 @@ function renderMediaItem(img, index, exampleFiles) {
             <button class="media-control-btn example-delete-btn ${!isCustomImage ? 'disabled' : ''}" 
                     title="${isCustomImage ? 'Delete this example' : 'Only custom images can be deleted'}" 
                     data-short-id="${img.id || ''}" 
-                    ${!isCustomImage ? 'disabled' : ''}>
+                    ${!isCustomImage ? 'aria-disabled="true"' : ''}>
                 <i class="fas fa-trash-alt"></i>
                 <i class="fas fa-check confirm-icon"></i>
             </button>
