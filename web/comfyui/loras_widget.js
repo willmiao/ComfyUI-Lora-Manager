@@ -5,13 +5,13 @@ import {
   updateWidgetHeight, 
   shouldShowClipEntry, 
   syncClipStrengthIfCollapsed,
-  LORA_ENTRY_HEIGHT, 
-  HEADER_HEIGHT, 
-  CONTAINER_PADDING, 
-  EMPTY_CONTAINER_HEIGHT 
+  LORA_ENTRY_HEIGHT,
+  HEADER_HEIGHT,
+  CONTAINER_PADDING,
+  EMPTY_CONTAINER_HEIGHT
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
-import { forwardMiddleMouseToCanvas, forwardWheelToCanvas } from "./utils.js";
+import { forwardMiddleMouseToCanvas, forwardWheelToCanvas, enableListWheelScroll } from "./utils.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference } from "./settings.js";
@@ -24,10 +24,17 @@ export function addLorasWidget(node, name, opts, callback) {
   container.className = "lm-loras-container";
 
   forwardMiddleMouseToCanvas(container);
+  // Capture-phase handler: scroll the list with the wheel when it overflows.
+  // Falls through to forwardWheelToCanvas (canvas zoom) when the list is short.
+  enableListWheelScroll(container);
   forwardWheelToCanvas(container);
 
   // Set initial height using CSS variables approach
   const defaultHeight = 200;
+
+  // Content height (capped at 12 rows by renderLoras), kept up to date and used
+  // to fix the widget/node height in both Canvas and Nodes 2.0 (Vue) modes.
+  let currentContentHeight = defaultHeight;
 
   // Check if this is a randomizer node (lock button instead of drag handle)
   const isRandomizerNode = opts?.isRandomizerNode === true;
@@ -198,7 +205,7 @@ export function addLorasWidget(node, name, opts, callback) {
       container.appendChild(emptyMessage);
       
       // Set fixed height for empty state
-      updateWidgetHeight(container, EMPTY_CONTAINER_HEIGHT, defaultHeight, node);
+      currentContentHeight = updateWidgetHeight(container, EMPTY_CONTAINER_HEIGHT, defaultHeight, node);
       return;
     }
 
@@ -645,7 +652,7 @@ export function addLorasWidget(node, name, opts, callback) {
     
     // Calculate height based on number of loras and fixed sizes
     const calculatedHeight = CONTAINER_PADDING + HEADER_HEIGHT + (Math.min(totalVisibleEntries, 12) * LORA_ENTRY_HEIGHT);
-    updateWidgetHeight(container, calculatedHeight, defaultHeight, node);
+    currentContentHeight = updateWidgetHeight(container, calculatedHeight, defaultHeight, node);
 
     // After all LoRA elements are created, apply selection state as the last step
     // This ensures the selection state is not overwritten
@@ -727,12 +734,31 @@ export function addLorasWidget(node, name, opts, callback) {
       widgetValue = updatedValue;
       renderLoras(widgetValue, widget);
     },
+    // The list area is capped at 12 rows (see calculatedHeight); beyond that the
+    // container scrolls. Report that capped height as both the min and preferred
+    // size so the node height stays fixed to the list, matching Canvas mode.
+    getMinHeight: () => currentContentHeight,
+    getHeight: () => currentContentHeight,
     hideOnZoom: true,
     selectOn: ['click', 'focus']
   });
 
   widget.value = defaultValue;
-  
+
+  // Canonical LiteGraph sizing hook (Canvas mode): fix the widget to the capped
+  // content height. Rows beyond the 12-row cap scroll inside the container.
+  widget.computeSize = (width) => [width, currentContentHeight];
+
+  // Nodes 2.0 / Vue mode reads computeLayoutSize for the node's size. Pin both
+  // the min and max to the capped content height so the list area is fixed to
+  // 12 rows (scrolling beyond), matching Canvas mode, instead of the layout
+  // engine measuring the full DOM and locking the node fully expanded.
+  widget.computeLayoutSize = () => ({
+    minHeight: currentContentHeight,
+    maxHeight: currentContentHeight,
+    minWidth: 400,
+  });
+
   widget.callback = callback;
 
   widget.onRemove = () => {
