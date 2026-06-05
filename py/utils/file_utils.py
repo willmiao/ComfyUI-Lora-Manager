@@ -81,7 +81,7 @@ def read_safetensors_metadata(file_path: str) -> dict[str, Any]:
                 return {}
             header = json.loads(header_bytes.decode("utf-8"))
             return header.get("__metadata__", {})
-    except (OSError, json.JSONDecodeError, UnicodeDecodeError, struct.error):
+    except (OSError, json.JSONDecodeError, UnicodeDecodeError, struct.error, MemoryError, Exception):
         return {}
 
 
