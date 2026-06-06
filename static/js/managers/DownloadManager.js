@@ -22,6 +22,11 @@ export class DownloadManager {
         this.apiClient = null;
         this.useDefaultPath = false;
 
+        // Batch mode state
+        this.batchModels = [];
+        this.isBatchMode = false;
+        this.editingBatchIndex = -1;
+
         this.loadingManager = new LoadingManager();
         this.folderTreeManager = new FolderTreeManager();
         this.folderClickHandler = null;
@@ -37,6 +42,8 @@ export class DownloadManager {
         this.handleConfirmFileSelection = this.confirmFileSelection.bind(this);
         this.handleCloseModal = this.closeModal.bind(this);
         this.handleToggleDefaultPath = this.toggleDefaultPath.bind(this);
+        this.handleBackToUrlFromBatch = this.backToUrlFromBatch.bind(this);
+        this.handleNextFromBatch = this.nextFromBatch.bind(this);
     }
 
     showDownloadModal() {
@@ -85,6 +92,10 @@ export class DownloadManager {
         // File selection step buttons
         document.getElementById('backToVersionFromFilesBtn').addEventListener('click', this.handleBackToVersionFromFiles);
         document.getElementById('confirmFileSelection').addEventListener('click', this.handleConfirmFileSelection);
+
+        // Batch preview buttons
+        document.getElementById('backToUrlFromBatchBtn').addEventListener('click', this.handleBackToUrlFromBatch);
+        document.getElementById('nextFromBatchBtn').addEventListener('click', this.handleNextFromBatch);
 
         // Default path toggle handler
         document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
@@ -138,6 +149,9 @@ export class DownloadManager {
         this.selectedFile = null;
 
         this.selectedFolder = '';
+        this.batchModels = [];
+        this.isBatchMode = false;
+        this.editingBatchIndex = -1;
 
         // Clear folder tree selection
         if (this.folderTreeManager) {
@@ -157,30 +171,99 @@ export class DownloadManager {
     }
 
     async validateAndFetchVersions() {
-        const url = document.getElementById('modelUrl').value.trim();
+        const rawText = document.getElementById('modelUrl').value.trim();
         const errorElement = document.getElementById('urlError');
+        const urls = rawText.split('\n').map(l => l.trim()).filter(Boolean);
 
-        try {
-            this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
-
-            this.modelId = this.extractModelId(url);
-            if (!this.modelId) {
-                throw new Error(translate('modals.download.errors.invalidUrl'));
-            }
-
-            await this.retrieveVersionsForModel(this.modelId, this.source);
-
-            // If we have a version ID from URL, pre-select it
-            if (this.modelVersionId) {
-                this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
-            }
-
-            this.showVersionStep();
-        } catch (error) {
-            errorElement.textContent = error.message;
-        } finally {
-            this.loadingManager.hide();
+        if (urls.length === 0) {
+            errorElement.textContent = translate('modals.download.errors.invalidUrl');
+            return;
         }
+
+        if (urls.length === 1) {
+            this.isBatchMode = false;
+            try {
+                this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
+
+                this.modelId = this.extractModelId(urls[0]);
+                if (!this.modelId) {
+                    throw new Error(translate('modals.download.errors.invalidUrl'));
+                }
+
+                await this.retrieveVersionsForModel(this.modelId, this.source);
+
+                if (this.modelVersionId) {
+                    this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
+                }
+
+                this.showVersionStep();
+            } catch (error) {
+                errorElement.textContent = error.message;
+            } finally {
+                this.loadingManager.hide();
+            }
+            return;
+        }
+
+        // Multi-URL batch mode
+        this.isBatchMode = true;
+        this.batchModels = [];
+        errorElement.textContent = '';
+
+        const seen = new Set();
+        const parsed = [];
+        for (const url of urls) {
+            const result = DownloadManager.parseModelUrl(url);
+            if (!result.modelId) {
+                parsed.push({ url, error: translate('modals.download.errors.invalidUrl') });
+                continue;
+            }
+            if (seen.has(result.modelId)) continue;
+            seen.add(result.modelId);
+            parsed.push({ url, ...result, error: null });
+        }
+
+        if (parsed.length === 0) {
+            errorElement.textContent = translate('modals.download.errors.invalidUrl');
+            return;
+        }
+
+        this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
+
+        let fetched = 0;
+        const total = parsed.filter(p => !p.error).length;
+
+        this.batchModels = new Array(parsed.length);
+
+        const fetchPromises = parsed.map(async (item, index) => {
+            if (item.error) {
+                this.batchModels[index] = { ...item, versions: [], selectedVersion: null };
+                return;
+            }
+            try {
+                const versions = await this.apiClient.fetchCivitaiVersions(item.modelId, item.source);
+                fetched++;
+                this.loadingManager.setStatus(`${fetched}/${total}`);
+
+                let selectedVersion = null;
+                if (versions && versions.length > 0) {
+                    if (item.modelVersionId) {
+                        selectedVersion = versions.find(v => v.id.toString() === item.modelVersionId) || versions[0];
+                    } else {
+                        selectedVersion = versions[0];
+                    }
+                }
+
+                this.batchModels[index] = { ...item, versions: versions || [], selectedVersion };
+            } catch (err) {
+                this.batchModels[index] = { ...item, versions: [], selectedVersion: null, error: err.message };
+            }
+        });
+
+        await Promise.all(fetchPromises);
+        this.loadingManager.hide();
+
+        this.showBatchPreviewStep();
     }
 
     async fetchVersionsForCurrentModel() {
@@ -204,25 +287,30 @@ export class DownloadManager {
         }
     }
 
-    extractModelId(url) {
+    static parseModelUrl(url) {
         const civarchiveMatch = url.match(/https?:\/\/(?:www\.)?(?:civitaiarchive|civarchive)\.com\/models\/(\d+)/i);
         if (civarchiveMatch) {
             const versionMatch = url.match(/modelVersionId=(\d+)/i);
-            this.modelVersionId = versionMatch ? versionMatch[1] : null;
-            this.source = 'civarchive';
-            return civarchiveMatch[1];
+            return {
+                modelId: civarchiveMatch[1],
+                modelVersionId: versionMatch ? versionMatch[1] : null,
+                source: 'civarchive',
+            };
         }
 
         const { modelId, modelVersionId } = extractCivitaiModelUrlParts(url);
         if (modelId) {
-            this.modelVersionId = modelVersionId;
-            this.source = null;
-            return modelId;
+            return { modelId, modelVersionId, source: null };
         }
 
-        this.modelVersionId = null;
-        this.source = null;
-        return null;
+        return { modelId: null, modelVersionId: null, source: null };
+    }
+
+    extractModelId(url) {
+        const result = DownloadManager.parseModelUrl(url);
+        this.modelVersionId = result.modelVersionId;
+        this.source = result.source;
+        return result.modelId;
     }
 
     async openForModelVersion(modelType, modelId, versionId = null) {
@@ -250,7 +338,10 @@ export class DownloadManager {
         document.getElementById('versionStep').style.display = 'block';
 
         const versionList = document.getElementById('versionList');
-        versionList.innerHTML = this.versions.map(version => {
+        const newList = versionList.cloneNode(false);
+        versionList.parentNode.replaceChild(newList, versionList);
+
+        newList.innerHTML = this.versions.map(version => {
             const firstImage = version.images?.find(img => !img.url.endsWith('.mp4'));
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
 
@@ -326,7 +417,7 @@ export class DownloadManager {
         }).join('');
 
         // Add click handlers for version selection and file badge
-        versionList.addEventListener('click', (event) => {
+        newList.addEventListener('click', (event) => {
             const badge = event.target.closest('.file-select-badge');
             if (badge) {
                 event.stopPropagation();
@@ -452,18 +543,30 @@ export class DownloadManager {
     }
 
     async proceedToLocation() {
-        if (!this.currentVersion) {
-            showToast('toast.loras.pleaseSelectVersion', {}, 'error');
+        // If editing a batch item's version, save and return to batch preview
+        if (this.isBatchMode && this.editingBatchIndex >= 0) {
+            if (this.currentVersion) {
+                this.batchModels[this.editingBatchIndex].selectedVersion = this.currentVersion;
+            }
+            this.editingBatchIndex = -1;
+            document.getElementById('versionStep').style.display = 'none';
+            this.showBatchPreviewStep();
             return;
         }
 
-        const existsLocally = this.currentVersion.existsLocally;
-        if (existsLocally) {
-            showToast('toast.loras.versionExists', {}, 'info');
-            return;
+        // In single-URL mode, validate version selection
+        if (!this.isBatchMode) {
+            if (!this.currentVersion) {
+                showToast('toast.loras.pleaseSelectVersion', {}, 'error');
+                return;
+            }
+            if (this.currentVersion.existsLocally) {
+                showToast('toast.loras.versionExists', {}, 'info');
+                return;
+            }
         }
 
-        document.getElementById('versionStep').style.display = 'none';
+        document.querySelectorAll('.download-step').forEach(step => step.style.display = 'none');
         document.getElementById('locationStep').style.display = 'block';
         await this.proceedToLocationContent();
     }
@@ -700,14 +803,123 @@ export class DownloadManager {
         this.updateTargetPath();
     }
 
+    showBatchPreviewStep() {
+        document.querySelectorAll('.download-step').forEach(step => step.style.display = 'none');
+        document.getElementById('batchPreviewStep').style.display = 'block';
+
+        const validCount = this.batchModels.filter(m => !m.error && m.selectedVersion).length;
+        document.getElementById('downloadModalTitle').textContent =
+            translate('modals.download.titleWithType', { type: this.apiClient.apiConfig.config.displayName }) +
+            ` (${validCount})`;
+
+        const list = document.getElementById('batchPreviewList');
+        list.innerHTML = this.batchModels.map((item, index) => {
+            if (item.error) {
+                return `
+                    <div class="batch-preview-item batch-preview-error" data-index="${index}">
+                        <div class="batch-preview-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="batch-preview-info">
+                            <div class="batch-preview-name">${item.url}</div>
+                            <div class="batch-preview-meta batch-preview-error-text">${item.error}</div>
+                        </div>
+                        <button class="batch-preview-remove" data-index="${index}" title="${translate('common.actions.remove', {}, 'Remove')}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }
+
+            const ver = item.selectedVersion;
+            const firstImage = ver?.images?.find(img => !img.url.endsWith('.mp4'));
+            const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
+            const fileSize = ver?.modelSizeKB
+                ? (ver.modelSizeKB / 1024).toFixed(1)
+                : (ver?.files?.[0]?.sizeKB ? (ver.files[0].sizeKB / 1024).toFixed(1) : '?');
+            const existsLocally = ver?.existsLocally;
+
+            return `
+                <div class="batch-preview-item ${existsLocally ? 'batch-preview-local' : ''}" data-index="${index}">
+                    <div class="batch-preview-thumbnail">
+                        <img src="${thumbnailUrl}" alt="">
+                    </div>
+                    <div class="batch-preview-info">
+                        <div class="batch-preview-name">${ver?.name || `Model #${item.modelId}`}</div>
+                        <div class="batch-preview-meta">
+                            ${ver?.baseModel ? `<span>${ver.baseModel}</span>` : ''}
+                            <span>${fileSize} MB</span>
+                            ${existsLocally ? `<span class="batch-preview-local-badge"><i class="fas fa-check"></i> ${translate('modals.download.inLibrary')}</span>` : ''}
+                        </div>
+                    </div>
+                    ${item.versions.length > 1 ? `
+                        <button class="batch-preview-change-version secondary-btn" data-index="${index}">
+                            ${translate('common.actions.change', {}, 'Change')}
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+
+        list.onclick = (e) => {
+            const removeBtn = e.target.closest('.batch-preview-remove');
+            if (removeBtn) {
+                const idx = parseInt(removeBtn.dataset.index);
+                this.batchModels.splice(idx, 1);
+                this.showBatchPreviewStep();
+                return;
+            }
+            const changeBtn = e.target.closest('.batch-preview-change-version');
+            if (changeBtn) {
+                const idx = parseInt(changeBtn.dataset.index);
+                this.openBatchVersionEditor(idx);
+            }
+        };
+
+        const nextBtn = document.getElementById('nextFromBatchBtn');
+        nextBtn.disabled = validCount === 0;
+        nextBtn.classList.toggle('disabled', validCount === 0);
+    }
+
+    openBatchVersionEditor(index) {
+        this.editingBatchIndex = index;
+        const item = this.batchModels[index];
+
+        this.versions = item.versions;
+        this.currentVersion = item.selectedVersion;
+
+        document.getElementById('batchPreviewStep').style.display = 'none';
+        this.showVersionStep();
+    }
+
+    backToUrlFromBatch() {
+        document.getElementById('batchPreviewStep').style.display = 'none';
+        document.getElementById('urlStep').style.display = 'block';
+    }
+
+    nextFromBatch() {
+        const validModels = this.batchModels.filter(m => !m.error && m.selectedVersion);
+        if (validModels.length === 0) return;
+        this.proceedToLocation();
+    }
+
     backToUrl() {
         document.getElementById('versionStep').style.display = 'none';
-        document.getElementById('urlStep').style.display = 'block';
+        if (this.isBatchMode && this.editingBatchIndex >= 0) {
+            this.editingBatchIndex = -1;
+            this.showBatchPreviewStep();
+        } else {
+            document.getElementById('urlStep').style.display = 'block';
+        }
     }
 
     backToVersions() {
         document.getElementById('locationStep').style.display = 'none';
-        document.getElementById('versionStep').style.display = 'block';
+        if (this.isBatchMode) {
+            document.getElementById('batchPreviewStep').style.display = 'block';
+        } else {
+            document.getElementById('versionStep').style.display = 'block';
+        }
     }
 
     closeModal() {
@@ -727,34 +939,120 @@ export class DownloadManager {
             return;
         }
 
-        // Determine target folder and use_default_paths parameter
         let targetFolder = '';
         let useDefaultPaths = false;
 
         if (this.useDefaultPath) {
             useDefaultPaths = true;
-            targetFolder = ''; // Not needed when using default paths
         } else {
             targetFolder = this.folderTreeManager.getSelectedPath();
         }
-        const fileParams = this.selectedFile ? {
-            type: 'Model',
-            format: this.selectedFile.metadata?.format || 'SafeTensor',
-            size: this.selectedFile.metadata?.size || 'full',
-            fp: this.selectedFile.metadata?.fp,
-        } : null;
+        if (!this.isBatchMode) {
+            const fileParams = this.selectedFile ? {
+                type: 'Model',
+                format: this.selectedFile.metadata?.format || 'SafeTensor',
+                size: this.selectedFile.metadata?.size || 'full',
+                fp: this.selectedFile.metadata?.fp,
+            } : null;
 
-        return this.executeDownloadWithProgress({
-            modelId: this.modelId,
-            versionId: this.currentVersion.id,
-            versionName: this.currentVersion.name,
-            modelRoot,
-            targetFolder,
-            useDefaultPaths,
-            source: this.source,
-            fileParams,
-            closeModal: true,
+            return this.executeDownloadWithProgress({
+                modelId: this.modelId,
+                versionId: this.currentVersion.id,
+                versionName: this.currentVersion.name,
+                modelRoot,
+                targetFolder,
+                useDefaultPaths,
+                source: this.source,
+                fileParams,
+                closeModal: true,
+            });
+        }
+
+        // Batch download mode
+        const downloadItems = this.batchModels.filter(m => !m.error && m.selectedVersion && !m.selectedVersion.existsLocally);
+        if (downloadItems.length === 0) {
+            showToast('toast.loras.downloadCompleted', {}, 'info');
+            modalManager.closeModal('downloadModal');
+            return;
+        }
+
+        modalManager.closeModal('downloadModal');
+
+        const batchDownloadId = Date.now().toString();
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+        const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${batchDownloadId}`);
+
+        const loadingManager = state.loadingManager || this.loadingManager;
+        const updateProgress = loadingManager.showDownloadProgress(downloadItems.length);
+
+        let completedDownloads = 0;
+        let failedDownloads = 0;
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'download_id') return;
+
+            if (data.status === 'progress' && data.download_id?.startsWith(batchDownloadId)) {
+                const current = downloadItems[completedDownloads + failedDownloads];
+                const name = current?.selectedVersion?.name || `#${completedDownloads + failedDownloads + 1}`;
+                const metrics = {
+                    bytesDownloaded: data.bytes_downloaded,
+                    totalBytes: data.total_bytes,
+                    bytesPerSecond: data.bytes_per_second,
+                };
+                updateProgress(data.progress, completedDownloads, name, metrics);
+            }
+        };
+
+        await new Promise((resolve, reject) => {
+            ws.onopen = resolve;
+            ws.onerror = reject;
         });
+
+        for (let i = 0; i < downloadItems.length; i++) {
+            const item = downloadItems[i];
+            const ver = item.selectedVersion;
+            const name = ver?.name || `Model #${item.modelId}`;
+
+            updateProgress(0, completedDownloads, name);
+            loadingManager.setStatus(`${i + 1}/${downloadItems.length}: ${name}`);
+
+            try {
+                const response = await this.apiClient.downloadModel(
+                    item.modelId,
+                    ver.id,
+                    modelRoot,
+                    targetFolder,
+                    useDefaultPaths,
+                    batchDownloadId,
+                    item.source
+                );
+
+                if (!response.success) {
+                    failedDownloads++;
+                } else {
+                    completedDownloads++;
+                    updateProgress(100, completedDownloads, '');
+                }
+            } catch (err) {
+                console.error(`Failed to download ${name}:`, err);
+                failedDownloads++;
+            }
+        }
+
+        ws.close();
+        loadingManager.hide();
+
+        if (failedDownloads === 0) {
+            showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
+        } else {
+            showToast('toast.loras.downloadPartialSuccess', {
+                completed: completedDownloads,
+                total: downloadItems.length,
+            }, 'warning');
+        }
+
+        await resetAndReload(true);
     }
 
     async downloadVersionWithDefaults(modelType, modelId, versionId, { 
