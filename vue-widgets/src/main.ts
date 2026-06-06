@@ -655,13 +655,16 @@ function createAutocompleteTextWidgetFactory(
   // Get spellcheck setting from ComfyUI settings (default: false)
   const spellcheck = app.ui?.settings?.getSettingValue?.('Comfy.TextareaWidget.Spellcheck') ?? false
 
+  const maxHeight = modelType === 'loras' ? AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT : undefined
+
   const vueApp = createApp(AutocompleteTextWidget, {
     widget,
     node,
     modelType,
     placeholder: inputOptions.placeholder || widgetName,
     showPreview: true,
-    spellcheck
+    spellcheck,
+    maxHeight
   })
 
   vueApp.use(PrimeVue, {
@@ -672,6 +675,10 @@ function createAutocompleteTextWidgetFactory(
   vueApp.mount(container)
   const appKey = instanceId
   vueApps.set(appKey, vueApp)
+
+  if (maxHeight) {
+    container.style.maxHeight = `${maxHeight}px`
+  }
 
   widget.onRemove = createVueWidgetCleanup(vueApp, () => {
     vueApps.delete(appKey)

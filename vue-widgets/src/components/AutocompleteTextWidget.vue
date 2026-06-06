@@ -5,7 +5,8 @@
         ref="textareaRef"
         :placeholder="placeholder"
         :spellcheck="spellcheck ?? false"
-        :class="['text-input', { 'vue-dom-mode': isVueDomMode }]"
+        :class="['text-input', { 'vue-dom-mode': isVueDomMode, 'lm-wheel-scrollable': isVueDomMode }]"
+        :style="maxHeight && isVueDomMode ? { maxHeight: maxHeight + 'px' } : undefined"
         @input="onInput"
         @wheel="onWheel"
       />
@@ -47,6 +48,7 @@ const props = defineProps<{
   placeholder?: string
   showPreview?: boolean
   spellcheck?: boolean
+  maxHeight?: number
 }>()
 
 // Reactive ref for Vue DOM mode

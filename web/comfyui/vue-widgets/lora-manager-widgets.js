@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-5514bf46] {
+.autocomplete-text-widget[data-v-1c610e5d] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-5514bf46] {
+.input-wrapper[data-v-1c610e5d] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-5514bf46] {
+.text-input[data-v-1c610e5d] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2150,7 +2150,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-5514bf46] {
+.text-input.vue-dom-mode[data-v-1c610e5d] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2159,12 +2159,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-5514bf46]:focus {
+.text-input[data-v-1c610e5d]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-5514bf46] {
+.clear-button[data-v-1c610e5d] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2187,31 +2187,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-5514bf46] {
+.input-wrapper:hover .clear-button[data-v-1c610e5d] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-5514bf46]:hover {
+.clear-button[data-v-1c610e5d]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-5514bf46] {
+.clear-button svg[data-v-1c610e5d] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-5514bf46] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-1c610e5d] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-5514bf46]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-1c610e5d]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-5514bf46] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-1c610e5d] {
   width: 14px;
   height: 14px;
 }`));
@@ -14783,7 +14783,8 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     modelType: {},
     placeholder: {},
     showPreview: { type: Boolean },
-    spellcheck: { type: Boolean }
+    spellcheck: { type: Boolean },
+    maxHeight: {}
   },
   setup(__props) {
     const props = __props;
@@ -14913,10 +14914,11 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
             ref: textareaRef,
             placeholder: __props.placeholder,
             spellcheck: __props.spellcheck ?? false,
-            class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value }]),
+            class: normalizeClass(["text-input", { "vue-dom-mode": isVueDomMode.value, "lm-wheel-scrollable": isVueDomMode.value }]),
+            style: normalizeStyle(__props.maxHeight && isVueDomMode.value ? { maxHeight: __props.maxHeight + "px" } : void 0),
             onInput,
             onWheel
-          }, null, 42, _hoisted_3),
+          }, null, 46, _hoisted_3),
           showClearButton.value ? (openBlock(), createElementBlock("button", {
             key: 0,
             type: "button",
@@ -14949,7 +14951,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-5514bf46"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-1c610e5d"]]);
 function createVueWidgetCleanup(vueApp, onCleanup) {
   let didUnmount = false;
   return () => {
@@ -15799,13 +15801,15 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   );
   widget.metadataWidget = metadataWidget;
   const spellcheck = ((_c = (_b = (_a2 = app$1.ui) == null ? void 0 : _a2.settings) == null ? void 0 : _b.getSettingValue) == null ? void 0 : _c.call(_b, "Comfy.TextareaWidget.Spellcheck")) ?? false;
+  const maxHeight = modelType === "loras" ? AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT : void 0;
   const vueApp = createApp(AutocompleteTextWidget, {
     widget,
     node,
     modelType,
     placeholder: inputOptions.placeholder || widgetName,
     showPreview: true,
-    spellcheck
+    spellcheck,
+    maxHeight
   });
   vueApp.use(PrimeVue, {
     unstyled: true,
@@ -15814,6 +15818,9 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   vueApp.mount(container);
   const appKey = instanceId;
   vueApps.set(appKey, vueApp);
+  if (maxHeight) {
+    container.style.maxHeight = `${maxHeight}px`;
+  }
   widget.onRemove = createVueWidgetCleanup(vueApp, () => {
     vueApps.delete(appKey);
   });
