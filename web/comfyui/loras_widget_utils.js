@@ -18,28 +18,21 @@ export function formatLoraValue(loras) {
   return loras;
 }
 
-// Resolve the capped (12-row) height of the widget and physically cap the
-// container so the list area never grows past it.
-// `height` is the raw content height (already capped at 12 rows by the caller);
-// the result never drops below defaultHeight.
-// The max-height is the reliable lever: Nodes 2.0 / Vue mode measures the
-// rendered DOM to size the node, so without an actual height cap on the element
-// the list always shows every row. max-height bounds the element regardless of
-// what the layout engine measures, and the overflow makes the extra rows scroll.
-// Returns the resolved height so callers can also report it to ComfyUI.
+// Function to update widget height consistently
 export function updateWidgetHeight(container, height, defaultHeight, node) {
-  const cappedHeight = Math.max(defaultHeight, height);
-
-  container.style.maxHeight = `${cappedHeight}px`;
-
-  // Force node to redraw after a short delay to ensure the DOM is updated.
+  // Ensure minimum height
+  const finalHeight = Math.max(defaultHeight, height);
+  
+  // Update CSS variables
+  container.style.setProperty('--comfy-widget-min-height', `${finalHeight}px`);
+  container.style.setProperty('--comfy-widget-height', `${finalHeight}px`);
+  
+  // Force node to update size after a short delay to ensure DOM is updated
   if (node) {
     setTimeout(() => {
       node.setDirtyCanvas(true, true);
     }, 10);
   }
-
-  return cappedHeight;
 }
 
 // Determine if clip entry should be shown - now based on expanded property or initial diff values
