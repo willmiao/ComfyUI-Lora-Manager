@@ -218,8 +218,13 @@ export class DownloadManager {
                 parsed.push({ url, error: translate('modals.download.errors.invalidUrl') });
                 continue;
             }
-            if (seen.has(result.modelId)) continue;
-            seen.add(result.modelId);
+            // Dedup by modelId + modelVersionId combo so users can download
+            // different versions of the same model (e.g. latest + a specific version)
+            const dedupKey = result.modelVersionId
+                ? `${result.modelId}:${result.modelVersionId}`
+                : result.modelId;
+            if (seen.has(dedupKey)) continue;
+            seen.add(dedupKey);
             parsed.push({ url, ...result, error: null });
         }
 
