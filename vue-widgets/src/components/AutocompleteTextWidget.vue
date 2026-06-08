@@ -7,6 +7,7 @@
         :spellcheck="spellcheck ?? false"
         :class="['text-input', { 'vue-dom-mode': isVueDomMode, 'lm-wheel-scrollable': isVueDomMode }]"
         :style="maxHeight && isVueDomMode ? { maxHeight: maxHeight + 'px' } : undefined"
+        data-capture-wheel="true"
         @input="onInput"
         @wheel="onWheel"
       />
