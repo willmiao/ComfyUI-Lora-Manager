@@ -16,7 +16,9 @@
             "help": "ヘルプ",
             "add": "追加",
             "close": "閉じる",
-            "menu": "メニュー"
+            "menu": "メニュー",
+            "remove": "削除",
+            "change": "変更"
         },
         "status": {
             "loading": "読み込み中...",

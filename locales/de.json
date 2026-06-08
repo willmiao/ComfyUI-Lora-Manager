@@ -16,7 +16,9 @@
             "help": "Hilfe",
             "add": "Hinzufügen",
             "close": "Schließen",
-            "menu": "Menü"
+            "menu": "Menü",
+            "remove": "Entfernen",
+            "change": "Ändern"
         },
         "status": {
             "loading": "Wird geladen...",

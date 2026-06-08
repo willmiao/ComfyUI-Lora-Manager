@@ -16,7 +16,9 @@
             "help": "Aide",
             "add": "Ajouter",
             "close": "Fermer",
-            "menu": "Menu"
+            "menu": "Menu",
+            "remove": "Supprimer",
+            "change": "Modifier"
         },
         "status": {
             "loading": "Chargement...",

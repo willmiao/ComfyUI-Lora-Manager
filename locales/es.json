@@ -16,7 +16,9 @@
             "help": "Ayuda",
             "add": "Añadir",
             "close": "Cerrar",
-            "menu": "Menú"
+            "menu": "Menú",
+            "remove": "Eliminar",
+            "change": "Cambiar"
         },
         "status": {
             "loading": "Cargando...",

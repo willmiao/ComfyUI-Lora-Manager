@@ -16,7 +16,9 @@
             "help": "說明",
             "add": "新增",
             "close": "關閉",
-            "menu": "選單"
+            "menu": "選單",
+            "remove": "移除",
+            "change": "更換"
         },
         "status": {
             "loading": "載入中...",

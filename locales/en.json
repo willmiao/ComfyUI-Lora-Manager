@@ -16,7 +16,9 @@
             "help": "Help",
             "add": "Add",
             "close": "Close",
-            "menu": "Menu"
+            "menu": "Menu",
+            "remove": "Remove",
+            "change": "Change"
         },
         "status": {
             "loading": "Loading...",
