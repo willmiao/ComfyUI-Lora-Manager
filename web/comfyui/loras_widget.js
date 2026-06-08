@@ -11,10 +11,10 @@ import {
   EMPTY_CONTAINER_HEIGHT 
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
-import { forwardMiddleMouseToCanvas, forwardWheelToCanvas } from "./utils.js";
+import { forwardMiddleMouseToCanvas, forwardWheelToCanvas, enableListWheelScroll } from "./utils.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
-import { getStrengthStepPreference } from "./settings.js";
+import { getStrengthStepPreference, getLoraWidgetMaxVisibleLoras } from "./settings.js";
 
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
@@ -28,6 +28,20 @@ export function addLorasWidget(node, name, opts, callback) {
 
   // Set initial height using CSS variables approach
   const defaultHeight = 200;
+
+  // In Vue/node-2.0 mode, cap the widget height so it shows at most N entries.
+  // This prevents content from driving the node size beyond the cap.
+  // canvas/legacy mode is unaffected.
+  if (typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode) {
+    const maxLoras = getLoraWidgetMaxVisibleLoras();
+    const gap = 5; // flex gap from .lm-loras-container CSS
+    const maxH = CONTAINER_PADDING + HEADER_HEIGHT + maxLoras * LORA_ENTRY_HEIGHT + maxLoras * gap;
+    container.style.maxHeight = `${maxH}px`;
+    container.style.setProperty('--comfy-widget-max-height', `${maxH}px`);
+    // Window capture-phase hook: scroll the widget instead of zooming the canvas
+    // when the wheel is over a scrollable loras list.
+    enableListWheelScroll(container);
+  }
 
   // Check if this is a randomizer node (lock button instead of drag handle)
   const isRandomizerNode = opts?.isRandomizerNode === true;

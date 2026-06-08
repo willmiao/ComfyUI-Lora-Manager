@@ -784,6 +784,51 @@ export function forwardWheelToCanvas(container, options = {}) {
     }, { passive: false });
 }
 
+// Marks scrollable containers whose wheel scrolling must win over canvas zoom.
+const LM_WHEEL_CLASS = 'lm-wheel-scrollable';
+let lmWheelHookInstalled = false;
+
+/**
+ * Keep vertical wheel scrolling inside a scrollable widget container, even in
+ * Nodes 2.0 / Vue mode where ComfyUI's wheel→zoom handler runs on the document
+ * in the capture phase (outer than any container-level listener).
+ * Installs a single capture-phase hook on `window` (the outermost dispatch
+ * point). When the wheel is over a marked, scrollable element, we manually
+ * scroll it and fully consume the event so canvas zoom never sees it.
+ */
+export function enableListWheelScroll(container) {
+    if (!container) return;
+    container.classList.add(LM_WHEEL_CLASS);
+
+    if (lmWheelHookInstalled) return;
+    lmWheelHookInstalled = true;
+
+    window.addEventListener('wheel', (event) => {
+        // Let pinch/zoom and horizontal gestures pass through.
+        if (event.ctrlKey) return;
+        if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+
+        const target = event.target;
+        if (!target || typeof target.closest !== 'function') return;
+        const el = target.closest(`.${LM_WHEEL_CLASS}`);
+        if (!el) return;
+
+        const canScrollY = el.scrollHeight > el.clientHeight + 1;
+        if (!canScrollY) return;
+
+        // Translate deltaMode to approximate pixels.
+        const unit = event.deltaMode === 1 ? 16
+            : event.deltaMode === 2 ? el.clientHeight
+            : 1;
+
+        el.scrollTop += event.deltaY * unit;
+
+        event.preventDefault();
+        event.stopPropagation();
+        event.stopImmediatePropagation();
+    }, { capture: true, passive: false });
+}
+
 // Get connected Lora Pool node from pool_config input
 export function getConnectedPoolConfigNode(node) {
     if (!node?.inputs) {
