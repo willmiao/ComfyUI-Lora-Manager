@@ -1016,9 +1016,9 @@
         "download": {
             "title": "Скачать модель по URL",
             "titleWithType": "Скачать {type} по URL",
-            "url": "Civitai URL",
             "civitaiUrl": "Civitai URL:",
             "placeholder": "https://civitai.com/models/...",
+            "urlHint": "Введите один URL CivitAI или CivArchive в каждой строке. Поддерживается пакетная загрузка нескольких URL.",
             "locationPreview": "Предпросмотр места загрузки",
             "useDefaultPath": "Использовать путь по умолчанию",
             "useDefaultPathTooltip": "При включении файлы автоматически организуются с использованием настроенных шаблонов путей",

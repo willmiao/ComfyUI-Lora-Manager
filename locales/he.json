@@ -1016,9 +1016,9 @@
         "download": {
             "title": "הורד מודל מכתובת URL",
             "titleWithType": "הורד {type} מכתובת URL",
-            "url": "כתובת URL של Civitai",
             "civitaiUrl": "כתובת URL של Civitai:",
             "placeholder": "https://civitai.com/models/...",
+            "urlHint": "יש להזין כתובת URL אחת של CivitAI או CivArchive בכל שורה. תומך במספר כתובות URL להורדה בבת אחת.",
             "locationPreview": "תצוגה מקדימה של מיקום ההורדה",
             "useDefaultPath": "השתמש בנתיב ברירת מחדל",
             "useDefaultPathTooltip": "כאשר מופעל, קבצים מאורגנים אוטומטית באמצעות תבניות נתיב מוגדרות",

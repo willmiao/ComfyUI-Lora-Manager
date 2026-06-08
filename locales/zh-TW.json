@@ -1016,9 +1016,9 @@
         "download": {
             "title": "從網址下載模型",
             "titleWithType": "從網址下載 {type}",
-            "url": "Civitai 網址",
             "civitaiUrl": "Civitai 網址：",
             "placeholder": "https://civitai.com/models/...",
+            "urlHint": "每行輸入一個 CivitAI 或 CivArchive URL。支援批量下載多個 URL。",
             "locationPreview": "下載位置預覽",
             "useDefaultPath": "使用預設路徑",
             "useDefaultPathTooltip": "啟用後，檔案將依照設定的路徑範本自動整理",

@@ -684,6 +684,20 @@
     line-height: 1.5;
 }
 
+.input-hint {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-color);
+    opacity: 0.7;
+    font-size: 0.85em;
+    margin-top: 6px;
+}
+
+.input-hint i {
+    color: var(--lora-accent);
+}
+
 /* Batch Preview List */
 .batch-preview-list {
     max-height: 400px;

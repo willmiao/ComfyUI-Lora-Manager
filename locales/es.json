@@ -1016,9 +1016,9 @@
         "download": {
             "title": "Descargar modelo desde URL",
             "titleWithType": "Descargar {type} desde URL",
-            "url": "URL de Civitai",
             "civitaiUrl": "URL de Civitai:",
             "placeholder": "https://civitai.com/models/...",
+            "urlHint": "Ingrese una URL de CivitAI o CivArchive por línea. Admite múltiples URLs para descarga por lotes.",
             "locationPreview": "Vista previa de ubicación de descarga",
             "useDefaultPath": "Usar ruta predeterminada",
             "useDefaultPathTooltip": "Cuando está habilitado, los archivos se organizan automáticamente usando plantillas de rutas configuradas",

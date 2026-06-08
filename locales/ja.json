@@ -1016,9 +1016,9 @@
         "download": {
             "title": "URLからモデルをダウンロード",
             "titleWithType": "URLから{type}をダウンロード",
-            "url": "Civitai URL",
             "civitaiUrl": "Civitai URL：",
             "placeholder": "https://civitai.com/models/...",
+            "urlHint": "1行に1つのCivitAIまたはCivArchive URLを入力してください。複数のURLを一括ダウンロードできます。",
             "locationPreview": "ダウンロード場所プレビュー",
             "useDefaultPath": "デフォルトパスを使用",
             "useDefaultPathTooltip": "有効にすると、設定されたパステンプレートを使用してファイルが自動的に整理されます",

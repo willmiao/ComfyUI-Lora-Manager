@@ -9,9 +9,13 @@
         <!-- Step 1: URL Input -->
         <div class="download-step" id="urlStep">
             <div class="input-group">
-                <label for="modelUrl" id="modelUrlLabel">{{ t('modals.download.url') }}:</label>
+                <label for="modelUrl" id="modelUrlLabel">{{ t('modals.download.civitaiUrl') }}</label>
                 <textarea id="modelUrl" rows="5" placeholder="{{ t('modals.download.placeholder') }}"></textarea>
                 <div class="error-message" id="urlError"></div>
+                <div class="input-hint">
+                    <i class="fas fa-info-circle"></i>
+                    <span>{{ t('modals.download.urlHint') }}</span>
+                </div>
             </div>
             <div class="modal-actions">
                 <button class="primary-btn" id="nextFromUrl">{{ t('common.actions.next') }}</button>
