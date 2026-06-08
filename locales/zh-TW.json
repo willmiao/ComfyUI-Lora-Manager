@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "備註已儲存",
-                "saveFailed": "儲存備註失敗"
+                "saveFailed": "儲存備註失敗",
+                "showMore": "展開",
+                "showLess": "收起"
             },
             "usageTips": {
                 "addPresetParameter": "新增預設參數...",

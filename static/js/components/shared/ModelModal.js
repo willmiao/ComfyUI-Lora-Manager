@@ -510,7 +510,12 @@ export async function showModelModal(model, modelType) {
                         </div>
                         ${typeSpecificContent}
                         <div class="info-item notes">
-                            <label>${translate('modals.model.metadata.additionalNotes', {}, 'Additional Notes')} <i class="fas fa-info-circle notes-hint" title="${translate('modals.model.metadata.notesHint', {}, 'Press Enter to save, Shift+Enter for new line')}"></i></label>
+                            <div class="notes-header">
+                                <label>${translate('modals.model.metadata.additionalNotes', {}, 'Additional Notes')} <i class="fas fa-info-circle notes-hint" title="${translate('modals.model.metadata.notesHint', {}, 'Press Enter to save, Shift+Enter for new line')}"></i></label>
+                                <button class="notes-toggle-btn" style="display:none" title="${translate('modals.model.notes.showMore', {}, 'Show more')}">
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                            </div>
                             <div class="editable-field">
                                 <div class="notes-content" contenteditable="true" spellcheck="false">${modelWithFullData.notes || translate('modals.model.metadata.addNotesPlaceholder', {}, 'Add your notes here...')}</div>
                             </div>
@@ -837,10 +842,68 @@ function setupEditableFields(filePath, modelType) {
         });
     }
 
+    // Setup adaptive expand/collapse for notes
+    setupNotesExpand();
+
     // LoRA specific field setup
     if (modelType === 'loras') {
         setupLoraSpecificFields(filePath);
     }
+}
+
+/**
+ * Adaptive expand/collapse for the Additional Notes section.
+ * Measures content height synchronously after render (before first paint,
+ * so no visual flash). If notes fit within ~4 lines, no toggle is shown.
+ * If they exceed the threshold, the field collapses with a gradient fade
+ * and a "Show more" button appears.
+ */
+function setupNotesExpand() {
+    const notesContainer = document.querySelector('.info-item.notes');
+    if (!notesContainer) return;
+
+    const notesField = notesContainer.querySelector('.editable-field');
+    const notesContent = notesContainer.querySelector('.notes-content');
+    const toggleBtn = notesContainer.querySelector('.notes-toggle-btn');
+
+    if (!notesField || !notesContent || !toggleBtn) return;
+
+    const placeholderText = translate('modals.model.metadata.addNotesPlaceholder', {}, 'Add your notes here...');
+    const content = notesContent.textContent || '';
+    const isEmpty = !content.trim() || content === placeholderText;
+
+    if (isEmpty) {
+        return;
+    }
+
+    // CSS default has no constraints, so scrollHeight reflects full content
+    const contentHeight = notesContent.scrollHeight;
+    const collapsedThreshold = 95; // ~4 lines
+
+    if (contentHeight <= collapsedThreshold) {
+        return;
+    }
+
+    // Long content — collapse and show toggle
+    notesField.classList.add('collapsed');
+    toggleBtn.style.display = 'inline-flex';
+    toggleBtn.title = translate('modals.model.notes.showMore', {}, 'Show more');
+
+    const toggleIcon = toggleBtn.querySelector('i');
+
+    toggleBtn.addEventListener('click', function onClick() {
+        const isCollapsed = notesField.classList.contains('collapsed');
+        if (isCollapsed) {
+            notesField.classList.remove('collapsed');
+            toggleBtn.title = translate('modals.model.notes.showLess', {}, 'Show less');
+            toggleIcon.className = 'fas fa-chevron-up';
+            notesField.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        } else {
+            notesField.classList.add('collapsed');
+            toggleBtn.title = translate('modals.model.notes.showMore', {}, 'Show more');
+            toggleIcon.className = 'fas fa-chevron-down';
+        }
+    });
 }
 
 function setupLoraSpecificFields(filePath) {

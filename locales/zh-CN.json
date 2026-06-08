@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "备注保存成功",
-                "saveFailed": "备注保存失败"
+                "saveFailed": "备注保存失败",
+                "showMore": "展开",
+                "showLess": "收起"
             },
             "usageTips": {
                 "addPresetParameter": "添加预设参数...",

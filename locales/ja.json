@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "メモが正常に保存されました",
-                "saveFailed": "メモの保存に失敗しました"
+                "saveFailed": "メモの保存に失敗しました",
+                "showMore": "もっと見る",
+                "showLess": "折りたたむ"
             },
             "usageTips": {
                 "addPresetParameter": "プリセットパラメータを追加...",

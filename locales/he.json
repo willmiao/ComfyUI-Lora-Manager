@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "הערות נשמרו בהצלחה",
-                "saveFailed": "שמירת ההערות נכשלה"
+                "saveFailed": "שמירת ההערות נכשלה",
+                "showMore": "הצג עוד",
+                "showLess": "הצג פחות"
             },
             "usageTips": {
                 "addPresetParameter": "הוסף פרמטר קבוע מראש...",

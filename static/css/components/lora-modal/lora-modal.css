@@ -140,14 +140,66 @@
 
 /* Add specific styles for notes content */
 .info-item.notes .editable-field [contenteditable] {
-    height: 60px; /* Keep initial modal layout stable regardless of note length */
-    min-height: 60px; /* Increase height for multiple lines */
-    max-height: 420px; /* Limit maximum height */
-    overflow: auto; /* Enable scrolling and resize handle for long content */
-    resize: vertical; /* Allow manual vertical resizing */
-    white-space: pre-wrap; /* Preserve line breaks */
-    line-height: 1.5; /* Improve readability */
-    padding: 8px 12px; /* Slightly increase padding */
+    min-height: 60px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    padding: 8px 12px;
+}
+
+/* Notes expand/collapse — collapsed by default; only applies when JS detects long content */
+.info-item.notes .editable-field {
+    position: relative;
+    max-height: none;
+    overflow: visible;
+}
+
+.info-item.notes .editable-field.collapsed {
+    max-height: 80px;
+    overflow: hidden;
+}
+
+/* Gradient fade overlay hint when collapsed */
+.info-item.notes .editable-field.collapsed::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 28px;
+    background: linear-gradient(transparent, var(--bg-color));
+    pointer-events: none;
+}
+
+/* Notes header row — label left, toggle button right */
+.notes-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+/* Toggle button — icon only, inline with the label */
+.notes-toggle-btn {
+    display: none;  /* shown by JS when content exceeds threshold */
+    align-items: center;
+    justify-content: center;
+    width: 26px;
+    height: 26px;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--lora-accent);
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background 0.15s;
+    flex-shrink: 0;
+}
+
+.notes-toggle-btn:hover {
+    background: rgba(66, 153, 225, 0.1);
+}
+
+.notes-toggle-btn i {
+    font-size: 0.85em;
 }
 
 .file-path {

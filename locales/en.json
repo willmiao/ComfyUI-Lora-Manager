@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "Notes saved successfully",
-                "saveFailed": "Failed to save notes"
+                "saveFailed": "Failed to save notes",
+                "showMore": "Show more",
+                "showLess": "Show less"
             },
             "usageTips": {
                 "addPresetParameter": "Add preset parameter...",

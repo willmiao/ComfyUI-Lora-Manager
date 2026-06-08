@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "메모가 성공적으로 저장됨",
-                "saveFailed": "메모 저장 실패"
+                "saveFailed": "메모 저장 실패",
+                "showMore": "더 보기",
+                "showLess": "접기"
             },
             "usageTips": {
                 "addPresetParameter": "프리셋 매개변수 추가...",

@@ -1225,7 +1225,9 @@
             },
             "notes": {
                 "saved": "Notes sauvegardées avec succès",
-                "saveFailed": "Échec de la sauvegarde des notes"
+                "saveFailed": "Échec de la sauvegarde des notes",
+                "showMore": "Afficher plus",
+                "showLess": "Afficher moins"
             },
             "usageTips": {
                 "addPresetParameter": "Ajouter un paramètre prédéfini...",
