@@ -2016,10 +2016,21 @@ class ModelUpdateHandler:
             self._logger.error("Failed to refresh model updates: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+        hide_early_access = False
+        if self._settings is not None:
+            try:
+                hide_early_access = bool(
+                    self._settings.get("hide_early_access_updates", False)
+                )
+            except Exception:
+                pass
+
         serialized_records = []
         for record in records.values():
             has_update_fn = getattr(record, "has_update", None)
-            if callable(has_update_fn) and has_update_fn():
+            if callable(has_update_fn) and has_update_fn(
+                hide_early_access=hide_early_access
+            ):
                 serialized_records.append(self._serialize_record(record))
 
         return web.json_response(
