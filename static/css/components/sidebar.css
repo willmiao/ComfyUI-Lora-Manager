@@ -8,10 +8,10 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
     overflow: hidden;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: var(--transition-slow);
     flex-shrink: 0;
     z-index: var(--z-overlay);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-header);
     display: flex;
     flex-direction: column;
     backdrop-filter: blur(8px);
@@ -83,7 +83,7 @@
     flex-shrink: 0;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .sidebar-header:hover {
@@ -120,7 +120,7 @@
     padding: 4px;
     border-radius: 4px;
     opacity: 0.6;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     width: 24px;
     height: 24px;
     display: flex;
@@ -174,7 +174,7 @@
     align-items: center;
     padding: 8px 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     font-size: 0.85em;
     border-left: 3px solid transparent;
     color: var(--text-color);
@@ -298,7 +298,7 @@
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     color: var(--text-muted);
     position: relative;
 }
@@ -331,7 +331,7 @@
     margin-left: 6px;
     color: inherit;
     opacity: 0.6;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     pointer-events: none;
     font-size: 0.9em;
 }
@@ -364,7 +364,7 @@
     background: var(--bg-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
-    box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+    box-shadow: var(--shadow-lg);
     z-index: calc(var(--z-overlay) + 20);
     overflow-y: auto;
     max-height: 450px;
@@ -382,7 +382,7 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .breadcrumb-dropdown-item:hover {
@@ -406,7 +406,7 @@
     align-items: center;
     padding: 8px 16px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     font-size: 0.85em;
     border-left: 3px solid transparent;
     color: var(--text-color);
@@ -614,7 +614,7 @@
     background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.08);
     opacity: 0;
     transform: translateY(10px);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     pointer-events: none;
     z-index: 10;
 }
@@ -649,7 +649,7 @@
     background: var(--bg-color);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-lg);
     z-index: 20;
     animation: slideUp 0.2s ease;
 }
@@ -685,7 +685,7 @@
     color: var(--text-color);
     font-size: 0.85em;
     outline: none;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .sidebar-create-folder-input:focus {
@@ -702,7 +702,7 @@
     border: none;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     background: transparent;
     color: var(--text-muted);
 }

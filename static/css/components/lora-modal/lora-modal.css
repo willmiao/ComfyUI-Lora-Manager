@@ -203,7 +203,7 @@
 }
 
 .file-path {
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
 }
 
@@ -291,7 +291,7 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
-    transition: all 0.3s ease;
+    transition: opacity var(--transition-slow), visibility var(--transition-slow), transform var(--transition-slow);
     z-index: 10;
 }
 
@@ -347,7 +347,7 @@
     cursor: pointer;
     padding: 2px 5px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s ease;
+    transition: opacity var(--transition-base), background-color var(--transition-base);
     margin-left: var(--space-1);
 }
 
@@ -430,7 +430,7 @@
 }
 
 .size-wrapper span {
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
     opacity: 0.9;
 }
@@ -483,7 +483,7 @@
     color: var(--text-color);
     cursor: pointer;
     font-size: 0.95em;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     opacity: 0.7;
     position: relative;
 }
@@ -893,7 +893,7 @@
     border-radius: var(--border-radius-sm);
     max-width: fit-content;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 [data-theme="dark"] .creator-info,
@@ -965,7 +965,7 @@
     cursor: pointer;
     font-weight: 500;
     font-size: 0.9em;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .civitai-view i {
@@ -988,7 +988,7 @@
     cursor: pointer;
     font-weight: 500;
     font-size: 0.9em;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 [data-theme="dark"] .modal-send-btn {

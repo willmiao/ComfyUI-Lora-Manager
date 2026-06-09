@@ -11,8 +11,8 @@
     border-bottom: 1px solid oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.4); /* Make bottom border stronger */
     z-index: var(--z-overlay);
     padding: 12px 0;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2); /* Stronger shadow */
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-lg); /* Stronger shadow */
+    transition: var(--transition-slow);
     margin-bottom: 20px;
 }
 
@@ -65,7 +65,7 @@
     align-items: center;
     justify-content: center;
     gap: 6px;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .duplicates-banner button.btn-exit-mode:hover {
@@ -86,16 +86,16 @@
     background: var(--card-bg);
     color: var(--text-color);
     font-size: 0.85em;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-xs);
 }
 
 .duplicates-banner button:hover {
     border-color: var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h);
     background: var(--bg-color);
     transform: translateY(-1px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 .duplicates-banner button.btn-exit {
@@ -122,7 +122,7 @@
     padding: 16px;
     margin-bottom: 24px;
     background: var(--card-bg);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12); /* Add subtle shadow to groups */
+    box-shadow: var(--shadow-md); /* Add subtle shadow to groups */
     /* Add responsive width settings to match banner */
     max-width: 1400px;
     margin-left: auto;
@@ -173,9 +173,9 @@
     background: var(--card-bg);
     color: var(--text-color);
     font-size: 0.85em;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     cursor: pointer;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    box-shadow: var(--shadow-xs);
     margin-left: 8px;
 }
 
@@ -183,7 +183,7 @@
     border-color: var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h);
     background: var(--bg-color);
     transform: translateY(-1px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 .card-group-container {
@@ -230,20 +230,20 @@
     justify-content: center;
     cursor: pointer;
     z-index: 1;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    transition: all 0.2s ease;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition-base);
 }
 
 .group-toggle-btn:hover {
     border-color: var(--lora-accent-l) var(--lora-accent-c) var (--lora-accent-h);
     transform: translateY(-1px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-sm);
 }
 
 /* Duplicate card styling */
 .model-card.duplicate {
     position: relative;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .model-card.duplicate:hover {
@@ -257,7 +257,7 @@
 
 .model-card.duplicate-selected {
     border: 2px solid oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
-    box-shadow: 0 0 8px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--shadow-md);
 }
 
 .model-card .selector-checkbox {
@@ -290,7 +290,7 @@
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    box-shadow: var(--shadow-lg);
     padding: 10px;
     z-index: 1000;
     max-width: 350px;
@@ -432,7 +432,7 @@
     border-radius: var(--border-radius-xs);
     font-size: 0.85em;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .btn-verify-hashes:hover {
@@ -461,7 +461,7 @@
     position: absolute;
     top: -8px; /* Moved closer to button */
     right: -8px; /* Moved closer to button */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15); /* Softer shadow */
+    box-shadow: var(--shadow-sm); /* Softer shadow */
     transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
@@ -493,7 +493,7 @@
     cursor: help;
     font-size: 16px;
     margin-left: 8px;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .help-icon:hover {
@@ -511,7 +511,7 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     padding: 12px 16px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-elevated);
     z-index: var(--z-overlay);
     font-size: 0.9em;
     margin-top: 10px;
@@ -572,16 +572,16 @@
 
 /* In dark mode, add additional distinction */
 html[data-theme="dark"] .duplicates-banner {
-    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.4); /* Stronger shadow in dark mode */
+    box-shadow: var(--shadow-dark-lg); /* Stronger shadow in dark mode */
     background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15); /* Slightly stronger background in dark mode */
 }
 
 html[data-theme="dark"] .duplicate-group {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25); /* Stronger shadow in dark mode */
+    box-shadow: var(--shadow-lg); /* Stronger shadow in dark mode */
 }
 
 html[data-theme="dark"] .help-tooltip {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-elevated);
 }
 
 /* Styles for disabled controls during duplicates mode */

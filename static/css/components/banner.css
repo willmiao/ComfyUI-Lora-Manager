@@ -68,7 +68,7 @@
     text-decoration: none;
     font-size: 0.85em;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     white-space: nowrap;
     border: 1px solid transparent;
 }
@@ -102,7 +102,7 @@
     color: white;
     border-color: var(--lora-accent);
     transform: translateY(-1px);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 /* Tertiary Action Button */
@@ -133,7 +133,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     font-size: 0.8em;
 }
 

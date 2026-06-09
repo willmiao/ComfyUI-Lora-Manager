@@ -48,7 +48,7 @@
   border-radius: var(--border-radius-xs);
   padding: 4px 8px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   gap: 6px;
   position: relative;
 }

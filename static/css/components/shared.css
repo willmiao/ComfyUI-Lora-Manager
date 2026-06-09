@@ -78,7 +78,7 @@
     color: var(--text-color);
     white-space: normal;
     word-break: break-all;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-header);
     z-index: 100; /* Higher z-index to ensure it's above other elements */
     min-width: 300px;
     max-width: 300px;
@@ -107,7 +107,7 @@
     color: var(--text-color);
     white-space: normal;
     word-break: break-all;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-header);
     z-index: 100; /* Higher z-index to ensure it's above other elements */
     min-width: 200px;
     max-width: 300px;

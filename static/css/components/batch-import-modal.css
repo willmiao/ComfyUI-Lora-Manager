@@ -76,7 +76,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     background: var(--bg-color);
 }
 
@@ -166,7 +166,7 @@
     background: var(--card-bg);
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .back-btn:hover {
@@ -237,7 +237,7 @@
     padding: 8px 10px;
     border-radius: var(--border-radius-xs);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     border: 1px solid transparent;
 }
 

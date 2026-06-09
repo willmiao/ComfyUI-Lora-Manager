@@ -24,7 +24,7 @@
     border-radius: var(--border-radius-base);
     z-index: calc(var(--z-overlay) + 1);
     pointer-events: none;
-    transition: all 0.3s ease;
+    transition: var(--transition-slow);
     /* Add glow effect */
     box-shadow: 
         0 0 0 2px rgba(24, 144, 255, 0.3),
@@ -53,7 +53,7 @@
     min-width: 320px;
     max-width: 400px;
     z-index: calc(var(--z-overlay) + 3);
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-2xl);
     backdrop-filter: blur(10px);
 }
 
@@ -98,7 +98,7 @@
     color: var(--text-color);
     cursor: pointer;
     font-size: 0.9em;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .onboarding-btn:hover {
@@ -138,7 +138,7 @@
     padding: var(--space-3);
     min-width: 510px;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-dark-lg);
     backdrop-filter: blur(10px);
 }
 
@@ -167,7 +167,7 @@
     border-radius: var(--border-radius-sm);
     background: var(--card-bg);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     display: flex;
     flex-direction: column;
     align-items: center;

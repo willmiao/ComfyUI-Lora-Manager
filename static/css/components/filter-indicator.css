@@ -7,22 +7,22 @@
     color: white;
     border-radius: var(--border-radius-xs);
     padding: 4px 10px;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     border: 1px solid var(--lora-accent);
     cursor: pointer;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
     font-size: 0.85em;
 }
 
 .control-group .filter-active:hover {
     opacity: 0.92;
     transform: translateY(-1px);
-    box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-md);
 }
 
 .control-group .filter-active:active {
     transform: translateY(0);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-sm);
 }
 
 .control-group .filter-active i.fa-filter {
@@ -59,9 +59,9 @@
 
 /* Animation for filter indicator */
 @keyframes filterPulse {
-    0% { transform: scale(1); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
-    50% { transform: scale(1.03); box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15); }
-    100% { transform: scale(1); box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1); }
+    0% { transform: scale(1); box-shadow: var(--shadow-sm); }
+    50% { transform: scale(1.03); box-shadow: var(--shadow-lg); }
+    100% { transform: scale(1); box-shadow: var(--shadow-sm); }
 }
 
 .filter-active.animate {

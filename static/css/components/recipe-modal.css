@@ -55,7 +55,7 @@
     padding: 4px 8px;
     margin-left: 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -176,14 +176,14 @@
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-dropdown);
     padding: 10px 14px;
     max-width: 400px;
     z-index: 10;
     opacity: 0;
     visibility: hidden;
     transform: translateY(-4px);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     pointer-events: none;
 }
 
@@ -258,7 +258,7 @@
     cursor: pointer;
     font-weight: 500;
     font-size: 0.9em;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     white-space: nowrap;
 }
 
@@ -428,7 +428,7 @@
     font-size: 0.85em;
     cursor: pointer;
     border: none;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .source-url-cancel-btn {
@@ -548,7 +548,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .copy-btn:hover,
@@ -705,7 +705,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -725,7 +725,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -797,7 +797,7 @@
 
 .recipe-lora-item:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-header);
     border-color: var(--lora-accent);
 }
 
@@ -995,7 +995,7 @@
     padding: 8px 12px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-header);
     z-index: var(--z-overlay);
     width: max-content;
     max-width: 200px;
@@ -1049,7 +1049,7 @@
     background: rgba(0, 0, 0, 0.1);
     padding: 2px 4px;
     border-radius: 3px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
 }
 
@@ -1086,7 +1086,7 @@
     font-size: 0.85em;
     cursor: pointer;
     border: none;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .reconnect-cancel-btn {
@@ -1251,7 +1251,7 @@
     padding: 8px 12px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-header);
     z-index: var(--z-overlay);
     width: max-content;
     max-width: 200px;

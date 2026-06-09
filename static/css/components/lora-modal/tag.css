@@ -73,14 +73,14 @@
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm);
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
   padding: 10px 14px;
   max-width: 400px;
   z-index: 10;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-4px);
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   pointer-events: none;
 }
 
@@ -130,7 +130,7 @@
   cursor: pointer;
   padding: 2px 5px;
   border-radius: var(--border-radius-xs);
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   margin-left: var(--space-1);
 }
 

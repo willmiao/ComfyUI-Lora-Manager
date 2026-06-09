@@ -10,7 +10,7 @@
   cursor: pointer;
   padding: 2px 5px;
   border-radius: var(--border-radius-xs);
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .metadata-edit-btn:hover {
@@ -101,7 +101,7 @@
 }
 
 .metadata-item-dragging {
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-dialog);
   cursor: grabbing;
   opacity: 0.95;
   transition: none;
@@ -178,7 +178,7 @@ body.metadata-drag-active * {
   display: flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .metadata-edit-controls button:hover {
@@ -257,7 +257,7 @@ body.metadata-drag-active * {
   border-radius: var(--border-radius-sm);
   margin-top: 4px;
   z-index: 100;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-elevated);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -299,7 +299,7 @@ body.metadata-drag-active * {
   justify-content: space-between;
   padding: 5px 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
   border-radius: var(--border-radius-xs);
   background: var(--lora-surface);
   border: 1px solid var(--lora-border);

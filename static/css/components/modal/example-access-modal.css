@@ -20,12 +20,12 @@
     border: 1px solid var(--lora-border);
     background-color: var(--lora-surface);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .example-option-btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     border-color: var(--lora-accent);
 }
 
@@ -68,5 +68,5 @@
 
 /* Dark theme adjustments */
 [data-theme="dark"] .example-option-btn:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--shadow-elevated);
 }

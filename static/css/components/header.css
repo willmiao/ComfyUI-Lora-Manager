@@ -7,7 +7,7 @@
   height: 48px;
   /* Reduced height */
   width: 100%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   /* Slightly stronger shadow */
 }
 
@@ -134,14 +134,14 @@
   background: var(--input-bg, var(--card-bg));
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm, 6px);
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: border-color var(--transition-base), box-shadow var(--transition-base);
+  box-shadow: var(--shadow-header);
   overflow: hidden;
 }
 
 .header-search .search-container:focus-within {
   border-color: var(--lora-accent);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px var(--lora-accent);
+  box-shadow: var(--shadow-header), 0 0 0 1px var(--lora-accent);
 }
 
 .header-search input {
@@ -183,7 +183,7 @@
   color: var(--text-muted);
   cursor: pointer;
   border-radius: var(--border-radius-xs, 4px);
-  transition: all 0.2s ease;
+  transition: background-color var(--transition-base), color var(--transition-base);
 }
 
 .header-search .search-options-toggle {
@@ -271,7 +271,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--transition-base), color var(--transition-base), transform var(--transition-base);
   position: relative;
 }
 
@@ -343,7 +343,7 @@
   background-color: var(--lora-error);
   border-radius: 50%;
   border: 2px solid var(--card-bg);
-  transition: all 0.2s ease;
+  transition: opacity var(--transition-base);
   pointer-events: none;
   opacity: 0;
 }
@@ -364,7 +364,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--transition-base), color var(--transition-base);
   flex-shrink: 0;
 }
 
@@ -392,7 +392,7 @@
   background: var(--card-bg);
   border: 1px solid var(--border-color);
   border-radius: var(--border-radius-sm, 6px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-toast);
   padding: 0.5rem;
   min-width: 160px;
   z-index: var(--z-dropdown, 200);
@@ -412,7 +412,7 @@
   border-radius: var(--border-radius-xs, 4px);
   color: var(--text-color);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: background-color var(--transition-base), color var(--transition-base);
   font-size: 0.9rem;
   white-space: nowrap;
 }

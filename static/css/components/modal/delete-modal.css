@@ -51,7 +51,7 @@
     background: var(--lora-surface);
     padding: 2px 6px;
     border-radius: 3px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     border: 1px solid var(--lora-border);
 }
 

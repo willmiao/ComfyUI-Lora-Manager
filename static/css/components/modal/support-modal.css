@@ -100,7 +100,7 @@
     border-radius: var(--border-radius-sm);
     text-decoration: none;
     color: var(--text-color);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .social-link:hover {
@@ -120,14 +120,14 @@
     border-radius: var(--border-radius-sm);
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     margin-top: var(--space-1);
 }
 
 .kofi-button:hover {
     background: #E04946;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 /* Patreon button style */
@@ -142,14 +142,14 @@
     border-radius: var(--border-radius-sm);
     text-decoration: none;
     font-weight: 500;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     margin-top: var(--space-1);
 }
 
 .patreon-button:hover {
     background: #E04946;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 /* QR Code section styles */
@@ -189,7 +189,7 @@
     max-width: 80%;
     height: auto;
     border-radius: var(--border-radius-sm);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     border: 1px solid var(--lora-border);
     aspect-ratio: 1/1; /* Ensure proper aspect ratio for the square QR code */
 }
@@ -212,7 +212,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .support-toggle:hover {
@@ -261,7 +261,7 @@
 .update-link:hover,
 .folder-item:hover {
     border-color: var(--lora-accent);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 /* Supporters Section Styles */
@@ -347,14 +347,14 @@
     border: 1px solid var(--border-color);
     border-left: 3px solid var(--lora-accent);
     border-radius: var(--border-radius-sm);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     cursor: default;
 }
 
 .supporter-special-card:hover {
     border-color: var(--lora-accent);
     border-left-color: var(--lora-accent);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-header);
     transform: translateX(4px);
 }
 
@@ -439,7 +439,7 @@
     font-size: 0.95em;
     color: var(--text-color);
     opacity: 0.85;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     white-space: nowrap;
     cursor: default;
 }
