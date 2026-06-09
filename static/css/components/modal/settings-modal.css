@@ -927,7 +927,7 @@ input:checked + .toggle-slider:before {
 
 /* Path Template Settings Styles */
 .template-preview {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: var(--border-radius-xs);
     padding: var(--space-1);
@@ -939,7 +939,7 @@ input:checked + .toggle-slider:before {
 }
 
 [data-theme="dark"] .template-preview {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
 }
 

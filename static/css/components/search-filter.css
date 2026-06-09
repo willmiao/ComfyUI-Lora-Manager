@@ -7,7 +7,7 @@
     gap: 4px;
 }
 
-/* 调整搜索框样式以匹配其他控件 */
+/* Match search input styles to other controls */
 .search-container input {
     width: 100%;
     padding: 6px 35px 6px 12px; /* Reduced right padding */
@@ -35,7 +35,7 @@
     line-height: 1;
 }
 
-/* 修改清空按钮样式 */
+/* Clear button styles */
 .search-clear {
     position: absolute;
     right: 105px; /* Adjusted further left to avoid overlapping */

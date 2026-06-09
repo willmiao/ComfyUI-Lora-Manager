@@ -21,9 +21,11 @@
     background: var(--lora-surface);
 }
 
-.context-menu-item:hover {
+.context-menu-item:hover,
+.context-menu-item:focus-visible {
     background-color: var(--lora-accent);
     color: var(--lora-text);
+    outline: none;
 }
 
 .context-menu-separator {

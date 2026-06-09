@@ -58,8 +58,6 @@
 }
 
 .support-section {
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
     margin-bottom: var(--space-2);
@@ -258,7 +256,7 @@
     color: white; /* Icon color changes to white on hover */
 }
 
-/* 增强hover状态的视觉反馈 */
+/* Enhanced hover visual feedback */
 .social-link:hover,
 .update-link:hover,
 .folder-item:hover {

@@ -1,21 +1,20 @@
+@import 'tokens/index.css';
+
 html,
 body {
     margin: 0;
     padding: 0;
     height: 100%;
     overflow: hidden;
-    /* Disable default scrolling */
 }
 
-/* 针对Firefox */
 * {
     scrollbar-width: thin;
-    scrollbar-color: var(--border-color) transparent;
+    scrollbar-color: var(--border-base) transparent;
 }
 
-/* 针对Webkit browsers (Chrome, Safari等) */
 ::-webkit-scrollbar {
-    width: 8px;
+    width: var(--scrollbar-width, 8px);
 }
 
 ::-webkit-scrollbar-track {
@@ -24,116 +23,128 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-    background-color: var(--border-color);
-    border-radius: 4px;
+    background-color: var(--border-base);
+    border-radius: var(--radius-xs);
 }
 
 :root {
-    --bg-color: #ffffff;
-    --text-color: #333333;
-    --text-muted: #6c757d;
-    --card-bg: #ffffff;
-    --border-color: #e0e0e0;
     --header-height: 48px;
-
-    /* Color Components */
-    --lora-accent-l: 68%;
-    --lora-accent-c: 0.28;
-    --lora-accent-h: 256;
-    --lora-warning-l: 75%;
-    --lora-warning-c: 0.25;
-    --lora-warning-h: 80;
-    --lora-success-l: 70%;
-    --lora-success-c: 0.2;
-    --lora-success-h: 140;
-
-    /* Composed Colors */
-    --lora-accent: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
-    --lora-surface: oklch(97% 0 0 / 0.95);
-    --lora-border: oklch(72% 0.03 256 / 0.45);
-    --lora-text: oklch(95% 0.02 256);
-    --lora-error: oklch(75% 0.32 29);
-    --lora-error-bg: color-mix(in oklch, var(--lora-error) 20%, transparent);
-    --lora-error-border: color-mix(in oklch, var(--lora-error) 50%, transparent);
-    --lora-warning: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
-    --lora-success: oklch(var(--lora-success-l) var(--lora-success-c) var(--lora-success-h));
-    --badge-update-bg: oklch(72% 0.2 220);
-    --badge-update-text: oklch(28% 0.03 220);
-    --badge-update-glow: oklch(72% 0.2 220 / 0.28);
-    --badge-skip-refresh-bg: oklch(82% 0.12 45);
-    --badge-skip-refresh-text: oklch(35% 0.02 45);
-    --badge-skip-refresh-glow: oklch(82% 0.12 45 / 0.15);
-
-    /* Spacing Scale */
-    --space-1: calc(8px * 1);
-    --space-2: calc(8px * 2);
-    --space-3: calc(8px * 3);
-    --space-4: calc(8px * 4);
-
-    /* Z-index Scale */
-    --z-base: 10;
-    --z-header: 100;
-    --z-modal: 1000;
-    --z-overlay: 2000;
-
-    /* Border Radius */
-    --border-radius-base: 12px;
-    --border-radius-md: 12px;
-    --border-radius-sm: 8px;
-    --border-radius-xs: 4px;
-
     --scrollbar-width: 8px;
-    /* 添加滚动条宽度变量 */
 
-    /* Shortcut styles */
-    --shortcut-bg: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.12);
-    --shortcut-border: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.25);
-    --shortcut-text: var(--text-color);
+    --shortcut-bg: var(--color-accent-subtle);
+    --shortcut-border: var(--color-accent-border);
+    --shortcut-text: var(--text-primary);
+
+    --lora-accent-transparent: var(--color-accent-transparent);
+
+    /* Legacy spacing aliases: 8px base grid to match existing component usage */
+    --space-1: 8px;
+    --space-2: 16px;
+    --space-3: 24px;
+    --space-4: 32px;
+
+    /* Legacy border-radius aliases to match existing component usage */
+    --border-radius-xs: 4px;
+    --border-radius-sm: 6px;
+    --border-radius-base: 8px;
+    --border-radius-md: 12px;
+    --border-radius-lg: 16px;
+}
+
+:root {
+    --bg-color: var(--bg-base);
+    --text-color: var(--text-primary);
+    --text-muted: var(--text-secondary);
+    --card-bg: var(--surface-base);
+    --border-color: var(--border-base);
+
+    --lora-accent: var(--color-accent);
+    --lora-surface: var(--bg-elevated);
+    --lora-border: var(--border-subtle);
+    --lora-text: var(--text-primary);
+    --lora-error: var(--color-error);
+    --lora-error-bg: var(--color-error-bg);
+    --lora-error-border: var(--color-error-border);
+    --lora-warning: var(--color-warning);
+    --lora-success: var(--color-success);
+
+    --badge-update-bg: var(--color-info-bg);
+    --badge-update-text: var(--color-info-text);
+    --badge-update-glow: var(--color-info-glow);
+    --badge-skip-refresh-bg: var(--color-skip-refresh-bg);
+    --badge-skip-refresh-text: var(--color-skip-refresh-text);
+    --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
+}
+
+[data-theme="dark"] {
+    --bg-color: var(--bg-base);
+    --text-color: var(--text-primary);
+    --text-muted: var(--text-secondary);
+    --card-bg: var(--surface-base);
+    --border-color: var(--border-base);
+
+    --lora-accent: var(--color-accent);
+    --lora-surface: var(--bg-elevated);
+    --lora-border: var(--border-subtle);
+    --lora-text: var(--text-primary);
+    --lora-error: var(--color-error);
+    --lora-error-bg: var(--color-error-bg);
+    --lora-error-border: var(--color-error-border);
+    --lora-warning: var(--color-warning);
+    --lora-success: var(--color-success);
+
+    --badge-update-bg: var(--color-info-bg);
+    --badge-update-text: var(--color-info-text);
+    --badge-update-glow: var(--color-info-glow);
+    --badge-skip-refresh-bg: var(--color-skip-refresh-bg);
+    --badge-skip-refresh-text: var(--color-skip-refresh-text);
+    --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
 }
 
 html[data-theme="dark"] {
-    background-color: #1a1a1a !important;
+    background-color: var(--bg-base) !important;
     color-scheme: dark;
 }
 
 html[data-theme="light"] {
-    background-color: #ffffff !important;
+    background-color: var(--bg-base) !important;
     color-scheme: light;
 }
 
-[data-theme="dark"] {
-    --bg-color: #1a1a1a;
-    --text-color: #e0e0e0;
-    --text-muted: #a0a0a0;
-    --card-bg: #2d2d2d;
-    --border-color: #404040;
-
-    --lora-accent: oklch(68% 0.28 256);
-    --lora-surface: oklch(25% 0.02 256 / 0.98);
-    --lora-border: oklch(90% 0.02 256 / 0.15);
-    --lora-text: oklch(98% 0.02 256);
-    --lora-warning: oklch(75% 0.25 80);
-    /* Modified to be used with oklch() */
-    --lora-error-bg: color-mix(in oklch, var(--lora-error) 15%, transparent);
-    --lora-error-border: color-mix(in oklch, var(--lora-error) 40%, transparent);
-    --badge-update-bg: oklch(62% 0.18 220);
-    --badge-update-text: oklch(98% 0.02 240);
-    --badge-update-glow: oklch(62% 0.18 220 / 0.4);
-    --badge-skip-refresh-bg: oklch(82% 0.12 45);
-    --badge-skip-refresh-text: oklch(98% 0.02 45);
-    --badge-skip-refresh-glow: oklch(82% 0.12 45 / 0.15);
-}
-
 body {
-    font-family: 'Segoe UI', sans-serif;
-    background: var(--bg-color);
-    color: var(--text-color);
+    font-family: var(--font-body);
+    background: var(--bg-base);
+    color: var(--text-primary);
     display: flex;
     flex-direction: column;
     padding-top: 0;
-    /* Remove the padding-top */
 }
 
 .hidden {
     display: none !important;
+}
+
+:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+}
+
+button:focus:not(:focus-visible),
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible) {
+    outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+
+    html {
+        scroll-behavior: auto !important;
+    }
 }

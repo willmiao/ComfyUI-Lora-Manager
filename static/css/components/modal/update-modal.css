@@ -171,7 +171,7 @@
 
 /* Update progress styles */
 .update-progress {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-sm);
     padding: var(--space-2);
@@ -179,7 +179,7 @@
 }
 
 [data-theme="dark"] .update-progress {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
 }
 
 .progress-info {
@@ -234,8 +234,6 @@
 
 /* Changelog section */
 .changelog-section {
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);
 }
@@ -429,7 +427,7 @@
 }
 
 [data-theme="dark"] .banner-history-item {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
 }
 
 .banner-history-title {

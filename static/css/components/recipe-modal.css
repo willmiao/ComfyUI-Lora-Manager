@@ -99,7 +99,7 @@
     font-size: 0.9em;
 }
 
-/* 删除不再需要的按钮样式 */
+/* Remove obsolete button styles */
 .editor-actions {
     display: none;
 }
@@ -144,7 +144,7 @@
 }
 
 .recipe-tag-compact {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: var(--border-radius-xs);
     padding: 2px 8px;
@@ -154,7 +154,7 @@
 }
 
 [data-theme="dark"] .recipe-tag-compact {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
 }
 
@@ -203,7 +203,7 @@
 }
 
 .tooltip-tag {
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-hover);
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: var(--border-radius-xs);
     padding: 3px 8px;
@@ -212,7 +212,7 @@
 }
 
 [data-theme="dark"] .tooltip-tag {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-hover);
     border: 1px solid var(--lora-border);
 }
 
@@ -251,7 +251,7 @@
     align-items: center;
     gap: 6px;
     padding: 6px 12px;
-    background: rgba(0, 0, 0, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid rgba(0, 0, 0, 0.1);
     border-radius: var(--border-radius-sm);
     color: var(--text-color);
@@ -263,7 +263,7 @@
 }
 
 [data-theme="dark"] .recipe-source-url-btn {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--surface-subtle);
     border: 1px solid var(--lora-border);
 }
 
@@ -1114,9 +1114,9 @@
     color: #777;
 }
 
-/* 标题输入框特定的样式 */
+/* Title input specific styles */
 .title-input {
-    font-size: 1.2em !important; /* 调整为更合适的大小 */
+    font-size: 1.2em;
     line-height: 1.2;
     font-weight: 500;
 }

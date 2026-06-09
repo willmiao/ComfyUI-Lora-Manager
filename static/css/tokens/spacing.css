@@ -1,0 +1,19 @@
+:root {
+  --space-0-5: 2px;
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+
+  --space-1-legacy: calc(8px * 1);
+  --space-2-legacy: calc(8px * 2);
+  --space-3-legacy: calc(8px * 3);
+  --space-4-legacy: calc(8px * 4);
+}

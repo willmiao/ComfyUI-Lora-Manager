@@ -1,12 +1,12 @@
-/* 卡片网格布局 */
+/* Card grid layout */
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); /* Base size */
     gap: 12px; /* Consistent gap for both row and column spacing */
     row-gap: 20px; /* Increase vertical spacing between rows */
     margin-top: var(--space-2);
-    padding-top: 4px; /* 添加顶部内边距，为悬停动画提供空间 */
-    padding-bottom: 4px; /* 添加底部内边距，为悬停动画提供空间 */
+    padding-top: 4px;
+    padding-bottom: 4px;
     width: 100%; /* Ensure it takes full width of container */
     max-width: 1400px; /* Base container width */
     margin-left: auto;
@@ -353,21 +353,26 @@
 }
 
 .card-actions {
+    flex-shrink: 0;
     display: flex;
-    gap: var(--space-1); /* Use gap instead of margin for spacing between icons */
-    align-items: center;
+    gap: var(--space-1);
+    align-items: flex-end;
+    align-self: flex-end;
 }
 
-.card-actions i:hover {
+.card-actions i:hover,
+.card-actions i:focus-visible {
     opacity: 0.9;
     transform: scale(1.1);
     background-color: rgba(255, 255, 255, 0.1);
+    outline: 2px solid var(--lora-accent);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-xs);
 }
 
-/* Style for active favorites */
 .favorite-active {
-    color: #ffc107 !important; /* Gold color for favorites */
-    text-shadow: 0 0 5px rgba(255, 193, 7, 0.5);
+    color: var(--favorite-color) !important;
+    text-shadow: 0 0 5px var(--favorite-glow);
 }
 
 @media (max-width: 1200px) {
@@ -391,14 +396,6 @@
     }
 }
 
-.card-actions {
-    flex-shrink: 0;  /* Prevent actions from shrinking */
-    display: flex;
-    gap: var(--space-1);
-    align-items: flex-end; /* 将图标靠下对齐 */
-    align-self: flex-end; /* 将整个actions容器靠下对齐 */
-}
-
 .model-link {
     margin-top: var(--space-1);
 }
@@ -411,9 +408,13 @@
     text-shadow: none;
 }
 
-.model-link a:hover {
+.model-link a:hover,
+.model-link a:focus-visible {
     opacity: 0.8;
     text-decoration: none;
+    outline: 2px solid var(--lora-accent);
+    outline-offset: 2px;
+    border-radius: var(--border-radius-xs);
 }
 
 /* Updated model name to fix text cutoff issues */
@@ -438,7 +439,7 @@
 
 .base-model {
     display: inline-block;
-    background: #f0f0f0;
+    background: var(--surface-hover, oklch(95% 0 0));
     padding: 2px 6px;
     border-radius: var(--border-radius-xs);
     margin-right: 6px;

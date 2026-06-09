@@ -455,9 +455,9 @@
 }
 
 .import-formats {
-  font-size: 0.8em !important;
-  opacity: 0.6 !important;
-  margin-top: var(--space-2) !important;
+  font-size: 0.8em;
+  opacity: 0.6;
+  margin-top: var(--space-2);
 }
 
 .select-files-btn {
@@ -481,7 +481,7 @@
 
 /* For dark theme */
 [data-theme="dark"] .import-container {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-subtle);
 }
 
 /* Setup Guidance State - When example images path is not configured */

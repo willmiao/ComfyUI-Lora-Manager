@@ -707,19 +707,25 @@
     color: var(--text-muted);
 }
 
-.sidebar-create-folder-btn:hover {
+.sidebar-create-folder-btn:hover,
+.sidebar-create-folder-btn:focus-visible {
     background: var(--lora-surface);
     color: var(--text-color);
+    outline: none;
 }
 
-.sidebar-create-folder-confirm:hover {
+.sidebar-create-folder-confirm:hover,
+.sidebar-create-folder-confirm:focus-visible {
     background: oklch(from var(--success-color) l c h / 0.15);
     color: var(--success-color);
+    outline: none;
 }
 
-.sidebar-create-folder-cancel:hover {
+.sidebar-create-folder-cancel:hover,
+.sidebar-create-folder-cancel:focus-visible {
     background: oklch(from var(--error-color) l c h / 0.15);
     color: var(--error-color);
+    outline: none;
 }
 
 .sidebar-create-folder-hint {

@@ -31,7 +31,7 @@
 /* Edit Container */
 .metadata-edit-container {
   padding: var(--space-2);
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--surface-hover);
   border: 1px solid rgba(0, 0, 0, 0.1);
   border-radius: var(--border-radius-sm);
   margin-top: var(--space-2);
@@ -42,7 +42,7 @@
 }
 
 [data-theme="dark"] .metadata-edit-container {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-hover);
   border: 1px solid var(--lora-border);
 }
 
