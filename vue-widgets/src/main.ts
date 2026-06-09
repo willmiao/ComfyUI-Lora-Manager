@@ -25,6 +25,11 @@ const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100
+// Per-modelType min size hints for node initial sizing.
+// These are returned from the factory so ComfyUI's _initialMinSize mechanism
+// gives the node a sensible default width (and height for prompt/embeddings).
+const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400
+const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300
 const AUTOCOMPLETE_METADATA_VERSION = 1
 const LORA_MANAGER_WIDGET_IDS_PROPERTY = '__lm_widget_ids'
 
@@ -754,7 +759,13 @@ function createAutocompleteTextWidgetFactory(
     vueApps.delete(appKey)
   })
 
-  return { widget }
+  // Return minWidth/minHeight hints so ComfyUI's _initialMinSize mechanism
+  // sets a sensible initial node width (and height for prompt/embeddings).
+  // loras modelType retains its existing height constraints (getMaxHeight: 100).
+  const minWidth = AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT
+  const minHeight = modelType === 'loras' ? undefined : AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT
+
+  return { widget, minWidth, minHeight }
 }
 
 app.registerExtension({

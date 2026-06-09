@@ -15323,6 +15323,8 @@ const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300;
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200;
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60;
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100;
+const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400;
+const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300;
 const AUTOCOMPLETE_METADATA_VERSION = 1;
 const LORA_MANAGER_WIDGET_IDS_PROPERTY = "__lm_widget_ids";
 function forwardMiddleMouseToCanvas(container) {
@@ -15886,7 +15888,9 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   widget.onRemove = createVueWidgetCleanup(vueApp, () => {
     vueApps.delete(appKey);
   });
-  return { widget };
+  const minWidth = AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT;
+  const minHeight = modelType === "loras" ? void 0 : AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT;
+  return { widget, minWidth, minHeight };
 }
 app$1.registerExtension({
   name: "LoraManager.VueWidgets",
