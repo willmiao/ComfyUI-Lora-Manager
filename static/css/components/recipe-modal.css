@@ -176,7 +176,7 @@
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
-    box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-dropdown);
     padding: 10px 14px;
     max-width: 400px;
     z-index: 10;
@@ -797,7 +797,7 @@
 
 .recipe-lora-item:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: var(--shadow-header);
     border-color: var(--lora-accent);
 }
 
@@ -995,7 +995,7 @@
     padding: 8px 12px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-header);
     z-index: var(--z-overlay);
     width: max-content;
     max-width: 200px;
@@ -1049,7 +1049,7 @@
     background: rgba(0, 0, 0, 0.1);
     padding: 2px 4px;
     border-radius: 3px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
 }
 
@@ -1251,7 +1251,7 @@
     padding: 8px 12px;
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-header);
     z-index: var(--z-overlay);
     width: max-content;
     max-width: 200px;

@@ -757,7 +757,7 @@
     position: relative;
     border-radius: var(--border-radius-sm);
     overflow: hidden;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     transition: transform 0.2s ease;
 }
 

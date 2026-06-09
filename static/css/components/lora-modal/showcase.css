@@ -297,7 +297,7 @@
 
 .metadata-prompt {
   color: var(--text-color);
-  font-family: monospace;
+  font-family: var(--font-mono);
   font-size: 0.85em;
   white-space: pre-wrap;
 }

@@ -19,7 +19,7 @@
     border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-base);
     backdrop-filter: blur(16px);
-    transition: transform 160ms ease-out;
+    transition: transform var(--transition-fast) ease-out, box-shadow var(--transition-fast) ease-out, border-color var(--transition-fast) ease-out;
     aspect-ratio: 896/1152; /* Preserve aspect ratio */
     max-width: 260px; /* Base size */
     min-width: 200px; /* Prevent cards from becoming too narrow */
@@ -33,7 +33,8 @@
 
 .model-card:hover {
     transform: translateY(-2px);
-    background: oklch(100% 0 0 / 0.6);
+    box-shadow: var(--shadow-md);
+    border-color: var(--lora-accent);
 }
 
 .model-card:focus-visible {

@@ -203,7 +203,7 @@
 }
 
 .file-path {
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
 }
 
@@ -291,7 +291,7 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
-    transition: all 0.3s ease;
+    transition: opacity var(--transition-slow), visibility var(--transition-slow), transform var(--transition-slow);
     z-index: 10;
 }
 
@@ -347,7 +347,7 @@
     cursor: pointer;
     padding: 2px 5px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s ease;
+    transition: opacity var(--transition-base), background-color var(--transition-base);
     margin-left: var(--space-1);
 }
 
@@ -430,7 +430,7 @@
 }
 
 .size-wrapper span {
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
     opacity: 0.9;
 }

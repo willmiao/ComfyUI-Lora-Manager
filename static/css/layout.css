@@ -10,7 +10,7 @@
 .container {
     max-width: 1400px;
     margin: 0 auto;
-    padding: 0 15px;
+    padding: 0 var(--space-2);
     position: relative;
     z-index: var(--z-base);
 }

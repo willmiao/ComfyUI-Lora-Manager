@@ -404,7 +404,7 @@
 .path-display {
     padding: var(--space-1);
     color: var(--text-color);
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
     line-height: 1.4;
     white-space: pre-wrap;
@@ -678,7 +678,7 @@
     border-radius: var(--border-radius-xs);
     background: var(--bg-color);
     color: var(--text-color);
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
     resize: vertical;
     line-height: 1.5;

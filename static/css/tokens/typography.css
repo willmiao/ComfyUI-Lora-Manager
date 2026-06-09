@@ -1,4 +1,5 @@
 :root {
+  --font-display: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Inter', system-ui, sans-serif;
   --font-body: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', 'IBM Plex Mono', ui-monospace, Menlo, monospace;
 
@@ -8,6 +9,8 @@
   --text-md: 0.95rem;
   --text-lg: 1.1rem;
   --text-xl: 1.25rem;
+  --text-2xl: 1.5rem;
+  --text-3xl: 2rem;
 
   --leading-tight: 1.2;
   --leading-normal: 1.4;

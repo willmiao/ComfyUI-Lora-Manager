@@ -71,7 +71,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color var(--transition-base), color var(--transition-base), border-color var(--transition-base);
     flex-shrink: 0;
 }
 
@@ -103,7 +103,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: background-color var(--transition-base), color var(--transition-base), border-color var(--transition-base);
     flex-shrink: 0;
     position: relative;
 }

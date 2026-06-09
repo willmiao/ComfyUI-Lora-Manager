@@ -582,7 +582,7 @@
 }
 
 .priority-tags-example code {
-    font-family: var(--code-font, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace);
+    font-family: var(--font-mono);
     background-color: rgba(var(--lora-accent-rgb, 79, 70, 229), 0.12);
     padding: 2px 6px;
     border-radius: var(--border-radius-xs);
@@ -932,7 +932,7 @@ input:checked + .toggle-slider:before {
     border-radius: var(--border-radius-xs);
     padding: var(--space-1);
     margin-top: 8px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 0.9em;
     color: var(--lora-accent);
     display: none;
@@ -1146,7 +1146,7 @@ input:checked + .toggle-slider:before {
     color: white;
     padding: 2px 6px;
     border-radius: 3px;
-    font-family: monospace;
+    font-family: var(--font-mono);
     font-size: 1em;
     font-weight: 500;
 }
@@ -1175,7 +1175,7 @@ input:checked + .toggle-slider:before {
     background-color: var(--lora-surface);
     color: var(--text-color);
     font-size: 0.95em;
-    font-family: monospace;
+    font-family: var(--font-mono);
     height: 24px;
     transition: border-color 0.2s;
 }
@@ -1277,7 +1277,7 @@ input:checked + .toggle-slider:before {
     border-radius: 6px;
     font-size: 14px;
     font-weight: normal;
-    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    font-family: var(--font-body);
     white-space: normal;
     max-width: 220px;
     width: max-content;
