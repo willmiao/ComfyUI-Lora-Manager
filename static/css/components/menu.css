@@ -164,7 +164,7 @@
     border: 1px solid var(--border-color);
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .nsfw-level-btn:hover {

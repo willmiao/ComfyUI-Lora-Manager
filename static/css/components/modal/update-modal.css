@@ -160,7 +160,7 @@
     border-radius: var(--border-radius-sm);
     text-decoration: none;
     color: var(--text-color);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .update-link:hover {

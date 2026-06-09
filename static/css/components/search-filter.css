@@ -149,7 +149,7 @@
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-base);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     z-index: var(--z-overlay);
     padding: 16px;
     transition: transform 0.3s ease, opacity 0.3s ease;
@@ -243,7 +243,7 @@
     color: var(--text-color);
     font-size: 14px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     user-select: none; /* Prevent text selection */
     -webkit-user-select: none; /* For Safari */
     -moz-user-select: none; /* For Firefox */
@@ -373,7 +373,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     flex-shrink: 0;
 }
 
@@ -402,7 +402,7 @@
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-base);
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
     z-index: var(--z-overlay);
     padding: 16px;
     transition: transform 0.3s ease, opacity 0.3s ease;
@@ -470,7 +470,7 @@
     color: var(--text-color);
     font-size: 13px; /* Slightly smaller font size */
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     user-select: none;
     flex: 1;
     text-align: center;
@@ -516,7 +516,7 @@
     border-radius: var(--border-radius-sm);
     background-color: var(--lora-surface);
     border: 1px solid var(--border-color);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     cursor: pointer;
 }
 
@@ -574,7 +574,7 @@
     align-items: center;
     justify-content: center;
     font-size: 11px;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     margin-left: auto;
 }
 
@@ -599,7 +599,7 @@
     font-size: 14px;
     border-radius: var(--border-radius-sm);
     cursor: pointer;
-    transition: all 0.25s ease;
+    transition: var(--transition-base);
 }
 
 /* Enabled state - visual cue that button is actionable */
@@ -726,7 +726,7 @@
     cursor: pointer;
     color: var(--text-color);
     opacity: 0.7;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     font-weight: 500;
 }
 

@@ -46,7 +46,7 @@
     flex-direction: column;
     gap: 6px;
     align-items: center;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-side);
     max-height: 80vh;
     overflow-y: auto;
     scrollbar-width: thin;
@@ -75,7 +75,7 @@
     width: 20px;
     height: 40px;
     align-self: center;
-    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-side);
 }
 
 .toggle-alphabet-bar:hover {
@@ -99,7 +99,7 @@
     min-width: 24px;
     text-align: center;
     font-size: 0.85em;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     border: 1px solid var(--border-color);
 }
 

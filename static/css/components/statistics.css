@@ -17,13 +17,13 @@
     border-radius: var(--border-radius-base);
     padding: var(--space-2);
     text-align: center;
-    transition: all 0.3s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    transition: var(--transition-slow);
+    box-shadow: var(--shadow-sm);
 }
 
 .metric-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    box-shadow: var(--shadow-elevated);
 }
 
 .metric-card .metric-icon {
@@ -95,7 +95,7 @@
     border: none;
     padding: var(--space-2) var(--space-3);
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: var(--transition-slow);
     color: var(--text-color);
     border-bottom: 3px solid transparent;
     white-space: nowrap;
@@ -208,7 +208,7 @@
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .model-item:hover {
@@ -270,7 +270,7 @@
     border-radius: var(--border-radius-xs);
     font-size: 0.8rem;
     border: 1px solid oklch(var(--lora-accent) / 0.2);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     cursor: pointer;
 }
 
@@ -349,12 +349,12 @@
     padding: var(--space-2);
     border-radius: var(--border-radius-xs);
     border: 1px solid var(--border-color);
-    transition: all 0.3s ease;
+    transition: var(--transition-slow);
 }
 
 .insight-card:hover {
     transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-md);
 }
 
 .insight-card.type-success {
@@ -428,7 +428,7 @@
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .recommendation-item:hover {
@@ -534,9 +534,9 @@
 }
 
 [data-theme="dark"] .metric-card {
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-md);
 }
 
 [data-theme="dark"] .metric-card:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    box-shadow: var(--shadow-dark-lg);
 }

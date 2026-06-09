@@ -63,7 +63,7 @@
     align-items: center;
     justify-content: center;
     opacity: 0.6;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     position: relative;
 }
 

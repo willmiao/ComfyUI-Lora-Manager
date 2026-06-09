@@ -55,7 +55,7 @@
     padding: 4px 8px;
     margin-left: 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
     flex-shrink: 0;
     display: flex;
     align-items: center;
@@ -183,7 +183,7 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(-4px);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     pointer-events: none;
 }
 
@@ -258,7 +258,7 @@
     cursor: pointer;
     font-weight: 500;
     font-size: 0.9em;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     white-space: nowrap;
 }
 
@@ -428,7 +428,7 @@
     font-size: 0.85em;
     cursor: pointer;
     border: none;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .source-url-cancel-btn {
@@ -548,7 +548,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .copy-btn:hover,
@@ -705,7 +705,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -725,7 +725,7 @@
     cursor: pointer;
     padding: 4px 8px;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s;
+    transition: var(--transition-base);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1086,7 +1086,7 @@
     font-size: 0.85em;
     cursor: pointer;
     border: none;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .reconnect-cancel-btn {

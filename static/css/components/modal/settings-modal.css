@@ -10,7 +10,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .settings-toggle:hover {
@@ -81,7 +81,7 @@
     font-weight: 500;
     cursor: pointer;
     border-radius: var(--border-radius-xs);
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     margin-bottom: 4px;
 }
 
@@ -154,7 +154,7 @@
     background-color: var(--lora-surface);
     color: var(--text-color);
     font-size: 0.9em;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .settings-search-input:focus {
@@ -183,7 +183,7 @@
     justify-content: center;
     font-size: 0.7em;
     opacity: 0.6;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
 }
 
 .settings-search-clear:hover {
@@ -289,7 +289,7 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     text-decoration: none;
     position: relative;
 }
@@ -614,7 +614,7 @@
     border-bottom: 2px solid transparent;
     color: var(--text-color);
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: var(--transition-base);
     opacity: 0.7;
 }
 
@@ -974,7 +974,7 @@ input:checked + .toggle-slider:before {
     border-radius: var(--border-radius-xs);
     cursor: pointer;
     font-size: 0.9em;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     height: 32px; /* Match other control heights */
 }
 
@@ -1030,7 +1030,7 @@ input:checked + .toggle-slider:before {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: var(--transition-base);
 }
 
 .remove-mapping-btn:hover {
@@ -1287,7 +1287,7 @@ input:checked + .toggle-slider:before {
     pointer-events: none;
     z-index: 10000;
     line-height: 1.4;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--shadow-elevated);
     text-transform: none;
 }
 
@@ -1309,7 +1309,7 @@ input:checked + .toggle-slider:before {
 /* Dark theme adjustments for tooltip - Fully opaque */
 [data-theme="dark"] .info-icon[data-tooltip]::after {
     background: rgba(40, 40, 40, 0.95);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    box-shadow: var(--shadow-dark-lg);
 }
 
 /* Extra Folder Paths - Single input layout */
@@ -1361,7 +1361,7 @@ input:checked + .toggle-slider:before {
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     flex-shrink: 0;
 }
 

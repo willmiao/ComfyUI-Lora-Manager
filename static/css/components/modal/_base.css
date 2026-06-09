@@ -197,7 +197,7 @@ body.modal-open {
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: var(--transition-base);
     font-size: 0.95em;
 }
 

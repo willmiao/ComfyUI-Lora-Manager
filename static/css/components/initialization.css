@@ -176,7 +176,7 @@
   background: rgba(var(--lora-accent), 0.05);
   border-radius: var(--border-radius-base);
   padding: var(--space-2);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-sm);
 }
 
 .tips-header {

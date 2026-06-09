@@ -28,7 +28,7 @@
   border-radius: var(--border-radius-xs);
   padding: calc(var(--space-1) * 0.5) var(--space-1);
   gap: var(--space-1);
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .preset-tag span {
@@ -40,7 +40,7 @@
   color: var(--text-color);
   opacity: 0.5;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: var(--transition-base);
 }
 
 .preset-tag:hover {

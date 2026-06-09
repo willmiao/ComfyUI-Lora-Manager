@@ -61,7 +61,7 @@
   max-height: 85vh;
   object-fit: contain;
   border-radius: 4px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--shadow-dark-lg);
 }
 
 .media-viewer-video {
