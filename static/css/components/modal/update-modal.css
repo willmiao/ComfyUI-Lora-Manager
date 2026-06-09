@@ -234,8 +234,6 @@
 
 /* Changelog section */
 .changelog-section {
-    background: rgba(0, 0, 0, 0.02);
-    border: 1px solid rgba(0, 0, 0, 0.08);
     border-radius: var(--border-radius-sm);
     padding: var(--space-3);
 }
