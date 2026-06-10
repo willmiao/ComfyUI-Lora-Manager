@@ -176,6 +176,24 @@ class RecipeAnalysisService:
                     self._exif_utils.extract_image_metadata, temp_path
                 )
 
+            if not metadata and civitai_image_id and image_info:
+                original_url = image_info.get("url")
+                if original_url:
+                    self._logger.debug(
+                        "Optimized image lacks embedded metadata, "
+                        "falling back to original image: %s",
+                        original_url,
+                    )
+                    orig_temp_path = self._create_temp_path(suffix=".png")
+                    try:
+                        await self._download_image(original_url, orig_temp_path)
+                        metadata = await asyncio.to_thread(
+                            self._exif_utils.extract_image_metadata,
+                            orig_temp_path,
+                        )
+                    finally:
+                        self._safe_cleanup(orig_temp_path)
+
             result = await self._parse_metadata(
                 metadata or {},
                 recipe_scanner=recipe_scanner,

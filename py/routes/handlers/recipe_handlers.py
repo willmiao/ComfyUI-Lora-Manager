@@ -907,6 +907,7 @@ class RecipeManagementHandler:
             extension,
             civitai_meta_raw,
             model_version_id,
+            _original_image_url,
         ) = await self._download_remote_media(image_url)
 
         # Extract embedded EXIF metadata (offloaded to thread pool in this call)
@@ -1319,7 +1320,9 @@ class RecipeManagementHandler:
             "exclude": False,
         }
 
-    async def _download_remote_media(self, image_url: str) -> tuple[bytes, str, Any, Any]:
+    async def _download_remote_media(
+        self, image_url: str
+    ) -> tuple[bytes, str, Any, Any, Optional[str]]:
         civitai_client = self._civitai_client_getter()
         downloader = await self._downloader_factory()
         temp_path = None
@@ -1394,11 +1397,16 @@ class RecipeManagementHandler:
                     if mvids and isinstance(civitai_meta_raw, dict):
                         civitai_meta_raw["modelVersionIds"] = mvids
 
+                original_url = (
+                    image_info.get("url") if civitai_image_id and image_info else None
+                )
+
                 return (
                     file_obj.read(),
                     extension,
                     civitai_meta_raw,
                     model_ver_id,
+                    original_url,
                 )
         except RecipeDownloadError:
             raise
@@ -1550,7 +1558,7 @@ class RecipeManagementHandler:
                 "Could not extract Civitai image ID from URL"
             )
 
-        image_bytes, extension, civitai_meta_raw, model_version_id = (
+        image_bytes, extension, civitai_meta_raw, model_version_id, original_image_url = (
             await self._download_remote_media(image_url)
         )
 
@@ -1587,6 +1595,51 @@ class RecipeManagementHandler:
             self._logger.warning(
                 "Failed to extract embedded metadata: %s", exc
             )
+
+        if not parsed_embedded and original_image_url:
+            self._logger.debug(
+                "Optimized image has no embedded metadata, "
+                "falling back to original: %s",
+                original_image_url,
+            )
+            try:
+                downloader = await self._downloader_factory()
+                with tempfile.NamedTemporaryFile(
+                    suffix=".png", delete=False
+                ) as tmp:
+                    orig_tmp_path = tmp.name
+                try:
+                    success, _ = await downloader.download_file(
+                        original_image_url, orig_tmp_path, use_auth=False
+                    )
+                    if success:
+                        raw_orig = await asyncio.to_thread(
+                            ExifUtils.extract_image_metadata, orig_tmp_path
+                        )
+                        if raw_orig:
+                            parser = (
+                                self._analysis_service._recipe_parser_factory.create_parser(
+                                    raw_orig
+                                )
+                            )
+                            if parser:
+                                parsed_embedded = await parser.parse_metadata(
+                                    raw_orig, recipe_scanner=recipe_scanner
+                                )
+                                if (
+                                    parsed_embedded
+                                    and "gen_params" in parsed_embedded
+                                ):
+                                    embedded_gen_params = parsed_embedded[
+                                        "gen_params"
+                                    ]
+                finally:
+                    if os.path.exists(orig_tmp_path):
+                        os.unlink(orig_tmp_path)
+            except Exception as exc:
+                self._logger.warning(
+                    "Failed to extract metadata from original image: %s", exc
+                )
 
         # Parse CivitAI API meta to discover all resources from modelVersionIds.
         # Run unconditionally — EXIF parsing succeeds for gen_params but misses
