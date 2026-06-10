@@ -692,6 +692,7 @@
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
             "repairMetadata": "Metadaten der Auswahl reparieren",
+            "reimportMetadata": "Metadaten der Auswahl neu importieren",
             "checkUpdates": "Auswahl auf Updates prüfen",
             "moveAll": "Alle in Ordner verschieben",
             "autoOrganize": "Automatisch organisieren",
@@ -739,6 +740,7 @@
             "setContentRating": "Inhaltsbewertung festlegen",
             "moveToFolder": "In Ordner verschieben",
             "repairMetadata": "Metadaten reparieren",
+            "reimportMetadata": "Aus Quelle neu importieren",
             "excludeModel": "Modell ausschließen",
             "restoreModel": "Modell wiederherstellen",
             "deleteModel": "Modell löschen",
@@ -866,6 +868,13 @@
                 "skipped": "Rezept bereits in der neuesten Version, keine Reparatur erforderlich",
                 "failed": "Rezept-Reparatur fehlgeschlagen: {message}",
                 "missingId": "Rezept kann nicht repariert werden: Fehlende Rezept-ID"
+            },
+            "reimport": {
+                "starting": "Rezept wird aus Quelle neu importiert...",
+                "success": "Rezept erfolgreich neu importiert",
+                "noSourceUrl": "Rezept hat keine Quell-URL, Neuimport nicht möglich",
+                "failed": "Neuimport des Rezepts fehlgeschlagen: {message}",
+                "missingId": "Neuimport nicht möglich: Rezept-ID fehlt"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "Reparatur abgeschlossen: {repaired} repariert, {skipped} übersprungen (von {total})",
             "repairBulkSkipped": "Keine Reparatur für die {total} ausgewählten Rezepte erforderlich",
             "repairBulkFailed": "Reparatur der ausgewählten Rezepte fehlgeschlagen: {message}",
+            "reimporting": "Rezept wird aus Quelle neu importiert...",
+            "reimportSuccess": "Rezept erfolgreich neu importiert",
+            "reimportBulkComplete": "Neuimport abgeschlossen: {completed} importiert, {failed} fehlgeschlagen (von {total})",
+            "reimportBulkFailed": "Neuimport einiger Rezepte fehlgeschlagen",
             "noMissingLorasInSelection": "Keine fehlenden LoRAs in ausgewählten Rezepten gefunden",
             "noLoraRootConfigured": "Kein LoRA-Stammverzeichnis konfiguriert. Bitte legen Sie ein Standard-LoRA-Stammverzeichnis in den Einstellungen fest."
         },

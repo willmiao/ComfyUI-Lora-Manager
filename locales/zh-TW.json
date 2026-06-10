@@ -692,6 +692,7 @@
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
             "repairMetadata": "修復所選中元數據",
+            "reimportMetadata": "重新匯入所選配方元數據",
             "checkUpdates": "檢查所選更新",
             "moveAll": "全部移動到資料夾",
             "autoOrganize": "自動整理所選模型",
@@ -739,6 +740,7 @@
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
             "repairMetadata": "修復元數據",
+            "reimportMetadata": "從來源重新匯入",
             "excludeModel": "排除模型",
             "restoreModel": "還原模型",
             "deleteModel": "刪除模型",
@@ -866,6 +868,13 @@
                 "skipped": "配方已是最新版本，無需修復",
                 "failed": "修復配方失敗：{message}",
                 "missingId": "無法修復配方：缺少配方 ID"
+            },
+            "reimport": {
+                "starting": "正在從來源重新匯入配方...",
+                "success": "配方已從來源重新匯入成功",
+                "noSourceUrl": "配方沒有來源URL，無法重新匯入",
+                "failed": "重新匯入配方失敗：{message}",
+                "missingId": "無法重新匯入配方：缺少配方ID"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "修復完成：{repaired} 個已修復，{skipped} 個已跳過（共 {total} 個）",
             "repairBulkSkipped": "所選 {total} 個配方無需修復",
             "repairBulkFailed": "修復所選配方失敗：{message}",
+            "reimporting": "正在從來源重新匯入配方...",
+            "reimportSuccess": "配方已從來源重新匯入成功",
+            "reimportBulkComplete": "重新匯入完成：{completed} 個已匯入，{failed} 個失敗（共 {total} 個）",
+            "reimportBulkFailed": "重新匯入某些配方失敗",
             "noMissingLorasInSelection": "在選取的食譜中未找到缺失的 LoRAs",
             "noLoraRootConfigured": "未配置 LoRA 根目錄。請在設定中設定預設的 LoRA 根目錄。"
         },

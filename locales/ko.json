@@ -692,6 +692,7 @@
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
             "repairMetadata": "선택한 레시피 메타데이터 복구",
+            "reimportMetadata": "선택한 레시피 다시 가져오기",
             "checkUpdates": "선택 항목 업데이트 확인",
             "moveAll": "모두 폴더로 이동",
             "autoOrganize": "자동 정리 선택",
@@ -739,6 +740,7 @@
             "setContentRating": "콘텐츠 등급 설정",
             "moveToFolder": "폴더로 이동",
             "repairMetadata": "메타데이터 복구",
+            "reimportMetadata": "소스에서 다시 가져오기",
             "excludeModel": "모델 제외",
             "restoreModel": "모델 복원",
             "deleteModel": "모델 삭제",
@@ -866,6 +868,13 @@
                 "skipped": "레시피가 이미 최신 버전입니다. 복구가 필요하지 않습니다",
                 "failed": "레시피 복구 실패: {message}",
                 "missingId": "레시피를 복구할 수 없음: 레시피 ID 누락"
+            },
+            "reimport": {
+                "starting": "소스에서 레시피를 다시 가져오는 중...",
+                "success": "레시피를 다시 가져왔습니다",
+                "noSourceUrl": "레시피에 소스 URL이 없어 다시 가져올 수 없습니다",
+                "failed": "레시피 다시 가져오기 실패: {message}",
+                "missingId": "레시피를 다시 가져올 수 없음: 레시피 ID 누락"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "복구 완료: {repaired}개 복구, {skipped}개 건너뜀 (총 {total}개)",
             "repairBulkSkipped": "선택한 {total}개 레시피는 복구가 필요하지 않습니다",
             "repairBulkFailed": "선택한 레시피 복구 실패: {message}",
+            "reimporting": "소스에서 레시피를 다시 가져오는 중...",
+            "reimportSuccess": "레시피를 다시 가져왔습니다",
+            "reimportBulkComplete": "다시 가져오기 완료: {completed}개 성공, {failed}개 실패 (총 {total}개)",
+            "reimportBulkFailed": "일부 레시피를 다시 가져오지 못했습니다",
             "noMissingLorasInSelection": "선택한 레시피에서 누락된 LoRA를 찾을 수 없습니다",
             "noLoraRootConfigured": "LoRA 루트 디렉토리가 구성되지 않았습니다. 설정에서 기본 LoRA 루트를 설정하세요."
         },

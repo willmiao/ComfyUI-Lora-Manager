@@ -86,7 +86,8 @@ export class BulkManager {
                 skipMetadataRefresh: false,
                 setFavorite: true,
                 unfavorite: true,
-                repairMetadata: true
+                repairMetadata: true,
+                reimportMetadata: true
             }
         };
 
@@ -654,6 +655,87 @@ export class BulkManager {
 
         if (this.isStripVisible) {
             this.updateThumbnailStrip();
+        }
+    }
+
+    async reimportSelectedRecipes() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.recipes.noRecipesSelected', {}, 'warning');
+            return;
+        }
+
+        if (state.currentPageType !== 'recipes') {
+            showToast('This operation is only available for recipes', {}, 'warning');
+            return;
+        }
+
+        const filePaths = Array.from(state.selectedModels);
+        const total = filePaths.length;
+        let completed = 0;
+        let failed = 0;
+
+        const recipeMap = new Map();
+        if (state.virtualScroller?.items) {
+            for (const item of state.virtualScroller.items) {
+                if (item.file_path && item.id) {
+                    recipeMap.set(item.file_path, item);
+                }
+            }
+        }
+
+        const progressUI = state.loadingManager.showEnhancedProgress(
+            `Re-importing recipe 1/${total}...`
+        );
+
+        try {
+            for (let i = 0; i < filePaths.length; i++) {
+                const filePath = filePaths[i];
+                const recipeItem = recipeMap.get(filePath);
+                const recipeId = recipeItem?.id;
+                const recipeName = recipeItem?.title || recipeId || 'Unknown';
+
+                progressUI.updateProgress(
+                    Math.floor((i / total) * 100),
+                    recipeName,
+                    `Re-importing recipe ${Math.min(i + 1, total)}/${total}...`
+                );
+
+                if (!recipeId) {
+                    failed++;
+                    continue;
+                }
+
+                try {
+                    const response = await fetch(
+                        `/api/lm/recipe/${recipeId}/reimport`,
+                        { method: 'POST' }
+                    );
+                    const result = await response.json();
+                    if (result.success) {
+                        completed++;
+                    } else {
+                        failed++;
+                    }
+                } catch {
+                    failed++;
+                }
+            }
+            if (completed > 0) {
+                await progressUI.complete(
+                    `Re-import complete: ${completed} re-imported, ${failed} failed`
+                );
+            } else {
+                state.loadingManager.hide();
+                showToast('toast.recipes.reimportBulkFailed', {}, 'error');
+            }
+
+            const { resetAndReload: recipeResetAndReload } = await import('../api/recipeApi.js');
+            recipeResetAndReload(false, { preserveScroll: true });
+            this.clearSelection();
+        } catch (error) {
+            console.error('[reimportSelectedRecipes] outer catch:', error);
+            state.loadingManager.hide();
+            showToast('toast.recipes.reimportBulkFailed', {}, 'error');
         }
     }
 

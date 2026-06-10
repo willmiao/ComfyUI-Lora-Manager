@@ -692,6 +692,7 @@
             "copyAll": "Copiar toda la sintaxis",
             "refreshAll": "Actualizar todos los metadatos",
             "repairMetadata": "Reparar metadatos de la selección",
+            "reimportMetadata": "Reimportar metadatos de la selección",
             "checkUpdates": "Comprobar actualizaciones para la selección",
             "moveAll": "Mover todos a carpeta",
             "autoOrganize": "Auto-organizar seleccionados",
@@ -739,6 +740,7 @@
             "setContentRating": "Establecer clasificación de contenido",
             "moveToFolder": "Mover a carpeta",
             "repairMetadata": "Reparar metadatos",
+            "reimportMetadata": "Reimportar desde origen",
             "excludeModel": "Excluir modelo",
             "restoreModel": "Restaurar modelo",
             "deleteModel": "Eliminar modelo",
@@ -866,6 +868,13 @@
                 "skipped": "La receta ya está en la última versión, no se necesita reparación",
                 "failed": "Error al reparar la receta: {message}",
                 "missingId": "No se puede reparar la receta: falta el ID de la receta"
+            },
+            "reimport": {
+                "starting": "Reimportando receta desde origen...",
+                "success": "Receta reimportada exitosamente",
+                "noSourceUrl": "La receta no tiene URL de origen, no se puede reimportar",
+                "failed": "Error al reimportar la receta: {message}",
+                "missingId": "No se puede reimportar la receta: falta el ID"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "Reparación completa: {repaired} reparadas, {skipped} omitidas (de {total})",
             "repairBulkSkipped": "No se necesita reparación para ninguna de las {total} recetas seleccionadas",
             "repairBulkFailed": "Error al reparar las recetas seleccionadas: {message}",
+            "reimporting": "Reimportando receta desde origen...",
+            "reimportSuccess": "Receta reimportada exitosamente",
+            "reimportBulkComplete": "Reimportación completa: {completed} reimportadas, {failed} fallidas (de {total})",
+            "reimportBulkFailed": "Error al reimportar algunas recetas",
             "noMissingLorasInSelection": "No se encontraron LoRAs faltantes en las recetas seleccionadas",
             "noLoraRootConfigured": "No se ha configurado el directorio raíz de LoRA. Por favor, establezca un directorio raíz de LoRA predeterminado en la configuración."
         },

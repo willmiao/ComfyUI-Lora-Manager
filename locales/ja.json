@@ -692,6 +692,7 @@
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
             "repairMetadata": "選択したレシピのメタデータを修復",
+            "reimportMetadata": "選択したレシピを再インポート",
             "checkUpdates": "選択項目の更新を確認",
             "moveAll": "すべてをフォルダに移動",
             "autoOrganize": "自動整理を実行",
@@ -739,6 +740,7 @@
             "setContentRating": "コンテンツレーティングを設定",
             "moveToFolder": "フォルダに移動",
             "repairMetadata": "メタデータを修復",
+            "reimportMetadata": "ソースから再インポート",
             "excludeModel": "モデルを除外",
             "restoreModel": "モデルを復元",
             "deleteModel": "モデルを削除",
@@ -866,6 +868,13 @@
                 "skipped": "レシピはすでに最新バージョンです。修復は不要です",
                 "failed": "レシピの修復に失敗しました: {message}",
                 "missingId": "レシピを修復できません: レシピIDがありません"
+            },
+            "reimport": {
+                "starting": "ソースからレシピを再インポート中...",
+                "success": "レシピの再インポートが完了しました",
+                "noSourceUrl": "レシピにソースURLがありません。再インポートできません",
+                "failed": "レシピの再インポートに失敗しました: {message}",
+                "missingId": "レシピを再インポートできません: レシピIDがありません"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "修復完了：{repaired} 件修復、{skipped} 件スキップ（合計 {total} 件）",
             "repairBulkSkipped": "選択した {total} 件のレシピは修復不要です",
             "repairBulkFailed": "選択したレシピの修復に失敗しました：{message}",
+            "reimporting": "ソースからレシピを再インポート中...",
+            "reimportSuccess": "レシピの再インポートが完了しました",
+            "reimportBulkComplete": "再インポート完了：{completed} 件成功、{failed} 件失敗（合計 {total} 件）",
+            "reimportBulkFailed": "一部のレシピの再インポートに失敗しました",
             "noMissingLorasInSelection": "選択したレシピに不足している LoRA が見つかりませんでした",
             "noLoraRootConfigured": "LoRA ルートディレクトリが設定されていません。設定でデフォルトの LoRA ルートを設定してください。"
         },

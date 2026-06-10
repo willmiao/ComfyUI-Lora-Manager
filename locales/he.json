@@ -692,6 +692,7 @@
             "copyAll": "העתק את כל התחבירים",
             "refreshAll": "רענן את כל המטא-דאטה",
             "repairMetadata": "תקן מטא-דאטה עבור הנבחרים",
+            "reimportMetadata": "ייבא מחדש מטא-דאטה עבור הנבחרים",
             "checkUpdates": "בדוק עדכונים לבחירה",
             "moveAll": "העבר הכל לתיקייה",
             "autoOrganize": "ארגן אוטומטית נבחרים",
@@ -739,6 +740,7 @@
             "setContentRating": "הגדר דירוג תוכן",
             "moveToFolder": "העבר לתיקייה",
             "repairMetadata": "תיקון מטא-דאטה",
+            "reimportMetadata": "ייבא מחדש ממקור",
             "excludeModel": "החרג מודל",
             "restoreModel": "שחזור מודל",
             "deleteModel": "מחק מודל",
@@ -866,6 +868,13 @@
                 "skipped": "המתכון כבר בגרסה העדכנית ביותר, אין צורך בתיקון",
                 "failed": "תיקון המתכון נכשל: {message}",
                 "missingId": "לא ניתן לתקן את המתכון: חסר מזהה מתכון"
+            },
+            "reimport": {
+                "starting": "מייבא מתכון מחדש מהמקור...",
+                "success": "המתכון יובא מחדש בהצלחה",
+                "noSourceUrl": "למתכון אין כתובת מקור, לא ניתן לייבא מחדש",
+                "failed": "ייבוא המתכון מחדש נכשל: {message}",
+                "missingId": "לא ניתן לייבא מחדש: חסר מזהה מתכון"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "התיקון הושלם: {repaired} תוקנו, {skipped} דולגו (מתוך {total})",
             "repairBulkSkipped": "אין צורך בתיקון עבור {total} המתכונים הנבחרים",
             "repairBulkFailed": "תיקון המתכונים הנבחרים נכשל: {message}",
+            "reimporting": "מייבא מתכון מחדש מהמקור...",
+            "reimportSuccess": "המתכון יובא מחדש בהצלחה",
+            "reimportBulkComplete": "ייבוא מחדש הושלם: {completed} יובאו, {failed} נכשלו (מתוך {total})",
+            "reimportBulkFailed": "ייבוא מחדש של חלק מהמתכונים נכשל",
             "noMissingLorasInSelection": "לא נמצאו LoRAs חסרים במתכונים שנבחרו",
             "noLoraRootConfigured": "תיקיית השורש של LoRA לא מוגדרת. אנא הגדר תיקיית שורש LoRA ברירת מחדל בהגדרות."
         },

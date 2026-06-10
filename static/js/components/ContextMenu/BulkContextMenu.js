@@ -42,9 +42,13 @@ export class BulkContextMenu extends BaseContextMenu {
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
         const repairMetadataItem = this.menu.querySelector('[data-action="repair-metadata"]');
+        const reimportMetadataItem = this.menu.querySelector('[data-action="reimport-metadata"]');
 
         if (repairMetadataItem) {
             repairMetadataItem.style.display = config.repairMetadata ? 'flex' : 'none';
+        }
+        if (reimportMetadataItem) {
+            reimportMetadataItem.style.display = config.reimportMetadata ? 'flex' : 'none';
         }
 
         if (sendToWorkflowAppendItem) {
@@ -263,6 +267,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'repair-metadata':
                 bulkManager.repairSelectedRecipes();
+                break;
+            case 'reimport-metadata':
+                bulkManager.reimportSelectedRecipes();
                 break;
             case 'set-favorite': {
                 const allFavorited = this.countFavoritedInSelection() === state.selectedModels.size;

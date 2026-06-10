@@ -692,6 +692,7 @@
             "copyAll": "Copy Selected Syntax",
             "refreshAll": "Refresh Selected Metadata",
             "repairMetadata": "Repair Metadata for Selected",
+            "reimportMetadata": "Re-import Metadata for Selected",
             "checkUpdates": "Check Updates for Selected",
             "moveAll": "Move Selected to Folder",
             "autoOrganize": "Auto-Organize Selected",
@@ -739,6 +740,7 @@
             "setContentRating": "Set Content Rating",
             "moveToFolder": "Move to Folder",
             "repairMetadata": "Repair metadata",
+            "reimportMetadata": "Re-import from Source",
             "excludeModel": "Exclude Model",
             "restoreModel": "Restore Model",
             "deleteModel": "Delete Model",
@@ -866,6 +868,13 @@
                 "skipped": "Recipe already at latest version, no repair needed",
                 "failed": "Failed to repair recipe: {message}",
                 "missingId": "Cannot repair recipe: Missing recipe ID"
+            },
+            "reimport": {
+                "starting": "Re-importing recipe from source...",
+                "success": "Recipe re-imported successfully",
+                "noSourceUrl": "Recipe has no source URL, cannot re-import",
+                "failed": "Failed to re-import recipe: {message}",
+                "missingId": "Cannot re-import recipe: Missing recipe ID"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
             "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
             "repairBulkFailed": "Failed to repair selected recipes: {message}",
+            "reimporting": "Re-importing recipe from source...",
+            "reimportSuccess": "Recipe re-imported successfully",
+            "reimportBulkComplete": "Re-import complete: {completed} re-imported, {failed} failed (of {total})",
+            "reimportBulkFailed": "Failed to re-import some recipes",
             "noMissingLorasInSelection": "No missing LoRAs found in selected recipes",
             "noLoraRootConfigured": "No LoRA root directory configured. Please set a default LoRA root in settings."
         },

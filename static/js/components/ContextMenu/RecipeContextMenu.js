@@ -97,6 +97,9 @@ export class RecipeContextMenu extends BaseContextMenu {
                 // Repair recipe metadata
                 this.repairRecipe(recipeId);
                 break;
+            case 'reimport':
+                this.reimportRecipe(recipeId);
+                break;
         }
     }
 
@@ -323,6 +326,35 @@ export class RecipeContextMenu extends BaseContextMenu {
         } catch (error) {
             console.error('Error repairing recipe:', error);
             showToast('recipes.contextMenu.repair.failed', { message: error.message }, 'error');
+        }
+    }
+
+    async reimportRecipe(recipeId) {
+        if (!recipeId) {
+            showToast('recipes.contextMenu.reimport.missingId', {}, 'error');
+            return;
+        }
+
+        state.loadingManager.showSimpleLoading('Re-importing recipe from source...');
+
+        try {
+            const response = await fetch(`/api/lm/recipe/${recipeId}/reimport`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                state.loadingManager.hide();
+                showToast('toast.recipes.reimportSuccess', {}, 'success');
+                const { resetAndReload } = await import('../../api/recipeApi.js');
+                resetAndReload(false, { preserveScroll: true });
+            } else {
+                throw new Error(result.error || 'Re-import failed');
+            }
+        } catch (error) {
+            console.error('Error reimporting recipe:', error);
+            state.loadingManager.hide();
+            showToast('recipes.contextMenu.reimport.failed', { message: error.message }, 'error');
         }
     }
 }

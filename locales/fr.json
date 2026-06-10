@@ -692,6 +692,7 @@
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
             "repairMetadata": "Réparer les métadonnées de la sélection",
+            "reimportMetadata": "Ré-importer les métadonnées de la sélection",
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
             "moveAll": "Déplacer tout vers un dossier",
             "autoOrganize": "Auto-organiser la sélection",
@@ -739,6 +740,7 @@
             "setContentRating": "Définir la classification du contenu",
             "moveToFolder": "Déplacer vers un dossier",
             "repairMetadata": "Réparer les métadonnées",
+            "reimportMetadata": "Ré-importer depuis la source",
             "excludeModel": "Exclure le modèle",
             "restoreModel": "Restaurer le modèle",
             "deleteModel": "Supprimer le modèle",
@@ -866,6 +868,13 @@
                 "skipped": "Recette déjà à la version la plus récente, aucune réparation nécessaire",
                 "failed": "Échec de la réparation de la recette : {message}",
                 "missingId": "Impossible de réparer la recette : ID de recette manquant"
+            },
+            "reimport": {
+                "starting": "Ré-import de la recette depuis la source...",
+                "success": "Recette ré-importée avec succès",
+                "noSourceUrl": "La recette n'a pas d'URL source, ré-import impossible",
+                "failed": "Échec du ré-import de la recette : {message}",
+                "missingId": "Impossible de ré-importer la recette : ID de recette manquant"
             }
         },
         "batchImport": {
@@ -1717,6 +1726,10 @@
             "repairBulkComplete": "Réparation terminée : {repaired} réparée(s), {skipped} ignorée(s) (sur {total})",
             "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} recettes sélectionnées",
             "repairBulkFailed": "Échec de la réparation des recettes sélectionnées : {message}",
+            "reimporting": "Ré-import de la recette depuis la source...",
+            "reimportSuccess": "Recette ré-importée avec succès",
+            "reimportBulkComplete": "Ré-import terminé : {completed} ré-importé(s), {failed} échec(s) (sur {total})",
+            "reimportBulkFailed": "Échec du ré-import de certaines recettes",
             "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les recettes sélectionnées",
             "noLoraRootConfigured": "Aucun répertoire racine LoRA configuré. Veuillez définir un répertoire racine LoRA par défaut dans les paramètres."
         },
