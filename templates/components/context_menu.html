@@ -5,6 +5,7 @@
     <!-- <div class="context-menu-item" data-action="civitai">
         <i class="fas fa-external-link-alt"></i> View on Civitai
     </div> -->
+    <!-- Metadata -->
     <div class="context-menu-item" data-action="refresh-metadata">
         <i class="fas fa-sync"></i> <span>{{ t('loras.contextMenu.refreshMetadata') }}</span>
     </div>
@@ -14,6 +15,8 @@
     <div class="context-menu-item" data-action="relink-civitai">
         <i class="fas fa-link"></i> <span>{{ t('loras.contextMenu.relinkCivitai') }}</span>
     </div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Workflow -->
     <div class="context-menu-item" data-action="copyname">
         <i class="fas fa-copy"></i> <span>{{ t('loras.contextMenu.copySyntax') }}</span>
     </div>
@@ -23,6 +26,8 @@
     <div class="context-menu-item" data-action="sendreplace">
         <i class="fas fa-exchange-alt"></i> <span>{{ t('loras.contextMenu.sendToWorkflowReplace') }}</span>
     </div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Media / Preview -->
     <div class="context-menu-item" data-action="preview">
         <i class="fas fa-folder-open"></i> <span>{{ t('loras.contextMenu.openExamples') }}</span>
     </div>
@@ -32,13 +37,18 @@
     <div class="context-menu-item" data-action="replace-preview">
         <i class="fas fa-image"></i> <span>{{ t('loras.contextMenu.replacePreview') }}</span>
     </div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Attributes -->
     <div class="context-menu-item" data-action="set-nsfw">
         <i class="fas fa-exclamation-triangle"></i> <span>{{ t('loras.contextMenu.setContentRating') }}</span>
     </div>
-    <div class="context-menu-separator"></div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Organization -->
     <div class="context-menu-item" data-action="move">
         <i class="fas fa-folder-open"></i> <span>{{ t('loras.contextMenu.moveToFolder') }}</span>
     </div>
+    <div class="context-menu-separator"></div>
+    <!-- Destructive -->
     <div class="context-menu-item" data-action="exclude">
         <i class="fas fa-eye-slash"></i> <span>{{ t('loras.contextMenu.excludeModel') }}</span>
     </div>
@@ -53,25 +63,6 @@
         <span>{{ t('loras.bulkOperations.selected', {'count': 0}) }}</span>
     </div>
     <div class="context-menu-separator"></div>
-    <div class="context-menu-section" data-section="workflow">
-        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.workflow') }}</div>
-        <div class="context-menu-item has-submenu" data-has-submenu="send-to-workflow">
-            <i class="fas fa-paper-plane"></i>
-            <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
-            <i class="fas fa-chevron-right submenu-arrow"></i>
-            <div class="context-submenu">
-                <div class="context-menu-item" data-action="send-to-workflow-append">
-                    <i class="fas fa-paper-plane"></i> <span>{{ t('loras.contextMenu.sendToWorkflowAppend') }}</span>
-                </div>
-                <div class="context-menu-item" data-action="send-to-workflow-replace">
-                    <i class="fas fa-exchange-alt"></i> <span>{{ t('loras.contextMenu.sendToWorkflowReplace') }}</span>
-                </div>
-                <div class="context-menu-item" data-action="copy-all">
-                    <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
-                </div>
-            </div>
-        </div>
-    </div>
     <div class="context-menu-section" data-section="metadata">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.metadata') }}</div>
         <div class="context-menu-item" data-action="refresh-all">
@@ -93,6 +84,25 @@
             <i class="fas fa-redo"></i> <span>{{ t('loras.bulkOperations.resumeMetadataRefresh') }}</span>
         </div>
     </div>
+    <div class="context-menu-section" data-section="workflow">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.workflow') }}</div>
+        <div class="context-menu-item has-submenu" data-has-submenu="send-to-workflow">
+            <i class="fas fa-paper-plane"></i>
+            <span>{{ t('loras.bulkOperations.sendToWorkflow') }}</span>
+            <i class="fas fa-chevron-right submenu-arrow"></i>
+            <div class="context-submenu">
+                <div class="context-menu-item" data-action="send-to-workflow-append">
+                    <i class="fas fa-paper-plane"></i> <span>{{ t('loras.contextMenu.sendToWorkflowAppend') }}</span>
+                </div>
+                <div class="context-menu-item" data-action="send-to-workflow-replace">
+                    <i class="fas fa-exchange-alt"></i> <span>{{ t('loras.contextMenu.sendToWorkflowReplace') }}</span>
+                </div>
+                <div class="context-menu-item" data-action="copy-all">
+                    <i class="fas fa-copy"></i> <span>{{ t('loras.bulkOperations.copyAll') }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
     <div class="context-menu-section" data-section="attributes">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.attributes') }}</div>
         <div class="context-menu-item" data-action="add-tags">
@@ -108,15 +118,6 @@
             <i class="fas fa-exclamation-triangle"></i> <span>{{ t('loras.bulkOperations.setContentRating') }}</span>
         </div>
     </div>
-    <div class="context-menu-section" data-section="organize">
-        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.organize') }}</div>
-        <div class="context-menu-item" data-action="auto-organize">
-            <i class="fas fa-magic"></i> <span>{{ t('loras.bulkOperations.autoOrganize') }}</span>
-        </div>
-        <div class="context-menu-item" data-action="move-all">
-            <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
-        </div>
-    </div>
     <div class="context-menu-section" data-section="download">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.download') }}</div>
         <div class="context-menu-item" data-action="download-example-images">
@@ -124,6 +125,15 @@
         </div>
         <div class="context-menu-item" data-action="download-missing-loras">
             <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingLoras') }}</span>
+        </div>
+    </div>
+    <div class="context-menu-section" data-section="organize">
+        <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.organize') }}</div>
+        <div class="context-menu-item" data-action="auto-organize">
+            <i class="fas fa-magic"></i> <span>{{ t('loras.bulkOperations.autoOrganize') }}</span>
+        </div>
+        <div class="context-menu-item" data-action="move-all">
+            <i class="fas fa-folder-open"></i> <span>{{ t('loras.bulkOperations.moveAll') }}</span>
         </div>
     </div>
     <div class="context-menu-separator"></div>

@@ -34,6 +34,12 @@
     margin: 4px 0;
 }
 
+/* Lighter separator between category groups (vs the full separator before destructive) */
+.context-menu-separator.menu-section-break {
+    opacity: 0.4;
+    margin: 3px 0;
+}
+
 .context-menu-item.delete-item {
     color: var(--danger-color);
 }

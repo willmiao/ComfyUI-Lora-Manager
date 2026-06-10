@@ -17,6 +17,15 @@
 
 <div id="recipeContextMenu" class="context-menu" style="display: none;">
     <!-- <div class="context-menu-item" data-action="details"><i class="fas fa-info-circle"></i> View Details</div> -->
+    <!-- Metadata -->
+    <div class="context-menu-item" data-action="repair">
+        <i class="fas fa-tools"></i> {{ t('loras.contextMenu.repairMetadata') }}
+    </div>
+    <div class="context-menu-item" data-action="reimport">
+        <i class="fas fa-undo-alt"></i> {{ t('loras.contextMenu.reimportMetadata') }}
+    </div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Workflow / Share -->
     <div class="context-menu-item" data-action="share"><i class="fas fa-share-alt"></i> {{
         t('loras.contextMenu.shareRecipe') }}</div>
     <div class="context-menu-item" data-action="copy"><i class="fas fa-copy"></i> {{
@@ -25,22 +34,23 @@
         t('loras.contextMenu.sendToWorkflowAppend') }}</div>
     <div class="context-menu-item" data-action="sendreplace"><i class="fas fa-exchange-alt"></i> {{
         t('loras.contextMenu.sendToWorkflowReplace') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Recipe-specific -->
     <div class="context-menu-item" data-action="viewloras"><i class="fas fa-layer-group"></i> {{
         t('loras.contextMenu.viewAllLoras') }}</div>
     <div class="context-menu-item download-missing-item" data-action="download-missing"><i class="fas fa-download"></i>
         {{ t('loras.contextMenu.downloadMissingLoras') }}</div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Attributes -->
     <div class="context-menu-item" data-action="set-nsfw">
         <i class="fas fa-exclamation-triangle"></i> {{ t('loras.contextMenu.setContentRating') }}
     </div>
-    <div class="context-menu-item" data-action="repair">
-        <i class="fas fa-tools"></i> {{ t('loras.contextMenu.repairMetadata') }}
-    </div>
-    <div class="context-menu-item" data-action="reimport">
-        <i class="fas fa-undo-alt"></i> {{ t('loras.contextMenu.reimportMetadata') }}
-    </div>
-    <div class="context-menu-separator"></div>
+    <div class="context-menu-separator menu-section-break"></div>
+    <!-- Organization -->
     <div class="context-menu-item" data-action="move"><i class="fas fa-folder-open"></i> {{
         t('loras.contextMenu.moveToFolder') }}</div>
+    <div class="context-menu-separator"></div>
+    <!-- Destructive -->
     <div class="context-menu-item delete-item" data-action="delete"><i class="fas fa-trash"></i> {{
         t('loras.contextMenu.deleteRecipe') }}</div>
 </div>
