@@ -102,6 +102,7 @@ class RecipeHandlerSet:
             "check_image_exists": self.management.check_image_exists,
             "import_from_url": self.management.import_from_url,
             "create_from_example": self.management.create_from_example,
+            "reimport_recipe": self.management.reimport_recipe,
         }
 
 
@@ -797,6 +798,116 @@ class RecipeManagementHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=404)
         except Exception as exc:
             self._logger.error("Error repairing single recipe: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def reimport_recipe(self, request: web.Request) -> web.Response:
+        """Delete a recipe and re-import it from its source URL.
+
+        This gives the recipe a fresh start — re-downloads the image from
+        CivitAI, re-parses EXIF metadata with the current parser, and
+        re-resolves LoRAs / checkpoint. User edits (title, tags, favorite)
+        are carried over from the old recipe.
+        """
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            recipe_id = request.match_info["recipe_id"]
+            old_recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
+            if not old_recipe:
+                raise RecipeNotFoundError(f"Recipe {recipe_id} not found")
+
+            source_path = old_recipe.get("source_path")
+            if not source_path:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": (
+                            "Recipe has no source URL — cannot re-import. "
+                            "Use repair or manual import instead."
+                        ),
+                    },
+                    status=400,
+                )
+
+            user_edits: dict[str, Any] = {}
+            for key in ("title", "tags", "favorite"):
+                if key in old_recipe and old_recipe[key]:
+                    user_edits[key] = old_recipe[key]
+            if "tags" in user_edits and not isinstance(user_edits["tags"], list):
+                del user_edits["tags"]
+
+            old_created = old_recipe.get("created_date")
+            old_modified = old_recipe.get("modified")
+
+            await self._persistence_service.delete_recipe(
+                recipe_scanner=recipe_scanner, recipe_id=recipe_id
+            )
+
+            async with self._import_semaphore:
+                import_response = await self._do_import_from_url(
+                    source_path, recipe_scanner
+                )
+
+            body_bytes = import_response.body
+            if not body_bytes:
+                raise RuntimeError("Re-import returned an empty response")
+            import_body = json.loads(body_bytes.decode())
+            new_recipe_id = import_body.get("recipe_id")
+
+            if new_recipe_id and user_edits:
+                try:
+                    await self._persistence_service.update_recipe(
+                        recipe_scanner=recipe_scanner,
+                        recipe_id=new_recipe_id,
+                        updates=user_edits,
+                    )
+                except Exception as exc:
+                    self._logger.warning(
+                        "Re-import succeeded but failed to carry over "
+                        "user edits for new recipe %s: %s",
+                        new_recipe_id,
+                        exc,
+                    )
+
+            timestamp_updates: dict[str, Any] = {}
+            if old_created is not None:
+                timestamp_updates["created_date"] = old_created
+            if old_modified is not None:
+                timestamp_updates["modified"] = old_modified
+            if new_recipe_id and timestamp_updates:
+                try:
+                    await recipe_scanner.update_recipe_metadata(
+                        new_recipe_id, timestamp_updates
+                    )
+                except Exception as exc:
+                    self._logger.warning(
+                        "Re-import succeeded but failed to preserve "
+                        "timestamps for new recipe %s: %s",
+                        new_recipe_id,
+                        exc,
+                    )
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "old_recipe_id": recipe_id,
+                    "recipe_id": new_recipe_id,
+                    "source_path": source_path,
+                }
+            )
+        except RecipeNotFoundError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=404)
+        except RecipeValidationError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except RecipeDownloadError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error(
+                "Error reimporting recipe: %s", exc, exc_info=True
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def get_repair_progress(self, request: web.Request) -> web.Response:
