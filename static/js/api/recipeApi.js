@@ -213,6 +213,8 @@ export async function resetAndReloadWithVirtualScroll(options = {}) {
 
         if (scrollSnapshot) {
             await restoreScrollPosition(scrollSnapshot);
+        } else if (state.virtualScroller?.scrollContainer) {
+            state.virtualScroller.scrollContainer.scrollTop = 0;
         }
 
         return result;

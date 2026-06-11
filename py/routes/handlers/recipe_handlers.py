@@ -833,23 +833,51 @@ class RecipeManagementHandler:
                 )
 
             user_edits: dict[str, Any] = {}
-            for key in ("title", "tags", "favorite"):
-                if key in old_recipe and old_recipe[key]:
+            for key in ("title", "tags", "favorite", "preview_nsfw_level"):
+                if key in old_recipe and old_recipe[key] is not None:
                     user_edits[key] = old_recipe[key]
             if "tags" in user_edits and not isinstance(user_edits["tags"], list):
                 del user_edits["tags"]
 
-            old_created = old_recipe.get("created_date")
-            old_modified = old_recipe.get("modified")
+            old_file_path = old_recipe.get("file_path", "")
+            old_folder = os.path.dirname(old_file_path) if old_file_path else None
+
+            image_id = extract_civitai_image_id(source_path)
+            is_local_file = not image_id and os.path.isfile(source_path)
+
+            if not image_id and not is_local_file:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": (
+                            "Recipe source is neither a valid CivitAI image URL "
+                            "nor an accessible local file. "
+                            "Use repair or manual import instead."
+                        ),
+                    },
+                    status=400,
+                )
+
+            if is_local_file:
+                return await self._do_reimport_from_local(
+                    source_path,
+                    recipe_scanner,
+                    recipe_id=recipe_id,
+                    target_dir=old_folder,
+                    user_edits=user_edits,
+                    old_title=old_recipe.get("title", ""),
+                )
+
+            async with self._import_semaphore:
+                import_response = await self._do_import_from_url(
+                    source_path,
+                    recipe_scanner,
+                    target_dir=old_folder,
+                )
 
             await self._persistence_service.delete_recipe(
                 recipe_scanner=recipe_scanner, recipe_id=recipe_id
             )
-
-            async with self._import_semaphore:
-                import_response = await self._do_import_from_url(
-                    source_path, recipe_scanner
-                )
 
             body_bytes = import_response.body
             if not body_bytes:
@@ -868,24 +896,6 @@ class RecipeManagementHandler:
                     self._logger.warning(
                         "Re-import succeeded but failed to carry over "
                         "user edits for new recipe %s: %s",
-                        new_recipe_id,
-                        exc,
-                    )
-
-            timestamp_updates: dict[str, Any] = {}
-            if old_created is not None:
-                timestamp_updates["created_date"] = old_created
-            if old_modified is not None:
-                timestamp_updates["modified"] = old_modified
-            if new_recipe_id and timestamp_updates:
-                try:
-                    await recipe_scanner.update_recipe_metadata(
-                        new_recipe_id, timestamp_updates
-                    )
-                except Exception as exc:
-                    self._logger.warning(
-                        "Re-import succeeded but failed to preserve "
-                        "timestamps for new recipe %s: %s",
                         new_recipe_id,
                         exc,
                     )
@@ -1662,6 +1672,9 @@ class RecipeManagementHandler:
         self,
         image_url: str,
         recipe_scanner: Any,
+        *,
+        recipe_id: str | None = None,
+        target_dir: str | None = None,
     ) -> web.Response:
         image_id = extract_civitai_image_id(image_url)
         if not image_id:
@@ -1835,8 +1848,103 @@ class RecipeManagementHandler:
             tags=[],
             metadata=metadata,
             extension=extension,
+            recipe_id=recipe_id,
+            target_dir=target_dir,
         )
         return web.json_response(result.payload, status=result.status)
+
+    async def _do_reimport_from_local(
+        self,
+        file_path: str,
+        recipe_scanner: Any,
+        *,
+        recipe_id: str,
+        target_dir: str | None,
+        user_edits: dict[str, Any],
+        old_title: str,
+    ) -> web.Response:
+        """Re-import a recipe from a local image file.
+
+        Reads the original source file, re-parses its EXIF metadata, saves a
+        fresh recipe, then deletes the old one.
+        """
+        normalized = os.path.normpath(file_path)
+        if not os.path.isfile(normalized):
+            raise RecipeNotFoundError(
+                f"Source file no longer accessible: {normalized}"
+            )
+
+        with open(normalized, "rb") as fh:
+            image_bytes = fh.read()
+
+        extension = os.path.splitext(normalized)[1].lower() or ".png"
+
+        analysis_result = await self._analysis_service.analyze_local_image(
+            file_path=normalized,
+            recipe_scanner=recipe_scanner,
+        )
+        analysis_payload: dict[str, Any] = analysis_result.payload
+
+        gen_params = analysis_payload.get("gen_params") or {}
+        loras = analysis_payload.get("loras") or []
+        checkpoint = analysis_payload.get("checkpoint")
+        base_model = analysis_payload.get("base_model", "")
+
+        metadata: dict[str, Any] = {
+            "base_model": base_model,
+            "loras": loras,
+            "gen_params": gen_params,
+            "source_path": normalized,
+        }
+        if checkpoint:
+            metadata["checkpoint"] = checkpoint
+
+        prompt = (
+            gen_params.get("prompt")
+            or gen_params.get("positivePrompt")
+            or ""
+        )
+        name = " ".join(str(prompt).split()[:10]) if prompt else old_title
+
+        result = await self._persistence_service.save_recipe(
+            recipe_scanner=recipe_scanner,
+            image_bytes=image_bytes,
+            image_base64=analysis_payload.get("image_base64"),
+            name=name,
+            tags=[],
+            metadata=metadata,
+            extension=extension,
+            target_dir=target_dir,
+        )
+
+        await self._persistence_service.delete_recipe(
+            recipe_scanner=recipe_scanner, recipe_id=recipe_id
+        )
+
+        new_recipe_id = result.payload.get("recipe_id")
+        if new_recipe_id and user_edits:
+            try:
+                await self._persistence_service.update_recipe(
+                    recipe_scanner=recipe_scanner,
+                    recipe_id=new_recipe_id,
+                    updates=user_edits,
+                )
+            except Exception as exc:
+                self._logger.warning(
+                    "Re-import (local) succeeded but failed to carry over "
+                    "user edits for recipe %s: %s",
+                    new_recipe_id,
+                    exc,
+                )
+
+        return web.json_response(
+            {
+                "success": True,
+                "old_recipe_id": recipe_id,
+                "recipe_id": new_recipe_id,
+                "source_path": normalized,
+            }
+        )
 
     async def create_from_example(self, request: web.Request) -> web.Response:
         """Create a recipe from a model's example image using cached metadata.

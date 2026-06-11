@@ -724,14 +724,13 @@ export class BulkManager {
                 await progressUI.complete(
                     `Re-import complete: ${completed} re-imported, ${failed} failed`
                 );
+                const { resetAndReload: recipeResetAndReload } = await import('../api/recipeApi.js');
+                recipeResetAndReload(false, { preserveScroll: false });
+                this.clearSelection();
             } else {
                 state.loadingManager.hide();
                 showToast('toast.recipes.reimportBulkFailed', {}, 'error');
             }
-
-            const { resetAndReload: recipeResetAndReload } = await import('../api/recipeApi.js');
-            recipeResetAndReload(false, { preserveScroll: true });
-            this.clearSelection();
         } catch (error) {
             console.error('[reimportSelectedRecipes] outer catch:', error);
             state.loadingManager.hide();

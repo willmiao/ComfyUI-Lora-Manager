@@ -347,7 +347,7 @@ export class RecipeContextMenu extends BaseContextMenu {
                 state.loadingManager.hide();
                 showToast('toast.recipes.reimportSuccess', {}, 'success');
                 const { resetAndReload } = await import('../../api/recipeApi.js');
-                resetAndReload(false, { preserveScroll: true });
+                resetAndReload(false, { preserveScroll: false });
             } else {
                 throw new Error(result.error || 'Re-import failed');
             }

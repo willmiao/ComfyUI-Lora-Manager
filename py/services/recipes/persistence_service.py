@@ -49,8 +49,18 @@ class RecipePersistenceService:
         tags: Iterable[str],
         metadata: Optional[dict[str, Any]],
         extension: str | None = None,
+        recipe_id: str | None = None,
+        target_dir: str | None = None,
     ) -> PersistenceResult:
-        """Persist a user uploaded recipe."""
+        """Persist a user uploaded recipe.
+
+        Args:
+            recipe_id: If provided, reuse this ID instead of generating a new
+                UUID. Used by re-import to preserve the original recipe identity.
+            target_dir: If provided, save recipe files to this directory instead
+                of the default recipes_dir. Used by re-import to preserve the
+                original folder location.
+        """
 
         missing_fields = []
         if not name:
@@ -63,10 +73,10 @@ class RecipePersistenceService:
             )
 
         resolved_image_bytes = self._resolve_image_bytes(image_bytes, image_base64)
-        recipes_dir = recipe_scanner.recipes_dir
+        recipes_dir = target_dir or recipe_scanner.recipes_dir
         os.makedirs(recipes_dir, exist_ok=True)
 
-        recipe_id = str(uuid.uuid4())
+        recipe_id = recipe_id or str(uuid.uuid4())
         
         # Handle video formats by bypassing optimization and metadata embedding
         is_video = extension in [".mp4", ".webm"]
