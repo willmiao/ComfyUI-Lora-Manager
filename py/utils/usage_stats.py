@@ -10,6 +10,7 @@ from typing import Dict, Set
 
 from ..config import config
 from ..services.service_registry import ServiceRegistry
+from ..utils.settings_paths import get_settings_dir
 
 # Check if running in standalone mode
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
@@ -83,6 +84,7 @@ class UsageStats:
         
         # Load existing stats if available
         self._stats_file_path = self._get_stats_file_path()
+        self._migrate_from_old_location()
         self._load_stats()
         
         # Save interval in seconds
@@ -95,14 +97,38 @@ class UsageStats:
         logger.debug("Usage statistics tracker initialized")
     
     def _get_stats_file_path(self) -> str:
-        """Get the path to the stats JSON file"""
+        """Get the path to the stats JSON file in the settings directory."""
+        settings_dir = get_settings_dir(create=True)
+        return os.path.join(settings_dir, "stats", self.STATS_FILENAME)
+
+    @staticmethod
+    def _get_old_stats_file_path() -> str:
+        """Get the legacy stats file path in the first lora root directory."""
         if not config.loras_roots or len(config.loras_roots) == 0:
-            # If no lora roots are available, we can't save stats
-            # This will be handled by the caller
-            raise RuntimeError("No LoRA root directories configured. Cannot initialize usage statistics.")
-        
-        # Use the first lora root
-        return os.path.join(config.loras_roots[0], self.STATS_FILENAME)
+            return ""
+        return os.path.join(config.loras_roots[0], UsageStats.STATS_FILENAME)
+
+    def _migrate_from_old_location(self) -> None:
+        """Migrate stats file from old location (first lora root) to new location (settings_dir/stats/)."""
+        new_path = self._stats_file_path
+        if os.path.exists(new_path):
+            return
+
+        old_path = self._get_old_stats_file_path()
+        if not old_path or not os.path.exists(old_path):
+            return
+
+        try:
+            os.makedirs(os.path.dirname(new_path), exist_ok=True)
+            shutil.copy2(old_path, new_path)
+            logger.info("Migrated usage stats from %s to %s", old_path, new_path)
+            try:
+                os.remove(old_path)
+                logger.info("Cleaned up old stats file: %s", old_path)
+            except Exception as e:
+                logger.warning("Failed to remove old stats file %s: %s", old_path, e)
+        except Exception as e:
+            logger.error("Failed to migrate usage stats from %s to %s: %s", old_path, new_path, e)
     
     def _backup_old_stats(self):
         """Backup the old stats file before conversion"""

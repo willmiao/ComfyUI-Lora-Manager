@@ -27,9 +27,12 @@ async def _finalize_usage_stats(tasks):
 
 def _prepare_usage_stats(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, sleep_override=None):
     UsageStats._instance = None
-    stats_root = tmp_path / "loras"
-    stats_root.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(usage_stats_module.config, "loras_roots", [str(stats_root)])
+    settings_dir = tmp_path / "settings"
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module.config, "loras_roots", [str(loras_root)])
 
     created_tasks = []
     real_create_task = usage_stats_module.asyncio.create_task
@@ -45,7 +48,7 @@ def _prepare_usage_stats(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, sle
         monkeypatch.setattr(usage_stats_module.asyncio, "sleep", sleep_override)
 
     stats = UsageStats()
-    return stats, created_tasks, stats_root
+    return stats, created_tasks, settings_dir, loras_root
 
 
 async def test_usage_stats_converts_legacy_format(tmp_path, monkeypatch):
@@ -57,12 +60,15 @@ async def test_usage_stats_converts_legacy_format(tmp_path, monkeypatch):
     }
 
     UsageStats._instance = None
-    stats_root = tmp_path / "loras"
-    stats_root.mkdir(parents=True, exist_ok=True)
-    monkeypatch.setattr(usage_stats_module.config, "loras_roots", [str(stats_root)])
+    settings_dir = tmp_path / "settings"
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module.config, "loras_roots", [str(loras_root)])
 
-    stats_path = stats_root / UsageStats.STATS_FILENAME
-    stats_path.write_text(json.dumps(legacy_stats), encoding="utf-8")
+    old_stats_path = loras_root / UsageStats.STATS_FILENAME
+    old_stats_path.write_text(json.dumps(legacy_stats), encoding="utf-8")
 
     created_tasks = []
     real_create_task = usage_stats_module.asyncio.create_task
@@ -83,20 +89,23 @@ async def test_usage_stats_converts_legacy_format(tmp_path, monkeypatch):
     assert converted["checkpoints"]["hash1"] == {"total": 3, "history": {today: 3}}
     assert converted["loras"]["hash2"] == {"total": 5, "history": {today: 5}}
 
-    backup_path = stats_path.with_suffix(stats_path.suffix + UsageStats.BACKUP_SUFFIX)
+    new_stats_path = settings_dir / "stats" / UsageStats.STATS_FILENAME
+    assert new_stats_path.exists()
+
+    backup_path = new_stats_path.with_suffix(new_stats_path.suffix + UsageStats.BACKUP_SUFFIX)
     assert backup_path.exists()
 
     await _finalize_usage_stats(created_tasks)
 
 
 async def test_usage_stats_save_stats_persists_file(tmp_path, monkeypatch):
-    stats, tasks, stats_root = _prepare_usage_stats(tmp_path, monkeypatch)
+    stats, tasks, settings_dir, _ = _prepare_usage_stats(tmp_path, monkeypatch)
     stats.stats["total_executions"] = 4
 
     saved = await stats.save_stats(force=True)
     assert saved is True
 
-    stats_path = stats_root / UsageStats.STATS_FILENAME
+    stats_path = settings_dir / "stats" / UsageStats.STATS_FILENAME
     persisted = json.loads(stats_path.read_text(encoding="utf-8"))
     assert persisted["total_executions"] == 4
     assert persisted["last_save_time"] == stats.stats["last_save_time"]
@@ -110,7 +119,7 @@ async def test_usage_stats_background_processor_handles_pending_prompts(tmp_path
     async def fast_sleep(_seconds):
         await real_sleep(0.01)
 
-    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch, sleep_override=fast_sleep)
+    stats, tasks, _, _ = _prepare_usage_stats(tmp_path, monkeypatch, sleep_override=fast_sleep)
 
     metadata_calls = []
     # Use string literals directly to avoid dependency on conditional imports
@@ -155,7 +164,7 @@ async def test_usage_stats_background_processor_handles_pending_prompts(tmp_path
 
 
 async def test_usage_stats_calculates_pending_checkpoint_hash_on_demand(tmp_path, monkeypatch):
-    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch)
+    stats, tasks, _, _ = _prepare_usage_stats(tmp_path, monkeypatch)
 
     metadata_payload = {
         "models": {
@@ -195,7 +204,7 @@ async def test_usage_stats_calculates_pending_checkpoint_hash_on_demand(tmp_path
 
 
 async def test_usage_stats_skips_failed_checkpoint_hash_retry(tmp_path, monkeypatch):
-    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch)
+    stats, tasks, _, _ = _prepare_usage_stats(tmp_path, monkeypatch)
 
     metadata_payload = {
         "models": {
@@ -234,7 +243,7 @@ async def test_usage_stats_skips_failed_checkpoint_hash_retry(tmp_path, monkeypa
 
 
 async def test_usage_stats_resolves_manually_copied_checkpoint_from_disk(tmp_path, monkeypatch):
-    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch)
+    stats, tasks, _, _ = _prepare_usage_stats(tmp_path, monkeypatch)
 
     checkpoints_root = tmp_path / "checkpoints"
     checkpoints_root.mkdir()
@@ -273,7 +282,7 @@ async def test_usage_stats_resolves_manually_copied_checkpoint_from_disk(tmp_pat
 
 
 async def test_usage_stats_skips_name_fallback_for_missing_lora_hash(tmp_path, monkeypatch):
-    stats, tasks, _ = _prepare_usage_stats(tmp_path, monkeypatch)
+    stats, tasks, _, _ = _prepare_usage_stats(tmp_path, monkeypatch)
 
     metadata_payload = {
         "models": {},
@@ -294,3 +303,79 @@ async def test_usage_stats_skips_name_fallback_for_missing_lora_hash(tmp_path, m
     assert not any(key.startswith("name:") for key in stats.stats["loras"])
 
     await _finalize_usage_stats(tasks)
+
+
+async def test_usage_stats_migrates_from_old_location(tmp_path, monkeypatch):
+    settings_dir = tmp_path / "settings"
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module.config, "loras_roots", [str(loras_root)])
+
+    old_data = {
+        "checkpoints": {},
+        "loras": {"lora-hash": {"total": 3, "history": {"2025-01-01": 3}}},
+        "embeddings": {},
+        "total_executions": 3,
+        "last_save_time": 100.0,
+    }
+    old_path = loras_root / UsageStats.STATS_FILENAME
+    old_path.write_text(json.dumps(old_data), encoding="utf-8")
+
+    created_tasks = []
+    real_create_task = usage_stats_module.asyncio.create_task
+
+    def _track_task(coro):
+        task = real_create_task(coro)
+        created_tasks.append(task)
+        return task
+
+    monkeypatch.setattr(usage_stats_module.asyncio, "create_task", _track_task)
+
+    stats = UsageStats()
+
+    new_path = settings_dir / "stats" / UsageStats.STATS_FILENAME
+    assert new_path.exists(), "Stats file should be migrated to new location"
+    assert not old_path.exists(), "Old stats file should be removed after migration"
+    assert stats.stats["total_executions"] == 3
+    assert stats.stats["loras"]["lora-hash"]["total"] == 3
+
+    await _finalize_usage_stats(created_tasks)
+
+
+async def test_usage_stats_uses_new_location_directly(tmp_path, monkeypatch):
+    settings_dir = tmp_path / "settings"
+    settings_dir.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module, "get_settings_dir", lambda create=True: str(settings_dir))
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir(parents=True, exist_ok=True)
+    monkeypatch.setattr(usage_stats_module.config, "loras_roots", [str(loras_root)])
+
+    new_data = {
+        "checkpoints": {},
+        "loras": {},
+        "embeddings": {},
+        "total_executions": 7,
+        "last_save_time": 200.0,
+    }
+    new_path = settings_dir / "stats" / UsageStats.STATS_FILENAME
+    new_path.parent.mkdir(parents=True, exist_ok=True)
+    new_path.write_text(json.dumps(new_data), encoding="utf-8")
+
+    created_tasks = []
+    real_create_task = usage_stats_module.asyncio.create_task
+
+    def _track_task(coro):
+        task = real_create_task(coro)
+        created_tasks.append(task)
+        return task
+
+    monkeypatch.setattr(usage_stats_module.asyncio, "create_task", _track_task)
+
+    stats = UsageStats()
+
+    assert stats.stats["total_executions"] == 7
+    assert not loras_root.joinpath(UsageStats.STATS_FILENAME).exists()
+
+    await _finalize_usage_stats(created_tasks)

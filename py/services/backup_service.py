@@ -141,6 +141,16 @@ class BackupService:
                     )
                 )
 
+        stats_path = os.path.join(get_settings_dir(create=True), "stats", "lora_manager_stats.json")
+        if os.path.exists(stats_path):
+            targets.append(
+                (
+                    "usage_stats",
+                    "stats/lora_manager_stats.json",
+                    stats_path,
+                )
+            )
+
         return targets
 
     @staticmethod
@@ -348,6 +358,8 @@ class BackupService:
         if kind == "model_update":
             filename = os.path.basename(archive_member)
             return str(Path(get_cache_file_path(CacheType.MODEL_UPDATE, create_dir=True)).parent / filename)
+        if kind == "usage_stats":
+            return os.path.join(get_settings_dir(create=True), "stats", "lora_manager_stats.json")
         return None
 
     async def create_auto_snapshot_if_due(self) -> Optional[dict[str, Any]]:
