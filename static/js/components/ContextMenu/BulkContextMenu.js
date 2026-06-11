@@ -51,21 +51,33 @@ export class BulkContextMenu extends BaseContextMenu {
             reimportMetadataItem.style.display = config.reimportMetadata ? 'flex' : 'none';
         }
 
+        const isEmbeddings = currentModelType === 'embeddings';
         if (sendToWorkflowAppendItem) {
             sendToWorkflowAppendItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
         }
         if (sendToWorkflowReplaceItem) {
-            sendToWorkflowReplaceItem.style.display = config.sendToWorkflow ? 'flex' : 'none';
+            sendToWorkflowReplaceItem.style.display = (config.sendToWorkflow && !isEmbeddings) ? 'flex' : 'none';
         }
         if (copyAllItem) {
             copyAllItem.style.display = config.copyAll ? 'flex' : 'none';
         }
 
-        // Submenu parent visibility
+        // Submenu parent - for embeddings, collapse into a direct item (no replace choice)
         const sendToWorkflowSubmenu = this.menu.querySelector('[data-has-submenu="send-to-workflow"]');
         if (sendToWorkflowSubmenu) {
             const hasWorkflowActions = config.sendToWorkflow || config.copyAll;
-            sendToWorkflowSubmenu.style.display = hasWorkflowActions ? 'flex' : 'none';
+            if (isEmbeddings && config.sendToWorkflow && !config.copyAll) {
+                sendToWorkflowSubmenu.classList.remove('has-submenu');
+                sendToWorkflowSubmenu.removeAttribute('data-has-submenu');
+                sendToWorkflowSubmenu.dataset.action = 'send-to-workflow-append';
+                const arrow = sendToWorkflowSubmenu.querySelector('.submenu-arrow');
+                if (arrow) arrow.style.display = 'none';
+                const submenu = sendToWorkflowSubmenu.querySelector('.context-submenu');
+                if (submenu) submenu.style.display = 'none';
+                sendToWorkflowSubmenu.style.display = 'flex';
+            } else {
+                sendToWorkflowSubmenu.style.display = hasWorkflowActions ? 'flex' : 'none';
+            }
         }
 
         if (refreshAllItem) {

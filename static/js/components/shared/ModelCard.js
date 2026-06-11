@@ -1,4 +1,4 @@
-import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, sendEmbeddingToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
@@ -216,6 +216,11 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
             missingNodesMessage,
             missingTargetMessage,
         });
+    } else if (modelType === MODEL_TYPES.EMBEDDING) {
+        const folder = card.dataset.folder || '';
+        const name = card.dataset.file_name || '';
+        const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
+        sendEmbeddingToWorkflow(embeddingCode, false);
     } else {
         showToast('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'info');
     }
@@ -230,8 +235,11 @@ function handleCopyAction(card, modelType) {
         const message = translate('modelCard.actions.checkpointNameCopied', {}, 'Checkpoint name copied');
         copyToClipboard(checkpointName, message);
     } else if (modelType === MODEL_TYPES.EMBEDDING) {
-        const embeddingName = card.dataset.file_name;
-        copyToClipboard(embeddingName, 'Embedding name copied');
+        const folder = card.dataset.folder || '';
+        const name = card.dataset.file_name || '';
+        const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
+        const message = translate('modelCard.actions.embeddingNameCopied', {}, 'Embedding syntax copied');
+        copyToClipboard(embeddingCode, message);
     }
 }
 

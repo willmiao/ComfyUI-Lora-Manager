@@ -3,6 +3,7 @@ import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { moveManager } from '../../managers/MoveManager.js';
 import { showDeleteModal, showExcludeModal } from '../../utils/modalUtils.js';
+import { sendEmbeddingToWorkflow } from '../../utils/uiHelpers.js';
 
 export class EmbeddingContextMenu extends BaseContextMenu {
     constructor() {
@@ -51,6 +52,13 @@ export class EmbeddingContextMenu extends BaseContextMenu {
                     this.currentCard.querySelector('.fa-copy').click();
                 }
                 break;
+            case 'sendtoworkflow': {
+                const folder = this.currentCard.dataset.folder || '';
+                const name = this.currentCard.dataset.file_name || '';
+                const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
+                sendEmbeddingToWorkflow(embeddingCode, false);
+                break;
+            }
             case 'refresh-metadata':
                 // Refresh metadata from CivitAI
                 apiClient.refreshSingleModelMetadata(this.currentCard.dataset.filepath);

@@ -3086,6 +3086,7 @@ class NodeRegistryHandler:
             data = await request.json()
             widget_name = data.get("widget_name")
             value = data.get("value")
+            mode = data.get("mode", "replace")
             node_ids = data.get("node_ids")
 
             if not isinstance(widget_name, str) or not widget_name:
@@ -3133,6 +3134,7 @@ class NodeRegistryHandler:
                     "id": parsed_node_id,
                     "widget_name": widget_name,
                     "value": value,
+                    "mode": mode,
                 }
 
                 if graph_identifier is not None:

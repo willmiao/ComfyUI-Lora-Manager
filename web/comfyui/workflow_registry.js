@@ -10,6 +10,13 @@ const LORA_NODE_CLASSES = new Set([
 
 const TARGET_WIDGET_NAMES = new Set(["ckpt_name", "unet_name"]);
 
+// Node classes whose "text" widget is a prompt text input (not LoRA syntax, notes, etc.)
+const TEXT_CAPABLE_CLASSES = new Set([
+    "Prompt (LoraManager)",
+    "Text (LoraManager)",
+    "CLIPTextEncode",
+]);
+
 app.registerExtension({
     name: "LoraManager.WorkflowRegistry",
 
@@ -41,8 +48,9 @@ app.registerExtension({
 
                 const supportsLora = LORA_NODE_CLASSES.has(node.comfyClass);
                 const hasTargetWidget = widgetNames.some((name) => TARGET_WIDGET_NAMES.has(name));
+                const hasTextWidget = TEXT_CAPABLE_CLASSES.has(node.comfyClass);
 
-                if (!supportsLora && !hasTargetWidget) {
+                if (!supportsLora && !hasTargetWidget && !hasTextWidget) {
                     continue;
                 }
 
@@ -65,6 +73,7 @@ app.registerExtension({
                     mode: node.mode,
                     capabilities: {
                         supports_lora: supportsLora,
+                        has_text_widget: hasTextWidget,
                         widget_names: widgetNames,
                     },
                 });
@@ -95,6 +104,7 @@ app.registerExtension({
         const graphId = message?.graph_id;
         const widgetName = message?.widget_name;
         const value = message?.value;
+        const mode = message?.mode ?? "replace";
 
         if (nodeId == null || !widgetName) {
             console.warn("LoRA Manager: invalid widget update payload", message);
@@ -127,15 +137,22 @@ app.registerExtension({
         }
 
         const widget = node.widgets[widgetIndex];
-        widget.value = value;
+        let newValue = value;
+
+        if (mode === "append") {
+            const separator = widget.value && widget.value.length > 0 ? " " : "";
+            newValue = widget.value + separator + value;
+        }
+
+        widget.value = newValue;
 
         if (Array.isArray(node.widgets_values) && node.widgets_values.length > widgetIndex) {
-            node.widgets_values[widgetIndex] = value;
+            node.widgets_values[widgetIndex] = newValue;
         }
 
         if (typeof widget.callback === "function") {
             try {
-                widget.callback(value);
+                widget.callback(newValue);
             } catch (callbackError) {
                 console.error("LoRA Manager: widget callback failed", callbackError);
             }

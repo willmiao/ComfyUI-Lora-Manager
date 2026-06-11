@@ -1,5 +1,5 @@
 import { state, getCurrentPageState } from '../state/index.js';
-import { showToast, copyToClipboard, sendLoraToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendEmbeddingToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -47,7 +47,7 @@ export class BulkManager {
             },
             [MODEL_TYPES.EMBEDDING]: {
                 addTags: true,
-                sendToWorkflow: false,
+                sendToWorkflow: true,
                 copyAll: false,
                 refreshAll: true,
                 checkUpdates: true,
@@ -504,13 +504,17 @@ export class BulkManager {
     }
 
     async sendAllModelsToWorkflow(replaceMode = false) {
-        if (state.currentPageType !== MODEL_TYPES.LORA) {
-            showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
+        if (state.selectedModels.size === 0) {
+            showToast('toast.models.noModelsSelected', {}, 'warning');
             return;
         }
 
-        if (state.selectedModels.size === 0) {
-            showToast('toast.loras.noLorasSelected', {}, 'warning');
+        if (state.currentPageType === MODEL_TYPES.EMBEDDING) {
+            return this._sendAllEmbeddingsToWorkflow();
+        }
+
+        if (state.currentPageType !== MODEL_TYPES.LORA) {
+            showToast('toast.loras.sendOnlyForLoras', {}, 'warning');
             return;
         }
 
@@ -540,6 +544,28 @@ export class BulkManager {
         }
 
         await sendLoraToWorkflow(loraSyntaxes.join(', '), replaceMode, 'lora');
+    }
+
+    async _sendAllEmbeddingsToWorkflow() {
+        const embeddingCodes = [];
+        for (const filepath of state.selectedModels) {
+            const escapedPath = CSS.escape(filepath);
+            const card = document.querySelector(`.model-card[data-filepath="${escapedPath}"]`);
+            if (card) {
+                const folder = card.dataset.folder || '';
+                const name = card.dataset.file_name || '';
+                const code = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
+                embeddingCodes.push(code);
+            }
+        }
+
+        if (embeddingCodes.length === 0) {
+            showToast('No valid embedding data found', {}, 'warning');
+            return;
+        }
+
+        const joinedCode = embeddingCodes.join(', ');
+        await sendEmbeddingToWorkflow(joinedCode, false);
     }
 
     showBulkDeleteModal() {

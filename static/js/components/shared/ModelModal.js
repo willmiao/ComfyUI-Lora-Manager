@@ -1,4 +1,4 @@
-import { showToast, openCivitai, sendLoraToWorkflow, sendModelPathToWorkflow, buildLoraSyntax } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, sendLoraToWorkflow, sendEmbeddingToWorkflow, sendModelPathToWorkflow, buildLoraSyntax } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import {
@@ -648,6 +648,10 @@ export async function showModelModal(model, modelType) {
         if (modelType === 'checkpoints' && modelWithFullData.sub_type) {
             activeModalElement.dataset.subType = modelWithFullData.sub_type;
         }
+        // Store folder for embedding models
+        if (modelType === 'embeddings' && modelWithFullData.folder) {
+            activeModalElement.dataset.folder = modelWithFullData.folder;
+        }
     }
     updateVersionsTabBadge(updateAvailabilityState.hasUpdateAvailable);
     const versionsTabController = initVersionsTab({
@@ -1188,9 +1192,10 @@ async function handleSendToWorkflow(target, modelType) {
             missingTargetMessage,
         });
     } else if (modelType === 'embeddings') {
-        // For Embedding: Send as LoRA syntax (embedding name only)
-        const embeddingSyntax = `<embed:${currentFileName}:1>`;
-        await sendLoraToWorkflow(embeddingSyntax, false, 'embedding');
+        const folder = modalElement?.dataset?.folder || '';
+        const name = currentFileName.replace(/\.[^.]+$/, '');
+        const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
+        await sendEmbeddingToWorkflow(embeddingCode, false);
     }
 }
 

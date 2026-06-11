@@ -866,6 +866,108 @@ async function sendWidgetValueToNodes(nodeIds, nodesMap, widgetName, value, mess
   }
 }
 
+async function sendTextToNodes(nodeIds, nodesMap, text, mode, messages = {}) {
+  const {
+    successMessage = 'Updated workflow node',
+    failureMessage = 'Failed to update workflow node',
+    missingTargetMessage = 'No target node selected',
+  } = messages;
+
+  const targetIds = Array.isArray(nodeIds) ? nodeIds : [];
+  if (targetIds.length === 0) {
+    showToast(missingTargetMessage, {}, 'warning');
+    return false;
+  }
+
+  const references = targetIds
+    .map((nodeKey) => resolveNodeReference(nodeKey, nodesMap))
+    .filter((reference) => reference && reference.node_id !== undefined);
+
+  if (references.length === 0) {
+    showToast(missingTargetMessage, {}, 'warning');
+    return false;
+  }
+
+  try {
+    const response = await fetch('/api/lm/update-node-widget', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        widget_name: 'text',
+        value: text,
+        mode: mode || 'append',
+        node_ids: references,
+      }),
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showToast(successMessage, {}, 'success');
+      return true;
+    }
+
+    const errorMessage = result?.error || failureMessage;
+    showToast(errorMessage, {}, 'error');
+    return false;
+  } catch (error) {
+    console.error('Failed to send text to workflow:', error);
+    showToast(failureMessage, {}, 'error');
+    return false;
+  }
+}
+
+export async function sendEmbeddingToWorkflow(embeddingCode, replaceMode = false) {
+  const registry = await fetchWorkflowRegistry();
+  if (!registry) {
+    return false;
+  }
+
+  const textNodes = filterRegistryNodes(registry.nodes, (node) => {
+    if (!isNodeEnabled(node)) {
+      return false;
+    }
+    return node.capabilities?.has_text_widget === true;
+  });
+
+  const nodeKeys = Object.keys(textNodes);
+  if (nodeKeys.length === 0) {
+    showToast('uiHelpers.workflow.noMatchingNodes', {}, 'warning');
+    return false;
+  }
+
+  const mode = replaceMode ? 'replace' : 'append';
+  const messages = {
+    successMessage: translate(
+      replaceMode ? 'uiHelpers.workflow.embeddingReplaced' : 'uiHelpers.workflow.embeddingAdded',
+      {},
+      replaceMode ? 'Embedding replaced in workflow' : 'Embedding added to workflow'
+    ),
+    failureMessage: translate('uiHelpers.workflow.embeddingFailed', {}, 'Failed to add embedding'),
+    missingTargetMessage: translate('uiHelpers.workflow.noTargetNodeSelected', {}, 'No target node selected'),
+  };
+
+  const handleSend = (selectedNodeIds) =>
+    sendTextToNodes(selectedNodeIds, textNodes, embeddingCode, mode, messages);
+
+  if (nodeKeys.length === 1) {
+    return await handleSend([nodeKeys[0]]);
+  }
+
+  const actionType = translate('uiHelpers.nodeSelector.embedding', {}, 'Embedding');
+  const actionMode = replaceMode
+    ? translate('uiHelpers.nodeSelector.replace', {}, 'Replace')
+    : translate('uiHelpers.nodeSelector.append', {}, 'Append');
+
+  showNodeSelector(textNodes, {
+    actionType,
+    actionMode,
+    onSend: handleSend,
+  });
+  return true;
+}
+
 // Global variable to track active node selector state
 let nodeSelectorState = {
   isActive: false,
