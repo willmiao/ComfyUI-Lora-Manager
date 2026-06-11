@@ -113,6 +113,7 @@
             "replacePreview": "プレビューを置換",
             "copyCheckpointName": "checkpoint名をコピー",
             "copyEmbeddingName": "embedding名をコピー",
+            "embeddingNameCopied": "Embedding構文をコピーしました",
             "sendCheckpointToWorkflow": "ComfyUIに送信",
             "sendEmbeddingToWorkflow": "ComfyUIに送信"
         },
@@ -1500,11 +1501,14 @@
             "noMatchingNodes": "現在のワークフローには互換性のあるノードがありません",
             "noTargetNodeSelected": "ターゲットノードが選択されていません",
             "modelUpdated": "モデルがワークフローで更新されました",
-            "modelFailed": "モデルノードの更新に失敗しました"
+            "modelFailed": "モデルノードの更新に失敗しました",
+            "embeddingAdded": "Embeddingをワークフローに追加しました",
+            "embeddingFailed": "Embeddingの追加に失敗しました"
         },
         "nodeSelector": {
             "recipe": "レシピ",
             "lora": "LoRA",
+            "embedding": "Embedding",
             "replace": "置換",
             "append": "追加",
             "selectTargetNode": "ターゲットノードを選択",

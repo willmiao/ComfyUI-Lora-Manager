@@ -1195,7 +1195,7 @@ async function handleSendToWorkflow(target, modelType) {
         const folder = modalElement?.dataset?.folder || '';
         const name = currentFileName.replace(/\.[^.]+$/, '');
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
-        await sendEmbeddingToWorkflow(embeddingCode, false);
+        await sendEmbeddingToWorkflow(embeddingCode);
     }
 }
 

@@ -565,7 +565,7 @@ export class BulkManager {
         }
 
         const joinedCode = embeddingCodes.join(', ');
-        await sendEmbeddingToWorkflow(joinedCode, false);
+        await sendEmbeddingToWorkflow(joinedCode);
     }
 
     showBulkDeleteModal() {

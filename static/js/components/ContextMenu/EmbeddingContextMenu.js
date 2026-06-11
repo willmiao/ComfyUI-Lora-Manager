@@ -56,7 +56,7 @@ export class EmbeddingContextMenu extends BaseContextMenu {
                 const folder = this.currentCard.dataset.folder || '';
                 const name = this.currentCard.dataset.file_name || '';
                 const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
-                sendEmbeddingToWorkflow(embeddingCode, false);
+                sendEmbeddingToWorkflow(embeddingCode);
                 break;
             }
             case 'refresh-metadata':

@@ -113,6 +113,7 @@
             "replacePreview": "Vorschau ersetzen",
             "copyCheckpointName": "Checkpoint-Name kopieren",
             "copyEmbeddingName": "Embedding-Name kopieren",
+            "embeddingNameCopied": "Embedding-Syntax kopiert",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
             "sendEmbeddingToWorkflow": "An ComfyUI senden"
         },
@@ -1500,11 +1501,14 @@
             "noMatchingNodes": "Keine kompatiblen Knoten im aktuellen Workflow verfügbar",
             "noTargetNodeSelected": "Kein Zielknoten ausgewählt",
             "modelUpdated": "Modell im Workflow aktualisiert",
-            "modelFailed": "Fehler beim Aktualisieren des Modellknotens"
+            "modelFailed": "Fehler beim Aktualisieren des Modellknotens",
+            "embeddingAdded": "Embedding zum Workflow hinzugefügt",
+            "embeddingFailed": "Fehler beim Hinzufügen des Embeddings"
         },
         "nodeSelector": {
             "recipe": "Rezept",
             "lora": "LoRA",
+            "embedding": "Embedding",
             "replace": "Ersetzen",
             "append": "Anhängen",
             "selectTargetNode": "Zielknoten auswählen",

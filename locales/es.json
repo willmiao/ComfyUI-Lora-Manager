@@ -113,6 +113,7 @@
             "replacePreview": "Reemplazar vista previa",
             "copyCheckpointName": "Copiar nombre del checkpoint",
             "copyEmbeddingName": "Copiar nombre del embedding",
+            "embeddingNameCopied": "Sintaxis de embedding copiada",
             "sendCheckpointToWorkflow": "Enviar a ComfyUI",
             "sendEmbeddingToWorkflow": "Enviar a ComfyUI"
         },
@@ -1500,11 +1501,14 @@
             "noMatchingNodes": "No hay nodos compatibles disponibles en el flujo de trabajo actual",
             "noTargetNodeSelected": "No se ha seleccionado ningún nodo de destino",
             "modelUpdated": "Modelo actualizado en el flujo de trabajo",
-            "modelFailed": "Error al actualizar nodo de modelo"
+            "modelFailed": "Error al actualizar nodo de modelo",
+            "embeddingAdded": "Embedding añadido al flujo de trabajo",
+            "embeddingFailed": "Error al añadir el embedding"
         },
         "nodeSelector": {
             "recipe": "Receta",
             "lora": "LoRA",
+            "embedding": "Embedding",
             "replace": "Reemplazar",
             "append": "Añadir",
             "selectTargetNode": "Seleccionar nodo de destino",

@@ -113,6 +113,7 @@
             "replacePreview": "Заменить превью",
             "copyCheckpointName": "Копировать имя checkpoint",
             "copyEmbeddingName": "Копировать имя embedding",
+            "embeddingNameCopied": "Синтаксис embedding скопирован",
             "sendCheckpointToWorkflow": "Отправить в ComfyUI",
             "sendEmbeddingToWorkflow": "Отправить в ComfyUI"
         },
@@ -1500,11 +1501,14 @@
             "noMatchingNodes": "В текущем workflow нет совместимых узлов",
             "noTargetNodeSelected": "Целевой узел не выбран",
             "modelUpdated": "Модель обновлена в workflow",
-            "modelFailed": "Не удалось обновить узел модели"
+            "modelFailed": "Не удалось обновить узел модели",
+            "embeddingAdded": "Embedding добавлен в workflow",
+            "embeddingFailed": "Не удалось добавить embedding"
         },
         "nodeSelector": {
             "recipe": "Рецепт",
             "lora": "LoRA",
+            "embedding": "Эмбеддинг",
             "replace": "Заменить",
             "append": "Добавить",
             "selectTargetNode": "Выберите целевой узел",

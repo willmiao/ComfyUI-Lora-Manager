@@ -918,7 +918,7 @@ async function sendTextToNodes(nodeIds, nodesMap, text, mode, messages = {}) {
   }
 }
 
-export async function sendEmbeddingToWorkflow(embeddingCode, replaceMode = false) {
+export async function sendEmbeddingToWorkflow(embeddingCode) {
   const registry = await fetchWorkflowRegistry();
   if (!registry) {
     return false;
@@ -937,32 +937,24 @@ export async function sendEmbeddingToWorkflow(embeddingCode, replaceMode = false
     return false;
   }
 
-  const mode = replaceMode ? 'replace' : 'append';
   const messages = {
-    successMessage: translate(
-      replaceMode ? 'uiHelpers.workflow.embeddingReplaced' : 'uiHelpers.workflow.embeddingAdded',
-      {},
-      replaceMode ? 'Embedding replaced in workflow' : 'Embedding added to workflow'
-    ),
+    successMessage: translate('uiHelpers.workflow.embeddingAdded', {}, 'Embedding added to workflow'),
     failureMessage: translate('uiHelpers.workflow.embeddingFailed', {}, 'Failed to add embedding'),
     missingTargetMessage: translate('uiHelpers.workflow.noTargetNodeSelected', {}, 'No target node selected'),
   };
 
   const handleSend = (selectedNodeIds) =>
-    sendTextToNodes(selectedNodeIds, textNodes, embeddingCode, mode, messages);
+    sendTextToNodes(selectedNodeIds, textNodes, embeddingCode, 'append', messages);
 
   if (nodeKeys.length === 1) {
     return await handleSend([nodeKeys[0]]);
   }
 
   const actionType = translate('uiHelpers.nodeSelector.embedding', {}, 'Embedding');
-  const actionMode = replaceMode
-    ? translate('uiHelpers.nodeSelector.replace', {}, 'Replace')
-    : translate('uiHelpers.nodeSelector.append', {}, 'Append');
 
   showNodeSelector(textNodes, {
     actionType,
-    actionMode,
+    actionMode: '',
     onSend: handleSend,
   });
   return true;

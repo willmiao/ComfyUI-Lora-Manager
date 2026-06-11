@@ -754,6 +754,7 @@ async def test_update_node_widget_sends_payload():
                 "widget_name": "ckpt_name",
                 "value": "models/checkpoints/model.ckpt",
                 "graph_id": "root",
+                "mode": "replace",
             },
         )
     ]

@@ -113,6 +113,7 @@
             "replacePreview": "替换预览",
             "copyCheckpointName": "复制 Checkpoint 名称",
             "copyEmbeddingName": "复制 Embedding 名称",
+            "embeddingNameCopied": "已复制 Embedding 语法",
             "sendCheckpointToWorkflow": "发送到 ComfyUI",
             "sendEmbeddingToWorkflow": "发送到 ComfyUI"
         },
@@ -1500,11 +1501,14 @@
             "noMatchingNodes": "当前工作流中没有兼容的节点",
             "noTargetNodeSelected": "未选择目标节点",
             "modelUpdated": "模型已更新到工作流",
-            "modelFailed": "更新模型节点失败"
+            "modelFailed": "更新模型节点失败",
+            "embeddingAdded": "Embedding 已追加到工作流",
+            "embeddingFailed": "添加 Embedding 失败"
         },
         "nodeSelector": {
             "recipe": "配方",
             "lora": "LoRA",
+            "embedding": "Embedding",
             "replace": "替换",
             "append": "追加",
             "selectTargetNode": "选择目标节点",

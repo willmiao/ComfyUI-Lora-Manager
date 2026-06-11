@@ -220,7 +220,7 @@ function handleSendToWorkflow(card, replaceMode, modelType) {
         const folder = card.dataset.folder || '';
         const name = card.dataset.file_name || '';
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
-        sendEmbeddingToWorkflow(embeddingCode, false);
+        sendEmbeddingToWorkflow(embeddingCode);
     } else {
         showToast('modelCard.sendToWorkflow.checkpointNotImplemented', {}, 'info');
     }
