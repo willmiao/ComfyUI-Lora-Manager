@@ -1,7 +1,6 @@
 import os
 import logging
 import toml
-import git
 import zipfile
 import shutil
 import tempfile
@@ -358,6 +357,15 @@ class UpdateRoutes:
             tuple: (success, new_version)
         """
         try:
+            import git
+        except ImportError:
+            logger.error(
+                "GitPython is not available: the git executable was not found in PATH. "
+                "Install git or set $GIT_PYTHON_GIT_EXECUTABLE to the git binary path."
+            )
+            return False, ""
+
+        try:
             # Open the Git repository
             repo = git.Repo(plugin_root)
             
@@ -453,6 +461,7 @@ class UpdateRoutes:
             if not os.path.exists(os.path.join(plugin_root, '.git')):
                 return git_info
 
+            import git
             repo = git.Repo(plugin_root)
             commit = repo.head.commit
             git_info['commit_hash'] = commit.hexsha
