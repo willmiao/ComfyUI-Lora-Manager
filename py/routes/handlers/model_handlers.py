@@ -37,6 +37,7 @@ from ...services.use_cases import (
 )
 from ...services.websocket_manager import WebSocketManager
 from ...services.websocket_progress_callback import WebSocketProgressCallback
+from ...services.download_queue_service import DownloadQueueService
 from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.civitai_utils import resolve_license_payload
 from ...utils.file_utils import calculate_sha256
@@ -1567,6 +1568,255 @@ class ModelDownloadHandler:
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    # ------------------------------------------------------------------
+    # Download queue / history handlers
+    # ------------------------------------------------------------------
+
+    async def get_download_queue(self, request: web.Request) -> web.Response:
+        try:
+            service = await DownloadQueueService.get_instance()
+            queue = await service.get_queue()
+            stats = await service.get_stats()
+            return web.json_response({"success": True, "queue": queue, "stats": stats})
+        except Exception as exc:
+            self._logger.error(
+                "Error getting download queue: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def add_to_download_queue(self, request: web.Request) -> web.Response:
+        try:
+            import uuid
+
+            download_id = request.query.get("download_id") or str(uuid.uuid4())
+            model_id_str = request.query.get("model_id")
+            model_version_id_str = request.query.get("model_version_id")
+            model_name = request.query.get("model_name", "")
+            version_name = request.query.get("version_name", "")
+            thumbnail_url = request.query.get("thumbnail_url", "")
+            source = request.query.get("source")
+            file_params_json = request.query.get("file_params")
+
+            model_id = int(model_id_str) if model_id_str else None
+            model_version_id = int(model_version_id_str) if model_version_id_str else None
+            file_params = json.loads(file_params_json) if file_params_json else None
+
+            service = await DownloadQueueService.get_instance()
+            item = await service.add_to_queue(
+                download_id=download_id,
+                model_id=model_id,
+                model_version_id=model_version_id,
+                model_name=model_name,
+                version_name=version_name,
+                thumbnail_url=thumbnail_url,
+                source=source,
+                file_params=file_params,
+            )
+            return web.json_response({"success": True, "item": item})
+        except Exception as exc:
+            self._logger.error(
+                "Error adding to download queue: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def remove_from_download_queue(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response(
+                    {"success": False, "error": "download_id is required"}, status=400
+                )
+
+            service = await DownloadQueueService.get_instance()
+            removed = await service.remove_from_queue(download_id)
+            return web.json_response({"success": removed})
+        except Exception as exc:
+            self._logger.error(
+                "Error removing from download queue: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def move_queue_item_to_top(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response(
+                    {"success": False, "error": "download_id is required"}, status=400
+                )
+
+            service = await DownloadQueueService.get_instance()
+            moved = await service.move_to_top(download_id)
+            return web.json_response({"success": moved})
+        except Exception as exc:
+            self._logger.error(
+                "Error moving queue item to top: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def move_queue_item_to_end(self, request: web.Request) -> web.Response:
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response(
+                    {"success": False, "error": "download_id is required"}, status=400
+                )
+
+            service = await DownloadQueueService.get_instance()
+            moved = await service.move_to_end(download_id)
+            return web.json_response({"success": moved})
+        except Exception as exc:
+            self._logger.error(
+                "Error moving queue item to end: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def clear_download_queue(self, request: web.Request) -> web.Response:
+        try:
+            status_filter = request.query.get("status") or None
+            service = await DownloadQueueService.get_instance()
+            cleared = await service.clear_queue(status_filter=status_filter)
+            return web.json_response({"success": True, "cleared": cleared})
+        except Exception as exc:
+            self._logger.error(
+                "Error clearing download queue: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_download_history(self, request: web.Request) -> web.Response:
+        try:
+            limit = min(int(request.query.get("limit", "50")), 500)
+            offset = int(request.query.get("offset", "0"))
+            status_filter = request.query.get("status") or None
+            service = await DownloadQueueService.get_instance()
+            result = await service.get_history(
+                limit=limit, offset=offset, status_filter=status_filter
+            )
+            return web.json_response(
+                {
+                    "success": True,
+                    "items": result["items"],
+                    "total": result["total"],
+                    "limit": result["limit"],
+                    "offset": result["offset"],
+                }
+            )
+        except Exception as exc:
+            self._logger.error(
+                "Error getting download history: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def clear_download_history(self, request: web.Request) -> web.Response:
+        try:
+            status_filter = request.query.get("status") or None
+            service = await DownloadQueueService.get_instance()
+            cleared = await service.clear_history(status_filter=status_filter)
+            return web.json_response({"success": True, "cleared": cleared})
+        except Exception as exc:
+            self._logger.error(
+                "Error clearing download history: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def delete_download_history_item(self, request: web.Request) -> web.Response:
+        try:
+            item_id = int(request.query.get("id", "0"))
+            if not item_id:
+                return web.json_response(
+                    {"success": False, "error": "id is required"}, status=400
+                )
+
+            service = await DownloadQueueService.get_instance()
+            deleted = await service.delete_history_item(item_id)
+            return web.json_response({"success": deleted})
+        except Exception as exc:
+            self._logger.error(
+                "Error deleting download history item: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def retry_download_from_history(self, request: web.Request) -> web.Response:
+        try:
+            item_id = int(request.query.get("id", "0"))
+            if not item_id:
+                return web.json_response(
+                    {"success": False, "error": "id is required"}, status=400
+                )
+
+            service = await DownloadQueueService.get_instance()
+            item = await service.retry_from_history(item_id)
+            if item is None:
+                return web.json_response(
+                    {"success": False, "error": "History item not found or not retryable"},
+                    status=404,
+                )
+            return web.json_response({"success": True, "item": item})
+        except Exception as exc:
+            self._logger.error(
+                "Error retrying download from history: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def retry_all_failed_downloads(self, request: web.Request) -> web.Response:
+        try:
+            service = await DownloadQueueService.get_instance()
+            retry_count = await service.retry_all_failed()
+            return web.json_response({"success": True, "retry_count": retry_count})
+        except Exception as exc:
+            self._logger.error(
+                "Error retrying all failed downloads: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def complete_download_in_queue(self, request: web.Request) -> web.Response:
+        """Atomically move a download from queue to history with terminal status."""
+        try:
+            download_id = request.query.get("download_id")
+            if not download_id:
+                return web.json_response(
+                    {"success": False, "error": "download_id is required"}, status=400
+                )
+            status = request.query.get("status", "completed")
+            error = request.query.get("error")
+            file_path = request.query.get("file_path")
+            try:
+                bytes_downloaded = int(request.query.get("bytes_downloaded", "0"))
+            except (TypeError, ValueError):
+                bytes_downloaded = 0
+            total_bytes_raw = request.query.get("total_bytes")
+            total_bytes = int(total_bytes_raw) if total_bytes_raw else None
+
+            service = await DownloadQueueService.get_instance()
+            item = await service.complete_download(
+                download_id=download_id,
+                status=status,
+                error=error,
+                file_path=file_path,
+                bytes_downloaded=bytes_downloaded,
+                total_bytes=total_bytes,
+            )
+            if item is None:
+                return web.json_response(
+                    {"success": False, "error": "Download not found in queue"}, status=404
+                )
+            return web.json_response({"success": True, "item": item})
+        except Exception as exc:
+            self._logger.error(
+                "Error completing download: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_download_stats(self, request: web.Request) -> web.Response:
+        try:
+            service = await DownloadQueueService.get_instance()
+            stats = await service.get_stats()
+            return web.json_response({"success": True, "stats": stats})
+        except Exception as exc:
+            self._logger.error(
+                "Error getting download stats: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class ModelCivitaiHandler:
     """CivitAI integration endpoints."""
@@ -2596,6 +2846,19 @@ class ModelHandlerSet:
             "pause_download_get": self.download.pause_download_get,
             "resume_download_get": self.download.resume_download_get,
             "get_download_progress": self.download.get_download_progress,
+            "get_download_queue": self.download.get_download_queue,
+            "add_to_download_queue": self.download.add_to_download_queue,
+            "remove_from_download_queue": self.download.remove_from_download_queue,
+            "move_queue_item_to_top": self.download.move_queue_item_to_top,
+            "move_queue_item_to_end": self.download.move_queue_item_to_end,
+            "clear_download_queue": self.download.clear_download_queue,
+            "get_download_history": self.download.get_download_history,
+            "clear_download_history": self.download.clear_download_history,
+            "delete_download_history_item": self.download.delete_download_history_item,
+            "retry_download_from_history": self.download.retry_download_from_history,
+            "retry_all_failed_downloads": self.download.retry_all_failed_downloads,
+            "complete_download_in_queue": self.download.complete_download_in_queue,
+            "get_download_stats": self.download.get_download_stats,
             "get_civitai_versions": self.civitai.get_civitai_versions,
             "get_civitai_model_by_version": self.civitai.get_civitai_model_by_version,
             "get_civitai_model_by_hash": self.civitai.get_civitai_model_by_hash,

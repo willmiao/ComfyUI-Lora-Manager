@@ -107,6 +107,37 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/download-progress/{download_id}", "get_download_progress"
     ),
+    RouteDefinition("GET", "/api/lm/downloads/queue", "get_download_queue"),
+    RouteDefinition("GET", "/api/lm/downloads/queue/add", "add_to_download_queue"),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/queue/remove", "remove_from_download_queue"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/queue/move-to-top", "move_queue_item_to_top"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/queue/move-to-end", "move_queue_item_to_end"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/queue/clear", "clear_download_queue"
+    ),
+    RouteDefinition("GET", "/api/lm/downloads/history", "get_download_history"),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/history/clear", "clear_download_history"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/history/delete", "delete_download_history_item"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/history/retry", "retry_download_from_history"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/history/retry-all", "retry_all_failed_downloads"
+    ),
+    RouteDefinition("GET", "/api/lm/downloads/stats", "get_download_stats"),
+    RouteDefinition(
+        "GET", "/api/lm/downloads/queue/complete", "complete_download_in_queue"
+    ),
     RouteDefinition("POST", "/api/lm/{prefix}/cancel-task", "cancel_task"),
     RouteDefinition("GET", "/{prefix}", "handle_models_page"),
 )

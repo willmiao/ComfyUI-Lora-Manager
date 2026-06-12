@@ -189,6 +189,10 @@ class LoraManager:
 
             # Register DownloadManager with ServiceRegistry
             await ServiceRegistry.get_download_manager()
+
+            # Initialize DownloadQueueService for persistent queue/history
+            await ServiceRegistry.get_download_queue_service()
+
             await ServiceRegistry.get_backup_service()
 
             from .services.metadata_service import initialize_metadata_providers

@@ -189,6 +189,25 @@ class ServiceRegistry:
             return service
 
     @classmethod
+    async def get_download_queue_service(cls):
+        """Get or create the download queue service."""
+        service_name = "download_queue_service"
+
+        if service_name in cls._services:
+            return cls._services[service_name]
+
+        async with cls._get_lock(service_name):
+            if service_name in cls._services:
+                return cls._services[service_name]
+
+            from .download_queue_service import DownloadQueueService
+
+            service = await DownloadQueueService.get_instance()
+            cls._services[service_name] = service
+            logger.debug(f"Created and registered {service_name}")
+            return service
+
+    @classmethod
     async def get_backup_service(cls):
         """Get or create the backup service."""
 
