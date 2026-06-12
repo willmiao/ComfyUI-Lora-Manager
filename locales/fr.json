@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "Racine",
+        "moreOptions": "Plus d'options",
         "collapseAll": "Réduire tous les dossiers",
         "pinSidebar": "Épingler la barre latérale",
         "unpinSidebar": "Désépingler la barre latérale",
+        "hideOnThisPage": "Masquer la barre latérale sur cette page",
+        "showSidebar": "Afficher la barre latérale",
+        "sidebarHiddenNotification": "Barre latérale masquée sur la page {page}",
         "switchToListView": "Passer en vue liste",
         "switchToTreeView": "Passer en vue arborescence",
         "recursiveOn": "Inclure les sous-dossiers",

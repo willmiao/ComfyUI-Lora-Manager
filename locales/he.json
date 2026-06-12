@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "שורש",
+        "moreOptions": "אפשרויות נוספות",
         "collapseAll": "כווץ את כל התיקיות",
         "pinSidebar": "נעל סרגל צד",
         "unpinSidebar": "שחרר סרגל צד",
+        "hideOnThisPage": "הסתר סרגל צד בדף זה",
+        "showSidebar": "הצג סרגל צד",
+        "sidebarHiddenNotification": "סרגל הצד מוסתר בדף {page}",
         "switchToListView": "עבור לתצוגת רשימה",
         "switchToTreeView": "תצוגת עץ",
         "recursiveOn": "כלול תיקיות משנה",

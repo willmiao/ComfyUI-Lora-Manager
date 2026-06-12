@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "Raíz",
+        "moreOptions": "Más opciones",
         "collapseAll": "Colapsar todas las carpetas",
         "pinSidebar": "Fijar barra lateral",
         "unpinSidebar": "Desfijar barra lateral",
+        "hideOnThisPage": "Ocultar barra lateral en esta página",
+        "showSidebar": "Mostrar barra lateral",
+        "sidebarHiddenNotification": "Barra lateral oculta en la página {page}",
         "switchToListView": "Cambiar a vista de lista",
         "switchToTreeView": "Cambiar a vista de árbol",
         "recursiveOn": "Incluir subcarpetas",

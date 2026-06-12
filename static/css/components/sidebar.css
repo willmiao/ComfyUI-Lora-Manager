@@ -84,6 +84,7 @@
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
     transition: var(--transition-base);
+    position: relative;
 }
 
 .sidebar-header:hover {
@@ -148,6 +149,120 @@
 /* Remove old close button styles */
 .sidebar-toggle-close {
     display: none;
+}
+
+/* ===== Sidebar More Options Dropdown ===== */
+.sidebar-more-dropdown {
+    position: absolute;
+    top: 100%;
+    right: 8px;
+    min-width: 190px;
+    background: var(--bg-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    box-shadow: var(--shadow-lg);
+    z-index: calc(var(--z-overlay) + 20);
+    display: none;
+    overflow: hidden;
+    margin-top: 2px;
+}
+
+.sidebar-more-dropdown.open {
+    display: block;
+    animation: dropdownFadeIn 0.15s ease;
+}
+
+@keyframes dropdownFadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.sidebar-dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    cursor: pointer;
+    font-size: 0.85em;
+    color: var(--text-color);
+    transition: var(--transition-base);
+    white-space: nowrap;
+}
+
+.sidebar-dropdown-item:hover {
+    background: var(--lora-surface);
+}
+
+.sidebar-dropdown-item i {
+    width: 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.9em;
+    flex-shrink: 0;
+}
+
+.sidebar-dropdown-item:hover i {
+    color: var(--text-color);
+}
+
+.sidebar-dropdown-item.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+}
+
+/* ===== Sidebar Hidden Indicator (left edge) ===== */
+.sidebar-hidden-indicator {
+    position: fixed;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: var(--z-overlay);
+    width: 14px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--border-color);
+    opacity: 0.3;
+    border-radius: 0 4px 4px 0;
+    cursor: pointer;
+    transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.sidebar-hidden-indicator:hover {
+    opacity: 0.7;
+    background: var(--lora-accent);
+}
+
+.sidebar-hidden-indicator i {
+    font-size: 9px;
+    color: var(--text-muted);
+    transition: color 0.15s ease;
+}
+
+.sidebar-hidden-indicator:hover i {
+    color: white;
+}
+
+.sidebar-hidden-indicator-tooltip {
+    position: absolute;
+    left: 100%;
+    top: 50%;
+    transform: translateY(-50%);
+    margin-left: 8px;
+    padding: 4px 10px;
+    background: var(--text-color);
+    color: var(--bg-color);
+    font-size: 0.8em;
+    border-radius: 4px;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.sidebar-hidden-indicator:hover .sidebar-hidden-indicator-tooltip {
+    opacity: 1;
 }
 
 .sidebar-content {

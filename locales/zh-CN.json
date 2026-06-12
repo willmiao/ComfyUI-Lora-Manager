@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "根目录",
+        "moreOptions": "更多选项",
         "collapseAll": "折叠所有文件夹",
         "pinSidebar": "固定侧边栏",
         "unpinSidebar": "取消固定侧边栏",
+        "hideOnThisPage": "隐藏此页面侧边栏",
+        "showSidebar": "显示侧边栏",
+        "sidebarHiddenNotification": "{page}页面的文件夹侧边栏已隐藏",
         "switchToListView": "切换到列表视图",
         "switchToTreeView": "切换到树状视图",
         "recursiveOn": "包含子文件夹",

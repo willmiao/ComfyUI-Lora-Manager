@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "Корень",
+        "moreOptions": "Дополнительные параметры",
         "collapseAll": "Свернуть все папки",
         "pinSidebar": "Закрепить боковую панель",
         "unpinSidebar": "Открепить боковую панель",
+        "hideOnThisPage": "Скрыть боковую панель на этой странице",
+        "showSidebar": "Показать боковую панель",
+        "sidebarHiddenNotification": "Боковая панель скрыта на странице {page}",
         "switchToListView": "Переключить на вид списка",
         "switchToTreeView": "Переключить на древовидный вид",
         "recursiveOn": "Включать вложенные папки",

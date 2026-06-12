@@ -18,6 +18,20 @@
             <button class="sidebar-action-btn" id="sidebarPinToggle" title="{{ t('sidebar.unpinSidebar') }}">
                 <i class="fas fa-thumbtack"></i>
             </button>
+            <button class="sidebar-action-btn" id="sidebarMoreToggle" title="{{ t('sidebar.moreOptions') }}">
+                <i class="fas fa-ellipsis-v"></i>
+            </button>
+        </div>
+        <!-- Dropdown menu for more options -->
+        <div class="sidebar-more-dropdown" id="sidebarMoreDropdown">
+            <div class="sidebar-dropdown-item" data-action="toggle-pin">
+                <i class="fas fa-thumbtack"></i>
+                <span id="sidebarMorePinLabel">{{ t('sidebar.pinSidebar') }}</span>
+            </div>
+            <div class="sidebar-dropdown-item" data-action="toggle-hide">
+                <i class="fas fa-eye-slash"></i>
+                <span>{{ t('sidebar.hideOnThisPage') }}</span>
+            </div>
         </div>
     </div>
     <div class="sidebar-content">

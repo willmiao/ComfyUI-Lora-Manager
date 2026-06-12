@@ -36,6 +36,8 @@ export class SidebarManager {
         this.currentDropTarget = null;
         this.lastPageControls = null;
         this.isDisabledBySetting = false;
+        this.isDisabledByPage = false;
+        this.isMoreDropdownOpen = false;
         this.initializationPromise = null;
         this.isCreatingFolder = false;
         this._pendingDragState = null; // 用于保存拖拽创建文件夹时的状态
@@ -68,6 +70,10 @@ export class SidebarManager {
         this.handleSidebarDrop = this.handleSidebarDrop.bind(this);
         this.handleCreateFolderSubmit = this.handleCreateFolderSubmit.bind(this);
         this.handleCreateFolderCancel = this.handleCreateFolderCancel.bind(this);
+        this.handleMoreToggle = this.handleMoreToggle.bind(this);
+        this.handleMoreDropdownItemClick = this.handleMoreDropdownItemClick.bind(this);
+        this.handleDocumentClickForMore = this.handleDocumentClickForMore.bind(this);
+        this.getPageDisplayName = this.getPageDisplayName.bind(this);
     }
 
     setHostPageControls(pageControls) {
@@ -100,6 +106,8 @@ export class SidebarManager {
         this.initializeDragAndDrop();
         this.updateSidebarTitle();
         this.restoreSidebarState();
+        // Re-apply DOM visibility now that per-page state is known
+        this.updateDomVisibility(!this.isDisabledBySetting);
         await this.loadFolderTree();
         if (this.isDisabledBySetting && !forceInitialize) {
             this.cleanup();
@@ -143,6 +151,13 @@ export class SidebarManager {
             this.sidebarDragHandlersInitialized = false;
         }
 
+        const moreDropdown = document.getElementById('sidebarMoreDropdown');
+        if (moreDropdown) {
+            moreDropdown.classList.remove('open');
+        }
+        this.isMoreDropdownOpen = false;
+        this.hideSidebarHiddenIndicator();
+
         // Reset state
         this.pageControls = null;
         this.pageType = null;
@@ -151,6 +166,7 @@ export class SidebarManager {
         this.expandedNodes = new Set();
         this.openDropdown = null;
         this.isHovering = false;
+        this.isDisabledByPage = false;
         this.apiClient = null;
         this.isInitialized = false;
         this.recursiveSearchEnabled = true;
@@ -217,6 +233,18 @@ export class SidebarManager {
         if (recursiveToggleBtn) {
             recursiveToggleBtn.removeEventListener('click', this.handleRecursiveToggle);
         }
+
+        const moreToggle = document.getElementById('sidebarMoreToggle');
+        if (moreToggle) {
+            moreToggle.removeEventListener('click', this.handleMoreToggle);
+        }
+
+        const moreDropdown = document.getElementById('sidebarMoreDropdown');
+        if (moreDropdown) {
+            moreDropdown.removeEventListener('click', this.handleMoreDropdownItemClick);
+        }
+
+        document.removeEventListener('click', this.handleDocumentClickForMore);
     }
 
     initializeDragAndDrop() {
@@ -1045,6 +1073,19 @@ export class SidebarManager {
                 }
             });
         }
+
+        // More options dropdown
+        const moreToggle = document.getElementById('sidebarMoreToggle');
+        if (moreToggle) {
+            moreToggle.addEventListener('click', this.handleMoreToggle);
+        }
+
+        const moreDropdown = document.getElementById('sidebarMoreDropdown');
+        if (moreDropdown) {
+            moreDropdown.addEventListener('click', this.handleMoreDropdownItemClick);
+        }
+
+        document.addEventListener('click', this.handleDocumentClickForMore);
     }
 
     handleDocumentClick(event) {
@@ -1066,6 +1107,7 @@ export class SidebarManager {
         this.isPinned = !this.isPinned;
         this.updateAutoHideState();
         this.updatePinButton();
+        this.updateMoreDropdownLabels();
         this.saveSidebarState();
         this.updateContainerMargin();
     }
@@ -1129,7 +1171,7 @@ export class SidebarManager {
     }
 
     updateAutoHideState() {
-        if (this.isDisabledBySetting) return;
+        if (this.isDisabledBySetting || this.isDisabledByPage) return;
 
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
@@ -1174,8 +1216,11 @@ export class SidebarManager {
 
         if (!container || !sidebar || this.isDisabledBySetting) return;
 
-        // Reset margin to default
+        // Always reset margin first — needed when transitioning from visible to hidden
         container.style.marginLeft = '';
+
+        // When per-page disabled, skip adjustment but margin is already reset
+        if (this.isDisabledByPage) return;
 
         // Only adjust margin if sidebar is visible and pinned
         if ((this.isPinned || this.isHovering) && this.isVisible) {
@@ -1193,19 +1238,28 @@ export class SidebarManager {
     }
 
     updateDomVisibility(enabled) {
+        // Per-page disable adds on top of global setting
+        const isVisible = enabled && !this.isDisabledByPage;
         const sidebar = document.getElementById('folderSidebar');
         const hoverArea = document.getElementById('sidebarHoverArea');
 
         if (sidebar) {
-            sidebar.classList.toggle('hidden-by-setting', !enabled);
-            sidebar.setAttribute('aria-hidden', (!enabled).toString());
+            sidebar.classList.toggle('hidden-by-setting', !isVisible);
+            sidebar.setAttribute('aria-hidden', (!isVisible).toString());
         }
 
         if (hoverArea) {
-            hoverArea.classList.toggle('hidden-by-setting', !enabled);
-            if (!enabled) {
+            hoverArea.classList.toggle('hidden-by-setting', !isVisible);
+            if (!isVisible) {
                 hoverArea.classList.add('disabled');
             }
+        }
+
+        // Show or hide the "sidebar hidden" notification
+        if (enabled && this.isDisabledByPage) {
+            this.showSidebarHiddenIndicator();
+        } else {
+            this.hideSidebarHiddenIndicator();
         }
     }
 
@@ -1263,6 +1317,133 @@ export class SidebarManager {
             pinBtn.title = this.isPinned
                 ? translate('sidebar.unpinSidebar')
                 : translate('sidebar.pinSidebar');
+        }
+    }
+
+    // ===== More Options Dropdown =====
+
+    handleMoreToggle(event) {
+        event.stopPropagation();
+        const dropdown = document.getElementById('sidebarMoreDropdown');
+        if (!dropdown) return;
+
+        this.isMoreDropdownOpen = !dropdown.classList.contains('open');
+        dropdown.classList.toggle('open', this.isMoreDropdownOpen);
+        this.updateMoreDropdownLabels();
+    }
+
+    handleMoreDropdownItemClick(event) {
+        const item = event.target.closest('.sidebar-dropdown-item');
+        if (!item) return;
+
+        const action = item.dataset.action;
+        if (!action) return;
+
+        const dropdown = document.getElementById('sidebarMoreDropdown');
+        if (dropdown) {
+            dropdown.classList.remove('open');
+            this.isMoreDropdownOpen = false;
+        }
+
+        switch (action) {
+            case 'toggle-pin':
+                this.handlePinToggle(event);
+                break;
+            case 'toggle-hide':
+                this.toggleHideOnThisPage();
+                break;
+        }
+    }
+
+    handleDocumentClickForMore(event) {
+        const dropdown = document.getElementById('sidebarMoreDropdown');
+        const toggle = document.getElementById('sidebarMoreToggle');
+        if (!dropdown || !toggle) return;
+
+        if (!dropdown.contains(event.target) && !toggle.contains(event.target)) {
+            dropdown.classList.remove('open');
+            this.isMoreDropdownOpen = false;
+        }
+    }
+
+    updateMoreDropdownLabels() {
+        const pinLabel = document.getElementById('sidebarMorePinLabel');
+        if (pinLabel) {
+            pinLabel.textContent = this.isPinned
+                ? translate('sidebar.unpinSidebar')
+                : translate('sidebar.pinSidebar');
+        }
+
+        const hideItem = document.querySelector('.sidebar-dropdown-item[data-action="toggle-hide"]');
+        if (hideItem) {
+            const hideIcon = hideItem.querySelector('i');
+            const hideLabel = hideItem.querySelector('span');
+            if (this.isDisabledByPage) {
+                hideLabel.textContent = translate('sidebar.showSidebar');
+                if (hideIcon) {
+                    hideIcon.className = 'fas fa-eye';
+                }
+            } else {
+                hideLabel.textContent = translate('sidebar.hideOnThisPage');
+                if (hideIcon) {
+                    hideIcon.className = 'fas fa-eye-slash';
+                }
+            }
+        }
+    }
+
+    toggleHideOnThisPage() {
+        this.isDisabledByPage = !this.isDisabledByPage;
+        setStorageItem(`${this.pageType}_sidebarDisabled`, this.isDisabledByPage);
+        this.updateDomVisibility(!this.isDisabledBySetting);
+        this.updateAutoHideState();
+        this.updateContainerMargin();
+        this.updateMoreDropdownLabels();
+
+        if (!this.isDisabledByPage) {
+            this.hideSidebarHiddenIndicator();
+        } else {
+            showToast(
+                'sidebar.sidebarHiddenNotification',
+                { page: this.getPageDisplayName() },
+                'info',
+                `Sidebar hidden on ${this.getPageDisplayName()} page`
+            );
+        }
+    }
+
+    getPageDisplayName() {
+        const names = {
+            loras: 'LoRAs',
+            recipes: 'Recipes',
+            checkpoints: 'Checkpoints',
+            embeddings: 'Embeddings',
+        };
+        return names[this.pageType] || this.pageType;
+    }
+
+    showSidebarHiddenIndicator() {
+        if (document.getElementById('sidebarHiddenIndicator')) return;
+
+        const indicator = document.createElement('div');
+        indicator.id = 'sidebarHiddenIndicator';
+        indicator.className = 'sidebar-hidden-indicator';
+        indicator.innerHTML = `
+            <i class="fas fa-chevron-right"></i>
+            <span class="sidebar-hidden-indicator-tooltip">${translate('sidebar.showSidebar')}</span>
+        `;
+
+        indicator.addEventListener('click', () => {
+            this.toggleHideOnThisPage();
+        });
+
+        document.body.appendChild(indicator);
+    }
+
+    hideSidebarHiddenIndicator() {
+        const indicator = document.getElementById('sidebarHiddenIndicator');
+        if (indicator) {
+            indicator.remove();
         }
     }
 
@@ -1911,6 +2092,7 @@ export class SidebarManager {
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         const recursiveSearchEnabled = getStorageItem(`${this.pageType}_recursiveSearch`, true);
+        this.isDisabledByPage = getStorageItem(`${this.pageType}_sidebarDisabled`, false);
 
         this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);

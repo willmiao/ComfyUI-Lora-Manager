@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "Stammverzeichnis",
+        "moreOptions": "Weitere Optionen",
         "collapseAll": "Alle Ordner einklappen",
         "pinSidebar": "Sidebar anheften",
         "unpinSidebar": "Sidebar lösen",
+        "hideOnThisPage": "Seitenleiste auf dieser Seite ausblenden",
+        "showSidebar": "Seitenleiste anzeigen",
+        "sidebarHiddenNotification": "Seitenleiste auf der Seite {page} ausgeblendet",
         "switchToListView": "Zur Listenansicht wechseln",
         "switchToTreeView": "Zur Baumansicht wechseln",
         "recursiveOn": "Unterordner einbeziehen",

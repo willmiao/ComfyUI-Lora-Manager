@@ -953,9 +953,13 @@
     },
     "sidebar": {
         "modelRoot": "루트",
+        "moreOptions": "더 많은 옵션",
         "collapseAll": "모든 폴더 접기",
         "pinSidebar": "사이드바 고정",
         "unpinSidebar": "사이드바 고정 해제",
+        "hideOnThisPage": "이 페이지에서 사이드바 숨기기",
+        "showSidebar": "사이드바 표시",
+        "sidebarHiddenNotification": "{page} 페이지에서 사이드바가 숨겨져 있습니다",
         "switchToListView": "목록 보기로 전환",
         "switchToTreeView": "트리 보기로 전환",
         "recursiveOn": "하위 폴더 포함",
