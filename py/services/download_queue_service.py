@@ -349,12 +349,16 @@ class DownloadQueueService:
         file_path: Optional[str] = None,
         bytes_downloaded: int = 0,
         total_bytes: Optional[int] = None,
+        completed_at: Optional[float] = None,
     ) -> Optional[dict[str, Any]]:
         """Atomically move a download from the queue into the history table.
 
         Looks up the queue record by ``download_id``, deletes it from the
         queue, and inserts a corresponding history entry with the given
         terminal status (``completed``, ``failed``, or ``canceled``).
+
+        When *completed_at* is provided it is used as the completion
+        timestamp; otherwise ``time.time()`` is used.
 
         Returns the original queue record (before deletion) on success,
         or ``None`` if the download was not found in the queue.
@@ -368,7 +372,7 @@ class DownloadQueueService:
             if row is None:
                 return None
 
-            now = time.time()
+            now = completed_at if completed_at is not None else time.time()
             conn.execute(
                 "DELETE FROM download_queue WHERE download_id = ?",
                 (download_id,),

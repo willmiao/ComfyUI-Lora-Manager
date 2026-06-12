@@ -1785,6 +1785,8 @@ class ModelDownloadHandler:
                 bytes_downloaded = 0
             total_bytes_raw = request.query.get("total_bytes")
             total_bytes = int(total_bytes_raw) if total_bytes_raw else None
+            completed_at_raw = request.query.get("completed_at")
+            completed_at = float(completed_at_raw) if completed_at_raw else None
 
             service = await DownloadQueueService.get_instance()
             item = await service.complete_download(
@@ -1794,6 +1796,7 @@ class ModelDownloadHandler:
                 file_path=file_path,
                 bytes_downloaded=bytes_downloaded,
                 total_bytes=total_bytes,
+                completed_at=completed_at,
             )
             if item is None:
                 return web.json_response(
