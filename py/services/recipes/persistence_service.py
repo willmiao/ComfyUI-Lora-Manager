@@ -129,6 +129,18 @@ class RecipePersistenceService:
         if nsfw_level is not None and isinstance(nsfw_level, int):
             recipe_data["preview_nsfw_level"] = nsfw_level
 
+        # Compute recipe folder relative to recipes root, mirroring
+        # RecipeScanner._calculate_folder() which is only called during scan/load.
+        if recipe_scanner.recipes_dir:
+            recipe_file_dir = os.path.dirname(normalized_image_path)
+            try:
+                relative_folder = os.path.relpath(recipe_file_dir, recipe_scanner.recipes_dir)
+                if relative_folder in (".", ""):
+                    relative_folder = ""
+                recipe_data["folder"] = relative_folder.replace(os.path.sep, "/")
+            except Exception:
+                recipe_data["folder"] = ""
+
         json_filename = f"{recipe_id}.recipe.json"
         json_path = os.path.join(recipes_dir, json_filename)
         json_path = os.path.normpath(json_path)
