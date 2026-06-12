@@ -221,6 +221,9 @@ class UsageStats:
                         if "loras" in loaded_stats and isinstance(loaded_stats["loras"], dict):
                             self.stats["loras"] = loaded_stats["loras"]
                         
+                        if "embeddings" in loaded_stats and isinstance(loaded_stats["embeddings"], dict):
+                            self.stats["embeddings"] = loaded_stats["embeddings"]
+                        
                         if "total_executions" in loaded_stats:
                             self.stats["total_executions"] = loaded_stats["total_executions"]
                         
