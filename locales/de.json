@@ -693,7 +693,7 @@
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
             "repairMetadata": "Metadaten der Auswahl reparieren",
-            "reimportMetadata": "Metadaten der Auswahl neu importieren",
+            "reimportMetadata": "Aus Quelle neu importieren",
             "checkUpdates": "Auswahl auf Updates prüfen",
             "moveAll": "Alle in Ordner verschieben",
             "autoOrganize": "Automatisch organisieren",

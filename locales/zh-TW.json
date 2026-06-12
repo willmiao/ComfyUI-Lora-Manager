@@ -693,7 +693,7 @@
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
             "repairMetadata": "修復所選中元數據",
-            "reimportMetadata": "重新匯入所選配方元數據",
+            "reimportMetadata": "從來源重新匯入",
             "checkUpdates": "檢查所選更新",
             "moveAll": "全部移動到資料夾",
             "autoOrganize": "自動整理所選模型",

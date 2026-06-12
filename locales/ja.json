@@ -693,7 +693,7 @@
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
             "repairMetadata": "選択したレシピのメタデータを修復",
-            "reimportMetadata": "選択したレシピを再インポート",
+            "reimportMetadata": "ソースから再インポート",
             "checkUpdates": "選択項目の更新を確認",
             "moveAll": "すべてをフォルダに移動",
             "autoOrganize": "自動整理を実行",

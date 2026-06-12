@@ -693,7 +693,7 @@
             "copyAll": "Copy Selected Syntax",
             "refreshAll": "Refresh Selected Metadata",
             "repairMetadata": "Repair Metadata for Selected",
-            "reimportMetadata": "Re-import Metadata for Selected",
+            "reimportMetadata": "Re-import from Source",
             "checkUpdates": "Check Updates for Selected",
             "moveAll": "Move Selected to Folder",
             "autoOrganize": "Auto-Organize Selected",

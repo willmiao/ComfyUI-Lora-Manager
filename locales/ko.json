@@ -693,7 +693,7 @@
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
             "repairMetadata": "선택한 레시피 메타데이터 복구",
-            "reimportMetadata": "선택한 레시피 다시 가져오기",
+            "reimportMetadata": "소스에서 다시 가져오기",
             "checkUpdates": "선택 항목 업데이트 확인",
             "moveAll": "모두 폴더로 이동",
             "autoOrganize": "자동 정리 선택",
