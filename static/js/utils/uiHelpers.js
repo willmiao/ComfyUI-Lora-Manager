@@ -998,7 +998,9 @@ function showNodeSelector(nodes, options = {}) {
   nodeSelectorState.enableSendAll = options.enableSendAll !== false;
 
   // Generate node list HTML with icons and proper colors
-  const nodeItems = Object.entries(safeNodes).map(([nodeKey, node]) => {
+  const nodeItems = Object.entries(safeNodes)
+    .sort(([, a], [, b]) => a.type - b.type || a.id - b.id)
+    .map(([nodeKey, node]) => {
     const iconClass = NODE_TYPE_ICONS[node.type] || 'fas fa-question-circle';
     const bgColor = node.bgcolor || DEFAULT_NODE_COLOR;
     const graphLabel = node.graph_name ? ` (${node.graph_name})` : '';
