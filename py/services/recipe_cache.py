@@ -1,6 +1,6 @@
 import asyncio
 from typing import Iterable, List, Dict, Optional
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from operator import itemgetter
 from natsort import natsorted
 
@@ -14,6 +14,15 @@ class RecipeCache:
     sorted_by_date: List[Dict]
     folders: List[str] | None = None
     folder_tree: Dict | None = None
+    image_id_map: Dict[str, str] = field(default_factory=dict)
+    """Mapping of civitai image_id → recipe_id, precomputed at cache build time.
+
+    Built once during cache initialization (O(n)) so that
+    ``check_image_exists`` and ``import_from_url`` duplicate checks
+    can look up image_id in O(1) instead of scanning all recipes.
+    Recipes imported from local files have no valid civitai image_id
+    and are naturally excluded from this map.
+    """
 
     def __post_init__(self):
         self._lock = asyncio.Lock()

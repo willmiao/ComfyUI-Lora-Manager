@@ -1597,15 +1597,8 @@ class RecipeManagementHandler:
 
             cache = await recipe_scanner.get_cached_data()
 
-            # Build lookup: image_id -> recipe_id from stored source_path
-            image_to_recipe = {}
-            for recipe in getattr(cache, "raw_data", []):
-                source = recipe.get("source_path")
-                if not source:
-                    continue
-                image_id = extract_civitai_image_id(source)
-                if image_id and image_id not in image_to_recipe:
-                    image_to_recipe[image_id] = recipe.get("id")
+            # Use precomputed image_id_map (built once at cache init)
+            image_to_recipe = getattr(cache, "image_id_map", {})
 
             results = {}
             for img_id in requested_ids:
@@ -1641,20 +1634,22 @@ class RecipeManagementHandler:
                     "Could not extract Civitai image ID from URL"
                 )
 
-            # Check for duplicate (fast, before acquiring semaphore), unless force
             if not force:
                 cache = await recipe_scanner.get_cached_data()
-                for recipe in getattr(cache, "raw_data", []):
-                    source = recipe.get("source_path")
-                    if source:
-                        existing_id = extract_civitai_image_id(source)
-                        if existing_id == image_id:
-                            return web.json_response({
-                                "success": True,
-                                "recipe_id": recipe.get("id"),
-                                "name": recipe.get("title", ""),
-                                "already_exists": True,
-                            })
+                image_to_recipe = getattr(cache, "image_id_map", {})
+                existing_recipe_id = image_to_recipe.get(image_id)
+                if existing_recipe_id:
+                    recipe_name = ""
+                    for recipe in getattr(cache, "raw_data", []):
+                        if str(recipe.get("id", "")) == existing_recipe_id:
+                            recipe_name = recipe.get("title", "") or ""
+                            break
+                    return web.json_response({
+                        "success": True,
+                        "recipe_id": existing_recipe_id,
+                        "name": recipe_name,
+                        "already_exists": True,
+                    })
 
             async with self._import_semaphore:
                 return await self._do_import_from_url(image_url, recipe_scanner)

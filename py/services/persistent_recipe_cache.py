@@ -12,7 +12,7 @@ import logging
 import os
 import sqlite3
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Set, Tuple
 
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
@@ -26,6 +26,8 @@ class PersistedRecipeData:
 
     raw_data: List[Dict]
     file_stats: Dict[str, Tuple[float, int]]  # json_path -> (mtime, size)
+    image_id_map: Dict[str, str] = field(default_factory=dict)
+    """Precomputed mapping of civitai image_id → recipe_id."""
 
 
 class PersistentRecipeCache:
@@ -116,6 +118,20 @@ class PersistentRecipeCache:
                     if not rows:
                         return None
 
+                    # Restore precomputed image_id_map if available
+                    image_id_map: Dict[str, str] = {}
+                    try:
+                        meta_row = conn.execute(
+                            "SELECT value FROM cache_metadata WHERE key = ?",
+                            ("image_id_map",),
+                        ).fetchone()
+                        if meta_row:
+                            parsed = json.loads(meta_row["value"])
+                            if isinstance(parsed, dict):
+                                image_id_map = parsed
+                    except Exception:
+                        pass  # missing or corrupt — rebuilt on next cache refresh
+
                 finally:
                     conn.close()
         except FileNotFoundError:
@@ -138,14 +154,24 @@ class PersistentRecipeCache:
                     row["file_size"] or 0,
                 )
 
-        return PersistedRecipeData(raw_data=raw_data, file_stats=file_stats)
+        return PersistedRecipeData(
+            raw_data=raw_data,
+            file_stats=file_stats,
+            image_id_map=image_id_map,
+        )
 
-    def save_cache(self, recipes: List[Dict], json_paths: Optional[Dict[str, str]] = None) -> None:
+    def save_cache(
+        self,
+        recipes: List[Dict],
+        json_paths: Optional[Dict[str, str]] = None,
+        image_id_map: Optional[Dict[str, str]] = None,
+    ) -> None:
         """Save all recipes to SQLite cache.
 
         Args:
             recipes: List of recipe dictionaries to persist.
             json_paths: Optional mapping of recipe_id -> json_path for file stats.
+            image_id_map: Optional precomputed civitai image_id → recipe_id mapping.
         """
         if not self.is_enabled():
             return
@@ -185,6 +211,12 @@ class PersistentRecipeCache:
                             f"INSERT INTO recipes ({columns}) VALUES ({placeholders})",
                             recipe_rows,
                         )
+
+                    # Persist image_id_map for O(1) lookups on cache load
+                    conn.execute(
+                        "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES (?, ?)",
+                        ("image_id_map", json.dumps(image_id_map or {})),
+                    )
 
                     conn.commit()
                     logger.debug("Persisted %d recipes to cache", len(recipe_rows))
@@ -272,6 +304,29 @@ class PersistentRecipeCache:
                     conn.close()
         except Exception as exc:
             logger.debug("Failed to remove recipe %s from cache: %s", recipe_id, exc)
+
+    def save_image_id_map(self, image_id_map: Dict[str, str]) -> None:
+        """Persist the image_id_map to cache_metadata without rewriting the full cache.
+
+        This is called after ``add_recipe`` / ``remove_recipe`` mutations so
+        the persistent copy does not go stale between full ``save_cache`` calls.
+        """
+        if not self.is_enabled() or not self._schema_initialized:
+            return
+
+        try:
+            with self._db_lock:
+                conn = self._connect()
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES (?, ?)",
+                        ("image_id_map", json.dumps(image_id_map)),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+        except Exception as exc:
+            logger.debug("Failed to persist image_id_map: %s", exc)
 
     def get_indexed_recipe_ids(self) -> Set[str]:
         """Return all recipe IDs in the cache.

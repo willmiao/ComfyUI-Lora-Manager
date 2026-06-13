@@ -1015,3 +1015,85 @@ async def test_get_paginated_data_sorting(recipe_scanner):
     # Test Date ASC: Gamma (5), Alpha (10), Beta (20)
     res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="date:asc")
     assert [i["id"] for i in res["items"]] == ["C", "A", "B"]
+
+
+async def test_build_image_id_map_filters_correctly(recipe_scanner):
+    """Only recipes with valid CivitAI source_path appear in image_id_map.
+
+    Recipes imported from local files or with empty/missing source_path
+    must be naturally excluded.
+    """
+    scanner, _ = recipe_scanner
+    from py.services.recipe_cache import RecipeCache
+
+    scanner._cache = RecipeCache(
+        raw_data=[
+            {"id": "r1", "source_path": "https://civitai.com/images/12345"},
+            {"id": "r2", "source_path": "https://civitai.com/images/67890"},
+            {"id": "r3", "source_path": "/home/user/local_image.png"},
+            {"id": "r4", "source_path": ""},
+            {"id": "r5"},
+        ],
+        sorted_by_name=[],
+        sorted_by_date=[],
+    )
+
+    result = scanner._build_image_id_map()
+
+    assert result == {
+        "12345": "r1",
+        "67890": "r2",
+    }
+    # r3 = local file path, r4 = empty string, r5 = no key → all excluded
+    for rid in ("r3", "r4", "r5"):
+        assert rid not in result.values()
+
+
+async def test_add_recipe_updates_image_id_map(recipe_scanner):
+    """Adding a recipe with a CivitAI URL must update image_id_map.
+
+    A recipe with a local file path must NOT produce an entry.
+    """
+    scanner, _ = recipe_scanner
+
+    await scanner.add_recipe({
+        "id": "civitai-recipe",
+        "title": "CivitAI",
+        "source_path": "https://civitai.com/images/55555",
+    })
+
+    cache = await scanner.get_cached_data()
+    assert cache.image_id_map.get("55555") == "civitai-recipe"
+
+    await scanner.add_recipe({
+        "id": "local-recipe",
+        "title": "Local",
+        "source_path": "/path/to/local.png",
+    })
+
+    assert "local-recipe" not in cache.image_id_map.values()
+
+
+async def test_remove_recipe_clears_image_id_map(recipe_scanner):
+    """Removing a recipe that has a CivitAI image_id must clean up the map."""
+    scanner, _ = recipe_scanner
+
+    await scanner.add_recipe({
+        "id": "recipe-a",
+        "title": "A",
+        "source_path": "https://civitai.com/images/111",
+    })
+    await scanner.add_recipe({
+        "id": "recipe-b",
+        "title": "B",
+        "source_path": "https://civitai.com/images/222",
+    })
+
+    cache = await scanner.get_cached_data()
+    assert "111" in cache.image_id_map
+    assert cache.image_id_map["222"] == "recipe-b"
+
+    await scanner.remove_recipe("recipe-a")
+
+    assert "111" not in cache.image_id_map
+    assert cache.image_id_map["222"] == "recipe-b"

@@ -46,6 +46,7 @@ class StubRecipeScanner:
         self.last_paginated_params: Dict[str, Any] | None = None
         self.lora_lookup: Dict[str, List[Dict[str, Any]]] = {}
         self.checkpoint_lookup: Dict[str, List[Dict[str, Any]]] = {}
+        self.image_id_map_override: Dict[str, str] = {}
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
             return None
@@ -56,7 +57,10 @@ class StubRecipeScanner:
         )
 
     async def get_cached_data(self, force_refresh: bool = False) -> SimpleNamespace:  # noqa: ARG002 - flag unused by stub
-        return SimpleNamespace(raw_data=list(self.cached_raw))
+        return SimpleNamespace(
+            raw_data=list(self.cached_raw),
+            image_id_map=dict(getattr(self, "image_id_map_override", {})),
+        )
 
     async def get_paginated_data(self, **params: Any) -> Dict[str, Any]:
         self.last_paginated_params = params
@@ -999,3 +1003,95 @@ async def test_batch_import_cancel_missing_id(monkeypatch, tmp_path: Path) -> No
         payload = await response.json()
         assert response.status == 400
         assert payload["success"] is False
+
+
+async def test_check_image_exists_uses_image_id_map(monkeypatch, tmp_path: Path) -> None:
+    """check_image_exists must use precomputed image_id_map instead of scanning raw_data."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.image_id_map_override = {
+            "123": "recipe-alpha",
+            "789": "recipe-gamma",
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/check-image-exists",
+            params={"image_ids": "123,456,789"},
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["results"]["123"] == {
+            "in_library": True,
+            "recipe_id": "recipe-alpha",
+        }
+        assert payload["results"]["456"] == {
+            "in_library": False,
+            "recipe_id": None,
+        }
+        assert payload["results"]["789"] == {
+            "in_library": True,
+            "recipe_id": "recipe-gamma",
+        }
+
+
+async def test_check_image_exists_handles_empty_input(monkeypatch, tmp_path: Path) -> None:
+    """Empty or non-numeric image_ids must return an empty results dict."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get(
+            "/api/lm/recipes/check-image-exists",
+            params={"image_ids": ""},
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["results"] == {}
+
+
+async def test_import_from_url_detects_duplicate_via_image_id_map(
+    monkeypatch, tmp_path: Path,
+) -> None:
+    """import_from_url must return already_exists when image_id is in image_id_map."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.cached_raw = [
+            {"id": "existing-recipe", "title": "My Recipe"},
+        ]
+        harness.scanner.image_id_map_override = {
+            "99999": "existing-recipe",
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-from-url",
+            params={"image_url": "https://civitai.com/images/99999"},
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["already_exists"] is True
+        assert payload["recipe_id"] == "existing-recipe"
+        assert payload["name"] == "My Recipe"
+
+
+async def test_import_from_url_proceeds_when_image_id_not_in_map(
+    monkeypatch, tmp_path: Path,
+) -> None:
+    """When image_id is absent from image_id_map, import_from_url must proceed to import."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.image_id_map_override = {
+            "111": "some-other-recipe",
+        }
+        harness.civitai.image_info["99999"] = {
+            "id": 99999,
+            "url": "https://image.civitai.com/x/y/original=true/sample.jpeg",
+            "type": "image",
+            "meta": {"prompt": "test"},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-from-url",
+            params={"image_url": "https://civitai.com/images/99999"},
+        )
+
+        # The import may succeed or fail depending on downstream stubs,
+        # but it must NOT return already_exists
+        payload = await response.json()
+        assert payload.get("already_exists") is not True

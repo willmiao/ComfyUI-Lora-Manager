@@ -465,3 +465,81 @@ class TestPersistentRecipeCache:
         # Operations should complete
         assert operation_counts["saves"] == 5
         assert operation_counts["removes"] == 5
+
+    # -----------------------------------------------------------------------
+    # image_id_map persistence (Phase 1 improvement)
+    # -----------------------------------------------------------------------
+
+    def test_save_and_load_image_id_map_roundtrip(self, temp_db_path, sample_recipes):
+        """Save image_id_map via save_cache() and verify it round-trips through load_cache()."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        image_id_map = {
+            "12345": "recipe-alpha",
+            "67890": "recipe-beta",
+        }
+        cache.save_cache(sample_recipes, image_id_map=image_id_map)
+
+        loaded = cache.load_cache()
+        assert loaded is not None
+        assert loaded.image_id_map == image_id_map
+
+    def test_load_without_image_id_map_returns_empty_dict(self, temp_db_path, sample_recipes):
+        """Loading from a cache that has no image_id_map metadata must yield {}."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        # Save without image_id_map
+        cache.save_cache(sample_recipes)
+
+        loaded = cache.load_cache()
+        assert loaded is not None
+        assert loaded.image_id_map == {}
+
+    def test_save_cache_without_image_id_map_does_not_corrupt_existing(
+        self, temp_db_path, sample_recipes,
+    ):
+        """Overwriting cache without passing image_id_map must not leave stale data.
+
+        The previous image_id_map entry in cache_metadata should be replaced with {}.
+        """
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        cache.save_cache(sample_recipes, image_id_map={"123": "old-recipe"})
+        # Overwrite without image_id_map
+        cache.save_cache(sample_recipes)
+
+        loaded = cache.load_cache()
+        assert loaded.image_id_map == {}
+
+    def test_image_id_map_survives_recipe_update(self, temp_db_path, sample_recipes):
+        """Updating a single recipe must not drop the image_id_map metadata."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        cache.save_cache(sample_recipes, image_id_map={"123": "recipe-alpha"})
+
+        updated = dict(sample_recipes[0])
+        updated["title"] = "Updated"
+        cache.update_recipe(updated)
+
+        loaded = cache.load_cache()
+        assert loaded.image_id_map == {"123": "recipe-alpha"}
+
+    def test_save_image_id_map_persists_without_full_save(self, temp_db_path, sample_recipes):
+        """save_image_id_map must update cache_metadata without rewriting all recipes."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+        cache.save_cache(sample_recipes)
+
+        cache.save_image_id_map({"555": "new-recipe", "666": "another-recipe"})
+
+        loaded = cache.load_cache()
+        assert loaded.image_id_map == {"555": "new-recipe", "666": "another-recipe"}
+
+    def test_save_image_id_map_overwrites_previous(self, temp_db_path, sample_recipes):
+        """Calling save_image_id_map twice must replace, not merge."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+        cache.save_cache(sample_recipes, image_id_map={"111": "old"})
+
+        cache.save_image_id_map({"222": "new-only"})
+
+        loaded = cache.load_cache()
+        assert loaded.image_id_map == {"222": "new-only"}

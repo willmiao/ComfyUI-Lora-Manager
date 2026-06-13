@@ -20,6 +20,7 @@ from .metadata_service import get_default_metadata_provider
 from .checkpoint_scanner import CheckpointScanner
 from .settings_manager import get_settings_manager
 from .recipes.errors import RecipeNotFoundError
+from ..utils.civitai_utils import extract_civitai_image_id
 from ..utils.utils import calculate_recipe_fingerprint, fuzzy_match
 from natsort import natsorted
 import sys
@@ -532,7 +533,21 @@ class RecipeScanner:
                     self._sort_cache_sync()
                     # Backfill source_path from JSON files if missing (schema migration)
                     if self._backfill_source_path_if_needed(recipes, json_paths):
-                        self._persistent_cache.save_cache(recipes, json_paths)
+                        self._cache.image_id_map = self._build_image_id_map()
+                        self._persistent_cache.save_cache(
+                            recipes, json_paths, self._cache.image_id_map
+                        )
+                    else:
+                        # Use persisted map, or rebuild if empty (e.g. first startup
+                        # after deploying the image_id_map feature).
+                        if persisted.image_id_map:
+                            self._cache.image_id_map = dict(persisted.image_id_map)
+                        else:
+                            self._cache.image_id_map = self._build_image_id_map()
+                            if self._cache.image_id_map:
+                                self._persistent_cache.save_image_id_map(
+                                    self._cache.image_id_map
+                                )
                     return self._cache
                 else:
                     # Partial update: some files changed
@@ -545,8 +560,11 @@ class RecipeScanner:
                     self._sort_cache_sync()
                     # Backfill source_path from JSON files if missing (schema migration)
                     self._backfill_source_path_if_needed(recipes, json_paths)
+                    self._cache.image_id_map = self._build_image_id_map()
                     # Persist updated cache
-                    self._persistent_cache.save_cache(recipes, json_paths)
+                    self._persistent_cache.save_cache(
+                        recipes, json_paths, self._cache.image_id_map
+                    )
                     return self._cache
 
             # Fall back to full directory scan
@@ -558,9 +576,12 @@ class RecipeScanner:
             self._cache.raw_data = recipes
             self._update_folder_metadata(self._cache)
             self._sort_cache_sync()
+            self._cache.image_id_map = self._build_image_id_map()
 
             # Persist for next startup
-            self._persistent_cache.save_cache(recipes, json_paths)
+            self._persistent_cache.save_cache(
+                recipes, json_paths, self._cache.image_id_map
+            )
 
             return self._cache
         except Exception as e:
@@ -831,6 +852,28 @@ class RecipeScanner:
             )
         except Exception as e:
             logger.error(f"Error sorting recipe cache: {e}")
+
+    def _build_image_id_map(self) -> Dict[str, str]:
+        """Build civitai image_id → recipe_id mapping from cached recipes.
+
+        Only recipes with a valid CivitAI image URL source_path produce an
+        entry.  Recipes imported from local files are naturally excluded.
+        """
+        mapping: Dict[str, str] = {}
+        if not self._cache:
+            return mapping
+        for recipe in getattr(self._cache, "raw_data", []):
+            if not isinstance(recipe, dict):
+                continue
+            source = recipe.get("source_path")
+            if not source:
+                continue
+            image_id = extract_civitai_image_id(source)
+            if image_id and image_id not in mapping:
+                recipe_id = recipe.get("id")
+                if recipe_id is not None:
+                    mapping[image_id] = str(recipe_id)
+        return mapping
 
     async def _wait_for_lora_scanner(self) -> None:
         """Ensure the LoRA scanner has initialized before recipe enrichment."""
@@ -1296,11 +1339,20 @@ class RecipeScanner:
         # Update FTS index
         self._update_fts_index_for_recipe(recipe_data, "add")
 
+        source = recipe_data.get("source_path")
+        if source:
+            image_id = extract_civitai_image_id(source)
+            if image_id:
+                recipe_id_value = recipe_data.get("id")
+                if recipe_id_value is not None:
+                    cache.image_id_map[image_id] = str(recipe_id_value)
+
         # Persist to SQLite cache
         if self._persistent_cache:
             recipe_id = str(recipe_data.get("id", ""))
             json_path = self._json_path_map.get(recipe_id, "")
             self._persistent_cache.update_recipe(recipe_data, json_path)
+            self._persistent_cache.save_image_id_map(cache.image_id_map)
 
     async def remove_recipe(self, recipe_id: str) -> bool:
         """Remove a recipe from the cache by ID."""
@@ -1319,9 +1371,15 @@ class RecipeScanner:
         # Update FTS index
         self._update_fts_index_for_recipe(recipe_id, "remove")
 
+        # Remove any image_id entry pointing to this recipe
+        stale = [k for k, v in cache.image_id_map.items() if v == recipe_id]
+        for k in stale:
+            del cache.image_id_map[k]
+
         # Remove from SQLite cache
         if self._persistent_cache:
             self._persistent_cache.remove_recipe(recipe_id)
+            self._persistent_cache.save_image_id_map(cache.image_id_map)
             self._json_path_map.pop(recipe_id, None)
 
         return True
@@ -1332,14 +1390,21 @@ class RecipeScanner:
         cache = await self.get_cached_data()
         removed = await cache.bulk_remove(recipe_ids, resort=False)
         if removed:
+            removed_ids = {str(r.get("id", "")) for r in removed}
+            stale = [k for k, v in cache.image_id_map.items() if v in removed_ids]
+            for k in stale:
+                del cache.image_id_map[k]
+
             self._schedule_resort()
-            # Update FTS index and persistent cache for each removed recipe
             for recipe in removed:
                 recipe_id = str(recipe.get("id", ""))
                 self._update_fts_index_for_recipe(recipe_id, "remove")
                 if self._persistent_cache:
                     self._persistent_cache.remove_recipe(recipe_id)
                     self._json_path_map.pop(recipe_id, None)
+
+            if self._persistent_cache:
+                self._persistent_cache.save_image_id_map(cache.image_id_map)
         return len(removed)
 
     async def scan_all_recipes(self) -> List[Dict]:
