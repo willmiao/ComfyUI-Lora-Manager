@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import logging
 import mimetypes
-import sys
 import urllib.parse
 from pathlib import Path
 
@@ -56,16 +55,11 @@ class PreviewHandler:
             logger.debug("Preview file not found at %s", str(resolved))
             raise web.HTTPNotFound(text="Preview file not found")
 
-        # Video files on Windows: stream manually to avoid Windows IOCP native
-        # sendfile crash when the client disconnects mid-transfer (happens
-        # constantly when users scroll through a gallery of animated previews).
-        # On Linux/macOS, web.FileResponse uses kernel sendfile (zero-copy DMA)
-        # and does not have this issue, so it is safe and much faster.
-        suffix = resolved.suffix.lower()
-        if suffix in _VIDEO_EXTENSIONS and sys.platform == "win32":
-            return await self._stream_file(request, resolved)
-
-        # aiohttp's FileResponse handles range requests and content headers for us.
+        # aiohttp's FileResponse handles range requests, content headers, and
+        # uses kernel sendfile (zero-copy DMA) on Linux/macOS. On Windows it
+        # uses IOCP-based _sendfile_native which can crash when the client
+        # disconnects mid-transfer during fast scrolling. The _stream_file()
+        # fallback is kept for a future compat toggle.
         return web.FileResponse(path=resolved, chunk_size=_CHUNK_SIZE)
 
     async def _stream_file(
