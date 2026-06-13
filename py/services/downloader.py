@@ -256,7 +256,9 @@ class Downloader:
                 self._session = None
 
         # Check for app-level proxy settings
-        proxy_url = None
+        proxy_url = None  # http(s) proxy, passed via the per-request `proxy=` kwarg
+        socks_proxy_url = None  # SOCKS proxy, handled via aiohttp-socks connector
+        app_proxy_active = False
         settings_manager = get_settings_manager()
         if settings_manager.get("proxy_enabled", False):
             proxy_host = settings_manager.get("proxy_host", "").strip()
@@ -268,9 +270,19 @@ class Downloader:
             if proxy_host and proxy_port:
                 # Build proxy URL
                 if proxy_username and proxy_password:
-                    proxy_url = f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
+                    full_proxy_url = f"{proxy_type}://{proxy_username}:{proxy_password}@{proxy_host}:{proxy_port}"
                 else:
-                    proxy_url = f"{proxy_type}://{proxy_host}:{proxy_port}"
+                    full_proxy_url = f"{proxy_type}://{proxy_host}:{proxy_port}"
+
+                app_proxy_active = True
+                # aiohttp cannot tunnel SOCKS via the per-request `proxy=` kwarg
+                # (it would send HTTP to the SOCKS port and fail parsing the
+                # SOCKS handshake reply). SOCKS must be handled by an
+                # aiohttp-socks ProxyConnector instead.
+                if proxy_type.startswith("socks"):
+                    socks_proxy_url = full_proxy_url
+                else:
+                    proxy_url = full_proxy_url
 
                 logger.debug(
                     f"Using app-level proxy: {proxy_type}://{proxy_host}:{proxy_port}"
@@ -294,13 +306,27 @@ class Downloader:
             logger.debug("SSL: certifi unavailable; using system default CA bundle")
 
         # Optimize TCP connection parameters
-        connector = aiohttp.TCPConnector(
+        connector_kwargs = dict(
             ssl=ssl_context,
             limit=8,  # Concurrent connections
             ttl_dns_cache=300,  # DNS cache timeout
             force_close=False,  # Keep connections for reuse
             enable_cleanup_closed=True,
         )
+        if socks_proxy_url:
+            # Route all traffic through the SOCKS proxy via aiohttp-socks. The
+            # connector tunnels every connection, so no per-request `proxy=` is
+            # used (and must not be — see self._proxy_url below).
+            try:
+                from aiohttp_socks import ProxyConnector
+            except ImportError as e:  # pragma: no cover
+                raise RuntimeError(
+                    "A SOCKS proxy is configured but the 'aiohttp-socks' package "
+                    "is not installed. Install it with: pip install aiohttp-socks"
+                ) from e
+            connector = ProxyConnector.from_url(socks_proxy_url, **connector_kwargs)
+        else:
+            connector = aiohttp.TCPConnector(**connector_kwargs)
 
         # Configure timeout parameters
         timeout = aiohttp.ClientTimeout(
@@ -311,12 +337,14 @@ class Downloader:
 
         self._session = aiohttp.ClientSession(
             connector=connector,
-            trust_env=proxy_url
-            is None,  # Only use system proxy if no app-level proxy is set
+            # Only fall back to system/env proxy when no app-level proxy is active
+            trust_env=not app_proxy_active,
             timeout=timeout,
         )
 
-        # Store proxy URL for use in requests
+        # Store proxy URL for per-request use. Stays None for SOCKS because the
+        # ProxyConnector already tunnels everything; passing proxy= for SOCKS
+        # would re-trigger the original aiohttp parse error.
         self._proxy_url = proxy_url
         self._session_created_at = datetime.now()
 
