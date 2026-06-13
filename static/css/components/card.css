@@ -278,7 +278,7 @@
     left: 0;
     right: 0;
     background: linear-gradient(transparent 15%, oklch(0% 0 0 / 0.75));
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(var(--card-blur-amount, 8px));
     color: white;
     padding: var(--space-1);
     display: flex;
@@ -294,7 +294,7 @@
     left: 0;
     right: 0;
     background: linear-gradient(oklch(0% 0 0 / 0.75), transparent 85%);
-    backdrop-filter: blur(8px);
+    backdrop-filter: blur(var(--card-blur-amount, 8px));
     color: white;
     padding: var(--space-1);
     display: flex;

@@ -448,7 +448,9 @@
                 "modelName": "モデル名",
                 "fileName": "ファイル名"
             },
-            "modelNameDisplayHelp": "モデルカードのフッターに表示する内容を選択"
+            "modelNameDisplayHelp": "モデルカードのフッターに表示する内容を選択",
+            "cardBlurAmount": "カードオーバーレイのぼかし",
+            "cardBlurAmountHelp": "モデルカードとレシピカードのヘッダー・フッターオーバーレイのぼかし強度を調整します（0 = ぼかしなし、20 = 最大ぼかし）。"
         },
         "folderSettings": {
             "activeLibrary": "アクティブライブラリ",

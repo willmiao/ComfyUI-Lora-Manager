@@ -448,7 +448,9 @@
                 "modelName": "模型名稱",
                 "fileName": "檔案名稱"
             },
-            "modelNameDisplayHelp": "選擇在模型卡片底部顯示的內容"
+            "modelNameDisplayHelp": "選擇在模型卡片底部顯示的內容",
+            "cardBlurAmount": "卡片疊加模糊強度",
+            "cardBlurAmountHelp": "調整模型和配方卡片上頁首和頁尾疊加層的模糊強度（0 = 無模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
             "activeLibrary": "使用中的資料庫",

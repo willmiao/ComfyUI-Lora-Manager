@@ -448,7 +448,9 @@
                 "modelName": "Nom du modèle",
                 "fileName": "Nom du fichier"
             },
-            "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle"
+            "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle",
+            "cardBlurAmount": "Flou de superposition des cartes",
+            "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de recettes (0 = aucun flou, 20 = flou maximal)."
         },
         "folderSettings": {
             "activeLibrary": "Bibliothèque active",

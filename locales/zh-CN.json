@@ -448,7 +448,9 @@
                 "modelName": "模型名称",
                 "fileName": "文件名"
             },
-            "modelNameDisplayHelp": "选择在模型卡片底部显示的内容"
+            "modelNameDisplayHelp": "选择在模型卡片底部显示的内容",
+            "cardBlurAmount": "卡片叠加模糊强度",
+            "cardBlurAmountHelp": "调整模型和配方卡片上页眉和页脚叠加层的模糊强度（0 = 无模糊，20 = 最大模糊）。"
         },
         "folderSettings": {
             "activeLibrary": "活动库",

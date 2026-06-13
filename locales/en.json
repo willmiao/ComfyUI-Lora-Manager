@@ -448,7 +448,9 @@
                 "modelName": "Model Name",
                 "fileName": "File Name"
             },
-            "modelNameDisplayHelp": "Choose what to display in the model card footer"
+            "modelNameDisplayHelp": "Choose what to display in the model card footer",
+            "cardBlurAmount": "Card Overlay Blur",
+            "cardBlurAmountHelp": "Adjust the blur intensity of the header and footer overlays on model and recipe cards (0 = no blur, 20 = maximum blur)."
         },
         "folderSettings": {
             "activeLibrary": "Active Library",

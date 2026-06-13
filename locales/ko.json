@@ -448,7 +448,9 @@
                 "modelName": "모델명",
                 "fileName": "파일명"
             },
-            "modelNameDisplayHelp": "모델 카드 하단에 표시할 내용을 선택하세요"
+            "modelNameDisplayHelp": "모델 카드 하단에 표시할 내용을 선택하세요",
+            "cardBlurAmount": "카드 오버레이 흐림 강도",
+            "cardBlurAmountHelp": "모델 및 레시피 카드의 헤더와 푸터 오버레이 흐림 강도를 조정합니다 (0 = 흐림 없음, 20 = 최대 흐림)."
         },
         "folderSettings": {
             "activeLibrary": "활성 라이브러리",

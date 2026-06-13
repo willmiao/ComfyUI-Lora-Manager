@@ -32,6 +32,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     auto_download_example_images: false,
     blur_mature_content: true,
     mature_blur_level: 'R',
+    card_blur_amount: 8,
     autoplay_on_hover: false,
     display_density: 'default',
     card_info_display: 'always',
