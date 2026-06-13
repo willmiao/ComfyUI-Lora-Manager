@@ -81,7 +81,11 @@ class _RateLimitRetryHelper:
 
     def _calculate_delay(self, retry_after: Optional[float], attempt: int) -> float:
         if retry_after is not None:
-            return min(self._max_delay, max(0.0, retry_after))
+            # Cap at 1800s (30 min) as a safety ceiling. The old 30s cap was
+            # too low — CivArchive can return retry_after ~1500s, causing all
+            # retries to fail. A generous ceiling protects against pathological
+            # server values while still respecting the server's guidance.
+            return min(1800.0, max(0.0, retry_after))
 
         base_delay = self._base_delay * (2 ** max(0, attempt - 1))
         jitter_span = base_delay * self._jitter_ratio
