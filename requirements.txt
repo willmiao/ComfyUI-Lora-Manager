@@ -1,4 +1,5 @@
 aiohttp
+aiohttp-socks
 jinja2
 safetensors
 piexif
