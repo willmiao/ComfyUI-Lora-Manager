@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import mimetypes
+import sys
 import urllib.parse
 from pathlib import Path
 
@@ -13,7 +14,7 @@ from ...config import config as global_config
 
 logger = logging.getLogger(__name__)
 
-_CHUNK_SIZE = 256 * 1024  # 256 KB
+_CHUNK_SIZE = 1024 * 1024  # 1 MB — balance between streaming iteration overhead and per-chunk memory
 
 # Video file extensions that bypass native sendfile on Windows
 # to avoid IOCP/ProactorEventLoop crashes during client disconnect.
@@ -55,12 +56,13 @@ class PreviewHandler:
             logger.debug("Preview file not found at %s", str(resolved))
             raise web.HTTPNotFound(text="Preview file not found")
 
-        # Video files: stream manually to avoid Windows native sendfile crash.
-        # aiohttp's FileResponse uses _sendfile_native on Windows (IOCP-based),
-        # which breaks when the client disconnects mid-transfer — this happens
-        # constantly when users scroll through a gallery of animated previews.
+        # Video files on Windows: stream manually to avoid Windows IOCP native
+        # sendfile crash when the client disconnects mid-transfer (happens
+        # constantly when users scroll through a gallery of animated previews).
+        # On Linux/macOS, web.FileResponse uses kernel sendfile (zero-copy DMA)
+        # and does not have this issue, so it is safe and much faster.
         suffix = resolved.suffix.lower()
-        if suffix in _VIDEO_EXTENSIONS:
+        if suffix in _VIDEO_EXTENSIONS and sys.platform == "win32":
             return await self._stream_file(request, resolved)
 
         # aiohttp's FileResponse handles range requests and content headers for us.
@@ -82,6 +84,10 @@ class PreviewHandler:
         resp = web.StreamResponse()
         resp.content_type = content_type
         resp.content_length = file_size
+
+        # Allow browser caching: video previews rarely change during a session.
+        # The frontend already appends ?t={version} to bust cache on update.
+        resp.headers["Cache-Control"] = "public, max-age=86400"
 
         await resp.prepare(request)
 
