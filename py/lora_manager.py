@@ -33,6 +33,7 @@ from .utils.example_images_migration import ExampleImagesMigration
 from .services.websocket_manager import ws_manager
 from .services.example_images_cleanup_service import ExampleImagesCleanupService
 from .middleware.csp_middleware import relax_csp_for_remote_media
+from .middleware.error_middleware import api_json_error
 
 logger = logging.getLogger(__name__)
 
@@ -75,6 +76,11 @@ class LoraManager:
     def add_routes(cls):
         """Initialize and register all routes using the new refactored architecture"""
         app = PromptServer.instance.app
+
+        # Register JSON error middleware for /api/* routes as the outermost
+        # middleware so it catches errors from all other middlewares.
+        if api_json_error not in app.middlewares:
+            app.middlewares.insert(0, api_json_error)
 
         if relax_csp_for_remote_media not in app.middlewares:
             # Ensure CSP relaxer executes after ComfyUI's block_external_middleware so it can

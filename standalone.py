@@ -2,6 +2,7 @@ import os
 import sys
 import json
 from py.middleware.cache_middleware import cache_control
+from py.middleware.error_middleware import api_json_error
 from py.utils.settings_paths import ensure_settings_file
 
 # Set environment variable to indicate standalone mode
@@ -157,7 +158,7 @@ class StandaloneServer:
     def __init__(self):
         self.app = web.Application(
             logger=logger,
-            middlewares=[cache_control],
+            middlewares=[api_json_error, cache_control],
             client_max_size=256 * 1024 * 1024,
             handler_args={
                 "max_field_size": HEADER_SIZE_LIMIT,
