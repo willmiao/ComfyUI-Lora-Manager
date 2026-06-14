@@ -60,7 +60,14 @@ class PreviewHandler:
         # uses IOCP-based _sendfile_native which can crash when the client
         # disconnects mid-transfer during fast scrolling. The _stream_file()
         # fallback is kept for a future compat toggle.
-        return web.FileResponse(path=resolved, chunk_size=_CHUNK_SIZE)
+        #
+        # Set explicit Cache-Control so the browser can cache video (and image)
+        # previews across VirtualScroller recycling cycles. Without this,
+        # Chrome does not cache 206 Partial Content responses for <video>
+        # elements, causing the same video to be re-downloaded on every scroll.
+        resp = web.FileResponse(path=resolved, chunk_size=_CHUNK_SIZE)
+        resp.headers["Cache-Control"] = "public, max-age=86400"
+        return resp
 
     async def _stream_file(
         self, request: web.Request, path: Path
