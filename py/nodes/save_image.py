@@ -11,7 +11,7 @@ from ..metadata_collector.metadata_processor import MetadataProcessor
 from ..metadata_collector import get_metadata
 from ..utils.constants import CARD_PREVIEW_WIDTH
 from ..utils.exif_utils import ExifUtils
-from ..utils.utils import calculate_recipe_fingerprint
+from ..utils.utils import calculate_recipe_fingerprint, sanitize_folder_name
 from PIL import Image, PngImagePlugin
 import piexif
 import logging
@@ -309,12 +309,14 @@ class SaveImageLM:
                 filename = filename.replace(segment, str(h))
             elif key == "pprompt" and "prompt" in metadata_dict:
                 prompt = metadata_dict.get("prompt", "").replace("\n", " ")
+                prompt = sanitize_folder_name(prompt)
                 if len(parts) >= 2:
                     length = int(parts[1])
                     prompt = prompt[:length]
                 filename = filename.replace(segment, prompt.strip())
             elif key == "nprompt" and "negative_prompt" in metadata_dict:
                 prompt = metadata_dict.get("negative_prompt", "").replace("\n", " ")
+                prompt = sanitize_folder_name(prompt)
                 if len(parts) >= 2:
                     length = int(parts[1])
                     prompt = prompt[:length]
@@ -328,6 +330,7 @@ class SaveImageLM:
                     model = "model_unavailable"
                 else:
                     model = os.path.splitext(os.path.basename(model_value))[0]
+                    model = sanitize_folder_name(model)
                 if len(parts) >= 2:
                     length = int(parts[1])
                     model = model[:length]
