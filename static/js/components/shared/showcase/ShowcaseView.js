@@ -355,9 +355,9 @@ function renderImportInterface(isEmpty) {
                     <button class="select-files-btn" id="selectExampleFilesBtn">
                         <i class="fas fa-folder-open"></i> Select Files
                     </button>
-                    <p class="import-formats">Supported formats: jpg, png, gif, webp, mp4, webm</p>
+                    <p class="import-formats">Supported formats: jpg, png, gif, webp, avif, jxl, mp4, webm</p>
                 </div>
-                <input type="file" id="exampleFilesInput" multiple accept="image/*,video/mp4,video/webm" style="display: none;">
+                <input type="file" id="exampleFilesInput" multiple accept="image/*,image/avif,image/jxl,video/mp4,video/webm" style="display: none;">
                 <div class="import-progress-container" style="display: none;">
                     <div class="import-progress">
                         <div class="progress-bar"></div>
@@ -473,7 +473,7 @@ export function initExampleImport(modelHash, container) {
  */
 async function handleImportFiles(files, modelHash, importContainer) {
     // Filter for supported file types
-    const supportedImages = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+    const supportedImages = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.avif', '.jxl'];
     const supportedVideos = ['.mp4', '.webm'];
     const supportedExtensions = [...supportedImages, ...supportedVideos];
     

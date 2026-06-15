@@ -13,3 +13,7 @@ aiosqlite
 beautifulsoup4
 platformdirs
 pyyaml
+# imagecodecs provides JXL/AVIF encode/decode with full ISOBMFF control
+# brotli provides metadata compression for JXL/AVIF custom boxes
+imagecodecs
+brotli
