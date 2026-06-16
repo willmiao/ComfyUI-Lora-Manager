@@ -185,12 +185,25 @@ The Save Image Node supports dynamic filename generation using pattern codes. Yo
 
 #### Available Pattern Codes
 
+##### Cross-Node Placeholders (ComfyUI Standard)
+
+- `%NodeTitle.WidgetName%` - Reference any widget value from any node in your workflow, for example:
+  - `%KSampler.seed%` - The seed from a KSampler node
+  - `%Empty Latent Image.width%` - The width from an Empty Latent Image node
+  - `%KSampler.steps%` - The steps value from a KSampler node
+  - Nodes are matched by their "Node name for S&R" property, then by their title
+
+##### Generation Metadata Placeholders (LoRA Manager)
+
 - `%seed%` - Inserts the generation seed number
 - `%width%` - Inserts the image width
 - `%height%` - Inserts the image height
 - `%pprompt:N%` - Inserts the positive prompt (limited to N characters)
 - `%nprompt:N%` - Inserts the negative prompt (limited to N characters)
 - `%model:N%` - Inserts the model/checkpoint name (limited to N characters)
+
+##### Date/Time Placeholders
+
 - `%date%` - Inserts current date/time as "yyyyMMddhhmmss"
 - `%date:FORMAT%` - Inserts date using custom format with:
   - `yyyy` - 4-digit year
@@ -209,8 +222,25 @@ The Save Image Node supports dynamic filename generation using pattern codes. Yo
 - `%date:yyyy-MM-dd%` → `2025-04-28`
 - `%pprompt:20%_%seed%` → `beautiful landscape_1234567890`
 - `%model%_%date:yyMMdd%_%seed%` → `dreamshaper_v8_250428_1234567890`
+- `%KSampler.seed%` → `1234567890` (resolved from the KSampler node's widget)
+- `%Empty Latent Image.width%x%Empty Latent Image.height%` → `512x768`
+- `%KSampler.seed%_%KSampler.steps%` → `1234567890_25`
 
-You can combine multiple patterns to create detailed, organized filenames for your generated images.
+You can combine multiple patterns to create detailed, organized filenames for your generated images. Cross-node and metadata placeholders can be mixed freely — for example: `%KSampler.seed%_%model%_%date:yyyyMMdd%`.
+
+##### Organizing Images into Subdirectories
+
+Including a path separator (`/` on all platforms) in the filename prefix creates subdirectories automatically, which is especially powerful when combined with placeholders:
+
+| Pattern | Result |
+|---|---|
+| `%date:yyyy-MM-dd%/%seed%` | Saves to `2025-04-28/1234567890.png` |
+| `%model%/%date:yyMMdd%_%seed%` | Saves to `dreamshaper_v8/250428_1234567890.png` |
+| `%KSampler.seed%/%model%` | Saves to `1234567890/dreamshaper_v8.png` |
+| `%date:yyyy/MM/dd%/%seed%` | Saves to `2025/04/28/1234567890.png` (nested year/month/day) |
+| `%model%/training/%seed%` | Saves to `dreamshaper_v8/training/1234567890.png` |
+
+> **Note**: The subdirectory is created relative to your ComfyUI output directory (configurable via `--output-directory`). Characters invalid for folder names are automatically replaced with underscores.
 
 ### Standalone Mode
 

@@ -298,7 +298,12 @@ class SaveImageLM:
             key = parts[0]
 
             if key == "seed" and "seed" in metadata_dict:
-                filename = filename.replace(segment, str(metadata_dict.get("seed", "")))
+                seed_value = metadata_dict.get("seed")
+                if seed_value is not None:
+                    filename = filename.replace(segment, str(seed_value))
+                else:
+                    # Fallback if seed was not captured by metadata collector
+                    filename = filename.replace(segment, "0")
             elif key == "width" and "size" in metadata_dict:
                 size = metadata_dict.get("size", "x")
                 w = size.split("x")[0] if isinstance(size, str) else size[0]
