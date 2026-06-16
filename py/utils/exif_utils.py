@@ -1,16 +1,114 @@
 import json
 import logging
 import os
+import struct
 from io import BytesIO
 from typing import Any, Optional
 
 import piexif
 from PIL import Image, PngImagePlugin
 
+try:
+    import brotli
+    _BROTLI_AVAILABLE = True
+except ImportError:
+    brotli = None
+    _BROTLI_AVAILABLE = False
+
 logger = logging.getLogger(__name__)
 
 class ExifUtils:
     """Utility functions for working with EXIF data in images"""
+
+    @staticmethod
+    def _parse_isobmff_boxes(data: bytes, offset: int = 0) -> list[dict]:
+        boxes = []
+        while offset + 8 <= len(data):
+            size = struct.unpack('>I', data[offset:offset + 4])[0]
+            box_type = data[offset + 4:offset + 8]
+            if size == 0:
+                break
+            if size < 8 or offset + size > len(data):
+                break
+            box_data = data[offset + 8:offset + size]
+            boxes.append({'type': box_type, 'data': box_data, 'size': size})
+            offset += size
+        return boxes
+
+    @staticmethod
+    def _is_jxl_container(data: bytes) -> bool:
+        if len(data) < 32:
+            return False
+        return (
+            struct.unpack('>I', data[:4])[0] == 12
+            and data[4:8] == b'JXL '
+            and data[8:12] == bytes([0x0d, 0x0a, 0x87, 0x0a])
+            and struct.unpack('>I', data[12:16])[0] == 20
+            and data[16:20] == b'ftyp'
+            and data[20:24] == b'jxl '
+        )
+
+    @staticmethod
+    def _is_avif_container(data: bytes) -> bool:
+        if len(data) < 16:
+            return False
+        for box in ExifUtils._parse_isobmff_boxes(data):
+            if box['type'] == b'ftyp' and b'avif' in box['data']:
+                return True
+        return False
+
+    @staticmethod
+    def _extract_isobmff_brotli(image_path: str) -> Optional[dict]:
+        try:
+            with open(image_path, 'rb') as f:
+                data = f.read()
+        except Exception:
+            return None
+
+        if ExifUtils._is_jxl_container(data):
+            boxes = ExifUtils._parse_isobmff_boxes(data, offset=12)
+        elif ExifUtils._is_avif_container(data):
+            boxes = ExifUtils._parse_isobmff_boxes(data)
+        else:
+            return None
+
+        brob = None
+        for box in boxes:
+            if box['type'] == b'brob':
+                brob = box
+                break
+        if brob is None:
+            return None
+
+        payload = brob['data']
+        if payload[:4] != b'comf':
+            return None
+        compressed = payload[4:]
+
+        if _BROTLI_AVAILABLE:
+            try:
+                decompressed = brotli.decompress(compressed)
+            except Exception:
+                decompressed = None
+        else:
+            decompressed = None
+
+        raw = decompressed if decompressed is not None else compressed
+        try:
+            meta = json.loads(raw.decode('utf-8'))
+        except Exception:
+            return None
+
+        result = {"parameters": None, "prompt": None, "workflow": None, "comment": None}
+        if isinstance(meta.get("prompt"), (dict, list)):
+            result["prompt"] = json.dumps(meta["prompt"])
+        elif isinstance(meta.get("prompt"), str):
+            result["prompt"] = meta["prompt"]
+        if isinstance(meta.get("workflow"), (dict, list)):
+            result["workflow"] = json.dumps(meta["workflow"])
+        elif isinstance(meta.get("workflow"), str):
+            result["workflow"] = meta["workflow"]
+        return result
 
     @staticmethod
     def _decode_user_comment(user_comment: Any) -> Optional[str]:
@@ -42,6 +140,12 @@ class ExifUtils:
             "workflow": None,
             "comment": None,
         }
+
+        ext = os.path.splitext(image_path)[1].lower()
+        if ext in ('.avif', '.jxl'):
+            brotli_meta = ExifUtils._extract_isobmff_brotli(image_path)
+            if brotli_meta:
+                return brotli_meta
 
         with Image.open(image_path) as img:
             info = getattr(img, "info", {}) or {}
@@ -149,7 +253,6 @@ class ExifUtils:
             Optional[str]: Extracted metadata or None if not found
         """
         try:
-            # Skip for video files
             if image_path:
                 ext = os.path.splitext(image_path)[1].lower()
                 if ext in ['.mp4', '.webm']:
@@ -177,10 +280,9 @@ class ExifUtils:
             str: Path to the updated image
         """
         try:
-            # Skip for video files
             if image_path:
                 ext = os.path.splitext(image_path)[1].lower()
-                if ext in ['.mp4', '.webm']:
+                if ext in ['.mp4', '.webm', '.avif', '.jxl']:
                     return image_path
 
             metadata_fields = ExifUtils._load_structured_metadata(image_path)
@@ -212,10 +314,9 @@ class ExifUtils:
     def append_recipe_metadata(image_path, recipe_data) -> str:
         """Append recipe metadata to an image's EXIF data"""
         try:
-            # Skip for video files
             if image_path:
                 ext = os.path.splitext(image_path)[1].lower()
-                if ext in ['.mp4', '.webm']:
+                if ext in ['.mp4', '.webm', '.avif', '.jxl']:
                     return image_path
 
             # First, extract existing metadata
@@ -327,10 +428,9 @@ class ExifUtils:
             Tuple of (optimized_image_data, extension)
         """
         try:
-            # Skip for video files early if it's a file path
             if isinstance(image_data, str) and os.path.exists(image_data):
                 ext = os.path.splitext(image_data)[1].lower()
-                if ext in ['.mp4', '.webm']:
+                if ext in ['.mp4', '.webm', '.avif', '.jxl']:
                     try:
                         with open(image_data, 'rb') as f:
                             return f.read(), ext

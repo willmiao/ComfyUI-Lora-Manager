@@ -13,3 +13,5 @@ aiosqlite
 beautifulsoup4
 platformdirs
 pyyaml
+# brotli — ISOBMFF (AVIF/JXL) metadata decompression
+brotli>=1.2.0

@@ -62,6 +62,10 @@ class ExampleImagesProcessor:
                 return '.gif'
             elif content.startswith(b'RIFF') and b'WEBP' in content[:12]:
                 return '.webp'
+            elif len(content) >= 12 and content[4:8] == b'ftyp' and b'avif' in content[8:24]:
+                return '.avif'
+            elif content.startswith(b'\x00\x00\x00\x0cJXL \x0d\x0a\x87\x0a'):
+                return '.jxl'
             elif content.startswith(b'\x00\x00\x00\x18ftypmp4') or content.startswith(b'\x00\x00\x00\x20ftypmp4'):
                 return '.mp4'
             elif content.startswith(b'\x1A\x45\xDF\xA3'):
@@ -75,6 +79,8 @@ class ExampleImagesProcessor:
                 'image/png': '.png',
                 'image/gif': '.gif',
                 'image/webp': '.webp',
+                'image/avif': '.avif',
+                'image/jxl': '.jxl',
                 'video/mp4': '.mp4',
                 'video/webm': '.webm',
                 'video/quicktime': '.mov'

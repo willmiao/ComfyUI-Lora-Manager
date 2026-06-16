@@ -16,6 +16,8 @@ IMG_EXTENSIONS = (
     ".tif",
     ".tiff",
     ".webp",
+    ".avif",
+    ".jxl",
     ".mp4"
 )
 
