@@ -1398,6 +1398,21 @@
                     "versionDeleted": "版本已删除"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "元数据获取摘要",
+            "statSuccess": "成功",
+            "statFailed": "失败",
+            "statSkipped": "已跳过",
+            "statTotal": "总计扫描",
+            "statDuration": "耗时",
+            "successMessage": "全部 {count} 个 {type} 更新成功！",
+            "failedItems": "失败项目 ({count})",
+            "close": "关闭",
+            "copyReport": "复制报告",
+            "downloadCsv": "下载 CSV",
+            "columnModelName": "模型名称",
+            "columnError": "错误"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
             "exampleImagesDownloadSuccess": "示例图片下载成功！",
             "exampleImagesDownloadFailed": "示例图片下载失败：{message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "已复制到剪贴板",
+            "downloadStarted": "下载已开始"
         }
     },
     "doctor": {

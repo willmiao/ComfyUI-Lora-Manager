@@ -547,6 +547,14 @@ export class BaseModelApiClient {
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
 
+                // Wait for WebSocket connection to establish
+                await new Promise((resolve, reject) => {
+                    ws.onopen = resolve;
+                    ws.onerror = reject;
+                });
+
+                // Now that we're connected, set up the message/error handlers
+                // for the actual operation (separate from connection errors)
                 const operationComplete = new Promise((resolve, reject) => {
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
@@ -556,25 +564,39 @@ export class BaseModelApiClient {
                                 loading.setStatus('Starting metadata fetch...');
                                 break;
 
-                            case 'processing':
-                                const percent = ((data.processed / data.total) * 100).toFixed(1);
+                            case 'processing': {
+                                const handled = data.handled || data.processed;
+                                const percent = ((handled / data.total) * 100).toFixed(1);
                                 loading.setProgress(percent);
-                                loading.setStatus(
-                                    `Processing (${data.processed}/${data.total}) ${data.current_name}`
-                                );
+                                let statusText = `Processing (${handled}/${data.total}) ${data.current_name || ''}`;
+                                if (data.failure_count > 0) {
+                                    statusText += ` | ❌ ${data.failure_count} failed`;
+                                }
+                                if (data.skipped_count > 0) {
+                                    statusText += ` | ⏭️ ${data.skipped_count} skipped`;
+                                }
+                                loading.setStatus(statusText);
                                 break;
+                            }
 
-                            case 'completed':
+                            case 'completed': {
                                 loading.setProgress(100);
-                                loading.setStatus(
-                                    `Completed: Updated ${data.success} of ${data.processed} ${this.apiConfig.config.displayName}s`
-                                );
+                                let summaryText = `Completed: Updated ${data.success} of ${data.processed} ${this.apiConfig.config.displayName}s`;
+                                if (data.failure_count > 0) {
+                                    summaryText += ` | ❌ ${data.failure_count} failed`;
+                                }
+                                if (data.skipped_count > 0) {
+                                    summaryText += ` | ⏭️ ${data.skipped_count} skipped`;
+                                }
+                                summaryText += ` (⏱ ${data.elapsed_seconds || '?'}s)`;
+                                loading.setStatus(summaryText);
                                 resolve(data);
                                 break;
+                            }
 
                             case 'cancelled':
                                 loading.setStatus('Operation cancelled by user');
-                                resolve(data); // Consider it complete but marked as cancelled
+                                resolve(data);
                                 break;
 
                             case 'error':
@@ -586,12 +608,6 @@ export class BaseModelApiClient {
                     ws.onerror = (error) => {
                         reject(new Error('WebSocket error: ' + error.message));
                     };
-                });
-
-                // Wait for WebSocket connection to establish
-                await new Promise((resolve, reject) => {
-                    ws.onopen = resolve;
-                    ws.onerror = reject;
                 });
 
                 const response = await fetch(this.apiConfig.endpoints.fetchAllCivitai, {
@@ -608,10 +624,10 @@ export class BaseModelApiClient {
                 const finalData = await operationComplete;
 
                 resetAndReload(false);
-                if (finalData && finalData.status === 'cancelled') {
-                    showToast('toast.api.operationCancelledPartial', { success: finalData.success, total: finalData.total }, 'info');
-                } else {
-                    showToast('toast.api.metadataUpdateComplete', {}, 'success');
+
+                // Show result summary with failure details
+                if (finalData) {
+                    this._showMetadataRefreshResult(finalData);
                 }
             } catch (error) {
                 console.error('Error fetching metadata:', error);
@@ -625,6 +641,210 @@ export class BaseModelApiClient {
             initialMessage: 'Connecting...',
             completionMessage: 'Metadata update complete'
         });
+    }
+
+    _showMetadataRefreshResult(data) {
+        const { success, total } = data;
+
+        if (data.status === 'cancelled') {
+            showToast('toast.api.operationCancelledPartial', { success, total }, 'info');
+            return;
+        }
+
+        this._showFailureDetailsModal(data);
+    }
+
+    _showFailureDetailsModal(data) {
+        const { failures = [], success, processed, total, failure_count, skipped_count, elapsed_seconds } = data;
+
+        // Build failure list HTML
+        const failureRows = failures.map((f, i) =>
+            `<tr>
+                <td class="failure-index">${i + 1}</td>
+                <td class="failure-name" title="${this._escapeHtml(f.name)}">${this._escapeHtml(f.name)}</td>
+                <td class="failure-error">${this._escapeHtml(f.error || 'Unknown')}</td>
+            </tr>`
+        ).join('');
+
+        const modalHtml = `
+            <div id="metadataRefreshResultModal" class="modal" style="display: block;">
+                <div class="modal-content metadata-refresh-result-modal">
+                    <button class="close" data-action="close-modal">&times;</button>
+
+                    <h2><i class="fas fa-sync-alt"></i> ${translate('modals.metadataFetchSummary.title', {}, 'Metadata Fetch Summary')}</h2>
+
+                    <div class="refresh-summary-stats">
+                        <div class="stat-card stat-card-success">
+                            <i class="fas fa-check-circle"></i>
+                            <div class="stat-card-body">
+                                <span class="stat-card-label">${translate('modals.metadataFetchSummary.statSuccess', {}, 'Success')}</span>
+                                <span class="stat-card-value">${success}</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-failure">
+                            <i class="fas fa-times-circle"></i>
+                            <div class="stat-card-body">
+                                <span class="stat-card-label">${translate('modals.metadataFetchSummary.statFailed', {}, 'Failed')}</span>
+                                <span class="stat-card-value">${failure_count}</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-skipped">
+                            <i class="fas fa-forward"></i>
+                            <div class="stat-card-body">
+                                <span class="stat-card-label">${translate('modals.metadataFetchSummary.statSkipped', {}, 'Skipped')}</span>
+                                <span class="stat-card-value">${skipped_count}</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-total">
+                            <i class="fas fa-database"></i>
+                            <div class="stat-card-body">
+                                <span class="stat-card-label">${translate('modals.metadataFetchSummary.statTotal', {}, 'Total Scanned')}</span>
+                                <span class="stat-card-value">${total || processed}</span>
+                            </div>
+                        </div>
+                        <div class="stat-card stat-card-time">
+                            <i class="fas fa-clock"></i>
+                            <div class="stat-card-body">
+                                <span class="stat-card-label">${translate('modals.metadataFetchSummary.statDuration', {}, 'Duration')}</span>
+                                <span class="stat-card-value">${elapsed_seconds}s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    ${failure_count > 0 ? `
+                    <div class="refresh-failures-section">
+                        <h4><i class="fas fa-exclamation-triangle"></i> ${translate('modals.metadataFetchSummary.failedItems', { count: failure_count }, 'Failed Items (' + failure_count + ')')}</h4>
+                        <div class="failure-table-wrapper">
+                            <table class="failure-table">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>${translate('modals.metadataFetchSummary.columnModelName', {}, 'Model Name')}</th>
+                                        <th>${translate('modals.metadataFetchSummary.columnError', {}, 'Error')}</th>
+                                    </tr>
+                                </thead>
+                                <tbody>${failureRows}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                    ` : `
+                    <div class="refresh-success-message">
+                        <i class="fas fa-check-circle"></i> ${translate('modals.metadataFetchSummary.successMessage', { count: success, type: this.apiConfig.config.displayName }, 'All ' + success + ' ' + this.apiConfig.config.displayName + 's updated successfully!')}
+                    </div>
+                    `}
+
+                    <div class="modal-actions">
+                        <button class="cancel-btn" data-action="close-modal">${translate('modals.metadataFetchSummary.close', {}, 'Close')}</button>
+                        ${failure_count > 0 ? `
+                        <button class="secondary-btn" data-action="copy-report"><i class="fas fa-copy"></i> ${translate('modals.metadataFetchSummary.copyReport', {}, 'Copy Report')}</button>
+                        <button class="secondary-btn" data-action="download-csv"><i class="fas fa-download"></i> ${translate('modals.metadataFetchSummary.downloadCsv', {}, 'Download CSV')}</button>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+
+        const existing = document.getElementById('metadataRefreshResultModal');
+        if (existing) existing.remove();
+
+        const container = document.createElement('div');
+        container.innerHTML = modalHtml;
+        const modal = container.firstElementChild;
+        document.body.appendChild(modal);
+
+        modal.addEventListener('click', (e) => {
+            const action = e.target.closest('[data-action]')?.dataset.action;
+            if (!action) return;
+            e.preventDefault();
+
+            switch (action) {
+                case 'close-modal':
+                    modal.remove();
+                    break;
+                case 'copy-report':
+                    BaseModelApiClient._copyRefreshReport(e.target.closest('[data-action]'), data);
+                    break;
+                case 'download-csv':
+                    BaseModelApiClient._downloadRefreshReport(data);
+                    break;
+            }
+        });
+    }
+
+    _escapeHtml(str) {
+        if (!str) return '';
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    }
+
+    static _copyRefreshReport(btn, data) {
+        const { failures = [], success, processed, total, failure_count, skipped_count, elapsed_seconds } = data;
+        const lines = [
+            '=== Metadata Refresh Report ===',
+            `Date: ${new Date().toLocaleString()}`,
+            `Duration: ${elapsed_seconds}s`,
+            `Total scanned: ${total || processed}`,
+            `Successfully updated: ${success}`,
+            `Failed: ${failure_count}`,
+            `Skipped: ${skipped_count}`,
+            '',
+        ];
+        if (failure_count > 0) {
+            lines.push('--- Failed Items ---');
+            failures.forEach((f, i) => {
+                lines.push(`${i + 1}. ${f.name || 'Unknown'} — ${f.error || 'Unknown error'}`);
+            });
+            lines.push('');
+        }
+        lines.push('====================');
+
+        const text = lines.join('\n');
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('toast.api.copiedToClipboard', {}, 'success');
+            if (btn) {
+                const origHTML = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-check"></i> Copied!';
+                setTimeout(() => { btn.innerHTML = origHTML; }, 2000);
+            }
+        }).catch(() => {
+            // Fallback
+            const textarea = document.createElement('textarea');
+            textarea.value = text;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            showToast('toast.api.copiedToClipboard', {}, 'success');
+        });
+    }
+
+    static _downloadRefreshReport(data) {
+        const { failures = [], success, processed, total, failure_count, skipped_count, elapsed_seconds } = data;
+
+        // CSV header
+        let csv = 'Model Name,Error\n';
+        failures.forEach(f => {
+            const name = (f.name || 'Unknown').replace(/"/g, '""');
+            const error = (f.error || 'Unknown').replace(/"/g, '""');
+            csv += `"${name}","${error}"\n`;
+        });
+
+        // Add summary as trailing comments
+        csv += `\n# Summary: ${success} success, ${failure_count} failed, ${skipped_count} skipped, ${elapsed_seconds}s\n`;
+        csv += `# Total scanned: ${total || processed}\n`;
+
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `metadata-refresh-failures-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        showToast('toast.api.downloadStarted', {}, 'success');
     }
 
     async refreshBulkModelMetadata(filePaths) {

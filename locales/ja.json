@@ -1398,6 +1398,21 @@
                     "versionDeleted": "バージョンを削除しました"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "メタデータ取得サマリー",
+            "statSuccess": "成功",
+            "statFailed": "失敗",
+            "statSkipped": "スキップ",
+            "statTotal": "スキャン合計",
+            "statDuration": "所要時間",
+            "successMessage": "すべての{count}件の{type}を正常に更新しました",
+            "failedItems": "失敗したアイテム ({count})",
+            "close": "閉じる",
+            "copyReport": "レポートをコピー",
+            "downloadCsv": "CSVをダウンロード",
+            "columnModelName": "モデル名",
+            "columnError": "エラー"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "{successCount} {type}が正常に移動されました",
             "exampleImagesDownloadSuccess": "例画像が正常にダウンロードされました！",
             "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "クリップボードにコピーしました",
+            "downloadStarted": "ダウンロードを開始しました"
         }
     },
     "doctor": {

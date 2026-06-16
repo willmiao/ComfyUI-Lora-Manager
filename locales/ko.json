@@ -1398,6 +1398,21 @@
                     "versionDeleted": "버전이 삭제되었습니다"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "메타데이터 가져오기 요약",
+            "statSuccess": "성공",
+            "statFailed": "실패",
+            "statSkipped": "건너뜀",
+            "statTotal": "총 스캔",
+            "statDuration": "소요 시간",
+            "successMessage": "모든 {count}개 {type}이(가) 성공적으로 업데이트되었습니다",
+            "failedItems": "실패한 항목 ({count})",
+            "close": "닫기",
+            "copyReport": "보고서 복사",
+            "downloadCsv": "CSV 다운로드",
+            "columnModelName": "모델 이름",
+            "columnError": "오류"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "{successCount}개 {type}이(가) 성공적으로 이동되었습니다",
             "exampleImagesDownloadSuccess": "예시 이미지가 성공적으로 다운로드되었습니다!",
             "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "클립보드에 복사됨",
+            "downloadStarted": "다운로드 시작됨"
         }
     },
     "doctor": {

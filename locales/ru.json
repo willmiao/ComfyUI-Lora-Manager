@@ -1398,6 +1398,21 @@
                     "versionDeleted": "Версия удалена"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "Сводка получения метаданных",
+            "statSuccess": "Успешно",
+            "statFailed": "Ошибка",
+            "statSkipped": "Пропущено",
+            "statTotal": "Всего проверено",
+            "statDuration": "Длительность",
+            "successMessage": "Все {count} {type}s успешно обновлены",
+            "failedItems": "Ошибочные элементы ({count})",
+            "close": "Закрыть",
+            "copyReport": "Копировать отчет",
+            "downloadCsv": "Скачать CSV",
+            "columnModelName": "Имя модели",
+            "columnError": "Ошибка"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "Успешно перемещено {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Примеры изображений успешно загружены!",
             "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "Скопировано в буфер обмена",
+            "downloadStarted": "Загрузка начата"
         }
     },
     "doctor": {

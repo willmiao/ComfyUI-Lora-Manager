@@ -1398,6 +1398,21 @@
                     "versionDeleted": "הגרסה נמחקה"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "סיכום שליפת מטא-דאטה",
+            "statSuccess": "הצלחה",
+            "statFailed": "נכשל",
+            "statSkipped": "דולג",
+            "statTotal": "סה\"כ נסרק",
+            "statDuration": "משך",
+            "successMessage": "כל {count} {type}s עודכנו בהצלחה!",
+            "failedItems": "פריטים נכשלים ({count})",
+            "close": "סגור",
+            "copyReport": "העתק דוח",
+            "downloadCsv": "הורד CSV",
+            "columnModelName": "שם המודל",
+            "columnError": "שגיאה"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "הועברו בהצלחה {successCount} {type}s",
             "exampleImagesDownloadSuccess": "תמונות הדוגמה הורדו בהצלחה!",
             "exampleImagesDownloadFailed": "הורדת תמונות הדוגמה נכשלה: {message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "הועתק ללוח",
+            "downloadStarted": "ההורדה החלה"
         }
     },
     "doctor": {

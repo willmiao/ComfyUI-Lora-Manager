@@ -1398,6 +1398,21 @@
                     "versionDeleted": "Version deleted"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "Metadata Fetch Summary",
+            "statSuccess": "Success",
+            "statFailed": "Failed",
+            "statSkipped": "Skipped",
+            "statTotal": "Total Scanned",
+            "statDuration": "Duration",
+            "successMessage": "All {count} {type}s updated successfully!",
+            "failedItems": "Failed Items ({count})",
+            "close": "Close",
+            "copyReport": "Copy Report",
+            "downloadCsv": "Download CSV",
+            "columnModelName": "Model Name",
+            "columnError": "Error"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "Successfully moved {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Successfully downloaded example images!",
             "exampleImagesDownloadFailed": "Failed to download example images: {message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "Copied to clipboard",
+            "downloadStarted": "Download started"
         }
     },
     "doctor": {

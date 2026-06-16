@@ -1398,6 +1398,21 @@
                     "versionDeleted": "Versión eliminada"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "Resumen de obtención de metadatos",
+            "statSuccess": "Éxito",
+            "statFailed": "Fallido",
+            "statSkipped": "Omitido",
+            "statTotal": "Total escaneado",
+            "statDuration": "Duración",
+            "successMessage": "¡Todos los {count} {type}s actualizados correctamente!",
+            "failedItems": "Elementos fallidos ({count})",
+            "close": "Cerrar",
+            "copyReport": "Copiar informe",
+            "downloadCsv": "Descargar CSV",
+            "columnModelName": "Nombre del modelo",
+            "columnError": "Error"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "Movidos exitosamente {successCount} {type}s",
             "exampleImagesDownloadSuccess": "¡Imágenes de ejemplo descargadas exitosamente!",
             "exampleImagesDownloadFailed": "Error al descargar imágenes de ejemplo: {message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "Copiado al portapapeles",
+            "downloadStarted": "Descarga iniciada"
         }
     },
     "doctor": {

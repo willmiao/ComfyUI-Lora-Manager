@@ -1398,6 +1398,21 @@
                     "versionDeleted": "已刪除此版本"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "元資料獲取摘要",
+            "statSuccess": "成功",
+            "statFailed": "失敗",
+            "statSkipped": "已跳過",
+            "statTotal": "總計掃描",
+            "statDuration": "耗時",
+            "successMessage": "全部 {count} 個 {type} 更新成功！",
+            "failedItems": "失敗項目 ({count})",
+            "close": "關閉",
+            "copyReport": "複製報告",
+            "downloadCsv": "下載 CSV",
+            "columnModelName": "模型名稱",
+            "columnError": "錯誤"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "已成功移動 {successCount} 個 {type}",
             "exampleImagesDownloadSuccess": "範例圖片下載成功！",
             "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "已複製到剪貼簿",
+            "downloadStarted": "下載已開始"
         }
     },
     "doctor": {

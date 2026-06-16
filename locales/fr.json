@@ -1398,6 +1398,21 @@
                     "versionDeleted": "Version supprimée"
                 }
             }
+        },
+        "metadataFetchSummary": {
+            "title": "Récapitulatif de la récupération des métadonnées",
+            "statSuccess": "Réussi",
+            "statFailed": "Échoué",
+            "statSkipped": "Ignoré",
+            "statTotal": "Total scanné",
+            "statDuration": "Durée",
+            "successMessage": "Tous les {count} {type}s mis à jour avec succès !",
+            "failedItems": "Éléments échoués ({count})",
+            "close": "Fermer",
+            "copyReport": "Copier le rapport",
+            "downloadCsv": "Télécharger CSV",
+            "columnModelName": "Nom du modèle",
+            "columnError": "Erreur"
         }
     },
     "modelTags": {
@@ -1957,7 +1972,9 @@
             "bulkMoveSuccess": "{successCount} {type}s déplacés avec succès",
             "exampleImagesDownloadSuccess": "Images d'exemple téléchargées avec succès !",
             "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}",
-            "moveFailed": "Failed to move item: {message}"
+            "moveFailed": "Failed to move item: {message}",
+            "copiedToClipboard": "Copié dans le presse-papiers",
+            "downloadStarted": "Téléchargement démarré"
         }
     },
     "doctor": {

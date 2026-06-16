@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from typing import Any, Dict, List, Optional, Protocol, Sequence
 
 from ..metadata_sync_service import MetadataSyncService
@@ -62,16 +63,35 @@ class BulkMetadataRefreshUseCase:
         ]
 
         total_to_process = len(to_process)
+        initial_skipped = total_models - total_to_process  # models excluded from fetch queue
         processed = 0
         success = 0
+        skipped_count = initial_skipped
+        handled_count = initial_skipped
         needs_resort = False
+        start_time = time.monotonic()
+        failures: List[Dict[str, str]] = []
 
         self._service.scanner.reset_cancellation()
 
         async def emit(status: str, **extra: Any) -> None:
             if progress_callback is None:
                 return
-            payload = {"status": status, "total": total_to_process, "processed": processed, "success": success}
+            payload = {
+                "status": status,
+                "total": total_models,
+                "processed": processed,
+                "success": success,
+                "failure_count": len(failures),
+                "skipped_count": skipped_count,
+                "handled": handled_count,
+                "elapsed_seconds": int(time.monotonic() - start_time),
+            }
+            # Only include full failure details in terminal emits (completed,
+            # cancelled, rate_limited) to avoid serializing the list on every
+            # per-model progress update.
+            if failures and status in ("completed", "cancelled", "rate_limited"):
+                payload["failures"] = failures
             payload.update(extra)
             await progress_callback.on_progress(payload)
 
@@ -84,7 +104,7 @@ class BulkMetadataRefreshUseCase:
             if self._service.scanner.is_cancelled():
                 self._logger.info("Bulk metadata refresh cancelled by user")
                 await emit("cancelled", processed=processed, success=success)
-                return {"success": False, "message": "Operation cancelled", "processed": processed, "updated": success, "total": total_models}
+                return {"success": False, "message": "Operation cancelled", "processed": processed, "updated": success, "total": total_models, "failures": failures, "failure_count": len(failures), "skipped_count": skipped_count, "elapsed_seconds": int(time.monotonic() - start_time)}
             try:
                 original_name = model.get("model_name")
 
@@ -104,17 +124,23 @@ class BulkMetadataRefreshUseCase:
                             model["hash_status"] = "completed"
                         else:
                             self._logger.error(f"Failed to calculate hash for {file_path}")
+                            failures.append({"name": model.get("model_name", file_path or "Unknown"), "error": "Failed to calculate hash"})
                             processed += 1
+                            handled_count += 1
                             continue
                     else:
                         self._logger.warning(f"Scanner does not support lazy hash calculation for {file_path}")
+                        skipped_count += 1
                         processed += 1
+                        handled_count += 1
                         continue
 
                 # Skip models without valid hash
                 if not model.get("sha256"):
                     self._logger.warning(f"Skipping model without hash: {file_path}")
+                    skipped_count += 1
                     processed += 1
+                    handled_count += 1
                     continue
 
                 await MetadataManager.hydrate_model_data(model)
@@ -130,7 +156,16 @@ class BulkMetadataRefreshUseCase:
                 else:
                     consecutive_rate_limits = 0
 
+                if not result:
+                    current_name = model.get("model_name", file_path or "Unknown")
+                    failures.append({"name": current_name, "error": error_msg or "Unknown error"})
+                    self._logger.warning("Failed to fetch metadata for %s: %s", current_name, error_msg)
+
                 if consecutive_rate_limits >= RATE_LIMIT_ABORT_THRESHOLD:
+                    # The current model was attempted and failed due to rate limiting;
+                    # count it before aborting so the summary is consistent.
+                    processed += 1
+                    handled_count += 1
                     self._logger.warning(
                         "Bulk metadata refresh aborted: %d consecutive rate limits detected. "
                         "Processed %d/%d models.",
@@ -140,8 +175,6 @@ class BulkMetadataRefreshUseCase:
                     )
                     await emit(
                         "rate_limited",
-                        processed=processed,
-                        success=success,
                     )
                     return {
                         "success": False,
@@ -149,6 +182,10 @@ class BulkMetadataRefreshUseCase:
                         "processed": processed,
                         "updated": success,
                         "total": total_models,
+                        "failures": failures,
+                        "failure_count": len(failures),
+                        "skipped_count": skipped_count,
+                        "elapsed_seconds": int(time.monotonic() - start_time),
                     }
 
                 if result:
@@ -156,6 +193,7 @@ class BulkMetadataRefreshUseCase:
                     if original_name != model.get("model_name"):
                         needs_resort = True
                 processed += 1
+                handled_count += 1
                 await emit(
                     "processing",
                     processed=processed,
@@ -164,6 +202,9 @@ class BulkMetadataRefreshUseCase:
                 )
             except Exception as exc:  # pragma: no cover - logging path
                 processed += 1
+                handled_count += 1
+                current_name = model.get("model_name", model.get("file_path", "Unknown"))
+                failures.append({"name": current_name, "error": str(exc)})
                 self._logger.error(
                     "Error fetching CivitAI data for %s: %s",
                     model.get("file_path"),
@@ -180,7 +221,7 @@ class BulkMetadataRefreshUseCase:
             f"{success} of {processed} processed {self._service.model_type}s (total: {total_models})"
         )
 
-        return {"success": True, "message": message, "processed": processed, "updated": success, "total": total_models}
+        return {"success": True, "message": message, "processed": processed, "updated": success, "total": total_models, "failures": failures, "failure_count": len(failures), "skipped_count": skipped_count, "elapsed_seconds": int(time.monotonic() - start_time)}
 
     @staticmethod
     def _is_in_skip_path(folder: str, skip_paths: List[str]) -> bool:

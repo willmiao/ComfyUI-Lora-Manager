@@ -1,0 +1,196 @@
+/* Metadata Refresh Result Modal — component styles only */
+
+.metadata-refresh-result-modal {
+    max-width: 700px;
+}
+
+.refresh-summary-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--border-radius-sm);
+    background: var(--surface-subtle);
+    border-left: 4px solid transparent;
+    font-size: var(--text-sm);
+    flex: 1;
+    min-width: 130px;
+}
+
+.stat-card > i {
+    font-size: 1.25em;
+    flex-shrink: 0;
+}
+
+.stat-card-body {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.stat-card-label {
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    line-height: var(--leading-tight);
+}
+
+.stat-card-value {
+    font-weight: var(--weight-bold);
+    font-size: var(--text-lg);
+    color: var(--lora-text);
+    line-height: var(--leading-tight);
+}
+
+.stat-card-success {
+    border-left-color: var(--color-success);
+}
+
+.stat-card-success > i {
+    color: var(--color-success);
+}
+
+.stat-card-failure {
+    border-left-color: var(--color-error);
+}
+
+.stat-card-failure > i {
+    color: var(--color-error);
+}
+
+.stat-card-skipped {
+    border-left-color: var(--color-warning);
+}
+
+.stat-card-skipped > i {
+    color: var(--color-warning);
+}
+
+.stat-card-total {
+    border-left-color: var(--color-info);
+}
+
+.stat-card-total > i {
+    color: var(--color-info);
+}
+
+.stat-card-time {
+    border-left-color: var(--color-accent);
+}
+
+.stat-card-time > i {
+    color: var(--color-accent);
+}
+
+.refresh-failures-section {
+    margin-bottom: var(--space-3);
+}
+
+.refresh-failures-section h4 {
+    margin: 0 0 var(--space-2) 0;
+    font-size: var(--text-base);
+    color: var(--color-error);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.refresh-failures-section h4 i {
+    font-size: 0.9em;
+}
+
+.failure-table-wrapper {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+}
+
+.failure-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: var(--text-sm);
+}
+
+.failure-table th {
+    position: sticky;
+    top: 0;
+    background: var(--lora-surface);
+    border-bottom: 2px solid var(--lora-border);
+    padding: var(--space-1) var(--space-2);
+    text-align: left;
+    font-weight: var(--weight-semibold);
+    color: var(--text-secondary);
+    z-index: 1;
+}
+
+.failure-table td {
+    padding: var(--space-1) var(--space-2);
+    border-bottom: 1px solid var(--lora-border);
+    vertical-align: top;
+}
+
+.failure-table tr:last-child td {
+    border-bottom: none;
+}
+
+.failure-table tr:hover td {
+    background: var(--surface-subtle);
+}
+
+.failure-index {
+    width: 30px;
+    text-align: center;
+    color: var(--text-secondary);
+}
+
+.failure-name {
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: var(--text-xs);
+}
+
+.failure-error {
+    color: var(--color-error);
+    font-size: var(--text-xs);
+}
+
+.refresh-success-message {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    margin-bottom: var(--space-3);
+    background: var(--surface-subtle);
+    border-left: 4px solid var(--color-success);
+    color: var(--lora-text);
+    border-radius: var(--border-radius-sm);
+    font-weight: var(--weight-medium);
+}
+
+.refresh-success-message i {
+    font-size: 1.2em;
+    flex-shrink: 0;
+    color: var(--color-success);
+}
+
+[data-theme="dark"] .failure-table th {
+    background: var(--lora-surface);
+}
+
+[data-theme="dark"] .failure-table td {
+    border-bottom-color: var(--lora-border);
+}
+
+[data-theme="dark"] .failure-table tr:hover td {
+    background: var(--surface-subtle);
+}
