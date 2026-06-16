@@ -12,12 +12,14 @@ coverage/
 .coverage
 model_cache/
 
-# agent
+# agent / dev tooling
 .opencode/
 .claude/
 .sisyphus/
 .codex
 .omo
+reasonix.toml
+.codegraph/
 
 # Vue widgets development cache (but keep build output)
 vue-widgets/node_modules/
