@@ -22,6 +22,7 @@
         },
         "status": {
             "loading": "로딩 중...",
+            "cancelling": "취소 중...",
             "unknown": "알 수 없음",
             "date": "날짜",
             "version": "버전",

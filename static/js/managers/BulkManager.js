@@ -611,7 +611,9 @@ export class BulkManager {
 
             const result = await apiClient.bulkDeleteModels(filePaths);
 
-            if (result.success) {
+            if (result?.cancelled) {
+                showToast('toast.api.operationCancelled', {}, 'info');
+            } else if (result.success) {
                 const currentConfig = this.getCurrentDisplayConfig();
                 showToast('toast.models.deletedSuccessfully', {
                     count: result.deleted_count,

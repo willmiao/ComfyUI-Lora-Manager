@@ -2190,6 +2190,7 @@ describe('Interaction-level regression coverage', () => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ force: false }),
+      signal: expect.any(AbortSignal),
     });
 
     const updateResponse = await global.fetch.mock.results[1].value;

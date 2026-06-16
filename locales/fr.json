@@ -22,6 +22,7 @@
         },
         "status": {
             "loading": "Chargement...",
+            "cancelling": "Annulation...",
             "unknown": "Inconnu",
             "date": "Date",
             "version": "Version",

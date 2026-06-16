@@ -468,17 +468,21 @@ export class BaseModelApiClient {
     }
 
     async refreshModels(fullRebuild = false) {
+        const abortController = new AbortController();
         try {
             state.loadingManager.show(
                 `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${this.apiConfig.config.displayName}s...`,
                 0
             );
-            state.loadingManager.showCancelButton(() => this.cancelTask());
+            state.loadingManager.showCancelButton(() => {
+                this.cancelTask();
+                abortController.abort();
+            });
 
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
 
-            const response = await fetch(url);
+            const response = await fetch(url, { signal: abortController.signal });
 
             if (!response.ok) {
                 throw new Error(`Failed to refresh ${this.apiConfig.config.displayName}s: ${response.status} ${response.statusText}`);
@@ -494,6 +498,10 @@ export class BaseModelApiClient {
 
             showToast('toast.api.refreshComplete', { action: fullRebuild ? 'Full rebuild' : 'Refresh' }, 'success');
         } catch (error) {
+            if (error.name === 'AbortError') {
+                showToast('toast.api.operationCancelled', {}, 'info');
+                return;
+            }
             console.error('Refresh failed:', error);
             showToast('toast.api.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', type: this.apiConfig.config.displayName }, 'error');
         } finally {
@@ -948,13 +956,19 @@ export class BaseModelApiClient {
             throw new Error('No model IDs provided');
         }
 
+        const abortController = new AbortController();
+
         try {
             state.loadingManager.show('Checking for updates...', 0);
-            state.loadingManager.showCancelButton(() => this.cancelTask());
+            state.loadingManager.showCancelButton(() => {
+                this.cancelTask();
+                abortController.abort();
+            });
 
             const response = await fetch(this.apiConfig.endpoints.refreshUpdates, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: abortController.signal,
                 body: JSON.stringify({
                     model_ids: modelIds,
                     force
@@ -979,6 +993,10 @@ export class BaseModelApiClient {
 
             return payload;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                showToast('toast.api.operationCancelled', {}, 'info');
+                return null;
+            }
             console.error('Error refreshing updates for models:', error);
             throw error;
         } finally {
@@ -991,13 +1009,19 @@ export class BaseModelApiClient {
             throw new Error('No folder path provided');
         }
 
+        const abortController = new AbortController();
+
         try {
             state.loadingManager.show('Checking for updates...', 0);
-            state.loadingManager.showCancelButton(() => this.cancelTask());
+            state.loadingManager.showCancelButton(() => {
+                this.cancelTask();
+                abortController.abort();
+            });
 
             const response = await fetch(this.apiConfig.endpoints.refreshUpdates, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                signal: abortController.signal,
                 body: JSON.stringify({
                     folder_path: folderPath,
                     force
@@ -1022,6 +1046,10 @@ export class BaseModelApiClient {
 
             return payload;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                showToast('toast.api.operationCancelled', {}, 'info');
+                return null;
+            }
             console.error('Error refreshing updates for folder:', error);
             throw error;
         } finally {
@@ -1471,15 +1499,21 @@ export class BaseModelApiClient {
             throw new Error('No file paths provided');
         }
 
+        const abortController = new AbortController();
+
         try {
             state.loadingManager.showSimpleLoading(`Deleting ${this.apiConfig.config.displayName.toLowerCase()}s...`);
-            state.loadingManager.showCancelButton(() => this.cancelTask());
+            state.loadingManager.showCancelButton(() => {
+                this.cancelTask();
+                abortController.abort();
+            });
 
             const response = await fetch(this.apiConfig.endpoints.bulkDelete, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
+                signal: abortController.signal,
                 body: JSON.stringify({
                     file_paths: filePaths
                 })
@@ -1502,6 +1536,10 @@ export class BaseModelApiClient {
                 throw new Error(result.error || `Failed to delete ${this.apiConfig.config.displayName.toLowerCase()}s`);
             }
         } catch (error) {
+            if (error.name === 'AbortError') {
+                console.log(`Bulk delete cancelled by user for ${this.apiConfig.config.displayName.toLowerCase()}s`);
+                return { success: false, cancelled: true };
+            }
             console.error(`Error during bulk delete of ${this.apiConfig.config.displayName.toLowerCase()}s:`, error);
             throw error;
         } finally {

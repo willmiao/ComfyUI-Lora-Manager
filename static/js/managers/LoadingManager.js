@@ -73,7 +73,7 @@ export class LoadingManager {
             if (this.onCancelCallback) {
                 this.onCancelCallback();
                 this.cancelButton.disabled = true;
-                this.cancelButton.textContent = translate('common.status.loading', {}, 'Loading...');
+                this.cancelButton.textContent = translate('common.status.cancelling', {}, 'Cancelling...');
             }
         };
 

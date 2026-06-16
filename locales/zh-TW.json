@@ -22,6 +22,7 @@
         },
         "status": {
             "loading": "載入中...",
+            "cancelling": "取消中...",
             "unknown": "未知",
             "date": "日期",
             "version": "版本",

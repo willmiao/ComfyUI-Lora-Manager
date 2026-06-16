@@ -22,6 +22,7 @@
         },
         "status": {
             "loading": "読み込み中...",
+            "cancelling": "キャンセル中...",
             "unknown": "不明",
             "date": "日付",
             "version": "バージョン",

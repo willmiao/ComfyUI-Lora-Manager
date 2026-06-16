@@ -22,6 +22,7 @@
         },
         "status": {
             "loading": "Загрузка...",
+            "cancelling": "Отмена...",
             "unknown": "Неизвестно",
             "date": "Дата",
             "version": "Версия",

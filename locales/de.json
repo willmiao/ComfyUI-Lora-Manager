@@ -22,6 +22,7 @@
         },
         "status": {
             "loading": "Wird geladen...",
+            "cancelling": "Abbrechen...",
             "unknown": "Unbekannt",
             "date": "Datum",
             "version": "Version",

@@ -42,7 +42,12 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
     onStart?.({ displayName, loadingMessage });
 
     state.loadingManager?.showSimpleLoading?.(loadingMessage);
-    state.loadingManager?.showCancelButton?.(() => apiClient.cancelTask());
+
+    const abortController = new AbortController();
+    state.loadingManager?.showCancelButton?.(() => {
+        apiClient.cancelTask();
+        abortController.abort();
+    });
 
     let status = 'success';
     let records = [];
@@ -52,6 +57,7 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
         const response = await fetch(apiConfig.endpoints.refreshUpdates, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: abortController.signal,
             body: JSON.stringify({ force: false })
         });
 
@@ -81,6 +87,11 @@ export async function performModelUpdateCheck({ onStart, onComplete } = {}) {
 
         await resetAndReload(false);
     } catch (err) {
+        if (err?.name === 'AbortError') {
+            showToast('toast.api.operationCancelled', {}, 'info');
+            status = 'cancelled';
+            return { status: 'cancelled', displayName, records: [], error: null };
+        }
         status = 'error';
         error = err instanceof Error ? err : new Error(String(err));
         console.error('Error checking model updates:', error);
@@ -126,7 +137,12 @@ export async function performFolderUpdateCheck(folderPath, { onComplete } = {}) 
     );
 
     state.loadingManager?.showSimpleLoading?.(loadingMessage);
-    state.loadingManager?.showCancelButton?.(() => apiClient.cancelTask());
+
+    const abortController = new AbortController();
+    state.loadingManager?.showCancelButton?.(() => {
+        apiClient.cancelTask();
+        abortController.abort();
+    });
 
     let status = 'success';
     let records = [];
@@ -136,6 +152,7 @@ export async function performFolderUpdateCheck(folderPath, { onComplete } = {}) 
         const response = await fetch(apiConfig.endpoints.refreshUpdates, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
+            signal: abortController.signal,
             body: JSON.stringify({ folder_path: folderPath, force: false })
         });
 
@@ -165,6 +182,11 @@ export async function performFolderUpdateCheck(folderPath, { onComplete } = {}) 
 
         await resetAndReload(false);
     } catch (err) {
+        if (err?.name === 'AbortError') {
+            showToast('toast.api.operationCancelled', {}, 'info');
+            status = 'cancelled';
+            return { status: 'cancelled', records: [], error: null };
+        }
         status = 'error';
         error = err instanceof Error ? err : new Error(String(err));
         console.error('Error checking folder model updates:', error);
