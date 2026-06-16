@@ -43,7 +43,7 @@ class ExifUtils:
             struct.unpack('>I', data[:4])[0] == 12
             and data[4:8] == b'JXL '
             and data[8:12] == bytes([0x0d, 0x0a, 0x87, 0x0a])
-            and struct.unpack('>I', data[12:16])[0] == 20
+            and struct.unpack('>I', data[12:16])[0] >= 16
             and data[16:20] == b'ftyp'
             and data[20:24] == b'jxl '
         )
@@ -56,6 +56,9 @@ class ExifUtils:
             if box['type'] == b'ftyp' and b'avif' in box['data']:
                 return True
         return False
+
+    # Max decompressed size for brotli metadata (2 MB)
+    _BROTLI_MAX_DECOMPRESSED = 2 * 1024 * 1024
 
     @staticmethod
     def _extract_isobmff_brotli(image_path: str) -> Optional[dict]:
@@ -88,6 +91,13 @@ class ExifUtils:
         if _BROTLI_AVAILABLE:
             try:
                 decompressed = brotli.decompress(compressed)
+                if len(decompressed) > ExifUtils._BROTLI_MAX_DECOMPRESSED:
+                    logger.warning(
+                        "Brotli metadata too large (%d bytes, max %d), ignoring",
+                        len(decompressed),
+                        ExifUtils._BROTLI_MAX_DECOMPRESSED,
+                    )
+                    decompressed = None
             except Exception:
                 decompressed = None
         else:
