@@ -63,7 +63,8 @@ async def test_fallback_retries_same_provider_on_rate_limit(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_fallback_respects_retry_limit(monkeypatch):
+async def test_fallback_continues_to_next_provider_on_rate_limit(monkeypatch):
+    """After exhausting retries on primary, fallback should continue to secondary."""
     sleep_mock = AsyncMock()
     monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
     monkeypatch.setattr(provider_module.random, "uniform", lambda *_: 0.0)
@@ -76,13 +77,13 @@ async def test_fallback_respects_retry_limit(monkeypatch):
         rate_limit_retry_limit=2,
     )
 
-    with pytest.raises(RateLimitError) as exc_info:
-        await fallback.get_model_by_hash("abc")
+    # After Change A: no longer raises; falls through to secondary
+    result, error = await fallback.get_model_by_hash("abc")
 
-    assert exc_info.value.provider == "primary"
-    assert primary.calls == 2
-    assert secondary.calls == 0
-    sleep_mock.assert_awaited_once()
+    assert error is None
+    assert result == {"id": "secondary"}
+    assert primary.calls == 2          # retry_limit exhausted on primary
+    assert secondary.calls == 1        # secondary IS called now
 
 
 @pytest.mark.asyncio
@@ -117,3 +118,40 @@ async def test_rate_limit_retrying_provider_respects_limit(monkeypatch):
     assert exc_info.value.provider == "inner"
     assert inner.calls == 2
     sleep_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_retry_helper_limits_retries_for_large_retry_after():
+    """With retry_after >= 120s, _RateLimitRetryHelper should only attempt once (no retries)."""
+    calls = 0
+
+    async def failing():
+        nonlocal calls
+        calls += 1
+        raise RateLimitError("limited", retry_after=1500.0)
+
+    helper = provider_module._RateLimitRetryHelper(retry_limit=3)
+    with pytest.raises(RateLimitError):
+        await helper.run("test", failing)
+    assert calls == 1  # No retries for large retry_after
+
+
+@pytest.mark.asyncio
+async def test_retry_helper_retries_normally_for_small_retry_after(monkeypatch):
+    """With retry_after < 120s, _RateLimitRetryHelper should retry normally (up to limit)."""
+    sleep_mock = AsyncMock()
+    monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
+
+    calls = 0
+
+    async def succeeding():
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RateLimitError("limited", retry_after=30.0)
+        return {"ok": True}, None
+
+    helper = provider_module._RateLimitRetryHelper(retry_limit=3)
+    result, _ = await helper.run("test", succeeding)
+    assert result == {"ok": True}
+    assert calls == 2  # Retried once (small retry_after)

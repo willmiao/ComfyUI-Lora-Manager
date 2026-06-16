@@ -77,6 +77,9 @@ class BulkMetadataRefreshUseCase:
 
         await emit("started")
 
+        RATE_LIMIT_ABORT_THRESHOLD = 3
+        consecutive_rate_limits = 0
+
         for model in to_process:
             if self._service.scanner.is_cancelled():
                 self._logger.info("Bulk metadata refresh cancelled by user")
@@ -115,12 +118,39 @@ class BulkMetadataRefreshUseCase:
                     continue
 
                 await MetadataManager.hydrate_model_data(model)
-                result, _ = await self._metadata_sync.fetch_and_update_model(
+                result, error_msg = await self._metadata_sync.fetch_and_update_model(
                     sha256=model["sha256"],
                     file_path=model["file_path"],
                     model_data=model,
                     update_cache_func=self._service.scanner.update_single_model_cache,
                 )
+
+                if not result and error_msg and "Rate limited" in error_msg:
+                    consecutive_rate_limits += 1
+                else:
+                    consecutive_rate_limits = 0
+
+                if consecutive_rate_limits >= RATE_LIMIT_ABORT_THRESHOLD:
+                    self._logger.warning(
+                        "Bulk metadata refresh aborted: %d consecutive rate limits detected. "
+                        "Processed %d/%d models.",
+                        consecutive_rate_limits,
+                        processed,
+                        total_to_process,
+                    )
+                    await emit(
+                        "rate_limited",
+                        processed=processed,
+                        success=success,
+                    )
+                    return {
+                        "success": False,
+                        "message": f"Rate limit detected; {total_to_process - processed} models skipped",
+                        "processed": processed,
+                        "updated": success,
+                        "total": total_models,
+                    }
+
                 if result:
                     success += 1
                     if original_name != model.get("model_name"):

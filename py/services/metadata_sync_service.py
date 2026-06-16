@@ -216,13 +216,19 @@ class MetadataSyncService:
             provider_used: Optional[str] = None
             last_error: Optional[str] = None
             civitai_api_not_found = False
+            any_rate_limited = False
 
             for provider_name, provider in provider_attempts:
                 try:
                     civitai_metadata_candidate, error = await provider.get_model_by_hash(sha256)
                 except RateLimitError as exc:
-                    exc.provider = exc.provider or (provider_name or provider.__class__.__name__)
-                    raise
+                    logger.warning(
+                        "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                        provider_name or provider.__class__.__name__,
+                        exc.retry_after or 0,
+                    )
+                    any_rate_limited = True
+                    continue
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.error("Provider %s failed for hash %s: %s", provider_name, sha256, exc)
                     civitai_metadata_candidate, error = None, str(exc)
@@ -276,6 +282,8 @@ class MetadataSyncService:
                 )
 
                 resolved_error = last_error or default_error
+                if any_rate_limited and "Rate limited" not in resolved_error:
+                    resolved_error = "Rate limited"
                 if is_expected_offline_error(resolved_error):
                     resolved_error = OFFLINE_FRIENDLY_MESSAGE
 

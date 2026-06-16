@@ -441,7 +441,6 @@ async def test_fetch_and_update_model_returns_rate_limit_error(tmp_path):
 
     assert ok is False
     assert error is not None and "Rate limited" in error
-    assert "7" in error
     helpers.metadata_manager.save_metadata.assert_not_awaited()
     update_cache.assert_not_awaited()
     helpers.provider_selector.assert_not_awaited()
