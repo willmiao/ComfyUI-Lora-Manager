@@ -1067,8 +1067,11 @@ class ModelScanner:
 
         model_data = self._build_cache_entry(metadata, folder=normalized_folder)
 
-        # Compute SHA256 hash when metadata provided none (e.g., CivitAI API response has empty hashes)
-        if not model_data.get('sha256') and file_path:
+        # Compute SHA256 hash when metadata provided none (e.g., CivitAI API response has empty hashes).
+        # Respect hash_status='pending' (set by CheckpointScanner for large models) to defer
+        # hash calculation until on-demand — avoids reading entire checkpoint files at startup.
+        hash_status = model_data.get('hash_status', '')
+        if not model_data.get('sha256') and hash_status != 'pending' and file_path:
             try:
                 logger.info(f"Computing SHA256 hash for {file_path} (was empty from metadata)")
                 sha256 = await calculate_sha256(file_path)

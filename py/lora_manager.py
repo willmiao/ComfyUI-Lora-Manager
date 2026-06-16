@@ -436,5 +436,14 @@ class LoraManager:
         try:
             logger.info("LoRA Manager: Cleaning up services")
 
+            # Cancel any in-flight scanner initialization tasks so thread-pool
+            # workers (e.g. _initialize_cache_sync) can break out of their loops
+            # when the server shuts down (e.g. Ctrl+C on WSL).
+            for name in ("lora_scanner", "checkpoint_scanner", "embedding_scanner"):
+                scanner = ServiceRegistry.get_service_sync(name)
+                if scanner is not None and hasattr(scanner, "cancel_task"):
+                    scanner.cancel_task()
+                    logger.debug("LoRA Manager: Cancelled %s", name)
+
         except Exception as e:
             logger.error(f"Error during cleanup: {e}", exc_info=True)
