@@ -289,9 +289,10 @@ class MetadataSyncService:
 
                 error_msg = (
                     f"Error fetching metadata: {resolved_error} "
-                    f"(model_name={model_data.get('model_name', '')})"
+                    f"(file={os.path.basename(file_path)}, sha256={sha256})"
                 )
-                if is_expected_offline_error(resolved_error):
+                is_model_not_found = "Model not found" in resolved_error
+                if is_expected_offline_error(resolved_error) or is_model_not_found:
                     logger.info(error_msg)
                 else:
                     logger.error(error_msg)
