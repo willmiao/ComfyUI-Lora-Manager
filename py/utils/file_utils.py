@@ -44,9 +44,11 @@ async def calculate_sha256(file_path: str) -> str:
     chunk_size = _get_hash_chunk_size_bytes()
     with open(file_path, "rb") as f:
         fd = f.fileno()
-        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
         for byte_block in iter(lambda: f.read(chunk_size), b""):
             sha256_hash.update(byte_block)
+        # Evict pages after reading so the data doesn't linger in the kernel page
+        # cache — on WSL this otherwise appears as unreclaimable VmmemWSL growth.
+        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
     return sha256_hash.hexdigest()
 
 
