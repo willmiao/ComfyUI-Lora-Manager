@@ -240,6 +240,9 @@ export class StatisticsManager {
         
         // Storage efficiency chart
         this.createStorageEfficiencyChart();
+        
+        // Model types chart (Collection tab)
+        this.createModelTypesChart();
     }
 
     createCollectionPieChart() {
@@ -546,6 +549,68 @@ export class StatisticsManager {
                             label: (context) => {
                                 const point = context.raw;
                                 return `${point.name}: ${this.formatFileSize(point.x)}, ${point.y} uses`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createModelTypesChart() {
+        const ctx = document.getElementById('modelTypesChart');
+        if (!ctx || !this.data.collection || !this.data.collection.model_types_distribution) return;
+
+        const distribution = this.data.collection.model_types_distribution;
+        const typeDisplayNames = {
+            lora: 'LoRA',
+            locon: 'LyCORIS',
+            dora: 'DoRA',
+            checkpoint: 'Checkpoint',
+            diffusion_model: 'Diffusion Model',
+            embedding: 'Embeddings'
+        };
+
+        const colorPalette = {
+            lora: 'oklch(68% 0.28 256)',
+            locon: 'oklch(68% 0.25 190)',
+            dora: 'oklch(68% 0.25 330)',
+            checkpoint: 'oklch(68% 0.28 45)',
+            diffusion_model: 'oklch(68% 0.25 280)',
+            embedding: 'oklch(68% 0.25 120)'
+        };
+
+        const labels = Object.keys(distribution).map(k => typeDisplayNames[k] || k);
+        const values = Object.values(distribution);
+        const colors = Object.keys(distribution).map(k => colorPalette[k] || 'oklch(68% 0.15 0)');
+
+        const data = {
+            labels: labels,
+            datasets: [{
+                data: values,
+                backgroundColor: colors,
+                borderColor: getComputedStyle(document.documentElement).getPropertyValue('--border-color'),
+                borderWidth: 2
+            }]
+        };
+
+        this.charts.modelTypes = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const value = context.parsed;
+                                const pct = ((value / total) * 100).toFixed(1);
+                                return ` ${context.label}: ${value} (${pct}%)`;
                             }
                         }
                     }

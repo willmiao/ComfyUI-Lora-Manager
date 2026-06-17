@@ -11,6 +11,8 @@ from ..config import config
 from ..services.settings_manager import get_settings_manager
 from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
+from ..services.model_query import normalize_sub_type, resolve_sub_type
+from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES
 from ..utils.usage_stats import UsageStats
 
 logger = logging.getLogger(__name__)
@@ -140,6 +142,21 @@ class StatsRoutes:
             # Get usage statistics
             usage_data = await self.usage_stats.get_stats()
             
+            # CivitAI model type distribution across all model types
+            # Use the same logic as the filter panel: normalize_sub_type(resolve_sub_type(entry))
+            # with sub-type validation per model type
+            model_types_counter: Counter[str] = Counter()
+            for entry in lora_cache.raw_data:
+                ntype = normalize_sub_type(resolve_sub_type(entry))
+                if ntype and ntype in VALID_LORA_SUB_TYPES:
+                    model_types_counter[ntype] += 1
+            for entry in checkpoint_cache.raw_data:
+                ntype = normalize_sub_type(resolve_sub_type(entry))
+                if ntype and ntype in VALID_CHECKPOINT_SUB_TYPES:
+                    model_types_counter[ntype] += 1
+            # Embeddings: always count as "embedding" regardless of CivitAI sub-type
+            model_types_counter['embedding'] = len(embedding_cache.raw_data)
+            
             return web.json_response({
                 'success': True,
                 'data': {
@@ -154,7 +171,8 @@ class StatsRoutes:
                     'total_generations': usage_data.get('total_executions', 0),
                     'unused_loras': self._count_unused_models(lora_cache.raw_data, usage_data.get('loras', {})),
                     'unused_checkpoints': self._count_unused_models(checkpoint_cache.raw_data, usage_data.get('checkpoints', {})),
-                    'unused_embeddings': self._count_unused_models(embedding_cache.raw_data, usage_data.get('embeddings', {}))
+                    'unused_embeddings': self._count_unused_models(embedding_cache.raw_data, usage_data.get('embeddings', {})),
+                    'model_types_distribution': dict(model_types_counter.most_common())
                 }
             })
             
