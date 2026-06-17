@@ -39,6 +39,9 @@ async def calculate_sha256(file_path: str) -> str:
     Uses ``posix_fadvise`` with ``POSIX_FADV_DONTNEED`` to avoid polluting the OS page
     cache — critical on WSL where cached file pages live inside the VM and are not
     accounted for in guest ``used`` memory, causing VmmemWSL to balloon.
+
+    On Windows/macOS where ``posix_fadvise`` is not available the hint is silently
+    skipped.
     """
     sha256_hash = hashlib.sha256()
     chunk_size = _get_hash_chunk_size_bytes()
@@ -48,7 +51,9 @@ async def calculate_sha256(file_path: str) -> str:
             sha256_hash.update(byte_block)
         # Evict pages after reading so the data doesn't linger in the kernel page
         # cache — on WSL this otherwise appears as unreclaimable VmmemWSL growth.
-        os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
+        # Guard against platforms (Windows, macOS) that lack posix_fadvise.
+        if hasattr(os, "posix_fadvise") and hasattr(os, "POSIX_FADV_DONTNEED"):
+            os.posix_fadvise(fd, 0, 0, os.POSIX_FADV_DONTNEED)
     return sha256_hash.hexdigest()
 
 
