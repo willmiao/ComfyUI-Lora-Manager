@@ -1820,6 +1820,39 @@ class ModelDownloadHandler:
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def update_download_queue_status(self, request: web.Request) -> web.Response:
+        """Update the status of a queue item (non-terminal transitions).
+
+        Supported transitions include ``queued → downloading``,
+        ``downloading → paused``, ``paused → downloading``, etc.
+        Terminal transitions (``completed``, ``failed``, ``canceled``)
+        should use ``complete_download_in_queue`` instead.
+        """
+        try:
+            download_id = request.query.get("download_id")
+            status = request.query.get("status")
+            if not download_id or not status:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "download_id and status are required",
+                    },
+                    status=400,
+                )
+            service = await DownloadQueueService.get_instance()
+            updated = await service.update_status(download_id, status)
+            if not updated:
+                return web.json_response(
+                    {"success": False, "error": "Download not found in queue"},
+                    status=404,
+                )
+            return web.json_response({"success": True})
+        except Exception as exc:
+            self._logger.error(
+                "Error updating download queue status: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class ModelCivitaiHandler:
     """CivitAI integration endpoints."""
@@ -2864,6 +2897,7 @@ class ModelHandlerSet:
             "retry_all_failed_downloads": self.download.retry_all_failed_downloads,
             "complete_download_in_queue": self.download.complete_download_in_queue,
             "get_download_stats": self.download.get_download_stats,
+            "update_download_queue_status": self.download.update_download_queue_status,
             "get_civitai_versions": self.civitai.get_civitai_versions,
             "get_civitai_model_by_version": self.civitai.get_civitai_model_by_version,
             "get_civitai_model_by_hash": self.civitai.get_civitai_model_by_hash,
