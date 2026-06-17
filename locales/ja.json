@@ -956,10 +956,7 @@
     },
     "sidebar": {
         "modelRoot": "ルート",
-        "moreOptions": "その他のオプション",
         "collapseAll": "すべてのフォルダを折りたたむ",
-        "pinSidebar": "サイドバーを固定",
-        "unpinSidebar": "サイドバーの固定を解除",
         "hideOnThisPage": "このページでサイドバーを非表示",
         "showSidebar": "サイドバーを表示",
         "sidebarHiddenNotification": "{page}ページでサイドバーが非表示になっています",

@@ -91,7 +91,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "autoplay_on_hover": False,
     "display_density": "default",
     "card_info_display": "always",
-    "show_folder_sidebar": True,
     "include_trigger_words": False,
     "compact_mode": False,
     "priority_tags": DEFAULT_PRIORITY_TAG_CONFIG.copy(),

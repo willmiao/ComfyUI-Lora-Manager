@@ -956,10 +956,7 @@
     },
     "sidebar": {
         "modelRoot": "Root",
-        "moreOptions": "More options",
         "collapseAll": "Collapse All Folders",
-        "pinSidebar": "Pin Sidebar",
-        "unpinSidebar": "Unpin Sidebar",
         "hideOnThisPage": "Hide sidebar on this page",
         "showSidebar": "Show sidebar",
         "sidebarHiddenNotification": "Folder sidebar hidden on {page} page",

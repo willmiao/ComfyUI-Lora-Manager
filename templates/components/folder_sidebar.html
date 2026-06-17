@@ -1,6 +1,3 @@
-<!-- Hover detection area -->
-<div class="sidebar-hover-area" id="sidebarHoverArea"></div>
-
 <!-- Folder Navigation Sidebar -->
 <div class="folder-sidebar" id="folderSidebar">
     <div class="sidebar-header" id="sidebarHeader">
@@ -15,23 +12,9 @@
             <button class="sidebar-action-btn" id="sidebarCollapseAll" title="{{ t('sidebar.collapseAll') }}">
                 <i class="fas fa-compress-alt"></i>
             </button>
-            <button class="sidebar-action-btn" id="sidebarPinToggle" title="{{ t('sidebar.unpinSidebar') }}">
-                <i class="fas fa-thumbtack"></i>
+            <button class="sidebar-action-btn" id="sidebarHideToggle" title="{{ t('sidebar.hideOnThisPage') }}">
+                <i class="fas fa-chevron-left"></i>
             </button>
-            <button class="sidebar-action-btn" id="sidebarMoreToggle" title="{{ t('sidebar.moreOptions') }}">
-                <i class="fas fa-ellipsis-v"></i>
-            </button>
-        </div>
-        <!-- Dropdown menu for more options -->
-        <div class="sidebar-more-dropdown" id="sidebarMoreDropdown">
-            <div class="sidebar-dropdown-item" data-action="toggle-pin">
-                <i class="fas fa-thumbtack"></i>
-                <span id="sidebarMorePinLabel">{{ t('sidebar.pinSidebar') }}</span>
-            </div>
-            <div class="sidebar-dropdown-item" data-action="toggle-hide">
-                <i class="fas fa-eye-slash"></i>
-                <span>{{ t('sidebar.hideOnThisPage') }}</span>
-            </div>
         </div>
     </div>
     <div class="sidebar-content">

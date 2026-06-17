@@ -72,12 +72,6 @@ vi.mock('../../../static/js/managers/BannerService.js', () => ({
     },
 }));
 
-vi.mock('../../../static/js/components/SidebarManager.js', () => ({
-    sidebarManager: {
-        setSidebarEnabled: vi.fn().mockResolvedValue(),
-    },
-}));
-
 import { SettingsManager } from '../../../static/js/managers/SettingsManager.js';
 import { state } from '../../../static/js/state/index.js';
 

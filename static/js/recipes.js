@@ -95,8 +95,7 @@ class RecipeManager {
     async _initSidebar() {
         try {
             sidebarManager.setHostPageControls(this.pageControls);
-            const shouldShowSidebar = state?.global?.settings?.show_folder_sidebar !== false;
-            await sidebarManager.setSidebarEnabled(shouldShowSidebar);
+            await sidebarManager.initialize(this.pageControls);
         } catch (error) {
             console.error('Failed to initialize recipe sidebar:', error);
         }

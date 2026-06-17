@@ -83,6 +83,15 @@ vi.mock('../../../static/js/api/recipeApi.js', () => ({
   })),
 }));
 
+vi.mock('../../../static/js/components/SidebarManager.js', () => ({
+  sidebarManager: {
+    setHostPageControls: vi.fn(),
+    initialize: vi.fn(async () => {}),
+    refresh: vi.fn(async () => {}),
+    cleanup: vi.fn(),
+  },
+}));
+
 describe('RecipeManager', () => {
   let RecipeManager;
   let pageState;

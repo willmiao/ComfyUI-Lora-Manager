@@ -15,7 +15,6 @@ import { i18n } from '../i18n/index.js';
 import { configureModelCardVideo } from '../components/shared/ModelCard.js';
 import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePriorityTagSuggestionsCache } from '../utils/priorityTagHelpers.js';
 import { bannerService } from './BannerService.js';
-import { sidebarManager } from '../components/SidebarManager.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
 
@@ -882,12 +881,6 @@ export class SettingsManager {
         const cardInfoDisplaySelect = document.getElementById('cardInfoDisplay');
         if (cardInfoDisplaySelect) {
             cardInfoDisplaySelect.value = state.global.settings.card_info_display || 'always';
-        }
-
-        const showFolderSidebarCheckbox = document.getElementById('showFolderSidebar');
-        if (showFolderSidebarCheckbox) {
-            const showSidebarSetting = state.global.settings.show_folder_sidebar;
-            showFolderSidebarCheckbox.checked = showSidebarSetting !== false;
         }
 
         // Set model card footer action
@@ -2949,12 +2942,6 @@ export class SettingsManager {
         const showVersionOnCard = state.global.settings.show_version_on_card !== false;
         document.body.classList.toggle('hide-card-version', !showVersionOnCard);
 
-        const shouldShowSidebar = state.global.settings.show_folder_sidebar !== false;
-        if (sidebarManager && typeof sidebarManager.setSidebarEnabled === 'function') {
-            sidebarManager.setSidebarEnabled(shouldShowSidebar).catch((error) => {
-                console.error('Failed to apply sidebar visibility setting:', error);
-            });
-        }
     }
 }
 

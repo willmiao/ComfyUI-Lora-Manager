@@ -36,7 +36,6 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     autoplay_on_hover: false,
     display_density: 'default',
     card_info_display: 'always',
-    show_folder_sidebar: true,
     model_name_display: 'model_name',
     lora_syntax_format: 'legacy',
     model_card_footer_action: 'example_images',

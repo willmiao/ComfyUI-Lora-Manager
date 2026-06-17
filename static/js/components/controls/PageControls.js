@@ -93,8 +93,7 @@ export class PageControls {
     async initSidebarManager() {
         try {
             this.sidebarManager.setHostPageControls(this);
-            const shouldShowSidebar = state?.global?.settings?.show_folder_sidebar !== false;
-            await this.sidebarManager.setSidebarEnabled(shouldShowSidebar);
+            await this.sidebarManager.initialize(this);
         } catch (error) {
             console.error('Failed to initialize SidebarManager:', error);
         }
@@ -664,13 +663,6 @@ export class PageControls {
         }
 
         this.updateActionButtonStates();
-
-        if (this.sidebarManager) {
-            const shouldShowSidebar = !isExcludedView && state?.global?.settings?.show_folder_sidebar !== false;
-            this.sidebarManager.setSidebarEnabled(shouldShowSidebar).catch((error) => {
-                console.error('Failed to update sidebar visibility:', error);
-            });
-        }
     }
 
     suspendInteractiveModes() {

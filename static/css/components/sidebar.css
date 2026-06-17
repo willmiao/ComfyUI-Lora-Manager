@@ -8,67 +8,26 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
     overflow: hidden;
-    transition: var(--transition-slow);
     flex-shrink: 0;
     z-index: var(--z-overlay);
     box-shadow: var(--shadow-header);
     display: flex;
     flex-direction: column;
     backdrop-filter: blur(8px);
-    /* Default state: hidden off-screen */
+    /* Default: hidden off-screen — prevents flash before JS runs */
     transform: translateX(-100%);
     opacity: 0;
     pointer-events: none;
 }
 
-.folder-sidebar.hidden-by-setting {
-    display: none !important;
-}
-
-/* Visible state */
 .folder-sidebar.visible {
     transform: translateX(0);
     opacity: 1;
     pointer-events: all;
 }
 
-/* Auto-hide states */
-.folder-sidebar.auto-hide {
-    transform: translateX(-100%);
-    opacity: 0;
-    pointer-events: none;
-}
-
-.folder-sidebar.auto-hide.hover-active {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: all;
-}
-
-.folder-sidebar.collapsed {
-    transform: translateX(-100%);
-    opacity: 0;
-    pointer-events: none;
-}
-
-/* Hover detection area for auto-hide */
-.sidebar-hover-area {
-    position: fixed;
-    top: 68px;
-    left: 0;
-    width: 20px;
-    height: calc(100vh - 88px);
-    z-index: calc(var(--z-overlay) - 1);
-    background: transparent;
-    pointer-events: all;
-}
-
-.sidebar-hover-area.hidden-by-setting {
+.folder-sidebar.hidden-by-setting {
     display: none !important;
-}
-
-.sidebar-hover-area.disabled {
-    pointer-events: none;
 }
 
 .sidebar-header {
@@ -149,65 +108,6 @@
 /* Remove old close button styles */
 .sidebar-toggle-close {
     display: none;
-}
-
-/* ===== Sidebar More Options Dropdown ===== */
-.sidebar-more-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 8px;
-    min-width: 190px;
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    box-shadow: var(--shadow-lg);
-    z-index: calc(var(--z-overlay) + 20);
-    display: none;
-    overflow: hidden;
-    margin-top: 2px;
-}
-
-.sidebar-more-dropdown.open {
-    display: block;
-    animation: dropdownFadeIn 0.15s ease;
-}
-
-@keyframes dropdownFadeIn {
-    from { opacity: 0; transform: translateY(-4px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-
-.sidebar-dropdown-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 0.85em;
-    color: var(--text-color);
-    transition: var(--transition-base);
-    white-space: nowrap;
-}
-
-.sidebar-dropdown-item:hover {
-    background: var(--lora-surface);
-}
-
-.sidebar-dropdown-item i {
-    width: 16px;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.9em;
-    flex-shrink: 0;
-}
-
-.sidebar-dropdown-item:hover i {
-    color: var(--text-color);
-}
-
-.sidebar-dropdown-item.disabled {
-    opacity: 0.4;
-    pointer-events: none;
 }
 
 /* ===== Sidebar Hidden Indicator (left edge) ===== */
@@ -630,7 +530,7 @@
     opacity: 0.3;
 }
 
-/* Responsive Design */
+/* Responsive Design — Mobile: overlay when shown */
 @media (max-width: 1024px) {
     .folder-sidebar {
         top: 68px;
@@ -640,13 +540,9 @@
         height: calc(100vh - 88px);
         z-index: calc(var(--z-overlay) + 10);
     }
-    
-    .folder-sidebar.collapsed {
-        transform: translateX(-100%);
-    }
-    
-    /* Mobile overlay */
-    .folder-sidebar:not(.collapsed)::before {
+
+    /* Mobile overlay when sidebar is shown */
+    .folder-sidebar.visible::before {
         content: '';
         position: fixed;
         top: 0;
@@ -665,11 +561,11 @@
         max-width: 280px;
         left: 0px;
     }
-    
+
     .sidebar-breadcrumb-nav {
         font-size: 0.8em;
     }
-    
+
     .sidebar-breadcrumb-item {
         padding: 3px 6px;
     }

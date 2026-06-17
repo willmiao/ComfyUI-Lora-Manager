@@ -17,12 +17,8 @@ export class SidebarManager {
         this.treeData = {};
         this.selectedPath = '';
         this.expandedNodes = new Set();
-        this.isVisible = true;
-        this.isPinned = false;
         this.apiClient = null;
         this.openDropdown = null;
-        this.hoverTimeout = null;
-        this.isHovering = false;
         this.isInitialized = false;
         this.displayMode = 'tree'; // 'tree' or 'list'
         this.foldersList = [];
@@ -35,9 +31,7 @@ export class SidebarManager {
         this.folderTreeElement = null;
         this.currentDropTarget = null;
         this.lastPageControls = null;
-        this.isDisabledBySetting = false;
         this.isDisabledByPage = false;
-        this.isMoreDropdownOpen = false;
         this.initializationPromise = null;
         this.isCreatingFolder = false;
         this._pendingDragState = null; // 用于保存拖拽创建文件夹时的状态
@@ -48,12 +42,7 @@ export class SidebarManager {
         this.handleBreadcrumbClick = this.handleBreadcrumbClick.bind(this);
         this.handleDocumentClick = this.handleDocumentClick.bind(this);
         this.handleSidebarHeaderClick = this.handleSidebarHeaderClick.bind(this);
-        this.handlePinToggle = this.handlePinToggle.bind(this);
         this.handleCollapseAll = this.handleCollapseAll.bind(this);
-        this.handleMouseEnter = this.handleMouseEnter.bind(this);
-        this.handleMouseLeave = this.handleMouseLeave.bind(this);
-        this.handleHoverAreaEnter = this.handleHoverAreaEnter.bind(this);
-        this.handleHoverAreaLeave = this.handleHoverAreaLeave.bind(this);
         this.updateContainerMargin = this.updateContainerMargin.bind(this);
         this.handleDisplayModeToggle = this.handleDisplayModeToggle.bind(this);
         this.handleFolderListClick = this.handleFolderListClick.bind(this);
@@ -70,9 +59,7 @@ export class SidebarManager {
         this.handleSidebarDrop = this.handleSidebarDrop.bind(this);
         this.handleCreateFolderSubmit = this.handleCreateFolderSubmit.bind(this);
         this.handleCreateFolderCancel = this.handleCreateFolderCancel.bind(this);
-        this.handleMoreToggle = this.handleMoreToggle.bind(this);
-        this.handleMoreDropdownItemClick = this.handleMoreDropdownItemClick.bind(this);
-        this.handleDocumentClickForMore = this.handleDocumentClickForMore.bind(this);
+        this.handleHideToggle = this.handleHideToggle.bind(this);
         this.getPageDisplayName = this.getPageDisplayName.bind(this);
     }
 
@@ -81,12 +68,6 @@ export class SidebarManager {
     }
 
     async initialize(pageControls, options = {}) {
-        const { forceInitialize = false } = options;
-
-        if (this.isDisabledBySetting && !forceInitialize) {
-            return;
-        }
-
         // Clean up previous initialization if exists
         if (this.isInitialized) {
             this.cleanup();
@@ -99,24 +80,14 @@ export class SidebarManager {
             || pageControls?.sidebarApiClient
             || getModelApiClient();
 
-        // Set initial sidebar state immediately (hidden by default)
-        this.setInitialSidebarState();
-
         this.setupEventHandlers();
         this.initializeDragAndDrop();
         this.updateSidebarTitle();
         this.restoreSidebarState();
-        // Re-apply DOM visibility now that per-page state is known
-        this.updateDomVisibility(!this.isDisabledBySetting);
+        // Apply DOM visibility based on per-page state
+        this.updateDomVisibility();
         await this.loadFolderTree();
-        if (this.isDisabledBySetting && !forceInitialize) {
-            this.cleanup();
-            return;
-        }
         this.restoreSelectedFolder();
-
-        // Apply final state with animation after everything is loaded
-        this.applyFinalSidebarState();
 
         // Update container margin based on initial sidebar state
         this.updateContainerMargin();
@@ -127,12 +98,6 @@ export class SidebarManager {
 
     cleanup() {
         if (!this.isInitialized) return;
-
-        // Clear any pending timeouts
-        if (this.hoverTimeout) {
-            clearTimeout(this.hoverTimeout);
-            this.hoverTimeout = null;
-        }
 
         // Clean up event handlers
         this.removeEventHandlers();
@@ -151,11 +116,6 @@ export class SidebarManager {
             this.sidebarDragHandlersInitialized = false;
         }
 
-        const moreDropdown = document.getElementById('sidebarMoreDropdown');
-        if (moreDropdown) {
-            moreDropdown.classList.remove('open');
-        }
-        this.isMoreDropdownOpen = false;
         this.hideSidebarHiddenIndicator();
 
         // Reset state
@@ -165,7 +125,6 @@ export class SidebarManager {
         this.selectedPath = '';
         this.expandedNodes = new Set();
         this.openDropdown = null;
-        this.isHovering = false;
         this.isDisabledByPage = false;
         this.apiClient = null;
         this.isInitialized = false;
@@ -185,19 +144,13 @@ export class SidebarManager {
     }
 
     removeEventHandlers() {
-        const pinToggleBtn = document.getElementById('sidebarPinToggle');
         const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         const folderTree = document.getElementById('sidebarFolderTree');
         const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
         const sidebarHeader = document.getElementById('sidebarHeader');
-        const sidebar = document.getElementById('folderSidebar');
-        const hoverArea = document.getElementById('sidebarHoverArea');
         const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
         const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
 
-        if (pinToggleBtn) {
-            pinToggleBtn.removeEventListener('click', this.handlePinToggle);
-        }
         if (collapseAllBtn) {
             collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
         }
@@ -211,14 +164,6 @@ export class SidebarManager {
         }
         if (sidebarHeader) {
             sidebarHeader.removeEventListener('click', this.handleSidebarHeaderClick);
-        }
-        if (sidebar) {
-            sidebar.removeEventListener('mouseenter', this.handleMouseEnter);
-            sidebar.removeEventListener('mouseleave', this.handleMouseLeave);
-        }
-        if (hoverArea) {
-            hoverArea.removeEventListener('mouseenter', this.handleHoverAreaEnter);
-            hoverArea.removeEventListener('mouseleave', this.handleHoverAreaLeave);
         }
 
         // Remove document click handler
@@ -234,17 +179,10 @@ export class SidebarManager {
             recursiveToggleBtn.removeEventListener('click', this.handleRecursiveToggle);
         }
 
-        const moreToggle = document.getElementById('sidebarMoreToggle');
-        if (moreToggle) {
-            moreToggle.removeEventListener('click', this.handleMoreToggle);
+        const hideToggle = document.getElementById('sidebarHideToggle');
+        if (hideToggle) {
+            hideToggle.removeEventListener('click', this.handleHideToggle);
         }
-
-        const moreDropdown = document.getElementById('sidebarMoreDropdown');
-        if (moreDropdown) {
-            moreDropdown.removeEventListener('click', this.handleMoreDropdownItemClick);
-        }
-
-        document.removeEventListener('click', this.handleDocumentClickForMore);
     }
 
     initializeDragAndDrop() {
@@ -919,60 +857,6 @@ export class SidebarManager {
         this.currentDropTarget = null;
     }
 
-    async init() {
-        this.apiClient = this.pageControls?.getSidebarApiClient?.()
-            || this.pageControls?.sidebarApiClient
-            || getModelApiClient();
-
-        // Set initial sidebar state immediately (hidden by default)
-        this.setInitialSidebarState();
-
-        this.setupEventHandlers();
-        this.initializeDragAndDrop();
-        this.updateSidebarTitle();
-        this.restoreSidebarState();
-        await this.loadFolderTree();
-        this.restoreSelectedFolder();
-
-        // Apply final state with animation after everything is loaded
-        this.applyFinalSidebarState();
-
-        // Update container margin based on initial sidebar state
-        this.updateContainerMargin();
-    }
-
-    setInitialSidebarState() {
-        if (this.isDisabledBySetting) return;
-
-        const sidebar = document.getElementById('folderSidebar');
-        const hoverArea = document.getElementById('sidebarHoverArea');
-
-        if (!sidebar || !hoverArea) return;
-
-        // Get stored pin state
-        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, true);
-        this.isPinned = isPinned;
-
-        // Sidebar starts hidden by default (CSS handles this)
-        // Just set up the hover area state
-        if (window.innerWidth <= 1024) {
-            hoverArea.classList.add('disabled');
-        } else if (this.isPinned) {
-            hoverArea.classList.add('disabled');
-        } else {
-            hoverArea.classList.remove('disabled');
-        }
-    }
-
-    applyFinalSidebarState() {
-        if (this.isDisabledBySetting) return;
-
-        // Use requestAnimationFrame to ensure DOM is ready
-        requestAnimationFrame(() => {
-            this.updateAutoHideState();
-        });
-    }
-
     updateSidebarTitle() {
         const sidebarTitle = document.getElementById('sidebarTitle');
         if (sidebarTitle) {
@@ -985,12 +869,6 @@ export class SidebarManager {
         const sidebarHeader = document.getElementById('sidebarHeader');
         if (sidebarHeader) {
             sidebarHeader.addEventListener('click', this.handleSidebarHeaderClick);
-        }
-
-        // Pin toggle button
-        const pinToggleBtn = document.getElementById('sidebarPinToggle');
-        if (pinToggleBtn) {
-            pinToggleBtn.addEventListener('click', this.handlePinToggle);
         }
 
         // Collapse all button
@@ -1018,34 +896,18 @@ export class SidebarManager {
             sidebarBreadcrumbNav.addEventListener('click', this.handleBreadcrumbClick);
         }
 
-        // Hover detection for auto-hide
-        const sidebar = document.getElementById('folderSidebar');
-        const hoverArea = document.getElementById('sidebarHoverArea');
-
-        if (sidebar) {
-            sidebar.addEventListener('mouseenter', this.handleMouseEnter);
-            sidebar.addEventListener('mouseleave', this.handleMouseLeave);
-        }
-
-        if (hoverArea) {
-            hoverArea.addEventListener('mouseenter', this.handleHoverAreaEnter);
-            hoverArea.addEventListener('mouseleave', this.handleHoverAreaLeave);
-        }
-
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', (e) => {
-            if (window.innerWidth <= 1024 && this.isVisible) {
+            if (window.innerWidth <= 1024) {
                 const sidebar = document.getElementById('folderSidebar');
-
-                if (sidebar && !sidebar.contains(e.target)) {
-                    this.hideSidebar();
+                if (sidebar && !sidebar.contains(e.target) && !this.isDisabledByPage) {
+                    sidebar.classList.remove('visible');
                 }
             }
         });
 
         // Handle window resize
         window.addEventListener('resize', () => {
-            this.updateAutoHideState();
             this.updateContainerMargin();
         });
 
@@ -1074,18 +936,11 @@ export class SidebarManager {
             });
         }
 
-        // More options dropdown
-        const moreToggle = document.getElementById('sidebarMoreToggle');
-        if (moreToggle) {
-            moreToggle.addEventListener('click', this.handleMoreToggle);
+        // Dedicated hide sidebar button
+        const hideToggle = document.getElementById('sidebarHideToggle');
+        if (hideToggle) {
+            hideToggle.addEventListener('click', this.handleHideToggle);
         }
-
-        const moreDropdown = document.getElementById('sidebarMoreDropdown');
-        if (moreDropdown) {
-            moreDropdown.addEventListener('click', this.handleMoreDropdownItemClick);
-        }
-
-        document.addEventListener('click', this.handleDocumentClickForMore);
     }
 
     handleDocumentClick(event) {
@@ -1102,14 +957,9 @@ export class SidebarManager {
         }
     }
 
-    handlePinToggle(event) {
+    handleHideToggle(event) {
         event.stopPropagation();
-        this.isPinned = !this.isPinned;
-        this.updateAutoHideState();
-        this.updatePinButton();
-        this.updateMoreDropdownLabels();
-        this.saveSidebarState();
-        this.updateContainerMargin();
+        this.toggleHideOnThisPage();
     }
 
     handleCollapseAll(event) {
@@ -1119,102 +969,13 @@ export class SidebarManager {
         this.saveExpandedState();
     }
 
-    handleMouseEnter() {
-        this.isHovering = true;
-        if (this.hoverTimeout) {
-            clearTimeout(this.hoverTimeout);
-            this.hoverTimeout = null;
-        }
+    // ===== Sidebar visibility (per-page) and container margin =====
 
-        if (!this.isPinned) {
-            this.showSidebar();
-        }
-    }
-
-    handleMouseLeave() {
-        this.isHovering = false;
-        if (!this.isPinned) {
-            this.hoverTimeout = setTimeout(() => {
-                if (!this.isHovering) {
-                    this.hideSidebar();
-                }
-            }, 300);
-        }
-    }
-
-    handleHoverAreaEnter() {
-        if (!this.isPinned) {
-            this.showSidebar();
-        }
-    }
-
-    handleHoverAreaLeave() {
-        // Let the sidebar's mouse leave handler deal with hiding
-    }
-
-    showSidebar() {
-        const sidebar = document.getElementById('folderSidebar');
-        if (sidebar && !this.isPinned) {
-            sidebar.classList.add('hover-active');
-            this.isVisible = true;
-            this.updateContainerMargin();
-        }
-    }
-
-    hideSidebar() {
-        const sidebar = document.getElementById('folderSidebar');
-        if (sidebar && !this.isPinned) {
-            sidebar.classList.remove('hover-active');
-            this.isVisible = false;
-            this.updateContainerMargin();
-        }
-    }
-
-    updateAutoHideState() {
-        if (this.isDisabledBySetting || this.isDisabledByPage) return;
-
-        const sidebar = document.getElementById('folderSidebar');
-        const hoverArea = document.getElementById('sidebarHoverArea');
-
-        if (!sidebar || !hoverArea) return;
-
-        if (window.innerWidth <= 1024) {
-            // Mobile: always use collapsed state
-            sidebar.classList.remove('auto-hide', 'hover-active', 'visible');
-            sidebar.classList.add('collapsed');
-            hoverArea.classList.add('disabled');
-            this.isVisible = false;
-        } else if (this.isPinned) {
-            // Desktop pinned: always visible
-            sidebar.classList.remove('auto-hide', 'collapsed', 'hover-active');
-            sidebar.classList.add('visible');
-            hoverArea.classList.add('disabled');
-            this.isVisible = true;
-        } else {
-            // Desktop auto-hide: use hover detection
-            sidebar.classList.remove('collapsed', 'visible');
-            sidebar.classList.add('auto-hide');
-            hoverArea.classList.remove('disabled');
-
-            if (this.isHovering) {
-                sidebar.classList.add('hover-active');
-                this.isVisible = true;
-            } else {
-                sidebar.classList.remove('hover-active');
-                this.isVisible = false;
-            }
-        }
-
-        // Update container margin when sidebar state changes
-        this.updateContainerMargin();
-    }
-
-    // New method to update container margin based on sidebar state
     updateContainerMargin() {
         const container = document.querySelector('.container');
         const sidebar = document.getElementById('folderSidebar');
 
-        if (!container || !sidebar || this.isDisabledBySetting) return;
+        if (!container || !sidebar) return;
 
         // Always reset margin first — needed when transitioning from visible to hidden
         container.style.marginLeft = '';
@@ -1222,194 +983,40 @@ export class SidebarManager {
         // When per-page disabled, skip adjustment but margin is already reset
         if (this.isDisabledByPage) return;
 
-        // Only adjust margin if sidebar is visible and pinned
-        if ((this.isPinned || this.isHovering) && this.isVisible) {
-            const sidebarWidth = sidebar.offsetWidth;
-            const viewportWidth = window.innerWidth;
-            const containerWidth = container.offsetWidth;
+        // Sidebar is visible — adjust margin if we need room
+        const sidebarWidth = sidebar.offsetWidth;
+        const viewportWidth = window.innerWidth;
+        const containerWidth = container.offsetWidth;
 
-            // Check if there's enough space for both sidebar and container
-            // We need: sidebar width + container width + some padding < viewport width
-            if (sidebarWidth + containerWidth + sidebarWidth > viewportWidth) {
-                // Not enough space, push container to the right
-                container.style.marginLeft = `${sidebarWidth + 10}px`;
-            }
+        if (sidebarWidth + containerWidth + sidebarWidth > viewportWidth) {
+            container.style.marginLeft = `${sidebarWidth + 10}px`;
         }
     }
 
-    updateDomVisibility(enabled) {
-        // Per-page disable adds on top of global setting
-        const isVisible = enabled && !this.isDisabledByPage;
+    updateDomVisibility() {
+        const isHidden = this.isDisabledByPage;
         const sidebar = document.getElementById('folderSidebar');
-        const hoverArea = document.getElementById('sidebarHoverArea');
 
         if (sidebar) {
-            sidebar.classList.toggle('hidden-by-setting', !isVisible);
-            sidebar.setAttribute('aria-hidden', (!isVisible).toString());
+            sidebar.classList.toggle('visible', !isHidden);
+            sidebar.classList.toggle('hidden-by-setting', isHidden);
+            sidebar.setAttribute('aria-hidden', isHidden.toString());
         }
 
-        if (hoverArea) {
-            hoverArea.classList.toggle('hidden-by-setting', !isVisible);
-            if (!isVisible) {
-                hoverArea.classList.add('disabled');
-            }
-        }
-
-        // Show or hide the "sidebar hidden" notification
-        if (enabled && this.isDisabledByPage) {
+        // Show or hide the "sidebar hidden" edge indicator
+        if (isHidden) {
             this.showSidebarHiddenIndicator();
         } else {
             this.hideSidebarHiddenIndicator();
         }
     }
 
-    async setSidebarEnabled(enabled) {
-        this.isDisabledBySetting = !enabled;
-        this.updateDomVisibility(enabled);
-
-        const shouldForceInitialization = !enabled && !this.isInitialized;
-        const needsInitialization = !this.isInitialized || shouldForceInitialization;
-
-        if (this.lastPageControls && needsInitialization) {
-            if (!this.initializationPromise) {
-                this.initializationPromise = this.initialize(this.lastPageControls, {
-                    forceInitialize: shouldForceInitialization,
-                })
-                    .catch((error) => {
-                        console.error('Sidebar initialization failed:', error);
-                    })
-                    .finally(() => {
-                        this.initializationPromise = null;
-                    });
-            }
-
-            await this.initializationPromise;
-        } else if (this.initializationPromise) {
-            await this.initializationPromise;
-        }
-
-        if (!enabled) {
-            this.isHovering = false;
-            this.isVisible = false;
-
-            const container = document.querySelector('.container');
-            if (container) {
-                container.style.marginLeft = '';
-            }
-
-            if (this.isInitialized) {
-                this.updateBreadcrumbs();
-                this.updateSidebarHeader();
-            }
-
-            return;
-        }
-
-        if (this.isInitialized) {
-            this.updateAutoHideState();
-        }
-    }
-
-    updatePinButton() {
-        const pinBtn = document.getElementById('sidebarPinToggle');
-        if (pinBtn) {
-            pinBtn.classList.toggle('active', this.isPinned);
-            pinBtn.title = this.isPinned
-                ? translate('sidebar.unpinSidebar')
-                : translate('sidebar.pinSidebar');
-        }
-    }
-
-    // ===== More Options Dropdown =====
-
-    handleMoreToggle(event) {
-        event.stopPropagation();
-        const dropdown = document.getElementById('sidebarMoreDropdown');
-        if (!dropdown) return;
-
-        this.isMoreDropdownOpen = !dropdown.classList.contains('open');
-        dropdown.classList.toggle('open', this.isMoreDropdownOpen);
-        this.updateMoreDropdownLabels();
-    }
-
-    handleMoreDropdownItemClick(event) {
-        const item = event.target.closest('.sidebar-dropdown-item');
-        if (!item) return;
-
-        const action = item.dataset.action;
-        if (!action) return;
-
-        const dropdown = document.getElementById('sidebarMoreDropdown');
-        if (dropdown) {
-            dropdown.classList.remove('open');
-            this.isMoreDropdownOpen = false;
-        }
-
-        switch (action) {
-            case 'toggle-pin':
-                this.handlePinToggle(event);
-                break;
-            case 'toggle-hide':
-                this.toggleHideOnThisPage();
-                break;
-        }
-    }
-
-    handleDocumentClickForMore(event) {
-        const dropdown = document.getElementById('sidebarMoreDropdown');
-        const toggle = document.getElementById('sidebarMoreToggle');
-        if (!dropdown || !toggle) return;
-
-        if (!dropdown.contains(event.target) && !toggle.contains(event.target)) {
-            dropdown.classList.remove('open');
-            this.isMoreDropdownOpen = false;
-        }
-    }
-
-    updateMoreDropdownLabels() {
-        const pinLabel = document.getElementById('sidebarMorePinLabel');
-        if (pinLabel) {
-            pinLabel.textContent = this.isPinned
-                ? translate('sidebar.unpinSidebar')
-                : translate('sidebar.pinSidebar');
-        }
-
-        const hideItem = document.querySelector('.sidebar-dropdown-item[data-action="toggle-hide"]');
-        if (hideItem) {
-            const hideIcon = hideItem.querySelector('i');
-            const hideLabel = hideItem.querySelector('span');
-            if (this.isDisabledByPage) {
-                hideLabel.textContent = translate('sidebar.showSidebar');
-                if (hideIcon) {
-                    hideIcon.className = 'fas fa-eye';
-                }
-            } else {
-                hideLabel.textContent = translate('sidebar.hideOnThisPage');
-                if (hideIcon) {
-                    hideIcon.className = 'fas fa-eye-slash';
-                }
-            }
-        }
-    }
 
     toggleHideOnThisPage() {
         this.isDisabledByPage = !this.isDisabledByPage;
         setStorageItem(`${this.pageType}_sidebarDisabled`, this.isDisabledByPage);
-        this.updateDomVisibility(!this.isDisabledBySetting);
-        this.updateAutoHideState();
+        this.updateDomVisibility();
         this.updateContainerMargin();
-        this.updateMoreDropdownLabels();
-
-        if (!this.isDisabledByPage) {
-            this.hideSidebarHiddenIndicator();
-        } else {
-            showToast(
-                'sidebar.sidebarHiddenNotification',
-                { page: this.getPageDisplayName() },
-                'info',
-                `Sidebar hidden on ${this.getPageDisplayName()} page`
-            );
-        }
     }
 
     getPageDisplayName() {
@@ -1733,11 +1340,6 @@ export class SidebarManager {
 
         // Reload models with new filter
         await this.pageControls.resetAndReload();
-
-        // Auto-hide sidebar on mobile after selection
-        if (window.innerWidth <= 1024) {
-            this.hideSidebar();
-        }
     }
 
     handleFolderListClick(event) {
@@ -2047,63 +1649,53 @@ export class SidebarManager {
         }
     }
 
-    toggleSidebar() {
-        const sidebar = document.getElementById('folderSidebar');
-        const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-
-        if (!sidebar) return;
-
-        this.isVisible = !this.isVisible;
-
-        if (this.isVisible) {
-            sidebar.classList.remove('collapsed');
-            sidebar.classList.add('visible');
-        } else {
-            sidebar.classList.remove('visible');
-            sidebar.classList.add('collapsed');
-        }
-
-        if (toggleBtn) {
-            toggleBtn.classList.toggle('active', this.isVisible);
-        }
-
-        this.saveSidebarState();
-    }
-
-    closeSidebar() {
-        const sidebar = document.getElementById('folderSidebar');
-        const toggleBtn = document.querySelector('.sidebar-toggle-btn');
-
-        if (!sidebar) return;
-
-        this.isVisible = false;
-        sidebar.classList.remove('visible');
-        sidebar.classList.add('collapsed');
-
-        if (toggleBtn) {
-            toggleBtn.classList.remove('active');
-        }
-
-        this.saveSidebarState();
-    }
-
     restoreSidebarState() {
-        const isPinned = getStorageItem(`${this.pageType}_sidebarPinned`, true);
+        // Migration: old pin/unpin and global hide → per-page hide
+        this._migrateOldSettings();
+
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         const recursiveSearchEnabled = getStorageItem(`${this.pageType}_recursiveSearch`, true);
         this.isDisabledByPage = getStorageItem(`${this.pageType}_sidebarDisabled`, false);
 
-        this.isPinned = isPinned;
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
         this.recursiveSearchEnabled = recursiveSearchEnabled;
 
-        this.updatePinButton();
         this.updateDisplayModeButton();
         this.updateCollapseAllButton();
         this.updateSearchRecursiveOption();
         this.updateRecursiveToggleButton();
+    }
+
+    /**
+     * One-time migration: old pin/unpin and global show_folder_sidebar → per-page hide
+     * - sidebarPinned=false (was auto-hide) → sidebarDisabled=true for that page
+     * - show_folder_sidebar=false (global) → sidebarDisabled=true for ALL pages
+     */
+    _migrateOldSettings() {
+        if (getStorageItem('_sidebar_migration_done')) return;
+
+        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings'];
+
+        // 1. Migrate global hide setting to per-page
+        if (state?.global?.settings?.show_folder_sidebar === false) {
+            PAGES.forEach(p => setStorageItem(`${p}_sidebarDisabled`, true));
+        }
+
+        // 2. Migrate unpinned (auto-hide) to per-page hide
+        PAGES.forEach(p => {
+            const wasPinned = getStorageItem(`${p}_sidebarPinned`, true);
+            const alreadyDisabled = getStorageItem(`${p}_sidebarDisabled`, false);
+            if (wasPinned === false && !alreadyDisabled) {
+                // Was auto-hide → user didn't want sidebar taking space
+                setStorageItem(`${p}_sidebarDisabled`, true);
+            }
+            // Clean up old keys
+            localStorage.removeItem(`${p}_sidebarPinned`);
+        });
+
+        setStorageItem('_sidebar_migration_done', true);
     }
 
     restoreSelectedFolder() {
@@ -2118,11 +1710,6 @@ export class SidebarManager {
             this.updateSidebarHeader();
             this.updateBreadcrumbs(); // Always update breadcrumbs
         }
-        // Removed hidden class toggle since breadcrumbs are always visible now
-    }
-
-    saveSidebarState() {
-        setStorageItem(`${this.pageType}_sidebarPinned`, this.isPinned);
     }
 
     saveExpandedState() {
@@ -2134,7 +1721,7 @@ export class SidebarManager {
     }
 
     async refresh() {
-        if (this.isDisabledBySetting || !this.isInitialized) {
+        if (!this.isInitialized) {
             return;
         }
 
