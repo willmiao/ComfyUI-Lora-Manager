@@ -1424,15 +1424,6 @@
             "duplicate": "Ce tag existe déjà"
         }
     },
-    "keyboard": {
-        "navigation": "Navigation au clavier :",
-        "shortcuts": {
-            "pageUp": "Défiler d'une page vers le haut",
-            "pageDown": "Défiler d'une page vers le bas",
-            "home": "Aller en haut",
-            "end": "Aller en bas"
-        }
-    },
     "initialization": {
         "title": "Initialisation",
         "message": "Préparation de votre espace de travail...",

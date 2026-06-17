@@ -1424,15 +1424,6 @@
             "duplicate": "このタグは既に存在します"
         }
     },
-    "keyboard": {
-        "navigation": "キーボードナビゲーション：",
-        "shortcuts": {
-            "pageUp": "1ページ上にスクロール",
-            "pageDown": "1ページ下にスクロール",
-            "home": "トップにジャンプ",
-            "end": "ボトムにジャンプ"
-        }
-    },
     "initialization": {
         "title": "初期化中",
         "message": "ワークスペースを準備中...",

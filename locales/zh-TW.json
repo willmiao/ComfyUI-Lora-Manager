@@ -1424,15 +1424,6 @@
             "duplicate": "此標籤已存在"
         }
     },
-    "keyboard": {
-        "navigation": "鍵盤導覽：",
-        "shortcuts": {
-            "pageUp": "向上捲動一頁",
-            "pageDown": "向下捲動一頁",
-            "home": "跳至頂部",
-            "end": "跳至底部"
-        }
-    },
     "initialization": {
         "title": "初始化",
         "message": "正在準備您的工作區...",

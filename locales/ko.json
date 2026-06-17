@@ -1424,15 +1424,6 @@
             "duplicate": "이 태그는 이미 존재합니다"
         }
     },
-    "keyboard": {
-        "navigation": "키보드 내비게이션:",
-        "shortcuts": {
-            "pageUp": "한 페이지 위로 스크롤",
-            "pageDown": "한 페이지 아래로 스크롤",
-            "home": "맨 위로 이동",
-            "end": "맨 아래로 이동"
-        }
-    },
     "initialization": {
         "title": "초기화 중",
         "message": "작업공간을 준비하고 있습니다...",

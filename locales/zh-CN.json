@@ -1424,15 +1424,6 @@
             "duplicate": "该标签已存在"
         }
     },
-    "keyboard": {
-        "navigation": "键盘导航：",
-        "shortcuts": {
-            "pageUp": "向上一页滚动",
-            "pageDown": "向下一页滚动",
-            "home": "跳到顶部",
-            "end": "跳到底部"
-        }
-    },
     "initialization": {
         "title": "初始化",
         "message": "正在准备你的工作空间...",

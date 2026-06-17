@@ -1424,15 +1424,6 @@
             "duplicate": "This tag already exists"
         }
     },
-    "keyboard": {
-        "navigation": "Keyboard Navigation:",
-        "shortcuts": {
-            "pageUp": "Scroll up one page",
-            "pageDown": "Scroll down one page",
-            "home": "Jump to top",
-            "end": "Jump to bottom"
-        }
-    },
     "initialization": {
         "title": "Initializing",
         "message": "Preparing your workspace...",

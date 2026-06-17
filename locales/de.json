@@ -1424,15 +1424,6 @@
             "duplicate": "Dieser Tag existiert bereits"
         }
     },
-    "keyboard": {
-        "navigation": "Tastatur-Navigation:",
-        "shortcuts": {
-            "pageUp": "Eine Seite nach oben scrollen",
-            "pageDown": "Eine Seite nach unten scrollen",
-            "home": "Zum Anfang springen",
-            "end": "Zum Ende springen"
-        }
-    },
     "initialization": {
         "title": "Initialisierung",
         "message": "Ihr Arbeitsbereich wird vorbereitet...",

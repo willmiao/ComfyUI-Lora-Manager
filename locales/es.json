@@ -1424,15 +1424,6 @@
             "duplicate": "Esta etiqueta ya existe"
         }
     },
-    "keyboard": {
-        "navigation": "Navegación por teclado:",
-        "shortcuts": {
-            "pageUp": "Desplazar hacia arriba una página",
-            "pageDown": "Desplazar hacia abajo una página",
-            "home": "Saltar al inicio",
-            "end": "Saltar al final"
-        }
-    },
     "initialization": {
         "title": "Inicializando",
         "message": "Preparando tu espacio de trabajo...",

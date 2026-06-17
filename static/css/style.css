@@ -36,7 +36,7 @@
 @import 'components/initialization.css';
 @import 'components/progress-panel.css';
 @import 'components/duplicates.css'; /* Add duplicates component */
-@import 'components/keyboard-nav.css'; /* Add keyboard navigation component */
+
 @import 'components/statistics.css'; /* Add statistics component */
 @import 'components/sidebar.css'; /* Add sidebar component */
 @import 'components/media-viewer.css';
