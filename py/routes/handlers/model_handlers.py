@@ -1861,7 +1861,9 @@ class ModelCivitaiHandler:
             return web.json_response(result)
         except Exception as exc:
             self._logger.error(
-                "Error in fetch_all_civitai for %ss: %s", self._service.model_type, exc
+                "Error in fetch_all_civitai for %ss: %s",
+                self._service.model_type, exc,
+                exc_info=True,
             )
             return web.Response(text=str(exc), status=500)
 

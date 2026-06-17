@@ -293,7 +293,8 @@ async def test_fetch_and_update_model_respects_deleted_without_archive():
     assert "metadata archive DB is not enabled" in error
     helpers.default_provider_factory.assert_not_awaited()
     helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
-    update_cache.assert_not_awaited()
+    # Now update_cache_func IS called to persist the not-found flags to SQLite
+    update_cache.assert_awaited_once()
 
 
 @pytest.mark.asyncio

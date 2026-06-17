@@ -264,6 +264,14 @@ class MetadataSyncService:
                     model_data["last_checked_at"] = datetime.now().timestamp()
                     needs_save = True
 
+                # When the model was already classified as "not on CivitAI" via
+                # .metadata.json (civitai_deleted=True) but the SQLite cache is
+                # stale (because the pre-fix code never persisted these flags),
+                # ensure the flags are written to the scanner cache + SQLite.
+                if not needs_save and model_data.get("civitai_deleted") is True:
+                    model_data["last_checked_at"] = datetime.now().timestamp()
+                    needs_save = True
+
                 # Save metadata if any state was updated
                 if needs_save:
                     data_to_save = model_data.copy()
@@ -272,6 +280,7 @@ class MetadataSyncService:
                     if "last_checked_at" not in data_to_save:
                         data_to_save["last_checked_at"] = datetime.now().timestamp()
                     await self._metadata_manager.save_metadata(file_path, data_to_save)
+                    await update_cache_func(file_path, file_path, data_to_save)
 
                 default_error = (
                     "CivitAI model is deleted and metadata archive DB is not enabled"
@@ -291,11 +300,9 @@ class MetadataSyncService:
                     f"Error fetching metadata: {resolved_error} "
                     f"(file={os.path.basename(file_path)}, sha256={sha256})"
                 )
-                is_model_not_found = "Model not found" in resolved_error
-                if is_expected_offline_error(resolved_error) or is_model_not_found:
-                    logger.info(error_msg)
-                else:
-                    logger.error(error_msg)
+                # Use case layer (BulkMetadataRefreshUseCase) logs failed models at WARNING level,
+                # so this level is demoted to DEBUG to avoid duplicate user-visible logging.
+                logger.debug(error_msg)
                 return False, error_msg
 
             model_data["from_civitai"] = True
