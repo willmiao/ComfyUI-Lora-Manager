@@ -28,3 +28,6 @@ vue-widgets/dist/
 
 # Hypothesis test cache
 .hypothesis/
+
+# Working/research notes (not committed)
+.docs/
