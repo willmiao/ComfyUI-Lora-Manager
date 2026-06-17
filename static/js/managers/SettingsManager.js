@@ -805,12 +805,14 @@ export class SettingsManager {
 
         // Set card blur amount slider
         const cardBlurAmountInput = document.getElementById('cardBlurAmount');
+        const cardBlurValue = state.global.settings.card_blur_amount ?? 8;
         if (cardBlurAmountInput) {
-            cardBlurAmountInput.value = state.global.settings.card_blur_amount ?? 8;
+            cardBlurAmountInput.value = cardBlurValue;
+            cardBlurAmountInput.style.setProperty('--range-fill', (cardBlurValue / 20 * 100) + '%');
         }
         const cardBlurAmountValue = document.getElementById('cardBlurAmountValue');
         if (cardBlurAmountValue) {
-            cardBlurAmountValue.textContent = `${state.global.settings.card_blur_amount ?? 8}px`;
+            cardBlurAmountValue.textContent = `${cardBlurValue}px`;
         }
 
         const usePortableCheckbox = document.getElementById('usePortableSettings');
@@ -2069,6 +2071,9 @@ export class SettingsManager {
             if (displayEl) {
                 displayEl.textContent = `${value}px`;
             }
+
+            const max = parseInt(element.max, 10) || 20;
+            element.style.setProperty('--range-fill', (value / max * 100) + '%');
 
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
         } catch (error) {

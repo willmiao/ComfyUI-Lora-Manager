@@ -549,7 +549,7 @@
                                     </div>
                                     <div class="setting-control range-control">
                                         <input type="range" id="cardBlurAmount" min="0" max="20" value="8" step="1"
-                                               oninput="document.getElementById('cardBlurAmountValue').textContent = this.value + 'px'"
+                                               oninput="var pct = (this.value / 20) * 100; this.style.setProperty('--range-fill', pct + '%'); document.getElementById('cardBlurAmountValue').textContent = this.value + 'px'"
                                                onchange="settingsManager.saveRangeSetting('cardBlurAmount', 'cardBlurAmountValue', 'card_blur_amount')">
                                         <span id="cardBlurAmountValue" class="range-value">8px</span>
                                     </div>
