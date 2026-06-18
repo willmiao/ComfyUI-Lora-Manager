@@ -349,8 +349,8 @@
 }
 
 .progress-percentage {
-    font-size: 1.2em;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
     color: var(--lora-accent);
 }
 
@@ -365,9 +365,9 @@
 
 .progress-bar {
     height: 100%;
-    background: linear-gradient(90deg, var(--lora-accent), oklch(from var(--lora-accent) calc(l + 0.1) c h));
-    border-radius: 4px;
-    transition: width 0.3s ease;
+    background: var(--lora-accent);
+    border-radius: var(--border-radius-xs);
+    transition: width var(--transition-base);
 }
 
 /* Progress Stats */
@@ -389,27 +389,26 @@
 }
 
 .stat-item.success {
-    border-left: 3px solid var(--color-success);
+    border-left: 4px solid var(--color-success);
 }
 
 .stat-item.failed {
-    border-left: 3px solid var(--lora-error);
+    border-left: 4px solid var(--color-error);
 }
 
 .stat-item.skipped {
-    border-left: 3px solid var(--lora-warning);
+    border-left: 4px solid var(--color-warning);
 }
 
 .stat-label {
-    font-size: 0.8em;
-    color: var(--text-color);
-    opacity: 0.7;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
     margin-bottom: 4px;
 }
 
 .stat-value {
-    font-size: 1.4em;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
     color: var(--text-color);
 }
 
@@ -425,8 +424,7 @@
 }
 
 .current-item-label {
-    color: var(--text-color);
-    opacity: 0.7;
+    color: var(--text-secondary);
     flex-shrink: 0;
 }
 
@@ -449,27 +447,29 @@
 }
 
 .results-header {
-    text-align: center;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
     margin-bottom: var(--space-3);
 }
 
 .results-icon {
-    font-size: 3em;
+    font-size: var(--text-xl);
     color: var(--color-success);
-    margin-bottom: var(--space-1);
+    flex-shrink: 0;
 }
 
 .results-icon.warning {
-    color: var(--lora-warning);
+    color: var(--color-warning);
 }
 
 .results-icon.error {
-    color: var(--lora-error);
+    color: var(--color-error);
 }
 
 .results-title {
-    font-size: 1.3em;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
     color: var(--text-color);
 }
 
@@ -493,27 +493,26 @@
 }
 
 .result-card.success {
-    border-left: 3px solid var(--color-success);
+    border-left: 4px solid var(--color-success);
 }
 
 .result-card.failed {
-    border-left: 3px solid var(--lora-error);
+    border-left: 4px solid var(--color-error);
 }
 
 .result-card.skipped {
-    border-left: 3px solid var(--lora-warning);
+    border-left: 4px solid var(--color-warning);
 }
 
 .result-label {
-    font-size: 0.8em;
-    color: var(--text-color);
-    opacity: 0.7;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
     margin-bottom: 4px;
 }
 
 .result-value {
-    font-size: 1.4em;
-    font-weight: 600;
+    font-size: var(--text-lg);
+    font-weight: var(--weight-semibold);
     color: var(--text-color);
 }
 
@@ -527,13 +526,13 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px;
+    gap: var(--space-2);
+    padding: var(--space-2);
     cursor: pointer;
     color: var(--lora-accent);
-    font-weight: 500;
+    font-weight: var(--weight-medium);
     border-radius: var(--border-radius-xs);
-    transition: background 0.2s;
+    transition: background var(--transition-base);
 }
 
 .details-toggle:hover {
@@ -541,7 +540,7 @@
 }
 
 .details-toggle i {
-    transition: transform 0.2s;
+    transition: transform var(--transition-base);
 }
 
 .details-toggle.expanded i {
@@ -561,10 +560,10 @@
 .result-item {
     display: flex;
     align-items: center;
-    gap: 10px;
-    padding: 10px 12px;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
     border-bottom: 1px solid var(--border-color);
-    font-size: 0.9em;
+    font-size: var(--text-sm);
 }
 
 .result-item:last-child {
@@ -572,28 +571,23 @@
 }
 
 .result-item-status {
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 0.8em;
+    font-size: var(--text-sm);
+    flex-shrink: 0;
 }
 
 .result-item-status.success {
-    background: color-mix(in oklch, var(--color-success) 20%, transparent);
     color: var(--color-success);
 }
 
 .result-item-status.failed {
-    background: oklch(from var(--lora-error) l c h / 0.2);
-    color: var(--lora-error);
+    color: var(--color-error);
 }
 
 .result-item-status.skipped {
-    background: oklch(from var(--lora-warning) l c h / 0.2);
-    color: var(--lora-warning);
+    color: var(--color-warning);
 }
 
 .result-item-info {
@@ -610,8 +604,8 @@
 }
 
 .result-item-error {
-    font-size: 0.8em;
-    color: var(--lora-error);
+    font-size: var(--text-xs);
+    color: var(--color-error);
     margin-top: 2px;
 }
 

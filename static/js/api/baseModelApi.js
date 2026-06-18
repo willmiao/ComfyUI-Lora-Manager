@@ -679,39 +679,34 @@ export class BaseModelApiClient {
                 <div class="modal-content metadata-refresh-result-modal">
                     <button class="close" data-action="close-modal">&times;</button>
 
-                    <h2><i class="fas fa-sync-alt"></i> ${translate('modals.metadataFetchSummary.title', {}, 'Metadata Fetch Summary')}</h2>
+                    <h2>${translate('modals.metadataFetchSummary.title', {}, 'Metadata Fetch Summary')}</h2>
 
                     <div class="refresh-summary-stats">
                         <div class="stat-card stat-card-success">
-                            <i class="fas fa-check-circle"></i>
                             <div class="stat-card-body">
                                 <span class="stat-card-label">${translate('modals.metadataFetchSummary.statSuccess', {}, 'Success')}</span>
                                 <span class="stat-card-value">${success}</span>
                             </div>
                         </div>
                         <div class="stat-card stat-card-failure">
-                            <i class="fas fa-times-circle"></i>
                             <div class="stat-card-body">
                                 <span class="stat-card-label">${translate('modals.metadataFetchSummary.statFailed', {}, 'Failed')}</span>
                                 <span class="stat-card-value">${failure_count}</span>
                             </div>
                         </div>
                         <div class="stat-card stat-card-skipped">
-                            <i class="fas fa-forward"></i>
                             <div class="stat-card-body">
                                 <span class="stat-card-label">${translate('modals.metadataFetchSummary.statSkipped', {}, 'Skipped')}</span>
                                 <span class="stat-card-value">${skipped_count}</span>
                             </div>
                         </div>
                         <div class="stat-card stat-card-total">
-                            <i class="fas fa-database"></i>
                             <div class="stat-card-body">
                                 <span class="stat-card-label">${translate('modals.metadataFetchSummary.statTotal', {}, 'Total Scanned')}</span>
                                 <span class="stat-card-value">${total || processed}</span>
                             </div>
                         </div>
                         <div class="stat-card stat-card-time">
-                            <i class="fas fa-clock"></i>
                             <div class="stat-card-body">
                                 <span class="stat-card-label">${translate('modals.metadataFetchSummary.statDuration', {}, 'Duration')}</span>
                                 <span class="stat-card-value">${elapsed_seconds}s</span>
