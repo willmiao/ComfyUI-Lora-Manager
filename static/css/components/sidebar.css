@@ -117,7 +117,7 @@
     top: 68px; /* Align with sidebar header */
     z-index: var(--z-overlay);
     width: 14px;
-    height: 44px;
+    height: 48px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -134,7 +134,7 @@
 }
 
 .sidebar-hidden-indicator i {
-    font-size: 9px;
+    font-size: 11px;
     color: var(--text-muted);
     transition: color 0.15s ease;
 }
