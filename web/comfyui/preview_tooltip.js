@@ -12,6 +12,8 @@ const LICENSE_FLAG_BITS = {
   allowRelicense: 1 << 6,
 };
 
+// ── Set 1 (classic) icon definitions ──
+
 const LICENSE_ICON_COPY = {
   credit: "Creator credit required",
   image: "No selling generated content",
@@ -27,6 +29,51 @@ const COMMERCIAL_ICON_CONFIG = [
   { bit: LICENSE_FLAG_BITS.allowOnCivitai, icon: "brush-off.svg", label: LICENSE_ICON_COPY.rentcivit },
   { bit: LICENSE_FLAG_BITS.allowRental, icon: "world-off.svg", label: LICENSE_ICON_COPY.rent },
   { bit: LICENSE_FLAG_BITS.allowSellingModels, icon: "shopping-cart-off.svg", label: LICENSE_ICON_COPY.sell },
+];
+
+// ── Set 2 (new CivitAI-style) icon definitions ──
+
+const LNI = LICENSE_ICON_PATH; // alias for brevity
+
+const NEW_LICENSE_ICON_COPY = {
+  commercial: { allowed: "Commercial use allowed", denied: "No commercial use" },
+  genServices: { allowed: "Generation services allowed", denied: "No generation services" },
+  credit: { allowed: "No credit required", denied: "Creator credit required" },
+  derivatives: { allowed: "Merges allowed", denied: "No merges allowed" },
+  relicense: { allowed: "Different permissions allowed on merges", denied: "Same permissions required on merges" },
+};
+
+const NEW_ICON_CONFIG = [
+  {
+    bitCombo: [LICENSE_FLAG_BITS.allowOnImages, LICENSE_FLAG_BITS.allowSellingModels],
+    icon: "currency-dollar.svg",
+    labelKey: "commercial",
+    allowedFn: (flags) => (flags & LICENSE_FLAG_BITS.allowOnImages) !== 0 || (flags & LICENSE_FLAG_BITS.allowSellingModels) !== 0,
+  },
+  {
+    bitCombo: [LICENSE_FLAG_BITS.allowOnCivitai, LICENSE_FLAG_BITS.allowRental],
+    icon: "brush.svg",
+    labelKey: "genServices",
+    allowedFn: (flags) => (flags & LICENSE_FLAG_BITS.allowOnCivitai) !== 0 || (flags & LICENSE_FLAG_BITS.allowRental) !== 0,
+  },
+  {
+    bitCombo: [LICENSE_FLAG_BITS.allowNoCredit],
+    icon: "user.svg",
+    labelKey: "credit",
+    allowedFn: (flags) => (flags & LICENSE_FLAG_BITS.allowNoCredit) !== 0,
+  },
+  {
+    bitCombo: [LICENSE_FLAG_BITS.allowDerivatives],
+    icon: "git-merge.svg",
+    labelKey: "derivatives",
+    allowedFn: (flags) => (flags & LICENSE_FLAG_BITS.allowDerivatives) !== 0,
+  },
+  {
+    bitCombo: [LICENSE_FLAG_BITS.allowRelicense],
+    icon: "license.svg",
+    labelKey: "relicense",
+    allowedFn: (flags) => (flags & LICENSE_FLAG_BITS.allowRelicense) !== 0,
+  },
 ];
 
 function parseLicenseFlags(value) {
@@ -78,6 +125,81 @@ function createLicenseIconElement({ icon, label }) {
   return element;
 }
 
+// ── Set 2 (new style) helpers ──
+
+function buildNewLicenseIconData(licenseFlags) {
+  if (licenseFlags == null) {
+    return [];
+  }
+
+  return NEW_ICON_CONFIG.map((config) => {
+    const allowed = config.allowedFn(licenseFlags);
+    const label = allowed
+      ? NEW_LICENSE_ICON_COPY[config.labelKey].allowed
+      : NEW_LICENSE_ICON_COPY[config.labelKey].denied;
+    return {
+      icon: config.icon,
+      label,
+      allowed,
+    };
+  });
+}
+
+function createNewLicenseIconElement({ icon, label, allowed }) {
+  const element = document.createElement("span");
+  element.className = `lm-tooltip__license-icon-new ${allowed ? "allowed" : "denied"}`;
+  element.setAttribute("role", "img");
+  element.setAttribute("aria-label", label);
+  element.title = label;
+  element.style.setProperty("--license-icon-image", `url('${LICENSE_ICON_PATH}${icon}')`);
+  return element;
+}
+
+const LICENSE_ICON_STORAGE_KEY = "lm_license_icon_new_style";
+
+// Module-level cache: null = not yet initialized
+let _useNewIconsCached = null;
+
+// Fetch the setting from the LoRA Manager backend API via the proper
+// ComfyUI api helper (handles base URL, credentials, etc.).
+// Stores the result in both the in-memory cache and localStorage so the
+// value survives page reloads even before the API responds.
+async function _fetchLicenseIconSetting() {
+  try {
+    const response = await api.fetchApi("/lm/settings");
+    if (response.ok) {
+      const data = await response.json();
+      const value = data.use_new_license_icons !== false;
+      _useNewIconsCached = value;
+      try { localStorage.setItem(LICENSE_ICON_STORAGE_KEY, String(value)); } catch (_) {}
+    }
+  } catch (_) {
+    // API not available; cached/localStorage fallback stays in place
+  }
+}
+
+function getUseNewLicenseIcons() {
+  // 1) In-memory cache hit
+  if (_useNewIconsCached !== null) {
+    return _useNewIconsCached;
+  }
+
+  // 2) localStorage — survives page reloads
+  try {
+    const stored = localStorage.getItem(LICENSE_ICON_STORAGE_KEY);
+    if (stored !== null) {
+      _useNewIconsCached = stored === "true";
+      // Refresh from API in background for next time
+      _fetchLicenseIconSetting();
+      return _useNewIconsCached;
+    }
+  } catch (_) {}
+
+  // 3) First-ever run: kick off API fetch, default to new style
+  _fetchLicenseIconSetting();
+  return true;
+}
+
 /**
  * Lightweight preview tooltip that can display images or videos for different model types.
  */
@@ -100,6 +222,10 @@ export class PreviewTooltip {
         : (name) => name;
 
     ensureLmStyles();
+
+    // Pre-fetch license icon style from LM backend so the tooltip
+    // respects the standalone settings toggle as early as possible.
+    _fetchLicenseIconSetting();
 
     this.element = document.createElement("div");
     this.element.className = "lm-tooltip";
@@ -135,6 +261,7 @@ export class PreviewTooltip {
       previewUrl: data.preview_url,
       displayName: data.display_name ?? modelName,
       licenseFlags: parseLicenseFlags(data.license_flags),
+      useNewLicenseIcons: data.use_new_license_icons,
     };
   }
 
@@ -150,7 +277,7 @@ export class PreviewTooltip {
       };
     }
 
-    const { previewUrl, displayName, licenseFlags } = raw;
+    const { previewUrl, displayName, licenseFlags, useNewLicenseIcons } = raw;
     if (!previewUrl) {
       throw new Error("No preview URL available");
     }
@@ -161,6 +288,7 @@ export class PreviewTooltip {
           ? displayName
           : this.displayNameFormatter(modelName),
       licenseFlags: parseLicenseFlags(licenseFlags),
+      useNewLicenseIcons,
     };
   }
 
@@ -182,7 +310,7 @@ export class PreviewTooltip {
       }
 
       this.currentModelName = modelName;
-      const { previewUrl, displayName, licenseFlags } = await this.resolvePreviewData(
+      const { previewUrl, displayName, licenseFlags, useNewLicenseIcons } = await this.resolvePreviewData(
         modelName
       );
 
@@ -211,7 +339,7 @@ export class PreviewTooltip {
       nameLabel.className = "lm-tooltip__label";
 
       mediaContainer.appendChild(mediaElement);
-      this.renderLicenseOverlay(mediaContainer, licenseFlags);
+      this.renderLicenseOverlay(mediaContainer, licenseFlags, useNewLicenseIcons);
       mediaContainer.appendChild(nameLabel);
       this.element.appendChild(mediaContainer);
 
@@ -293,16 +421,25 @@ export class PreviewTooltip {
     }
   }
 
-  renderLicenseOverlay(container, licenseFlags) {
-    const icons = buildLicenseIconData(licenseFlags);
+  renderLicenseOverlay(container, licenseFlags, useNewLicenseIcons) {
+    const useNew = useNewLicenseIcons !== undefined ? useNewLicenseIcons : getUseNewLicenseIcons();
+    const icons = useNew
+      ? buildNewLicenseIconData(licenseFlags)
+      : buildLicenseIconData(licenseFlags);
     if (!icons.length) {
       return;
     }
 
     const overlay = document.createElement("div");
-    overlay.className = "lm-tooltip__license-overlay";
+    overlay.className = useNew
+      ? "lm-tooltip__license-overlay-new"
+      : "lm-tooltip__license-overlay";
     icons.forEach((descriptor) => {
-      overlay.appendChild(createLicenseIconElement(descriptor));
+      overlay.appendChild(
+        useNew
+          ? createNewLicenseIconElement(descriptor)
+          : createLicenseIconElement(descriptor)
+      );
     });
     container.appendChild(overlay);
   }

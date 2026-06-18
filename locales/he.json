@@ -314,6 +314,7 @@
             "downloads": "הורדות",
             "videoSettings": "הגדרות וידאו",
             "layoutSettings": "הגדרות פריסה",
+            "licenseIcons": "סמלי רישיון",
             "misc": "שונות",
             "backup": "גיבויים",
             "folderSettings": "תיקיות ברירת מחדל",
@@ -593,6 +594,10 @@
         "hideEarlyAccessUpdates": {
             "label": "הסתר עדכוני גישה מוקדמת",
             "help": "רק עדכוני גישה מוקדמת"
+        },
+        "licenseIcons": {
+            "useNewStyle": "השתמש בסמלי רישיון מעודכנים",
+            "useNewStyleHelp": "הצג הרשאות רישיון עם מחוונים צבעוניים (סגנון חדש) או סמלי הגבלה בלבד (סגנון קלאסי). משקף את העיצוב העדכני של CivitAI."
         },
         "misc": {
             "includeTriggerWords": "כלול מילות טריגר בתחביר LoRA",

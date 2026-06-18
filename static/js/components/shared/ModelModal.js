@@ -234,6 +234,95 @@ function renderLicenseIcons(modelData) {
     </div>`;
 }
 
+// ── Set 2 (new CivitAI-style) permission icons ──
+
+const NEW_LICENSE_ICON_CONFIG = [
+    {
+        key: 'commercial',
+        icon: 'currency-dollar.svg',
+        allowedFn: (license) => {
+            const uses = license.allowCommercialUse || [];
+            return uses.includes('Image') || uses.includes('Sell');
+        },
+        labelAllowed: 'Commercial use allowed',
+        labelDenied: 'No commercial use'
+    },
+    {
+        key: 'genServices',
+        icon: 'brush.svg',
+        allowedFn: (license) => {
+            const uses = license.allowCommercialUse || [];
+            return uses.includes('RentCivit') || uses.includes('Rent');
+        },
+        labelAllowed: 'Generation services allowed',
+        labelDenied: 'No generation services'
+    },
+    {
+        key: 'credit',
+        icon: 'user.svg',
+        allowedFn: (license) => !!license.allowNoCredit,
+        labelAllowed: 'No credit required',
+        labelDenied: 'Creator credit required'
+    },
+    {
+        key: 'derivatives',
+        icon: 'git-merge.svg',
+        allowedFn: (license) => !!license.allowDerivatives,
+        labelAllowed: 'Merges allowed',
+        labelDenied: 'No merges allowed'
+    },
+    {
+        key: 'relicense',
+        icon: 'license.svg',
+        allowedFn: (license) => !!license.allowDifferentLicense,
+        labelAllowed: 'Different permissions allowed on merges',
+        labelDenied: 'Same permissions required on merges'
+    }
+];
+
+function createNewLicenseIconMarkup(icon, allowed, label) {
+    const safeLabel = escapeAttribute(label);
+    const iconPath = `/loras_static/images/tabler/${icon}`;
+    const stateClass = allowed ? 'allowed' : 'denied';
+    return `<span class="license-icon-new ${stateClass}" role="img" aria-label="${safeLabel}" title="${safeLabel}" style="--license-icon-image: url('${iconPath}')"></span>`;
+}
+
+function renderNewLicenseIcons(modelData) {
+    const license = modelData?.civitai?.model;
+    if (!license) {
+        return '';
+    }
+
+    const icons = [];
+    NEW_LICENSE_ICON_CONFIG.forEach((config) => {
+        if (config.key === 'credit' && !hasLicenseField(license, 'allowNoCredit')) {
+            return;
+        }
+        if (config.key === 'derivatives' && !hasLicenseField(license, 'allowDerivatives')) {
+            return;
+        }
+        if (config.key === 'relicense' && !hasLicenseField(license, 'allowDifferentLicense')) {
+            return;
+        }
+        if ((config.key === 'commercial' || config.key === 'genServices') && !hasLicenseField(license, 'allowCommercialUse')) {
+            return;
+        }
+        const allowed = config.allowedFn(license);
+        const label = allowed ? config.labelAllowed : config.labelDenied;
+        icons.push(createNewLicenseIconMarkup(config.icon, allowed, label));
+    });
+
+    if (!icons.length) {
+        return '';
+    }
+
+    const containerLabel = translate('modals.model.license.restrictionsLabel', {}, 'License permissions');
+    const safeContainerLabel = escapeAttribute(containerLabel);
+    return `<div class="license-permissions" aria-label="${safeContainerLabel}" role="group">
+        ${icons.join('\n        ')}
+    </div>`;
+}
+
 /**
  * Display the model modal with the given model data
  * @param {Object} model - Model data object
@@ -264,7 +353,10 @@ export async function showModelModal(model, modelType) {
     };
     const escapedFilePathAttr = escapeAttribute(modelWithFullData.file_path || '');
     const escapedFolderPath = escapeHtml((modelWithFullData.file_path || '').replace(/[^/]+$/, '') || 'N/A');
-    const licenseIcons = renderLicenseIcons(modelWithFullData);
+    const useNewIcons = state.global.settings.use_new_license_icons !== false;
+    const licenseIcons = useNewIcons
+        ? renderNewLicenseIcons(modelWithFullData)
+        : renderLicenseIcons(modelWithFullData);
     const viewOnCivitaiAction = modelWithFullData.from_civitai ? `
 <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${escapedFilePathAttr}">
     <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}

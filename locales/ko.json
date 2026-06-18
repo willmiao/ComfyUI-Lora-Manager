@@ -314,6 +314,7 @@
             "downloads": "다운로드",
             "videoSettings": "비디오 설정",
             "layoutSettings": "레이아웃 설정",
+            "licenseIcons": "라이선스 아이콘",
             "misc": "기타",
             "backup": "백업",
             "folderSettings": "기본 루트",
@@ -593,6 +594,10 @@
         "hideEarlyAccessUpdates": {
             "label": "얼리 액세스 업데이트 숨기기",
             "help": "얼리 액세스 업데이트만"
+        },
+        "licenseIcons": {
+            "useNewStyle": "업데이트된 라이선스 아이콘 사용",
+            "useNewStyleHelp": "색상 표시기가 있는 라이선스 권한(새 스타일) 또는 제한 전용 아이콘(클래식 스타일)을 표시합니다. 현재 CivitAI 디자인을 반영합니다."
         },
         "misc": {
             "includeTriggerWords": "LoRA 문법에 트리거 단어 포함",

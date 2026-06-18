@@ -105,6 +105,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "download_skip_base_models": [],
     "backup_auto_enabled": True,
     "backup_retention_count": 5,
+    "use_new_license_icons": True,
 }
 
 

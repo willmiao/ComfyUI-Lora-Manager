@@ -72,6 +72,10 @@
     margin-left: auto;
 }
 
+.modal-header-actions .license-permissions {
+    margin-left: auto;
+}
+
 .license-restrictions {
     display: flex;
     align-items: center;
@@ -92,6 +96,41 @@
 
 .license-restrictions .license-icon:hover {
     background-color: var(--text-color);
+    transform: translateY(-1px);
+}
+
+/* Set 2 — New style permission indicators */
+.license-permissions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.license-icon-new {
+    width: 22px;
+    height: 22px;
+    display: inline-block;
+    border-radius: 4px;
+    background-color: var(--text-muted);
+    -webkit-mask: var(--license-icon-image) center/contain no-repeat;
+    mask: var(--license-icon-image) center/contain no-repeat;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+    cursor: default;
+    outline: 2px solid transparent;
+    outline-offset: 1px;
+}
+
+.license-icon-new.allowed {
+    background-color: var(--color-success, #40c057);
+    outline-color: color-mix(in oklch, var(--color-success, #40c057) 30%, transparent);
+}
+
+.license-icon-new.denied {
+    background-color: var(--color-error, #fa5252);
+    outline-color: color-mix(in oklch, var(--color-error, #fa5252) 30%, transparent);
+}
+
+.license-icon-new:hover {
     transform: translateY(-1px);
 }
 

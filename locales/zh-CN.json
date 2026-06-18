@@ -314,6 +314,7 @@
             "downloads": "下载",
             "videoSettings": "视频设置",
             "layoutSettings": "布局设置",
+            "licenseIcons": "许可协议图标",
             "misc": "其他",
             "backup": "备份",
             "folderSettings": "默认根目录",
@@ -593,6 +594,10 @@
         "hideEarlyAccessUpdates": {
             "label": "隐藏抢先体验更新",
             "help": "抢先体验更新"
+        },
+        "licenseIcons": {
+            "useNewStyle": "使用新版许可协议图标",
+            "useNewStyleHelp": "以彩色指示器显示许可权限（新样式），或仅显示限制图标（经典样式）。与当前 CivitAI 设计保持一致。"
         },
         "misc": {
             "includeTriggerWords": "复制 LoRA 语法时包含触发词",

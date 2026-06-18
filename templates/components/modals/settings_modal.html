@@ -592,6 +592,30 @@
                             </div>
                         </div>
                         
+                        <!-- License Icons -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.sections.licenseIcons') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="useNewLicenseIcons">
+                                        {{ t('settings.licenseIcons.useNewStyle') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.licenseIcons.useNewStyleHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="useNewLicenseIcons"
+                                                   onchange="settingsManager.saveToggleSetting('useNewLicenseIcons', 'use_new_license_icons')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Miscellaneous -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">

@@ -101,14 +101,19 @@ vi.mock(API_FACTORY, () => ({
 
 describe('Model modal license rendering', () => {
   let getModelApiClient;
+  let state;
 
   beforeEach(async () => {
     document.body.innerHTML = '';
     ({ getModelApiClient } = await import(API_FACTORY));
     getModelApiClient.mockReset();
+    // Import state and force classic icons for this test
+    const stateModule = await import('../../../static/js/state/index.js');
+    state = stateModule.state;
+    state.global.settings.use_new_license_icons = false;
   });
 
-  it('handles aggregated commercial strings without extra restrictions', async () => {
+  it('handles aggregated commercial strings without extra restrictions (classic style)', async () => {
     const fetchModelMetadata = vi.fn().mockResolvedValue(null);
     getModelApiClient.mockReturnValue({
       fetchModelMetadata,

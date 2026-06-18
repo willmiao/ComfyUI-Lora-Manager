@@ -1272,6 +1272,14 @@ class ModelQueryHandler:
                     license_flags = (model_data or {}).get("license_flags")
                     if license_flags is not None:
                         response_payload["license_flags"] = int(license_flags)
+                    # Include the user's license icon style preference so the
+                    # ComfyUI tooltip can pick the right set without a separate
+                    # API call.
+                    try:
+                        settings = get_settings_manager()
+                        response_payload["use_new_license_icons"] = settings.get("use_new_license_icons", True)
+                    except Exception:
+                        pass
                 return web.json_response(response_payload)
             return web.json_response(
                 {

@@ -314,6 +314,7 @@
             "downloads": "ダウンロード",
             "videoSettings": "動画設定",
             "layoutSettings": "レイアウト設定",
+            "licenseIcons": "ライセンスアイコン",
             "misc": "その他",
             "backup": "バックアップ",
             "folderSettings": "デフォルトルート",
@@ -593,6 +594,10 @@
         "hideEarlyAccessUpdates": {
             "label": "早期アクセス更新を非表示",
             "help": "早期アクセスのみの更新"
+        },
+        "licenseIcons": {
+            "useNewStyle": "更新されたライセンスアイコンを使用",
+            "useNewStyleHelp": "カラーインジケーター付きでライセンス許可を表示（新スタイル）するか、制限のみのアイコンを表示（クラシックスタイル）します。現在のCivitAIデザインを反映しています。"
         },
         "misc": {
             "includeTriggerWords": "LoRA構文にトリガーワードを含める",

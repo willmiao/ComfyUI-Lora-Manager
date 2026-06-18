@@ -1003,6 +1003,12 @@ export class SettingsManager {
 
         this.loadDownloadBackendSettings();
         this.loadProxySettings();
+
+        // Set license icon style
+        const useNewLicenseIconsCheckbox = document.getElementById('useNewLicenseIcons');
+        if (useNewLicenseIconsCheckbox) {
+            useNewLicenseIconsCheckbox.checked = state.global.settings.use_new_license_icons !== false;
+        }
     }
 
     loadDownloadBackendSettings() {
@@ -2946,6 +2952,10 @@ export class SettingsManager {
         // Apply show version on card setting
         const showVersionOnCard = state.global.settings.show_version_on_card !== false;
         document.body.classList.toggle('hide-card-version', !showVersionOnCard);
+
+        // Apply license icon style
+        const useNewLicenseIcons = state.global.settings.use_new_license_icons !== false;
+        document.body.classList.toggle('use-new-license-icons', useNewLicenseIcons);
 
     }
 }

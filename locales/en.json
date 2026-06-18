@@ -314,6 +314,7 @@
             "downloads": "Downloads",
             "videoSettings": "Video Settings",
             "layoutSettings": "Layout Settings",
+            "licenseIcons": "License Icons",
             "misc": "Miscellaneous",
             "backup": "Backups",
             "folderSettings": "Default Roots",
@@ -593,6 +594,10 @@
         "hideEarlyAccessUpdates": {
             "label": "Hide Early Access Updates",
             "help": "When enabled, models with only early access updates will not show 'Update available' badge"
+        },
+        "licenseIcons": {
+            "useNewStyle": "Use updated license icons",
+            "useNewStyleHelp": "Display license permissions with colored indicators (new style) or restriction-only icons (classic style). Mirroring the current CivitAI design."
         },
         "misc": {
             "includeTriggerWords": "Include Trigger Words in LoRA Syntax",

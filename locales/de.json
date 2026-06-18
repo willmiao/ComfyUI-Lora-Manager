@@ -314,6 +314,7 @@
             "downloads": "Downloads",
             "videoSettings": "Video-Einstellungen",
             "layoutSettings": "Layout-Einstellungen",
+            "licenseIcons": "Lizenzsymbole",
             "misc": "Verschiedenes",
             "backup": "Backups",
             "folderSettings": "Standard-Roots",
@@ -593,6 +594,10 @@
         "hideEarlyAccessUpdates": {
             "label": "Früher Zugriff Updates ausblenden",
             "help": "Nur Early-Access-Updates"
+        },
+        "licenseIcons": {
+            "useNewStyle": "Aktualisierte Lizenzsymbole verwenden",
+            "useNewStyleHelp": "Lizenzberechtigungen mit farbigen Indikatoren (neuer Stil) oder nur Einschränkungssymbolen (klassischer Stil) anzeigen. Orientiert sich am aktuellen CivitAI-Design."
         },
         "misc": {
             "includeTriggerWords": "Trigger Words in LoRA-Syntax einschließen",
