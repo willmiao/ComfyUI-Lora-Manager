@@ -27,8 +27,8 @@
     transition: var(--transition-slow);
     /* Add glow effect */
     box-shadow: 
-        0 0 0 2px rgba(24, 144, 255, 0.3),
-        0 0 20px rgba(24, 144, 255, 0.2),
+        0 0 0 2px color-mix(in oklch, var(--color-accent) 30%, transparent),
+        0 0 20px color-mix(in oklch, var(--color-accent) 20%, transparent),
         inset 0 0 0 1px rgba(255, 255, 255, 0.1);
 }
 
@@ -221,14 +221,14 @@
 @keyframes onboarding-pulse {
     0%, 100% {
         box-shadow: 
-            0 0 0 2px rgba(24, 144, 255, 0.4),
-            0 0 20px rgba(24, 144, 255, 0.3),
+            0 0 0 2px color-mix(in oklch, var(--color-accent) 40%, transparent),
+            0 0 20px color-mix(in oklch, var(--color-accent) 30%, transparent),
             inset 0 0 0 1px rgba(255, 255, 255, 0.1);
     }
     50% {
         box-shadow: 
-            0 0 0 4px rgba(24, 144, 255, 0.6),
-            0 0 30px rgba(24, 144, 255, 0.4),
+            0 0 0 4px color-mix(in oklch, var(--color-accent) 60%, transparent),
+            0 0 30px color-mix(in oklch, var(--color-accent) 40%, transparent),
             inset 0 0 0 1px rgba(255, 255, 255, 0.2);
     }
 }

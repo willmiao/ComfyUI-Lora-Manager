@@ -255,7 +255,7 @@
             "presets": "Theme-Voreinstellungen",
             "default": "Standard",
             "nord": "Nord",
-            "gruvbox": "Gruvbox",
+            "midnight": "Midnight",
             "monokai": "Monokai",
             "dracula": "Dracula",
             "solarized": "Solarized",

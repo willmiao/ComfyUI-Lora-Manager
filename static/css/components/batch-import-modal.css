@@ -389,7 +389,7 @@
 }
 
 .stat-item.success {
-    border-left: 3px solid #00B87A;
+    border-left: 3px solid var(--color-success);
 }
 
 .stat-item.failed {
@@ -455,7 +455,7 @@
 
 .results-icon {
     font-size: 3em;
-    color: #00B87A;
+    color: var(--color-success);
     margin-bottom: var(--space-1);
 }
 
@@ -493,7 +493,7 @@
 }
 
 .result-card.success {
-    border-left: 3px solid #00B87A;
+    border-left: 3px solid var(--color-success);
 }
 
 .result-card.failed {
@@ -582,8 +582,8 @@
 }
 
 .result-item-status.success {
-    background: oklch(from #00B87A l c h / 0.2);
-    color: #00B87A;
+    background: color-mix(in oklch, var(--color-success) 20%, transparent);
+    color: var(--color-success);
 }
 
 .result-item-status.failed {
@@ -661,11 +661,11 @@
 
 /* Completed State */
 .batch-progress-container.completed .progress-bar {
-    background: #00B87A;
+    background: var(--color-success);
 }
 
 .batch-progress-container.completed .status-icon {
-    color: #00B87A;
+    color: var(--color-success);
 }
 
 .batch-progress-container.completed .status-icon i {

@@ -211,7 +211,7 @@
 
 .lora-item.is-early-access {
     background: rgba(0, 184, 122, 0.05);
-    border-left: 4px solid #00B87A;
+    border-left: 4px solid var(--color-success);
 }
 
 .lora-item.missing-locally {
@@ -310,7 +310,7 @@
 
 .missing-lora-item.is-early-access {
     background: rgba(0, 184, 122, 0.05);
-    border-left: 3px solid #00B87A;
+    border-left: 3px solid var(--color-success);
     padding-left: 10px;
 }
 
@@ -630,7 +630,7 @@
     gap: 12px;
     padding: 12px 16px;
     background: rgba(0, 184, 122, 0.1);
-    border: 1px solid #00B87A;
+    border: 1px solid var(--color-success);
     border-radius: var(--border-radius-sm);
     color: var(--text-color);
     margin-bottom: var(--space-2);
@@ -646,7 +646,7 @@
 
 /* Specific styling for the early access warning container in import modal */
 .early-access-warning .warning-icon {
-    color: #00B87A;
+    color: var(--color-success);
     font-size: 1.2em;
 }
 

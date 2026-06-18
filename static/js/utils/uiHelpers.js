@@ -198,15 +198,20 @@ export function restoreFolderFilter() {
 }
 
 const CYCLE_ORDER = ['auto', 'light', 'dark'];
-const PRESET_NAMES = ['default', 'nord', 'gruvbox', 'monokai', 'dracula', 'solarized'];
+const PRESET_NAMES = ['default', 'nord', 'midnight', 'monokai', 'dracula', 'solarized'];
 
 export { CYCLE_ORDER, PRESET_NAMES };
 
 export function initTheme() {
   const savedTheme = getStorageItem('theme') || 'auto';
-  const savedPreset = getStorageItem('theme_preset') || 'default';
+  // Migrate deprecated presets
+  let savedPreset = getStorageItem('theme_preset');
+  if (savedPreset === 'gruvbox') {
+    savedPreset = 'midnight';
+    setStorageItem('theme_preset', 'midnight');
+  }
   applyTheme(savedTheme);
-  applyPreset(savedPreset);
+  applyPreset(savedPreset || 'default');
 
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     const currentTheme = getStorageItem('theme') || 'auto';

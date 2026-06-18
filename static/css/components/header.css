@@ -472,8 +472,8 @@
   background: oklch(62% 0.18 213);
 }
 
-.preset-swatch-gruvbox {
-  background: oklch(58% 0.22 25);
+.preset-swatch-midnight {
+  background: oklch(52% 0.15 300);
 }
 
 .preset-swatch-monokai {
@@ -508,8 +508,8 @@
   background: oklch(68% 0.18 213);
 }
 
-[data-theme="dark"] .preset-swatch-gruvbox {
-  background: oklch(62% 0.22 25);
+[data-theme="dark"] .preset-swatch-midnight {
+  background: oklch(68% 0.14 300);
 }
 
 [data-theme="dark"] .preset-swatch-monokai {

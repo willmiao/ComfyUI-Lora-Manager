@@ -255,7 +255,7 @@
             "presets": "테마 프리셋",
             "default": "기본",
             "nord": "Nord",
-            "gruvbox": "Gruvbox",
+            "midnight": "Midnight",
             "monokai": "Monokai",
             "dracula": "Dracula",
             "solarized": "Solarized",
