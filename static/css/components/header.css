@@ -283,7 +283,6 @@
 
 .theme-toggle {
   position: relative;
-  /* Ensure relative positioning for the container */
 }
 
 .theme-toggle .light-icon,
@@ -293,17 +292,14 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  /* Center perfectly */
   opacity: 0;
   transition: opacity 0.3s ease;
 }
 
-/* Default state shows dark icon */
 .theme-toggle .dark-icon {
   opacity: 1;
 }
 
-/* Light theme shows light icon */
 .theme-toggle.theme-light .light-icon {
   opacity: 1;
 }
@@ -313,7 +309,6 @@
   opacity: 0;
 }
 
-/* Dark theme shows dark icon */
 .theme-toggle.theme-dark .dark-icon {
   opacity: 1;
 }
@@ -323,7 +318,6 @@
   opacity: 0;
 }
 
-/* Auto theme shows auto icon */
 .theme-toggle.theme-auto .auto-icon {
   opacity: 1;
 }
@@ -331,6 +325,203 @@
 .theme-toggle.theme-auto .light-icon,
 .theme-toggle.theme-auto .dark-icon {
   opacity: 0;
+}
+
+.theme-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 8px);
+  right: -8px;
+  background: var(--surface-base, #ffffff);
+  border: 1px solid var(--border-base, #e0e0e0);
+  border-radius: var(--radius-md, 8px);
+  box-shadow: var(--shadow-xl, 0 4px 16px rgba(0, 0, 0, 0.15));
+  padding: 12px;
+  min-width: 220px;
+  z-index: var(--z-dropdown, 200);
+  animation: theme-popover-in 0.15s ease-out;
+}
+
+.theme-popover.active {
+  display: block;
+}
+
+@keyframes theme-popover-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.theme-popover-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.theme-popover-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary, #6c757d);
+}
+
+.theme-popover-divider {
+  height: 1px;
+  background: var(--border-base, #e0e0e0);
+  margin: 10px 0;
+}
+
+.theme-popover-modes {
+  display: flex;
+  gap: 6px;
+}
+
+.theme-mode-btn {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-base, #e0e0e0);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface-elevated, #ffffff);
+  color: var(--text-primary, #333333);
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: background-color var(--transition-base, 200ms ease),
+              border-color var(--transition-base, 200ms ease),
+              color var(--transition-base, 200ms ease);
+}
+
+.theme-mode-btn i {
+  font-size: 0.9rem;
+}
+
+.theme-mode-btn:hover {
+  background: var(--surface-hover, oklch(95% 0.02 256));
+  border-color: var(--color-accent, oklch(68% 0.28 256));
+}
+
+.theme-mode-btn.active {
+  background: var(--color-accent-subtle, oklch(68% 0.28 256 / 0.12));
+  border-color: var(--color-accent, oklch(68% 0.28 256));
+  color: var(--color-accent, oklch(68% 0.28 256));
+}
+
+.theme-popover-presets {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+}
+
+.theme-preset-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 4px;
+  border: 1px solid var(--border-base, #e0e0e0);
+  border-radius: var(--radius-sm, 6px);
+  background: var(--surface-elevated, #ffffff);
+  color: var(--text-primary, #333333);
+  cursor: pointer;
+  font-size: 0.7rem;
+  transition: background-color var(--transition-base, 200ms ease),
+              border-color var(--transition-base, 200ms ease),
+              color var(--transition-base, 200ms ease);
+}
+
+.theme-preset-btn:hover {
+  background: var(--surface-hover, oklch(95% 0.02 256));
+  border-color: var(--color-accent, oklch(68% 0.28 256));
+}
+
+.theme-preset-btn.active {
+  background: var(--color-accent-subtle, oklch(68% 0.28 256 / 0.12));
+  border-color: var(--color-accent, oklch(68% 0.28 256));
+  color: var(--color-accent, oklch(68% 0.28 256));
+}
+
+.preset-swatch {
+  display: inline-block;
+  width: 22px;
+  height: 22px;
+  border-radius: var(--radius-xs, 4px);
+  border: 1px solid var(--border-subtle, oklch(72% 0.03 256 / 0.45));
+  flex-shrink: 0;
+  transition: transform var(--transition-base, 200ms ease),
+              box-shadow var(--transition-base, 200ms ease);
+}
+
+/* Solid accent colors — each swatch shows the theme's accent color directly.
+   This matches the app's flat, token-driven design language instead of using
+   decorative gradients that clash with the matte aesthetic. */
+
+.preset-swatch-default {
+  background: oklch(68% 0.28 256);
+}
+
+.preset-swatch-nord {
+  background: oklch(62% 0.18 213);
+}
+
+.preset-swatch-gruvbox {
+  background: oklch(58% 0.22 25);
+}
+
+.preset-swatch-monokai {
+  background: oklch(72% 0.24 190);
+}
+
+.preset-swatch-dracula {
+  background: oklch(68% 0.24 265);
+}
+
+.preset-swatch-solarized {
+  background: oklch(55% 0.18 175);
+}
+
+.theme-preset-btn.active .preset-swatch {
+  box-shadow: 0 0 0 2px var(--color-accent, oklch(68% 0.28 256));
+}
+
+.theme-preset-btn:hover .preset-swatch {
+  transform: scale(1.08);
+}
+
+/* Dark mode: use each preset's dark-mode accent lightness for visibility.
+   These match the --color-accent-l values from [data-theme="dark"][data-theme-preset="..."]
+   in tokens/colors.css so the swatch accurately previews what the theme looks like. */
+
+[data-theme="dark"] .preset-swatch-default {
+  background: oklch(68% 0.28 256);
+}
+
+[data-theme="dark"] .preset-swatch-nord {
+  background: oklch(68% 0.18 213);
+}
+
+[data-theme="dark"] .preset-swatch-gruvbox {
+  background: oklch(62% 0.22 25);
+}
+
+[data-theme="dark"] .preset-swatch-monokai {
+  background: oklch(72% 0.24 190);
+}
+
+[data-theme="dark"] .preset-swatch-dracula {
+  background: oklch(72% 0.24 265);
+}
+
+[data-theme="dark"] .preset-swatch-solarized {
+  background: oklch(60% 0.18 175);
 }
 
 /* Badge styling */

@@ -251,7 +251,18 @@
             "toggle": "切换主题",
             "switchToLight": "切换到浅色主题",
             "switchToDark": "切换到深色主题",
-            "switchToAuto": "切换到自动主题"
+            "switchToAuto": "切换到自动主题",
+            "presets": "主题预设",
+            "default": "默认",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "模式",
+            "light": "浅色",
+            "dark": "深色",
+            "auto": "自动"
         },
         "actions": {
             "checkUpdates": "检查更新",

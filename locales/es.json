@@ -251,7 +251,18 @@
             "toggle": "Cambiar tema",
             "switchToLight": "Cambiar a tema claro",
             "switchToDark": "Cambiar a tema oscuro",
-            "switchToAuto": "Cambiar a tema automático"
+            "switchToAuto": "Cambiar a tema automático",
+            "presets": "Preajustes de tema",
+            "default": "Predeterminado",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "Modo",
+            "light": "Claro",
+            "dark": "Oscuro",
+            "auto": "Auto"
         },
         "actions": {
             "checkUpdates": "Comprobar actualizaciones",

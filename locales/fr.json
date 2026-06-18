@@ -251,7 +251,18 @@
             "toggle": "Basculer le thème",
             "switchToLight": "Passer au thème clair",
             "switchToDark": "Passer au thème sombre",
-            "switchToAuto": "Passer au thème automatique"
+            "switchToAuto": "Passer au thème automatique",
+            "presets": "Préréglages de thème",
+            "default": "Par défaut",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "Mode",
+            "light": "Clair",
+            "dark": "Sombre",
+            "auto": "Auto"
         },
         "actions": {
             "checkUpdates": "Vérifier les mises à jour",

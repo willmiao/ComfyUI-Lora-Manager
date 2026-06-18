@@ -251,7 +251,18 @@
             "toggle": "החלף ערכת נושא",
             "switchToLight": "עבור לערכת נושא בהירה",
             "switchToDark": "עבור לערכת נושא כהה",
-            "switchToAuto": "עבור לערכת נושא אוטומטית"
+            "switchToAuto": "עבור לערכת נושא אוטומטית",
+            "presets": "ערכות נושא מוגדרות",
+            "default": "ברירת מחדל",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "מצב",
+            "light": "בהיר",
+            "dark": "כהה",
+            "auto": "אוטומטי"
         },
         "actions": {
             "checkUpdates": "בדוק עדכונים",

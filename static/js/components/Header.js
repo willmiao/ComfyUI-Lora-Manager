@@ -1,9 +1,9 @@
 import { updateService } from '../managers/UpdateService.js';
-import { toggleTheme } from '../utils/uiHelpers.js';
+import { toggleTheme, setPreset, CYCLE_ORDER, PRESET_NAMES } from '../utils/uiHelpers.js';
 import { SearchManager } from '../managers/SearchManager.js';
 import { FilterManager } from '../managers/FilterManager.js';
 import { initPageState } from '../state/index.js';
-import { getStorageItem } from '../utils/storageHelpers.js';
+import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { updateElementAttribute } from '../utils/i18nHelpers.js';
 import { renderSupporters } from '../services/supportersService.js';
 
@@ -47,25 +47,8 @@ export class HeaderManager {
     }
     
     initializeCommonElements() {
-      // Handle theme toggle
-      const themeToggle = document.querySelector('.theme-toggle');
-      if (themeToggle) {
-        const currentTheme = getStorageItem('theme') || 'auto';
-        themeToggle.classList.add(`theme-${currentTheme}`);
+      this.initializeThemePopover();
 
-        // Use i18nHelpers to update themeToggle's title
-        this.updateThemeTooltip(themeToggle, currentTheme);
-
-        themeToggle.addEventListener('click', async () => {
-          if (typeof toggleTheme === 'function') {
-            const newTheme = toggleTheme();
-            // Use i18nHelpers to update themeToggle's title
-            this.updateThemeTooltip(themeToggle, newTheme);
-          }
-        });
-      }
-      
-      // Handle settings toggle
       const settingsToggle = document.querySelector('.settings-toggle');
       if (settingsToggle) {
         settingsToggle.addEventListener('click', () => {
@@ -74,22 +57,19 @@ export class HeaderManager {
           }
         });
       }
-      
-      // Handle update toggle
+
       const updateToggle = document.getElementById('updateToggleBtn');
       if (updateToggle) {
         updateToggle.addEventListener('click', () => {
           updateService.toggleUpdateModal();
         });
       }
-      
-      // Handle support toggle
+
       const supportToggle = document.getElementById('supportToggleBtn');
       if (supportToggle) {
         supportToggle.addEventListener('click', async () => {
           if (window.modalManager) {
             window.modalManager.toggleModal('supportModal');
-            // Load supporters data when modal opens
             try {
               await renderSupporters();
             } catch (error) {
@@ -99,39 +79,124 @@ export class HeaderManager {
         });
       }
 
-      // Handle QR code toggle
       const qrToggle = document.getElementById('toggleQRCode');
       const qrContainer = document.getElementById('qrCodeContainer');
-      
-      if (qrToggle && qrContainer) {
-          qrToggle.addEventListener('click', function() {
-              qrContainer.classList.toggle('show');
-              qrToggle.classList.toggle('active');
-              
-              const toggleText = qrToggle.querySelector('.toggle-text');
-              if (qrContainer.classList.contains('show')) {
-                  toggleText.textContent = 'Hide WeChat QR Code';
-                  // Add small delay to ensure DOM is updated before scrolling
-                  setTimeout(() => {
-                      const supportModal = document.querySelector('.support-modal');
-                      if (supportModal) {
-                          supportModal.scrollTo({
-                              top: supportModal.scrollHeight,
-                              behavior: 'smooth'
-                          });
-                      }
-                  }, 250);
-              } else {
-                  toggleText.textContent = 'Show WeChat QR Code';
-              }
-          });
-      }
-      
-      // Hide search functionality on Statistics page
-      this.updateHeaderForPage();
 
-      // Initialize hamburger menu for mobile
+      if (qrToggle && qrContainer) {
+        qrToggle.addEventListener('click', function () {
+          qrContainer.classList.toggle('show');
+          qrToggle.classList.toggle('active');
+
+          const toggleText = qrToggle.querySelector('.toggle-text');
+          if (qrContainer.classList.contains('show')) {
+            toggleText.textContent = 'Hide WeChat QR Code';
+            setTimeout(() => {
+              const supportModal = document.querySelector('.support-modal');
+              if (supportModal) {
+                supportModal.scrollTo({
+                  top: supportModal.scrollHeight,
+                  behavior: 'smooth'
+                });
+              }
+            }, 250);
+          } else {
+            toggleText.textContent = 'Show WeChat QR Code';
+          }
+        });
+      }
+
+      this.updateHeaderForPage();
       this.initializeHamburgerMenu();
+    }
+
+    initializeThemePopover() {
+      const themeToggle = document.querySelector('.theme-toggle');
+      const themePopover = document.getElementById('themePopover');
+      if (!themeToggle || !themePopover) return;
+
+      const currentTheme = getStorageItem('theme') || 'auto';
+      const currentPreset = getStorageItem('theme_preset') || 'default';
+      themeToggle.classList.add(`theme-${currentTheme}`);
+      this.updateThemeTooltip(themeToggle, currentTheme);
+      this.updatePopoverActiveStates(currentTheme, currentPreset);
+
+      themeToggle.addEventListener('click', (e) => {
+        if (e.target.closest('.theme-popover')) return;
+        e.stopPropagation();
+        const isOpen = themePopover.classList.contains('active');
+        this.closeAllPopovers();
+        if (!isOpen) {
+          themePopover.classList.add('active');
+        }
+      });
+
+      themePopover.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const modeBtn = e.target.closest('.theme-mode-btn');
+        const presetBtn = e.target.closest('.theme-preset-btn');
+
+        if (modeBtn) {
+          const mode = modeBtn.dataset.mode;
+          this.setThemeMode(mode);
+        } else if (presetBtn) {
+          const preset = presetBtn.dataset.preset;
+          this.setThemePreset(preset);
+        }
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!themeToggle.contains(e.target) && !themePopover.contains(e.target)) {
+          themePopover.classList.remove('active');
+        }
+      });
+    }
+
+    closeAllPopovers() {
+      const themePopover = document.getElementById('themePopover');
+      if (themePopover) {
+        themePopover.classList.remove('active');
+      }
+    }
+
+    setThemeMode(mode) {
+      setStorageItem('theme', mode);
+      const htmlElement = document.documentElement;
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      htmlElement.removeAttribute('data-theme');
+      if (mode === 'dark' || (mode === 'auto' && prefersDark)) {
+        htmlElement.setAttribute('data-theme', 'dark');
+        document.body.dataset.theme = 'dark';
+      } else {
+        htmlElement.setAttribute('data-theme', 'light');
+        document.body.dataset.theme = 'light';
+      }
+      const themeToggle = document.querySelector('.theme-toggle');
+      if (themeToggle) {
+        themeToggle.classList.remove('theme-light', 'theme-dark', 'theme-auto');
+        themeToggle.classList.add(`theme-${mode}`);
+        this.updateThemeTooltip(themeToggle, mode);
+      }
+      this.updateHamburgerThemeIcon();
+      this.updatePopoverActiveStates(mode, getStorageItem('theme_preset') || 'default');
+    }
+
+    setThemePreset(preset) {
+      setPreset(preset);
+      this.updatePopoverActiveStates(getStorageItem('theme') || 'auto', preset);
+      this.updateHamburgerThemeIcon();
+    }
+
+    updatePopoverActiveStates(theme, preset) {
+      const popover = document.getElementById('themePopover');
+      if (!popover) return;
+
+      popover.querySelectorAll('.theme-mode-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.mode === theme);
+      });
+
+      popover.querySelectorAll('.theme-preset-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.preset === preset);
+      });
     }
 
     initializeHamburgerMenu() {
@@ -188,7 +253,6 @@ export class HeaderManager {
         case 'theme':
           if (typeof toggleTheme === 'function') {
             const newTheme = toggleTheme();
-            // Update theme toggle in header if it exists
             const themeToggle = document.querySelector('.theme-toggle');
             if (themeToggle) {
               themeToggle.classList.remove('theme-light', 'theme-dark', 'theme-auto');
@@ -196,6 +260,7 @@ export class HeaderManager {
               this.updateThemeTooltip(themeToggle, newTheme);
             }
             this.updateHamburgerThemeIcon();
+            this.updatePopoverActiveStates(newTheme, getStorageItem('theme_preset') || 'default');
           }
           break;
         case 'settings':

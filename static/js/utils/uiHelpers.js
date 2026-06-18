@@ -197,11 +197,17 @@ export function restoreFolderFilter() {
   }
 }
 
+const CYCLE_ORDER = ['auto', 'light', 'dark'];
+const PRESET_NAMES = ['default', 'nord', 'gruvbox', 'monokai', 'dracula', 'solarized'];
+
+export { CYCLE_ORDER, PRESET_NAMES };
+
 export function initTheme() {
   const savedTheme = getStorageItem('theme') || 'auto';
+  const savedPreset = getStorageItem('theme_preset') || 'default';
   applyTheme(savedTheme);
+  applyPreset(savedPreset);
 
-  // Update theme when system preference changes (for 'auto' mode)
   window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
     const currentTheme = getStorageItem('theme') || 'auto';
     if (currentTheme === 'auto') {
@@ -212,34 +218,44 @@ export function initTheme() {
 
 export function toggleTheme() {
   const currentTheme = getStorageItem('theme') || 'auto';
-  let newTheme;
-
-  if (currentTheme === 'light') {
-    newTheme = 'dark';
-  } else {
-    newTheme = 'light';
-  }
+  const currentIndex = CYCLE_ORDER.indexOf(currentTheme);
+  const nextIndex = (currentIndex + 1) % CYCLE_ORDER.length;
+  const newTheme = CYCLE_ORDER[nextIndex];
 
   setStorageItem('theme', newTheme);
   applyTheme(newTheme);
 
-  // Force a repaint to ensure theme changes are applied immediately
   document.body.style.display = 'none';
-  document.body.offsetHeight; // Trigger a reflow
+  document.body.offsetHeight;
   document.body.style.display = '';
 
   return newTheme;
 }
 
-// Add a new helper function to apply the theme
+export function cyclePreset() {
+  const currentPreset = getStorageItem('theme_preset') || 'default';
+  const currentIndex = PRESET_NAMES.indexOf(currentPreset);
+  const nextIndex = (currentIndex + 1) % PRESET_NAMES.length;
+  const newPreset = PRESET_NAMES[nextIndex];
+
+  setStorageItem('theme_preset', newPreset);
+  applyPreset(newPreset);
+
+  return newPreset;
+}
+
+export function setPreset(name) {
+  if (!PRESET_NAMES.includes(name)) return;
+  setStorageItem('theme_preset', name);
+  applyPreset(name);
+}
+
 function applyTheme(theme) {
   const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
   const htmlElement = document.documentElement;
 
-  // Remove any existing theme attributes
   htmlElement.removeAttribute('data-theme');
 
-  // Apply the appropriate theme
   if (theme === 'dark' || (theme === 'auto' && prefersDark)) {
     htmlElement.setAttribute('data-theme', 'dark');
     document.body.dataset.theme = 'dark';
@@ -248,19 +264,18 @@ function applyTheme(theme) {
     document.body.dataset.theme = 'light';
   }
 
-  // Update the theme-toggle icon state
   updateThemeToggleIcons(theme);
 }
 
-// New function to update theme toggle icons
+function applyPreset(preset) {
+  document.documentElement.setAttribute('data-theme-preset', preset);
+}
+
 function updateThemeToggleIcons(theme) {
   const themeToggle = document.querySelector('.theme-toggle');
   if (!themeToggle) return;
 
-  // Remove any existing active classes
   themeToggle.classList.remove('theme-light', 'theme-dark', 'theme-auto');
-
-  // Add the appropriate class based on current theme
   themeToggle.classList.add(`theme-${theme}`);
 }
 

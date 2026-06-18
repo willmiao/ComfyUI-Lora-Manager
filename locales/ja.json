@@ -251,7 +251,18 @@
             "toggle": "テーマの切り替え",
             "switchToLight": "ライトテーマに切り替え",
             "switchToDark": "ダークテーマに切り替え",
-            "switchToAuto": "自動テーマに切り替え"
+            "switchToAuto": "自動テーマに切り替え",
+            "presets": "テーマプリセット",
+            "default": "デフォルト",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "モード",
+            "light": "ライト",
+            "dark": "ダーク",
+            "auto": "自動"
         },
         "actions": {
             "checkUpdates": "更新確認",

@@ -251,7 +251,18 @@
             "toggle": "테마 토글",
             "switchToLight": "라이트 테마로 전환",
             "switchToDark": "다크 테마로 전환",
-            "switchToAuto": "자동 테마로 전환"
+            "switchToAuto": "자동 테마로 전환",
+            "presets": "테마 프리셋",
+            "default": "기본",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "모드",
+            "light": "라이트",
+            "dark": "다크",
+            "auto": "자동"
         },
         "actions": {
             "checkUpdates": "업데이트 확인",

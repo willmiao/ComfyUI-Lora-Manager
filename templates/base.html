@@ -46,15 +46,19 @@
     </script>
     <script>
       (function() {
-        // Apply theme immediately based on stored preference
-        const STORAGE_PREFIX = 'lora_manager_';
-        const savedTheme = localStorage.getItem(STORAGE_PREFIX + 'theme') || 'auto';
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var STORAGE_PREFIX = 'lora_manager_';
+        var savedTheme = localStorage.getItem(STORAGE_PREFIX + 'theme') || 'auto';
+        var savedPreset = localStorage.getItem(STORAGE_PREFIX + 'theme_preset') || 'default';
+        var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         
         if (savedTheme === 'dark' || (savedTheme === 'auto' && prefersDark)) {
           document.documentElement.setAttribute('data-theme', 'dark');
         } else {
           document.documentElement.setAttribute('data-theme', 'light');
+        }
+
+        if (savedPreset && savedPreset !== 'default') {
+          document.documentElement.setAttribute('data-theme-preset', savedPreset);
         }
       })();
     </script>

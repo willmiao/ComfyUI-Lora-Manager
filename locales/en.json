@@ -251,7 +251,18 @@
             "toggle": "Toggle theme",
             "switchToLight": "Switch to light theme",
             "switchToDark": "Switch to dark theme",
-            "switchToAuto": "Switch to auto theme"
+            "switchToAuto": "Switch to auto theme",
+            "presets": "Theme Presets",
+            "default": "Default",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "Mode",
+            "light": "Light",
+            "dark": "Dark",
+            "auto": "Auto"
         },
         "actions": {
             "checkUpdates": "Check Updates",

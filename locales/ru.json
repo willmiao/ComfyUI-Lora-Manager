@@ -251,7 +251,18 @@
             "toggle": "Переключить тему",
             "switchToLight": "Переключить на светлую тему",
             "switchToDark": "Переключить на тёмную тему",
-            "switchToAuto": "Переключить на автоматическую тему"
+            "switchToAuto": "Переключить на автоматическую тему",
+            "presets": "Предустановки тем",
+            "default": "По умолчанию",
+            "nord": "Nord",
+            "gruvbox": "Gruvbox",
+            "monokai": "Monokai",
+            "dracula": "Dracula",
+            "solarized": "Solarized",
+            "mode": "Режим",
+            "light": "Светлый",
+            "dark": "Тёмный",
+            "auto": "Авто"
         },
         "actions": {
             "checkUpdates": "Проверить обновления",
