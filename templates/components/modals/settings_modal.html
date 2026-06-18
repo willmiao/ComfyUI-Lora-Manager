@@ -103,7 +103,6 @@
                                         <input type="password" 
                                             id="civitaiApiKey" 
                                             placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
-                                            value="{{ settings.get('civitai_api_key', '') }}"
                                             autocomplete="new-password"
                                             onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
                                             onkeydown="if(event.key === 'Enter') { this.blur(); }" />

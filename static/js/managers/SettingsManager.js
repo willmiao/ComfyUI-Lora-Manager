@@ -344,9 +344,14 @@ export class SettingsManager {
                     if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
                         this.isOpen = settingsModal.style.display === 'block';
 
-                        // When modal is opened, update checkbox state from current settings
                         if (this.isOpen) {
                             this.loadSettingsToUI();
+                        } else {
+                            // Clear sensitive fields on close to prevent browser save-password prompts
+                            const apiKeyInput = document.getElementById('civitaiApiKey');
+                            if (apiKeyInput) apiKeyInput.value = '';
+                            const proxyPasswordInput = document.getElementById('proxyPassword');
+                            if (proxyPasswordInput) proxyPasswordInput.value = '';
                         }
                     }
                 });
@@ -818,6 +823,11 @@ export class SettingsManager {
         const usePortableCheckbox = document.getElementById('usePortableSettings');
         if (usePortableCheckbox) {
             usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
+        }
+
+        const civitaiApiKeyInput = document.getElementById('civitaiApiKey');
+        if (civitaiApiKeyInput) {
+            civitaiApiKeyInput.value = state.global.settings.civitai_api_key || '';
         }
 
         const civitaiHostSelect = document.getElementById('civitaiHost');
