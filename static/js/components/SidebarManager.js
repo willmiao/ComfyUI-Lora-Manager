@@ -1040,7 +1040,15 @@ export class SidebarManager {
             <span class="sidebar-hidden-indicator-tooltip">${translate('sidebar.showSidebar')}</span>
         `;
 
+        // Subtle breathing animation on first sight to aid discoverability;
+        // stops permanently after user clicks the restore button once
+        const restoreKey = `${this.pageType}_restoreButtonUsed`;
+        if (!getStorageItem(restoreKey, false)) {
+            indicator.classList.add('breathing');
+        }
+
         indicator.addEventListener('click', () => {
+            setStorageItem(restoreKey, true);
             this.toggleHideOnThisPage();
         });
 

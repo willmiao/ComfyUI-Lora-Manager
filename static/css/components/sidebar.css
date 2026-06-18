@@ -114,8 +114,7 @@
 .sidebar-hidden-indicator {
     position: fixed;
     left: 0;
-    top: 50%;
-    transform: translateY(-50%);
+    top: 68px; /* Align with sidebar header */
     z-index: var(--z-overlay);
     width: 14px;
     height: 44px;
@@ -142,6 +141,21 @@
 
 .sidebar-hidden-indicator:hover i {
     color: white;
+}
+
+/* Subtle breathing animation for first-time discovery */
+@keyframes sidebarBreathing {
+    0%, 100% { opacity: 0.3; }
+    50%      { opacity: 0.65; }
+}
+
+.sidebar-hidden-indicator.breathing {
+    animation: sidebarBreathing 2.5s ease-in-out infinite;
+    animation-delay: 0.5s;
+}
+
+.sidebar-hidden-indicator.breathing:hover {
+    animation: none;
 }
 
 .sidebar-hidden-indicator-tooltip {
