@@ -5,10 +5,10 @@
     position: sticky; /* Keep the sticky position */
     top: var(--space-1);
     width: 100%;
-    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1); /* Use accent color with low opacity */
+    background-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.1); /* Use accent color with low opacity */
     color: var(--text-color);
-    border-top: 1px solid oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.3); /* Add top border with accent color */
-    border-bottom: 1px solid oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.4); /* Make bottom border stronger */
+    border-top: 1px solid oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.3); /* Add top border with accent color */
+    border-bottom: 1px solid oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.4); /* Make bottom border stronger */
     z-index: var(--z-overlay);
     padding: 12px 0;
     box-shadow: var(--shadow-lg); /* Stronger shadow */
@@ -41,7 +41,7 @@
 
 .duplicates-banner i.fa-exclamation-triangle {
     font-size: 18px;
-    color: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    color: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
 }
 
 .duplicates-banner .banner-actions {
@@ -70,7 +70,7 @@
 
 .duplicates-banner button.btn-exit-mode:hover {
     background-color: var(--bg-color);
-    border-color: var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h);
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     transform: translateY(-1px);
 }
 
@@ -92,7 +92,7 @@
 }
 
 .duplicates-banner button:hover {
-    border-color: var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h);
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     background: var(--bg-color);
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
@@ -117,7 +117,7 @@
 /* Duplicate groups */
 .duplicate-group {
     position: relative;
-    border: 2px solid oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    border: 2px solid oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
     border-radius: var(--border-radius-base);
     padding: 16px;
     margin-bottom: 24px;
@@ -152,7 +152,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-left: 4px solid oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h)); /* Add accent border on the left */
+    border-left: 4px solid oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h)); /* Add accent border on the left */
 }
 
 .duplicate-group-header span:last-child {
@@ -180,7 +180,7 @@
 }
 
 .duplicate-group-header button:hover {
-    border-color: var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h);
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     background: var(--bg-color);
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
@@ -235,7 +235,7 @@
 }
 
 .group-toggle-btn:hover {
-    border-color: var(--lora-accent-l) var(--lora-accent-c) var (--lora-accent-h);
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
 }
@@ -247,16 +247,16 @@
 }
 
 .model-card.duplicate:hover {
-    border-color: var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h);
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
 }
 
 .model-card.duplicate.latest {
     border-style: solid;
-    border-color: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    border-color: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
 }
 
 .model-card.duplicate-selected {
-    border: 2px solid oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
+    border: 2px solid oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     box-shadow: var(--shadow-md);
 }
 
@@ -276,7 +276,7 @@
     position: absolute;
     top: 10px;
     left: 10px;
-    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
+    background: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     color: white;
     font-size: 12px;
     padding: 2px 6px;
@@ -328,7 +328,7 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px dashed var(--border-color);
-    color: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    color: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
     font-weight: bold;
     word-break: break-all; /* Ensure long hashes wrap properly */
 }
@@ -351,12 +351,12 @@
 }
 
 .verification-badge.verified {
-    background-color: oklch(70% 0.2 140); /* Green for verified */
+    background-color: var(--color-success); /* Green for verified */
     color: white;
 }
 
 .verification-badge.mismatch {
-    background-color: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    background-color: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
     color: white;
 }
 
@@ -366,7 +366,7 @@
 
 /* Hash Mismatch Styling */
 .model-card.duplicate.hash-mismatch {
-    border: 2px dashed oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    border: 2px dashed oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
     opacity: 0.85;
     position: relative;
 }
@@ -380,8 +380,8 @@
     bottom: 0;
     background: repeating-linear-gradient(
         45deg,
-        oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h) / 0.05),
-        oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h) / 0.05) 10px,
+        oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.05),
+        oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h) / 0.05) 10px,
         transparent 10px,
         transparent 20px
     );
@@ -398,7 +398,7 @@
     position: absolute;
     top: 10px;
     left: 10px; /* Changed from right:10px to left:10px */
-    background: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    background: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
     color: white;
     font-size: 12px;
     padding: 3px 8px;
@@ -417,7 +417,7 @@
     margin-top: 8px;
     padding-top: 8px;
     border-top: 1px dashed var(--border-color);
-    color: oklch(var(--lora-warning-l) var(--lora-warning-c) var(--lora-warning-h));
+    color: oklch(var(--color-warning-l) var(--color-warning-c) var(--color-warning-h));
     font-weight: bold;
 }
 
@@ -437,7 +437,7 @@
 
 .btn-verify-hashes:hover {
     background: var(--bg-color);
-    border-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
+    border-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
     transform: translateY(-1px);
 }
 
@@ -498,7 +498,7 @@
 
 .help-icon:hover {
     opacity: 1;
-    color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h));
+    color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h));
 }
 
 /* Help tooltip */
@@ -573,7 +573,7 @@
 /* In dark mode, add additional distinction */
 html[data-theme="dark"] .duplicates-banner {
     box-shadow: var(--shadow-dark-lg); /* Stronger shadow in dark mode */
-    background-color: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15); /* Slightly stronger background in dark mode */
+    background-color: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.15); /* Slightly stronger background in dark mode */
 }
 
 html[data-theme="dark"] .duplicate-group {
@@ -598,11 +598,11 @@ html[data-theme="dark"] .help-tooltip {
     background: var(--lora-accent);
     color: white;
     border-color: var(--lora-accent);
-    box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.25);
+    box-shadow: 0 0 0 2px oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.25);
     position: relative;
     z-index: 5;
 }
 
 #findDuplicatesBtn.active:hover {
-    background: oklch(calc(var(--lora-accent-l) - 5%) var(--lora-accent-c) var(--lora-accent-h));
+    background: oklch(calc(var(--color-accent-l) - 5%) var(--color-accent-c) var(--color-accent-h));
 }
