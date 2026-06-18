@@ -72,55 +72,6 @@
           <i class="fas fa-moon dark-icon"></i>
           <i class="fas fa-sun light-icon"></i>
           <i class="fas fa-adjust auto-icon"></i>
-          <div class="theme-popover" id="themePopover">
-            <div class="theme-popover-section">
-              <div class="theme-popover-label">{{ t('header.theme.mode') }}</div>
-              <div class="theme-popover-modes">
-                <button class="theme-mode-btn" data-mode="light" title="{{ t('header.theme.light') }}">
-                  <i class="fas fa-sun"></i>
-                  <span>{{ t('header.theme.light') }}</span>
-                </button>
-                <button class="theme-mode-btn" data-mode="dark" title="{{ t('header.theme.dark') }}">
-                  <i class="fas fa-moon"></i>
-                  <span>{{ t('header.theme.dark') }}</span>
-                </button>
-                <button class="theme-mode-btn" data-mode="auto" title="{{ t('header.theme.auto') }}">
-                  <i class="fas fa-adjust"></i>
-                  <span>{{ t('header.theme.auto') }}</span>
-                </button>
-              </div>
-            </div>
-            <div class="theme-popover-divider"></div>
-            <div class="theme-popover-section">
-              <div class="theme-popover-label">{{ t('header.theme.presets') }}</div>
-              <div class="theme-popover-presets">
-                <button class="theme-preset-btn" data-preset="default" title="{{ t('header.theme.default') }}">
-                  <span class="preset-swatch preset-swatch-default"></span>
-                  <span>{{ t('header.theme.default') }}</span>
-                </button>
-                <button class="theme-preset-btn" data-preset="nord" title="{{ t('header.theme.nord') }}">
-                  <span class="preset-swatch preset-swatch-nord"></span>
-                  <span>{{ t('header.theme.nord') }}</span>
-                </button>
-                <button class="theme-preset-btn" data-preset="midnight" title="{{ t('header.theme.midnight') }}">
-                  <span class="preset-swatch preset-swatch-midnight"></span>
-                  <span>{{ t('header.theme.midnight') }}</span>
-                </button>
-                <button class="theme-preset-btn" data-preset="monokai" title="{{ t('header.theme.monokai') }}">
-                  <span class="preset-swatch preset-swatch-monokai"></span>
-                  <span>{{ t('header.theme.monokai') }}</span>
-                </button>
-                <button class="theme-preset-btn" data-preset="dracula" title="{{ t('header.theme.dracula') }}">
-                  <span class="preset-swatch preset-swatch-dracula"></span>
-                  <span>{{ t('header.theme.dracula') }}</span>
-                </button>
-                <button class="theme-preset-btn" data-preset="solarized" title="{{ t('header.theme.solarized') }}">
-                  <span class="preset-swatch preset-swatch-solarized"></span>
-                  <span>{{ t('header.theme.solarized') }}</span>
-                </button>
-              </div>
-            </div>
-          </div>
         </div>
         <div class="settings-toggle" title="{{ t('common.actions.settings') }}">
           <i class="fas fa-cog"></i>
@@ -168,6 +119,56 @@
     </div>
   </div>
 </header>
+
+<div class="theme-popover" id="themePopover" role="dialog" aria-label="{{ t('header.theme.toggle') }}">
+  <div class="theme-popover-section">
+    <div class="theme-popover-label">{{ t('header.theme.mode') }}</div>
+    <div class="theme-popover-modes">
+      <button class="theme-mode-btn" data-mode="light" title="{{ t('header.theme.light') }}">
+        <i class="fas fa-sun"></i>
+        <span>{{ t('header.theme.light') }}</span>
+      </button>
+      <button class="theme-mode-btn" data-mode="dark" title="{{ t('header.theme.dark') }}">
+        <i class="fas fa-moon"></i>
+        <span>{{ t('header.theme.dark') }}</span>
+      </button>
+      <button class="theme-mode-btn" data-mode="auto" title="{{ t('header.theme.auto') }}">
+        <i class="fas fa-adjust"></i>
+        <span>{{ t('header.theme.auto') }}</span>
+      </button>
+    </div>
+  </div>
+  <div class="theme-popover-divider"></div>
+  <div class="theme-popover-section">
+    <div class="theme-popover-label">{{ t('header.theme.presets') }}</div>
+    <div class="theme-popover-presets">
+      <button class="theme-preset-btn" data-preset="default" title="{{ t('header.theme.default') }}">
+        <span class="preset-swatch preset-swatch-default"></span>
+        <span>{{ t('header.theme.default') }}</span>
+      </button>
+      <button class="theme-preset-btn" data-preset="nord" title="{{ t('header.theme.nord') }}">
+        <span class="preset-swatch preset-swatch-nord"></span>
+        <span>{{ t('header.theme.nord') }}</span>
+      </button>
+      <button class="theme-preset-btn" data-preset="midnight" title="{{ t('header.theme.midnight') }}">
+        <span class="preset-swatch preset-swatch-midnight"></span>
+        <span>{{ t('header.theme.midnight') }}</span>
+      </button>
+      <button class="theme-preset-btn" data-preset="monokai" title="{{ t('header.theme.monokai') }}">
+        <span class="preset-swatch preset-swatch-monokai"></span>
+        <span>{{ t('header.theme.monokai') }}</span>
+      </button>
+      <button class="theme-preset-btn" data-preset="dracula" title="{{ t('header.theme.dracula') }}">
+        <span class="preset-swatch preset-swatch-dracula"></span>
+        <span>{{ t('header.theme.dracula') }}</span>
+      </button>
+      <button class="theme-preset-btn" data-preset="solarized" title="{{ t('header.theme.solarized') }}">
+        <span class="preset-swatch preset-swatch-solarized"></span>
+        <span>{{ t('header.theme.solarized') }}</span>
+      </button>
+    </div>
+  </div>
+</div>
 
 <!-- Add search options panel with context-aware options -->
 <div id="searchOptionsPanel" class="search-options-panel hidden">

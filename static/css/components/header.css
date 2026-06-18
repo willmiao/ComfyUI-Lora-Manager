@@ -329,16 +329,14 @@
 
 .theme-popover {
   display: none;
-  position: absolute;
-  top: calc(100% + 8px);
-  right: -8px;
+  position: fixed;
   background: var(--surface-base, #ffffff);
   border: 1px solid var(--border-base, #e0e0e0);
   border-radius: var(--radius-md, 8px);
   box-shadow: var(--shadow-xl, 0 4px 16px rgba(0, 0, 0, 0.15));
   padding: 12px;
   min-width: 220px;
-  z-index: var(--z-dropdown, 200);
+  z-index: calc(var(--z-overlay) + 1);
   animation: theme-popover-in 0.15s ease-out;
 }
 

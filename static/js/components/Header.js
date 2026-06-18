@@ -121,11 +121,11 @@ export class HeaderManager {
       this.updatePopoverActiveStates(currentTheme, currentPreset);
 
       themeToggle.addEventListener('click', (e) => {
-        if (e.target.closest('.theme-popover')) return;
         e.stopPropagation();
         const isOpen = themePopover.classList.contains('active');
         this.closeAllPopovers();
         if (!isOpen) {
+          this.positionThemePopover();
           themePopover.classList.add('active');
         }
       });
@@ -149,6 +149,13 @@ export class HeaderManager {
           themePopover.classList.remove('active');
         }
       });
+
+      // Reposition on resize while popover is active
+      window.addEventListener('resize', () => {
+        if (themePopover.classList.contains('active')) {
+          this.positionThemePopover();
+        }
+      });
     }
 
     closeAllPopovers() {
@@ -156,6 +163,17 @@ export class HeaderManager {
       if (themePopover) {
         themePopover.classList.remove('active');
       }
+    }
+
+    positionThemePopover() {
+      const themeToggle = document.querySelector('.theme-toggle');
+      const themePopover = document.getElementById('themePopover');
+      if (!themeToggle || !themePopover) return;
+      const rect = themeToggle.getBoundingClientRect();
+      // Guard: toggle may be hidden on narrow viewports (≤950px CSS hides .header-controls)
+      if (rect.width === 0 || rect.height === 0) return;
+      themePopover.style.top = (rect.bottom + 8) + 'px';
+      themePopover.style.right = (window.innerWidth - rect.right - 8) + 'px';
     }
 
     setThemeMode(mode) {
