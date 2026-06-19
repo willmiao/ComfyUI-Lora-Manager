@@ -901,6 +901,55 @@ class LoraLoaderManagerExtractor(NodeMetadataExtractor):
                 "node_id": node_id
             }
 
+class LoraTextLoaderManagerExtractor(NodeMetadataExtractor):
+    """Extract LoRA metadata from LoraTextLoaderLM (LoRA Text Loader).
+
+    The node accepts a `lora_syntax` STRING containing <lora:name:strength> tags
+    (same format as the ComfyUI prompt), plus an optional `lora_stack`.
+    This extractor parses the syntax string using the same regex as the node.
+    """
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        active_loras = []
+
+        # Process lora_stack if available (optional input)
+        if "lora_stack" in inputs:
+            lora_stack = inputs.get("lora_stack", [])
+            for item in lora_stack:
+                # lora_stack entries are (path, model_strength, clip_strength) tuples
+                if isinstance(item, (list, tuple)) and len(item) >= 2:
+                    lora_path = item[0]
+                    model_strength = item[1]
+                    lora_name = os.path.splitext(os.path.basename(lora_path))[0]
+                    active_loras.append({
+                        "name": lora_name,
+                        "strength": round(float(model_strength), 2)
+                    })
+
+        # Process lora_syntax string input
+        if "lora_syntax" in inputs:
+            lora_syntax = inputs.get("lora_syntax", "")
+            if lora_syntax and isinstance(lora_syntax, str):
+                pattern = r"<lora:([^:>]+):([^:>]+)(?::([^:>]+))?>"
+                matches = re.findall(pattern, lora_syntax, re.IGNORECASE)
+                for match in matches:
+                    lora_name = match[0]
+                    model_strength = float(match[1])
+                    active_loras.append({
+                        "name": lora_name,
+                        "strength": round(model_strength, 2)
+                    })
+
+        if active_loras:
+            metadata[LORAS][node_id] = {
+                "lora_list": active_loras,
+                "node_id": node_id
+            }
+
+
 class FluxGuidanceExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -1146,6 +1195,7 @@ NODE_EXTRACTORS = {
     "UNETLoaderLM": UNETLoaderExtractor,  # LoRA Manager
     "LoraLoader": LoraLoaderExtractor,
     "LoraLoaderLM": LoraLoaderManagerExtractor,
+    "LoraTextLoaderLM": LoraTextLoaderManagerExtractor,
     "RgthreePowerLoraLoader": RgthreePowerLoraLoaderExtractor,
     "TensorRTLoader": TensorRTLoaderExtractor,
     # Conditioning

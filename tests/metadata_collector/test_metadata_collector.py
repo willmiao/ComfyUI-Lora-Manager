@@ -733,6 +733,65 @@ def test_lora_manager_cache_updates_when_loras_removed(metadata_registry):
     assert "lora_node" not in metadata[LORAS]
 
 
+def test_lora_text_loader_extracts_loras_from_syntax(metadata_registry):
+    """LoraTextLoaderLM extractor parses <lora:name:strength> tags from lora_syntax string."""
+    metadata_registry.start_collection("prompt1")
+
+    metadata_registry.record_node_execution(
+        "text_loader",
+        "LoraTextLoaderLM",
+        {"lora_syntax": ["<lora:foo:0.8> <lora:bar:1.0>"]},
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt1")
+
+    assert "text_loader" in metadata[LORAS]
+    lora_list = metadata[LORAS]["text_loader"]["lora_list"]
+    assert len(lora_list) == 2
+    assert lora_list[0] == {"name": "foo", "strength": 0.8}
+    assert lora_list[1] == {"name": "bar", "strength": 1.0}
+
+
+def test_lora_text_loader_extracts_loras_from_lora_stack(metadata_registry):
+    """LoraTextLoaderLM extractor also processes the optional lora_stack input."""
+    metadata_registry.start_collection("prompt1")
+
+    metadata_registry.record_node_execution(
+        "stack_loader",
+        "LoraTextLoaderLM",
+        {
+            "lora_syntax": [""],
+            "lora_stack": (("/models/loras/my-lora.safetensors", 0.6, 0.5),),
+        },
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt1")
+
+    assert "stack_loader" in metadata[LORAS]
+    lora_list = metadata[LORAS]["stack_loader"]["lora_list"]
+    assert len(lora_list) == 1
+    assert lora_list[0] == {"name": "my-lora", "strength": 0.6}
+
+
+def test_lora_text_loader_handles_empty_syntax(metadata_registry):
+    """LoraTextLoaderLM extractor produces no metadata when no loras are provided."""
+    metadata_registry.start_collection("prompt1")
+
+    metadata_registry.record_node_execution(
+        "empty_loader",
+        "LoraTextLoaderLM",
+        {"lora_syntax": [""]},
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt1")
+
+    assert "empty_loader" not in metadata[LORAS]
+
+
+
 def test_lora_manager_checkpoint_and_unet_loaders_extract_models(metadata_registry):
     metadata_registry.start_collection("prompt1")
 
