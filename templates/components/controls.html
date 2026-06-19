@@ -1,4 +1,5 @@
 <div class="controls">
+    {% if page_id != 'recipes' %}
     <div id="excludedViewBanner" class="excluded-view-banner hidden">
         <div class="excluded-view-banner__content">
             <div class="excluded-view-banner__title">
@@ -11,42 +12,52 @@
             </button>
         </div>
     </div>
+    {% endif %}
     <div class="actions">
         <div class="action-buttons">
-            <div title="{{ t('loras.controls.sort.title') }}" class="control-group">
+            <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.sort.title') }}{% else %}{{ t('loras.controls.sort.title') }}{% endif %}" class="control-group">
                 <select id="sortSelect">
                     <optgroup label="{{ t('loras.controls.sort.name') }}">
                         <option value="name:asc">{{ t('loras.controls.sort.nameAsc') }}</option>
                         <option value="name:desc">{{ t('loras.controls.sort.nameDesc') }}</option>
                     </optgroup>
-                    <optgroup label="{{ t('loras.controls.sort.date') }}">
+                    <optgroup label="{% if page_id == 'recipes' %}{{ t('recipes.controls.sort.date') }}{% else %}{{ t('loras.controls.sort.date') }}{% endif %}">
                         <option value="date:desc">{{ t('loras.controls.sort.dateDesc') }}</option>
                         <option value="date:asc">{{ t('loras.controls.sort.dateAsc') }}</option>
                     </optgroup>
+                    {% if page_id != 'recipes' %}
                     <optgroup label="{{ t('loras.controls.sort.size') }}">
                         <option value="size:desc">{{ t('loras.controls.sort.sizeDesc') }}</option>
                         <option value="size:asc">{{ t('loras.controls.sort.sizeAsc') }}</option>
                     </optgroup>
-                    {% if page_id != 'embeddings' %}
+                    {% endif %}
+                    {% if page_id != 'embeddings' and page_id != 'recipes' %}
                         <optgroup label="{{ t('loras.controls.sort.usage', default='Usage') }}">
                             <option value="usage:desc">{{ t('loras.controls.sort.usageDesc', default='Times used (high to low)') }}</option>
                             <option value="usage:asc">{{ t('loras.controls.sort.usageAsc', default='Times used (low to high)') }}</option>
                         </optgroup>
                     {% endif %}
+                    {% if page_id == 'recipes' %}
+                        <optgroup label="{{ t('recipes.controls.sort.lorasCount') }}">
+                            <option value="loras_count:desc">{{ t('recipes.controls.sort.lorasCountDesc') }}</option>
+                            <option value="loras_count:asc">{{ t('recipes.controls.sort.lorasCountAsc') }}</option>
+                        </optgroup>
+                    {% endif %}
                 </select>
             </div>
-            <div title="{{ t('loras.controls.refresh.title') }}" class="control-group dropdown-group">
+            <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.title') }}{% else %}{{ t('loras.controls.refresh.title') }}{% endif %}" class="control-group dropdown-group">
                 <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span>{{ t('common.actions.refresh') }}</span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">
                     <i class="fas fa-caret-down"></i>
                 </button>
                 <div class="dropdown-menu">
-                    <div class="dropdown-item" data-action="full-rebuild" title="{{ t('loras.controls.refresh.fullTooltip') }}">
-                        <i class="fas fa-tools"></i> <span>{{ t('loras.controls.refresh.full') }}</span>
+                    <div class="dropdown-item" data-action="full-rebuild" title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.fullTooltip', default='Rebuild cache - full rescan of all recipe files') }}{% else %}{{ t('loras.controls.refresh.fullTooltip') }}{% endif %}">
+                        <i class="fas fa-tools"></i> <span>{% if page_id == 'recipes' %}{{ t('loras.controls.refresh.full', default='Rebuild Cache') }}{% else %}{{ t('loras.controls.refresh.full') }}{% endif %}</span>
                     </div>
                 </div>
             </div>
             
+            {% if page_id != 'recipes' %}
             <div class="control-group">
                 <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><i class="fas fa-download"></i> <span>{{ t('loras.controls.fetch.action') }}</span></button>
             </div>
@@ -55,6 +66,15 @@
                     <i class="fas fa-cloud-download-alt"></i> <span>{{ t('loras.controls.download.action') }}</span>
                 </button>
             </div>
+            {% endif %}
+            {% if page_id == 'recipes' %}
+            <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
+                <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{ t('recipes.controls.import.action') }}</button>
+            </div>
+            <div title="{{ t('recipes.batchImport.title') }}" class="control-group">
+                <button onclick="batchImportManager.showModal()"><i class="fas fa-layer-group"></i> {{ t('recipes.batchImport.action') }}</button>
+            </div>
+            {% endif %}
             <div class="control-group">
                 <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
                     <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span> <div class="shortcut-key">B</div></span>
@@ -71,6 +91,7 @@
                     <i class="fas fa-star"></i> <span>{{ t('loras.controls.favorites.action') }}</span>
                 </button>
             </div>
+            {% if page_id != 'recipes' %}
             <div class="control-group dropdown-group update-filter-group">
                 <button id="updateFilterBtn" data-action="toggle-updates" class="dropdown-main update-filter" title="{{ t('loras.controls.updates.title') }}">
                     <i class="fas fa-exclamation-circle"></i> <span>{{ t('loras.controls.updates.action') }}</span>
@@ -84,6 +105,7 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
             <div id="customFilterIndicator" class="control-group hidden">
                 <div class="filter-active">
                     <i class="fas fa-filter"></i> <span class="customFilterText" title=""></span>

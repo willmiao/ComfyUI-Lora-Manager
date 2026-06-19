@@ -62,91 +62,9 @@
 
 {% block content %}
 <!-- Recipe controls -->
-<div class="controls">
-    <div class="actions">
-        <div class="action-buttons">
-            <div class="control-group">
-                <select id="sortSelect" title="{{ t('recipes.controls.sort.title') }}">
-                    <optgroup label="{{ t('recipes.controls.sort.name') }}">
-                        <option value="name:asc">{{ t('recipes.controls.sort.nameAsc') }}</option>
-                        <option value="name:desc">{{ t('recipes.controls.sort.nameDesc') }}</option>
-                    </optgroup>
-                    <optgroup label="{{ t('recipes.controls.sort.date') }}">
-                        <option value="date:desc">{{ t('recipes.controls.sort.dateDesc') }}</option>
-                        <option value="date:asc">{{ t('recipes.controls.sort.dateAsc') }}</option>
-                    </optgroup>
-                    <optgroup label="{{ t('recipes.controls.sort.lorasCount') }}">
-                        <option value="loras_count:desc">{{ t('recipes.controls.sort.lorasCountDesc') }}</option>
-                        <option value="loras_count:asc">{{ t('recipes.controls.sort.lorasCountAsc') }}</option>
-                    </optgroup>
-                </select>
-            </div>
-            <div title="{{ t('recipes.controls.refresh.title') }}" class="control-group dropdown-group">
-                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span>{{
-                    t('common.actions.refresh') }}</span></button>
-                <button class="dropdown-toggle" aria-label="Show refresh options">
-                    <i class="fas fa-caret-down"></i>
-                </button>
-                <div class="dropdown-menu">
-                    <div class="dropdown-item" data-action="full-rebuild" title="{{ t('recipes.controls.refresh.fullTooltip', default='Rebuild cache - full rescan of all recipe files') }}">
-                        <i class="fas fa-tools"></i> <span>{{ t('loras.controls.refresh.full', default='Rebuild Cache') }}</span>
-                    </div>
-                </div>
-            </div>
-            <div title="{{ t('recipes.controls.import.title') }}" class="control-group">
-                <button onclick="importManager.showImportModal()"><i class="fas fa-file-import"></i> {{
-                    t('recipes.controls.import.action') }}</button>
-            </div>
-            <div title="{{ t('recipes.batchImport.title') }}" class="control-group">
-                <button onclick="batchImportManager.showModal()"><i class="fas fa-layer-group"></i> {{
-                    t('recipes.batchImport.action') }}</button>
-            </div>
-            <div class="control-group" title="{{ t('loras.controls.bulk.title') }}">
-                <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
-                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span>
-                        <div class="shortcut-key">B</div>
-                    </span>
-                </button>
-            </div>
-            <!-- Add duplicate detection button -->
-            <div title="{{ t('loras.controls.duplicates.title') }}" class="control-group">
-                <button onclick="recipeManager.findDuplicateRecipes()"><i class="fas fa-clone"></i> {{
-                    t('loras.controls.duplicates.action') }}</button>
-            </div>
-            <div class="control-group">
-                <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter"
-                    title="{{ t('recipes.controls.favorites.title') }}">
-                    <i class="fas fa-star"></i> <span>{{ t('recipes.controls.favorites.action') }}</span>
-                </button>
-            </div>
-            <!-- Custom filter indicator button (hidden by default) -->
-            <div id="customFilterIndicator" class="control-group hidden">
-                <div class="filter-active">
-                    <i class="fas fa-filter"></i> <span id="customFilterText">{{ t('recipes.controls.filteredByLora')
-                        }}</span>
-                    <i class="fas fa-times-circle clear-filter"></i>
-                </div>
-            </div>
-        </div>
-
-        <div class="controls-right">
-            <div class="control-group doctor-control-group">
-                <button id="doctorTriggerBtn" class="doctor-trigger" title="{{ t('doctor.buttonTitle', default='Run diagnostics and common fixes') }}">
-                    <i class="fas fa-stethoscope"></i>
-                    <span>{{ t('doctor.title', default='Doctor') }}</span>
-                    <span id="doctorStatusBadge" class="doctor-status-badge hidden" aria-hidden="true"></span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Breadcrumb Navigation -->
-    <div id="breadcrumbContainer" class="sidebar-breadcrumb-container">
-        <nav class="sidebar-breadcrumb-nav" id="sidebarBreadcrumbNav">
-            <!-- Breadcrumbs will be populated by JavaScript -->
-        </nav>
-    </div>
-</div>
+{% include 'components/controls.html' %}
+<!-- Breadcrumb Navigation -->
+{% include 'components/breadcrumb.html' %}
 
 <!-- Duplicates banner (hidden by default) -->
 <div id="duplicatesBanner" class="duplicates-banner" style="display: none;">
