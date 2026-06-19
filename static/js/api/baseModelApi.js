@@ -133,6 +133,16 @@ export class BaseModelApiClient {
             pageState.hasMore = result.hasMore;
             pageState.currentPage = pageState.currentPage + 1;
 
+            // When resetting to page 1, scroll back to the top
+            // This covers: folder selection, filter/sort/search changes,
+            // favorites/update/excluded view toggles, alphabet filter, etc.
+            if (resetPage) {
+                const scrollContainer = document.querySelector('.page-content');
+                if (scrollContainer) {
+                    scrollContainer.scrollTop = 0;
+                }
+            }
+
             if (updateFolders) {
                 sidebarManager.refresh();
             }

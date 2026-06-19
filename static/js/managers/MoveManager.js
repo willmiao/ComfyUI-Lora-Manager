@@ -321,29 +321,94 @@ class MoveManager {
         }
 
         try {
+            let movedFiles = []; // Array of { original_file_path, new_file_path }
+
             if (this.bulkFilePaths) {
                 // Bulk move mode
-                await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
-                
+                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
+                movedFiles = (results || [])
+                    .filter(r => r.success)
+                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
+
                 // Deselect moving items
                 this.bulkFilePaths.forEach(path => bulkManager.deselectItem(path));
             } else {
                 // Single move mode
-                await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
-                
+                const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
+                if (result) {
+                    movedFiles.push({
+                        original_file_path: result.original_file_path || this.currentFilePath,
+                        new_file_path: result.new_file_path
+                    });
+                }
+
                 // Deselect moving item
                 bulkManager.deselectItem(this.currentFilePath);
             }
 
-            // Refresh UI by reloading the current page, same as drag-and-drop behavior
-            // This ensures all metadata (like preview URLs) are correctly formatted by the backend
-            if (sidebarManager.pageControls && typeof sidebarManager.pageControls.resetAndReload === 'function') {
-                await sidebarManager.pageControls.resetAndReload(true);
-            } else if (sidebarManager.lastPageControls && typeof sidebarManager.lastPageControls.resetAndReload === 'function') {
-                await sidebarManager.lastPageControls.resetAndReload(true);
+            // Update VirtualScroller in-place instead of full reload
+            if (movedFiles.length > 0 && state.virtualScroller) {
+                // Get current page state for folder filter check
+                const pageState = getCurrentPageState();
+                const normalizedActive = (pageState.activeFolder || '').replace(/\\/g, '/').replace(/\/$/, '');
+                const isRecursive = pageState.searchOptions?.recursive ?? true;
+                const isFolderFiltered = pageState.activeFolder !== null;
+
+                // Determine which items are still visible after the move
+                const pathsToRemove = [];
+                const pathsToUpdate = []; // { originalPath, newData }
+
+                for (const moved of movedFiles) {
+                    if (!moved.original_file_path) continue;
+
+                    if (isFolderFiltered) {
+                        // Compute relative folder of the new path
+                        const newRelativeFolder = this._getRelativeFolder(moved.new_file_path);
+                        const normalizedNewFolder = newRelativeFolder.replace(/\\/g, '/').replace(/\/$/, '');
+
+                        // Check if the new location is still within the active folder
+                        let stillVisible;
+                        if (isRecursive) {
+                            stillVisible = normalizedActive === '' ||
+                                normalizedNewFolder === normalizedActive ||
+                                normalizedNewFolder.startsWith(normalizedActive + '/');
+                        } else {
+                            stillVisible = normalizedNewFolder === normalizedActive;
+                        }
+
+                        if (stillVisible) {
+                            pathsToUpdate.push({
+                                originalPath: moved.original_file_path,
+                                newData: {
+                                    file_path: moved.new_file_path,
+                                    folder: newRelativeFolder
+                                }
+                            });
+                        } else {
+                            pathsToRemove.push(moved.original_file_path);
+                        }
+                    } else {
+                        // No folder filter active — items remain visible, just update path
+                        pathsToUpdate.push({
+                            originalPath: moved.original_file_path,
+                            newData: {
+                                file_path: moved.new_file_path,
+                                folder: this._getRelativeFolder(moved.new_file_path)
+                            }
+                        });
+                    }
+                }
+
+                // Apply updates to the VirtualScroller
+                if (pathsToRemove.length > 0) {
+                    state.virtualScroller.removeMultipleItemsByFilePath(pathsToRemove);
+                }
+                for (const update of pathsToUpdate) {
+                    state.virtualScroller.updateSingleItem(update.originalPath, update.newData);
+                }
             }
 
-            // Refresh folder tree in sidebar
+            // Refresh folder tree in sidebar (no model data reload)
             await sidebarManager.refresh();
 
             modalManager.closeModal('moveModal');

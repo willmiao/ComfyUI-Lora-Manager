@@ -4,7 +4,7 @@
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { translate } from '../utils/i18nHelpers.js';
-import { state } from '../state/index.js';
+import { state, getCurrentPageState } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
@@ -457,20 +457,68 @@ export class SidebarManager {
 
         try {
             console.log('[SidebarManager] calling apiClient.move, useBulkMove:', useBulkMove);
+            let movedFiles = []; // Array of { original_file_path, new_file_path }
+
             if (useBulkMove) {
-                await this.apiClient.moveBulkModels(this.draggedFilePaths, destination);
+                const results = await this.apiClient.moveBulkModels(this.draggedFilePaths, destination);
+                movedFiles = (results || [])
+                    .filter(r => r.success)
+                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
             } else {
-                await this.apiClient.moveSingleModel(this.draggedFilePaths[0], destination);
+                const result = await this.apiClient.moveSingleModel(this.draggedFilePaths[0], destination);
+                if (result) {
+                    movedFiles.push({
+                        original_file_path: result.original_file_path || this.draggedFilePaths[0],
+                        new_file_path: result.new_file_path
+                    });
+                }
             }
             console.log('[SidebarManager] apiClient.move successful');
 
-            if (this.pageControls && typeof this.pageControls.resetAndReload === 'function') {
-                console.log('[SidebarManager] calling resetAndReload');
-                await this.pageControls.resetAndReload(true);
-            } else {
-                console.log('[SidebarManager] calling refresh');
-                await this.refresh();
+            // Update VirtualScroller in-place instead of full reload
+            if (movedFiles.length > 0 && state.virtualScroller) {
+                const pageState = getCurrentPageState();
+                const normalizedActive = (pageState.activeFolder || '').replace(/\\/g, '/').replace(/\/$/, '');
+                const isRecursive = pageState.searchOptions?.recursive ?? true;
+                const isFolderFiltered = pageState.activeFolder !== null;
+
+                const normalizedTarget = targetRelativePath.replace(/\\/g, '/').replace(/\/$/, '');
+
+                // Determine if items in the target folder are visible in the current view
+                let itemsRemainVisible = true;
+                if (isFolderFiltered) {
+                    if (isRecursive) {
+                        itemsRemainVisible = normalizedActive === '' ||
+                            normalizedTarget === normalizedActive ||
+                            normalizedTarget.startsWith(normalizedActive + '/');
+                    } else {
+                        itemsRemainVisible = normalizedTarget === normalizedActive;
+                    }
+                }
+
+                if (itemsRemainVisible) {
+                    // Items stay visible — update each item's file_path to reflect new location
+                    for (const moved of movedFiles) {
+                        if (moved.original_file_path && moved.new_file_path) {
+                            state.virtualScroller.updateSingleItem(moved.original_file_path, {
+                                file_path: moved.new_file_path,
+                                folder: normalizedTarget
+                            });
+                        }
+                    }
+                } else {
+                    // Items no longer visible in current folder — remove from VirtualScroller
+                    const pathsToRemove = movedFiles
+                        .map(m => m.original_file_path)
+                        .filter(Boolean);
+                    if (pathsToRemove.length > 0) {
+                        state.virtualScroller.removeMultipleItemsByFilePath(pathsToRemove);
+                    }
+                }
             }
+
+            // Refresh sidebar folder tree only (no model data reload)
+            await this.refresh();
 
             if (this.draggedFromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
                 bulkManager.toggleBulkMode();
@@ -530,20 +578,68 @@ export class SidebarManager {
 
         try {
             console.log('[SidebarManager] calling apiClient.move, useBulkMove:', useBulkMove);
+            let movedFiles = []; // Array of { original_file_path, new_file_path }
+
             if (useBulkMove) {
-                await this.apiClient.moveBulkModels(draggedFilePaths, destination);
+                const results = await this.apiClient.moveBulkModels(draggedFilePaths, destination);
+                movedFiles = (results || [])
+                    .filter(r => r.success)
+                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
             } else {
-                await this.apiClient.moveSingleModel(draggedFilePaths[0], destination);
+                const result = await this.apiClient.moveSingleModel(draggedFilePaths[0], destination);
+                if (result) {
+                    movedFiles.push({
+                        original_file_path: result.original_file_path || draggedFilePaths[0],
+                        new_file_path: result.new_file_path
+                    });
+                }
             }
             console.log('[SidebarManager] apiClient.move successful');
 
-            if (this.pageControls && typeof this.pageControls.resetAndReload === 'function') {
-                console.log('[SidebarManager] calling resetAndReload');
-                await this.pageControls.resetAndReload(true);
-            } else {
-                console.log('[SidebarManager] calling refresh');
-                await this.refresh();
+            // Update VirtualScroller in-place instead of full reload
+            if (movedFiles.length > 0 && state.virtualScroller) {
+                const pageState = getCurrentPageState();
+                const normalizedActive = (pageState.activeFolder || '').replace(/\\/g, '/').replace(/\/$/, '');
+                const isRecursive = pageState.searchOptions?.recursive ?? true;
+                const isFolderFiltered = pageState.activeFolder !== null;
+
+                const normalizedTarget = targetRelativePath.replace(/\\/g, '/').replace(/\/$/, '');
+
+                // Determine if items in the target folder are visible in the current view
+                let itemsRemainVisible = true;
+                if (isFolderFiltered) {
+                    if (isRecursive) {
+                        itemsRemainVisible = normalizedActive === '' ||
+                            normalizedTarget === normalizedActive ||
+                            normalizedTarget.startsWith(normalizedActive + '/');
+                    } else {
+                        itemsRemainVisible = normalizedTarget === normalizedActive;
+                    }
+                }
+
+                if (itemsRemainVisible) {
+                    // Items stay visible — update each item's file_path to reflect new location
+                    for (const moved of movedFiles) {
+                        if (moved.original_file_path && moved.new_file_path) {
+                            state.virtualScroller.updateSingleItem(moved.original_file_path, {
+                                file_path: moved.new_file_path,
+                                folder: normalizedTarget
+                            });
+                        }
+                    }
+                } else {
+                    // Items no longer visible in current folder — remove from VirtualScroller
+                    const pathsToRemove = movedFiles
+                        .map(m => m.original_file_path)
+                        .filter(Boolean);
+                    if (pathsToRemove.length > 0) {
+                        state.virtualScroller.removeMultipleItemsByFilePath(pathsToRemove);
+                    }
+                }
             }
+
+            // Refresh sidebar folder tree only (no model data reload)
+            await this.refresh();
 
             if (draggedFromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
                 bulkManager.toggleBulkMode();
@@ -1346,7 +1442,7 @@ export class SidebarManager {
         this.pageControls.pageState.activeFolder = normalizedPath;
         setStorageItem(`${this.pageType}_activeFolder`, normalizedPath);
 
-        // Reload models with new filter
+        // Reload models with new filter (loadMoreWithVirtualScroll will scroll to top)
         await this.pageControls.resetAndReload();
     }
 
