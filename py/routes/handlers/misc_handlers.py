@@ -49,7 +49,10 @@ from ...utils.constants import (
     VALID_LORA_TYPES,
 )
 from ...utils.civitai_utils import rewrite_preview_url
-from ...utils.example_images_paths import is_valid_example_images_root
+from ...utils.example_images_paths import (
+    find_non_compliant_items_in_example_images_root,
+    is_valid_example_images_root,
+)
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.session_logging import get_standalone_session_log_snapshot
 from ...utils.usage_stats import UsageStats
@@ -1498,6 +1501,16 @@ class SettingsHandler:
         if not os.path.isdir(folder_path):
             return "Please set a dedicated folder for example images."
         if not self._is_dedicated_example_images_folder(folder_path):
+            offending = find_non_compliant_items_in_example_images_root(folder_path)
+            if offending:
+                items_str = ", ".join(repr(item) for item in offending[:5])
+                if len(offending) > 5:
+                    items_str += f" … and {len(offending) - 5} more"
+                return (
+                    f"The folder contains items that are not valid example image "
+                    f"folders: {items_str}. Please use a dedicated, empty folder "
+                    f"for example images to prevent accidental data loss."
+                )
             return "Please set a dedicated folder for example images."
         return None
 

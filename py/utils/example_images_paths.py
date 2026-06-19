@@ -12,6 +12,18 @@ from ..services.settings_manager import get_settings_manager
 
 _HEX_PATTERN = re.compile(r"[a-fA-F0-9]{64}")
 
+# Filesystem/metadata files that are never created by the example images system
+# and are safe to ignore during validation. The cleanup service only operates on
+# directories, so these files pose no data-loss risk.
+_SAFE_FILENAMES: frozenset[str] = frozenset({
+    ".DS_Store",       # macOS folder metadata
+    "Thumbs.db",       # Windows thumbnail cache
+    "desktop.ini",     # Windows folder customization
+    ".localized",      # macOS folder name localization
+    ".gitkeep",        # Placeholder to keep empty dirs in git
+    ".gitignore",      # Git ignore rules
+})
+
 logger = logging.getLogger(__name__)
 
 
@@ -180,6 +192,22 @@ def is_hash_folder(name: str) -> bool:
     return bool(_HEX_PATTERN.fullmatch(name or ""))
 
 
+def _is_safe_ignorable_entry(item: str, item_path: str) -> bool:
+    """Return True if *item* is a harmless system/hidden file we can skip.
+
+    These files are never created by the example images system and are safe to
+    ignore because the cleanup/delete operations only act on **directories**,
+    never on individual files (other than ``.download_progress.json``).
+    """
+    if item in _SAFE_FILENAMES:
+        return True
+    # Hide Unix hidden files (dotfiles) that are regular files,
+    # since the cleanup system never deletes or moves files.
+    if item.startswith(".") and os.path.isfile(item_path):
+        return True
+    return False
+
+
 def is_valid_example_images_root(folder_path: str) -> bool:
     """Check whether a folder looks like a dedicated example images root."""
 
@@ -190,7 +218,14 @@ def is_valid_example_images_root(folder_path: str) -> bool:
 
     for item in items:
         item_path = os.path.join(folder_path, item)
+
+        # .download_progress.json is an expected metadata file — check before
+        # the generic dotfile rule so it stays explicitly documented.
         if item == ".download_progress.json" and os.path.isfile(item_path):
+            continue
+
+        # Skip harmless system/hidden files — cleanup only touches directories
+        if _is_safe_ignorable_entry(item, item_path):
             continue
 
         if os.path.isdir(item_path):
@@ -209,6 +244,41 @@ def is_valid_example_images_root(folder_path: str) -> bool:
         return False
 
     return True
+
+
+def find_non_compliant_items_in_example_images_root(folder_path: str) -> list[str]:
+    """Return the names of items that prevent *folder_path* from being a valid
+    example images root, or an empty list if the folder is valid.
+
+    This mirrors ``is_valid_example_images_root`` but **returns** the offending
+    names instead of a boolean, so callers can produce actionable error messages.
+    """
+    try:
+        items = os.listdir(folder_path)
+    except OSError as exc:
+        return [f"<cannot list directory: {exc}>"]
+
+    offending: list[str] = []
+
+    for item in items:
+        item_path = os.path.join(folder_path, item)
+
+        # Same skip rules as is_valid_example_images_root
+        if item == ".download_progress.json" and os.path.isfile(item_path):
+            continue
+        if _is_safe_ignorable_entry(item, item_path):
+            continue
+        if os.path.isdir(item_path):
+            if is_hash_folder(item):
+                continue
+            if item == "_deleted":
+                continue
+            if _library_folder_has_only_hash_dirs(item_path):
+                continue
+
+        offending.append(item)
+
+    return offending
 
 
 def _library_folder_has_only_hash_dirs(path: str) -> bool:
