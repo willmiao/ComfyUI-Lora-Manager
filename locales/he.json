@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "תובנות חכמות",
             "recommendations": "המלצות",
-            "noInsights": "אין תובנות זמינות"
+            "noInsights": "אין תובנות זמינות",
+            "unusedLoras": {
+                "high": {
+                    "title": "כמות גבוהה של LoRAs שאינן בשימוש",
+                    "description": "{percent}% מה-LoRAs שלך ({count}/{total}) מעולם לא נעשה בהם שימוש.",
+                    "suggestion": "שקול לארגן או לאחסן בארכיון מודלים שאינם בשימוש כדי לפנות שטח אחסון."
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "התגלו נקודות ביקורת שאינן בשימוש",
+                    "description": "{percent}% מנקודות הביקורת שלך ({count}/{total}) מעולם לא נעשה בהן שימוש.",
+                    "suggestion": "בדוק ושקול להסיר נקודות ביקורת שאינך צריך עוד."
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "כמות גבוהה של Embeddings שאינם בשימוש",
+                    "description": "{percent}% מה-Embeddings שלך ({count}/{total}) מעולם לא נעשה בהם שימוש.",
+                    "suggestion": "שקול לארגן או לאחסן בארכיון Embeddings שאינם בשימוש כדי לייעל את האוסף."
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "התגלה אוסף גדול",
+                    "description": "אוסף המודלים שלך משתמש ב-{size} של אחסון.",
+                    "suggestion": "שקול להשתמש באחסון חיצוני או בפתרונות ענן לארגון טוב יותר."
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "משתמש פעיל",
+                    "description": "השלמת {count} יצירות עד כה!",
+                    "suggestion": "המשך לחקור וליצור תוכן מדהים עם המודלים שלך."
+                }
+            }
         },
         "charts": {
             "collectionOverview": "סקירת אוסף",

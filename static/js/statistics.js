@@ -191,7 +191,7 @@ export class StatisticsManager {
             case 'size':
                 return this.formatFileSize(value);
             case 'percentage':
-                return `${value.toFixed(1)}%`;
+                return new Intl.NumberFormat(i18n.getCurrentLocale(), { style: 'percent', maximumFractionDigits: 1 }).format(value / 100);
             default:
                 return value;
         }
@@ -760,13 +760,26 @@ export class StatisticsManager {
             return;
         }
 
-        container.innerHTML = insights.map(insight => `
+        container.innerHTML = insights.map(insight => {
+            const params = insight.params || {};
+            let title, description, suggestion;
+            if (insight.key) {
+                title = translate('statistics.' + insight.key + '.title', params);
+                description = translate('statistics.' + insight.key + '.description', params);
+                suggestion = translate('statistics.' + insight.key + '.suggestion', params);
+            } else {
+                // Backward compatibility for insights without key/params
+                title = insight.title || '';
+                description = insight.description || '';
+                suggestion = insight.suggestion || '';
+            }
+            return `
             <div class="insight-card type-${insight.type}">
-                <div class="insight-title">${insight.title}</div>
-                <div class="insight-description">${insight.description}</div>
-                <div class="insight-suggestion">${insight.suggestion}</div>
+                <div class="insight-title">${title}</div>
+                <div class="insight-description">${description}</div>
+                <div class="insight-suggestion">${suggestion}</div>
             </div>
-        `).join('');
+        `}).join('');
 
         // Render collection analysis cards
         this.renderCollectionAnalysis();

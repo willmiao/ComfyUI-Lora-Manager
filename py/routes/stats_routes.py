@@ -477,9 +477,12 @@ class StatsRoutes:
                 if unused_lora_percent > 50:
                     insights.append({
                         'type': 'warning',
-                        'title': 'High Number of Unused LoRAs',
-                        'description': f'{unused_lora_percent:.1f}% of your LoRAs ({unused_loras}/{total_loras}) have never been used.',
-                        'suggestion': 'Consider organizing or archiving unused models to free up storage space.'
+                        'key': 'insights.unusedLoras.high',
+                        'params': {
+                            'percent': f'{unused_lora_percent:.1f}',
+                            'count': str(unused_loras),
+                            'total': str(total_loras)
+                        }
                     })
             
             if total_checkpoints > 0:
@@ -487,9 +490,12 @@ class StatsRoutes:
                 if unused_checkpoint_percent > 30:
                     insights.append({
                         'type': 'warning',
-                        'title': 'Unused Checkpoints Detected',
-                        'description': f'{unused_checkpoint_percent:.1f}% of your checkpoints ({unused_checkpoints}/{total_checkpoints}) have never been used.',
-                        'suggestion': 'Review and consider removing checkpoints you no longer need.'
+                        'key': 'insights.unusedCheckpoints.detected',
+                        'params': {
+                            'percent': f'{unused_checkpoint_percent:.1f}',
+                            'count': str(unused_checkpoints),
+                            'total': str(total_checkpoints)
+                        }
                     })
             
             if total_embeddings > 0:
@@ -497,9 +503,12 @@ class StatsRoutes:
                 if unused_embedding_percent > 50:
                     insights.append({
                         'type': 'warning',
-                        'title': 'High Number of Unused Embeddings',
-                        'description': f'{unused_embedding_percent:.1f}% of your embeddings ({unused_embeddings}/{total_embeddings}) have never been used.',
-                        'suggestion': 'Consider organizing or archiving unused embeddings to optimize your collection.'
+                        'key': 'insights.unusedEmbeddings.high',
+                        'params': {
+                            'percent': f'{unused_embedding_percent:.1f}',
+                            'count': str(unused_embeddings),
+                            'total': str(total_embeddings)
+                        }
                     })
             
             # Storage insights
@@ -510,18 +519,20 @@ class StatsRoutes:
             if total_size > 100 * 1024 * 1024 * 1024:  # 100GB
                 insights.append({
                     'type': 'info',
-                    'title': 'Large Collection Detected',
-                    'description': f'Your model collection is using {self._format_size(total_size)} of storage.',
-                    'suggestion': 'Consider using external storage or cloud solutions for better organization.'
+                    'key': 'insights.collection.large',
+                    'params': {
+                        'size': self._format_size(total_size)
+                    }
                 })
             
             # Recent activity insight
             if usage_data.get('total_executions', 0) > 100:
                 insights.append({
                     'type': 'success',
-                    'title': 'Active User',
-                    'description': f'You\'ve completed {usage_data["total_executions"]} generations so far!',
-                    'suggestion': 'Keep exploring and creating amazing content with your models.'
+                    'key': 'insights.activity.active',
+                    'params': {
+                        'count': str(usage_data['total_executions'])
+                    }
                 })
             
             return web.json_response({

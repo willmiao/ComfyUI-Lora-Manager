@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "スマートインサイト",
             "recommendations": "推奨事項",
-            "noInsights": "インサイトはありません"
+            "noInsights": "インサイトはありません",
+            "unusedLoras": {
+                "high": {
+                    "title": "未使用のLoRAが多数あります",
+                    "description": "LoRAの{percent}%（{count}/{total}）が一度も使用されていません。",
+                    "suggestion": "未使用のモデルを整理またはアーカイブしてストレージを解放してください。"
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "未使用のCheckpointを検出",
+                    "description": "Checkpointの{percent}%（{count}/{total}）が一度も使用されていません。",
+                    "suggestion": "不要なCheckpointを確認して削除を検討してください。"
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "未使用のEmbeddingが多数あります",
+                    "description": "Embeddingの{percent}%（{count}/{total}）が一度も使用されていません。",
+                    "suggestion": "未使用のEmbeddingを整理またはアーカイブしてコレクションを最適化してください。"
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "大規模コレクションを検出",
+                    "description": "モデルコレクションが{size}のストレージを使用しています。",
+                    "suggestion": "外部ストレージやクラウドソリューションの使用を検討してください。"
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "アクティブユーザー",
+                    "description": "これまでに{count}回の生成を完了しました！",
+                    "suggestion": "モデルを使って素晴らしいコンテンツを作り続けてください。"
+                }
+            }
         },
         "charts": {
             "collectionOverview": "コレクション概要",

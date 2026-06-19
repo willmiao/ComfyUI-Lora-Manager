@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "Smart Insights",
             "recommendations": "Recommendations",
-            "noInsights": "No insights available"
+            "noInsights": "No insights available",
+            "unusedLoras": {
+                "high": {
+                    "title": "High Number of Unused LoRAs",
+                    "description": "{percent}% of your LoRAs ({count}/{total}) have never been used.",
+                    "suggestion": "Consider organizing or archiving unused models to free up storage space."
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "Unused Checkpoints Detected",
+                    "description": "{percent}% of your checkpoints ({count}/{total}) have never been used.",
+                    "suggestion": "Review and consider removing checkpoints you no longer need."
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "High Number of Unused Embeddings",
+                    "description": "{percent}% of your embeddings ({count}/{total}) have never been used.",
+                    "suggestion": "Consider organizing or archiving unused embeddings to optimize your collection."
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "Large Collection Detected",
+                    "description": "Your model collection is using {size} of storage.",
+                    "suggestion": "Consider using external storage or cloud solutions for better organization."
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "Active User",
+                    "description": "You've completed {count} generations so far!",
+                    "suggestion": "Keep exploring and creating amazing content with your models."
+                }
+            }
         },
         "charts": {
             "collectionOverview": "Collection Overview",

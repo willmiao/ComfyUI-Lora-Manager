@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "智慧洞察",
             "recommendations": "推薦",
-            "noInsights": "暫無可用洞察"
+            "noInsights": "暫無可用洞察",
+            "unusedLoras": {
+                "high": {
+                    "title": "大量未使用的 LoRA",
+                    "description": "你的 LoRA 中有 {percent}%（{count}/{total}）從未被使用過。",
+                    "suggestion": "考慮整理或封存未使用的模型以釋放儲存空間。"
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "檢測到未使用的 Checkpoint",
+                    "description": "你的 Checkpoint 中有 {percent}%（{count}/{total}）從未被使用過。",
+                    "suggestion": "審查並考慮刪除不再需要的 Checkpoint。"
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "大量未使用的 Embedding",
+                    "description": "你的 Embedding 中有 {percent}%（{count}/{total}）從未被使用過。",
+                    "suggestion": "考慮整理或封存未使用的 Embedding 以優化你的收藏。"
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "檢測到大型收藏",
+                    "description": "你的模型收藏正在使用 {size} 的儲存空間。",
+                    "suggestion": "考慮使用外部儲存或雲端解決方案以獲得更好的組織。"
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "活躍用戶",
+                    "description": "你已經完成了 {count} 次生成！",
+                    "suggestion": "繼續探索並用你的模型創作精彩內容。"
+                }
+            }
         },
         "charts": {
             "collectionOverview": "收藏總覽",

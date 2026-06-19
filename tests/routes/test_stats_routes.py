@@ -302,15 +302,15 @@ async def test_get_insights(stats_routes):
     insights = payload["data"]["insights"]
     assert len(insights) == 3
 
-    titles = {entry["title"] for entry in insights}
-    assert "High Number of Unused LoRAs" in titles
-    assert "Unused Checkpoints Detected" in titles
-    assert "High Number of Unused Embeddings" in titles
+    keys = {entry["key"] for entry in insights}
+    assert "insights.unusedLoras.high" in keys
+    assert "insights.unusedCheckpoints.detected" in keys
+    assert "insights.unusedEmbeddings.high" in keys
 
-    descriptions = {entry["description"] for entry in insights}
-    assert any("2/3" in desc for desc in descriptions)
-    assert any("1/2" in desc for desc in descriptions)
-    assert any("1/1" in desc for desc in descriptions)
+    params_list = [entry["params"] for entry in insights]
+    assert any(p["total"] == "3" for p in params_list)
+    assert any(p["total"] == "2" for p in params_list)
+    assert any(p["total"] == "1" for p in params_list)
 
 
 @pytest.mark.asyncio

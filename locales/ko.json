@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "스마트 인사이트",
             "recommendations": "추천",
-            "noInsights": "인사이트 없음"
+            "noInsights": "인사이트 없음",
+            "unusedLoras": {
+                "high": {
+                    "title": "사용하지 않은 LoRA가 많음",
+                    "description": "LoRA의 {percent}%({count}/{total})가 한 번도 사용되지 않았습니다.",
+                    "suggestion": "사용하지 않는 모델을 정리하거나 보관하여 저장 공간을 확보하세요."
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "사용하지 않은 Checkpoint 감지",
+                    "description": "Checkpoint의 {percent}%({count}/{total})가 한 번도 사용되지 않았습니다.",
+                    "suggestion": "더 이상 필요하지 않은 Checkpoint를 검토하고 제거하세요."
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "사용하지 않은 Embedding이 많음",
+                    "description": "Embedding의 {percent}%({count}/{total})가 한 번도 사용되지 않았습니다.",
+                    "suggestion": "사용하지 않는 Embedding을 정리하여 컬렉션을 최적화하세요."
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "대규모 컬렉션 감지",
+                    "description": "모델 컬렉션이 {size}의 저장 공간을 사용 중입니다.",
+                    "suggestion": "더 나은 관리를 위해 외부 저장소나 클라우드 솔루션을 고려하세요."
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "활성 사용자",
+                    "description": "지금까지 {count}번의 생성을 완료했습니다!",
+                    "suggestion": "모델로 계속해서 멋진 콘텐츠를 탐색하고 만들어보세요."
+                }
+            }
         },
         "charts": {
             "collectionOverview": "컬렉션 개요",

@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "Intelligente Erkenntnisse",
             "recommendations": "Empfehlungen",
-            "noInsights": "Keine Erkenntnisse verfügbar"
+            "noInsights": "Keine Erkenntnisse verfügbar",
+            "unusedLoras": {
+                "high": {
+                    "title": "Hohe Anzahl ungenutzter LoRAs",
+                    "description": "{percent}% Ihrer LoRAs ({count}/{total}) wurden noch nie verwendet.",
+                    "suggestion": "Erwägen Sie, ungenutzte Modelle zu organisieren oder zu archivieren, um Speicherplatz freizugeben."
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "Ungenutzte Checkpoints erkannt",
+                    "description": "{percent}% Ihrer Checkpoints ({count}/{total}) wurden noch nie verwendet.",
+                    "suggestion": "Überprüfen Sie nicht mehr benötigte Checkpoints und erwägen Sie deren Entfernung."
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "Hohe Anzahl ungenutzter Embeddings",
+                    "description": "{percent}% Ihrer Embeddings ({count}/{total}) wurden noch nie verwendet.",
+                    "suggestion": "Organisieren oder archivieren Sie ungenutzte Embeddings, um Ihre Sammlung zu optimieren."
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "Große Sammlung erkannt",
+                    "description": "Ihre Modellsammlung verwendet {size} Speicher.",
+                    "suggestion": "Erwägen Sie externe Speicher- oder Cloud-Lösungen für eine bessere Organisation."
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "Aktiver Benutzer",
+                    "description": "Sie haben {count} Generationen abgeschlossen!",
+                    "suggestion": "Entdecken und erstellen Sie weiterhin großartige Inhalte mit Ihren Modellen."
+                }
+            }
         },
         "charts": {
             "collectionOverview": "Sammlungsübersicht",

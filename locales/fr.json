@@ -1046,7 +1046,42 @@
         "insights": {
             "smartInsights": "Aperçus intelligents",
             "recommendations": "Recommandations",
-            "noInsights": "Aucun aperçu disponible"
+            "noInsights": "Aucun aperçu disponible",
+            "unusedLoras": {
+                "high": {
+                    "title": "Nombre élevé de LoRAs inutilisées",
+                    "description": "{percent}% de vos LoRAs ({count}/{total}) n'ont jamais été utilisées.",
+                    "suggestion": "Envisagez d'organiser ou d'archiver les modèles inutilisés pour libérer de l'espace."
+                }
+            },
+            "unusedCheckpoints": {
+                "detected": {
+                    "title": "Points de contrôle inutilisés détectés",
+                    "description": "{percent}% de vos points de contrôle ({count}/{total}) n'ont jamais été utilisés.",
+                    "suggestion": "Examinez et envisagez de supprimer les points de contrôle dont vous n'avez plus besoin."
+                }
+            },
+            "unusedEmbeddings": {
+                "high": {
+                    "title": "Nombre élevé d'Embeddings inutilisées",
+                    "description": "{percent}% de vos embeddings ({count}/{total}) n'ont jamais été utilisées.",
+                    "suggestion": "Envisagez d'organiser ou d'archiver les embeddings inutilisées pour optimiser votre collection."
+                }
+            },
+            "collection": {
+                "large": {
+                    "title": "Grande collection détectée",
+                    "description": "Votre collection de modèles utilise {size} de stockage.",
+                    "suggestion": "Envisagez d'utiliser un stockage externe ou des solutions cloud pour une meilleure organisation."
+                }
+            },
+            "activity": {
+                "active": {
+                    "title": "Utilisateur actif",
+                    "description": "Vous avez effectué {count} générations jusqu'à présent !",
+                    "suggestion": "Continuez à explorer et à créer du contenu formidable avec vos modèles."
+                }
+            }
         },
         "charts": {
             "collectionOverview": "Aperçu de la collection",
