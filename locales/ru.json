@@ -274,6 +274,9 @@
         "civitaiApiKey": "Ключ API Civitai",
         "civitaiApiKeyPlaceholder": "Введите ваш ключ API Civitai",
         "civitaiApiKeyHelp": "Используется для аутентификации при загрузке моделей с Civitai",
+        "civitaiApiKeyConfigured": "Настроен",
+        "civitaiApiKeyNotConfigured": "Не настроен",
+        "civitaiApiKeySet": "Настроить",
         "civitaiHost": {
             "label": "Хост Civitai",
             "help": "Выберите, какой сайт Civitai будет открываться при использовании ссылок «View on Civitai».",

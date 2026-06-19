@@ -134,8 +134,10 @@ async def test_get_settings_excludes_no_sync_keys():
 
     assert payload["success"] is True
     # Regular settings should be synced
-    assert payload["settings"]["civitai_api_key"] == "abc"
     assert payload["settings"]["regular_setting"] == "value"
+    # civitai_api_key is in _NO_SYNC_KEYS; only the boolean flag is returned
+    assert payload["settings"].get("civitai_api_key") is None
+    assert payload["settings"]["civitai_api_key_set"] is True
     # _NO_SYNC_KEYS should not be synced
     assert "hash_chunk_size_mb" not in payload["settings"]
     assert "folder_paths" not in payload["settings"]

@@ -1328,6 +1328,9 @@ class SettingsHandler:
             "folder_paths",
             "libraries",
             "active_library",
+            # Sensitive — never expose the actual value to the frontend;
+            # frontend receives a boolean instead (civitai_api_key_set).
+            "civitai_api_key",
         }
     )
 
@@ -1382,6 +1385,9 @@ class SettingsHandler:
                     value = self._settings.get(key)
                     if value is not None:
                         response_data[key] = value
+            # Sensitive fields: only expose a boolean indicating whether set
+            raw_key = self._settings.get("civitai_api_key")
+            response_data["civitai_api_key_set"] = bool(raw_key)
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file

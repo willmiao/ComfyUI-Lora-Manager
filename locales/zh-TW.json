@@ -274,6 +274,9 @@
         "civitaiApiKey": "Civitai API 金鑰",
         "civitaiApiKeyPlaceholder": "請輸入您的 Civitai API 金鑰",
         "civitaiApiKeyHelp": "用於從 Civitai 下載模型時的身份驗證",
+        "civitaiApiKeyConfigured": "已設定",
+        "civitaiApiKeyNotConfigured": "未設定",
+        "civitaiApiKeySet": "設定",
         "civitaiHost": {
             "label": "Civitai 站點",
             "help": "選擇使用「在 Civitai 中查看」時預設開啟的 Civitai 站點。",

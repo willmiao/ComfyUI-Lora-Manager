@@ -26,7 +26,7 @@
     'messages': list([
     ]),
     'settings': dict({
-      'civitai_api_key': 'test-key',
+      'civitai_api_key_set': True,
       'language': 'en',
       'theme': 'dark',
     }),

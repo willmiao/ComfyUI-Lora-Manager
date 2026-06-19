@@ -347,9 +347,9 @@ export class SettingsManager {
                         if (this.isOpen) {
                             this.loadSettingsToUI();
                         } else {
-                            // Clear sensitive fields on close to prevent browser save-password prompts
-                            const apiKeyInput = document.getElementById('civitaiApiKey');
-                            if (apiKeyInput) apiKeyInput.value = '';
+                            // Reset API key edit mode on close
+                            this.cancelEditApiKey(true);
+                            // Clear proxy password on close
                             const proxyPasswordInput = document.getElementById('proxyPassword');
                             if (proxyPasswordInput) proxyPasswordInput.value = '';
                         }
@@ -825,10 +825,8 @@ export class SettingsManager {
             usePortableCheckbox.checked = !!state.global.settings.use_portable_settings;
         }
 
-        const civitaiApiKeyInput = document.getElementById('civitaiApiKey');
-        if (civitaiApiKeyInput) {
-            civitaiApiKeyInput.value = state.global.settings.civitai_api_key || '';
-        }
+        // Update API key status display (do NOT pre-fill the input)
+        this.updateApiKeyStatus();
 
         const civitaiHostSelect = document.getElementById('civitaiHost');
         if (civitaiHostSelect) {
@@ -2898,16 +2896,97 @@ export class SettingsManager {
         }
     }
 
+    // ── CivitAI API Key management ──────────────────────────────
+
+    updateApiKeyStatus() {
+        const hasKey = !!(state.global.settings.civitai_api_key_set ||
+                          state.global.settings.civitai_api_key);
+        const statusEl = document.getElementById('civitaiApiKeyStatus');
+        const statusText = document.getElementById('civitaiApiKeyStatusText');
+        const actionBtn = document.getElementById('civitaiApiKeyActionBtn');
+        if (!statusText || !actionBtn) return;
+
+        if (hasKey) {
+            statusText.classList.remove('api-key-status--unconfigured');
+            statusText.classList.add('api-key-status--configured');
+            statusText.innerHTML = '<i class="fas fa-check-circle text-success"></i> '
+                + translate('settings.civitaiApiKeyConfigured', {}, 'Configured');
+            actionBtn.textContent = translate('common.actions.change', {}, 'Change');
+        } else {
+            statusText.classList.remove('api-key-status--configured');
+            statusText.classList.add('api-key-status--unconfigured');
+            statusText.innerHTML = '<i class="fas fa-times-circle text-error"></i> '
+                + translate('settings.civitaiApiKeyNotConfigured', {}, 'Not configured');
+            actionBtn.textContent = translate('settings.civitaiApiKeySet', {}, 'Set up');
+        }
+    }
+
+    editApiKey() {
+        const statusEl = document.getElementById('civitaiApiKeyStatus');
+        if (statusEl) statusEl.classList.add('is-hidden');
+        const editContainer = document.getElementById('civitaiApiKeyEdit');
+        if (editContainer) editContainer.classList.remove('is-hidden');
+        // Focus the input
+        const input = document.getElementById('civitaiApiKey');
+        if (input) {
+            input.value = '';  // Never pre-fill the secret
+            setTimeout(() => input.focus(), 50);
+        }
+    }
+
+    cancelEditApiKey(silent) {
+        const editContainer = document.getElementById('civitaiApiKeyEdit');
+        if (editContainer) editContainer.classList.add('is-hidden');
+        const statusContainer = document.getElementById('civitaiApiKeyStatus');
+        if (statusContainer) statusContainer.classList.remove('is-hidden');
+        // Clear any typed value
+        const input = document.getElementById('civitaiApiKey');
+        if (input) input.value = '';
+        if (!silent) {
+            this.updateApiKeyStatus();
+        }
+    }
+
+    async saveApiKey() {
+        const input = document.getElementById('civitaiApiKey');
+        if (!input) return;
+
+        const value = input.value.trim();
+
+        try {
+            await this.saveSetting('civitai_api_key', value);
+            showToast('toast.settings.settingsUpdated',
+                { setting: 'CivitAI API Key' }, 'success');
+        } catch (error) {
+            showToast('toast.settings.settingSaveFailed',
+                { message: error.message }, 'error');
+            return;
+        }
+
+        // Update the in-memory flag so the UI reflects the change
+        state.global.settings.civitai_api_key_set = !!value;
+        this.cancelEditApiKey(true);
+        this.updateApiKeyStatus();
+    }
+
     toggleInputVisibility(button) {
         const input = button.parentElement.querySelector('input');
+        if (!input) return;
         const icon = button.querySelector('i');
-
-        if (input.type === 'password') {
+        if (input.dataset.mask === 'css') {
+            // CSS-masked input (CivitAI API key) — toggle class, not type
+            input.classList.toggle('api-key-masked');
+            if (icon) {
+                icon.className = input.classList.contains('api-key-masked')
+                    ? 'fas fa-eye'
+                    : 'fas fa-eye-slash';
+            }
+        } else if (input.type === 'password') {
             input.type = 'text';
-            icon.className = 'fas fa-eye-slash';
+            if (icon) icon.className = 'fas fa-eye-slash';
         } else {
             input.type = 'password';
-            icon.className = 'fas fa-eye';
+            if (icon) icon.className = 'fas fa-eye';
         }
     }
 

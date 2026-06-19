@@ -327,10 +327,15 @@ export class DoctorManager {
             case 'open-settings':
                 modalManager.showModal('settingsModal');
                 window.setTimeout(() => {
-                    const input = document.getElementById('civitaiApiKey');
-                    if (input) {
-                        input.focus();
-                        input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    // Open the API key editor directly
+                    if (typeof settingsManager.editApiKey === 'function') {
+                        settingsManager.editApiKey();
+                    } else {
+                        const input = document.getElementById('civitaiApiKey');
+                        if (input) {
+                            input.focus();
+                            input.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }
                     }
                 }, 100);
                 break;

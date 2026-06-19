@@ -274,6 +274,9 @@
         "civitaiApiKey": "Civitai API 키",
         "civitaiApiKeyPlaceholder": "Civitai API 키를 입력하세요",
         "civitaiApiKeyHelp": "Civitai에서 모델을 다운로드할 때 인증에 사용됩니다",
+        "civitaiApiKeyConfigured": "설정됨",
+        "civitaiApiKeyNotConfigured": "설정되지 않음",
+        "civitaiApiKeySet": "설정",
         "civitaiHost": {
             "label": "Civitai 호스트",
             "help": "\"View on Civitai\" 링크를 사용할 때 어떤 Civitai 사이트를 열지 선택합니다.",

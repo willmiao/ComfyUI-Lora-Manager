@@ -335,7 +335,12 @@
     }
 }
 
-/* API key input specific styles */
+/* API key input — CSS masking (prevents Chrome password manager triggers) */
+.api-key-masked {
+    -webkit-text-security: disc;
+}
+
+/* API key input specific styles (shared with proxy password) */
 .api-key-input {
     width: 100%; /* Take full width of parent */
     position: relative;
@@ -345,7 +350,7 @@
 
 .api-key-input input {
     width: 100%;
-    padding: 6px 40px 6px 10px; /* Add left padding */
+    padding: 6px 40px 6px 10px; /* Right padding for eye button */
     height: 32px;
     box-sizing: border-box;
     border-radius: var(--border-radius-xs);
@@ -353,6 +358,13 @@
     background-color: var(--lora-surface);
     color: var(--text-color);
     font-size: 0.95em;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.api-key-input input:focus {
+    border-color: var(--lora-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
 }
 
 .api-key-input .toggle-visibility {
@@ -364,10 +376,96 @@
     opacity: 0.6;
     cursor: pointer;
     padding: 4px 8px;
+    transition: opacity 0.2s ease;
 }
 
 .api-key-input .toggle-visibility:hover {
     opacity: 1;
+}
+
+/* API key item — stack status/edit views vertically for smooth cross-fade */
+.api-key-item .setting-control {
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+/* API key status display (shown when not editing) */
+.api-key-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    justify-content: flex-end;
+    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.25s ease;
+    max-height: 80px;
+    overflow: hidden;
+}
+
+.api-key-status.is-hidden {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    margin: 0;
+}
+
+.api-key-status-text {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.95em;
+    white-space: nowrap;
+    transition: color 0.2s ease;
+}
+
+/* Status color modifiers — replace inline styles */
+.api-key-status--configured .fa-check-circle {
+    color: var(--lora-success);
+}
+
+.api-key-status--unconfigured .fa-times-circle {
+    color: var(--lora-error);
+}
+
+/* Utility classes for status icon colors (used by JS) */
+.text-success {
+    color: var(--lora-success);
+}
+
+.text-error {
+    color: var(--lora-error);
+}
+
+/* API key inline edit container — flex row with input + buttons */
+.api-key-edit {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 100%;
+    justify-content: flex-end;
+    transition: opacity 0.2s ease, transform 0.2s ease, max-height 0.25s ease;
+    max-height: 80px;
+    overflow: hidden;
+}
+
+.api-key-edit.is-hidden {
+    opacity: 0;
+    max-height: 0;
+    transform: translateY(-4px);
+    pointer-events: none;
+    margin: 0;
+}
+
+.api-key-edit .api-key-input {
+    flex: 1;
+    min-width: 0;
+}
+
+.api-key-edit .primary-btn,
+.api-key-edit .secondary-btn {
+    height: 32px;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
 /* Text input wrapper styles for consistent input styling */

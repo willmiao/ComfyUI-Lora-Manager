@@ -274,6 +274,9 @@
         "civitaiApiKey": "Clé API Civitai",
         "civitaiApiKeyPlaceholder": "Entrez votre clé API Civitai",
         "civitaiApiKeyHelp": "Utilisée pour l'authentification lors du téléchargement de modèles depuis Civitai",
+        "civitaiApiKeyConfigured": "Configuré",
+        "civitaiApiKeyNotConfigured": "Non configuré",
+        "civitaiApiKeySet": "Configurer",
         "civitaiHost": {
             "label": "Hôte Civitai",
             "help": "Choisissez quel site Civitai s'ouvre lorsque vous utilisez les liens « View on Civitai ».",

@@ -274,6 +274,9 @@
         "civitaiApiKey": "Civitai APIキー",
         "civitaiApiKeyPlaceholder": "Civitai APIキーを入力してください",
         "civitaiApiKeyHelp": "Civitaiからモデルをダウンロードするときの認証に使用されます",
+        "civitaiApiKeyConfigured": "設定済み",
+        "civitaiApiKeyNotConfigured": "未設定",
+        "civitaiApiKeySet": "設定",
         "civitaiHost": {
             "label": "Civitai ホスト",
             "help": "「View on Civitai」リンクを使うときに開く Civitai サイトを選択します。",

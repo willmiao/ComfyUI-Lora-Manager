@@ -95,20 +95,35 @@
                         <div class="setting-item api-key-item">
                             <div class="setting-row">
                                 <div class="setting-info">
-                                    <label for="civitaiApiKey">{{ t('settings.civitaiApiKey') }}</label>
+                                    <label>{{ t('settings.civitaiApiKey') }}</label>
                                     <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.civitaiApiKeyHelp') }}"></i>
                                 </div>
                                 <div class="setting-control">
-                                    <div class="api-key-input">
-                                        <input type="password" 
-                                            id="civitaiApiKey" 
-                                            placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
-                                            autocomplete="new-password"
-                                            onblur="settingsManager.saveInputSetting('civitaiApiKey', 'civitai_api_key')"
-                                            onkeydown="if(event.key === 'Enter') { this.blur(); }" />
-                                        <button class="toggle-visibility">
-                                            <i class="fas fa-eye"></i>
+                                    <!-- Status display (shown when not editing) -->
+                                    <div id="civitaiApiKeyStatus" class="api-key-status">
+                                        <span id="civitaiApiKeyStatusText" class="api-key-status-text api-key-status--unconfigured">
+                                            <i class="fas fa-times-circle text-error"></i>
+                                            {{ t('settings.civitaiApiKeyNotConfigured') }}
+                                        </span>
+                                        <button type="button" class="secondary-btn" id="civitaiApiKeyActionBtn" onclick="settingsManager.editApiKey()">
+                                            {{ t('settings.civitaiApiKeySet') }}
                                         </button>
+                                    </div>
+                                    <!-- Inline edit view (shown when editing) -->
+                                    <div id="civitaiApiKeyEdit" class="api-key-edit is-hidden">
+                                        <div class="api-key-input">
+                                            <input type="text"
+                                                id="civitaiApiKey"
+                                                class="api-key-masked"
+                                                placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
+                                                autocomplete="off"
+                                                data-mask="css" />
+                                            <button type="button" class="toggle-visibility">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                        </div>
+                                        <button type="button" class="primary-btn" onclick="settingsManager.saveApiKey()">{{ t('common.actions.save') }}</button>
+                                        <button type="button" class="secondary-btn" onclick="settingsManager.cancelEditApiKey()">{{ t('common.actions.cancel') }}</button>
                                     </div>
                                 </div>
                             </div>

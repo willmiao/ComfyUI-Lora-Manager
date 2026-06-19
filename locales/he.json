@@ -274,6 +274,9 @@
         "civitaiApiKey": "מפתח API של Civitai",
         "civitaiApiKeyPlaceholder": "הזן את מפתח ה-API שלך מ-Civitai",
         "civitaiApiKeyHelp": "משמש לאימות בעת הורדת מודלים מ-Civitai",
+        "civitaiApiKeyConfigured": "מוגדר",
+        "civitaiApiKeyNotConfigured": "לא מוגדר",
+        "civitaiApiKeySet": "הגדר",
         "civitaiHost": {
             "label": "מארח Civitai",
             "help": "בחר איזה אתר של Civitai ייפתח בעת שימוש בקישורי \"View on Civitai\".",

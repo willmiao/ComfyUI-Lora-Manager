@@ -274,6 +274,9 @@
         "civitaiApiKey": "Civitai API Key",
         "civitaiApiKeyPlaceholder": "Geben Sie Ihren Civitai API Key ein",
         "civitaiApiKeyHelp": "Wird für die Authentifizierung beim Herunterladen von Modellen von Civitai verwendet",
+        "civitaiApiKeyConfigured": "Konfiguriert",
+        "civitaiApiKeyNotConfigured": "Nicht konfiguriert",
+        "civitaiApiKeySet": "Einrichten",
         "civitaiHost": {
             "label": "Civitai-Host",
             "help": "Wählen Sie aus, welche Civitai-Seite geöffnet wird, wenn Sie „View on Civitai“-Links verwenden.",
