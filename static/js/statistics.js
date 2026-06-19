@@ -288,28 +288,28 @@ export class StatisticsManager {
         const checkpointData = this.data.baseModels.checkpoints;
         const embeddingData = this.data.baseModels.embeddings;
         
-        const allModels = new Set([
+        const allModels = Array.from(new Set([
             ...Object.keys(loraData), 
             ...Object.keys(checkpointData),
             ...Object.keys(embeddingData)
-        ]);
+        ])).sort();
         
         const data = {
-            labels: Array.from(allModels),
+            labels: allModels,
             datasets: [
                 {
                     label: translate('statistics.metrics.loras'),
-                    data: Array.from(allModels).map(model => loraData[model] || 0),
+                    data: allModels.map(model => loraData[model] || 0),
                     backgroundColor: 'oklch(68% 0.28 256 / 0.7)'
                 },
                 {
                     label: translate('statistics.metrics.checkpoints'),
-                    data: Array.from(allModels).map(model => checkpointData[model] || 0),
+                    data: allModels.map(model => checkpointData[model] || 0),
                     backgroundColor: 'oklch(68% 0.28 200 / 0.7)'
                 },
                 {
                     label: translate('statistics.metrics.embeddings'),
-                    data: Array.from(allModels).map(model => embeddingData[model] || 0),
+                    data: allModels.map(model => embeddingData[model] || 0),
                     backgroundColor: 'oklch(68% 0.28 120 / 0.7)'
                 }
             ]
