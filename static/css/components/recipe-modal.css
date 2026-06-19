@@ -9,6 +9,10 @@
     position: relative;
 }
 
+#recipeTagsContainer {
+    width: 100%;
+}
+
 .recipe-modal-header h2 {
     margin: 0 0 var(--space-1);
     padding: var(--space-1);
@@ -95,125 +99,9 @@
     min-width: 0;
 }
 
-.content-editor.tags-editor input {
-    font-size: 0.9em;
-}
-
 /* Remove obsolete button styles */
 .editor-actions {
     display: none;
-}
-
-/* Special styling for tags content */
-.tags-content {
-    display: flex;
-    align-items: center;
-    flex-wrap: nowrap;
-    gap: 8px;
-}
-
-.tags-display {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 6px;
-    align-items: center;
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-}
-
-.no-tags {
-    font-size: 0.85em;
-    color: var(--text-color);
-    opacity: 0.6;
-    font-style: italic;
-}
-
-/* Recipe Tags styles */
-.recipe-tags-container {
-    position: relative;
-    margin-top: 0;
-    margin-bottom: 10px;
-}
-
-.recipe-tags-compact {
-    display: flex;
-    flex-wrap: nowrap;
-    gap: 6px;
-    align-items: center;
-}
-
-.recipe-tag-compact {
-    background: var(--surface-subtle);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: var(--border-radius-xs);
-    padding: 2px 8px;
-    font-size: 0.75em;
-    color: var(--text-color);
-    white-space: nowrap;
-}
-
-[data-theme="dark"] .recipe-tag-compact {
-    background: var(--surface-subtle);
-    border: 1px solid var(--lora-border);
-}
-
-.recipe-tag-more {
-    background: var(--lora-accent);
-    color: var(--lora-text);
-    border-radius: var(--border-radius-xs);
-    padding: 2px 8px;
-    font-size: 0.75em;
-    cursor: pointer;
-    white-space: nowrap;
-    font-weight: 500;
-}
-
-.recipe-tags-tooltip {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    background: var(--card-bg);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-sm);
-    box-shadow: var(--shadow-dropdown);
-    padding: 10px 14px;
-    max-width: 400px;
-    z-index: 10;
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-4px);
-    transition: var(--transition-base);
-    pointer-events: none;
-}
-
-.recipe-tags-tooltip.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    pointer-events: auto;
-}
-
-.tooltip-content {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.tooltip-tag {
-    background: var(--surface-hover);
-    border: 1px solid rgba(0, 0, 0, 0.1);
-    border-radius: var(--border-radius-xs);
-    padding: 3px 8px;
-    font-size: 0.75em;
-    color: var(--text-color);
-}
-
-[data-theme="dark"] .tooltip-tag {
-    background: var(--surface-hover);
-    border: 1px solid var(--lora-border);
 }
 
 #recipeModal .modal-content {
@@ -1153,7 +1041,7 @@
         max-height: 2.4em;
     }
 
-    .recipe-tags-container {
+    #recipeTagsContainer {
         margin-bottom: 6px;
     }
 

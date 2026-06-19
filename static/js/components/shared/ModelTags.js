@@ -29,6 +29,14 @@ let priorityTagSuggestionsLoaded = false;
 let priorityTagSuggestionsPromise = null;
 let activeTagDragState = null;
 
+// Configurable options for tag editing (set by setupTagEditMode)
+let tagEditOptions = {
+    showSuggestions: true,
+    saveHandler: null,
+    onSaved: null,
+    normalizeTag: true,
+};
+
 function normalizeModelTypeKey(modelType) {
     if (!modelType) {
         return '';
@@ -140,13 +148,30 @@ let saveTagsHandler = null;
 
 /**
  * Set up tag editing mode
+ * @param {string|null} modelType - Model type for suggestions (e.g. 'loras', 'checkpoints')
+ * @param {Object} [options] - Optional configuration
+ * @param {boolean} [options.showSuggestions=true] - Show priority tag suggestions dropdown
+ * @param {Function} [options.saveHandler] - Custom save function, async (filePath, tags) => {}
+ * @param {Function} [options.onSaved] - Called after successful save, (tags) => {}
+ * @param {boolean} [options.normalizeTag=true] - Lowercase tag on add
  */
-export function setupTagEditMode(modelType = null) {
-    const editBtn = document.querySelector('.edit-tags-btn');
+export function setupTagEditMode(modelType = null, options = {}) {
+    // Store options for use by saveTags and addNewTag
+    tagEditOptions = {
+        showSuggestions: options.showSuggestions !== false,
+        saveHandler: options.saveHandler || null,
+        onSaved: options.onSaved || null,
+        normalizeTag: options.normalizeTag !== false,
+    };
+
+    const root = options.container || document;
+    const editBtn = root.querySelector('.edit-tags-btn');
     if (!editBtn) return;
 
-    setActiveModelTypeKey(modelType);
-    ensurePriorityTagSuggestions();
+    if (tagEditOptions.showSuggestions) {
+        setActiveModelTypeKey(modelType);
+        ensurePriorityTagSuggestions();
+    }
     
     // Store original tags for restoring on cancel
     let originalTags = [];
@@ -158,7 +183,8 @@ export function setupTagEditMode(modelType = null) {
     
     // Create new handler and store reference
     const editBtnClickHandler = function() {
-        const tagsSection = document.querySelector('.model-tags-container');
+        const tagsSection = this.closest('.model-tags-container');
+        if (!tagsSection) return;
         const isEditMode = tagsSection.classList.toggle('edit-mode');
         const filePath = this.dataset.filePath;
         
@@ -193,16 +219,18 @@ export function setupTagEditMode(modelType = null) {
                 tagsSection.appendChild(editContainer);
                 
                 // Setup the tag input field behavior
-                setupTagInput();
+                setupTagInput(tagsSection);
                 
                 // Create and add preset suggestions dropdown
-                const tagForm = editContainer.querySelector('.metadata-add-form');
-                const suggestionsDropdown = createSuggestionsDropdown(originalTags);
-                tagForm.appendChild(suggestionsDropdown);
+                if (tagEditOptions.showSuggestions) {
+                    const tagForm = editContainer.querySelector('.metadata-add-form');
+                    const suggestionsDropdown = createSuggestionsDropdown(originalTags);
+                    tagForm.appendChild(suggestionsDropdown);
+                }
                 
                 // Setup delete buttons for existing tags
                 setupDeleteButtons();
-                setupTagDragAndDrop();
+                setupTagDragAndDrop(tagsSection);
                 
                 // Transfer click event from original button to the cloned one
                 const newEditBtn = editContainer.querySelector('.metadata-header-btn');
@@ -218,7 +246,7 @@ export function setupTagEditMode(modelType = null) {
                 // Just show the existing edit container
                 tagsEditContainer.style.display = 'block';
                 editBtn.style.display = 'none';
-                setupTagDragAndDrop();
+                setupTagDragAndDrop(tagsSection);
             }
         } else {
             // Exit edit mode
@@ -255,7 +283,7 @@ export function setupTagEditMode(modelType = null) {
     saveTagsHandler = function(e) {
         if (e.target.classList.contains('save-tags-btn') || 
             e.target.closest('.save-tags-btn')) {
-            saveTags();
+            saveTags(e.target);
         }
     };
     
@@ -267,19 +295,28 @@ export function setupTagEditMode(modelType = null) {
 
 /**
  * Save tags
+ * @param {Element} [triggerElement] - The element that triggered the save (e.g. save button)
  */
-async function saveTags() {
-    const editBtn = document.querySelector('.edit-tags-btn');
-    if (!editBtn) return;
+async function saveTags(triggerElement = null) {
+    let editBtn;
+    let scope;
+    if (triggerElement) {
+        scope = triggerElement.closest('.model-tags-container');
+        editBtn = scope ? scope.querySelector('.edit-tags-btn') : document.querySelector('.edit-tags-btn');
+    } else {
+        scope = document.querySelector('.model-tags-container');
+        editBtn = scope ? scope.querySelector('.edit-tags-btn') : null;
+    }
+    if (!editBtn || !scope) return;
     
     const filePath = editBtn.dataset.filePath;
-    const tagElements = document.querySelectorAll('.metadata-item');
+    const tagElements = scope.querySelectorAll('.metadata-item');
     let tags = Array.from(tagElements).map(tag => tag.dataset.tag);
     
     // Flush uncommitted input as a tag so it's not silently lost on save
-    const tagInput = document.querySelector('.metadata-input');
+    const tagInput = scope.querySelector('.metadata-input');
     if (tagInput) {
-        const pendingTag = tagInput.value.trim().toLowerCase();
+        const pendingTag = tagEditOptions.normalizeTag ? tagInput.value.trim().toLowerCase() : tagInput.value.trim();
         if (pendingTag && !tags.includes(pendingTag)) {
             tags.push(pendingTag);
         }
@@ -287,7 +324,7 @@ async function saveTags() {
     }
 
     // Get original tags to compare
-    const originalTagElements = document.querySelectorAll('.tooltip-tag');
+    const originalTagElements = scope.querySelectorAll('.tooltip-tag');
     const originalTags = Array.from(originalTagElements).map(tag => tag.textContent);
     
     // Check if tags have actually changed
@@ -301,58 +338,67 @@ async function saveTags() {
     }
     
     try {
-        // Save tags metadata
-        await getModelApiClient().saveModelMetadata(filePath, { tags: tags });
+        // Use custom save handler if provided, otherwise default model API
+        if (tagEditOptions.saveHandler) {
+            await tagEditOptions.saveHandler(filePath, tags);
+        } else {
+            await getModelApiClient().saveModelMetadata(filePath, { tags: tags });
+        }
         
         // Set flag to skip restoring original tags when exiting edit mode
         editBtn.dataset.skipRestore = "true";
         
-        // Update the compact tags display
-        const compactTagsContainer = document.querySelector('.model-tags-container');
-        if (compactTagsContainer) {
-            // Generate new compact tags HTML
-            const compactTagsDisplay = compactTagsContainer.querySelector('.model-tags-compact');
-            
-            if (compactTagsDisplay) {
-                // Clear current tags
-                compactTagsDisplay.innerHTML = '';
+        // Use custom onSaved if provided (e.g. for recipe dirty state + re-render)
+        if (tagEditOptions.onSaved) {
+            tagEditOptions.onSaved(tags);
+        } else {
+            // Update the compact tags display
+            const compactTagsContainer = scope;
+            if (compactTagsContainer) {
+                // Generate new compact tags HTML
+                const compactTagsDisplay = compactTagsContainer.querySelector('.model-tags-compact');
                 
-                // Add visible tags (up to 5)
-                const visibleTags = tags.slice(0, 5);
-                visibleTags.forEach(tag => {
-                    const span = document.createElement('span');
-                    span.className = 'model-tag-compact';
-                    span.textContent = tag;
-                    compactTagsDisplay.appendChild(span);
-                });
+                if (compactTagsDisplay) {
+                    // Clear current tags
+                    compactTagsDisplay.innerHTML = '';
+                    
+                    // Add visible tags (up to 5)
+                    const visibleTags = tags.slice(0, 5);
+                    visibleTags.forEach(tag => {
+                        const span = document.createElement('span');
+                        span.className = 'model-tag-compact';
+                        span.textContent = tag;
+                        compactTagsDisplay.appendChild(span);
+                    });
+                    
+                    // Add more indicator if needed
+                    const remainingCount = Math.max(0, tags.length - 5);
+                    if (remainingCount > 0) {
+                        const more = document.createElement('span');
+                        more.className = 'model-tag-more';
+                        more.dataset.count = remainingCount;
+                        more.textContent = `+${remainingCount}`;
+                        compactTagsDisplay.appendChild(more);
+                    }
+                }
                 
-                // Add more indicator if needed
-                const remainingCount = Math.max(0, tags.length - 5);
-                if (remainingCount > 0) {
-                    const more = document.createElement('span');
-                    more.className = 'model-tag-more';
-                    more.dataset.count = remainingCount;
-                    more.textContent = `+${remainingCount}`;
-                    compactTagsDisplay.appendChild(more);
+                // Update tooltip content
+                const tooltipContent = compactTagsContainer.querySelector('.tooltip-content');
+                if (tooltipContent) {
+                    tooltipContent.innerHTML = '';
+                    
+                    tags.forEach(tag => {
+                        const span = document.createElement('span');
+                        span.className = 'tooltip-tag';
+                        span.textContent = tag;
+                        tooltipContent.appendChild(span);
+                    });
                 }
             }
             
-            // Update tooltip content
-            const tooltipContent = compactTagsContainer.querySelector('.tooltip-content');
-            if (tooltipContent) {
-                tooltipContent.innerHTML = '';
-                
-                tags.forEach(tag => {
-                    const span = document.createElement('span');
-                    span.className = 'tooltip-tag';
-                    span.textContent = tag;
-                    tooltipContent.appendChild(span);
-                });
-            }
+            // Exit edit mode
+            editBtn.click();
         }
-        
-        // Exit edit mode
-        editBtn.click();
         
         showToast('modelTags.messages.updated', {}, 'success');
     } catch (error) {
@@ -470,16 +516,19 @@ function renderPriorityTagSuggestions(container, existingTags = []) {
 
 /**
  * Set up tag input behavior
+ * @param {Element} scopeContainer - The .model-tags-container element
  */
-function setupTagInput() {
-    const tagInput = document.querySelector('.metadata-input');
+function setupTagInput(scopeContainer) {
+    const tagInput = scopeContainer
+        ? scopeContainer.querySelector('.metadata-input')
+        : document.querySelector('.metadata-input');
     
     if (tagInput) {
         tagInput.focus();
         tagInput.addEventListener('keydown', function(e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                addNewTag(this.value);
+                addNewTag(this.value, this);
                 this.value = ''; // Clear input after adding
             }
         });
@@ -504,9 +553,12 @@ function setupDeleteButtons() {
 
 /**
  * Enable drag-and-drop sorting for tag items
+ * @param {Element} [scopeContainer] - Optional scoped .model-tags-container element
  */
-function setupTagDragAndDrop() {
-    const container = document.querySelector(METADATA_ITEMS_CONTAINER_SELECTOR);
+function setupTagDragAndDrop(scopeContainer) {
+    const container = scopeContainer
+        ? scopeContainer.querySelector(METADATA_ITEMS_CONTAINER_SELECTOR)
+        : document.querySelector(METADATA_ITEMS_CONTAINER_SELECTOR);
     if (!container) {
         return;
     }
@@ -712,12 +764,14 @@ function finishPointerDrag() {
 /**
  * Add a new tag
  * @param {string} tag - Tag to add
+ * @param {Element} [scopeElement] - Element within the correct .model-tags-container for scoping
  */
-function addNewTag(tag) {
-    tag = tag.trim().toLowerCase();
+function addNewTag(tag, scopeElement = null) {
+    tag = tagEditOptions.normalizeTag ? tag.trim().toLowerCase() : tag.trim();
     if (!tag) return;
     
-    const tagsContainer = document.querySelector('.metadata-items');
+    const scope = scopeElement ? scopeElement.closest('.model-tags-container') : document;
+    const tagsContainer = scope.querySelector('.metadata-items');
     if (!tagsContainer) return;
     
     // Validation: Check length
@@ -762,7 +816,7 @@ function addNewTag(tag) {
     });
     
     tagsContainer.appendChild(newTag);
-    setupTagDragAndDrop();
+    setupTagDragAndDrop(scope);
     
     // Update status of items in the suggestions dropdown
     updateSuggestionsDropdown();

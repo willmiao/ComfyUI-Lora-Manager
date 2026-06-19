@@ -6,13 +6,8 @@
             <h2 id="recipeModalTitle">Recipe Details</h2>
             <!-- Header Actions: populated dynamically in RecipeModal.js -->
             <div class="recipe-header-actions" id="recipeHeaderActions"></div>
-            <!-- Recipe Tags Container -->
-            <div class="recipe-tags-container">
-                <div class="recipe-tags-compact" id="recipeTagsCompact"></div>
-                <div class="recipe-tags-tooltip" id="recipeTagsTooltip">
-                    <div class="tooltip-content" id="recipeTagsTooltipContent"></div>
-                </div>
-            </div>
+            <!-- Recipe Tags Container (rendered by renderCompactTags) -->
+            <div id="recipeTagsContainer"></div>
         </header>
         
         <div class="modal-body">

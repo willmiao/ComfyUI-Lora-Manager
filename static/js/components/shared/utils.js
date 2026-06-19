@@ -78,10 +78,12 @@ export function renderCompactTags(tags, filePath = '') {
 
 /**
  * Set up tag tooltip functionality
+ * @param {Element} [scopeContainer] - Optional container to scope the querySelector
  */
-export function setupTagTooltip() {
-    const tagsContainer = document.querySelector('.model-tags-container');
-    const tooltip = document.querySelector('.model-tags-tooltip');
+export function setupTagTooltip(scopeContainer = null) {
+    const root = scopeContainer || document;
+    const tagsContainer = root.querySelector('.model-tags-container');
+    const tooltip = root.querySelector('.model-tags-tooltip');
     
     if (tagsContainer && tooltip) {
         tagsContainer.addEventListener('mouseenter', () => {

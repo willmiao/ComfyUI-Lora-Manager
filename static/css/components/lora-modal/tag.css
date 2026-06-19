@@ -17,6 +17,8 @@
   flex-wrap: nowrap;
   gap: 6px;
   align-items: center;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .model-tag-compact {
@@ -28,6 +30,9 @@
   font-size: 0.75em;
   color: var(--text-color);
   white-space: nowrap;
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Style for empty tags placeholder */
@@ -118,8 +123,9 @@
 /* Model Tags Edit Mode */
 .model-tags-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  overflow: hidden;
 }
 
 .edit-tags-btn {
@@ -132,6 +138,7 @@
   border-radius: var(--border-radius-xs);
   transition: var(--transition-base);
   margin-left: var(--space-1);
+  flex-shrink: 0;
 }
 
 .edit-tags-btn.visible,
