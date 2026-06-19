@@ -427,7 +427,18 @@ class MetadataSyncService:
         metadata = await metadata_loader(metadata_path)
 
         for key, value in updates.items():
-            if isinstance(value, dict) and isinstance(metadata.get(key), dict):
+            if key == "tags" and isinstance(value, list):
+                # Normalize tags: trim, lowercase, deduplicate
+                normalized = []
+                seen = set()
+                for tag in value:
+                    if isinstance(tag, str):
+                        t = tag.strip().lower()
+                        if t and t not in seen:
+                            normalized.append(t)
+                            seen.add(t)
+                metadata[key] = normalized
+            elif isinstance(value, dict) and isinstance(metadata.get(key), dict):
                 metadata[key].update(value)
             else:
                 metadata[key] = value

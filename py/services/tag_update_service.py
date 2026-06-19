@@ -36,9 +36,9 @@ class TagUpdateService:
             if isinstance(tag, str) and tag.strip():
                 # Convert all tags to lowercase to avoid case sensitivity issues on Windows
                 normalized = tag.strip().lower()
-                if normalized.lower() not in existing_lower:
+                if normalized not in existing_lower:
                     existing_tags.append(normalized)
-                    existing_lower.append(normalized.lower())
+                    existing_lower.append(normalized)
                     tags_added.append(normalized)
 
         metadata["tags"] = existing_tags

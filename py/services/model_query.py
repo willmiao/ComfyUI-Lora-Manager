@@ -294,12 +294,14 @@ class ModelFilterSet:
                 for tag, state in tag_filters.items():
                     if not tag:
                         continue
+                    # Normalize to lowercase for case-insensitive matching
+                    normalized = tag.strip().lower()
                     if state == "exclude":
-                        exclude_tags.add(tag)
+                        exclude_tags.add(normalized)
                     else:
-                        include_tags.add(tag)
+                        include_tags.add(normalized)
             else:
-                include_tags = {tag for tag in tag_filters if tag}
+                include_tags = {tag.strip().lower() for tag in tag_filters if tag}
 
             if include_tags:
                 tag_logic = criteria.tag_logic.lower() if criteria.tag_logic else "any"
@@ -318,13 +320,17 @@ class ModelFilterSet:
                                 return True
                             # Otherwise, check if all non-special tags match
                             if non_special_tags:
-                                return all(tag in (item_tags or []) for tag in non_special_tags)
+                                # Case-insensitive: normalize item tags too
+                                normalized_item_tags = {t.strip().lower() for t in (item_tags or []) if isinstance(t, str)}
+                                return all(tag in normalized_item_tags for tag in non_special_tags)
                             return True
-                        # Normal case: all tags must match
-                        return all(tag in (item_tags or []) for tag in non_special_tags)
+                        # Normal case: all tags must match (case-insensitive)
+                        normalized_item_tags = {t.strip().lower() for t in (item_tags or []) if isinstance(t, str)}
+                        return all(tag in normalized_item_tags for tag in non_special_tags)
                     else:
-                        # OR logic (default): item must have ANY include tag
-                        return any(tag in include_tags for tag in (item_tags or []))
+                        # OR logic (default): item must have ANY include tag (case-insensitive)
+                        normalized_item_tags = {t.strip().lower() for t in (item_tags or []) if isinstance(t, str)}
+                        return bool(normalized_item_tags & include_tags)
 
                 items = [item for item in items if matches_include(item.get("tags"))]
 
@@ -333,7 +339,9 @@ class ModelFilterSet:
                 def matches_exclude(item_tags):
                     if not item_tags and "__no_tags__" in exclude_tags:
                         return True
-                    return any(tag in exclude_tags for tag in (item_tags or []))
+                    # Case-insensitive: normalize item tags
+                    normalized_item_tags = {t.strip().lower() for t in (item_tags or []) if isinstance(t, str)}
+                    return bool(normalized_item_tags & exclude_tags)
 
                 items = [
                     item for item in items if not matches_exclude(item.get("tags"))
