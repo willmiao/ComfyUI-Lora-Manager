@@ -1016,6 +1016,18 @@
             "storage": "Almacenamiento",
             "insights": "Perspectivas"
         },
+        "metrics": {
+            "totalModels": "Total de modelos",
+            "totalStorage": "Almacenamiento total",
+            "totalGenerations": "Generaciones totales",
+            "usageRate": "Tasa de uso",
+            "loras": "LoRAs",
+            "checkpoints": "Puntos de control",
+            "embeddings": "Embeddings",
+            "uniqueTags": "Etiquetas únicas",
+            "unusedModels": "Modelos no usados",
+            "avgUsesPerModel": "Prom. usos/modelo"
+        },
         "usage": {
             "mostUsedLoras": "LoRAs más utilizados",
             "mostUsedCheckpoints": "Checkpoints más utilizados",
@@ -1033,13 +1045,42 @@
         },
         "insights": {
             "smartInsights": "Perspectivas inteligentes",
-            "recommendations": "Recomendaciones"
+            "recommendations": "Recomendaciones",
+            "noInsights": "No hay información disponible"
         },
         "charts": {
             "collectionOverview": "Resumen de colección",
             "baseModelDistribution": "Distribución de modelo base",
             "usageTrends": "Tendencias de uso (Últimos 30 días)",
-            "usageDistribution": "Distribución de uso"
+            "usageDistribution": "Distribución de uso",
+            "date": "Fecha",
+            "usageCount": "Conteo de uso",
+            "fileSizeBytes": "Tamaño del archivo (bytes)",
+            "models": "Modelos",
+            "loraUsage": "Uso de LoRA",
+            "checkpointUsage": "Uso de Checkpoint",
+            "embeddingUsage": "Uso de Embedding"
+        },
+        "modelTypes": {
+            "lora": "LoRA",
+            "locon": "LyCORIS",
+            "dora": "DoRA",
+            "checkpoint": "Punto de control",
+            "diffusion_model": "Modelo de difusión",
+            "embedding": "Embeddings"
+        },
+        "placeholders": {
+            "loading": "Cargando...",
+            "noModels": "No se encontraron modelos",
+            "errorLoading": "Error al cargar datos",
+            "noStorageData": "No hay datos de almacenamiento disponibles",
+            "rootFolder": "Raíz",
+            "chartLibraryMissing": "El gráfico requiere la librería Chart.js"
+        },
+        "tooltips": {
+            "tagCount": "{tag}: {count} modelos",
+            "chartUsage": "{name}: {size}, {count} usos",
+            "chartPercentage": "{label}: {value} ({pct}%)"
         }
     },
     "modals": {

@@ -1016,6 +1016,18 @@
             "storage": "אחסון",
             "insights": "תובנות"
         },
+        "metrics": {
+            "totalModels": "סה\"כ דגמים",
+            "totalStorage": "סה\"כ אחסון",
+            "totalGenerations": "סה\"כ יצירות",
+            "usageRate": "שיעור שימוש",
+            "loras": "LoRA",
+            "checkpoints": "נקודות ביקורת",
+            "embeddings": "הטמעות",
+            "uniqueTags": "תגיות ייחודיות",
+            "unusedModels": "דגמים שאינם בשימוש",
+            "avgUsesPerModel": "ממוצע שימושים/דגם"
+        },
         "usage": {
             "mostUsedLoras": "LoRAs הנפוצים ביותר",
             "mostUsedCheckpoints": "Checkpoints הנפוצים ביותר",
@@ -1033,13 +1045,42 @@
         },
         "insights": {
             "smartInsights": "תובנות חכמות",
-            "recommendations": "המלצות"
+            "recommendations": "המלצות",
+            "noInsights": "אין תובנות זמינות"
         },
         "charts": {
             "collectionOverview": "סקירת אוסף",
             "baseModelDistribution": "התפלגות מודלי בסיס",
             "usageTrends": "מגמות שימוש (30 יום אחרונים)",
-            "usageDistribution": "התפלגות שימוש"
+            "usageDistribution": "התפלגות שימוש",
+            "date": "תאריך",
+            "usageCount": "מספר שימושים",
+            "fileSizeBytes": "גודל קובץ (בתים)",
+            "models": "דגמים",
+            "loraUsage": "שימוש ב-LoRA",
+            "checkpointUsage": "שימוש ב-Checkpoint",
+            "embeddingUsage": "שימוש ב-Embedding"
+        },
+        "modelTypes": {
+            "lora": "LoRA",
+            "locon": "LyCORIS",
+            "dora": "DoRA",
+            "checkpoint": "נקודת ביקורת",
+            "diffusion_model": "מודל דיפוזיה",
+            "embedding": "הטמעות"
+        },
+        "placeholders": {
+            "loading": "טוען...",
+            "noModels": "לא נמצאו דגמים",
+            "errorLoading": "שגיאה בטעינת נתונים",
+            "noStorageData": "אין נתוני אחסון זמינים",
+            "rootFolder": "שורש",
+            "chartLibraryMissing": "הגרף דורש את ספריית Chart.js"
+        },
+        "tooltips": {
+            "tagCount": "{tag}: {count} דגמים",
+            "chartUsage": "{name}: {size}, {count} שימושים",
+            "chartPercentage": "{label}: {value} ({pct}%)"
         }
     },
     "modals": {

@@ -1016,6 +1016,18 @@
             "storage": "ストレージ",
             "insights": "インサイト"
         },
+        "metrics": {
+            "totalModels": "モデル総数",
+            "totalStorage": "ストレージ合計",
+            "totalGenerations": "生成回数合計",
+            "usageRate": "使用率",
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "uniqueTags": "ユニークタグ",
+            "unusedModels": "未使用モデル",
+            "avgUsesPerModel": "平均使用回数/モデル"
+        },
         "usage": {
             "mostUsedLoras": "最も使用されているLoRA",
             "mostUsedCheckpoints": "最も使用されているCheckpoint",
@@ -1033,13 +1045,42 @@
         },
         "insights": {
             "smartInsights": "スマートインサイト",
-            "recommendations": "推奨事項"
+            "recommendations": "推奨事項",
+            "noInsights": "インサイトはありません"
         },
         "charts": {
             "collectionOverview": "コレクション概要",
             "baseModelDistribution": "ベースモデル分布",
             "usageTrends": "使用傾向（過去30日）",
-            "usageDistribution": "使用分布"
+            "usageDistribution": "使用分布",
+            "date": "日付",
+            "usageCount": "使用回数",
+            "fileSizeBytes": "ファイルサイズ（バイト）",
+            "models": "モデル",
+            "loraUsage": "LoRA 使用量",
+            "checkpointUsage": "Checkpoint 使用量",
+            "embeddingUsage": "Embedding 使用量"
+        },
+        "modelTypes": {
+            "lora": "LoRA",
+            "locon": "LyCORIS",
+            "dora": "DoRA",
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "拡散モデル",
+            "embedding": "Embedding"
+        },
+        "placeholders": {
+            "loading": "読み込み中...",
+            "noModels": "モデルが見つかりません",
+            "errorLoading": "データ読み込みエラー",
+            "noStorageData": "ストレージデータがありません",
+            "rootFolder": "ルート",
+            "chartLibraryMissing": "Chart.js ライブラリが必要です"
+        },
+        "tooltips": {
+            "tagCount": "{tag}: {count} モデル",
+            "chartUsage": "{name}: {size}, {count} 回使用",
+            "chartPercentage": "{label}: {value} ({pct}%)"
         }
     },
     "modals": {

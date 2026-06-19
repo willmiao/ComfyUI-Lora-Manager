@@ -1,6 +1,8 @@
 // Statistics page functionality
 import { appCore } from './core.js';
 import { showToast } from './utils/uiHelpers.js';
+import { translate } from './utils/i18nHelpers.js';
+import { i18n } from './i18n/index.js';
 
 // Chart.js import (assuming it's available globally or via CDN)
 // If Chart.js isn't available, we'll need to add it to the project
@@ -124,43 +126,43 @@ export class StatisticsManager {
             {
                 icon: 'fas fa-magic',
                 value: this.data.collection.total_models,
-                label: 'Total Models',
+                label: translate('statistics.metrics.totalModels'),
                 format: 'number'
             },
             {
                 icon: 'fas fa-database',
                 value: this.data.collection.total_size,
-                label: 'Total Storage',
+                label: translate('statistics.metrics.totalStorage'),
                 format: 'size'
             },
             {
                 icon: 'fas fa-play-circle',
                 value: this.data.collection.total_generations,
-                label: 'Total Generations',
+                label: translate('statistics.metrics.totalGenerations'),
                 format: 'number'
             },
             {
                 icon: 'fas fa-chart-line',
                 value: this.calculateUsageRate(),
-                label: 'Usage Rate',
+                label: translate('statistics.metrics.usageRate'),
                 format: 'percentage'
             },
             {
                 icon: 'fas fa-layer-group',
                 value: this.data.collection.lora_count,
-                label: 'LoRAs',
+                label: translate('statistics.metrics.loras'),
                 format: 'number'
             },
             {
                 icon: 'fas fa-check-circle',
                 value: this.data.collection.checkpoint_count,
-                label: 'Checkpoints',
+                label: translate('statistics.metrics.checkpoints'),
                 format: 'number'
             },
             {
                 icon: 'fas fa-code',
                 value: this.data.collection.embedding_count,
-                label: 'Embeddings',
+                label: translate('statistics.metrics.embeddings'),
                 format: 'number'
             }
         ];
@@ -196,11 +198,7 @@ export class StatisticsManager {
     }
 
     formatFileSize(bytes) {
-        if (bytes === 0) return '0 Bytes';
-        const k = 1024;
-        const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
-        const i = Math.floor(Math.log(bytes) / Math.log(k));
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        return i18n.formatFileSize(bytes);
     }
 
     calculateUsageRate() {
@@ -250,7 +248,7 @@ export class StatisticsManager {
         if (!ctx || !this.data.collection) return;
 
         const data = {
-            labels: ['LoRAs', 'Checkpoints', 'Embeddings'],
+            labels: [translate('statistics.metrics.loras'), translate('statistics.metrics.checkpoints'), translate('statistics.metrics.embeddings')],
             datasets: [{
                 data: [
                     this.data.collection.lora_count, 
@@ -300,17 +298,17 @@ export class StatisticsManager {
             labels: Array.from(allModels),
             datasets: [
                 {
-                    label: 'LoRAs',
+                    label: translate('statistics.metrics.loras'),
                     data: Array.from(allModels).map(model => loraData[model] || 0),
                     backgroundColor: 'oklch(68% 0.28 256 / 0.7)'
                 },
                 {
-                    label: 'Checkpoints',
+                    label: translate('statistics.metrics.checkpoints'),
                     data: Array.from(allModels).map(model => checkpointData[model] || 0),
                     backgroundColor: 'oklch(68% 0.28 200 / 0.7)'
                 },
                 {
-                    label: 'Embeddings',
+                    label: translate('statistics.metrics.embeddings'),
                     data: Array.from(allModels).map(model => embeddingData[model] || 0),
                     backgroundColor: 'oklch(68% 0.28 120 / 0.7)'
                 }
@@ -345,21 +343,21 @@ export class StatisticsManager {
             labels: timeline.map(item => new Date(item.date).toLocaleDateString()),
             datasets: [
                 {
-                    label: 'LoRA Usage',
+                    label: translate('statistics.charts.loraUsage'),
                     data: timeline.map(item => item.lora_usage),
                     borderColor: 'oklch(68% 0.28 256)',
                     backgroundColor: 'oklch(68% 0.28 256 / 0.1)',
                     fill: true
                 },
                 {
-                    label: 'Checkpoint Usage',
+                    label: translate('statistics.charts.checkpointUsage'),
                     data: timeline.map(item => item.checkpoint_usage),
                     borderColor: 'oklch(68% 0.28 200)',
                     backgroundColor: 'oklch(68% 0.28 200 / 0.1)',
                     fill: true
                 },
                 {
-                    label: 'Embedding Usage',
+                    label: translate('statistics.charts.embeddingUsage'),
                     data: timeline.map(item => item.embedding_usage),
                     borderColor: 'oklch(68% 0.28 120)',
                     backgroundColor: 'oklch(68% 0.28 120 / 0.1)',
@@ -383,14 +381,14 @@ export class StatisticsManager {
                         display: true,
                         title: {
                             display: true,
-                            text: 'Date'
+                            text: translate('statistics.charts.date')
                         }
                     },
                     y: {
                         display: true,
                         title: {
                             display: true,
-                            text: 'Usage Count'
+                            text: translate('statistics.charts.usageCount')
                         }
                     }
                 }
@@ -416,7 +414,7 @@ export class StatisticsManager {
         const data = {
             labels: allModels.map(model => model.name),
             datasets: [{
-                label: 'Usage Count',
+                label: translate('statistics.charts.usageCount'),
                 data: allModels.map(model => model.usage_count),
                 backgroundColor: allModels.map(model => {
                     switch(model.type) {
@@ -450,7 +448,7 @@ export class StatisticsManager {
         if (!ctx || !this.data.collection) return;
 
         const data = {
-            labels: ['LoRAs', 'Checkpoints', 'Embeddings'],
+            labels: [translate('statistics.metrics.loras'), translate('statistics.metrics.checkpoints'), translate('statistics.metrics.embeddings')],
             datasets: [{
                 data: [
                     this.data.collection.lora_size, 
@@ -504,7 +502,7 @@ export class StatisticsManager {
 
         const data = {
             datasets: [{
-                label: 'Models',
+                label: translate('statistics.charts.models'),
                 data: allData.map(item => ({
                     x: item.size,
                     y: item.usage_count,
@@ -532,14 +530,14 @@ export class StatisticsManager {
                     x: {
                         title: {
                             display: true,
-                            text: 'File Size (bytes)'
+                            text: translate('statistics.charts.fileSizeBytes')
                         },
                         type: 'logarithmic'
                     },
                     y: {
                         title: {
                             display: true,
-                            text: 'Usage Count'
+                            text: translate('statistics.charts.usageCount')
                         }
                     }
                 },
@@ -548,7 +546,7 @@ export class StatisticsManager {
                         callbacks: {
                             label: (context) => {
                                 const point = context.raw;
-                                return `${point.name}: ${this.formatFileSize(point.x)}, ${point.y} uses`;
+                                return translate('statistics.tooltips.chartUsage', { name: point.name, size: this.formatFileSize(point.x), count: point.y });
                             }
                         }
                     }
@@ -563,12 +561,12 @@ export class StatisticsManager {
 
         const distribution = this.data.collection.model_types_distribution;
         const typeDisplayNames = {
-            lora: 'LoRA',
-            locon: 'LyCORIS',
-            dora: 'DoRA',
-            checkpoint: 'Checkpoint',
-            diffusion_model: 'Diffusion Model',
-            embedding: 'Embeddings'
+            lora: translate('statistics.modelTypes.lora'),
+            locon: translate('statistics.modelTypes.locon'),
+            dora: translate('statistics.modelTypes.dora'),
+            checkpoint: translate('statistics.modelTypes.checkpoint'),
+            diffusion_model: translate('statistics.modelTypes.diffusion_model'),
+            embedding: translate('statistics.modelTypes.embedding')
         };
 
         const colorPalette = {
@@ -610,7 +608,7 @@ export class StatisticsManager {
                                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                 const value = context.parsed;
                                 const pct = ((value / total) * 100).toFixed(1);
-                                return ` ${context.label}: ${value} (${pct}%)`;
+                                return translate('statistics.tooltips.chartPercentage', { label: context.label, value, pct });
                             }
                         }
                     }
@@ -654,7 +652,7 @@ export class StatisticsManager {
         
         // Show loading indicator on initial load
         if (state.offset === 0) {
-            container.innerHTML = '<div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> Loading...</div>';
+            container.innerHTML = '<div class="loading-placeholder"><i class="fas fa-spinner fa-spin"></i> ' + translate('statistics.placeholders.loading') + '</div>';
         }
 
         try {
@@ -670,7 +668,7 @@ export class StatisticsManager {
                 }
 
                 if (items.length === 0 && state.offset === 0) {
-                    container.innerHTML = '<div class="loading-placeholder">No models found</div>';
+                    container.innerHTML = '<div class="loading-placeholder">' + translate('statistics.placeholders.noModels') + '</div>';
                     state.hasMore = false;
                 } else if (items.length < state.limit) {
                     state.hasMore = false;
@@ -683,7 +681,7 @@ export class StatisticsManager {
                              onerror="this.src='/loras_static/images/no-preview.png'">
                         <div class="model-info">
                             <div class="model-name" title="${model.name}">${model.name}</div>
-                            <div class="model-meta">${model.base_model} • ${model.folder || 'Root'}</div>
+                            <div class="model-meta">${model.base_model} • ${model.folder || translate('statistics.placeholders.rootFolder')}</div>
                         </div>
                         <div class="model-usage">${model.usage_count}</div>
                     </div>
@@ -695,7 +693,7 @@ export class StatisticsManager {
         } catch (error) {
             console.error(`Error loading ${type} list:`, error);
             if (state.offset === 0) {
-                container.innerHTML = '<div class="loading-placeholder">Error loading data</div>';
+                container.innerHTML = '<div class="loading-placeholder">' + translate('statistics.placeholders.errorLoading') + '</div>';
             }
         } finally {
             state.isLoading = false;
@@ -718,7 +716,7 @@ export class StatisticsManager {
         ].sort((a, b) => b.size - a.size).slice(0, 10);
 
         if (allModels.length === 0) {
-            container.innerHTML = '<div class="loading-placeholder">No storage data available</div>';
+            container.innerHTML = '<div class="loading-placeholder">' + translate('statistics.placeholders.noStorageData') + '</div>';
             return;
         }
 
@@ -726,7 +724,7 @@ export class StatisticsManager {
             <div class="model-item">
                 <div class="model-info">
                     <div class="model-name" title="${model.name}">${model.name}</div>
-                    <div class="model-meta">${model.type} • ${model.base_model}</div>
+                    <div class="model-meta">${translate('statistics.modelTypes.' + model.type.toLowerCase())} • ${model.base_model}</div>
                 </div>
                 <div class="model-usage">${this.formatFileSize(model.size)}</div>
             </div>
@@ -744,7 +742,7 @@ export class StatisticsManager {
             const size = Math.ceil((tagData.count / maxCount) * 5);
             return `
                 <span class="tag-cloud-item size-${size}" 
-                      title="${tagData.tag}: ${tagData.count} models">
+                      title="${translate('statistics.tooltips.tagCount', { tag: tagData.tag, count: tagData.count })}">
                     ${tagData.tag}
                 </span>
             `;
@@ -758,7 +756,7 @@ export class StatisticsManager {
         const insights = this.data.insights.insights;
         
         if (insights.length === 0) {
-            container.innerHTML = '<div class="loading-placeholder">No insights available</div>';
+            container.innerHTML = '<div class="loading-placeholder">' + translate('statistics.insights.noInsights') + '</div>';
             return;
         }
 
@@ -782,25 +780,25 @@ export class StatisticsManager {
             {
                 icon: 'fas fa-percentage',
                 value: this.calculateUsageRate(),
-                label: 'Usage Rate',
+                label: translate('statistics.metrics.usageRate'),
                 format: 'percentage'
             },
             {
                 icon: 'fas fa-tags',
                 value: this.data.tags?.total_unique_tags || 0,
-                label: 'Unique Tags',
+                label: translate('statistics.metrics.uniqueTags'),
                 format: 'number'
             },
             {
                 icon: 'fas fa-clock',
                 value: this.data.collection.unused_loras + this.data.collection.unused_checkpoints,
-                label: 'Unused Models',
+                label: translate('statistics.metrics.unusedModels'),
                 format: 'number'
             },
             {
                 icon: 'fas fa-chart-line',
                 value: this.calculateAverageUsage(),
-                label: 'Avg. Uses/Model',
+                label: translate('statistics.metrics.avgUsesPerModel'),
                 format: 'decimal'
             }
         ];
@@ -829,7 +827,7 @@ export class StatisticsManager {
         const chartCanvases = document.querySelectorAll('canvas');
         chartCanvases.forEach(canvas => {
             const container = canvas.parentElement;
-            container.innerHTML = '<div class="loading-placeholder"><i class="fas fa-chart-bar"></i> Chart requires Chart.js library</div>';
+            container.innerHTML = '<div class="loading-placeholder"><i class="fas fa-chart-bar"></i> ' + translate('statistics.placeholders.chartLibraryMissing') + '</div>';
         });
     }
 

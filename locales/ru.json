@@ -1016,6 +1016,18 @@
             "storage": "Хранение",
             "insights": "Аналитика"
         },
+        "metrics": {
+            "totalModels": "Всего моделей",
+            "totalStorage": "Всего хранилища",
+            "totalGenerations": "Всего генераций",
+            "usageRate": "Коэффициент использования",
+            "loras": "LoRA",
+            "checkpoints": "Контрольные точки",
+            "embeddings": "Эмбеддинги",
+            "uniqueTags": "Уникальные теги",
+            "unusedModels": "Неиспользуемые модели",
+            "avgUsesPerModel": "Сред. использований/модель"
+        },
         "usage": {
             "mostUsedLoras": "Наиболее используемые LoRAs",
             "mostUsedCheckpoints": "Наиболее используемые Checkpoints",
@@ -1033,13 +1045,42 @@
         },
         "insights": {
             "smartInsights": "Умная аналитика",
-            "recommendations": "Рекомендации"
+            "recommendations": "Рекомендации",
+            "noInsights": "Нет доступных данных"
         },
         "charts": {
             "collectionOverview": "Обзор коллекции",
             "baseModelDistribution": "Распределение базовых моделей",
             "usageTrends": "Тенденции использования (за последние 30 дней)",
-            "usageDistribution": "Распределение использования"
+            "usageDistribution": "Распределение использования",
+            "date": "Дата",
+            "usageCount": "Количество использований",
+            "fileSizeBytes": "Размер файла (байты)",
+            "models": "Модели",
+            "loraUsage": "Использование LoRA",
+            "checkpointUsage": "Использование Checkpoint",
+            "embeddingUsage": "Использование Embedding"
+        },
+        "modelTypes": {
+            "lora": "LoRA",
+            "locon": "LyCORIS",
+            "dora": "DoRA",
+            "checkpoint": "Контрольная точка",
+            "diffusion_model": "Диффузионная модель",
+            "embedding": "Эмбеддинги"
+        },
+        "placeholders": {
+            "loading": "Загрузка...",
+            "noModels": "Модели не найдены",
+            "errorLoading": "Ошибка загрузки данных",
+            "noStorageData": "Нет данных о хранилище",
+            "rootFolder": "Корень",
+            "chartLibraryMissing": "Для графика требуется библиотека Chart.js"
+        },
+        "tooltips": {
+            "tagCount": "{tag}: {count} моделей",
+            "chartUsage": "{name}: {size}, {count} использований",
+            "chartPercentage": "{label}: {value} ({pct}%)"
         }
     },
     "modals": {

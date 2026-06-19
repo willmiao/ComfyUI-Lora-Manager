@@ -1016,6 +1016,18 @@
             "storage": "Storage",
             "insights": "Insights"
         },
+        "metrics": {
+            "totalModels": "Total Models",
+            "totalStorage": "Total Storage",
+            "totalGenerations": "Total Generations",
+            "usageRate": "Usage Rate",
+            "loras": "LoRAs",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
+            "uniqueTags": "Unique Tags",
+            "unusedModels": "Unused Models",
+            "avgUsesPerModel": "Avg. Uses/Model"
+        },
         "usage": {
             "mostUsedLoras": "Most Used LoRAs",
             "mostUsedCheckpoints": "Most Used Checkpoints",
@@ -1033,13 +1045,42 @@
         },
         "insights": {
             "smartInsights": "Smart Insights",
-            "recommendations": "Recommendations"
+            "recommendations": "Recommendations",
+            "noInsights": "No insights available"
         },
         "charts": {
             "collectionOverview": "Collection Overview",
             "baseModelDistribution": "Base Model Distribution",
             "usageTrends": "Usage Trends (Last 30 Days)",
-            "usageDistribution": "Usage Distribution"
+            "usageDistribution": "Usage Distribution",
+            "date": "Date",
+            "usageCount": "Usage Count",
+            "fileSizeBytes": "File Size (bytes)",
+            "models": "Models",
+            "loraUsage": "LoRA Usage",
+            "checkpointUsage": "Checkpoint Usage",
+            "embeddingUsage": "Embedding Usage"
+        },
+        "modelTypes": {
+            "lora": "LoRA",
+            "locon": "LyCORIS",
+            "dora": "DoRA",
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "Diffusion Model",
+            "embedding": "Embeddings"
+        },
+        "placeholders": {
+            "loading": "Loading...",
+            "noModels": "No models found",
+            "errorLoading": "Error loading data",
+            "noStorageData": "No storage data available",
+            "rootFolder": "Root",
+            "chartLibraryMissing": "Chart requires Chart.js library"
+        },
+        "tooltips": {
+            "tagCount": "{tag}: {count} models",
+            "chartUsage": "{name}: {size}, {count} uses",
+            "chartPercentage": "{label}: {value} ({pct}%)"
         }
     },
     "modals": {

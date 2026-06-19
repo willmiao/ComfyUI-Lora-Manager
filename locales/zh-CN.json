@@ -1016,6 +1016,18 @@
             "storage": "存储",
             "insights": "洞察"
         },
+        "metrics": {
+            "totalModels": "模型总数",
+            "totalStorage": "总存储空间",
+            "totalGenerations": "总生成次数",
+            "usageRate": "使用率",
+            "loras": "LoRA",
+            "checkpoints": "Checkpoint",
+            "embeddings": "Embedding",
+            "uniqueTags": "唯一标签",
+            "unusedModels": "未使用模型",
+            "avgUsesPerModel": "平均使用次数/模型"
+        },
         "usage": {
             "mostUsedLoras": "最常用 LoRA",
             "mostUsedCheckpoints": "最常用 Checkpoint",
@@ -1033,13 +1045,42 @@
         },
         "insights": {
             "smartInsights": "智能洞察",
-            "recommendations": "推荐"
+            "recommendations": "推荐",
+            "noInsights": "暂无可用洞察"
         },
         "charts": {
             "collectionOverview": "收藏概览",
             "baseModelDistribution": "基础模型分布",
             "usageTrends": "使用趋势（最近30天）",
-            "usageDistribution": "使用分布"
+            "usageDistribution": "使用分布",
+            "date": "日期",
+            "usageCount": "使用次数",
+            "fileSizeBytes": "文件大小（字节）",
+            "models": "模型",
+            "loraUsage": "LoRA 使用量",
+            "checkpointUsage": "Checkpoint 使用量",
+            "embeddingUsage": "Embedding 使用量"
+        },
+        "modelTypes": {
+            "lora": "LoRA",
+            "locon": "LyCORIS",
+            "dora": "DoRA",
+            "checkpoint": "Checkpoint",
+            "diffusion_model": "扩散模型",
+            "embedding": "Embedding"
+        },
+        "placeholders": {
+            "loading": "加载中...",
+            "noModels": "未找到模型",
+            "errorLoading": "数据加载失败",
+            "noStorageData": "暂无存储数据",
+            "rootFolder": "根目录",
+            "chartLibraryMissing": "需要 Chart.js 库来显示图表"
+        },
+        "tooltips": {
+            "tagCount": "{tag}：{count} 个模型",
+            "chartUsage": "{name}：{size}，{count} 次使用",
+            "chartPercentage": "{label}：{value}（{pct}%）"
         }
     },
     "modals": {
