@@ -116,14 +116,4 @@ export class CheckpointsControls extends PageControls {
 
         await resetAndReload();
     }
-
-    /**
-     * Helper to truncate text with ellipsis
-     * @param {string} text
-     * @param {number} maxLength
-     * @returns {string}
-     */
-    _truncateText(text, maxLength) {
-        return text.length > maxLength ? `${text.substring(0, maxLength - 3)}...` : text;
-    }
 }

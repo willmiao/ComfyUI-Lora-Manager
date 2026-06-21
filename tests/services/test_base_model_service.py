@@ -803,6 +803,71 @@ async def test_get_paginated_data_group_by_model_dedup():
     assert response_all["total"] == 5
 
 
+async def test_get_paginated_data_filters_by_civitai_model_id():
+    """civitai_model_id filter returns only items matching the given modelId,
+    and bypasses group_by_model dedup so all versions appear."""
+    items = [
+        # Two versions of modelId=1
+        {"model_name": "Model1_v1", "folder": "root", "civitai": {"modelId": 1, "id": 100}},
+        {"model_name": "Model1_v2", "folder": "root", "civitai": {"modelId": 1, "id": 200}},
+        # One version of modelId=2
+        {"model_name": "Model2", "folder": "root", "civitai": {"modelId": 2, "id": 50}},
+        # Standalone (no civitai data)
+        {"model_name": "Standalone", "folder": "root"},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+    )
+
+    # Filter by modelId=1 — both versions should appear
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        civitai_model_id=1,
+    )
+
+    names = {item["model_name"] for item in response["items"]}
+    assert names == {"Model1_v1", "Model1_v2"}
+    assert response["total"] == 2
+
+    # Filter by modelId=2 — single version
+    response2 = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        civitai_model_id=2,
+    )
+
+    assert response2["total"] == 1
+    assert response2["items"][0]["model_name"] == "Model2"
+
+    # civitai_model_id + group_by_model=True — still shows all versions (no dedup)
+    response_dedup = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        civitai_model_id=1,
+        group_by_model=True,
+    )
+
+    assert response_dedup["total"] == 2
+    # Verify both versions are present (dedup was skipped)
+    version_ids = {item["civitai"]["id"] for item in response_dedup["items"]}
+    assert version_ids == {100, 200}
+
+
 def test_model_filter_set_handles_include_and_exclude_tag_filters():
     settings = StubSettings({})
     filter_set = ModelFilterSet(settings)

@@ -145,16 +145,6 @@ export class LorasControls extends PageControls {
     }
     
     /**
-     * Helper to truncate text with ellipsis
-     * @param {string} text - Text to truncate
-     * @param {number} maxLength - Maximum length before truncating
-     * @returns {string} - Truncated text
-     */
-    _truncateText(text, maxLength) {
-        return text.length > maxLength ? text.substring(0, maxLength - 3) + '...' : text;
-    }
-    
-    /**
      * Initialize the alphabet bar component
      */
     initAlphabetBar() {
