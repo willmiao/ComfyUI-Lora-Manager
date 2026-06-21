@@ -1,6 +1,6 @@
 // PageControls.js - Manages controls for both LoRAs and Checkpoints pages
 import { state, getCurrentPageState, setCurrentPageType } from '../../state/index.js';
-import { getStorageItem, setStorageItem, getSessionItem, setSessionItem } from '../../utils/storageHelpers.js';
+import { getStorageItem, setStorageItem, getSessionItem, setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
@@ -129,6 +129,9 @@ export class PageControls {
             clearFilterBtn.addEventListener('click', () => this.clearCustomFilter());
         }
         
+        // Check for View Local Versions filter
+        this.checkVlmFilter();
+
         // Page-specific event listeners
         this.initPageSpecificListeners();
     }
@@ -462,18 +465,68 @@ export class PageControls {
     /**
      * Clear custom filter
      */
+    /**
+     * Check for View Local Versions filter in sessionStorage
+     */
+    checkVlmFilter() {
+        const vlmModelId = getSessionItem('vlm_model_id');
+        const vlmModelName = getSessionItem('vlm_model_name');
+        const vlmBaseModel = getSessionItem('vlm_base_model');
+
+        if (vlmModelId && vlmModelName) {
+            const indicator = document.getElementById('customFilterIndicator');
+            const filterText = indicator?.querySelector('.customFilterText');
+
+            if (indicator && filterText) {
+                indicator.classList.remove('hidden');
+
+                const prefix = vlmBaseModel
+                    ? 'Showing same-base versions from'
+                    : 'Showing all versions from';
+                const displayText = `${prefix}: ${vlmModelName}`;
+
+                filterText.textContent = this._truncateText(displayText, 40);
+                filterText.setAttribute('title', displayText);
+            }
+        }
+    }
+
+    /**
+     * Clear custom filter
+     */
     async clearCustomFilter() {
+        // Check for View Local Versions filter first
+        const vlmModelId = getSessionItem('vlm_model_id');
+        if (vlmModelId) {
+            removeSessionItem('vlm_model_id');
+            removeSessionItem('vlm_model_name');
+            removeSessionItem('vlm_base_model');
+
+            // Full page reload to restore initial state (mirrors the "set" action)
+            window.location.reload();
+            return;
+        }
+
+        // Otherwise delegate to subclass for recipe filters
         if (!this.api) {
             console.error('API methods not registered');
             return;
         }
-        
+
         try {
             await this.api.clearCustomFilter();
         } catch (error) {
             console.error('Error clearing custom filter:', error);
             showToast('toast.controls.clearFilterFailed', { message: error.message }, 'error');
         }
+    }
+
+    /**
+     * Truncate text with ellipsis
+     */
+    _truncateText(text, maxLength) {
+        if (!text) return '';
+        return text.length > maxLength ? `${text.substring(0, maxLength - 3)}...` : text;
     }
     
     /**

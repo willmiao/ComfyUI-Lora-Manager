@@ -1465,7 +1465,7 @@
                     "resumeModelUpdates": "Resume updates for this model",
                     "ignoreModelUpdates": "Ignore updates for this model",
                     "viewLocalVersions": "View all local versions",
-                    "viewLocalTooltip": "Coming soon"
+                    "viewLocalTooltip": "Show all local versions of this model on the main page"
                 },
                 "filters": {
                     "label": "Base filter",

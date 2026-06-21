@@ -6,6 +6,7 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 import { buildCivitaiModelUrl } from '../../utils/civitaiUtils.js';
 import { formatFileSize } from './utils.js';
+import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 
 const VIDEO_EXTENSIONS = ['.mp4', '.webm', '.mov', '.mkv'];
 const PREVIEW_PLACEHOLDER_URL = '/loras_static/images/no-preview.png';
@@ -744,7 +745,7 @@ function renderToolbar(record, toolbarState = {}) {
                 <button class="versions-toolbar-btn versions-toolbar-btn-primary" data-versions-action="toggle-model-ignore">
                     ${escapeHtml(ignoreText)}
                 </button>
-                <button class="versions-toolbar-btn versions-toolbar-btn-secondary" data-versions-action="view-local" title="${escapeHtml(translate('modals.model.versions.actions.viewLocalTooltip', {}, 'Coming soon'))}" disabled>
+                <button class="versions-toolbar-btn versions-toolbar-btn-secondary" data-versions-action="view-local" title="${escapeHtml(translate('modals.model.versions.actions.viewLocalTooltip', {}, 'Show all local versions of this model on the main page'))}">
                     ${escapeHtml(viewLocalText)}
                 </button>
             </div>
@@ -792,6 +793,7 @@ export function initVersionsTab({
     modelId,
     currentVersionId,
     currentBaseModel,
+    modelName,
     onUpdateStatusChange,
 }) {
     const pane = document.querySelector(`#${modalId} #versions-tab`);
@@ -1017,6 +1019,31 @@ export function initVersionsTab({
             return;
         }
         render(controller.record);
+    }
+
+    function handleViewLocalVersions() {
+        if (!controller.record || !modelId) {
+            return;
+        }
+        // Determine base model filter based on current display mode
+        const baseModelInfo = getCurrentVersionBaseModel(controller.record, normalizedCurrentVersionId);
+        const isFilteringActive =
+            displayMode === DISPLAY_FILTER_MODES.SAME_BASE &&
+            Boolean(baseModelInfo.normalized);
+
+        // Write filter params to sessionStorage
+        setSessionItem('vlm_model_id', String(modelId));
+        setSessionItem('vlm_model_name', modelName || String(modelId));
+        if (isFilteringActive) {
+            // Use raw (non-normalized) base model for exact backend matching
+            setSessionItem('vlm_base_model', baseModelInfo.raw);
+        } else {
+            removeSessionItem('vlm_base_model');
+        }
+
+        // Close the modal and reload the page to show filtered cards
+        modalManager.closeModal(modalId);
+        window.location.reload();
     }
 
     async function handleToggleVersionIgnore(button, versionId) {
@@ -1347,6 +1374,10 @@ export function initVersionsTab({
                 case 'toggle-version-display-mode':
                     event.preventDefault();
                     handleToggleVersionDisplayMode();
+                    break;
+                case 'view-local':
+                    event.preventDefault();
+                    handleViewLocalVersions();
                     break;
                 default:
                     break;

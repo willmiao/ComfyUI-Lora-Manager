@@ -95,6 +95,16 @@ export class CheckpointsControls extends PageControls {
      * Clear checkpoint custom filter and reload
      */
     async clearCustomFilter() {
+        // Check for View Local Versions filter first
+        const vlmModelId = getSessionItem('vlm_model_id');
+        if (vlmModelId) {
+            removeSessionItem('vlm_model_id');
+            removeSessionItem('vlm_model_name');
+            removeSessionItem('vlm_base_model');
+            window.location.reload();
+            return;
+        }
+
         removeSessionItem('recipe_to_checkpoint_filterHash');
         removeSessionItem('recipe_to_checkpoint_filterHashes');
         removeSessionItem('filterCheckpointRecipeName');

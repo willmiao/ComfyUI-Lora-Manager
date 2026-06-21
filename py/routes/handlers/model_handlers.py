@@ -373,6 +373,14 @@ class ModelListingHandler:
             request.query.get("group_by_model", "false").lower() == "true"
         )
 
+        # View-local-versions filter: show all local versions of a specific model
+        civitai_model_id = request.query.get("civitai_model_id")
+        if civitai_model_id is not None:
+            try:
+                civitai_model_id = int(civitai_model_id)
+            except (TypeError, ValueError):
+                civitai_model_id = None
+
         return {
             "page": page,
             "page_size": page_size,
@@ -397,6 +405,7 @@ class ModelListingHandler:
             "name_pattern_exclude": name_pattern_exclude,
             "name_pattern_use_regex": name_pattern_use_regex,
             "group_by_model": group_by_model,
+            "civitai_model_id": civitai_model_id,
             **self._parse_specific_params(request),
         }
 

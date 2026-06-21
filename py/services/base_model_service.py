@@ -104,9 +104,17 @@ class BaseModelService(ABC):
         fetch_duration = time.perf_counter() - t0
         initial_count = len(sorted_data)
 
+        # Optionally filter by civitai model ID (shows all local versions of a specific model)
+        civitai_model_id = kwargs.get("civitai_model_id")
+        if civitai_model_id is not None:
+            sorted_data = [
+                item for item in sorted_data
+                if self._extract_model_id(item) == civitai_model_id
+            ]
+
         # Optionally group by civitai modelId, showing only the latest version per model
         dedup_lost = 0
-        if kwargs.get("group_by_model"):
+        if kwargs.get("group_by_model") and civitai_model_id is None:
             dedup_map = {}  # modelId -> (item, version_id)
             standalone = []
             for item in sorted_data:

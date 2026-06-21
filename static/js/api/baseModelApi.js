@@ -1271,8 +1271,9 @@ export class BaseModelApiClient {
 
         params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
 
-        // Pass group-by-model mode to backend
-        if (state.global.settings.group_by_model) {
+        // Pass group-by-model mode to backend (skip when showing all versions of a specific model)
+        const vlmModelId = getSessionItem('vlm_model_id');
+        if (state.global.settings.group_by_model && !vlmModelId) {
             params.append('group_by_model', 'true');
         }
 
@@ -1357,6 +1358,17 @@ export class BaseModelApiClient {
     }
 
     _addModelSpecificParams(params, pageState) {
+        // Check for View Local Versions filter (takes priority over recipe filters)
+        const vlmModelId = getSessionItem('vlm_model_id');
+        if (vlmModelId) {
+            params.append('civitai_model_id', vlmModelId);
+            const vlmBaseModel = getSessionItem('vlm_base_model');
+            if (vlmBaseModel) {
+                params.append('base_model', vlmBaseModel);
+            }
+            return;
+        }
+
         if (this.modelType === 'loras') {
             const filterLoraHash = getSessionItem('recipe_to_lora_filterLoraHash');
             const filterLoraHashes = getSessionItem('recipe_to_lora_filterLoraHashes');

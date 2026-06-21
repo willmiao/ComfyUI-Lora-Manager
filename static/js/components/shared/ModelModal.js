@@ -752,6 +752,7 @@ export async function showModelModal(model, modelType) {
         modelId: civitaiModelId,
         currentVersionId: civitaiVersionId,
         currentBaseModel: modelWithFullData.base_model,
+        modelName: model.model_name,
         onUpdateStatusChange: handleUpdateStatusChange,
     });
     setupEditableFields(modelWithFullData.file_path, modelType);

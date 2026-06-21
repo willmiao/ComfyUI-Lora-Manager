@@ -9,6 +9,13 @@ export class LoraApiClient extends BaseModelApiClient {
      * Add LoRA-specific parameters to query
      */
     _addModelSpecificParams(params, pageState) {
+        // Let parent handle View Local Versions filter first
+        super._addModelSpecificParams(params, pageState);
+        // If VLM filter was applied, skip recipe-specific filters
+        if (params.has('civitai_model_id')) {
+            return;
+        }
+
         const filterLoraHash = getSessionItem('recipe_to_lora_filterLoraHash');
         const filterLoraHashes = getSessionItem('recipe_to_lora_filterLoraHashes');
 
