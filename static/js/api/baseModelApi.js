@@ -1,7 +1,7 @@
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
-import { getStorageItem, getSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
+import { getStorageItem, getSessionItem, removeSessionItem, saveMapToStorage } from '../utils/storageHelpers.js';
 import {
     getCompleteApiConfig,
     getCurrentModelType,
@@ -1360,13 +1360,20 @@ export class BaseModelApiClient {
     _addModelSpecificParams(params, pageState) {
         // Check for View Local Versions filter (takes priority over recipe filters)
         const vlmModelId = getSessionItem('vlm_model_id');
-        if (vlmModelId) {
+        const vlmPageType = getSessionItem('vlm_page_type');
+        if (vlmModelId && vlmPageType === this.modelType) {
             params.append('civitai_model_id', vlmModelId);
             const vlmBaseModel = getSessionItem('vlm_base_model');
             if (vlmBaseModel) {
                 params.append('base_model', vlmBaseModel);
             }
             return;
+        } else if (vlmModelId && vlmPageType !== this.modelType) {
+            // Stale VLM data from a different page type — clean up
+            removeSessionItem('vlm_model_id');
+            removeSessionItem('vlm_model_name');
+            removeSessionItem('vlm_base_model');
+            removeSessionItem('vlm_page_type');
         }
 
         if (this.modelType === 'loras') {

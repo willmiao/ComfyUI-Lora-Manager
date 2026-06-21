@@ -1031,9 +1031,10 @@ export function initVersionsTab({
             displayMode === DISPLAY_FILTER_MODES.SAME_BASE &&
             Boolean(baseModelInfo.normalized);
 
-        // Write filter params to sessionStorage
+        // Write filter params to sessionStorage (page-scoped)
         setSessionItem('vlm_model_id', String(modelId));
         setSessionItem('vlm_model_name', modelName || String(modelId));
+        setSessionItem('vlm_page_type', modelType);
         if (isFilteringActive) {
             // Use raw (non-normalized) base model for exact backend matching
             setSessionItem('vlm_base_model', baseModelInfo.raw);

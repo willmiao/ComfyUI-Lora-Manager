@@ -118,6 +118,7 @@ export class LorasControls extends PageControls {
             removeSessionItem('vlm_model_id');
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
+            removeSessionItem('vlm_page_type');
             window.location.reload();
             return;
         }

@@ -466,10 +466,22 @@ export class PageControls {
      * Clear custom filter
      */
     /**
-     * Check for View Local Versions filter in sessionStorage
+     * Check for View Local Versions filter in sessionStorage (page-type-scoped)
      */
     checkVlmFilter() {
         const vlmModelId = getSessionItem('vlm_model_id');
+        const vlmPageType = getSessionItem('vlm_page_type');
+
+        // Only show VLM indicator when it belongs to the current page type
+        if (vlmModelId && vlmPageType !== this.pageType) {
+            // Stale VLM data from a different page — clean up
+            removeSessionItem('vlm_model_id');
+            removeSessionItem('vlm_model_name');
+            removeSessionItem('vlm_base_model');
+            removeSessionItem('vlm_page_type');
+            return;
+        }
+
         const vlmModelName = getSessionItem('vlm_model_name');
         const vlmBaseModel = getSessionItem('vlm_base_model');
 
@@ -501,6 +513,7 @@ export class PageControls {
             removeSessionItem('vlm_model_id');
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
+            removeSessionItem('vlm_page_type');
 
             // Full page reload to restore initial state (mirrors the "set" action)
             window.location.reload();
