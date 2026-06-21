@@ -746,6 +746,63 @@ async def test_get_paginated_data_update_available_only_without_update_service()
     assert response["total_pages"] == 0
 
 
+@pytest.mark.asyncio
+async def test_get_paginated_data_group_by_model_dedup():
+    """group_by_model deduplicates items sharing the same civitai modelId,
+    keeping only the item with the highest version (civitai.id)."""
+    items = [
+        # Two versions of the same model (modelId=1)
+        {"model_name": "SameModel", "folder": "root", "civitai": {"modelId": 1, "id": 100}},
+        {"model_name": "SameModel", "folder": "root", "civitai": {"modelId": 1, "id": 200}},
+        # Another model with two versions
+        {"model_name": "AnotherModel", "folder": "root", "civitai": {"modelId": 2, "id": 50}},
+        {"model_name": "AnotherModel", "folder": "root", "civitai": {"modelId": 2, "id": 99}},
+        # A standalone item with no civitai metadata (no modelId)
+        {"model_name": "Standalone", "folder": "root"},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+    )
+
+    # With group_by_model=True — modelId=1 keeps id=200, modelId=2 keeps id=99
+    response = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+        group_by_model=True,
+    )
+
+    names = {item["model_name"] for item in response["items"]}
+    assert names == {"SameModel", "AnotherModel", "Standalone"}
+    assert response["total"] == 3
+    # Verify the kept items have the highest version id
+    for item in response["items"]:
+        if item.get("civitai", {}).get("modelId") == 1:
+            assert item["civitai"]["id"] == 200
+        elif item.get("civitai", {}).get("modelId") == 2:
+            assert item["civitai"]["id"] == 99
+
+    # With group_by_model=False (default) — all 5 items pass through
+    response_all = await service.get_paginated_data(
+        page=1,
+        page_size=10,
+        sort_by="name:asc",
+    )
+
+    assert response_all["total"] == 5
+
+
 def test_model_filter_set_handles_include_and_exclude_tag_filters():
     settings = StubSettings({})
     filter_set = ModelFilterSet(settings)

@@ -430,6 +430,8 @@
             "help": "활성화하면 다운로드 기록 서비스가 해당 버전이 이미 다운로드되었음을 기록한 경우 LoRA Manager는 해당 모델 버전 다운로드를 건너뜁니다. 모든 다운로드 플로우에 적용됩니다."
         },
         "layoutSettings": {
+            "groupByModel": "모델별 그룹화",
+            "groupByModelHelp": "활성화하면 각 Civitai 모델의 최신 버전만 단일 카드로 표시되며, 이전 버전은 숨겨집니다.",
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
                 "default": "기본",

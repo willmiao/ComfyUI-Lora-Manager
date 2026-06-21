@@ -104,6 +104,22 @@ class BaseModelService(ABC):
         fetch_duration = time.perf_counter() - t0
         initial_count = len(sorted_data)
 
+        # Optionally group by civitai modelId, showing only the latest version per model
+        dedup_lost = 0
+        if kwargs.get("group_by_model"):
+            dedup_map = {}  # modelId -> (item, version_id)
+            standalone = []
+            for item in sorted_data:
+                mid = self._extract_model_id(item)
+                if mid is None:
+                    standalone.append(item)
+                    continue
+                vid = self._extract_version_id(item) or 0
+                if mid not in dedup_map or vid > dedup_map[mid][1]:
+                    dedup_map[mid] = (item, vid)
+            dedup_lost = len(sorted_data) - (len(dedup_map) + len(standalone))
+            sorted_data = [entry[0] for entry in dedup_map.values()] + standalone
+
         t1 = time.perf_counter()
         if hash_filters:
             filtered_data = await self._apply_hash_filters(sorted_data, hash_filters)
@@ -172,7 +188,7 @@ class BaseModelService(ABC):
         overall_duration = time.perf_counter() - overall_start
         logger.debug(
             "%s.get_paginated_data took %.3fs (fetch: %.3fs, filter: %.3fs, update_filter: %.3fs, pagination: %.3fs, annotate: %.3fs). "
-            "Counts: initial=%d, post_filter=%d, final=%d",
+            "Counts: initial=%d, dedup=%d, post_filter=%d, final=%d",
             self.__class__.__name__,
             overall_duration,
             fetch_duration,
@@ -181,6 +197,7 @@ class BaseModelService(ABC):
             pagination_duration,
             annotate_duration,
             initial_count,
+            dedup_lost,
             post_filter_count,
             final_count,
         )

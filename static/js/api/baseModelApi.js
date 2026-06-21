@@ -1271,6 +1271,11 @@ export class BaseModelApiClient {
 
         params.append('recursive', pageState.searchOptions.recursive ? 'true' : 'false');
 
+        // Pass group-by-model mode to backend
+        if (state.global.settings.group_by_model) {
+            params.append('group_by_model', 'true');
+        }
+
         if (!isExcludedView && pageState.filters) {
             if (pageState.filters.tags && Object.keys(pageState.filters.tags).length > 0) {
                 Object.entries(pageState.filters.tags).forEach(([tag, state]) => {

@@ -54,6 +54,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     backup_retention_count: 5,
     strip_lora_on_copy: false,
     use_new_license_icons: true,
+    group_by_model: false,
 });
 
 export function createDefaultSettings() {

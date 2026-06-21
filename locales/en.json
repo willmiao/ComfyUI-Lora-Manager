@@ -430,6 +430,8 @@
             "help": "When enabled, versions downloaded before will be skipped."
         },
         "layoutSettings": {
+            "groupByModel": "Group by Model",
+            "groupByModelHelp": "When enabled, only the latest version of each Civitai model is shown as a single card. Older versions are hidden.",
             "displayDensity": "Display Density",
             "displayDensityOptions": {
                 "default": "Default",

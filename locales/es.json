@@ -430,6 +430,8 @@
             "help": "Cuando está habilitado, LoRA Manager omitirá la descarga de una versión de modelo si el servicio de historial de descargas registra esa versión exacta como ya descargada. Aplica a todos los flujos de descarga."
         },
         "layoutSettings": {
+            "groupByModel": "Agrupar por modelo",
+            "groupByModelHelp": "Cuando está activado, solo se muestra la versión más reciente de cada modelo de Civitai como una tarjeta única. Las versiones anteriores están ocultas.",
             "displayDensity": "Densidad de visualización",
             "displayDensityOptions": {
                 "default": "Predeterminado",

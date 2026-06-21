@@ -430,6 +430,8 @@
             "help": "Wenn aktiviert, überspringt LoRA Manager den Download einer Modellversion, wenn der Download-Verlaufsdienst diese spezifische Version als bereits heruntergeladen erfasst hat. Gilt für alle Download-Abläufe."
         },
         "layoutSettings": {
+            "groupByModel": "Nach Modell gruppieren",
+            "groupByModelHelp": "Wenn aktiviert, wird nur die neueste Version jedes Civitai-Modells als einzelne Karte angezeigt. Ältere Versionen werden ausgeblendet.",
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
                 "default": "Standard",

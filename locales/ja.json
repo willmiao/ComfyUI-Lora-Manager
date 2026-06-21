@@ -430,6 +430,8 @@
             "help": "有効にすると、ダウンロード履歴サービスがそのバージョンが既にダウンロード済みと記録している場合、LoRA Managerはそのモデルバージョンのダウンロードをスキップします。すべてのダウンロードフローに適用されます。"
         },
         "layoutSettings": {
+            "groupByModel": "モデルでグループ化",
+            "groupByModelHelp": "有効にすると、各Civitaiモデルの最新バージョンのみが1枚のカードとして表示され、古いバージョンは非表示になります。",
             "displayDensity": "表示密度",
             "displayDensityOptions": {
                 "default": "デフォルト",

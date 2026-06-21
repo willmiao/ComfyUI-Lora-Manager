@@ -233,6 +233,8 @@ class ModelListingHandler:
         start_time = time.perf_counter()
         try:
             params = self._parse_common_params(request)
+            # group_by_model is meaningless for excluded view; strip it
+            params.pop("group_by_model", None)
             result = await self._service.get_excluded_paginated_data(**params)
 
             format_start = time.perf_counter()
@@ -366,6 +368,11 @@ class ModelListingHandler:
             request.query.get("name_pattern_use_regex", "false").lower() == "true"
         )
 
+        # Group-by-model flag: deduplicate versions sharing the same civitai modelId
+        group_by_model = (
+            request.query.get("group_by_model", "false").lower() == "true"
+        )
+
         return {
             "page": page,
             "page_size": page_size,
@@ -389,6 +396,7 @@ class ModelListingHandler:
             "name_pattern_include": name_pattern_include,
             "name_pattern_exclude": name_pattern_exclude,
             "name_pattern_use_regex": name_pattern_use_regex,
+            "group_by_model": group_by_model,
             **self._parse_specific_params(request),
         }
 

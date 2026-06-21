@@ -430,6 +430,8 @@
             "help": "啟用後，如果下載歷史服務記錄顯示該版本已下載，LoRA Manager 將跳過下載該模型版本。適用於所有下載流程。"
         },
         "layoutSettings": {
+            "groupByModel": "按模型分組",
+            "groupByModelHelp": "啟用後，每個 Civitai 模型僅顯示最新版本的單張卡片，舊版本將被隱藏。",
             "displayDensity": "顯示密度",
             "displayDensityOptions": {
                 "default": "預設",

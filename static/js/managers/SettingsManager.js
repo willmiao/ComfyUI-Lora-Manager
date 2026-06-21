@@ -905,6 +905,12 @@ export class SettingsManager {
             showVersionOnCardCheckbox.checked = state.global.settings.show_version_on_card !== false;
         }
 
+        // Set group by model
+        const groupByModelCheckbox = document.getElementById('groupByModel');
+        if (groupByModelCheckbox) {
+            groupByModelCheckbox.checked = !!state.global.settings.group_by_model;
+        }
+
         // Set model name display setting
         const modelNameDisplaySelect = document.getElementById('modelNameDisplay');
         if (modelNameDisplaySelect) {
@@ -2011,7 +2017,7 @@ export class SettingsManager {
                 }
             }
 
-            if (settingKey === 'show_only_sfw' || settingKey === 'blur_mature_content') {
+            if (settingKey === 'show_only_sfw' || settingKey === 'blur_mature_content' || settingKey === 'group_by_model') {
                 this.reloadContent();
             }
 
@@ -3045,6 +3051,10 @@ export class SettingsManager {
         // Apply license icon style
         const useNewLicenseIcons = state.global.settings.use_new_license_icons !== false;
         document.body.classList.toggle('use-new-license-icons', useNewLicenseIcons);
+
+        // Apply group-by-model mode
+        const groupByModel = !!state.global.settings.group_by_model;
+        document.body.classList.toggle('group-by-model', groupByModel);
 
     }
 }
