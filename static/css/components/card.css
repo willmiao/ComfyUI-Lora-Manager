@@ -509,6 +509,50 @@
     background: rgba(0,0,0,0.18); /* Optional: subtle background for contrast */
 }
 
+/* Clickable version count link (shown in group-by-model mode) */
+.version-count-link {
+    display: inline-block;
+    color: var(--color-accent);
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-size: 0.85em;
+    line-height: 1.4;
+    margin-top: 2px;
+    border: 1px solid var(--color-accent-border);
+    border-radius: var(--border-radius-xs);
+    padding: 1px 6px;
+    background: var(--color-accent-subtle);
+    cursor: pointer;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+.version-count-link:hover {
+    background: var(--color-accent-border);
+    border-color: var(--color-accent-transparent);
+}
+
+/* Medium density adjustments for version count link */
+.medium-density .version-count-link {
+    font-size: 0.8em;
+}
+
+.medium-density .badge-version-unit .version-count-link {
+    max-width: 90px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Compact density adjustments for version count link */
+.compact-density .version-count-link {
+    font-size: 0.75em;
+}
+
+.compact-density .badge-version-unit .version-count-link {
+    max-width: 70px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
 /* Version row — flex container for badges + version names */
 .version-row {
     display: flex;

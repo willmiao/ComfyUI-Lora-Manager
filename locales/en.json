@@ -145,6 +145,10 @@
         },
         "usage": {
             "timesUsed": "Times used"
+        },
+        "footer": {
+            "versionCount": "{count} versions",
+            "viewAllVersions": "View all local versions"
         }
     },
     "globalContextMenu": {
@@ -675,7 +679,10 @@
                 "sizeAsc": "Smallest",
                 "usage": "Use Count",
                 "usageDesc": "Most",
-                "usageAsc": "Least"
+                "usageAsc": "Least",
+                "versionsCount": "Local Versions",
+                "versionsCountDesc": "Most versions first",
+                "versionsCountAsc": "Fewest versions first"
             },
             "refresh": {
                 "title": "Refresh model list",

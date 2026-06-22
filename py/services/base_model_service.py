@@ -115,18 +115,49 @@ class BaseModelService(ABC):
         # Optionally group by civitai modelId, showing only the latest version per model
         dedup_lost = 0
         if kwargs.get("group_by_model") and civitai_model_id is None:
-            dedup_map = {}  # modelId -> (item, version_id)
+            # Determine whether to further sub-group by base model
+            # When update_flag_strategy is "same_base", versions with different
+            # base models are effectively different groups — the dedup key
+            # needs to include base_model so the version count and VLM flow
+            # stay consistent (card shows correct count for its base model).
+            ufs = self.settings.get("update_flag_strategy", "same_base")
+            group_by_base = ufs == "same_base"
+
+            dedup_map = {}  # (modelId [,base_model]) -> (item, version_id)
+            version_counter = {}  # same-key -> count
             standalone = []
             for item in sorted_data:
                 mid = self._extract_model_id(item)
                 if mid is None:
                     standalone.append(item)
                     continue
+                key = (mid, item.get("base_model") or "") if group_by_base else mid
+                # Count all versions per key
+                version_counter[key] = version_counter.get(key, 0) + 1
                 vid = self._extract_version_id(item) or 0
-                if mid not in dedup_map or vid > dedup_map[mid][1]:
-                    dedup_map[mid] = (item, vid)
+                if key not in dedup_map or vid > dedup_map[key][1]:
+                    dedup_map[key] = (item, vid)
+            # Attach version_count to each surviving grouped item (shallow copy
+            # to avoid mutating cached dicts — the cache is shared across requests)
+            for key, (item, vid) in dedup_map.items():
+                item = dict(item)
+                item["version_count"] = version_counter[key]
+                dedup_map[key] = (item, vid)
             dedup_lost = len(sorted_data) - (len(dedup_map) + len(standalone))
             sorted_data = [entry[0] for entry in dedup_map.values()] + standalone
+
+        # Re-sort by version_count after dedup (only makes sense in group_by_model mode)
+        is_group_by_active = kwargs.get("group_by_model") and civitai_model_id is None
+        if sort_params.key == "versions_count" and is_group_by_active:
+            reverse = sort_params.order == "desc"
+            sorted_data.sort(
+                key=lambda x: (
+                    x.get("version_count", 0),
+                    (x.get("model_name") or x.get("file_name") or "").lower(),
+                    x.get("file_path", "").lower(),
+                ),
+                reverse=reverse,
+            )
 
         t1 = time.perf_counter()
         if hash_filters:

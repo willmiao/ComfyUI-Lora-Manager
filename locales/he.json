@@ -145,6 +145,10 @@
         },
         "usage": {
             "timesUsed": "מספר שימושים"
+        },
+        "footer": {
+            "versionCount": "{count} גרסאות",
+            "viewAllVersions": "הצג את כל הגרסאות המקומיות"
         }
     },
     "globalContextMenu": {
@@ -675,7 +679,10 @@
                 "sizeAsc": "הקטן ביותר",
                 "usage": "מספר שימושים",
                 "usageDesc": "הכי הרבה",
-                "usageAsc": "הכי פחות"
+                "usageAsc": "הכי פחות",
+                "versionsCount": "גרסאות מקומיות",
+                "versionsCountDesc": "הכי הרבה גרסאות ראשונות",
+                "versionsCountAsc": "הכי מעט גרסאות ראשונות"
             },
             "refresh": {
                 "title": "רענן רשימת מודלים",

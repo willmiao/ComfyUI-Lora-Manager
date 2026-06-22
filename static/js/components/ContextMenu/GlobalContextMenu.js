@@ -108,6 +108,11 @@ export class GlobalContextMenu extends BaseContextMenu {
         const newValue = !state.global.settings.group_by_model;
         state.global.settings.group_by_model = newValue;
 
+        // Save/restore sort preference when toggling group_by_model
+        if (window.pageControls?.onGroupByModelToggled) {
+            window.pageControls.onGroupByModelToggled(newValue);
+        }
+
         sm.saveSetting('group_by_model', newValue).catch((error) => {
             console.error('Failed to save group_by_model setting:', error);
             // Revert state on failure

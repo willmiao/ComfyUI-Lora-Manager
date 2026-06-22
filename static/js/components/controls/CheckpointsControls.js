@@ -102,7 +102,12 @@ export class CheckpointsControls extends PageControls {
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
             removeSessionItem('vlm_page_type');
-            window.location.reload();
+            // Hide the indicator
+            const indicator = document.getElementById('customFilterIndicator');
+            if (indicator) {
+                indicator.classList.add('hidden');
+            }
+            await resetAndReload();
             return;
         }
 

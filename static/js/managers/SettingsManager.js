@@ -2018,6 +2018,10 @@ export class SettingsManager {
             }
 
             if (settingKey === 'show_only_sfw' || settingKey === 'blur_mature_content' || settingKey === 'group_by_model') {
+                // Save/restore sort preference when toggling group_by_model
+                if (settingKey === 'group_by_model' && window.pageControls?.onGroupByModelToggled) {
+                    window.pageControls.onGroupByModelToggled(value);
+                }
                 this.reloadContent();
             }
 

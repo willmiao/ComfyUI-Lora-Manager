@@ -145,6 +145,10 @@
         },
         "usage": {
             "timesUsed": "Количество использований"
+        },
+        "footer": {
+            "versionCount": "{count} версий",
+            "viewAllVersions": "Показать все локальные версии"
         }
     },
     "globalContextMenu": {
@@ -675,7 +679,10 @@
                 "sizeAsc": "Наименьшим",
                 "usage": "Число использований",
                 "usageDesc": "Больше",
-                "usageAsc": "Меньше"
+                "usageAsc": "Меньше",
+                "versionsCount": "Локальные версии",
+                "versionsCountDesc": "Сначала больше версий",
+                "versionsCountAsc": "Сначала меньше версий"
             },
             "refresh": {
                 "title": "Обновить список моделей",

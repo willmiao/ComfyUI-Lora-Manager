@@ -1,6 +1,6 @@
 // PageControls.js - Manages controls for both LoRAs and Checkpoints pages
 import { state, getCurrentPageState, setCurrentPageType } from '../../state/index.js';
-import { getStorageItem, setStorageItem, getSessionItem, setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
+import { getStorageItem, setStorageItem, removeStorageItem, getSessionItem, setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
@@ -466,6 +466,68 @@ export class PageControls {
      * Clear custom filter
      */
     /**
+     * Trigger View Local Versions without page reload
+     * Sets sessionStorage and reloads data via the API.
+     */
+    triggerVlmView(modelId, modelName, baseModel, pageType) {
+        const targetPageType = pageType || this.pageType;
+        setSessionItem('vlm_model_id', String(modelId));
+        setSessionItem('vlm_model_name', modelName || String(modelId));
+        setSessionItem('vlm_page_type', targetPageType);
+        if (baseModel) {
+            setSessionItem('vlm_base_model', baseModel);
+        } else {
+            removeSessionItem('vlm_base_model');
+        }
+        // Reload data via API (no page reload)
+        this.resetAndReload(true).then(() => {
+            // Show the VLM indicator after data loads
+            this.checkVlmFilter();
+        });
+    }
+
+    /**
+     * Called when group_by_model is toggled.
+     * Saves current sort when entering grouped mode, restores normal sort
+     * when leaving — prevents "Most versions first" persisting after exit.
+     */
+    onGroupByModelToggled(isEnabled) {
+        const normalKey = `${this.pageType}_sort_normal`;
+        const groupedKey = `${this.pageType}_sort_grouped`;
+
+        if (isEnabled) {
+            // Entering group mode: save current sort for later restoration
+            setStorageItem(normalKey, this.pageState.sortBy);
+            // Restore previously saved grouped sort, if any
+            const savedGroupedSort = getStorageItem(groupedKey);
+            if (savedGroupedSort) {
+                this.pageState.sortBy = savedGroupedSort;
+                this.saveSortPreference(savedGroupedSort);
+                const sortSelect = document.getElementById('sortSelect');
+                if (sortSelect) {
+                    sortSelect.value = savedGroupedSort;
+                }
+            }
+        } else {
+            // Leaving group mode: save current grouped sort aside, restore normal
+            const currentSort = this.pageState.sortBy;
+            if (currentSort && currentSort.startsWith('versions_count')) {
+                setStorageItem(groupedKey, currentSort);
+            }
+            const savedNormalSort = getStorageItem(normalKey);
+            if (savedNormalSort) {
+                removeStorageItem(normalKey);
+                this.pageState.sortBy = savedNormalSort;
+                this.saveSortPreference(savedNormalSort);
+                const sortSelect = document.getElementById('sortSelect');
+                if (sortSelect) {
+                    sortSelect.value = savedNormalSort;
+                }
+            }
+        }
+    }
+
+    /**
      * Check for View Local Versions filter in sessionStorage (page-type-scoped)
      */
     checkVlmFilter() {
@@ -515,8 +577,14 @@ export class PageControls {
             removeSessionItem('vlm_base_model');
             removeSessionItem('vlm_page_type');
 
-            // Full page reload to restore initial state (mirrors the "set" action)
-            window.location.reload();
+            // Hide the indicator
+            const indicator = document.getElementById('customFilterIndicator');
+            if (indicator) {
+                indicator.classList.add('hidden');
+            }
+
+            // Reload data via API (no page reload)
+            await this.resetAndReload(true);
             return;
         }
 

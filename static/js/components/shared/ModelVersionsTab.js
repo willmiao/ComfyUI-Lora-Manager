@@ -1042,9 +1042,16 @@ export function initVersionsTab({
             removeSessionItem('vlm_base_model');
         }
 
-        // Close the modal and reload the page to show filtered cards
+        // Close the modal and navigate via no-reload VLM flow
         modalManager.closeModal(modalId);
-        window.location.reload();
+        if (window.pageControls && typeof window.pageControls.triggerVlmView === 'function') {
+            window.pageControls.triggerVlmView(
+                modelId,
+                modelName || String(modelId),
+                isFilteringActive ? baseModelInfo.raw : undefined,
+                modelType
+            );
+        }
     }
 
     async function handleToggleVersionIgnore(button, versionId) {

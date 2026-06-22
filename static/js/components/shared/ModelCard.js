@@ -100,6 +100,12 @@ function handleModelCardEvent_internal(event, modelType) {
         return true; // Stop propagation
     }
 
+    if (event.target.closest('.version-count-link')) {
+        event.stopPropagation();
+        handleViewLocalVersionsFromCard(card, modelType);
+        return true;
+    }
+
     // If no specific element was clicked, handle the card click (show modal or toggle selection)
     handleCardClick(card, modelType);
     return false; // Continue with other handlers (e.g., bulk selection)
@@ -262,6 +268,22 @@ async function handleExampleImagesAccess(card, modelType) {
     } catch (error) {
         console.error('Error checking for example images:', error);
         showToast('modelCard.exampleImages.checkError', {}, 'error');
+    }
+}
+
+function handleViewLocalVersionsFromCard(card, modelType) {
+    const modelId = card.dataset.modelId;
+    const modelName = card.dataset.name;
+    if (!modelId) return;
+    // Respect update_flag_strategy: only filter by base model when the strategy says so
+    const strategy = state.global?.settings?.update_flag_strategy;
+    const shouldFilterByBase = strategy === 'same_base';
+    const baseModel = shouldFilterByBase && card.dataset.base_model !== 'Unknown'
+        ? card.dataset.base_model
+        : undefined;
+    // Use the no-reload VLM flow via PageControls
+    if (window.pageControls && typeof window.pageControls.triggerVlmView === 'function') {
+        window.pageControls.triggerVlmView(modelId, modelName, baseModel, modelType);
     }
 }
 
@@ -448,6 +470,10 @@ export function createModelCard(model, modelType) {
     const hasUpdateAvailable = Boolean(model.update_available);
     card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
     card.dataset.skip_metadata_refresh = model.skip_metadata_refresh ? 'true' : 'false';
+    // Store version_count for group-by-model display
+    if (model.version_count !== undefined) {
+        card.dataset.version_count = model.version_count;
+    }
 
     // To only show usage_count when sorting by usage. 
     const pageState = getCurrentPageState();
@@ -659,16 +685,28 @@ export function createModelCard(model, modelType) {
                             const autoTags = model.auto_tags || [];
                             const hlTags = autoTags.filter(t => t === 'HIGH' || t === 'LOW');
                             const hasVersionName = model.civitai?.name;
-                            if (!hlTags.length && !hasVersionName) return '';
+                            // When group_by_model is active and model has multiple versions,
+                            // show clickable version count instead of version name (and hide badges)
+                            const isGroupByModel = state.global.settings.group_by_model;
+                            const versionCount = model.version_count;
+                            const showVersionCount = isGroupByModel && versionCount > 1;
+                            if (!hlTags.length && !hasVersionName && !showVersionCount) return '';
                             const density = state.global.settings.display_density || 'default';
                             const shortLabels = density === 'medium' || density === 'compact';
-                            const badges = hlTags.map(t => {
+                            // Don't show HIGH/LOW badges when showing version count (confusing in grouped mode)
+                            const badges = !showVersionCount ? hlTags.map(t => {
                                 const cls = t === 'HIGH' ? 'hl-badge hl-badge--high' : 'hl-badge hl-badge--low';
                                 const label = shortLabels ? (t === 'HIGH' ? 'H' : 'L') : t;
                                 const titleAttr = shortLabels ? ` title="${t}"` : '';
                                 return `<span class="${cls}"${titleAttr}>${label}</span>`;
-                            }).join('');
-                            const versionHtml = hasVersionName ? `<span class="version-name civitai-version">${model.civitai.name}</span>` : '';
+                            }).join('') : '';
+                            let versionHtml = '';
+                            if (showVersionCount) {
+                                const countLabel = translate('modelCard.footer.versionCount', { count: versionCount }, `${versionCount} versions`);
+                                versionHtml = `<span class="version-count-link" title="${translate('modelCard.footer.viewAllVersions', {}, 'View all local versions')}">${countLabel}</span>`;
+                            } else if (hasVersionName) {
+                                versionHtml = `<span class="version-name civitai-version">${model.civitai.name}</span>`;
+                            }
                             return `<span class="badge-version-unit">${badges}${versionHtml}</span>`;
                         })()}
                         ${hasUsageCount ? `<span class="version-name" title="${translate('modelCard.usage.timesUsed', {}, 'Times used')}">${model.usage_count}×</span>` : ''}

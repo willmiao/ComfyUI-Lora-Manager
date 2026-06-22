@@ -48,6 +48,7 @@ class EmbeddingService(BaseModelService):
             "skip_metadata_refresh": bool(embedding_data.get("skip_metadata_refresh", False)),
             "civitai": self.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True),
             "auto_tags": embedding_data.get("auto_tags") or extract_auto_tags(embedding_data),
+            "version_count": embedding_data.get("version_count"),
         }
     
     def find_duplicate_hashes(self) -> Dict:

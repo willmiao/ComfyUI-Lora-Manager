@@ -59,6 +59,7 @@ class LoraService(BaseModelService):
                 lora_data.get("civitai", {}), minimal=True
             ),
             "auto_tags": lora_data.get("auto_tags") or extract_auto_tags(lora_data),
+            "version_count": lora_data.get("version_count"),
         }
 
     async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:

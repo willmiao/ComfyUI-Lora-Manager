@@ -790,8 +790,14 @@ async def test_get_paginated_data_group_by_model_dedup():
     for item in response["items"]:
         if item.get("civitai", {}).get("modelId") == 1:
             assert item["civitai"]["id"] == 200
+            # version_count should reflect total versions for this model
+            assert item.get("version_count") == 2, f"Expected version_count=2, got {item.get('version_count')}"
         elif item.get("civitai", {}).get("modelId") == 2:
             assert item["civitai"]["id"] == 99
+            assert item.get("version_count") == 2, f"Expected version_count=2, got {item.get('version_count')}"
+        else:
+            # Standalone item should NOT have version_count
+            assert "version_count" not in item, f"Standalone should not have version_count"
 
     # With group_by_model=False (default) — all 5 items pass through
     response_all = await service.get_paginated_data(

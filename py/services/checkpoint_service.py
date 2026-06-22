@@ -48,6 +48,7 @@ class CheckpointService(BaseModelService):
             "skip_metadata_refresh": bool(checkpoint_data.get("skip_metadata_refresh", False)),
             "civitai": self.filter_civitai_data(checkpoint_data.get("civitai", {}), minimal=True),
             "auto_tags": checkpoint_data.get("auto_tags") or extract_auto_tags(checkpoint_data),
+            "version_count": checkpoint_data.get("version_count"),
         }
     
     def find_duplicate_hashes(self) -> Dict:

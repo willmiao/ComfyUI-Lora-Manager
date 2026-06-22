@@ -145,6 +145,10 @@
         },
         "usage": {
             "timesUsed": "使用次數"
+        },
+        "footer": {
+            "versionCount": "{count} 個版本",
+            "viewAllVersions": "檢視所有本地版本"
         }
     },
     "globalContextMenu": {
@@ -675,7 +679,10 @@
                 "sizeAsc": "最小",
                 "usage": "使用次數",
                 "usageDesc": "最多",
-                "usageAsc": "最少"
+                "usageAsc": "最少",
+                "versionsCount": "本地版本數",
+                "versionsCountDesc": "版本數從多到少",
+                "versionsCountAsc": "版本數從少到多"
             },
             "refresh": {
                 "title": "重新整理模型列表",

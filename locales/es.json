@@ -145,6 +145,10 @@
         },
         "usage": {
             "timesUsed": "Veces usado"
+        },
+        "footer": {
+            "versionCount": "{count} versiones",
+            "viewAllVersions": "Ver todas las versiones locales"
         }
     },
     "globalContextMenu": {
@@ -675,7 +679,10 @@
                 "sizeAsc": "Menor",
                 "usage": "Número de usos",
                 "usageDesc": "Más",
-                "usageAsc": "Menos"
+                "usageAsc": "Menos",
+                "versionsCount": "Versiones locales",
+                "versionsCountDesc": "Más versiones primero",
+                "versionsCountAsc": "Menos versiones primero"
             },
             "refresh": {
                 "title": "Actualizar lista de modelos",

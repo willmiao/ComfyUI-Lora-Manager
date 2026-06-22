@@ -37,6 +37,12 @@
                             <option value="usage:asc">{{ t('loras.controls.sort.usageAsc', default='Times used (low to high)') }}</option>
                         </optgroup>
                     {% endif %}
+                    {% if page_id != 'recipes' %}
+                        <optgroup class="sort-option-versions-count" label="{{ t('loras.controls.sort.versionsCount', default='Local Versions') }}">
+                            <option value="versions_count:desc">{{ t('loras.controls.sort.versionsCountDesc', default='Most versions first') }}</option>
+                            <option value="versions_count:asc">{{ t('loras.controls.sort.versionsCountAsc', default='Fewest versions first') }}</option>
+                        </optgroup>
+                    {% endif %}
                     {% if page_id == 'recipes' %}
                         <optgroup label="{{ t('recipes.controls.sort.lorasCount') }}">
                             <option value="loras_count:desc">{{ t('recipes.controls.sort.lorasCountDesc') }}</option>
