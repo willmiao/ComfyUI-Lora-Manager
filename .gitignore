@@ -19,6 +19,7 @@ model_cache/
 .codex
 .omo
 reasonix.toml
+.reasonix/
 .codegraph/
 
 # Vue widgets development cache (but keep build output)
