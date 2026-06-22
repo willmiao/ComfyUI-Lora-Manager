@@ -332,7 +332,7 @@
             "extraFolderPaths": "額外資料夾路徑",
             "downloadPathTemplates": "下載路徑範本",
             "priorityTags": "優先標籤",
-            "updateFlags": "更新標記",
+            "versionScope": "版本範圍",
             "exampleImages": "範例圖片",
             "autoOrganize": "自動整理",
             "metadata": "中繼資料",
@@ -595,7 +595,7 @@
             "download": "下載",
             "restartRequired": "需要重新啟動"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "更新標記策略",
             "help": "決定更新徽章是否僅在新版本與本地檔案共享相同基礎模型時顯示，或只要該模型有任何更新版本就顯示。",
             "options": {

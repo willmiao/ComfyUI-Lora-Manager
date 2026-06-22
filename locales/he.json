@@ -332,7 +332,7 @@
             "extraFolderPaths": "נתיבי תיקיות נוספים",
             "downloadPathTemplates": "תבניות נתיב הורדה",
             "priorityTags": "תגיות עדיפות",
-            "updateFlags": "תגי עדכון",
+            "versionScope": "תגי עדכון",
             "exampleImages": "תמונות דוגמה",
             "autoOrganize": "ארגון אוטומטי",
             "metadata": "מטא-נתונים",
@@ -595,7 +595,7 @@
             "download": "הורד",
             "restartRequired": "דורש הפעלה מחדש"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "אסטרטגיית תגי עדכון",
             "help": "בחרו אם תוויות העדכון יוצגו רק כאשר גרסה חדשה חולקת את אותו דגם בסיס כמו הקבצים המקומיים שלכם או בכל מקרה שבו קיימת גרסה חדשה עבור אותו דגם.",
             "options": {

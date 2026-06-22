@@ -332,7 +332,7 @@
             "extraFolderPaths": "Chemins de dossiers supplémentaires",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
             "priorityTags": "Étiquettes prioritaires",
-            "updateFlags": "Indicateurs de mise à jour",
+            "versionScope": "Indicateurs de mise à jour",
             "exampleImages": "Images d'exemple",
             "autoOrganize": "Organisation automatique",
             "metadata": "Métadonnées",
@@ -595,7 +595,7 @@
             "download": "Télécharger",
             "restartRequired": "Redémarrage requis"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "Stratégie des indicateurs de mise à jour",
             "help": "Choisissez si les badges de mise à jour doivent apparaître uniquement lorsqu’une nouvelle version partage le même modèle de base que vos fichiers locaux, ou dès qu’il existe une version plus récente pour ce modèle.",
             "options": {

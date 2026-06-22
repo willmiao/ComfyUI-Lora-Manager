@@ -482,7 +482,7 @@ async def test_get_paginated_data_annotates_update_flags_with_bulk_dedup():
 
 
 @pytest.mark.asyncio
-async def test_update_flag_strategy_same_base_prefers_matching_base():
+async def test_version_grouping_same_base_prefers_matching_base():
     items = [
         {
             "model_name": "Pony Version",
@@ -551,7 +551,7 @@ async def test_update_flag_strategy_same_base_prefers_matching_base():
         should_ignore_model=False,
     )
     update_service = StubUpdateServiceWithRecords({1: record})
-    settings = StubSettings({"update_flag_strategy": "same_base"})
+    settings = StubSettings({"version_grouping": "same_base"})
 
     service = DummyService(
         model_type="stub",
@@ -579,7 +579,7 @@ async def test_update_flag_strategy_same_base_prefers_matching_base():
 
 
 @pytest.mark.asyncio
-async def test_update_flag_strategy_same_base_honors_latest_local_version():
+async def test_version_grouping_same_base_honors_latest_local_version():
     items = [
         {
             "model_name": "Pony v0.1",
@@ -648,7 +648,7 @@ async def test_update_flag_strategy_same_base_honors_latest_local_version():
         should_ignore_model=False,
     )
     update_service = StubUpdateServiceWithRecords({1: record})
-    settings = StubSettings({"update_flag_strategy": "same_base"})
+    settings = StubSettings({"version_grouping": "same_base"})
 
     service = DummyService(
         model_type="stub",

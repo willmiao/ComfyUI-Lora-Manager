@@ -332,7 +332,7 @@
             "extraFolderPaths": "추가 폴다 경로",
             "downloadPathTemplates": "다운로드 경로 템플릿",
             "priorityTags": "우선순위 태그",
-            "updateFlags": "업데이트 표시",
+            "versionScope": "업데이트 표시",
             "exampleImages": "예시 이미지",
             "autoOrganize": "자동 정리",
             "metadata": "메타데이터",
@@ -595,7 +595,7 @@
             "download": "다운로드",
             "restartRequired": "재시작 필요"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "업데이트 표시 전략",
             "help": "새 릴리스가 로컬 파일과 동일한 베이스 모델을 공유할 때만 업데이트 배지를 표시할지, 또는 해당 모델에 사용 가능한 새 버전이 있으면 항상 표시할지 결정합니다.",
             "options": {

@@ -98,7 +98,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "lora_syntax_format": "legacy",
     "model_card_footer_action": "replace_preview",
     "show_version_on_card": True,
-    "update_flag_strategy": "same_base",
+    "version_grouping": "same_base",
     "auto_organize_exclusions": [],
     "metadata_refresh_skip_paths": [],
     "skip_previously_downloaded_model_versions": False,
@@ -745,6 +745,7 @@ class SettingsManager:
             "includeTriggerWords": "include_trigger_words",
             "compactMode": "compact_mode",
             "modelCardFooterAction": "model_card_footer_action",
+            "update_flag_strategy": "version_grouping",
         }
 
         updated = False

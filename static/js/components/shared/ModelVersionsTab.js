@@ -307,7 +307,7 @@ function getToggleTooltipText(mode) {
 }
 
 function getDefaultDisplayMode() {
-    const strategy = state?.global?.settings?.update_flag_strategy;
+    const strategy = state?.global?.settings?.version_grouping;
     return strategy === DISPLAY_FILTER_MODES.SAME_BASE
         ? DISPLAY_FILTER_MODES.SAME_BASE
         : DISPLAY_FILTER_MODES.ANY;
@@ -339,7 +339,7 @@ function resolveUpdateAvailability(record, baseModel, currentVersionId) {
         return false;
     }
 
-    const strategy = state?.global?.settings?.update_flag_strategy;
+    const strategy = state?.global?.settings?.version_grouping;
     const sameBaseMode = strategy === DISPLAY_FILTER_MODES.SAME_BASE;
     const hideEarlyAccess = state?.global?.settings?.hide_early_access_updates;
 

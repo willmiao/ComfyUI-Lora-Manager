@@ -116,11 +116,11 @@ class BaseModelService(ABC):
         dedup_lost = 0
         if kwargs.get("group_by_model") and civitai_model_id is None:
             # Determine whether to further sub-group by base model
-            # When update_flag_strategy is "same_base", versions with different
+            # When version_grouping is "same_base", versions with different
             # base models are effectively different groups — the dedup key
             # needs to include base_model so the version count and VLM flow
             # stay consistent (card shows correct count for its base model).
-            ufs = self.settings.get("update_flag_strategy", "same_base")
+            ufs = self.settings.get("version_grouping", "same_base")
             group_by_base = ufs == "same_base"
 
             dedup_map = {}  # (modelId [,base_model]) -> (item, version_id)
@@ -551,7 +551,7 @@ class BaseModelService(ABC):
         if not ordered_ids:
             return annotated
 
-        strategy_value = self.settings.get("update_flag_strategy")
+        strategy_value = self.settings.get("version_grouping")
         if isinstance(strategy_value, str) and strategy_value.strip():
             strategy = strategy_value.strip().lower()
         else:

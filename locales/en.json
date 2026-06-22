@@ -332,7 +332,7 @@
             "extraFolderPaths": "Extra Folder Paths",
             "downloadPathTemplates": "Download Path Templates",
             "priorityTags": "Priority Tags",
-            "updateFlags": "Update Flags",
+            "versionScope": "Version Scope",
             "exampleImages": "Example Images",
             "autoOrganize": "Auto-organize",
             "metadata": "Metadata",
@@ -595,12 +595,12 @@
             "download": "Download",
             "restartRequired": "Requires restart"
         },
-        "updateFlagStrategy": {
-            "label": "Update Flag Strategy",
-            "help": "Decide whether update badges should only appear when a new release shares the same base model as your local files or whenever any newer version exists for that model.",
+        "versionGrouping": {
+            "label": "Version Grouping",
+            "help": "Decide how versions are grouped for display: by base model or all together. Also controls update badge logic and the VLM version list filtering.",
             "options": {
-                "sameBase": "Match updates by base model",
-                "any": "Flag any available update"
+                "sameBase": "Group by base model (same_base)",
+                "any": "Show all versions (any)"
             }
         },
         "hideEarlyAccessUpdates": {

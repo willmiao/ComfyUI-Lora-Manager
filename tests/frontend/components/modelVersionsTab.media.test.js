@@ -33,7 +33,7 @@ const stateMock = {
   global: {
     settings: {
       autoplay_on_hover: false,
-      update_flag_strategy: 'any',
+      version_grouping: 'any',
     },
   },
 };
@@ -67,7 +67,7 @@ describe('ModelVersionsTab media rendering', () => {
       </div>
     `;
     stateMock.global.settings.autoplay_on_hover = false;
-    stateMock.global.settings.update_flag_strategy = 'any';
+    stateMock.global.settings.version_grouping = 'any';
     ({ getModelApiClient } = await import(API_FACTORY_MODULE));
     fetchModelUpdateVersions = vi.fn();
     getModelApiClient.mockReturnValue({
@@ -157,7 +157,7 @@ describe('ModelVersionsTab media rendering', () => {
   });
 
   it('shows a stable label with a short state indicator', async () => {
-    stateMock.global.settings.update_flag_strategy = 'any';
+    stateMock.global.settings.version_grouping = 'any';
     fetchModelUpdateVersions.mockResolvedValue({
       success: true,
       record: {
@@ -192,7 +192,7 @@ describe('ModelVersionsTab media rendering', () => {
   });
 
   it('filters versions to the current base model when strategy is same_base', async () => {
-    stateMock.global.settings.update_flag_strategy = 'same_base';
+    stateMock.global.settings.version_grouping = 'same_base';
     fetchModelUpdateVersions.mockResolvedValue({
       success: true,
       record: {
@@ -235,7 +235,7 @@ describe('ModelVersionsTab media rendering', () => {
   });
 
   it('toggle button can switch to display all versions', async () => {
-    stateMock.global.settings.update_flag_strategy = 'same_base';
+    stateMock.global.settings.version_grouping = 'same_base';
     fetchModelUpdateVersions.mockResolvedValue({
       success: true,
       record: {
@@ -286,7 +286,7 @@ describe('ModelVersionsTab media rendering', () => {
   });
 
   it('shows a newer version badge when viewing same-base results', async () => {
-    stateMock.global.settings.update_flag_strategy = 'same_base';
+    stateMock.global.settings.version_grouping = 'same_base';
     fetchModelUpdateVersions.mockResolvedValue({
       success: true,
       record: {

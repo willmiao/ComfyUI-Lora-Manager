@@ -275,8 +275,8 @@ function handleViewLocalVersionsFromCard(card, modelType) {
     const modelId = card.dataset.modelId;
     const modelName = card.dataset.name;
     if (!modelId) return;
-    // Respect update_flag_strategy: only filter by base model when the strategy says so
-    const strategy = state.global?.settings?.update_flag_strategy;
+    // Respect version_grouping: only filter by base model when the strategy says so
+    const strategy = state.global?.settings?.version_grouping;
     const shouldFilterByBase = strategy === 'same_base';
     const baseModel = shouldFilterByBase && card.dataset.base_model !== 'Unknown'
         ? card.dataset.base_model

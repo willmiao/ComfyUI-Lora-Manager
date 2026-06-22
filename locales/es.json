@@ -332,7 +332,7 @@
             "extraFolderPaths": "Rutas de carpetas adicionales",
             "downloadPathTemplates": "Plantillas de rutas de descarga",
             "priorityTags": "Etiquetas prioritarias",
-            "updateFlags": "Indicadores de actualización",
+            "versionScope": "Indicadores de actualización",
             "exampleImages": "Imágenes de ejemplo",
             "autoOrganize": "Organización automática",
             "metadata": "Metadatos",
@@ -595,7 +595,7 @@
             "download": "Descargar",
             "restartRequired": "Requiere reinicio"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "Estrategia de indicadores de actualización",
             "help": "Decide si las insignias de actualización deben mostrarse solo cuando una nueva versión comparte el mismo modelo base que tus archivos locales o siempre que exista cualquier versión más reciente de ese modelo.",
             "options": {

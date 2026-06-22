@@ -332,7 +332,7 @@
             "extraFolderPaths": "追加フォルダーパス",
             "downloadPathTemplates": "ダウンロードパステンプレート",
             "priorityTags": "優先タグ",
-            "updateFlags": "アップデートフラグ",
+            "versionScope": "アップデートフラグ",
             "exampleImages": "例画像",
             "autoOrganize": "自動整理",
             "metadata": "メタデータ",
@@ -595,7 +595,7 @@
             "download": "ダウンロード",
             "restartRequired": "再起動が必要"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "アップデートフラグの表示戦略",
             "help": "新リリースがローカルファイルと同じベースモデルを共有する場合にのみ更新バッジを表示するか、そのモデルに新しいバージョンがあれば常に表示するかを決めます。",
             "options": {

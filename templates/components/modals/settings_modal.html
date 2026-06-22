@@ -1100,23 +1100,23 @@
                             </div>
                         </div>
                         
-                        <!-- Update Flags -->
+                        <!-- Version Scope -->
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
-                                <h4>{{ t('settings.sections.updateFlags') }}</h4>
+                                <h4>{{ t('settings.sections.versionScope') }}</h4>
                             </div>
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="updateFlagStrategy">
-                                        {{ t('settings.updateFlagStrategy.label') }}
-                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.updateFlagStrategy.help') }}"></i>
+                                        <label for="versionGrouping">
+                                        {{ t('settings.versionGrouping.label') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.versionGrouping.help') }}"></i>
                                     </label>
                                     </div>
                                     <div class="setting-control select-control">
-                                        <select id="updateFlagStrategy" onchange="settingsManager.saveSelectSetting('updateFlagStrategy', 'update_flag_strategy')">
-                                            <option value="same_base">{{ t('settings.updateFlagStrategy.options.sameBase') }}</option>
-                                            <option value="any">{{ t('settings.updateFlagStrategy.options.any') }}</option>
+                                        <select id="versionGrouping" onchange="settingsManager.saveSelectSetting('versionGrouping', 'version_grouping')">
+                                            <option value="same_base">{{ t('settings.versionGrouping.options.sameBase') }}</option>
+                                            <option value="any">{{ t('settings.versionGrouping.options.any') }}</option>
                                         </select>
                                     </div>
                                 </div>

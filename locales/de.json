@@ -332,7 +332,7 @@
             "extraFolderPaths": "Zusätzliche Ordnerpfade",
             "downloadPathTemplates": "Download-Pfad-Vorlagen",
             "priorityTags": "Prioritäts-Tags",
-            "updateFlags": "Update-Markierungen",
+            "versionScope": "Update-Markierungen",
             "exampleImages": "Beispielbilder",
             "autoOrganize": "Auto-Organisierung",
             "metadata": "Metadaten",
@@ -595,7 +595,7 @@
             "download": "Herunterladen",
             "restartRequired": "Neustart erforderlich"
         },
-        "updateFlagStrategy": {
+        "versionGrouping": {
             "label": "Strategie für Update-Markierungen",
             "help": "Entscheide, ob Update-Badges nur dann erscheinen, wenn eine neue Version dasselbe Basismodell wie deine lokalen Dateien verwendet, oder sobald es irgendein neueres Release für dieses Modell gibt.",
             "options": {

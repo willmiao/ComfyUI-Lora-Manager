@@ -917,9 +917,9 @@ export class SettingsManager {
             modelNameDisplaySelect.value = state.global.settings.model_name_display || 'model_name';
         }
 
-        const updateFlagStrategySelect = document.getElementById('updateFlagStrategy');
-        if (updateFlagStrategySelect) {
-            updateFlagStrategySelect.value = state.global.settings.update_flag_strategy || 'same_base';
+        const versionGroupingSelect = document.getElementById('versionGrouping');
+        if (versionGroupingSelect) {
+            versionGroupingSelect.value = state.global.settings.version_grouping || 'same_base';
         }
 
         // Set hide early access updates setting
@@ -2070,7 +2070,7 @@ export class SettingsManager {
             if (
                 settingKey === 'model_name_display'
                 || settingKey === 'model_card_footer_action'
-                || settingKey === 'update_flag_strategy'
+                || settingKey === 'version_grouping'
                 || settingKey === 'mature_blur_level'
             ) {
                 this.reloadContent();
