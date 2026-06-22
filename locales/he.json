@@ -183,6 +183,9 @@
         },
         "manageExcludedModels": {
             "label": "ניהול מודלים מוחרגים"
+        },
+        "groupByModel": {
+            "label": "קיבוץ לפי דגם"
         }
     },
     "header": {

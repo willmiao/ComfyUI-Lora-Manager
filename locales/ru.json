@@ -183,6 +183,9 @@
         },
         "manageExcludedModels": {
             "label": "Управление исключёнными моделями"
+        },
+        "groupByModel": {
+            "label": "Группировать по модели"
         }
     },
     "header": {

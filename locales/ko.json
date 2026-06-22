@@ -183,6 +183,9 @@
         },
         "manageExcludedModels": {
             "label": "제외된 모델 관리"
+        },
+        "groupByModel": {
+            "label": "모델별 그룹화"
         }
     },
     "header": {

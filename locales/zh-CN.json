@@ -183,6 +183,9 @@
         },
         "manageExcludedModels": {
             "label": "管理已排除的模型"
+        },
+        "groupByModel": {
+            "label": "按模型分组"
         }
     },
     "header": {

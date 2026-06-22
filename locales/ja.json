@@ -183,6 +183,9 @@
         },
         "manageExcludedModels": {
             "label": "除外モデルを管理"
+        },
+        "groupByModel": {
+            "label": "モデルでグループ化"
         }
     },
     "header": {

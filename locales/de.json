@@ -183,6 +183,9 @@
         },
         "manageExcludedModels": {
             "label": "Ausgeschlossene Modelle verwalten"
+        },
+        "groupByModel": {
+            "label": "Nach Modell gruppieren"
         }
     },
     "header": {

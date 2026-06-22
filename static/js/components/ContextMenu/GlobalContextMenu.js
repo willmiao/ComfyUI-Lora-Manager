@@ -24,6 +24,14 @@ export class GlobalContextMenu extends BaseContextMenu {
         const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
         const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
         const repairRecipesItem = this.menu.querySelector('[data-action="repair-recipes"]');
+        const groupByModelItem = this.menu.querySelector('[data-action="toggle-group-by-model"]');
+        const groupByModelCheck = groupByModelItem?.querySelector('.check-indicator');
+
+        // Update check indicator for group-by-model
+        if (groupByModelCheck) {
+            const isEnabled = !!state.global.settings.group_by_model;
+            groupByModelCheck.style.display = isEnabled ? 'block' : 'none';
+        }
 
         if (isRecipesPage) {
             modelUpdateItem?.classList.add('hidden');
@@ -31,6 +39,7 @@ export class GlobalContextMenu extends BaseContextMenu {
             downloadExamplesItem?.classList.add('hidden');
             cleanupExamplesItem?.classList.add('hidden');
             excludedModelsItem?.classList.add('hidden');
+            groupByModelItem?.classList.add('hidden');
             repairRecipesItem?.classList.remove('hidden');
         } else {
             modelUpdateItem?.classList.remove('hidden');
@@ -38,6 +47,7 @@ export class GlobalContextMenu extends BaseContextMenu {
             downloadExamplesItem?.classList.remove('hidden');
             cleanupExamplesItem?.classList.remove('hidden');
             excludedModelsItem?.classList.remove('hidden');
+            groupByModelItem?.classList.remove('hidden');
             repairRecipesItem?.classList.add('hidden');
         }
 
@@ -74,6 +84,9 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'manage-excluded-models':
                 this.manageExcludedModels();
                 break;
+            case 'toggle-group-by-model':
+                this.toggleGroupByModel();
+                break;
             default:
                 console.warn(`Unhandled global context menu action: ${action}`);
                 break;
@@ -84,6 +97,25 @@ export class GlobalContextMenu extends BaseContextMenu {
         window.pageControls?.enterExcludedView?.().catch((error) => {
             console.error('Failed to open excluded models view:', error);
         });
+    }
+
+    toggleGroupByModel() {
+        const sm = window.settingsManager;
+        if (!sm) {
+            console.error('settingsManager not available on window');
+            return;
+        }
+        const newValue = !state.global.settings.group_by_model;
+        state.global.settings.group_by_model = newValue;
+
+        sm.saveSetting('group_by_model', newValue).catch((error) => {
+            console.error('Failed to save group_by_model setting:', error);
+            // Revert state on failure
+            state.global.settings.group_by_model = !newValue;
+        });
+
+        sm.applyFrontendSettings();
+        sm.reloadContent();
     }
 
     async downloadExampleImages(menuItem) {
