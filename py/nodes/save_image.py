@@ -608,7 +608,7 @@ class SaveImageLM:
             img = Image.fromarray(np.clip(img, 0, 255).astype(np.uint8))
 
             # Generate filename with counter if needed
-            base_filename = filename
+            base_filename = filename.replace("%batch_num%", str(i))
             if add_counter_to_filename:
                 # Use counter + i to ensure unique filenames for all images in batch
                 current_counter = counter + i
