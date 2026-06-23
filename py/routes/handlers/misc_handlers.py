@@ -535,6 +535,7 @@ class NodeRegistry:
                     "capabilities": capabilities,
                     "widget_names": widget_names,
                     "mode": node.get("mode"),
+                    "marker_role": node.get("marker_role"),
                 }
             logger.debug("Registered %s nodes in registry", len(nodes))
             self._registry_updated.set()
@@ -3104,13 +3105,17 @@ class NodeRegistryHandler:
         try:
             data = await request.json()
             widget_name = data.get("widget_name")
+            action = data.get("action")
             value = data.get("value")
             mode = data.get("mode", "replace")
             node_ids = data.get("node_ids")
 
-            if not isinstance(widget_name, str) or not widget_name:
+            if not action and (not isinstance(widget_name, str) or not widget_name):
                 return web.json_response(
-                    {"success": False, "error": "Missing widget_name parameter"},
+                    {
+                        "success": False,
+                        "error": "Missing parameter: provide either 'action' or 'widget_name'",
+                    },
                     status=400,
                 )
 
@@ -3149,12 +3154,15 @@ class NodeRegistryHandler:
                 except (TypeError, ValueError):
                     parsed_node_id = node_identifier
 
-                payload = {
+                payload: dict = {
                     "id": parsed_node_id,
-                    "widget_name": widget_name,
                     "value": value,
                     "mode": mode,
                 }
+                if action:
+                    payload["action"] = action
+                if widget_name:
+                    payload["widget_name"] = widget_name
 
                 if graph_identifier is not None:
                     payload["graph_id"] = str(graph_identifier)

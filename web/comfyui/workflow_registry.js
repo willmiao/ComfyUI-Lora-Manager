@@ -28,6 +28,11 @@ app.registerExtension({
         api.addEventListener("lm_widget_update", (event) => {
             this.applyWidgetUpdate(event?.detail ?? {});
         });
+
+        // React to marker changes from the Node Marker extension
+        window.addEventListener("lm_marker_changed", () => {
+            this.refreshRegistry();
+        });
     },
 
     async refreshRegistry() {
@@ -49,8 +54,10 @@ app.registerExtension({
                 const supportsLora = LORA_NODE_CLASSES.has(node.comfyClass);
                 const hasTargetWidget = widgetNames.some((name) => TARGET_WIDGET_NAMES.has(name));
                 const hasTextWidget = TEXT_CAPABLE_CLASSES.has(node.comfyClass);
+                const markerRole = node.properties?.lm_marker_role ?? null;
 
-                if (!supportsLora && !hasTargetWidget && !hasTextWidget) {
+                // Skip nodes with no relevant capability UNLESS they are marked
+                if (!supportsLora && !hasTargetWidget && !hasTextWidget && !markerRole) {
                     continue;
                 }
 
@@ -71,6 +78,7 @@ app.registerExtension({
                     type: node.comfyClass,
                     comfy_class: node.comfyClass,
                     mode: node.mode,
+                    marker_role: markerRole,
                     capabilities: {
                         supports_lora: supportsLora,
                         has_text_widget: hasTextWidget,
@@ -102,11 +110,12 @@ app.registerExtension({
     applyWidgetUpdate(message) {
         const nodeId = message?.node_id ?? message?.id;
         const graphId = message?.graph_id;
+        const action = message?.action;
         const widgetName = message?.widget_name;
         const value = message?.value;
         const mode = message?.mode ?? "replace";
 
-        if (nodeId == null || !widgetName) {
+        if (nodeId == null || (!action && !widgetName)) {
             console.warn("LoRA Manager: invalid widget update payload", message);
             return;
         }
@@ -126,33 +135,72 @@ app.registerExtension({
             return;
         }
 
-        const widgetIndex = node.widgets.findIndex((widget) => widget?.name === widgetName);
-        if (widgetIndex === -1) {
-            console.warn(
-                "LoRA Manager: target widget not found on node",
-                widgetName,
-                node
-            );
+        // ---- Resolve target widget ----
+        let targetWidget = null;
+
+        if (action === "inject_text") {
+            // Find the first text-capable widget by type.
+            // Normalise to lowercase for case-insensitive matching.
+            const TEXT_TYPES = new Set(["string", "customtext"]);
+            targetWidget = node.widgets.find((w) => {
+                const t = typeof w?.type === "string" ? w.type.toLowerCase() : "";
+                if (TEXT_TYPES.has(t)) return true;
+                // Broad fallback for unknown composite types.
+                if (t.includes("string")) {
+                    return true;
+                }
+                return false;
+            });
+            if (!targetWidget) {
+                // Last resort: pick the first widget that is not a hidden/internal type
+                targetWidget = node.widgets.find((w) => w?.name && !w.name.startsWith("_"));
+                if (!targetWidget) {
+                    console.warn(
+                        "LoRA Manager: no suitable widget for inject_text on node",
+                        node.id
+                    );
+                    return;
+                }
+            }
+        } else if (widgetName) {
+            // Legacy: find widget by name
+            targetWidget = node.widgets.find((w) => w?.name === widgetName);
+            if (!targetWidget) {
+                console.warn(
+                    "LoRA Manager: target widget not found on node",
+                    widgetName,
+                    node
+                );
+                return;
+            }
+        } else {
+            console.warn("LoRA Manager: no action or widget_name in payload", message);
             return;
         }
 
-        const widget = node.widgets[widgetIndex];
+        // ---- Update widget value ----
+        const widgetIndex = node.widgets.indexOf(targetWidget);
         let newValue = value;
 
         if (mode === "append") {
-            const separator = widget.value && widget.value.length > 0 ? " " : "";
-            newValue = widget.value + separator + value;
+            const separator =
+                targetWidget.value && targetWidget.value.length > 0 ? " " : "";
+            newValue = targetWidget.value + separator + value;
         }
 
-        widget.value = newValue;
+        targetWidget.value = newValue;
 
-        if (Array.isArray(node.widgets_values) && node.widgets_values.length > widgetIndex) {
+        if (
+            Array.isArray(node.widgets_values) &&
+            widgetIndex >= 0 &&
+            node.widgets_values.length > widgetIndex
+        ) {
             node.widgets_values[widgetIndex] = newValue;
         }
 
-        if (typeof widget.callback === "function") {
+        if (typeof targetWidget.callback === "function") {
             try {
-                widget.callback(newValue);
+                targetWidget.callback(newValue);
             } catch (callbackError) {
                 console.error("LoRA Manager: widget callback failed", callbackError);
             }

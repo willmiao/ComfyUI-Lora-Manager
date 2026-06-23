@@ -915,7 +915,7 @@ async function sendTextToNodes(nodeIds, nodesMap, text, mode, messages = {}) {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        widget_name: 'text',
+        action: 'inject_text',
         value: text,
         mode: mode || 'append',
         node_ids: references,
@@ -948,7 +948,10 @@ export async function sendEmbeddingToWorkflow(embeddingCode) {
     if (!isNodeEnabled(node)) {
       return false;
     }
-    return node.capabilities?.has_text_widget === true;
+    return (
+      node.capabilities?.has_text_widget === true ||
+      node.marker_role === "send_prompt_target"
+    );
   });
 
   const nodeKeys = Object.keys(textNodes);
