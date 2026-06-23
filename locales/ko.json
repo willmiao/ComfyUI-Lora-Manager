@@ -1620,12 +1620,15 @@
             "modelUpdated": "모델이 워크플로에서 업데이트되었습니다",
             "modelFailed": "모델 노드 업데이트 실패",
             "embeddingAdded": "Embedding을 워크플로에 추가했습니다",
-            "embeddingFailed": "Embedding 추가 실패"
+            "embeddingFailed": "Embedding 추가 실패",
+            "promptSent": "프롬프트를 워크플로에 보냈습니다",
+            "promptFailed": "프롬프트 보내기 실패"
         },
         "nodeSelector": {
             "recipe": "레시피",
             "lora": "LoRA",
             "embedding": "임베딩",
+            "prompt": "프롬프트",
             "replace": "교체",
             "append": "추가",
             "selectTargetNode": "대상 노드 선택",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "LoRA 이름 또는 문법을 입력해주세요",
             "reconnectedSuccessfully": "LoRA가 성공적으로 다시 연결되었습니다",
             "reconnectFailed": "LoRA 다시 연결 오류: {message}",
+            "noPromptToSend": "보낼 프롬프트가 없습니다",
             "cannotSend": "레시피를 전송할 수 없습니다: 레시피 ID 누락",
             "sendFailed": "레시피를 워크플로로 전송하는데 실패했습니다",
             "sendError": "레시피를 워크플로로 전송하는 중 오류",

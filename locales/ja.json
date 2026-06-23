@@ -1620,12 +1620,15 @@
             "modelUpdated": "モデルがワークフローで更新されました",
             "modelFailed": "モデルノードの更新に失敗しました",
             "embeddingAdded": "Embeddingをワークフローに追加しました",
-            "embeddingFailed": "Embeddingの追加に失敗しました"
+            "embeddingFailed": "Embeddingの追加に失敗しました",
+            "promptSent": "プロンプトをワークフローに送信しました",
+            "promptFailed": "プロンプトの送信に失敗しました"
         },
         "nodeSelector": {
             "recipe": "レシピ",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "プロンプト",
             "replace": "置換",
             "append": "追加",
             "selectTargetNode": "ターゲットノードを選択",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "LoRA名または構文を入力してください",
             "reconnectedSuccessfully": "LoRAが正常に再接続されました",
             "reconnectFailed": "LoRA再接続エラー：{message}",
+            "noPromptToSend": "送信するプロンプトがありません",
             "cannotSend": "レシピを送信できません：レシピIDがありません",
             "sendFailed": "レシピのワークフローへの送信に失敗しました",
             "sendError": "レシピのワークフロー送信エラー",

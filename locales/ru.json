@@ -1620,12 +1620,15 @@
             "modelUpdated": "Модель обновлена в workflow",
             "modelFailed": "Не удалось обновить узел модели",
             "embeddingAdded": "Embedding добавлен в workflow",
-            "embeddingFailed": "Не удалось добавить embedding"
+            "embeddingFailed": "Не удалось добавить embedding",
+            "promptSent": "Запрос отправлен в workflow",
+            "promptFailed": "Не удалось отправить запрос"
         },
         "nodeSelector": {
             "recipe": "Рецепт",
             "lora": "LoRA",
             "embedding": "Эмбеддинг",
+            "prompt": "Запрос",
             "replace": "Заменить",
             "append": "Добавить",
             "selectTargetNode": "Выберите целевой узел",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "Пожалуйста, введите название LoRA или синтаксис",
             "reconnectedSuccessfully": "LoRA успешно переподключена",
             "reconnectFailed": "Ошибка переподключения LoRA: {message}",
+            "noPromptToSend": "Нет запроса для отправки",
             "cannotSend": "Невозможно отправить рецепт: отсутствует ID рецепта",
             "sendFailed": "Не удалось отправить рецепт в workflow",
             "sendError": "Ошибка отправки рецепта в workflow",

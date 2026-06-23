@@ -1,5 +1,5 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata, stripLoraTags, sendPromptToWorkflow } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
@@ -1200,6 +1200,40 @@ class RecipeModal {
                 this.sendRecipeToWorkflow();
             });
         }
+
+        // Send prompt to workflow buttons
+        const sendPromptBtn = document.getElementById('sendPromptBtn');
+        const sendNegativePromptBtn = document.getElementById('sendNegativePromptBtn');
+
+        if (sendPromptBtn) {
+            sendPromptBtn.addEventListener('click', () => {
+                let promptText = this.currentRecipe?.gen_params?.prompt || '';
+                if (this.shouldStripLoraOnCopy()) {
+                    promptText = RecipeModal.stripLoraTags(promptText);
+                }
+                if (!promptText.trim()) {
+                    showToast('toast.recipes.noPromptToSend', {}, 'warning');
+                    return;
+                }
+                sendPromptToWorkflow(promptText);
+            });
+        }
+
+        if (sendNegativePromptBtn) {
+            sendNegativePromptBtn.addEventListener('click', () => {
+                let negativePromptText = this.currentRecipe?.gen_params?.negative_prompt || '';
+                if (this.shouldStripLoraOnCopy()) {
+                    negativePromptText = RecipeModal.stripLoraTags(negativePromptText);
+                }
+                if (!negativePromptText.trim()) {
+                    showToast('toast.recipes.noPromptToSend', {}, 'warning');
+                    return;
+                }
+                sendPromptToWorkflow(negativePromptText, {
+                    actionTypeText: 'Negative Prompt',
+                });
+            });
+        }
     }
 
     /**
@@ -1208,14 +1242,7 @@ class RecipeModal {
      * Cleans up artifacts like leading ", ", double commas, and extra whitespace.
      */
     static stripLoraTags(text) {
-        return text
-            .replace(/<lora:[^>]*>/gi, '')
-            .replace(/&lt;lora:[^&]*&gt;/gi, '')
-            .replace(/,(\s*,)+/g, ',')
-            .replace(/^,\s*/, '')
-            .replace(/,\s*$/, '')
-            .replace(/\s{2,}/g, ' ')
-            .trim();
+        return stripLoraTags(text);
     }
 
     shouldStripLoraOnCopy() {

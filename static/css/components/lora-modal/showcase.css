@@ -272,13 +272,25 @@
   margin-top: var(--space-2);
 }
 
+.metadata-row.prompt-row .param-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.metadata-row.prompt-row .param-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .metadata-label {
   font-weight: 600;
   color: var(--text-color);
   opacity: 0.8;
   font-size: 0.85em;
-  display: block;
-  margin-bottom: 4px;
 }
 
 .metadata-prompt-wrapper {
@@ -286,7 +298,7 @@
   background: var(--lora-surface);
   border: 1px solid var(--lora-border);
   border-radius: var(--border-radius-xs);
-  padding: 6px 30px 6px 8px;
+  padding: 6px 8px;
   margin-top: 2px;
   max-height: 80px; /* Reduced from 120px */
   overflow-y: auto;
@@ -302,22 +314,24 @@
   white-space: pre-wrap;
 }
 
-.copy-prompt-btn {
-  position: absolute;
-  top: 6px;
-  right: 6px;
+.copy-prompt-btn,
+.send-prompt-btn {
   background: transparent;
   border: none;
   color: var(--text-color);
   opacity: 0.6;
   cursor: pointer;
-  padding: 3px;
+  padding: 3px 6px;
+  border-radius: var(--border-radius-xs);
   transition: var(--transition-base);
+  font-size: 0.9em;
 }
 
-.copy-prompt-btn:hover {
+.copy-prompt-btn:hover,
+.send-prompt-btn:hover {
   opacity: 1;
   color: var(--lora-accent);
+  background: var(--lora-surface);
 }
 
 /* Scrollbar styling for metadata panel */

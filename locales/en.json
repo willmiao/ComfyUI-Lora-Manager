@@ -1620,12 +1620,15 @@
             "modelUpdated": "Model updated in workflow",
             "modelFailed": "Failed to update model node",
             "embeddingAdded": "Embedding added to workflow",
-            "embeddingFailed": "Failed to add embedding"
+            "embeddingFailed": "Failed to add embedding",
+            "promptSent": "Prompt sent to workflow",
+            "promptFailed": "Failed to send prompt"
         },
         "nodeSelector": {
             "recipe": "Recipe",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "Prompt",
             "replace": "Replace",
             "append": "Append",
             "selectTargetNode": "Select target node",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "Please enter a LoRA name or syntax",
             "reconnectedSuccessfully": "LoRA reconnected successfully",
             "reconnectFailed": "Error reconnecting LoRA: {message}",
+            "noPromptToSend": "No prompt to send",
             "cannotSend": "Cannot send recipe: Missing recipe ID",
             "sendFailed": "Failed to send recipe to workflow",
             "sendError": "Error sending recipe to workflow",

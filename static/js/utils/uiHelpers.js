@@ -518,6 +518,22 @@ export function copyLoraSyntax(card) {
   }
 }
 
+/**
+ * Strip <lora:...> tags from prompt text and clean up residual punctuation/whitespace.
+ * Handles both unescaped (<lora:...>) and HTML-escaped (&lt;lora:...&gt;) variants.
+ * Cleans up artifacts like leading ", ", double commas, and extra whitespace.
+ */
+export function stripLoraTags(text) {
+    return text
+        .replace(/<lora:[^>]*>/gi, '')
+        .replace(/&lt;lora:[^&]*&gt;/gi, '')
+        .replace(/,(\s*,)+/g, ',')
+        .replace(/^,\s*/, '')
+        .replace(/,\s*$/, '')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
+}
+
 async function fetchWorkflowRegistry() {
   try {
     const response = await fetch('/api/lm/get-registry');
@@ -978,6 +994,63 @@ export async function sendEmbeddingToWorkflow(embeddingCode) {
   showNodeSelector(textNodes, {
     actionType,
     actionMode: '',
+    onSend: handleSend,
+  });
+  return true;
+}
+
+/**
+ * Send prompt text to workflow text-capable nodes (replaces existing content).
+ * Uses the same target node discovery as sendEmbeddingToWorkflow.
+ * @param {string} promptText - The prompt/negative prompt text to send
+ * @param {Object} [options] - Optional messages overrides
+ * @param {string} [options.actionTypeText] - Label for the action type (default "Prompt")
+ * @param {string} [options.successMessage] - Success toast message
+ * @param {string} [options.failureMessage] - Failure toast message
+ * @param {string} [options.missingNodesMessage] - No nodes warning message
+ * @param {string} [options.missingTargetMessage] - No target selected warning message
+ * @returns {Promise<boolean>} Whether the send succeeded
+ */
+export async function sendPromptToWorkflow(promptText, options = {}) {
+  const registry = await fetchWorkflowRegistry();
+  if (!registry) {
+    return false;
+  }
+
+  const textNodes = filterRegistryNodes(registry.nodes, (node) => {
+    if (!isNodeEnabled(node)) {
+      return false;
+    }
+    return (
+      node.capabilities?.has_text_widget === true ||
+      node.marker_role === "send_prompt_target"
+    );
+  });
+
+  const nodeKeys = Object.keys(textNodes);
+  if (nodeKeys.length === 0) {
+    showToast(options.missingNodesMessage || 'uiHelpers.workflow.noMatchingNodes', {}, 'warning');
+    return false;
+  }
+
+  const messages = {
+    successMessage: options.successMessage || translate('uiHelpers.workflow.promptSent', {}, 'Prompt sent to workflow'),
+    failureMessage: options.failureMessage || translate('uiHelpers.workflow.promptFailed', {}, 'Failed to send prompt'),
+    missingTargetMessage: options.missingTargetMessage || translate('uiHelpers.workflow.noTargetNodeSelected', {}, 'No target node selected'),
+  };
+
+  const handleSend = (selectedNodeIds) =>
+    sendTextToNodes(selectedNodeIds, textNodes, promptText, 'replace', messages);
+
+  if (nodeKeys.length === 1) {
+    return await handleSend([nodeKeys[0]]);
+  }
+
+  const actionType = options.actionTypeText || translate('uiHelpers.nodeSelector.prompt', {}, 'Prompt');
+
+  showNodeSelector(textNodes, {
+    actionType,
+    actionMode: translate('uiHelpers.nodeSelector.replace', {}, 'Replace'),
     onSend: handleSend,
   });
   return true;

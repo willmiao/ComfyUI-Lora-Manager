@@ -1620,12 +1620,15 @@
             "modelUpdated": "Modelo actualizado en el flujo de trabajo",
             "modelFailed": "Error al actualizar nodo de modelo",
             "embeddingAdded": "Embedding añadido al flujo de trabajo",
-            "embeddingFailed": "Error al añadir el embedding"
+            "embeddingFailed": "Error al añadir el embedding",
+            "promptSent": "Prompt enviado al flujo de trabajo",
+            "promptFailed": "Error al enviar el prompt"
         },
         "nodeSelector": {
             "recipe": "Receta",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "Prompt",
             "replace": "Reemplazar",
             "append": "Añadir",
             "selectTargetNode": "Seleccionar nodo de destino",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "Por favor introduce un nombre de LoRA o sintaxis",
             "reconnectedSuccessfully": "LoRA reconectado exitosamente",
             "reconnectFailed": "Error reconectando LoRA: {message}",
+            "noPromptToSend": "No hay prompt para enviar",
             "cannotSend": "No se puede enviar receta: Falta ID de receta",
             "sendFailed": "Error al enviar receta al flujo de trabajo",
             "sendError": "Error enviando receta al flujo de trabajo",

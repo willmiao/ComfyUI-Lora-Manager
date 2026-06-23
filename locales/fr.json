@@ -1620,12 +1620,15 @@
             "modelUpdated": "Modèle mis à jour dans le workflow",
             "modelFailed": "Échec de la mise à jour du nœud modèle",
             "embeddingAdded": "Embedding ajouté au workflow",
-            "embeddingFailed": "Échec de l'ajout de l'embedding"
+            "embeddingFailed": "Échec de l'ajout de l'embedding",
+            "promptSent": "Prompt envoyé au workflow",
+            "promptFailed": "Échec de l'envoi du prompt"
         },
         "nodeSelector": {
             "recipe": "Recipe",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "Prompt",
             "replace": "Remplacer",
             "append": "Ajouter",
             "selectTargetNode": "Sélectionner le nœud cible",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "Veuillez entrer un nom ou une syntaxe LoRA",
             "reconnectedSuccessfully": "LoRA reconnecté avec succès",
             "reconnectFailed": "Erreur lors de la reconnexion du LoRA : {message}",
+            "noPromptToSend": "Aucun prompt à envoyer",
             "cannotSend": "Impossible d'envoyer la recipe : ID de recipe manquant",
             "sendFailed": "Échec de l'envoi de la recipe vers le workflow",
             "sendError": "Erreur lors de l'envoi de la recipe vers le workflow",

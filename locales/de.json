@@ -1620,12 +1620,15 @@
             "modelUpdated": "Modell im Workflow aktualisiert",
             "modelFailed": "Fehler beim Aktualisieren des Modellknotens",
             "embeddingAdded": "Embedding zum Workflow hinzugefügt",
-            "embeddingFailed": "Fehler beim Hinzufügen des Embeddings"
+            "embeddingFailed": "Fehler beim Hinzufügen des Embeddings",
+            "promptSent": "Prompt an Workflow gesendet",
+            "promptFailed": "Fehler beim Senden des Prompts"
         },
         "nodeSelector": {
             "recipe": "Rezept",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "Prompt",
             "replace": "Ersetzen",
             "append": "Anhängen",
             "selectTargetNode": "Zielknoten auswählen",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "Bitte geben Sie einen LoRA-Namen oder Syntax ein",
             "reconnectedSuccessfully": "LoRA erfolgreich neu verbunden",
             "reconnectFailed": "Fehler beim Neuverbinden des LoRA: {message}",
+            "noPromptToSend": "Kein zu sendender Prompt",
             "cannotSend": "Kann Rezept nicht senden: Fehlende Rezept-ID",
             "sendFailed": "Fehler beim Senden des Rezepts an Workflow",
             "sendError": "Fehler beim Senden des Rezepts an Workflow",

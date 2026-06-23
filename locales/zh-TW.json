@@ -1620,12 +1620,15 @@
             "modelUpdated": "模型已更新到工作流",
             "modelFailed": "更新模型節點失敗",
             "embeddingAdded": "Embedding 已附加到工作流",
-            "embeddingFailed": "傳送 Embedding 到工作流失敗"
+            "embeddingFailed": "傳送 Embedding 到工作流失敗",
+            "promptSent": "提示詞已發送到工作流",
+            "promptFailed": "提示詞發送失敗"
         },
         "nodeSelector": {
             "recipe": "配方",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "提示詞",
             "replace": "取代",
             "append": "附加",
             "selectTargetNode": "選擇目標節點",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "請輸入 LoRA 名稱或語法",
             "reconnectedSuccessfully": "LoRA 重新連結成功",
             "reconnectFailed": "LoRA 重新連結錯誤：{message}",
+            "noPromptToSend": "沒有可發送的提示詞",
             "cannotSend": "無法傳送配方：缺少配方 ID",
             "sendFailed": "傳送配方到工作流失敗",
             "sendError": "傳送配方到工作流錯誤",

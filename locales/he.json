@@ -1620,12 +1620,15 @@
             "modelUpdated": "מודל עודכן ב-workflow",
             "modelFailed": "עדכון צומת המודל נכשל",
             "embeddingAdded": "Embedding נוסף ל-workflow",
-            "embeddingFailed": "הוספת Embedding נכשלה"
+            "embeddingFailed": "הוספת Embedding נכשלה",
+            "promptSent": "הנחיה נשלחה ל-workflow",
+            "promptFailed": "שליחת ההנחיה נכשלה"
         },
         "nodeSelector": {
             "recipe": "מתכון",
             "lora": "LoRA",
             "embedding": "Embedding",
+            "prompt": "הנחיה",
             "replace": "החלף",
             "append": "הוסף",
             "selectTargetNode": "בחר צומת יעד",
@@ -1812,6 +1815,7 @@
             "enterLoraName": "אנא הזן שם LoRA או תחביר",
             "reconnectedSuccessfully": "LoRA קושר מחדש בהצלחה",
             "reconnectFailed": "שגיאה בקישור מחדש של LoRA: {message}",
+            "noPromptToSend": "אין הנחיה לשליחה",
             "cannotSend": "לא ניתן לשלוח מתכון: חסר מזהה מתכון",
             "sendFailed": "שליחת המתכון ל-workflow נכשלה",
             "sendError": "שגיאה בשליחת המתכון ל-workflow",
