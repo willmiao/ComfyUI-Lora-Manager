@@ -3,7 +3,7 @@ import { app } from "../../scripts/app.js";
 // =============================================================================
 // Node Marker – right-click node marking (no dedicated node required)
 //
-// Adds a "Mark as →" submenu with role options to any node's context menu.
+// Adds a "🎯 Mark as →" submenu with role options to any node's context menu.
 // Roles are stored in ``node.properties.lm_marker_role`` and automatically
 // persist with the workflow JSON.
 //
@@ -107,7 +107,7 @@ function buildMenuItems(node) {
   return [
     null,
     {
-      content: "Mark as",
+      content: "\uD83C\uDFAF Mark as",
       has_submenu: true,
       submenu: {
         options: buildSubmenuOptions(node),
