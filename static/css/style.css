@@ -60,7 +60,4 @@
     margin-bottom: var(--space-2);
 }
 
-/* Hide versions_count sort option when group-by-model is off */
-body:not(.group-by-model) .sort-option-versions-count {
-    display: none;
-}
+/* ---------- reused from shared styles ---------- */

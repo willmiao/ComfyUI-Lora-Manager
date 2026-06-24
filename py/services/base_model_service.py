@@ -152,18 +152,51 @@ class BaseModelService(ABC):
             dedup_lost = len(sorted_data) - (len(dedup_map) + len(standalone))
             sorted_data = [entry[0] for entry in dedup_map.values()] + standalone
 
-        # Re-sort by version_count after dedup (only makes sense in group_by_model mode)
-        is_group_by_active = kwargs.get("group_by_model") and civitai_model_id is None
-        if sort_params.key == "versions_count" and is_group_by_active:
+        # Re-sort by version_count (grouped: after dedup; non-grouped: group internally, sort, expand)
+        if sort_params.key == "versions_count" and civitai_model_id is None:
             reverse = sort_params.order == "desc"
-            sorted_data.sort(
-                key=lambda x: (
-                    x.get("version_count", 0),
-                    (x.get("model_name") or x.get("file_name") or "").lower(),
-                    x.get("file_path", "").lower(),
-                ),
-                reverse=reverse,
-            )
+            if kwargs.get("group_by_model"):
+                # Grouped mode: items are already dedup'd with version_count attached
+                sorted_data.sort(
+                    key=lambda x: (
+                        x.get("version_count", 0),
+                        (x.get("model_name") or x.get("file_name") or "").lower(),
+                        x.get("file_path", "").lower(),
+                    ),
+                    reverse=reverse,
+                )
+            else:
+                # Non-grouped mode: group internally, sort groups by count, expand
+                # Respect the version_grouping setting (same logic as grouped dedup)
+                ufs = self.settings.get("version_grouping", "same_base")
+                group_by_base = ufs == "same_base"
+
+                model_groups: Dict[Any, List[Dict]] = {}
+                ungrouped_standalone: List[Dict] = []
+                for item in sorted_data:
+                    mid = self._extract_model_id(item)
+                    if mid is None:
+                        ungrouped_standalone.append(item)
+                        continue
+                    key = (mid, item.get("base_model") or "") if group_by_base else mid
+                    model_groups.setdefault(key, []).append(item)
+                # Sort versions within each group by version id descending
+                for items in model_groups.values():
+                    items.sort(
+                        key=lambda x: self._extract_version_id(x) or 0,
+                        reverse=True,
+                    )
+                # Sort groups by version count
+                sorted_groups = sorted(
+                    model_groups.values(),
+                    key=lambda items: len(items),
+                    reverse=reverse,
+                )
+                # Flatten: grouped items first, standalone items last
+                sorted_data = []
+                for items in sorted_groups:
+                    sorted_data.extend(items)
+                sorted_data.extend(ungrouped_standalone)
 
         t1 = time.perf_counter()
         if hash_filters:

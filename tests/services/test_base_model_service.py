@@ -809,6 +809,136 @@ async def test_get_paginated_data_group_by_model_dedup():
     assert response_all["total"] == 5
 
 
+@pytest.mark.asyncio
+async def test_get_paginated_data_versions_count_non_grouped_desc():
+    """Non-grouped, versions_count:desc — groups by model, sorts by count desc,
+    within-group by version id desc, then flattens."""
+    items = [
+        # modelId=1 has 3 versions
+        {"model_name": "ModelA", "folder": "root", "civitai": {"modelId": 1, "id": 300}},
+        {"model_name": "ModelA", "folder": "root", "civitai": {"modelId": 1, "id": 200}},
+        {"model_name": "ModelA", "folder": "root", "civitai": {"modelId": 1, "id": 100}},
+        # modelId=2 has 2 versions
+        {"model_name": "ModelB", "folder": "root", "civitai": {"modelId": 2, "id": 99}},
+        {"model_name": "ModelB", "folder": "root", "civitai": {"modelId": 2, "id": 50}},
+        # modelId=3 has 1 version
+        {"model_name": "ModelC", "folder": "root", "civitai": {"modelId": 3, "id": 1}},
+        # standalone (no modelId)
+        {"model_name": "Standalone", "folder": "root"},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1, page_size=10, sort_by="versions_count:desc",
+    )
+
+    ids = [item["civitai"]["id"] for item in response["items"] if "civitai" in item and "id" in item["civitai"]]
+    # modelId=1 (3 versions): id descending → 300, 200, 100
+    # modelId=2 (2 versions): id descending → 99, 50
+    # modelId=3 (1 version) → 1
+    assert ids == [300, 200, 100, 99, 50, 1], f"Unexpected order: {ids}"
+    assert response["total"] == 7
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_versions_count_non_grouped_asc():
+    """Non-grouped, versions_count:asc — groups by model, sorts by count asc,
+    then flattens."""
+    items = [
+        # modelId=1 has 3 versions
+        {"model_name": "ModelA", "folder": "root", "civitai": {"modelId": 1, "id": 300}},
+        {"model_name": "ModelA", "folder": "root", "civitai": {"modelId": 1, "id": 200}},
+        {"model_name": "ModelA", "folder": "root", "civitai": {"modelId": 1, "id": 100}},
+        # modelId=2 has 2 versions
+        {"model_name": "ModelB", "folder": "root", "civitai": {"modelId": 2, "id": 99}},
+        {"model_name": "ModelB", "folder": "root", "civitai": {"modelId": 2, "id": 50}},
+        # modelId=3 has 1 version
+        {"model_name": "ModelC", "folder": "root", "civitai": {"modelId": 3, "id": 1}},
+        # standalone (no modelId)
+        {"model_name": "Standalone", "folder": "root"},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    settings = StubSettings({})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1, page_size=10, sort_by="versions_count:asc",
+    )
+
+    ids = [item["civitai"]["id"] for item in response["items"] if "civitai" in item and "id" in item["civitai"]]
+    # modelId=3 (1 version) → 1
+    # modelId=2 (2 versions): id descending → 99, 50
+    # modelId=1 (3 versions): id descending → 300, 200, 100
+    assert ids == [1, 99, 50, 300, 200, 100], f"Unexpected order: {ids}"
+    assert response["total"] == 7
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_versions_count_non_grouped_same_base():
+    """Non-grouped, versions_count with version_grouping=same_base —
+    models with same modelId but different base_model are separate groups."""
+    items = [
+        # modelId=1, base_model="sd15" — 2 versions
+        {"model_name": "ModelA", "folder": "root", "base_model": "sd15", "civitai": {"modelId": 1, "id": 200}},
+        {"model_name": "ModelA", "folder": "root", "base_model": "sd15", "civitai": {"modelId": 1, "id": 100}},
+        # modelId=1, base_model="sdxl" — 3 versions
+        {"model_name": "ModelA", "folder": "root", "base_model": "sdxl", "civitai": {"modelId": 1, "id": 30}},
+        {"model_name": "ModelA", "folder": "root", "base_model": "sdxl", "civitai": {"modelId": 1, "id": 20}},
+        {"model_name": "ModelA", "folder": "root", "base_model": "sdxl", "civitai": {"modelId": 1, "id": 10}},
+        # modelId=2, base_model="sd15" — 1 version
+        {"model_name": "ModelB", "folder": "root", "base_model": "sd15", "civitai": {"modelId": 2, "id": 1}},
+    ]
+    repository = StubRepository(items)
+    filter_set = PassThroughFilterSet()
+    search_strategy = NoSearchStrategy()
+    settings = StubSettings({"version_grouping": "same_base"})
+
+    service = DummyService(
+        model_type="stub",
+        scanner=object(),
+        metadata_class=BaseModelMetadata,
+        cache_repository=repository,
+        filter_set=filter_set,
+        search_strategy=search_strategy,
+        settings_provider=settings,
+    )
+
+    response = await service.get_paginated_data(
+        page=1, page_size=10, sort_by="versions_count:desc",
+    )
+
+    ids = [item["civitai"]["id"] for item in response["items"] if "civitai" in item and "id" in item["civitai"]]
+    # (1, "sdxl") — 3 versions: 30, 20, 10
+    # (1, "sd15") — 2 versions: 200, 100
+    # (2, "sd15") — 1 version: 1
+    assert ids == [30, 20, 10, 200, 100, 1], f"Unexpected order: {ids}"
+    assert response["total"] == 6
+
+
 async def test_get_paginated_data_filters_by_civitai_model_id():
     """civitai_model_id filter returns only items matching the given modelId,
     and bypasses group_by_model dedup so all versions appear."""
