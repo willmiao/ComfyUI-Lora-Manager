@@ -338,7 +338,6 @@ export class HeaderManager {
       const headerSearch = document.getElementById('headerSearch');
       const searchInput = headerSearch?.querySelector('#searchInput');
       const searchButtons = headerSearch?.querySelectorAll('button');
-      const placeholderKey = 'header.search.placeholders.' + this.currentPage;
 
       if (this.currentPage === 'statistics' && headerSearch) {
         headerSearch.classList.add('disabled');
@@ -353,7 +352,7 @@ export class HeaderManager {
         if (searchInput) {
           searchInput.disabled = false;
           // Use i18nHelpers to update placeholder
-          updateElementAttribute(searchInput, 'placeholder', placeholderKey, {}, '');
+          updateElementAttribute(searchInput, 'placeholder', 'header.search.placeholder', {}, '');
         }
         searchButtons?.forEach(btn => btn.disabled = false);
       }

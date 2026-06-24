@@ -202,13 +202,7 @@
             "statistics": "통계"
         },
         "search": {
-            "placeholder": "검색...",
-            "placeholders": {
-                "loras": "LoRA 검색...",
-                "recipes": "레시피 검색...",
-                "checkpoints": "Checkpoint 검색...",
-                "embeddings": "Embedding 검색..."
-            },
+            "placeholder": "검색",
             "options": "검색 옵션",
             "searchIn": "검색 범위:",
             "notAvailable": "통계 페이지에서는 검색을 사용할 수 없습니다",

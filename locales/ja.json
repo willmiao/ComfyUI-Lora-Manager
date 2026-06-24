@@ -202,13 +202,7 @@
             "statistics": "統計"
         },
         "search": {
-            "placeholder": "検索...",
-            "placeholders": {
-                "loras": "LoRAを検索...",
-                "recipes": "レシピを検索...",
-                "checkpoints": "checkpointを検索...",
-                "embeddings": "embeddingを検索..."
-            },
+            "placeholder": "検索",
             "options": "検索オプション",
             "searchIn": "検索対象：",
             "notAvailable": "統計ページでは検索は利用できません",

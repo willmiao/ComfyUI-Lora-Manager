@@ -202,13 +202,7 @@
             "statistics": "Estadísticas"
         },
         "search": {
-            "placeholder": "Buscar...",
-            "placeholders": {
-                "loras": "Buscar LoRAs...",
-                "recipes": "Buscar recetas...",
-                "checkpoints": "Buscar checkpoints...",
-                "embeddings": "Buscar embeddings..."
-            },
+            "placeholder": "Buscar",
             "options": "Opciones de búsqueda",
             "searchIn": "Buscar en:",
             "notAvailable": "Búsqueda no disponible en la página de estadísticas",

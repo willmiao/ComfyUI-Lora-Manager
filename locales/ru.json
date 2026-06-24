@@ -202,13 +202,7 @@
             "statistics": "Статистика"
         },
         "search": {
-            "placeholder": "Поиск...",
-            "placeholders": {
-                "loras": "Поиск LoRAs...",
-                "recipes": "Поиск рецептов...",
-                "checkpoints": "Поиск checkpoints...",
-                "embeddings": "Поиск embeddings..."
-            },
+            "placeholder": "Поиск",
             "options": "Опции поиска",
             "searchIn": "Искать в:",
             "notAvailable": "Поиск недоступен на странице статистики",

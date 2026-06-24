@@ -202,13 +202,7 @@
             "statistics": "统计"
         },
         "search": {
-            "placeholder": "搜索...",
-            "placeholders": {
-                "loras": "搜索 LoRA...",
-                "recipes": "搜索配方...",
-                "checkpoints": "搜索 Checkpoint...",
-                "embeddings": "搜索 Embedding..."
-            },
+            "placeholder": "搜索",
             "options": "搜索选项",
             "searchIn": "搜索范围：",
             "notAvailable": "统计页面不可用搜索",

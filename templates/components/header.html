@@ -45,8 +45,7 @@
 
     <!-- Center section: Search -->
     {% set search_disabled = current_page == 'statistics' %}
-    {% set search_placeholder_key = 'header.search.notAvailable' if search_disabled else 'header.search.placeholders.' ~
-    current_page %}
+    {% set search_placeholder_key = 'header.search.notAvailable' if search_disabled else 'header.search.placeholder' %}
     {% set header_search_class = 'header-search disabled' if search_disabled else 'header-search' %}
     <div class="{{ header_search_class }}" id="headerSearch">
       <div class="search-container">

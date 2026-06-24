@@ -202,13 +202,7 @@
             "statistics": "統計"
         },
         "search": {
-            "placeholder": "搜尋...",
-            "placeholders": {
-                "loras": "搜尋 LoRA...",
-                "recipes": "搜尋配方...",
-                "checkpoints": "搜尋 checkpoint...",
-                "embeddings": "搜尋 embedding..."
-            },
+            "placeholder": "搜尋",
             "options": "搜尋選項",
             "searchIn": "搜尋範圍：",
             "notAvailable": "統計頁面無法搜尋",

@@ -202,13 +202,7 @@
             "statistics": "סטטיסטיקה"
         },
         "search": {
-            "placeholder": "חפש...",
-            "placeholders": {
-                "loras": "חפש LoRAs...",
-                "recipes": "חפש מתכונים...",
-                "checkpoints": "חפש checkpoints...",
-                "embeddings": "חפש embeddings..."
-            },
+            "placeholder": "חיפוש",
             "options": "אפשרויות חיפוש",
             "searchIn": "חפש ב:",
             "notAvailable": "חיפוש לא זמין בדף הסטטיסטיקה",
