@@ -726,3 +726,25 @@ body.lm-lora-reordering * {
   font-size: 12px;
   color: rgba(226, 232, 240, 0.6);
 }
+
+/* ---- Widget flash highlight (visual cue after a value is sent to a node) ---- */
+/* Applied to a widget row element when its value is updated by LoRA Manager.
+   Shifts the value text color to the LM brand accent with a CSS transition
+   for fade-in/fade-out. Removal (timeout / hover) is handled by JS.
+
+   The transition is declared on .lm-flash-host (added alongside .lm-flash)
+   rather than on ComfyUI's .lg-node-widget, so we don't impose a global
+   color transition on every widget input. The host class persists until
+   cleanup so fade-out still applies after .lm-flash is removed. */
+.lm-flash-host input,
+.lm-flash-host textarea,
+.lm-flash-host [role="combobox"] {
+  transition: color 0.25s ease, -webkit-text-fill-color 0.25s ease;
+}
+
+.lm-flash input,
+.lm-flash textarea,
+.lm-flash [role="combobox"] {
+  color: #4299E0 !important;
+  -webkit-text-fill-color: #4299E0 !important;
+}
