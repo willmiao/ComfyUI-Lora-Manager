@@ -149,7 +149,7 @@
   width: 100%;
   padding: 0.5rem 0.75rem;
   padding-left: 2.25rem !important;
-  padding-right: 5rem !important;
+  padding-right: 6.75rem !important; /* clear room for options + filter + clear/cue toggles */
   border: none;
   background: transparent;
   color: var(--text-color);
@@ -188,6 +188,81 @@
 
 .header-search .search-options-toggle {
   right: 2.25rem;
+}
+
+/* Clear button: sit immediately left of the search-options toggle */
+.header-search .search-clear {
+  position: absolute;
+  right: 4.25rem; /* 2.25rem (options toggle) + 28px toggle width + 4px gap */
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  border-radius: var(--border-radius-xs, 4px);
+  padding: 0;
+  line-height: 1;
+  transition: background-color var(--transition-base), color var(--transition-base);
+}
+
+.header-search .search-clear.visible {
+  display: flex;
+}
+
+.header-search .search-clear:hover {
+  background: color-mix(in oklch, var(--text-muted) 15%, transparent);
+  color: var(--lora-accent);
+}
+
+/* Keyboard shortcut cue: shown when search is empty, hidden when typing */
+.header-search .search-shortcut-cue {
+  position: absolute;
+  right: 4.25rem; /* same slot as clear button */
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  pointer-events: none;
+  font-family: inherit;
+  font-size: 0.7rem;
+  line-height: 1;
+  color: var(--text-muted);
+  opacity: 0.7;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.header-search .search-shortcut-cue kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  /* Subtle tint derived from text color so it adapts to both light & dark themes */
+  background: color-mix(in oklch, var(--text-muted) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--text-muted) 25%, transparent);
+  border-radius: var(--border-radius-xs, 3px);
+  line-height: 1;
+}
+
+.header-search .search-shortcut-cue.hidden {
+  display: none;
+}
+
+.header-search.disabled .search-shortcut-cue {
+  display: none;
 }
 
 .header-search .search-options-toggle:hover,

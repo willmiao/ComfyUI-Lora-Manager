@@ -27,6 +27,9 @@ export class SearchManager {
       // Create clear button for search input
       this.createClearButton();
       
+      // Keyboard shortcut cue element (static, exists in the HTML)
+      this.searchShortcutCue = document.getElementById('searchShortcutCue');
+      
       this.initEventListeners();
       this.loadSearchPreferences();
       this.setupKeyboardShortcuts();
@@ -163,8 +166,13 @@ export class SearchManager {
     }
     
     updateClearButtonVisibility() {
+      const hasText = this.searchInput.value.length > 0;
       if (this.clearButton) {
-        this.clearButton.classList.toggle('visible', this.searchInput.value.length > 0);
+        this.clearButton.classList.toggle('visible', hasText);
+      }
+      // Toggle the keyboard shortcut cue: visible only when search is empty
+      if (this.searchShortcutCue) {
+        this.searchShortcutCue.classList.toggle('hidden', hasText);
       }
     }
     

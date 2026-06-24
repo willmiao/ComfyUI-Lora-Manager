@@ -53,6 +53,7 @@
         <input type="text" id="searchInput" placeholder="{{ t(search_placeholder_key) }}" {% if search_disabled %}
           disabled{% endif %} />
         <i class="fas fa-search search-icon"></i>
+        <span class="search-shortcut-cue" id="searchShortcutCue"><kbd>Ctrl</kbd><kbd>F</kbd></span>
         <button class="search-options-toggle" id="searchOptionsToggle" title="{{ t('header.search.options') }}" {% if
           search_disabled %} disabled aria-disabled="true" {% endif %}>
           <i class="fas fa-sliders-h"></i>
