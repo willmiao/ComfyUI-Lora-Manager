@@ -682,7 +682,8 @@
                 "usageAsc": "Wenigste",
                 "versionsCount": "Lokale Versionen",
                 "versionsCountDesc": "Meiste Versionen zuerst",
-                "versionsCountAsc": "Wenigste Versionen zuerst"
+                "versionsCountAsc": "Wenigste Versionen zuerst",
+                "versionIdDesc": "Neueste Version zuerst"
             },
             "refresh": {
                 "title": "Modelliste aktualisieren",

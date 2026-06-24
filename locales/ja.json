@@ -682,7 +682,8 @@
                 "usageAsc": "少ない",
                 "versionsCount": "ローカルバージョン数",
                 "versionsCountDesc": "バージョン数の多い順",
-                "versionsCountAsc": "バージョン数の少ない順"
+                "versionsCountAsc": "バージョン数の少ない順",
+                "versionIdDesc": "最新バージョン順"
             },
             "refresh": {
                 "title": "モデルリストを更新",

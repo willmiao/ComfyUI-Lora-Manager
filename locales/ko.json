@@ -682,7 +682,8 @@
                 "usageAsc": "적은 순",
                 "versionsCount": "로컬 버전 수",
                 "versionsCountDesc": "버전 수 많은 순",
-                "versionsCountAsc": "버전 수 적은 순"
+                "versionsCountAsc": "버전 수 적은 순",
+                "versionIdDesc": "최신 버전순"
             },
             "refresh": {
                 "title": "모델 목록 새로고침",

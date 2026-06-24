@@ -682,7 +682,8 @@
                 "usageAsc": "最少",
                 "versionsCount": "本地版本数",
                 "versionsCountDesc": "版本数从多到少",
-                "versionsCountAsc": "版本数从少到多"
+                "versionsCountAsc": "版本数从少到多",
+                "versionIdDesc": "最新版本优先"
             },
             "refresh": {
                 "title": "刷新模型列表",

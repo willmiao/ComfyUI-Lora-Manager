@@ -111,6 +111,12 @@ class BaseModelService(ABC):
                 item for item in sorted_data
                 if self._extract_model_id(item) == civitai_model_id
             ]
+            # VLM mode: always sort by version ID descending (newest version first),
+            # regardless of the current sort_by preference.
+            sorted_data.sort(
+                key=lambda x: self._extract_version_id(x) or 0,
+                reverse=True,
+            )
 
         # Optionally group by civitai modelId, showing only the latest version per model
         dedup_lost = 0

@@ -682,7 +682,8 @@
                 "usageAsc": "Menos",
                 "versionsCount": "Versiones locales",
                 "versionsCountDesc": "Más versiones primero",
-                "versionsCountAsc": "Menos versiones primero"
+                "versionsCountAsc": "Menos versiones primero",
+                "versionIdDesc": "Versión más nueva primero"
             },
             "refresh": {
                 "title": "Actualizar lista de modelos",

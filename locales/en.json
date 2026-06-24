@@ -682,7 +682,8 @@
                 "usageAsc": "Least",
                 "versionsCount": "Local Versions",
                 "versionsCountDesc": "Most versions first",
-                "versionsCountAsc": "Fewest versions first"
+                "versionsCountAsc": "Fewest versions first",
+                "versionIdDesc": "Newest version first"
             },
             "refresh": {
                 "title": "Refresh model list",

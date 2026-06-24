@@ -264,6 +264,23 @@
     box-shadow: 0 0 0 2px oklch(var(--lora-accent) / 0.15);
 }
 
+/* Disabled sort dropdown — used when VLM custom filter is active */
+.control-group select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: var(--bg-color);
+    border-color: var(--border-color);
+    box-shadow: none;
+    transform: none;
+}
+
+.control-group select:disabled:hover {
+    border-color: var(--border-color);
+    background-color: var(--bg-color);
+    transform: none;
+    box-shadow: none;
+}
+
 /* Ensure hidden class works properly */
 .hidden {
     display: none !important;

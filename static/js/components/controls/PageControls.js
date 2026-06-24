@@ -466,6 +466,60 @@ export class PageControls {
      * Clear custom filter
      */
     /**
+     * Dynamically add the VLM sort option (version_id:desc) to the sort dropdown.
+     * It is not a permanent option — only present while VLM is active.
+     */
+    _addVlmSortOption() {
+        const sortSelect = document.getElementById('sortSelect');
+        if (!sortSelect) return;
+        // Only add if not already present
+        if (sortSelect.querySelector('option[value="version_id:desc"]')) return;
+        const opt = document.createElement('option');
+        opt.value = 'version_id:desc';
+        opt.textContent = this._t('loras.controls.sort.versionIdDesc', 'Newest version first');
+        sortSelect.appendChild(opt);
+    }
+
+    /**
+     * Remove the VLM sort option from the sort dropdown.
+     */
+    _removeVlmSortOption() {
+        const sortSelect = document.getElementById('sortSelect');
+        if (!sortSelect) return;
+        const opt = sortSelect.querySelector('option[value="version_id:desc"]');
+        if (opt) opt.remove();
+    }
+
+    /**
+     * Look up a translation key via the global i18n helper, falling back to
+     * a plain-text default when the key is missing or i18n is unavailable.
+     */
+    _t(key, fallback) {
+        if (typeof window.i18n?.t === 'function') {
+            return window.i18n.t(key, { defaultValue: fallback });
+        }
+        return fallback;
+    }
+
+    /**
+     * Restore the sort dropdown state after VLM is cleared.
+     * Shared by PageControls.clearCustomFilter() and subclass overrides.
+     */
+    _restoreSortAfterVlm() {
+        const prevSort = getSessionItem('vlm_prev_sort');
+        removeSessionItem('vlm_prev_sort');
+        const restoredSort = prevSort || 'name:asc';
+        this.pageState.sortBy = restoredSort;
+        this.saveSortPreference(restoredSort);
+        this._removeVlmSortOption();
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            sortSelect.value = restoredSort;
+            sortSelect.disabled = false;
+        }
+    }
+
+    /**
      * Trigger View Local Versions without page reload
      * Sets sessionStorage and reloads data via the API.
      */
@@ -478,6 +532,17 @@ export class PageControls {
             setSessionItem('vlm_base_model', baseModel);
         } else {
             removeSessionItem('vlm_base_model');
+        }
+        // Save current sort preference so it can be restored when VLM is cleared
+        setSessionItem('vlm_prev_sort', this.pageState.sortBy);
+        // Inject the temporary sort option and force version_id:desc
+        this._addVlmSortOption();
+        this.pageState.sortBy = 'version_id:desc';
+        this.saveSortPreference('version_id:desc');
+        const sortSelect = document.getElementById('sortSelect');
+        if (sortSelect) {
+            sortSelect.value = 'version_id:desc';
+            sortSelect.disabled = true;
         }
         // Reload data via API (no page reload)
         this.resetAndReload(true).then(() => {
@@ -533,6 +598,7 @@ export class PageControls {
     checkVlmFilter() {
         const vlmModelId = getSessionItem('vlm_model_id');
         const vlmPageType = getSessionItem('vlm_page_type');
+        const sortSelect = document.getElementById('sortSelect');
 
         // Only show VLM indicator when it belongs to the current page type
         if (vlmModelId && vlmPageType !== this.pageType) {
@@ -541,6 +607,9 @@ export class PageControls {
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
             removeSessionItem('vlm_page_type');
+            removeSessionItem('vlm_prev_sort');
+            this._removeVlmSortOption();
+            if (sortSelect) sortSelect.disabled = false;
             return;
         }
 
@@ -548,6 +617,13 @@ export class PageControls {
         const vlmBaseModel = getSessionItem('vlm_base_model');
 
         if (vlmModelId && vlmModelName) {
+            // VLM is active — inject sort option, disable dropdown, show indicator
+            this._addVlmSortOption();
+            if (sortSelect) {
+                sortSelect.value = 'version_id:desc';
+                sortSelect.disabled = true;
+            }
+
             const indicator = document.getElementById('customFilterIndicator');
             const filterText = indicator?.querySelector('.customFilterText');
 
@@ -562,6 +638,10 @@ export class PageControls {
                 filterText.textContent = this._truncateText(displayText, 40);
                 filterText.setAttribute('title', displayText);
             }
+        } else {
+            // No VLM — ensure sort option is removed and dropdown is enabled
+            this._removeVlmSortOption();
+            if (sortSelect) sortSelect.disabled = false;
         }
     }
 
@@ -576,6 +656,8 @@ export class PageControls {
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
             removeSessionItem('vlm_page_type');
+
+            this._restoreSortAfterVlm();
 
             // Hide the indicator
             const indicator = document.getElementById('customFilterIndicator');

@@ -102,6 +102,7 @@ export class CheckpointsControls extends PageControls {
             removeSessionItem('vlm_model_name');
             removeSessionItem('vlm_base_model');
             removeSessionItem('vlm_page_type');
+            this._restoreSortAfterVlm();
             // Hide the indicator
             const indicator = document.getElementById('customFilterIndicator');
             if (indicator) {
