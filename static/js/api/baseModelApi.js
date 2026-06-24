@@ -115,7 +115,10 @@ export class BaseModelApiClient {
         const pageState = this.getPageState();
 
         try {
-            state.loadingManager.showSimpleLoading(`Loading more ${this.apiConfig.config.displayName}s...`);
+            // Use grid-scoped loading instead of full-page overlay
+            if (state.virtualScroller?.showGridLoading) {
+                state.virtualScroller.showGridLoading();
+            }
 
             pageState.isLoading = true;
             if (resetPage) {
@@ -154,7 +157,14 @@ export class BaseModelApiClient {
             throw error;
         } finally {
             pageState.isLoading = false;
-            state.loadingManager.hide();
+            // Wait for the next rAF so refreshWithData's scheduleRender has
+            // completed rendering new cards before hiding the grid loading overlay.
+            // This eliminates the ~6.7ms blank-frame gap that caused the flicker.
+            if (state.virtualScroller?.hideGridLoading) {
+                requestAnimationFrame(() => {
+                    state.virtualScroller.hideGridLoading();
+                });
+            }
         }
     }
 

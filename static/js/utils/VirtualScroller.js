@@ -657,6 +657,9 @@ export class VirtualScroller {
             this.resizeObserver.disconnect();
         }
 
+        // Remove any active grid loading overlay
+        this.hideGridLoading();
+
         // Remove rendered elements
         this.clearRenderedItems();
 
@@ -1129,5 +1132,31 @@ export class VirtualScroller {
             item: this.items[targetIndex],
             index: targetIndex
         };
+    }
+
+    /**
+     * Show a grid-scoped loading indicator (replaces full-page overlay)
+     * Only covers the card grid area, leaving header/sidebar unaffected.
+     */
+    showGridLoading() {
+        // Remove any stale overlay from a prior deferred hide (e.g. from final rAF)
+        this.hideGridLoading();
+        const overlay = document.createElement('div');
+        overlay.className = 'grid-loading-overlay';
+        const spinner = document.createElement('div');
+        spinner.className = 'loading-spinner';
+        overlay.appendChild(spinner);
+        this.gridElement.appendChild(overlay);
+        this.gridLoadingOverlay = overlay;
+    }
+
+    /**
+     * Hide the grid-scoped loading indicator.
+     */
+    hideGridLoading() {
+        if (this.gridLoadingOverlay) {
+            this.gridLoadingOverlay.remove();
+            this.gridLoadingOverlay = null;
+        }
     }
 }
