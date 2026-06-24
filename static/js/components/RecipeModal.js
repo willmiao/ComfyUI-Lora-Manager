@@ -1,5 +1,5 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata, stripLoraTags, sendPromptToWorkflow } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
@@ -38,6 +38,16 @@ const GEN_PARAM_NORMALIZATION = {
     'Cfg scale': 'cfg_scale',
     'Clip skip': 'clip_skip',
     'Denoising strength': 'denoising_strength',
+};
+
+const PARAM_DISPLAY_NAMES = {
+    steps: 'Steps',
+    sampler: 'Sampler',
+    cfg_scale: 'CFG',
+    seed: 'Seed',
+    size: 'Size',
+    clip_skip: 'Clip Skip',
+    denoising_strength: 'Denoising Strength',
 };
 
 class RecipeModal {
@@ -588,10 +598,11 @@ class RecipeModal {
 
                 for (const [key, value] of Object.entries(sanitizedGenParams)) {
                     if (!excludedParams.includes(key) && value !== undefined && value !== null) {
+                        const displayName = PARAM_DISPLAY_NAMES[key] || key;
                         const paramTag = document.createElement('div');
                         paramTag.className = 'param-tag';
                         paramTag.innerHTML = `
-                            <span class="param-name">${key}:</span>
+                            <span class="param-name">${displayName}:</span>
                             <span class="param-value">${value}</span>
                         `;
                         otherParamsElement.appendChild(paramTag);
@@ -1232,6 +1243,19 @@ class RecipeModal {
                 sendPromptToWorkflow(negativePromptText, {
                     actionTypeText: 'Negative Prompt',
                 });
+            });
+        }
+
+        // Send params to workflow button
+        const sendParamsBtn = document.getElementById('sendParamsBtn');
+        if (sendParamsBtn) {
+            sendParamsBtn.addEventListener('click', () => {
+                const genParams = this.currentRecipe?.gen_params || {};
+                if (!genParams || Object.keys(genParams).length === 0) {
+                    showToast('No generation parameters available', {}, 'warning');
+                    return;
+                }
+                sendGenParamsToWorkflow(genParams);
             });
         }
     }

@@ -1117,9 +1117,9 @@ describe('Interaction-level regression coverage', () => {
     expect(document.getElementById('recipePrompt').textContent).toBe('No prompt information available');
     expect(document.getElementById('recipeNegativePrompt').textContent).toBe('No negative prompt information available');
     const otherParamsText = document.getElementById('recipeOtherParams').textContent;
-    expect(otherParamsText).toContain('sampler:');
+    expect(otherParamsText).toContain('Sampler:');
     expect(otherParamsText).toContain('dpmpp_2m');
-    expect(otherParamsText).not.toContain('cfg_scale');
+    expect(otherParamsText).not.toContain('CFG');
   });
 
   it('filters dirty generation params from recipe modal display', async () => {
@@ -1168,8 +1168,8 @@ describe('Interaction-level regression coverage', () => {
     const otherParamsText = document.getElementById('recipeOtherParams').textContent;
     expect(document.getElementById('recipePrompt').textContent).toContain('visible prompt');
     expect(document.getElementById('recipeNegativePrompt').textContent).toContain('visible negative');
-    expect(otherParamsText).toContain('sampler:');
-    expect(otherParamsText).toContain('cfg_scale:');
+    expect(otherParamsText).toContain('Sampler:');
+    expect(otherParamsText).toContain('CFG:');
     expect(otherParamsText).not.toContain('Version');
     expect(otherParamsText).not.toContain('raw_metadata');
     expect(otherParamsText).not.toContain('RNG');
@@ -1222,7 +1222,7 @@ describe('Interaction-level regression coverage', () => {
     expect(document.getElementById('recipePrompt').textContent).not.toContain('stale prompt');
     expect(document.getElementById('recipeNegativePrompt').textContent).toContain('fresh negative');
     expect(document.getElementById('recipeNegativePrompt').textContent).not.toContain('stale negative');
-    expect(otherParamsText).toContain('cfg_scale:');
+    expect(otherParamsText).toContain('CFG:');
     expect(otherParamsText).toContain('7');
     expect(otherParamsText).not.toContain('3');
   });

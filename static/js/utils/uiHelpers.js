@@ -6,6 +6,7 @@ import { eventManager } from './EventManager.js';
 import { bannerService } from '../managers/BannerService.js';
 import { modalManager } from '../managers/ModalManager.js';
 import { buildCivitaiUrl, normalizeCivitaiPageHost } from './civitaiUtils.js';
+import { resolveSamplerScheduler, findMatchingWidgets } from './genParamsMapper.js';
 
 const CIVITAI_HOST_INFO_BANNER_ID = 'civitai-host-preference';
 const CIVITAI_HOST_INFO_BANNER_SEEN_KEY = 'civitai_host_info_banner_seen';
@@ -856,11 +857,12 @@ async function sendWidgetValueToNodes(nodeIds, nodesMap, widgetName, value, mess
     successMessage = 'Updated workflow node',
     failureMessage = 'Failed to update workflow node',
     missingTargetMessage = 'No target node selected',
+    silent = false,
   } = messages;
 
   const targetIds = Array.isArray(nodeIds) ? nodeIds : [];
   if (targetIds.length === 0) {
-    showToast(missingTargetMessage, {}, 'warning');
+    if (!silent) showToast(missingTargetMessage, {}, 'warning');
     return false;
   }
 
@@ -869,7 +871,7 @@ async function sendWidgetValueToNodes(nodeIds, nodesMap, widgetName, value, mess
     .filter((reference) => reference && reference.node_id !== undefined);
 
   if (references.length === 0) {
-    showToast(missingTargetMessage, {}, 'warning');
+    if (!silent) showToast(missingTargetMessage, {}, 'warning');
     return false;
   }
 
@@ -888,16 +890,16 @@ async function sendWidgetValueToNodes(nodeIds, nodesMap, widgetName, value, mess
 
     const result = await response.json();
     if (result.success) {
-      showToast(successMessage, {}, 'success');
+      if (!silent) showToast(successMessage, {}, 'success');
       return true;
     }
 
     const errorMessage = result?.error || failureMessage;
-    showToast(errorMessage, {}, 'error');
+    if (!silent) showToast(errorMessage, {}, 'error');
     return false;
   } catch (error) {
     console.error('Failed to send widget value to workflow:', error);
-    showToast(failureMessage, {}, 'error');
+    if (!silent) showToast(failureMessage, {}, 'error');
     return false;
   }
 }
@@ -1052,6 +1054,127 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
     actionType,
     actionMode: translate('uiHelpers.nodeSelector.replace', {}, 'Replace'),
     onSend: handleSend,
+  });
+  return true;
+}
+
+/**
+ * Send generation parameters (seed, steps, cfg, sampler, scheduler) to
+ * workflow nodes that have been marked with "Send Gen Params Target".
+ *
+ * @param {Object} genParams - Raw gen_params from recipe or showcase metadata
+ * @returns {Promise<boolean>} Whether the send succeeded
+ */
+export async function sendGenParamsToWorkflow(genParams) {
+  if (!genParams || typeof genParams !== 'object') {
+    showToast('No generation parameters to send', {}, 'warning');
+    return false;
+  }
+
+  // 1. Extract relevant params (skip prompt, negative_prompt, clip_skip, denoising_strength)
+  const raw = {
+    seed: genParams.seed,
+    steps: genParams.steps,
+    cfg: genParams.cfg_scale,
+  };
+
+  // 2. Resolve sampler/scheduler
+  const resolved = resolveSamplerScheduler(genParams.sampler);
+  if (resolved) {
+    if (resolved.sampler) raw.sampler = resolved.sampler;
+    if (resolved.scheduler) raw.scheduler = resolved.scheduler;
+  }
+
+  // Check if we have anything to send
+  const hasAny = Object.values(raw).some(v => v !== undefined && v !== null && v !== '');
+  if (!hasAny) {
+    showToast('No sendable parameters found', {}, 'warning');
+    return false;
+  }
+
+  // 3. Fetch workflow registry
+  const registry = await fetchWorkflowRegistry();
+  if (!registry) {
+    return false;
+  }
+
+  // 4. Filter nodes by marker_role === "send_gen_params"
+  const targetNodes = filterRegistryNodes(registry.nodes, (node) => {
+    return node.marker_role === 'send_gen_params' && isNodeEnabled(node);
+  });
+
+  const nodeKeys = Object.keys(targetNodes);
+  if (nodeKeys.length === 0) {
+    showToast(
+      'No node marked as Send Gen Params Target.\nRight-click a node in ComfyUI → Mark as → Send Gen Params Target',
+      {},
+      'warning'
+    );
+    return false;
+  }
+
+  // 5. For each candidate node, find matching widgets
+  // Also collect widget_names from registry for matching
+  const sendToNode = async (nodeIds) => {
+    const targetIds = Array.isArray(nodeIds) ? nodeIds : [nodeIds];
+    let allSuccess = true;
+    let totalSent = 0;
+    let totalFailed = 0;
+
+    for (const nodeKey of targetIds) {
+      const node = targetNodes[nodeKey];
+      if (!node) continue;
+
+      const widgetNames = node.widget_names || [];
+      const updates = findMatchingWidgets(widgetNames, raw);
+
+      if (updates.length === 0) {
+        showToast(`Node "${node.title || node.type}" has no matching widgets for these parameters`, {}, 'warning');
+        allSuccess = false;
+        continue;
+      }
+
+      // Send each widget value sequentially
+      for (const update of updates) {
+        const success = await sendWidgetValueToNodes(
+          [nodeKey],
+          targetNodes,
+          update.widgetName,
+          update.value,
+          {
+            silent: true,
+          }
+        );
+        if (success) {
+          totalSent++;
+        } else {
+          totalFailed++;
+          allSuccess = false;
+        }
+      }
+    }
+
+    // Show single summary toast
+    if (totalSent > 0 && totalFailed === 0) {
+      showToast(`Sent ${totalSent} parameter${totalSent > 1 ? 's' : ''} to workflow`, {}, 'success');
+    } else if (totalFailed > 0 && totalSent > 0) {
+      showToast(`Partially updated (${totalSent} ok, ${totalFailed} failed)`, {}, 'warning');
+    } else if (totalFailed > 0) {
+      showToast('Failed to update parameters', {}, 'error');
+    }
+    return allSuccess;
+  };
+
+  // 6. If multiple nodes, show node selector; otherwise send directly
+  if (nodeKeys.length === 1) {
+    return await sendToNode([nodeKeys[0]]);
+  }
+
+  showNodeSelector(targetNodes, {
+    actionType: 'Gen Params',
+    actionMode: 'Update',
+    onSend: sendToNode,
+    enableSendAll: true,
   });
   return true;
 }

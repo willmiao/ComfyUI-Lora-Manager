@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import { getAllGraphNodes, getNodeReference, getNodeFromGraph } from "./utils.js";
+import { ensureLmStyles } from "./lm_styles_loader.js";
 
 const LORA_NODE_CLASSES = new Set([
     "Lora Loader (LoraManager)",
@@ -21,6 +22,8 @@ app.registerExtension({
     name: "LoraManager.WorkflowRegistry",
 
     setup() {
+        ensureLmStyles();
+
         api.addEventListener("lora_registry_refresh", () => {
             this.refreshRegistry();
         });
@@ -213,5 +216,164 @@ app.registerExtension({
         if (typeof app.graph?.setDirtyCanvas === "function") {
             app.graph.setDirtyCanvas(true, true);
         }
+
+        // ---- Visual cue: briefly highlight the updated widget ----
+        this.flashWidget(node, targetWidget);
+    },
+
+    /**
+     * Add a temporary visual highlight to a widget after its value is updated.
+     * - Vue Nodes mode: change value text color on all non-button elements
+     * - Canvas mode: define text_color on widget instance (value text only)
+     * Highlight fades after 10 seconds or on hover (Vue mode only).
+     */
+    flashWidget(node, widget) {
+        const FLASH_DURATION = 3000;
+        const flashEnd = Date.now() + FLASH_DURATION;
+        const nodeId = node.id;
+
+        // Colors consistent with canvas mode
+        const VALUE_COLOR = '#66B3FF';
+
+        // Helper: find the widget row in the DOM (by label text matching widget name)
+        const findRowEl = () => {
+            const container = document.querySelector(`[data-node-id="${nodeId}"]`);
+            if (!container) return null;
+            const all = container.querySelectorAll('[data-testid="node-widget"]');
+            for (const w of all) {
+                const label = w.querySelector('[data-testid="widget-layout-field-label"]');
+                if (label && label.textContent.trim() === widget.name) {
+                    return w;
+                }
+            }
+            return null;
+        };
+
+        // Helper: get label and ring elements from a widget row
+        const getLabelAndRing = (row) => {
+            if (!row) return { labelEl: null, ringEl: null };
+            const labelEl = row.querySelector('[data-testid="widget-layout-field-label"]');
+            const ringEl = labelEl?.nextElementSibling
+                || row.querySelector('.flex-1.relative.min-w-0')
+                || row.querySelector('.rounded-lg.transition-all')
+                || null;
+            return { labelEl, ringEl };
+        };
+
+        const applyFlash = (row) => {
+            if (!row) return;
+            const { ringEl } = getLabelAndRing(row);
+            if (ringEl) {
+                const innerRing = ringEl.querySelector('.rounded-lg.transition-all');
+                if (innerRing) {
+                    // Target value-displaying elements for all widget types:
+                    // NumberWidget: spinbutton input
+                    // ComboWidget: combobox button
+                    // Text widgets (CLIPTextEncode, Prompt, etc.): textarea / text input
+                    innerRing.querySelectorAll(
+                        'input, textarea, [role="combobox"]'
+                    ).forEach(el => {
+                        el.style.color = VALUE_COLOR;
+                    });
+                }
+            }
+        };
+
+        const removeFlash = (row) => {
+            if (!row) return;
+            const { ringEl } = getLabelAndRing(row);
+            if (ringEl) {
+                const innerRing = ringEl.querySelector('.rounded-lg.transition-all');
+                if (innerRing) {
+                    // Clear color from all inputs/textarea/combobox
+                    innerRing.querySelectorAll(
+                        'input, textarea, [role="combobox"]'
+                    ).forEach(el => {
+                        el.style.color = '';
+                    });
+                }
+            }
+        };
+
+        // --- Try Vue Nodes mode first ---
+        const nodeEl = document.querySelector(`[data-node-id="${nodeId}"]`);
+        if (nodeEl) {
+            // Apply immediately
+            const initialRow = findRowEl();
+            applyFlash(initialRow);
+
+            // rAF loop: re-apply after Vue re-renders
+            let rafId = null;
+            const poll = () => {
+                if (Date.now() >= flashEnd) {
+                    const lastRow = findRowEl();
+                    removeFlash(lastRow);
+                    rafId = null;
+                    return;
+                }
+                const currentRow = findRowEl();
+                applyFlash(currentRow);
+                rafId = requestAnimationFrame(poll);
+            };
+            rafId = requestAnimationFrame(poll);
+
+            // Cleanup timeout
+            const timeoutId = setTimeout(() => {
+                if (rafId) cancelAnimationFrame(rafId);
+                const lastRow = findRowEl();
+                removeFlash(lastRow);
+            }, FLASH_DURATION);
+
+            // Hover dismissal via event delegation on node container
+            const hoverHandler = (e) => {
+                const row = findRowEl();
+                if (row && row.contains(e.target)) {
+                    clearTimeout(timeoutId);
+                    if (rafId) cancelAnimationFrame(rafId);
+                    removeFlash(row);
+                    nodeEl.removeEventListener('mouseover', hoverHandler);
+                }
+            };
+            nodeEl.addEventListener('mouseover', hoverHandler);
+
+            return; // Vue mode done
+        }
+
+        // --- Canvas mode: change widget value text color via instance property shadowing ---
+        // BaseWidget reads text_color (value) from prototype getter. Defining an own
+        // property on the instance shadows the getter without monkey-patching.
+        // Works for ALL widget types — only value text is changed, label is left alone.
+        Object.defineProperty(widget, 'text_color', {
+            value: VALUE_COLOR,
+            writable: true,
+            configurable: true,
+        });
+
+        if (typeof node.setDirtyCanvas === "function") {
+            node.setDirtyCanvas(true);
+        }
+
+        // Track this widget so it gets restored alongside others on the same node
+        if (!node._lmFlashedWidgets) node._lmFlashedWidgets = [];
+        if (!node._lmFlashedWidgets.includes(widget)) {
+            node._lmFlashedWidgets.push(widget);
+        }
+
+        // Single per-node timer that restores ALL flashed widgets at once.
+        // Subsequent calls reset the timer but don't orphan previous widgets.
+        if (node._lmFlashCleanup) {
+            clearTimeout(node._lmFlashCleanup);
+        }
+        node._lmFlashCleanup = setTimeout(() => {
+            for (const w of (node._lmFlashedWidgets || [])) {
+                delete w.text_color;
+                delete w.secondary_text_color;
+            }
+            delete node._lmFlashedWidgets;
+            delete node._lmFlashCleanup;
+            if (typeof node.setDirtyCanvas === "function") {
+                node.setDirtyCanvas(true);
+            }
+        }, FLASH_DURATION);
     },
 });

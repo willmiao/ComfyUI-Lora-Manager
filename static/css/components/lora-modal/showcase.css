@@ -229,6 +229,19 @@
   gap: 10px;
 }
 
+/* Header row for params section */
+.metadata-row.params-row {
+    flex-direction: column;
+}
+
+.metadata-row.params-row .param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
 /* Styling for parameters tags */
 .params-tags {
   display: flex;
@@ -315,7 +328,8 @@
 }
 
 .copy-prompt-btn,
-.send-prompt-btn {
+.send-prompt-btn,
+.send-params-btn {
   background: transparent;
   border: none;
   color: var(--text-color);
@@ -328,7 +342,8 @@
 }
 
 .copy-prompt-btn:hover,
-.send-prompt-btn:hover {
+.send-prompt-btn:hover,
+.send-params-btn:hover {
   opacity: 1;
   color: var(--lora-accent);
   background: var(--lora-surface);
