@@ -260,7 +260,6 @@ function createTagElement({
 }) {
   const tagEl = document.createElement("div");
   tagEl.className = "comfy-tag";
-  tagEl.dataset.captureWheel = "true";
 
   const baseStyles = {
     padding: `${roundScaled(group ? 5 : 3, styleScale)}px ${roundScaled(group ? 8 : 10, styleScale)}px`,
@@ -619,6 +618,36 @@ function showTagContextMenu(event, tagData, index, widget, anchorEl) {
   setTimeout(() => document.addEventListener('click', closeMenu), 0);
 }
 
+// Singleton window capture-phase wheel hook: focuses the tags container when a
+// wheel event occurs inside it, so that ComfyUI's wheelCapturedByFocusedElement
+// recognises this zone and does NOT forward the event to canvas (which would
+// trigger zoom and stopPropagation, preventing the strength-adjustment handler).
+/** @type {boolean} */
+let tagWheelCaptureHookInstalled = false;
+function installTagWheelCaptureHook() {
+  if (tagWheelCaptureHookInstalled) return;
+  tagWheelCaptureHookInstalled = true;
+
+  window.addEventListener(
+    "wheel",
+    (event) => {
+      // Only handle vertical mouse wheel (not pinch-zoom or horizontal swipe)
+      if (event.ctrlKey || event.metaKey) return;
+      if (Math.abs(event.deltaX) > Math.abs(event.deltaY)) return;
+
+      const target = /** @type {Element} */ (event.target);
+      if (!target?.closest) return;
+      const targetContainer = target.closest(
+        '.comfy-tags-container[data-capture-wheel="true"]'
+      );
+      if (!targetContainer) return;
+
+      targetContainer.focus({ preventScroll: true });
+    },
+    { capture: true, passive: true }
+  );
+}
+
 export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.02, options = {}) {
   const container = document.createElement("div");
   container.className = "comfy-tags-container";
@@ -627,6 +656,29 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
 
   forwardMiddleMouseToCanvas(container);
   forwardWheelToCanvas(container);
+
+  // Vue render mode: ComfyUI's TransformPane uses a capture-phase wheel handler
+  // (TransformPane @wheel.capture) that checks wheelCapturedByFocusedElement.
+  // For that check to return true (preventing canvas zoom and allowing our
+  // strength-adjustment wheel handler to fire), the container needs both
+  // data-capture-wheel AND document.activeElement inside it.
+  // We make the container focusable and auto-focus it on wheel events via a
+  // window capture-phase hook.
+  container.dataset.captureWheel = "true";
+  container.tabIndex = -1;
+
+  // Blur on mouseleave to avoid lingering focus side effects.
+  container.addEventListener("mouseleave", () => {
+    if (document.activeElement === container) {
+      container.blur();
+    }
+  });
+
+  // Singleton window capture-phase wheel handler: focuses our container when
+  // a wheel event occurs inside it, so that wheelCapturedByFocusedElement
+  // recognises this zone and does NOT forward the event to canvas (which would
+  // trigger zoom and stopPropagation, preventing our strength handler).
+  installTagWheelCaptureHook();
 
   Object.assign(container.style, {
     display: "flex",
@@ -641,6 +693,7 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     overflow: "auto",
     alignItems: "flex-start",
     alignContent: "flex-start",
+    outline: "none",
   });
 
   const initialTagsData = opts?.defaultVal || [];
