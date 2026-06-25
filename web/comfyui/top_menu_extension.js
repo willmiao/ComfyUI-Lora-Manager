@@ -186,32 +186,59 @@ const createExtensionObject = (useActionBar) => {
             };
             injectStyles();
 
-            const replaceButtonIcon = () => {
-                const buttons = document.querySelectorAll('button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"]');
-                buttons.forEach(button => {
-                    button.classList.add('lm-top-menu-button');
-                    button.innerHTML = getLoraManagerIcon();
-                    button.style.borderRadius = '4px';
-                    button.style.padding = '6px';
-                    button.style.backgroundColor = 'var(--primary-bg)';
-                    const svg = button.querySelector('svg');
-                    if (svg) {
-                        svg.style.width = '20px';
-                        svg.style.height = '20px';
-                    }
-                });
-                if (buttons.length === 0) {
-                    requestAnimationFrame(replaceButtonIcon);
+            const applyIconToButton = (button) => {
+                // Skip if the SVG icon is already in place
+                if (button.querySelector('svg')) return;
+                button.classList.add('lm-top-menu-button');
+                button.innerHTML = getLoraManagerIcon();
+                button.style.borderRadius = '4px';
+                button.style.padding = '6px';
+                button.style.backgroundColor = 'var(--primary-bg)';
+                const svg = button.querySelector('svg');
+                if (svg) {
+                    svg.style.width = '20px';
+                    svg.style.height = '20px';
                 }
             };
-            requestAnimationFrame(replaceButtonIcon);
+
+            // Initial application — retry until the button is rendered by Vue
+            const pollUntilFound = () => {
+                const buttons = document.querySelectorAll('button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"]');
+                if (buttons.length > 0) {
+                    buttons.forEach(applyIconToButton);
+                } else {
+                    requestAnimationFrame(pollUntilFound);
+                }
+            };
+            requestAnimationFrame(pollUntilFound);
+
+            // MutationObserver: keep the SVG icon in place after Vue re-renders
+            // (e.g. when the properties panel is toggled inside a subgraph)
+            if (typeof MutationObserver !== 'undefined') {
+                const observer = new MutationObserver(() => {
+                    const buttons = document.querySelectorAll('button[aria-label="Launch LoRA Manager (Shift+Click opens in new window)"]');
+                    buttons.forEach(button => {
+                        // Only re-apply when Vue has reset innerHTML back to <i>
+                        if (button.querySelector('i')) {
+                            applyIconToButton(button);
+                        }
+                    });
+                });
+                // Watch the action bar and a broad ancestor so we cover re-mounts
+                const watchNode = document.querySelector('[data-testid="action-bar-buttons"]')
+                    || document.querySelector('.actionbar-container')
+                    || document.body;
+                observer.observe(watchNode, { childList: true, subtree: true });
+                // Store reference for potential cleanup
+                window.__lmIconObserver = observer;
+            }
         },
     };
     
     if (useActionBar) {
         extensionObj.actionBarButtons = [
             {
-                icon: "icon-[mdi--alpha-l-box] size-4",
+                icon: "icon-[lucide--layers] size-4",
                 tooltip: BUTTON_TOOLTIP,
                 onClick: openLoraManager
             }
