@@ -138,7 +138,7 @@ class Aria2Downloader:
             self._transfers.pop(download_id, None)
 
     async def _get_status_with_retry(
-        self, download_id: str, *, max_retries: int = 3, retry_delay: float = 1.0
+        self, download_id: str, *, max_retries: int = 4, retry_delay: float = 3.0
     ) -> Optional[Dict[str, Any]]:
         """Call get_status with retry for transient RPC failures.
 
@@ -510,6 +510,7 @@ class Aria2Downloader:
                 "--continue=true",
                 "--daemon=false",
                 "--quiet=true",
+                "--fsync=false",
                 f"--stop-with-process={os.getpid()}",
             ]
 
@@ -649,7 +650,9 @@ class Aria2Downloader:
         if self._rpc_session is None or self._rpc_session.closed:
             async with self._rpc_session_lock:
                 if self._rpc_session is None or self._rpc_session.closed:
-                    timeout = aiohttp.ClientTimeout(total=30)
+                    timeout = aiohttp.ClientTimeout(
+                        total=None, sock_connect=10, sock_read=60
+                    )
                     self._rpc_session = aiohttp.ClientSession(timeout=timeout)
         return self._rpc_session
 

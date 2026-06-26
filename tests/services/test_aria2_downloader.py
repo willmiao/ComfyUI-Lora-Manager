@@ -410,7 +410,7 @@ async def test_get_status_with_retry_raises_after_all_retries_exhausted(monkeypa
         await downloader._get_status_with_retry("dummy")
 
     msg = str(exc_info.value)
-    assert "after 3 attempts" in msg
+    assert "after 4 attempts" in msg
     assert "connection reset" in msg
 
 
