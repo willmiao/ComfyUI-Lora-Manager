@@ -510,7 +510,6 @@ class Aria2Downloader:
                 "--continue=true",
                 "--daemon=false",
                 "--quiet=true",
-                "--fsync=false",
                 f"--stop-with-process={os.getpid()}",
             ]
 
