@@ -423,3 +423,33 @@ async def test_get_status_with_retry_returns_none_when_not_tracked(monkeypatch):
     # _get_status_with_retry should propagate that without raising.
     result = await downloader._get_status_with_retry("nonexistent")
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_wait_until_ready_includes_stderr_in_error():
+    """When the subprocess exits early, its stderr output must be in Aria2Error."""
+    import sys
+
+    downloader = Aria2Downloader()
+
+    # Start a subprocess that writes a message to stderr and exits with code 28.
+    proc = await asyncio.create_subprocess_exec(
+        sys.executable, "-c",
+        "import sys; print('ERROR: unknown option --fsync', file=sys.stderr); sys.exit(28)",
+        stdout=asyncio.subprocess.DEVNULL,
+        stderr=asyncio.subprocess.PIPE,
+    )
+
+    # Let the process exit
+    await asyncio.sleep(0.2)
+
+    # Point the downloader at this dead process and let _wait_until_ready
+    # discover the exit and read stderr.
+    downloader._process = proc
+
+    with pytest.raises(Aria2Error) as exc_info:
+        await downloader._wait_until_ready()
+
+    msg = str(exc_info.value)
+    assert "code 28" in msg
+    assert "ERROR: unknown option --fsync" in msg
