@@ -579,3 +579,45 @@ async def test_update_in_library_versions_populates_metadata(tmp_path):
     assert version.preview_url == "https://example.com/preview.png"
     assert version.is_in_library is True
 
+
+@pytest.mark.asyncio
+async def test_refresh_folder_filter_considers_cross_folder_versions(tmp_path):
+    """When refreshing by folder, versions in other folders must still be
+    considered in-library so they aren't reported as available updates."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=0)
+    # Same model (modelId=1) in two folders with different versions
+    raw_data = [
+        {"civitai": {"modelId": 1, "id": 11}, "folder": "folder_a"},
+        {"civitai": {"modelId": 1, "id": 15}, "folder": "folder_b"},
+    ]
+    scanner = DummyScanner(raw_data)
+    # Remote offers: 11 (in folder_a), 15 (in folder_b), 20 (truly new)
+    provider = DummyProvider(
+        {
+            "modelVersions": [
+                {"id": 11, "files": [], "images": []},
+                {"id": 15, "files": [], "images": []},
+                {"id": 20, "files": [], "images": []},
+            ]
+        }
+    )
+
+    await service.refresh_for_model_type(
+        "lora", scanner, provider, folder_path="folder_a",
+    )
+    record = await service.get_record("lora", 1)
+
+    assert record is not None
+
+    # Version 15 is in folder_b — must be in_library even when filtering by folder_a
+    v15 = next(v for v in record.versions if v.version_id == 15)
+    assert v15.is_in_library is True
+
+    # Version 20 is truly new — should not be in_library
+    v20 = next(v for v in record.versions if v.version_id == 20)
+    assert v20.is_in_library is False
+
+    # has_update must be True (version 20 > max_in_library=15)
+    assert record.has_update() is True
+

@@ -724,6 +724,16 @@ class ModelUpdateService:
             "Refreshing update metadata for %d %s models", total_models, model_type
         )
 
+        # When filtering by folder, also collect the cross-folder version set
+        # so that versions already present in other folders are not reported
+        # as available updates. See issue #997.
+        all_local_versions: Optional[Dict[int, List[int]]] = None
+        if folder_path is not None:
+            all_local_versions = await self._collect_local_versions(
+                scanner,
+                target_model_ids=target_filter,
+            )
+
         results: Dict[int, ModelUpdateRecord] = {}
         prefetched: Dict[int, Mapping] = {}
 
@@ -762,6 +772,12 @@ class ModelUpdateService:
         for index, (model_id, version_ids) in enumerate(
             local_versions.items(), start=1
         ):
+            # Use cross-folder version IDs for is_in_library if available
+            all_vids: Sequence[int] = (
+                all_local_versions.get(model_id, [])
+                if all_local_versions is not None
+                else version_ids
+            )
             record = await self._refresh_single_model(
                 model_type,
                 model_id,
@@ -769,6 +785,7 @@ class ModelUpdateService:
                 metadata_provider,
                 force_refresh=force_refresh,
                 prefetched_response=prefetched.get(model_id),
+                all_local_version_ids=all_vids,
             )
             if scanner.is_cancelled():
                 logger.info(f"{model_type.capitalize()} Update Service: Refresh cancelled by user")
@@ -964,8 +981,16 @@ class ModelUpdateService:
         *,
         force_refresh: bool = False,
         prefetched_response: Optional[Mapping] = None,
+        all_local_version_ids: Optional[Sequence[int]] = None,
     ) -> Optional[ModelUpdateRecord]:
         normalized_local = self._normalize_sequence(local_versions)
+        # When folder-filtering, this carries the cross-folder version set
+        # for is_in_library; otherwise it falls back to normalized_local.
+        normalized_all = (
+            self._normalize_sequence(all_local_version_ids)
+            if all_local_version_ids is not None
+            else normalized_local
+        )
         now = time.time()
         async with self._lock:
             existing = self._get_record(model_type, model_id)
@@ -973,6 +998,7 @@ class ModelUpdateService:
                 record = self._merge_with_local_versions(
                     existing,
                     normalized_local,
+                    all_local_version_ids=normalized_all,
                 )
                 self._upsert_record(record)
                 return record
@@ -1048,6 +1074,7 @@ class ModelUpdateService:
                 record = self._merge_with_local_versions(
                     existing,
                     normalized_local,
+                    all_local_version_ids=normalized_all,
                 )
                 self._upsert_record(record)
                 return record
@@ -1059,6 +1086,7 @@ class ModelUpdateService:
                     model_type=model_type,
                     model_id=model_id,
                     last_checked_at=now,
+                    all_local_version_ids=normalized_all,
                 )
                 record = replace(record, should_ignore_model=True)
                 self._upsert_record(record)
@@ -1077,6 +1105,7 @@ class ModelUpdateService:
                     fetched_versions,
                     existing,
                     now,
+                    all_local_version_ids=normalized_all,
                 )
             else:
                 record = self._merge_with_local_versions(
@@ -1085,6 +1114,7 @@ class ModelUpdateService:
                     model_type=model_type,
                     model_id=model_id,
                     last_checked_at=existing.last_checked_at if existing else None,
+                    all_local_version_ids=normalized_all,
                 )
             self._upsert_record(record)
             return record
@@ -1322,12 +1352,20 @@ class ModelUpdateService:
         existing: Optional[ModelUpdateRecord],
         normalized_local: Sequence[int],
         *,
+        all_local_version_ids: Optional[Sequence[int]] = None,
         model_type: Optional[str] = None,
         model_id: Optional[int] = None,
         last_checked_at: Optional[float] = None,
         version_info: Optional[Mapping] = None,
     ) -> ModelUpdateRecord:
         local_set = set(normalized_local)
+        # When folder-filtering, also consider versions in other folders
+        # as in-library so they are not reported as available updates.
+        effective_local_set: set[int] = (
+            local_set | set(all_local_version_ids)
+            if all_local_version_ids is not None
+            else local_set
+        )
         versions: List[ModelVersionRecord] = []
         ignore_map: Dict[int, bool] = {}
         if existing:
@@ -1339,7 +1377,7 @@ class ModelUpdateService:
                 versions.append(
                     replace(
                         version,
-                        is_in_library=version.version_id in local_set,
+                        is_in_library=version.version_id in effective_local_set,
                     )
                 )
         elif model_type is None or model_id is None:
@@ -1386,8 +1424,17 @@ class ModelUpdateService:
         remote_versions: Sequence[ModelVersionRecord],
         existing: Optional[ModelUpdateRecord],
         timestamp: float,
+        *,
+        all_local_version_ids: Optional[Sequence[int]] = None,
     ) -> ModelUpdateRecord:
         local_set = set(local_versions)
+        # When folder-filtering, also consider versions in other folders
+        # as in-library so they are not reported as available updates.
+        effective_local_set: set[int] = (
+            local_set | set(all_local_version_ids)
+            if all_local_version_ids is not None
+            else local_set
+        )
         ignore_map = {version.version_id: version.should_ignore for version in existing.versions} if existing else {}
         preview_map = {version.version_id: version.preview_url for version in existing.versions} if existing else {}
         sort_map = {version.version_id: version.sort_index for version in existing.versions} if existing else {}
@@ -1406,7 +1453,7 @@ class ModelUpdateService:
                     released_at=remote_version.released_at,
                     size_bytes=remote_version.size_bytes,
                     preview_url=remote_version.preview_url or preview_map.get(version_id),
-                    is_in_library=version_id in local_set,
+                    is_in_library=version_id in effective_local_set,
                     should_ignore=ignore_map.get(version_id, remote_version.should_ignore),
                     sort_index=sort_map.get(version_id, index),
                     early_access_ends_at=remote_version.early_access_ends_at,
