@@ -4,7 +4,7 @@ import { ImportManager } from './managers/ImportManager.js';
 import { BatchImportManager } from './managers/BatchImportManager.js';
 import { RecipeModal } from './components/RecipeModal.js';
 import { state, getCurrentPageState } from './state/index.js';
-import { getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
+import { getStorageItem, setStorageItem, getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
 import { RecipeContextMenu } from './components/ContextMenu/index.js';
 import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll } from './utils/infiniteScroll.js';
@@ -237,13 +237,18 @@ class RecipeManager {
     }
 
     initEventListeners() {
-        // Sort select
+        // Sort select — load saved preference, persist on change
         const sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
+            const savedSort = getStorageItem('recipes_sort');
+            if (savedSort) {
+                this.pageState.sortBy = savedSort;
+            }
             initSortDropdown(sortSelect);
             sortSelect.value = this.pageState.sortBy || 'date:desc';
             sortSelect.addEventListener('change', () => {
                 this.pageState.sortBy = sortSelect.value;
+                setStorageItem('recipes_sort', sortSelect.value);
                 refreshVirtualScroll();
             });
         }

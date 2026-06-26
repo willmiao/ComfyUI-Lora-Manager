@@ -316,7 +316,12 @@ export class PageControls {
      * Load sort preference from storage
      */
     loadSortPreference() {
-        const savedSort = getStorageItem(`${this.pageType}_sort`);
+        // Use separate keys for grouped vs non-grouped sort so each mode
+        // remembers its own preference independently
+        const key = state.global.settings.group_by_model
+            ? `${this.pageType}_sort_grouped`
+            : `${this.pageType}_sort`;
+        const savedSort = getStorageItem(key);
         if (savedSort) {
             // Handle legacy format conversion
             const convertedSort = this.convertLegacySortFormat(savedSort);
@@ -360,7 +365,11 @@ export class PageControls {
             };
             return;
         }
-        setStorageItem(`${this.pageType}_sort`, sortValue);
+        // Separate storage for grouped vs non-grouped sort
+        const key = state.global.settings.group_by_model
+            ? `${this.pageType}_sort_grouped`
+            : `${this.pageType}_sort`;
+        setStorageItem(key, sortValue);
     }
     
     /**
@@ -555,37 +564,28 @@ export class PageControls {
 
     /**
      * Called when group_by_model is toggled.
-     * Saves current sort when entering grouped mode, restores normal sort
-     * when leaving — prevents "Most versions first" persisting after exit.
+     * Swaps between {pageType}_sort (non-group) and {pageType}_sort_grouped,
+     * so each mode remembers its own sort preference independently.
      */
     onGroupByModelToggled(isEnabled) {
-        const normalKey = `${this.pageType}_sort_normal`;
         const groupedKey = `${this.pageType}_sort_grouped`;
 
         if (isEnabled) {
-            // Entering group mode: save current sort for later restoration
-            setStorageItem(normalKey, this.pageState.sortBy);
-            // Restore previously saved grouped sort, if any
+            // Entering group mode: restore last-used grouped sort, if any
             const savedGroupedSort = getStorageItem(groupedKey);
             if (savedGroupedSort) {
                 this.pageState.sortBy = savedGroupedSort;
-                this.saveSortPreference(savedGroupedSort);
                 const sortSelect = document.getElementById('sortSelect');
                 if (sortSelect) {
                     sortSelect.value = savedGroupedSort;
                 }
             }
         } else {
-            // Leaving group mode: save current grouped sort aside, restore normal
-            const currentSort = this.pageState.sortBy;
-            if (currentSort && currentSort.startsWith('versions_count')) {
-                setStorageItem(groupedKey, currentSort);
-            }
-            const savedNormalSort = getStorageItem(normalKey);
+            // Leaving group mode: persist current sort for next time, restore non-group sort
+            setStorageItem(groupedKey, this.pageState.sortBy);
+            const savedNormalSort = getStorageItem(`${this.pageType}_sort`);
             if (savedNormalSort) {
-                removeStorageItem(normalKey);
                 this.pageState.sortBy = savedNormalSort;
-                this.saveSortPreference(savedNormalSort);
                 const sortSelect = document.getElementById('sortSelect');
                 if (sortSelect) {
                     sortSelect.value = savedNormalSort;
