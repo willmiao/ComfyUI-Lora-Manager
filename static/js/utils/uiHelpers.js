@@ -384,12 +384,9 @@ export function initBackToTop() {
     }
   };
 
-  // Smooth scroll to top
+  // Scroll to top
   button.addEventListener('click', () => {
-    scrollContainer.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    });
+    scrollContainer.scrollTop = 0;
   });
 
   // Listen for scroll events on the scrollable container
