@@ -520,15 +520,18 @@ class Aria2Downloader:
                 stderr=asyncio.subprocess.PIPE,
             )
 
+            await self._wait_until_ready()
+
             # Drain aria2's stderr in a background task so the pipe buffer
             # never fills up.  If the pipe blocks, aria2 itself freezes and
             # cannot respond to RPC — this was the root cause of the
             # "Failed to query aria2 download status" timeout bug.
+            # Must start AFTER _wait_until_ready to avoid a race where the
+            # drain task consumes aria2's early-exit error message before
+            # _wait_until_ready can read it.
             self._stderr_reader_task = asyncio.create_task(
                 self._drain_stderr()
             )
-
-            await self._wait_until_ready()
 
     def _resolve_executable(self) -> str:
         settings = get_settings_manager()
