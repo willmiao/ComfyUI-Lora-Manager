@@ -123,24 +123,39 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         if model_hash_from_hashes:
                             metadata["model_hash"] = model_hash_from_hashes
                     
-                    # Extract Lora hashes in alternative format
+                    # Extract Lora hashes in alternative format.
+                    # Run unconditionally (not just as fallback) so that
+                    # non-empty hashes from Lora hashes fill in the gaps left
+                    # by empty values in the Hashes JSON dict.  Some WebUI
+                    # builds write real hash values only to Lora hashes and
+                    # leave the Hashes JSON values empty.
                     lora_hashes_match = re.search(self.LORA_HASHES_REGEX, params_section)
-                    if not hashes_match and lora_hashes_match:
+                    if lora_hashes_match:
                         try:
                             lora_hashes_str = lora_hashes_match.group(1)
                             lora_hash_entries = lora_hashes_str.split(', ')
-                            
-                            # Initialize hashes dict if it doesn't exist
-                            if "hashes" not in metadata:
-                                metadata["hashes"] = {}
-                                
+
                             # Parse each lora hash entry (format: "name: hash")
                             for entry in lora_hash_entries:
                                 if ': ' in entry:
                                     lora_name, lora_hash = entry.split(': ', 1)
-                                    # Add as lora type in the same format as regular hashes
-                                    metadata["hashes"][f"lora:{lora_name}"] = lora_hash.strip()
-                            
+                                    lora_hash = lora_hash.strip()
+                                    if not lora_hash:
+                                        # Skip entries without a hash value
+                                        continue
+                                    # Initialize hashes dict if it doesn't exist
+                                    if "hashes" not in metadata:
+                                        metadata["hashes"] = {}
+                                    # Add as lora type in the same format as
+                                    # regular hashes.  Only override an
+                                    # existing entry if its value is empty
+                                    # (Lora hashes is the more reliable
+                                    # source when Hashes JSON has blanks).
+                                    key = f"lora:{lora_name}"
+                                    existing = metadata["hashes"].get(key, "")
+                                    if not existing:
+                                        metadata["hashes"][key] = lora_hash
+
                             # Remove lora hashes from params section
                             params_section = params_section.replace(lora_hashes_match.group(0), '')
                         except Exception as e:
@@ -362,6 +377,12 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         # Only process lora or hypernet types
                         if not hash_key.startswith(("lora:", "hypernet:")):
                             continue
+                        
+                        # Skip entries without a hash value — they can't be
+                        # resolved via CivitAI and would only produce a
+                        # useless "Deleted" entry in the recipe.
+                        if not lora_hash:
+                            continue
                             
                         lora_type, lora_name = hash_key.split(':', 1)
                         
@@ -387,11 +408,7 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         # Try to get info from Civitai
                         if metadata_provider:
                             try:
-                                if lora_hash:
-                                    # If we have hash, use it for lookup
-                                    civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
-                                else:
-                                    civitai_info = None
+                                civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
                                 
                                 populated_entry = await self.populate_lora_from_civitai(
                                     lora_entry, 

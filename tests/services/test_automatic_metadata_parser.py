@@ -65,6 +65,74 @@ async def test_parse_metadata_extracts_checkpoint_from_civitai_resources(monkeyp
 
 
 @pytest.mark.asyncio
+async def test_parse_metadata_merges_lora_hashes_over_empty_hashes_json(monkeypatch):
+    """When Hashes JSON has empty lora hashes but Lora hashes text field has
+    real ones, the real hashes should be used and those LoRAs resolved
+    correctly; entries with empty hashes in both sources should be skipped."""
+    lora_version_info = {
+        "id": 947620,
+        "modelId": 98765,
+        "model": {"name": "cfg_scale_boost", "type": "LORA"},
+        "name": "v1",
+        "images": [{"url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/original=true"}],
+        "baseModel": "illustrious",
+        "downloadUrl": "https://civitai.com/api/download/models/947620",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "sizeKB": 1024,
+                "name": "cfg_scale_boost.safetensors",
+                "hashes": {"SHA256": "4605b2de07"},
+            }
+        ],
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                assert model_hash == "4605b2de07"
+                return lora_version_info, None
+
+            async def get_model_version_info(self, version_id):
+                raise AssertionError("get_model_version_info should not be called")
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = AutomaticMetadataParser()
+
+    metadata_text = (
+        "a cyberpunk portrait <lora:cfg_scale_boost:0.6>\n"
+        "Negative prompt: low quality\n"
+        "Steps: 20, Sampler: Euler a, CFG scale: 7, Seed: 123456, Size: 512x768, "
+        "Model hash: abc123, Model: test.safetensors, "
+        'Lora hashes: "cfg_scale_boost: 4605b2de07, EmptyLora: ", '
+        'Hashes: {"model": "abc123", "lora:cfg_scale_boost": "", "lora:EmptyLora": "", "lora:UnusedLora": ""}'
+    )
+
+    result = await parser.parse_metadata(metadata_text)
+
+    # cfg_scale_boost should be resolved (hash from Lora hashes overrode empty Hashes JSON)
+    loras = result.get("loras", [])
+    assert len(loras) == 1, f"Expected 1 LoRA, got {len(loras)}"
+    lora = loras[0]
+    assert lora["name"] == "cfg_scale_boost", f"Expected cfg_scale_boost, got {lora['name']}"
+    assert lora["hash"] == "4605b2de07", f"Expected hash 4605b2de07, got {lora['hash']}"
+    assert lora.get("isDeleted") in (None, False), f"LoRA should not be deleted"
+    assert lora["weight"] == 0.6, f"Expected weight 0.6, got {lora['weight']}"
+
+    # EmptyLora and UnusedLora should be skipped (no hash in either source)
+    lora_names = [l["name"] for l in loras]
+    assert "EmptyLora" not in lora_names, "EmptyLora should have been skipped"
+    assert "UnusedLora" not in lora_names, "UnusedLora should have been skipped"
+
+
+@pytest.mark.asyncio
 async def test_parse_metadata_extracts_checkpoint_from_model_hash(monkeypatch):
     checkpoint_info = {
         "id": 98765,
