@@ -2029,7 +2029,21 @@ class DownloadManager:
                     break
 
                 last_error = result
-                if os.path.exists(save_path):
+                # For aria2: if the .aria2 control file is missing, aria2 considers
+                # the download complete.  A transient RPC failure may have made us
+                # think the download failed even though the file is fully on disk.
+                # Keep the file so a retry can find it already complete.
+                if (
+                    transfer_backend == "aria2"
+                    and os.path.exists(save_path)
+                    and not os.path.exists(f"{save_path}.aria2")
+                ):
+                    logger.warning(
+                        "aria2 download reported failure but .aria2 file is absent "
+                        "for %s — the file is likely complete.  Preserving it for retry.",
+                        save_path,
+                    )
+                elif os.path.exists(save_path):
                     try:
                         os.remove(save_path)
                     except Exception as e:
