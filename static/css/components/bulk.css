@@ -1,6 +1,7 @@
 /* Style for selected cards */
 .model-card.selected {
-    box-shadow: 0 0 0 2px var(--lora-accent);
+    outline: 2px solid var(--lora-accent);
+    outline-offset: -2px;
     position: relative;
 }
 
