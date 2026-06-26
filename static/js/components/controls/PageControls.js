@@ -4,6 +4,7 @@ import { getStorageItem, setStorageItem, removeStorageItem, getSessionItem, setS
 import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
+import { initSortDropdown } from './SortDropdown.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -106,6 +107,7 @@ export class PageControls {
         // Sort select handler
         const sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
+            initSortDropdown(sortSelect);
             sortSelect.value = this.pageState.sortBy;
             sortSelect.addEventListener('change', async (e) => {
                 this.pageState.sortBy = e.target.value;

@@ -15,8 +15,13 @@
     {% endif %}
     <div class="actions">
         <div class="action-buttons">
-            <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.sort.title') }}{% else %}{{ t('loras.controls.sort.title') }}{% endif %}" class="control-group">
-                <select id="sortSelect">
+            <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.sort.title') }}{% else %}{{ t('loras.controls.sort.title') }}{% endif %}" class="control-group sort-dropdown-group dropdown-group" data-sort-dropdown>
+                <button type="button" class="sort-trigger" aria-haspopup="listbox" aria-expanded="false">
+                    <span class="sort-trigger__label"></span>
+                    <i class="fas fa-caret-down sort-trigger__caret" aria-hidden="true"></i>
+                </button>
+                <div class="dropdown-menu sort-dropdown-menu" role="listbox"></div>
+                <select id="sortSelect" class="sort-select-native" tabindex="-1" aria-hidden="true">
                     <optgroup label="{{ t('loras.controls.sort.name') }}">
                         <option value="name:asc">{{ t('loras.controls.sort.nameAsc') }}</option>
                         <option value="name:desc">{{ t('loras.controls.sort.nameDesc') }}</option>

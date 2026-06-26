@@ -281,6 +281,157 @@
     box-shadow: none;
 }
 
+/* === Sort dropdown — decoupled trigger width ===========================
+   The native <select> sizes its trigger to the widest <option>, wasting
+   horizontal space when a short option is selected. This custom trigger
+   sizes to the currently selected text only; the dropdown menu sizes to
+   its content independently. The native <select> is kept in the DOM
+   (visually hidden) so existing JS that reads/writes `.value` / `.disabled`
+   and dynamically adds/removes <option>s keeps working. */
+
+.sort-dropdown-group {
+    position: relative;
+    display: flex;
+}
+
+.sort-trigger {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    min-width: 100px;
+    max-width: 240px;
+    padding: 4px 10px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    background: var(--card-bg);
+    color: var(--text-color);
+    font-size: 0.85em;
+    cursor: pointer;
+    transition: var(--transition-base);
+    box-shadow: var(--shadow-xs);
+}
+
+.sort-trigger:hover,
+.sort-trigger:focus-visible {
+    border-color: var(--lora-accent);
+    background: var(--bg-color);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-lg);
+    outline: none;
+}
+
+.sort-trigger:active {
+    transform: translateY(0);
+    box-shadow: var(--shadow-xs);
+}
+
+.sort-trigger__label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sort-trigger__caret {
+    opacity: 0.8;
+    transition: transform var(--transition-base);
+    flex-shrink: 0;
+}
+
+.sort-dropdown-group.active .sort-trigger__caret {
+    transform: rotate(180deg);
+}
+
+.sort-dropdown-group.active .sort-trigger {
+    border-color: var(--lora-accent);
+    box-shadow: 0 0 0 2px color-mix(in oklch, var(--lora-accent) 15%, transparent);
+}
+
+/* Disabled state — mirrors the native :disabled look (used when VLM is active) */
+.sort-dropdown-group.is-disabled .sort-trigger {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    background: var(--bg-color);
+    border-color: var(--border-color);
+    box-shadow: none;
+    transform: none;
+}
+
+/* Dropdown menu — sizes to its content, independent of trigger width.
+   Inherits base .dropdown-menu styling; capped for very long i18n text. */
+.sort-dropdown-menu {
+    min-width: max-content;
+    max-width: 320px;
+    width: max-content;
+}
+
+/* Optgroup label rendered as a section header */
+.sort-dropdown-group .sort-optgroup-label {
+    padding: 8px 12px 4px;
+    font-size: 0.75em;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    cursor: default;
+    user-select: none;
+}
+
+.sort-dropdown-group .sort-optgroup-label:first-child {
+    padding-top: 4px;
+}
+
+/* Option items */
+.sort-dropdown-group .sort-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    color: var(--text-color);
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+}
+
+.sort-dropdown-group .sort-option::before {
+    content: '';
+    width: 14px;
+    flex-shrink: 0;
+    text-align: center;
+    font-weight: 700;
+}
+
+.sort-dropdown-group .sort-option:hover {
+    background-color: color-mix(in oklch, var(--lora-accent) 10%, transparent);
+}
+
+.sort-dropdown-group .sort-option.is-selected {
+    color: var(--lora-accent);
+    font-weight: 600;
+}
+
+.sort-dropdown-group .sort-option.is-selected::before {
+    content: '\2713';
+    color: var(--lora-accent);
+}
+
+/* Visually hidden native <select> — kept in the DOM for programmatic access.
+   High-specificity selector overrides .control-group select { min-width: 100px }. */
+.control-group .sort-select-native {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    min-width: 0;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+    opacity: 0;
+    pointer-events: none;
+}
+
 /* Ensure hidden class works properly */
 .hidden {
     display: none !important;

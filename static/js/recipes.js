@@ -10,6 +10,7 @@ import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll } from './utils/infiniteScroll.js';
 import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
 import { sidebarManager } from './components/SidebarManager.js';
+import { initSortDropdown } from './components/controls/SortDropdown.js';
 
 class RecipePageControls {
     constructor() {
@@ -239,6 +240,7 @@ class RecipeManager {
         // Sort select
         const sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
+            initSortDropdown(sortSelect);
             sortSelect.value = this.pageState.sortBy || 'date:desc';
             sortSelect.addEventListener('change', () => {
                 this.pageState.sortBy = sortSelect.value;
