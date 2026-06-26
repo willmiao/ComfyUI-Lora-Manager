@@ -230,8 +230,12 @@ export function initSortDropdown(select) {
     // Close dropdown when clicking outside
     document.addEventListener('click', (event) => {
         if (!group.contains(event.target)) {
+            const wasOpen = group.classList.contains('active');
             close();
-            trigger.focus();
+            // Only return focus to the trigger when the dropdown was actually
+            // open — avoids forcing scrollIntoView on every page click (which
+            // causes the scroll container to jump when clicking a model card).
+            if (wasOpen) trigger.focus();
         }
     });
 
