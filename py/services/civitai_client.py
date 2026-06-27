@@ -56,7 +56,7 @@ class CivitaiClient:
         self._MAX_CACHE_ENTRIES = 500
 
     def _build_image_info_url(self, image_id: str) -> str:
-        return f"{self.base_url}/images?imageId={image_id}&nsfw=X"
+        return f"{self.base_url}/images?imageId={image_id}&nsfw=X&withMeta=true"
 
     async def _make_request(
         self,

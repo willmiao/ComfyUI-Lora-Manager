@@ -568,7 +568,7 @@ async def test_get_image_info_prefers_red_host_for_red_source(monkeypatch, downl
 
     assert result == {"id": 124950237, "name": "target"}
     assert requested_urls == [
-        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X"
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X&withMeta=true"
     ]
 
 
@@ -589,7 +589,7 @@ async def test_get_image_info_uses_red_host_even_for_red_source(monkeypatch, dow
 
     assert result == {"id": 124950237, "name": "target"}
     assert requested_urls == [
-        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X",
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X&withMeta=true",
     ]
 
 
@@ -610,7 +610,7 @@ async def test_get_image_info_does_not_fall_back_after_request_failure(monkeypat
 
     assert result is None
     assert requested_urls == [
-        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X",
+        "https://civitai.red/api/v1/images?imageId=124950237&nsfw=X&withMeta=true",
     ]
 
 

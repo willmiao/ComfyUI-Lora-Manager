@@ -514,11 +514,21 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
 
                         result["loras"].append(lora_entry)
 
-            # Process modelVersionIds from Civitai image API
-            # These are model version IDs returned at root level when meta doesn't contain resources
-            if "modelVersionIds" in metadata and isinstance(
-                metadata["modelVersionIds"], list
+            # Process modelVersionIds from Civitai image API.
+            # These are version IDs returned at root level of the API response.
+            # When resources or civitaiResources are already present in metadata
+            # (which they are when ?withMeta=true is passed), those sections have
+            # complete hash/type information — modelVersionIds is a fallback for
+            # when meta is null and only the flat ID list is available. Skipping
+            # it here avoids duplicates: the same file hash often resolves to
+            # different version IDs via hash lookup (resources) vs the original
+            # version ID in modelVersionIds, and both paths would create entries.
+            if (
+                "modelVersionIds" in metadata
+                and isinstance(metadata["modelVersionIds"], list)
+                and not result.get("loras")
             ):
+
                 for version_id in metadata["modelVersionIds"]:
                     version_id_str = str(version_id)
 
@@ -594,11 +604,12 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                                             checkpoint_entry, civitai_info
                                         )
                                     )
-                                    if cp_populated.get("id"):
+                                    if cp_populated.get("modelId"):
                                         result["model"] = cp_populated
                                 continue  # Not a LoRA, don't add to loras
 
                             lora_entry = populated_entry
+
                         except Exception as e:
                             logger.error(
                                 f"Error fetching Civitai info for model version {version_id}: {e}"

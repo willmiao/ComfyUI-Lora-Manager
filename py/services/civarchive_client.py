@@ -417,7 +417,7 @@ class CivArchiveClient:
 
             if version_id is not None:
                 raw_id = version_data.get("id")
-                if raw_id != version_id:
+                if raw_id is not None and str(raw_id) != str(version_id):
                     logger.warning(
                         "Requested version %s doesn't match default version %s for model %s",
                         version_id,
