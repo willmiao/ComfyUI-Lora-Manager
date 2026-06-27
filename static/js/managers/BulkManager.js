@@ -21,6 +21,7 @@ export class BulkManager {
         this.isMarqueeActive = false;
         this.isDragging = false;
         this.marqueeStart = { x: 0, y: 0 };
+        this.marqueeStartDoc = { x: 0, y: 0 }; // Marquee start in document coordinates
         this.marqueeElement = null;
         this.initialSelectedModels = new Set();
 
@@ -28,6 +29,11 @@ export class BulkManager {
         this.dragThreshold = 5; // Pixels to move before considering it a drag
         this.mouseDownTime = 0;
         this.mouseDownPosition = { x: 0, y: 0 };
+
+        // Auto-scroll properties for marquee
+        this.lastClientX = 0;
+        this.lastClientY = 0;
+        this.autoScrollRaf = null;
 
         // Model type specific action configurations
         this.actionConfig = {
@@ -168,7 +174,10 @@ export class BulkManager {
 
         eventManager.addHandler('mousemove', 'bulkManager-marquee-move', (e) => {
             if (this.isMarqueeActive) {
+                this.lastClientX = e.clientX;
+                this.lastClientY = e.clientY;
                 this.updateMarqueeSelection(e);
+                this.startAutoScroll();
             } else if (this.mouseDownTime && !this.isDragging) {
                 // Check if we've moved enough to consider it a drag
                 const dx = e.clientX - this.mouseDownPosition.x;
@@ -237,6 +246,7 @@ export class BulkManager {
      * Clean up event handlers
      */
     cleanup() {
+        this.stopAutoScroll();
         eventManager.removeAllHandlersForSource('bulkManager-keyboard');
         eventManager.removeAllHandlersForSource('bulkManager-marquee-start');
         eventManager.removeAllHandlersForSource('bulkManager-marquee-move');
@@ -1727,9 +1737,14 @@ export class BulkManager {
      * @param {boolean} isDragging - Whether this is triggered from a drag operation
      */
     startMarqueeSelection(e, isDragging = false) {
-        // Store initial mouse position
+        // Store initial mouse position (viewport coordinates for visual element)
         this.marqueeStart.x = this.mouseDownPosition.x;
         this.marqueeStart.y = this.mouseDownPosition.y;
+
+        // Store initial mouse position in document coordinates (for logical selection)
+        const container = document.querySelector('.page-content');
+        this.marqueeStartDoc.x = this.mouseDownPosition.x + (container?.scrollLeft || 0);
+        this.marqueeStartDoc.y = this.mouseDownPosition.y + (container?.scrollTop || 0);
 
         // Store initial selection state
         this.initialSelectedModels = new Set(state.selectedModels);
@@ -1776,46 +1791,67 @@ export class BulkManager {
      */
     updateMarqueeSelection(e) {
         if (!this.marqueeElement) return;
-
-        const currentX = e.clientX;
-        const currentY = e.clientY;
-
-        // Calculate rectangle bounds
-        const left = Math.min(this.marqueeStart.x, currentX);
-        const top = Math.min(this.marqueeStart.y, currentY);
-        const width = Math.abs(currentX - this.marqueeStart.x);
-        const height = Math.abs(currentY - this.marqueeStart.y);
-
-        // Update marquee element position and size
-        this.marqueeElement.style.left = left + 'px';
-        this.marqueeElement.style.top = top + 'px';
-        this.marqueeElement.style.width = width + 'px';
-        this.marqueeElement.style.height = height + 'px';
-
-        // Check which cards intersect with marquee
-        this.updateCardSelection(left, top, left + width, top + height);
+        this.updateMarqueeSelectionFromPosition(e.clientX, e.clientY);
     }
 
     /**
-     * Update card selection based on marquee bounds
+     * Update marquee from raw client coordinates (used by both mousemove and auto-scroll loop)
      */
-    updateCardSelection(left, top, right, bottom) {
-        const cards = document.querySelectorAll('.model-card');
+    updateMarqueeSelectionFromPosition(clientX, clientY) {
+        if (!this.marqueeElement) return;
+
+        const container = document.querySelector('.page-content');
+        const scrollX = container?.scrollLeft || 0;
+        const scrollY = container?.scrollTop || 0;
+
+        // Current position in document coordinates
+        const currentDocX = clientX + scrollX;
+        const currentDocY = clientY + scrollY;
+
+        // Calculate marquee rectangle in document coordinates
+        const docLeft = Math.min(this.marqueeStartDoc.x, currentDocX);
+        const docTop = Math.min(this.marqueeStartDoc.y, currentDocY);
+        const docRight = Math.max(this.marqueeStartDoc.x, currentDocX);
+        const docBottom = Math.max(this.marqueeStartDoc.y, currentDocY);
+
+        // Update visual marquee element (position: fixed, so subtract scroll offset)
+        this.marqueeElement.style.left = (docLeft - scrollX) + 'px';
+        this.marqueeElement.style.top = (docTop - scrollY) + 'px';
+        this.marqueeElement.style.width = (docRight - docLeft) + 'px';
+        this.marqueeElement.style.height = (docBottom - docTop) + 'px';
+
+        // Check which cards intersect with marquee
+        this.updateCardSelection(docLeft, docTop, docRight, docBottom);
+    }
+
+    /**
+     * Update card selection based on marquee bounds (document coordinates).
+     * Uses dual detection: DOM cards for visible ones + VirtualScroller layout for off-screen cards.
+     */
+    updateCardSelection(docLeft, docTop, docRight, docBottom) {
+        const vs = state.virtualScroller;
+        const container = document.querySelector('.page-content');
+        const scrollX = container?.scrollLeft || 0;
+        const scrollY = container?.scrollTop || 0;
         const newSelection = new Set(this.initialSelectedModels);
+        const visibleFilepaths = new Set();
 
-        cards.forEach(card => {
-            const rect = card.getBoundingClientRect();
-
-            // Check if card intersects with marquee rectangle
-            const intersects = !(rect.right < left ||
-                rect.left > right ||
-                rect.bottom < top ||
-                rect.top > bottom);
-
+        // Step 1: Process visible DOM cards using getBoundingClientRect + scroll offset
+        document.querySelectorAll('.model-card').forEach(card => {
             const filepath = card.dataset.filepath;
+            if (!filepath) return;
+            visibleFilepaths.add(filepath);
+
+            const rect = card.getBoundingClientRect();
+            const cardLeft = rect.left + scrollX;
+            const cardTop = rect.top + scrollY;
+            const cardRight = rect.right + scrollX;
+            const cardBottom = rect.bottom + scrollY;
+
+            const intersects = !(cardRight < docLeft || cardLeft > docRight ||
+                                 cardBottom < docTop || cardTop > docBottom);
 
             if (intersects) {
-                // Add to selection if intersecting
                 newSelection.add(filepath);
                 card.classList.add('selected');
 
@@ -1825,11 +1861,42 @@ export class BulkManager {
                     this.updateMetadataCacheFromCard(filepath, card);
                 }
             } else if (!this.initialSelectedModels.has(filepath)) {
-                // Remove from selection if not intersecting and wasn't initially selected
                 newSelection.delete(filepath);
                 card.classList.remove('selected');
             }
         });
+
+        // Step 2: Process off-screen cards via VirtualScroller layout calculation.
+        // Since VirtualScroller removes off-screen DOM elements, we compute
+        // each card's position from its index and the VS layout parameters.
+        if (vs?.gridElement && vs.items && vs.columnsCount > 0) {
+            const gridRect = vs.gridElement.getBoundingClientRect();
+            // Grid origin in scroll-container content coordinates
+            const originX = gridRect.left + scrollX;
+            const originY = gridRect.top + scrollY;
+
+            for (let i = 0; i < vs.items.length; i++) {
+                const filepath = vs.items[i]?.file_path;
+                if (!filepath || visibleFilepaths.has(filepath)) continue;
+
+                const row = Math.floor(i / vs.columnsCount);
+                const col = i % vs.columnsCount;
+
+                const cLeft = originX + col * (vs.itemWidth + vs.columnGap);
+                const cTop = originY + (vs.containerPaddingTop || 0) + row * (vs.itemHeight + (vs.rowGap || 0));
+                const cRight = cLeft + vs.itemWidth;
+                const cBottom = cTop + vs.itemHeight;
+
+                const intersects = !(cRight < docLeft || cLeft > docRight ||
+                                     cBottom < docTop || cTop > docBottom);
+
+                if (intersects) {
+                    newSelection.add(filepath);
+                } else if (!this.initialSelectedModels.has(filepath)) {
+                    newSelection.delete(filepath);
+                }
+            }
+        }
 
         // Update global selection state
         state.selectedModels = newSelection;
@@ -1848,6 +1915,9 @@ export class BulkManager {
         this.isMarqueeActive = false;
         this.isDragging = false;
         this.mouseDownTime = 0;
+
+        // Stop any active auto-scroll
+        this.stopAutoScroll();
 
         // Update event manager state
         eventManager.setState('marqueeActive', false);
@@ -1873,6 +1943,79 @@ export class BulkManager {
 
         // Clear initial selection state
         this.initialSelectedModels.clear();
+    }
+
+    /**
+     * Start auto-scroll loop when mouse approaches viewport edge during marquee
+     */
+    startAutoScroll() {
+        if (this.autoScrollRaf) return;
+        this.autoScrollLoop();
+    }
+
+    /**
+     * Stop auto-scroll loop
+     */
+    stopAutoScroll() {
+        if (this.autoScrollRaf) {
+            cancelAnimationFrame(this.autoScrollRaf);
+            this.autoScrollRaf = null;
+        }
+    }
+
+    /**
+     * Auto-scroll loop: scrolls the page when mouse is near viewport edges
+     * and re-evaluates marquee selection after each scroll.
+     */
+    autoScrollLoop() {
+        if (!this.isMarqueeActive) {
+            this.autoScrollRaf = null;
+            return;
+        }
+
+        const container = document.querySelector('.page-content');
+        if (!container) {
+            this.autoScrollRaf = null;
+            return;
+        }
+
+        const MARGIN = 30;      // Px from edge to trigger scroll
+        const BASE_SPEED = 12;   // Pixels per frame at edge boundary
+        const MAX_SPEED = 40;    // Maximum scroll speed
+        const rect = container.getBoundingClientRect();
+        let dx = 0;
+        let dy = 0;
+
+        // Vertical auto-scroll - speed increases the further the cursor is past the edge
+        if (this.lastClientY !== undefined) {
+            if (this.lastClientY < rect.top + MARGIN) {
+                const dist = Math.max(0, (rect.top + MARGIN) - this.lastClientY);
+                dy = -Math.min(BASE_SPEED + dist * 0.5, MAX_SPEED);
+            } else if (this.lastClientY > rect.bottom - MARGIN) {
+                const dist = Math.max(0, this.lastClientY - (rect.bottom - MARGIN));
+                dy = Math.min(BASE_SPEED + dist * 0.5, MAX_SPEED);
+            }
+        }
+
+        // Horizontal auto-scroll
+        if (this.lastClientX !== undefined) {
+            if (this.lastClientX < rect.left + MARGIN) {
+                const dist = Math.max(0, (rect.left + MARGIN) - this.lastClientX);
+                dx = -Math.min(BASE_SPEED + dist * 0.5, MAX_SPEED);
+            } else if (this.lastClientX > rect.right - MARGIN) {
+                const dist = Math.max(0, this.lastClientX - (rect.right - MARGIN));
+                dx = Math.min(BASE_SPEED + dist * 0.5, MAX_SPEED);
+            }
+        }
+
+        if (dx !== 0 || dy !== 0) {
+            container.scrollBy(dx, dy);
+            // Re-evaluate marquee selection with the new scroll position
+            this.updateMarqueeSelectionFromPosition(this.lastClientX, this.lastClientY);
+            this.autoScrollRaf = requestAnimationFrame(() => this.autoScrollLoop());
+        } else {
+            this.autoScrollRaf = null;
+        }
     }
 }
 
