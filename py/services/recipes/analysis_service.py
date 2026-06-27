@@ -146,11 +146,38 @@ class RecipeAnalysisService:
                 ):
                     metadata = metadata["meta"]
 
-                # Include modelVersionIds from root level if available
-                # Civitai API returns modelVersionIds at root level, not in meta
+                # Include modelVersionIds from root level if available.
+                # CivitAI API returns modelVersionIds at root level, not in meta.
+                # When meta is null (None), create a minimal dict so downstream
+                # parsers can still discover LoRAs and checkpoints.
                 model_version_ids = image_info.get("modelVersionIds")
-                if model_version_ids and isinstance(metadata, dict):
-                    metadata["modelVersionIds"] = model_version_ids
+                if model_version_ids:
+                    if isinstance(metadata, dict):
+                        metadata["modelVersionIds"] = model_version_ids
+                    else:
+                        metadata = {"modelVersionIds": model_version_ids}
+
+                # Inject browsingLevel (canonical integer) so the recipe's
+                # preview_nsfw_level can be set, enabling proper NSFW blur
+                # of the preview image.  Fall back to nsfwLevel (string)
+                # when browsingLevel is absent.
+                if isinstance(metadata, dict):
+                    browsing_level = image_info.get("browsingLevel")
+                    nsfw_level_str = image_info.get("nsfwLevel")
+                    if isinstance(browsing_level, int) and browsing_level > 0:
+                        metadata["browsingLevel"] = browsing_level
+                    elif (
+                        isinstance(nsfw_level_str, str)
+                        and nsfw_level_str
+                        in (
+                            "PG", "PG13", "R", "X", "XXX", "Blocked",
+                        )
+                    ):
+                        from ...utils.constants import NSFW_LEVELS
+
+                        metadata["browsingLevel"] = NSFW_LEVELS.get(
+                            nsfw_level_str, 0
+                        )
 
                 # Validate that metadata contains meaningful recipe fields
                 # If not, treat as None to trigger EXIF extraction from downloaded image
@@ -171,12 +198,19 @@ class RecipeAnalysisService:
                 temp_path = self._create_temp_path(suffix=extension)
                 await self._download_image(url, temp_path)
 
-            if metadata is None and not is_video:
-                metadata = await asyncio.to_thread(
+            # Always extract EXIF from the downloaded image for generation
+            # params (prompt, negative prompt, sampler, steps, etc.).
+            # Previously this was gated on ``metadata is None``, but that
+            # skipped EXIF entirely when API metadata (modelVersionIds,
+            # browsingLevel) is present, losing all generation parameters.
+            exif_metadata = None
+            if not is_video:
+                exif_metadata = await asyncio.to_thread(
                     self._exif_utils.extract_image_metadata, temp_path
                 )
 
-            if not metadata and civitai_image_id and image_info:
+            # Fallback: try the original (non-optimized) image for EXIF data
+            if not exif_metadata and civitai_image_id and image_info:
                 original_url = image_info.get("url")
                 if original_url:
                     self._logger.debug(
@@ -187,15 +221,38 @@ class RecipeAnalysisService:
                     orig_temp_path = self._create_temp_path(suffix=".png")
                     try:
                         await self._download_image(original_url, orig_temp_path)
-                        metadata = await asyncio.to_thread(
+                        exif_metadata = await asyncio.to_thread(
                             self._exif_utils.extract_image_metadata,
                             orig_temp_path,
                         )
                     finally:
                         self._safe_cleanup(orig_temp_path)
 
+            # Parse EXIF data (typically a string like parameters/prompt/workflow)
+            # and API metadata (dict with modelVersionIds, browsingLevel) separately,
+            # then merge: API loras/checkpoint override, EXIF gen_params fill in gaps.
+            # This mirrors the two-pass approach in _do_import_from_url.
+            exif_parsed_result = None
+            if isinstance(exif_metadata, str):
+                exif_parser = self._recipe_parser_factory.create_parser(exif_metadata)
+                if exif_parser:
+                    exif_data = await exif_parser.parse_metadata(
+                        exif_metadata, recipe_scanner=recipe_scanner,
+                    )
+                    if exif_data and not exif_data.get("error"):
+                        exif_parsed_result = exif_data
+
+            # Merge API metadata (dict) with EXIF data (if dict) for the
+            # CivitaiApiMetadataParser.  If EXIF data is a string it was
+            # parsed above — don't try to merge a string into a dict.
+            merged = {}
+            if isinstance(exif_metadata, dict):
+                merged.update(exif_metadata)
+            if isinstance(metadata, dict):
+                merged.update(metadata)
+
             result = await self._parse_metadata(
-                metadata or {},
+                merged,
                 recipe_scanner=recipe_scanner,
                 image_path=temp_path,
                 include_image_base64=True,
@@ -203,13 +260,23 @@ class RecipeAnalysisService:
                 extension=extension,
             )
 
-            if civitai_image_id and image_info and not result.payload.get("error"):
-                mvid = image_info.get("modelVersionId")
-                if not mvid:
-                    mvids = image_info.get("modelVersionIds")
-                    if isinstance(mvids, list) and mvids:
-                        mvid = mvids[0]
+            # Merge EXIF string-parsed gen_params into the API result.
+            # API gen_params take priority (they come later via update).
+            if exif_parsed_result and not result.payload.get("error"):
+                exif_gp = exif_parsed_result.get("gen_params") or {}
+                result_gp = result.payload.get("gen_params") or {}
+                merged_gp = {**exif_gp, **result_gp}
+                if merged_gp:
+                    result.payload["gen_params"] = merged_gp
 
+            if civitai_image_id and image_info and not result.payload.get("error"):
+                # Use the metadata dict we built (may contain modelVersionIds
+                # and browsingLevel from the API root level).  Do NOT pass
+                # image_info.get("meta") — it is null for images whose meta
+                # lives at the root level only.  Also do NOT derive
+                # model_version_id from modelVersionIds[0] — that array mixes
+                # checkpoints, LoRAs, and other types without ordering
+                # guarantees; the parser already resolved them correctly.
                 recipe_for_enrich = {
                     "gen_params": result.payload.get("gen_params", {}),
                     "loras": result.payload.get("loras", []),
@@ -222,8 +289,10 @@ class RecipeAnalysisService:
                     recipe=recipe_for_enrich,
                     civitai_client=civitai_client,
                     request_params=None,
-                    prefetched_civitai_meta_raw=image_info.get("meta"),
-                    prefetched_model_version_id=mvid,
+                    prefetched_civitai_meta_raw=(
+                        metadata if isinstance(metadata, dict) else None
+                    ),
+                    prefetched_model_version_id=None,
                 )
 
                 result.payload["gen_params"] = recipe_for_enrich["gen_params"]
@@ -231,6 +300,12 @@ class RecipeAnalysisService:
                     result.payload["checkpoint"] = recipe_for_enrich["checkpoint"]
                 if recipe_for_enrich.get("base_model"):
                     result.payload["base_model"] = recipe_for_enrich["base_model"]
+
+                # Extract browsingLevel from our constructed metadata for NSFW blur
+                if isinstance(metadata, dict):
+                    bl = metadata.get("browsingLevel")
+                    if isinstance(bl, int) and bl > 0:
+                        result.payload["preview_nsfw_level"] = bl
 
             return result
         finally:
@@ -314,6 +389,10 @@ class RecipeAnalysisService:
             "prompt_type",
             "positive",
             "negative",
+            # modelVersionIds is injected at the root level by CivitAI's image
+            # API when meta is null. It carries the version IDs of ALL models
+            # (checkpoint + LoRAs) used to generate the image.
+            "modelVersionIds",
         }
         return any(field in metadata for field in recipe_fields)
 

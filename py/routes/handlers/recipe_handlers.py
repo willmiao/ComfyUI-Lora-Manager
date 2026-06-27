@@ -32,6 +32,7 @@ from ...utils.civitai_utils import (
     extract_civitai_image_id_from_cdn_url,
     rewrite_preview_url,
 )
+from ...utils.constants import NSFW_LEVELS
 from ...utils.exif_utils import ExifUtils
 from ...recipes.merger import GenParamsMerger
 from ...recipes.enrichment import RecipeEnricher
@@ -1120,6 +1121,13 @@ class RecipeManagementHandler:
             if parsed_embedded.get("base_model") and not metadata.get("base_model"):
                 metadata["base_model"] = parsed_embedded["base_model"]
 
+        # Extract preview_nsfw_level from the CivitAI API response
+        # (injected into civitai_meta_raw by _download_remote_media).
+        if isinstance(civitai_meta_raw, dict):
+            bl = civitai_meta_raw.get("browsingLevel")
+            if isinstance(bl, int) and bl > 0:
+                metadata["preview_nsfw_level"] = bl
+
         civitai_client = self._civitai_client_getter()
         await RecipeEnricher.enrich_recipe(
             recipe=metadata,
@@ -1515,8 +1523,31 @@ class RecipeManagementHandler:
                     # CivitAI API returns modelVersionIds at the root level of
                     # the image response, NOT inside the meta object.
                     mvids = image_info.get("modelVersionIds")
-                    if mvids and isinstance(civitai_meta_raw, dict):
-                        civitai_meta_raw["modelVersionIds"] = mvids
+                    if mvids:
+                        if isinstance(civitai_meta_raw, dict):
+                            civitai_meta_raw["modelVersionIds"] = mvids
+                        else:
+                            # meta is null but modelVersionIds exists — create a
+                            # minimal dict so downstream parsers can discover
+                            # LoRAs and checkpoints from the API response.
+                            civitai_meta_raw = {"modelVersionIds": mvids}
+
+                    # Inject browsingLevel (canonical integer) so the recipe's
+                    # preview_nsfw_level can be set, enabling proper NSFW blur
+                    # of the preview image.  Fall back to nsfwLevel (string)
+                    # when browsingLevel is absent.
+                    if isinstance(civitai_meta_raw, dict):
+                        browsing_level = image_info.get("browsingLevel")
+                        nsfw_level_str = image_info.get("nsfwLevel")
+                        if isinstance(browsing_level, int) and browsing_level > 0:
+                            civitai_meta_raw["browsingLevel"] = browsing_level
+                        elif (
+                            isinstance(nsfw_level_str, str)
+                            and nsfw_level_str in NSFW_LEVELS
+                        ):
+                            civitai_meta_raw["browsingLevel"] = NSFW_LEVELS[
+                                nsfw_level_str
+                            ]
 
                 original_url = (
                     image_info.get("url") if civitai_image_id and image_info else None
@@ -1795,6 +1826,13 @@ class RecipeManagementHandler:
             "gen_params": embedded_gen_params or {},
             "source_path": image_url,
         }
+
+        # Extract preview_nsfw_level from the CivitAI API response
+        # (injected into civitai_meta_raw by _download_remote_media).
+        if isinstance(civitai_meta_raw, dict):
+            bl = civitai_meta_raw.get("browsingLevel")
+            if isinstance(bl, int) and bl > 0:
+                metadata["preview_nsfw_level"] = bl
 
         if civitai_parsed:
             civitai_loras = civitai_parsed.get("loras", [])

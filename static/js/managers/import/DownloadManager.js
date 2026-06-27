@@ -57,8 +57,15 @@ export class DownloadManager {
                     base_model: this.importManager.recipeData.base_model || "",
                     loras: this.importManager.recipeData.loras || [],
                     gen_params: this.importManager.recipeData.gen_params || {},
-                    raw_metadata: this.importManager.recipeData.raw_metadata || {}
+                    raw_metadata: this.importManager.recipeData.raw_metadata || {},
                 };
+
+                // Preserve preview_nsfw_level from analysis so the saved
+                // recipe applies the correct NSFW blur on the preview image.
+                const nsfwLevel = this.importManager.recipeData.preview_nsfw_level;
+                if (nsfwLevel !== undefined && nsfwLevel !== null) {
+                    completeMetadata.preview_nsfw_level = nsfwLevel;
+                }
 
                 const checkpointMetadata =
                     this.importManager.recipeData.checkpoint ||

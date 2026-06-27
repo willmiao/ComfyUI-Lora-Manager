@@ -523,6 +523,10 @@ class BatchImportService:
                 if payload.get("checkpoint"):
                     metadata["checkpoint"] = payload["checkpoint"]
 
+                nsfw = payload.get("preview_nsfw_level")
+                if isinstance(nsfw, int) and nsfw > 0:
+                    metadata["preview_nsfw_level"] = nsfw
+
                 image_bytes = None
                 image_base64 = payload.get("image_base64")
 
