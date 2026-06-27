@@ -147,6 +147,8 @@ DIFFUSION_MODEL_BASE_MODELS = frozenset(
         "Qwen",
         "ZImageBase",
         "ZImageTurbo",
+        # Krea 2 — loaded via UNETLoader in ComfyUI
+        "Krea 2",
     ]
 )
 

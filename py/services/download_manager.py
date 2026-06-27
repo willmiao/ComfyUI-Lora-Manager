@@ -1288,10 +1288,24 @@ class DownloadManager:
                     "download_id": download_id,
                 }
 
-            # Check if this checkpoint should be treated as a diffusion model based on baseModel
+            # Check if this checkpoint should be treated as a diffusion model
+            # Priority: (1) any file has type "UNet" or "Diffusion Model",
+            #            (2) baseModel is in DIFFUSION_MODEL_BASE_MODELS
             is_diffusion_model = False
             if model_type == "checkpoint":
-                if base_model_value in DIFFUSION_MODEL_BASE_MODELS:
+                # Check file types first (more direct signal from CivitAI)
+                version_files = version_info.get("files", [])
+                for f in version_files:
+                    f_type = f.get("type", "")
+                    if f_type in ("UNet", "Diffusion Model"):
+                        is_diffusion_model = True
+                        logger.info(
+                            f"File type '{f_type}' detected, routing checkpoint to unet folder"
+                        )
+                        break
+
+                # Fallback to baseModel name check
+                if not is_diffusion_model and base_model_value in DIFFUSION_MODEL_BASE_MODELS:
                     is_diffusion_model = True
                     logger.info(
                         f"baseModel '{base_model_value}' is a known diffusion model, routing to unet folder"
@@ -1420,7 +1434,7 @@ class DownloadManager:
                             f
                             for f in files
                             if f.get("primary")
-                            and f.get("type") in ("Model", "Negative", "Diffusion Model")
+                            and f.get("type") in ("Model", "Negative", "Diffusion Model", "UNet")
                         ),
                         None,
                     )
@@ -1451,7 +1465,7 @@ class DownloadManager:
                     (
                         f
                         for f in files
-                        if f.get("primary") and f.get("type") in ("Model", "Negative", "Diffusion Model")
+                        if f.get("primary") and f.get("type") in ("Model", "Negative", "Diffusion Model", "UNet")
                     ),
                     None,
                 )

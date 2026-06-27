@@ -351,7 +351,7 @@ export class DownloadManager {
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
 
             // Count model-type files per version
-            const modelFiles = (version.files || []).filter(f => f.type === 'Model');
+            const modelFiles = (version.files || []).filter(f => f.type === 'Model' || f.type === 'UNet' || f.type === 'Diffusion Model');
             const primaryFile = modelFiles.find(f => f.primary) || modelFiles[0] || {};
             const fileSize = version.modelSizeKB ?
                 (version.modelSizeKB / 1024).toFixed(2) :
@@ -478,7 +478,7 @@ export class DownloadManager {
         if (!version) return;
 
         this.currentVersion = version;
-        const modelFiles = (version.files || []).filter(f => f.type === 'Model');
+        const modelFiles = (version.files || []).filter(f => f.type === 'Model' || f.type === 'UNet' || f.type === 'Diffusion Model');
 
         document.getElementById('versionStep').style.display = 'none';
         document.getElementById('fileSelectionStep').style.display = 'block';
@@ -534,7 +534,7 @@ export class DownloadManager {
         const version = this.currentVersion;
         if (!version) return;
 
-        const modelFiles = (version.files || []).filter(f => f.type === 'Model');
+        const modelFiles = (version.files || []).filter(f => f.type === 'Model' || f.type === 'UNet' || f.type === 'Diffusion Model');
         this.selectedFile = modelFiles.find(f => f.id.toString() === selectedRadio.value);
 
         document.getElementById('fileSelectionStep').style.display = 'none';
@@ -954,7 +954,7 @@ export class DownloadManager {
         }
         if (!this.isBatchMode) {
             const fileParams = this.selectedFile ? {
-                type: 'Model',
+                type: this.selectedFile.type || 'Model',
                 format: this.selectedFile.metadata?.format || 'SafeTensor',
                 size: this.selectedFile.metadata?.size || 'full',
                 fp: this.selectedFile.metadata?.fp,
