@@ -586,7 +586,9 @@ class FakePromptServer:
     sent = []
 
     class Instance:
-        def send_sync(self, event, payload):
+        sockets: dict = {}
+
+        def send_sync(self, event, payload, sid=None):
             FakePromptServer.sent.append((event, payload))
 
     instance = Instance()
@@ -601,7 +603,12 @@ async def test_register_nodes_requires_graph_id():
         standalone_mode=False,
     )
 
-    request = FakeRequest(json_data={"nodes": [{"node_id": 1}]})
+    request = FakeRequest(
+        json_data={
+            "nodes": [{"node_id": 1}],
+            "client_id": "test-client-1",
+        }
+    )
     response = await handler.register_nodes(request)
     payload = json.loads(response.text)
 
@@ -629,7 +636,8 @@ async def test_register_nodes_stores_graph_identifier():
                     "type": "Lora Loader (LoraManager)",
                     "title": "Loader",
                 }
-            ]
+            ],
+            "client_id": "test-client-1",
         }
     )
 
@@ -638,7 +646,7 @@ async def test_register_nodes_stores_graph_identifier():
 
     assert payload["success"] is True
 
-    registry = await node_registry.get_registry()
+    registry = await node_registry.get_merged_registry()
     assert registry["node_count"] == 1
     stored_node = next(iter(registry["nodes"].values()))
     assert stored_node["graph_id"] == "graph-123"
@@ -664,7 +672,8 @@ async def test_register_nodes_defaults_graph_name_to_none():
                     "type": "Lora Loader (LoraManager)",
                     "title": "Root Loader",
                 }
-            ]
+            ],
+            "client_id": "test-client-1",
         }
     )
 
@@ -673,7 +682,7 @@ async def test_register_nodes_defaults_graph_name_to_none():
 
     assert payload["success"] is True
 
-    registry = await node_registry.get_registry()
+    registry = await node_registry.get_merged_registry()
     stored_node = next(iter(registry["nodes"].values()))
     assert stored_node["graph_name"] is None
 
@@ -700,7 +709,8 @@ async def test_register_nodes_includes_capabilities():
                         "widget_names": ["ckpt_name", "", 42],
                     },
                 }
-            ]
+            ],
+            "client_id": "test-client-1",
         }
     )
 
@@ -709,7 +719,7 @@ async def test_register_nodes_includes_capabilities():
 
     assert payload["success"] is True
 
-    registry = await node_registry.get_registry()
+    registry = await node_registry.get_merged_registry()
     stored_node = next(iter(registry["nodes"].values()))
     assert stored_node["capabilities"] == {
         "supports_lora": False,
@@ -724,7 +734,9 @@ async def test_update_node_widget_sends_payload():
 
     class RecordingPromptServer:
         class Instance:
-            def send_sync(self, event, payload):
+            sockets: dict = {}
+
+            def send_sync(self, event, payload, sid=None):
                 send_calls.append((event, payload))
 
         instance = Instance()
@@ -768,7 +780,9 @@ async def test_update_lora_code_includes_graph_identifier():
 
     class RecordingPromptServer:
         class Instance:
-            def send_sync(self, event, payload):
+            sockets: dict = {}
+
+            def send_sync(self, event, payload, sid=None):
                 send_calls.append((event, payload))
 
         instance = Instance()

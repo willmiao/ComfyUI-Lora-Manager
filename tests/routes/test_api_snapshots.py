@@ -60,7 +60,9 @@ class FakePromptServer:
     sent = []
 
     class Instance:
-        def send_sync(self, event, payload):
+        sockets: dict = {}
+
+        def send_sync(self, event, payload, sid=None):
             FakePromptServer.sent.append((event, payload))
 
     instance = Instance()
@@ -148,7 +150,8 @@ class TestNodeRegistryHandlerSnapshots:
                         "type": "Lora Loader (LoraManager)",
                         "title": "Test Loader",
                     }
-                ]
+                ],
+                "client_id": "test-client-1",
             }
         )
 
@@ -167,7 +170,7 @@ class TestNodeRegistryHandlerSnapshots:
             standalone_mode=False,
         )
 
-        request = FakeRequest(json_data={"nodes": []})
+        request = FakeRequest(json_data={"nodes": [], "client_id": "test-client-1"})
         response = await handler.register_nodes(request)
         payload = json.loads(response.text)
 

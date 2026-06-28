@@ -151,7 +151,10 @@ app.registerExtension({
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ nodes: workflowNodes }),
+                body: JSON.stringify({
+                    nodes: workflowNodes,
+                    client_id: api.clientId ?? api.initialClientId ?? "",
+                }),
             });
 
             if (!response.ok) {
