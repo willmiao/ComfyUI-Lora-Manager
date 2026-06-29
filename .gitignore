@@ -7,6 +7,10 @@ py/run_test.py
 .vscode/
 cache/
 civitai/
+stats/
+wildcards/
+backups/
+logs/
 node_modules/
 coverage/
 .coverage
