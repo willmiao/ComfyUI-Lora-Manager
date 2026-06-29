@@ -16,6 +16,27 @@ logger = logging.getLogger(__name__)
 
 NETWORK_EXCEPTIONS = (ClientError, OSError, asyncio.TimeoutError)
 
+# User-managed directories that live inside the plugin folder (portable
+# mode) and must survive a Git-based update. ``git clean -fd`` would
+# otherwise delete them because they are untracked and, in released tags,
+# not listed in ``.gitignore``. ``-e`` excludes a path from cleaning
+# regardless of whether it is ignored.
+_PRESERVE_DIRS = ('settings.json', 'civitai', 'wildcards', 'backups', 'stats', 'logs', 'cache', 'model_cache')
+
+
+def _clean_excludes() -> List[str]:
+    """Build the ``-e`` arguments for ``git clean`` from :data:`_PRESERVE_DIRS`."""
+    excludes: List[str] = []
+    for name in _PRESERVE_DIRS:
+        excludes.append('-e')
+        excludes.append(name)
+        # For directories, also exclude nested matches explicitly
+        # (``-e dir`` alone matches the dir entry; ``-e dir/**`` guards
+        # contents under all git versions as defense-in-depth).
+        excludes.append('-e')
+        excludes.append(f'{name}/**')
+    return excludes
+
 
 class UpdateRoutes:
     """Routes for handling plugin update checks"""
@@ -365,6 +386,8 @@ class UpdateRoutes:
             )
             return False, ""
 
+        clean_excludes = _clean_excludes()
+
         try:
             # Open the Git repository
             repo = git.Repo(plugin_root)
@@ -376,8 +399,9 @@ class UpdateRoutes:
             if nightly:
                 # Reset to discard any local changes
                 repo.git.reset('--hard')
-                # Clean untracked files
-                repo.git.clean('-fd')
+                # Clean untracked files, but preserve user-managed directories
+                # (wildcards, backups, stats, civitai, caches, settings.json).
+                repo.git.clean('-fd', *clean_excludes)
                 
                 # Switch to main branch and pull latest
                 main_branch = 'main'
@@ -394,8 +418,9 @@ class UpdateRoutes:
             else:
                 # Reset to discard any local changes
                 repo.git.reset('--hard')
-                # Clean untracked files
-                repo.git.clean('-fd')
+                # Clean untracked files, but preserve user-managed directories
+                # (wildcards, backups, stats, civitai, caches, settings.json).
+                repo.git.clean('-fd', *clean_excludes)
                 
                 # Get latest release tag
                 tags = sorted(repo.tags, key=lambda t: t.commit.committed_datetime, reverse=True)
