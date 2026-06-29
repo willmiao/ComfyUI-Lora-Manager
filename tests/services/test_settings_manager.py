@@ -200,52 +200,97 @@ def _setup_storage_paths(tmp_path, monkeypatch):
     return project_root, user_dir, user_settings_path
 
 
-def _populate_cache(root_dir, marker_name, db_text):
-    cache_dir = root_dir / "model_cache"
-    cache_dir.mkdir(exist_ok=True)
-    marker_file = cache_dir / marker_name
-    marker_file.write_text(marker_name, encoding="utf-8")
-    (root_dir / "model_cache.sqlite").write_text(db_text, encoding="utf-8")
+def _populate_settings_dir(root_dir):
+    """Create test data for all managed subdirectories under a settings directory."""
+    (root_dir / "cache" / "symlink").mkdir(parents=True, exist_ok=True)
+    (root_dir / "cache" / "symlink" / "symlink_map.json").write_text(
+        '{"migrated": true}', encoding="utf-8"
+    )
+    (root_dir / "backups").mkdir(parents=True, exist_ok=True)
+    (root_dir / "backups" / "backup_test.zip").write_text(
+        "backup", encoding="utf-8"
+    )
+    (root_dir / "logs").mkdir(parents=True, exist_ok=True)
+    (root_dir / "logs" / "session.log").write_text("log", encoding="utf-8")
+    (root_dir / "stats").mkdir(parents=True, exist_ok=True)
+    (root_dir / "stats" / "stats.json").write_text(
+        '{"stats": true}', encoding="utf-8"
+    )
+    (root_dir / "wildcards").mkdir(parents=True, exist_ok=True)
+    (root_dir / "wildcards" / "test.txt").write_text("wildcard", encoding="utf-8")
 
 
-def test_switch_to_portable_mode_copies_cache(tmp_path, monkeypatch):
+def test_switch_to_portable_mode_copies_subdirectories(tmp_path, monkeypatch):
     project_root, user_dir, user_settings = _setup_storage_paths(tmp_path, monkeypatch)
-    _populate_cache(user_dir, "user_marker.txt", "user_db")
+    _populate_settings_dir(user_dir)
 
     manager = SettingsManager()
 
     manager.set("use_portable_settings", True)
 
     assert manager.settings_file == str(project_root / "settings.json")
-    marker_copy = project_root / "model_cache" / "user_marker.txt"
-    assert marker_copy.read_text(encoding="utf-8") == "user_marker.txt"
-    assert (project_root / "model_cache.sqlite").read_text(
+    # Managed subdirectories should all be migrated
+    assert (
+        project_root / "cache" / "symlink" / "symlink_map.json"
+    ).read_text(encoding="utf-8") == '{"migrated": true}'
+    assert (
+        project_root / "backups" / "backup_test.zip"
+    ).read_text(encoding="utf-8") == "backup"
+    assert (project_root / "logs" / "session.log").read_text(
         encoding="utf-8"
-    ) == "user_db"
+    ) == "log"
+    assert (project_root / "stats" / "stats.json").read_text(
+        encoding="utf-8"
+    ) == '{"stats": true}'
+    assert (project_root / "wildcards" / "test.txt").read_text(
+        encoding="utf-8"
+    ) == "wildcard"
     assert user_settings.exists()
 
 
-def test_switching_back_to_user_config_moves_cache(tmp_path, monkeypatch):
+def test_switching_back_to_user_config_moves_subdirectories(tmp_path, monkeypatch):
     project_root, user_dir, user_settings = _setup_storage_paths(tmp_path, monkeypatch)
-    _populate_cache(user_dir, "user_marker.txt", "user_db")
+    _populate_settings_dir(user_dir)
 
     manager = SettingsManager()
     manager.set("use_portable_settings", True)
 
-    project_cache_dir = project_root / "model_cache"
-    project_cache_dir.mkdir(exist_ok=True)
-    (project_cache_dir / "project_marker.txt").write_text(
-        "project_marker", encoding="utf-8"
+    # Populate project-root managed subdirectories
+    (project_root / "cache" / "model").mkdir(parents=True, exist_ok=True)
+    (project_root / "cache" / "model" / "default.sqlite").write_text(
+        "project_db", encoding="utf-8"
     )
-    (project_root / "model_cache.sqlite").write_text("project_db", encoding="utf-8")
+    (project_root / "backups" / "project_backup.zip").write_text(
+        "project_backup", encoding="utf-8"
+    )
+    (project_root / "logs" / "project.log").write_text(
+        "project_log", encoding="utf-8"
+    )
+    (project_root / "stats" / "project_stats.json").write_text(
+        '{"project": true}', encoding="utf-8"
+    )
+    (project_root / "wildcards" / "project.txt").write_text(
+        "project_wildcard", encoding="utf-8"
+    )
 
     manager.set("use_portable_settings", False)
 
     assert manager.settings_file == str(user_settings)
-    assert (user_dir / "model_cache" / "project_marker.txt").read_text(
+    assert (user_dir / "cache" / "model" / "default.sqlite").read_text(
         encoding="utf-8"
-    ) == "project_marker"
-    assert (user_dir / "model_cache.sqlite").read_text(encoding="utf-8") == "project_db"
+    ) == "project_db"
+    assert (user_dir / "backups" / "project_backup.zip").read_text(
+        encoding="utf-8"
+    ) == "project_backup"
+    assert (user_dir / "logs" / "project.log").read_text(
+        encoding="utf-8"
+    ) == "project_log"
+    assert (user_dir / "stats" / "project_stats.json").read_text(
+        encoding="utf-8"
+    ) == '{"project": true}'
+    assert (user_dir / "wildcards" / "project.txt").read_text(
+        encoding="utf-8"
+    ) == "project_wildcard"
 
 
 def test_download_path_template_parses_json_string(manager):

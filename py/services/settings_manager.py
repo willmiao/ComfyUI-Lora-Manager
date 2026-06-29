@@ -1568,7 +1568,7 @@ class SettingsManager:
         previous_dir = os.path.dirname(previous_path) or target_dir
 
         if os.path.abspath(previous_path) != os.path.abspath(target_path):
-            self._copy_model_cache_directory(previous_dir, target_dir)
+            self._migrate_settings_directory_content(previous_dir, target_dir)
             logger.info("Switching settings file to: %s", target_path)
 
         self._pending_portable_switch = {"other_path": other_path}
@@ -1603,46 +1603,52 @@ class SettingsManager:
         finally:
             self._pending_portable_switch = None
 
-    def _copy_model_cache_directory(self, source_dir: str, target_dir: str) -> None:
-        """Copy model_cache artifacts when switching storage locations."""
+    def _migrate_settings_directory_content(
+        self, source_dir: str, target_dir: str
+    ) -> None:
+        """Migrate settings directory subdirectories when switching storage locations.
+
+        Copies the canonical subdirectories (cache, backups, logs, stats, wildcards)
+        from the old settings directory to the new one. Legacy cache artifacts
+        (model_cache, recipe_cache, etc.) are migrated lazily by
+        ``resolve_cache_path_with_migration`` on first access.
+
+        Args:
+            source_dir: The previous settings directory path.
+            target_dir: The new settings directory path.
+        """
 
         if not source_dir or not target_dir:
             return
 
-        source_cache_dir = os.path.join(source_dir, "model_cache")
-        target_cache_dir = os.path.join(target_dir, "model_cache")
-        if os.path.isdir(source_cache_dir) and os.path.abspath(
-            source_cache_dir
-        ) != os.path.abspath(target_cache_dir):
-            try:
-                shutil.copytree(
-                    source_cache_dir,
-                    target_cache_dir,
-                    dirs_exist_ok=True,
-                    ignore=shutil.ignore_patterns("*.sqlite-shm", "*.sqlite-wal"),
-                )
-            except Exception as exc:
-                logger.warning(
-                    "Failed to copy model_cache directory from %s to %s: %s",
-                    source_cache_dir,
-                    target_cache_dir,
-                    exc,
-                )
+        def _copy_dir(name: str) -> None:
+            source = os.path.join(source_dir, name)
+            target = os.path.join(target_dir, name)
+            if os.path.isdir(source) and os.path.abspath(source) != os.path.abspath(
+                target
+            ):
+                try:
+                    shutil.copytree(
+                        source,
+                        target,
+                        dirs_exist_ok=True,
+                        ignore=shutil.ignore_patterns("*.sqlite-shm", "*.sqlite-wal"),
+                    )
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to copy directory %s from %s to %s: %s",
+                        name,
+                        source,
+                        target,
+                        exc,
+                    )
 
-        source_cache_file = os.path.join(source_dir, "model_cache.sqlite")
-        target_cache_file = os.path.join(target_dir, "model_cache.sqlite")
-        if os.path.isfile(source_cache_file) and os.path.abspath(
-            source_cache_file
-        ) != os.path.abspath(target_cache_file):
-            try:
-                shutil.copy2(source_cache_file, target_cache_file)
-            except Exception as exc:
-                logger.warning(
-                    "Failed to copy model_cache.sqlite from %s to %s: %s",
-                    source_cache_file,
-                    target_cache_file,
-                    exc,
-                )
+        # Managed subdirectories under settings_dir
+        _copy_dir("cache")
+        _copy_dir("backups")
+        _copy_dir("logs")
+        _copy_dir("stats")
+        _copy_dir("wildcards")
 
     def _get_user_config_directory(self) -> str:
         """Return the user configuration directory, falling back to ~/.config."""
