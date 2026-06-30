@@ -327,7 +327,7 @@ class CivArchiveClient:
             if resolved:
                 return resolved, None
 
-            logger.error("Error fetching version of CivArchive model by hash %s", model_hash[:10])
+            logger.debug("Error fetching version of CivArchive model by hash %s", model_hash[:10])
             return None, "No version data found"
 
         except RateLimitError:
