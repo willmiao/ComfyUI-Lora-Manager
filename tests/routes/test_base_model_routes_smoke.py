@@ -201,6 +201,45 @@ def test_list_models_returns_formatted_items(mock_service, mock_scanner):
     asyncio.run(scenario())
 
 
+def test_list_models_filters_out_corrupted_entries(mock_service, mock_scanner):
+    """Corrupted cache entries (format_response returns None) must not appear
+    in the response items nor cause a 500. See issue #730.
+    """
+    mock_service.paginated_items = [
+        {"file_path": "/tmp/good.safetensors", "name": "Good"},
+        {"file_path": None, "name": "Corrupted"},  # triggers None from format_response
+        {"file_path": "/tmp/also_good.safetensors", "name": "AlsoGood"},
+    ]
+
+    # Override format_response to return None for corrupted entries
+    original_format = mock_service.format_response
+
+    async def conditional_format(item):
+        if item.get("file_path") is None:
+            return None
+        return await original_format(item)
+
+    mock_service.format_response = conditional_format
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get("/api/lm/test-models/list")
+            payload = await response.json()
+
+            assert response.status == 200
+            # Only the 2 non-corrupted entries should appear
+            assert len(payload["items"]) == 2
+            assert payload["items"][0]["name"] == "Good"
+            assert payload["items"][1]["name"] == "AlsoGood"
+            # None should never appear in the items list
+            assert None not in payload["items"]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
 def test_model_types_endpoint_returns_counts(mock_service, mock_scanner):
     mock_service.model_types = [
         {"type": "LoRa", "count": 3},

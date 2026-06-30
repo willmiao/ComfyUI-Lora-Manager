@@ -199,8 +199,107 @@ class TestEmbeddingServiceFormatResponse:
             "from_civitai": True,
             "civitai": {},
         }
-        
+
         result = await embedding_service.format_response(embedding_data)
-        
+
         assert result["sub_type"] == "embedding"
         assert "model_type" not in result  # Removed in refactoring
+
+
+class TestFormatResponseCorruptedEntries:
+    """Test format_response handles corrupted cache entries gracefully (issue #730).
+
+    When cache rows have None/missing critical fields (e.g. from a partially
+    written or legacy DB), format_response must NOT raise KeyError/AttributeError.
+    Instead it returns None so the handler layer can filter the bad entry out
+    instead of failing the entire listing request.
+    """
+
+    @pytest.fixture
+    def mock_scanner(self):
+        scanner = MagicMock()
+        scanner._hash_index = MagicMock()
+        return scanner
+
+    @pytest.fixture
+    def lora_service(self, mock_scanner):
+        return LoraService(mock_scanner)
+
+    @pytest.fixture
+    def checkpoint_service(self, mock_scanner):
+        return CheckpointService(mock_scanner)
+
+    @pytest.fixture
+    def embedding_service(self, mock_scanner):
+        return EmbeddingService(mock_scanner)
+
+    @pytest.mark.asyncio
+    async def test_lora_returns_none_on_missing_file_path(self, lora_service):
+        """format_response returns None when file_path is missing (corrupted row)."""
+        lora_data = {
+            "model_name": "Test LoRA",
+            "file_name": "test_lora",
+            "file_path": None,  # corrupted: missing file_path
+            "folder": "",
+            "sha256": "abc123",
+            "tags": [],
+            "from_civitai": True,
+            "civitai": {},
+        }
+        result = await lora_service.format_response(lora_data)
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_lora_handles_none_model_name_gracefully(self, lora_service):
+        """format_response should not crash when model_name is None (legacy DB row)."""
+        lora_data = {
+            "model_name": None,          # NULL from old DB row
+            "file_name": "test_lora",
+            "file_path": "/models/test_lora.safetensors",
+            "folder": "",
+            "sha256": "abc123",
+            "tags": [],
+            "from_civitai": True,
+            "civitai": {},
+        }
+        result = await lora_service.format_response(lora_data)
+        # Should not raise; model_name falls back to file_name
+        assert result is not None
+        assert result["model_name"] == "test_lora"
+
+    @pytest.mark.asyncio
+    async def test_checkpoint_returns_none_on_missing_file_path(self, checkpoint_service):
+        """format_response returns None when file_path is missing (corrupted row)."""
+        checkpoint_data = {
+            "model_name": "Test",
+            "file_name": "test",
+            "file_path": "",  # empty string == corrupted
+            "folder": "",
+            "sha256": "abc",
+            "tags": [],
+            "from_civitai": True,
+            "civitai": {},
+            "sub_type": "checkpoint",
+        }
+        result = await checkpoint_service.format_response(checkpoint_data)
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_embedding_handles_none_fields_gracefully(self, embedding_service):
+        """format_response should not crash when optional fields are None."""
+        embedding_data = {
+            "model_name": None,
+            "file_name": None,
+            "file_path": "/models/test.pt",
+            "folder": None,
+            "sha256": "abc",
+            "tags": [],
+            "from_civitai": True,
+            "civitai": {},
+            "sub_type": "embedding",
+        }
+        result = await embedding_service.format_response(embedding_data)
+        assert result is not None
+        assert result["file_path"] == "/models/test.pt"
+        # model_name falls back to file_name which falls back to ""
+        assert result["model_name"] == ""

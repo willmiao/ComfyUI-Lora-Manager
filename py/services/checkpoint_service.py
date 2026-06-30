@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from .base_model_service import BaseModelService
 from .auto_tag_service import extract_auto_tags
@@ -21,20 +21,37 @@ class CheckpointService(BaseModelService):
         """
         super().__init__("checkpoint", scanner, CheckpointMetadata, update_service=update_service)
     
-    async def format_response(self, checkpoint_data: Dict) -> Dict:
-        """Format Checkpoint data for API response"""
+    async def format_response(self, checkpoint_data: Dict) -> Optional[Dict]:
+        """Format Checkpoint data for API response.
+
+        Returns None when the entry is missing critical fields (corrupted cache
+        row), so the handler layer can filter it out. See issue #730.
+        """
+        # Guard against corrupted cache entries missing critical fields
+        file_path = checkpoint_data.get("file_path")
+        if not file_path or not isinstance(file_path, str):
+            logger.warning(
+                "Skipping corrupted checkpoint entry (missing file_path): %s",
+                checkpoint_data.get("file_name", "<unknown>"),
+            )
+            return None
+
         # Get sub_type from cache entry (new canonical field)
         sub_type = checkpoint_data.get("sub_type", "checkpoint")
-        
+
+        file_name = checkpoint_data.get("file_name") or ""
+        model_name = checkpoint_data.get("model_name") or file_name
+        folder = checkpoint_data.get("folder") or ""
+
         return {
-            "model_name": checkpoint_data["model_name"],
-            "file_name": checkpoint_data["file_name"],
+            "model_name": model_name,
+            "file_name": file_name,
             "preview_url": config.get_preview_static_url(checkpoint_data.get("preview_url", "")),
             "preview_nsfw_level": checkpoint_data.get("preview_nsfw_level", 0),
             "base_model": checkpoint_data.get("base_model", ""),
-            "folder": checkpoint_data["folder"],
+            "folder": folder,
             "sha256": checkpoint_data.get("sha256", ""),
-            "file_path": checkpoint_data["file_path"].replace(os.sep, "/"),
+            "file_path": file_path.replace(os.sep, "/"),
             "file_size": checkpoint_data.get("size", 0),
             "modified": checkpoint_data.get("modified", ""),
             "tags": checkpoint_data.get("tags", []),

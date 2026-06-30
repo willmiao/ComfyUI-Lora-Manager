@@ -476,10 +476,19 @@ class ModelScanner:
             for tag in adjusted_item.get('tags') or []:
                 tags_count[tag] = tags_count.get(tag, 0) + 1
 
-        # Validate cache entries and check health
+        # Validate cache entries and check health.
+        # Always use the validated/repaired entries — even when there are no
+        # invalid entries, auto_repair may have filled in missing optional
+        # fields (model_name, file_name, folder) with safe defaults on a copied
+        # working_entry.  Without this unconditional replacement the repaired
+        # copies are discarded and None values propagate to format_response.
+        # See issue #730.
         valid_entries, invalid_entries = CacheEntryValidator.validate_batch(
             adjusted_raw_data, auto_repair=True
         )
+
+        # Always use the validated entries (repaired copies)
+        adjusted_raw_data = valid_entries
 
         if invalid_entries:
             monitor = CacheHealthMonitor()

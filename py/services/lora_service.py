@@ -24,23 +24,41 @@ class LoraService(BaseModelService):
         """
         super().__init__("lora", scanner, LoraMetadata, update_service=update_service)
 
-    async def format_response(self, lora_data: Dict) -> Dict:
-        """Format LoRA data for API response"""
+    async def format_response(self, lora_data: Dict) -> Optional[Dict]:
+        """Format LoRA data for API response.
+
+        Returns None when the entry is missing critical fields (corrupted cache
+        row), so the handler layer can filter it out instead of crashing the
+        whole listing request. See issue #730.
+        """
+        # Guard against corrupted cache entries missing critical fields
+        file_path = lora_data.get("file_path")
+        if not file_path or not isinstance(file_path, str):
+            logger.warning(
+                "Skipping corrupted LoRA entry (missing file_path): %s",
+                lora_data.get("file_name", "<unknown>"),
+            )
+            return None
+
         # Resolve sub_type using priority: sub_type > model_type > civitai.model.type > default
         # Normalize to lowercase for consistent API responses
         sub_type = resolve_sub_type(lora_data).lower()
 
+        file_name = lora_data.get("file_name") or ""
+        model_name = lora_data.get("model_name") or file_name
+        folder = lora_data.get("folder") or ""
+
         return {
-            "model_name": lora_data["model_name"],
-            "file_name": lora_data["file_name"],
+            "model_name": model_name,
+            "file_name": file_name,
             "preview_url": config.get_preview_static_url(
                 lora_data.get("preview_url", "")
             ),
             "preview_nsfw_level": lora_data.get("preview_nsfw_level", 0),
             "base_model": lora_data.get("base_model", ""),
-            "folder": lora_data["folder"],
+            "folder": folder,
             "sha256": lora_data.get("sha256", ""),
-            "file_path": lora_data["file_path"].replace(os.sep, "/"),
+            "file_path": file_path.replace(os.sep, "/"),
             "file_size": lora_data.get("size", 0),
             "modified": lora_data.get("modified", ""),
             "tags": lora_data.get("tags", []),

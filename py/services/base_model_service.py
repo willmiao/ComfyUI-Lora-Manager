@@ -791,8 +791,12 @@ class BaseModelService(ABC):
         }
 
     @abstractmethod
-    async def format_response(self, model_data: Dict) -> Dict:
-        """Format model data for API response - must be implemented by subclasses"""
+    async def format_response(self, model_data: Dict) -> Optional[Dict]:
+        """Format model data for API response - must be implemented by subclasses.
+
+        Subclasses should return None for corrupted entries so the handler
+        layer can filter them out. See issue #730.
+        """
         pass
 
     # Common service methods that delegate to scanner

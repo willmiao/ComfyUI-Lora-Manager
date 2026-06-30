@@ -1,6 +1,6 @@
 import os
 import logging
-from typing import Dict
+from typing import Dict, Optional
 
 from .base_model_service import BaseModelService
 from .auto_tag_service import extract_auto_tags
@@ -21,20 +21,37 @@ class EmbeddingService(BaseModelService):
         """
         super().__init__("embedding", scanner, EmbeddingMetadata, update_service=update_service)
     
-    async def format_response(self, embedding_data: Dict) -> Dict:
-        """Format Embedding data for API response"""
+    async def format_response(self, embedding_data: Dict) -> Optional[Dict]:
+        """Format Embedding data for API response.
+
+        Returns None when the entry is missing critical fields (corrupted cache
+        row), so the handler layer can filter it out. See issue #730.
+        """
+        # Guard against corrupted cache entries missing critical fields
+        file_path = embedding_data.get("file_path")
+        if not file_path or not isinstance(file_path, str):
+            logger.warning(
+                "Skipping corrupted embedding entry (missing file_path): %s",
+                embedding_data.get("file_name", "<unknown>"),
+            )
+            return None
+
         # Get sub_type from cache entry (new canonical field)
         sub_type = embedding_data.get("sub_type", "embedding")
-        
+
+        file_name = embedding_data.get("file_name") or ""
+        model_name = embedding_data.get("model_name") or file_name
+        folder = embedding_data.get("folder") or ""
+
         return {
-            "model_name": embedding_data["model_name"],
-            "file_name": embedding_data["file_name"],
+            "model_name": model_name,
+            "file_name": file_name,
             "preview_url": config.get_preview_static_url(embedding_data.get("preview_url", "")),
             "preview_nsfw_level": embedding_data.get("preview_nsfw_level", 0),
             "base_model": embedding_data.get("base_model", ""),
-            "folder": embedding_data["folder"],
+            "folder": folder,
             "sha256": embedding_data.get("sha256", ""),
-            "file_path": embedding_data["file_path"].replace(os.sep, "/"),
+            "file_path": file_path.replace(os.sep, "/"),
             "file_size": embedding_data.get("size", 0),
             "modified": embedding_data.get("modified", ""),
             "tags": embedding_data.get("tags", []),

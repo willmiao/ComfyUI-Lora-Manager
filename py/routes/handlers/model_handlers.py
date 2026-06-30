@@ -203,11 +203,17 @@ class ModelListingHandler:
             result = await self._service.get_paginated_data(**params)
 
             format_start = time.perf_counter()
+            formatted_raw = [
+                await self._service.format_response(entry)
+                for entry in result["items"]
+            ]
+            # Filter out None entries returned for corrupted cache rows (issue #730).
+            # Note: "total" intentionally remains the pre-filter count to reflect
+            # the true number of models in the cache; corrupted entries are rare
+            # and adjusting total would cause pagination drift on every page.
+            formatted_items = [item for item in formatted_raw if item is not None]
             formatted_result = {
-                "items": [
-                    await self._service.format_response(item)
-                    for item in result["items"]
-                ],
+                "items": formatted_items,
                 "total": result["total"],
                 "page": result["page"],
                 "page_size": result["page_size"],
@@ -238,11 +244,15 @@ class ModelListingHandler:
             result = await self._service.get_excluded_paginated_data(**params)
 
             format_start = time.perf_counter()
+            formatted_raw = [
+                await self._service.format_response(entry)
+                for entry in result["items"]
+            ]
+            # Filter out None entries returned for corrupted cache rows (issue #730).
+            # "total" stays at the pre-filter count; see get_models for rationale.
+            formatted_items = [item for item in formatted_raw if item is not None]
             formatted_result = {
-                "items": [
-                    await self._service.format_response(item)
-                    for item in result["items"]
-                ],
+                "items": formatted_items,
                 "total": result["total"],
                 "page": result["page"],
                 "page_size": result["page_size"],
@@ -533,8 +543,13 @@ class ModelManagementHandler:
             if not success:
                 return web.json_response({"success": False, "error": error})
 
-            formatted_metadata = await self._service.format_response(model_data)
-            return web.json_response({"success": True, "metadata": formatted_metadata})
+            formatted = await self._service.format_response(model_data)
+            if formatted is None:
+                return web.json_response(
+                    {"success": False, "error": "Model entry is corrupted (missing file_path)"},
+                    status=500,
+                )
+            return web.json_response({"success": True, "metadata": formatted})
         except Exception as exc:
             if is_expected_offline_error(str(exc)):
                 return web.json_response(
@@ -1091,10 +1106,12 @@ class ModelQueryHandler:
                 # Sort: originals first, copies last
                 sorted_models = self._sort_duplicate_group(filtered)
 
-                # Format response
+                # Format response, filtering out corrupted entries (issue #730)
                 group = {"hash": sha256, "models": []}
                 for model in sorted_models:
-                    group["models"].append(await self._service.format_response(model))
+                    formatted = await self._service.format_response(model)
+                    if formatted is not None:
+                        group["models"].append(formatted)
 
                 # Only include groups with 2+ models after filtering
                 if len(group["models"]) > 1:
@@ -1211,9 +1228,9 @@ class ModelQueryHandler:
                         (m for m in cache.raw_data if m["file_path"] == path), None
                     )
                     if model:
-                        group["models"].append(
-                            await self._service.format_response(model)
-                        )
+                        formatted = await self._service.format_response(model)
+                        if formatted is not None:
+                            group["models"].append(formatted)
                 hash_val = self._service.scanner.get_hash_by_filename(filename)
                 if hash_val:
                     main_path = self._service.get_path_by_hash(hash_val)
@@ -1223,9 +1240,9 @@ class ModelQueryHandler:
                             None,
                         )
                         if main_model:
-                            group["models"].insert(
-                                0, await self._service.format_response(main_model)
-                            )
+                            formatted = await self._service.format_response(main_model)
+                            if formatted is not None:
+                                group["models"].insert(0, formatted)
                 if group["models"]:
                     result.append(group)
             return web.json_response(
