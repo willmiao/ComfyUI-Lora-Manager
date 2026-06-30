@@ -94,6 +94,13 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/delete-model-version", "delete_model_version"
     ),
+    # Hugging Face model endpoints
+    RouteDefinition(
+        "GET", "/api/lm/hf-repo-files", "get_hf_repo_files"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/download-hf-model", "download_hf_model"
+    ),
 )
 
 

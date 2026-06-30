@@ -190,6 +190,12 @@ export const DOWNLOAD_ENDPOINTS = {
     exampleImages: '/api/lm/force-download-example-images' // New endpoint for downloading example images
 };
 
+// Hugging Face API endpoints
+export const HF_ENDPOINTS = {
+    repoFiles: '/api/lm/hf-repo-files',
+    download: '/api/lm/download-hf-model',
+};
+
 // WebSocket endpoints
 export const WS_ENDPOINTS = {
     fetchProgress: '/ws/fetch-progress'

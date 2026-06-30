@@ -822,3 +822,111 @@
 [data-theme="dark"] .batch-preview-item {
     background: var(--lora-surface);
 }
+
+/* HF Repo File Explorer Step */
+.hf-repo-header {
+    margin-bottom: var(--space-2);
+    font-size: 0.95em;
+    color: var(--text-color);
+    opacity: 0.8;
+}
+
+.repo-file-list {
+    max-height: 360px;
+    overflow-y: auto;
+    margin: var(--space-2) 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.repo-file-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    transition: var(--transition-base);
+    background: var(--bg-color);
+}
+
+.repo-file-item:hover {
+    border-color: var(--lora-accent);
+    box-shadow: var(--shadow-sm);
+}
+
+.repo-file-item.selected {
+    border: 2px solid var(--lora-accent);
+    background: oklch(var(--lora-accent) / 0.05);
+}
+
+.repo-file-item .repo-file-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--lora-accent);
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+}
+
+.repo-file-icon {
+    font-size: 1.2em;
+    color: var(--text-color);
+    opacity: 0.6;
+    width: 24px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.repo-file-name {
+    flex: 1;
+    font-weight: 500;
+    font-size: 0.95em;
+    word-break: keep-all;
+    overflow-wrap: anywhere;
+    min-width: 0;
+}
+
+.repo-file-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.6;
+    white-space: nowrap;
+}
+
+.repo-file-size {
+    font-variant-numeric: tabular-nums;
+}
+
+.hf-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    border-radius: 8px;
+    background: oklch(0.55 0.12 250 / 0.15);
+    color: oklch(0.7 0.12 250);
+    font-size: 0.75em;
+    font-weight: 600;
+    margin-left: 4px;
+}
+
+[data-theme="dark"] .repo-file-item {
+    background: var(--lora-surface);
+}
+
+/* Checkbox inside HF batch preview items */
+.batch-preview-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--lora-accent);
+    flex-shrink: 0;
+    padding: 0;
+    border: none;
+    margin: 0;
+}

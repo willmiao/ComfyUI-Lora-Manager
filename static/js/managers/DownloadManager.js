@@ -27,6 +27,11 @@ export class DownloadManager {
         this.isBatchMode = false;
         this.editingBatchIndex = -1;
 
+        // HF download state
+        this.hfRepoId = null;
+        this.hfRepoFiles = [];
+        this.hfSelectedFiles = [];
+
         this.loadingManager = new LoadingManager();
         this.folderTreeManager = new FolderTreeManager();
         this.folderClickHandler = null;
@@ -44,6 +49,10 @@ export class DownloadManager {
         this.handleToggleDefaultPath = this.toggleDefaultPath.bind(this);
         this.handleBackToUrlFromBatch = this.backToUrlFromBatch.bind(this);
         this.handleNextFromBatch = this.nextFromBatch.bind(this);
+
+        // HF handlers
+        this.handleBackToUrlFromHf = this.backToUrlFromHf.bind(this);
+        this.handleNextFromHfFiles = this.nextFromHfFiles.bind(this);
     }
 
     showDownloadModal() {
@@ -99,6 +108,12 @@ export class DownloadManager {
 
         // Default path toggle handler
         document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
+
+        // HF step buttons
+        const backToUrlFromHfBtn = document.getElementById('backToUrlFromHfBtn');
+        if (backToUrlFromHfBtn) backToUrlFromHfBtn.addEventListener('click', this.handleBackToUrlFromHf);
+        const nextFromHfFiles = document.getElementById('nextFromHfFiles');
+        if (nextFromHfFiles) nextFromHfFiles.addEventListener('click', this.handleNextFromHfFiles);
     }
 
     updateModalLabels() {
@@ -160,6 +175,11 @@ export class DownloadManager {
 
         // Reset default path toggle
         this.loadDefaultPathSetting();
+
+        // Reset HF state
+        this.hfRepoId = null;
+        this.hfRepoFiles = [];
+        this.hfSelectedFiles = [];
     }
 
     async retrieveVersionsForModel(modelId, source = null) {
@@ -180,6 +200,29 @@ export class DownloadManager {
             return;
         }
 
+        // Detect URL types — all URLs must share the same source type
+        const urlTypes = urls.map(u => DownloadManager.detectUrlType(u));
+        const isHf = urlTypes.every(t => t && (t.type === 'hf-resolve' || t.type === 'hf-repo'));
+        const isCivitai = urlTypes.every(t => t && t.type === 'civitai');
+
+        if (!isHf && !isCivitai) {
+            const allValid = urlTypes.every(t => t !== null);
+            if (!allValid) {
+                errorElement.textContent = translate('modals.download.errors.invalidUrl');
+                return;
+            }
+            // Mixed sources not supported in one batch
+            if (urls.length > 1) {
+                errorElement.textContent = translate('modals.download.errors.mixedSources');
+                return;
+            }
+        }
+
+        if (isHf) {
+            return this._validateAndFetchHf(urls, errorElement);
+        }
+
+        // --- Original CivitAI flow below ---
         if (urls.length === 1) {
             this.isBatchMode = false;
             try {
@@ -271,6 +314,142 @@ export class DownloadManager {
         this.showBatchPreviewStep();
     }
 
+    // ---- Hugging Face download flow ----
+
+    async _validateAndFetchHf(urls, errorElement) {
+        if (urls.length === 1) {
+            const info = DownloadManager.detectUrlType(urls[0]);
+            // Direct file resolve URL → skip file selection, go to location
+            if (info.type === 'hf-resolve') {
+                this.isBatchMode = false;
+                this.hfRepoId = info.repo;
+                this.hfSelectedFiles = [info.filename];
+                this.hfRepoFiles = [];
+                this.source = 'huggingface';
+                this.proceedToLocation();
+                return;
+            }
+            // Repo URL → fetch file list
+            try {
+                this.loadingManager.showSimpleLoading(translate('modals.download.fetchingRepoFiles'));
+                const files = await this.apiClient.fetchHfRepoFiles(info.repo);
+                if (!files || files.length === 0) {
+                    throw new Error(translate('modals.download.errors.noModelFiles'));
+                }
+                this.hfRepoId = info.repo;
+                this.hfRepoFiles = files;
+                this.hfSelectedFiles = [];
+                this.isBatchMode = false;
+                this.source = 'huggingface';
+                this.showRepoFileStep(info.repo);
+            } catch (err) {
+                errorElement.textContent = err.message;
+            } finally {
+                this.loadingManager.hide();
+            }
+            return;
+        }
+
+        // Multiple HF URLs → batch mode: flatten all files from all repos
+        this.isBatchMode = true;
+        this.batchModels = [];
+        this.source = 'huggingface';
+        this.loadingManager.showSimpleLoading(translate('modals.download.fetchingRepoFiles'));
+
+        for (const url of urls) {
+            const info = DownloadManager.detectUrlType(url);
+            if (!info) {
+                this.batchModels.push({ url, error: 'Invalid URL', versions: [], selectedVersion: null });
+                continue;
+            }
+            if (info.type === 'hf-resolve') {
+                this.batchModels.push({
+                    url,
+                    source: 'huggingface',
+                    repo: info.repo,
+                    filename: info.filename,
+                    revision: info.revision || 'main',
+                    displayName: info.filename,
+                    selectedVersion: true,
+                    versions: [],
+                    checked: true,
+                    error: null,
+                });
+            } else if (info.type === 'hf-repo') {
+                try {
+                    const files = await this.apiClient.fetchHfRepoFiles(info.repo);
+                    if (!files || files.length === 0) {
+                        this.batchModels.push({ url, error: 'No model files found', versions: [], selectedVersion: null });
+                        continue;
+                    }
+                    // Flatten: create one batch item per file, all checked by default
+                    for (const file of files) {
+                        this.batchModels.push({
+                            url,
+                            source: 'huggingface',
+                            repo: info.repo,
+                            filename: file.filename,
+                            revision: 'main',
+                            displayName: file.filename,
+                            fileSizeBytes: file.size,
+                            selectedVersion: true,
+                            versions: [],
+                            checked: true,
+                            error: null,
+                        });
+                    }
+                } catch (err) {
+                    this.batchModels.push({ url, error: err.message, versions: [], selectedVersion: null });
+                }
+            }
+        }
+
+        this.loadingManager.hide();
+        this.showBatchPreviewStep();
+    }
+
+    showRepoFileStep(repoId) {
+        document.querySelectorAll('.download-step').forEach(s => s.style.display = 'none');
+        document.getElementById('repoFileStep').style.display = 'block';
+        document.getElementById('hfRepoLabel').textContent = repoId;
+
+        const list = document.getElementById('repoFileList');
+        list.innerHTML = this.hfRepoFiles.map((f, i) => {
+            const sizeMb = f.size > 0 ? (f.size / (1024 * 1024)).toFixed(1) : '?';
+            return `
+                <div class="repo-file-item" data-index="${i}">
+                    <input type="checkbox" class="repo-file-checkbox" data-index="${i}" />
+                    <span class="repo-file-icon"><i class="fas fa-file"></i></span>
+                    <span class="repo-file-name">${f.filename}</span>
+                    <span class="repo-file-meta">
+                        <span class="repo-file-size">${sizeMb} MB</span>
+                    </span>
+                </div>
+            `;
+        }).join('');
+    }
+
+    backToUrlFromHf() {
+        this.hfRepoId = null;
+        this.hfRepoFiles = [];
+        this.hfSelectedFiles = [];
+        document.getElementById('repoFileStep').style.display = 'none';
+        document.getElementById('urlStep').style.display = 'block';
+    }
+
+    nextFromHfFiles() {
+        // Read checked state directly from DOM — more reliable than event-tracking
+        const checked = document.querySelectorAll('.repo-file-checkbox:checked');
+        this.hfSelectedFiles = Array.from(checked).map(cb => {
+            const idx = parseInt(cb.dataset.index);
+            return this.hfRepoFiles[idx].filename;
+        });
+        if (!this.hfSelectedFiles.length) {
+            return;
+        }
+        this.proceedToLocation();
+    }
+
     async fetchVersionsForCurrentModel() {
         const errorElement = document.getElementById('urlError');
         if (errorElement) {
@@ -309,6 +488,50 @@ export class DownloadManager {
         }
 
         return { modelId: null, modelVersionId: null, source: null };
+    }
+
+    /**
+     * Detect the source type of a download URL.
+     * @param {string} url
+     * @returns {{ type: string, repo?: string, filename?: string, revision?: string } | null}
+     *   type: 'civitai' | 'civarchive' | 'hf-resolve' | 'hf-repo' | 'direct-http'
+     */
+    static detectUrlType(url) {
+        const trimmed = url.trim();
+        if (!trimmed) return null;
+
+        // CivitAI
+        if (/civitai\.com\/models\//i.test(trimmed) || /civitaiarchive|civarchive/i.test(trimmed)) {
+            // Will be parsed by existing CivitAI logic
+            return { type: 'civitai' };
+        }
+
+        // Hugging Face resolve URL → direct file
+        const hfResolveMatch = trimmed.match(/huggingface\.co\/([^/\s]+\/[^/\s]+)\/resolve\/([^/\s]+)\/(.+)/i);
+        if (hfResolveMatch) {
+            return {
+                type: 'hf-resolve',
+                repo: hfResolveMatch[1],
+                revision: hfResolveMatch[2],
+                filename: hfResolveMatch[3],
+            };
+        }
+
+        // Hugging Face repo URL (huggingface.co/user/repo or bare user/repo path)
+        const hfRepoMatch = trimmed.match(/(?:https?:\/\/huggingface\.co\/)?([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\/?$|$)/);
+        if (hfRepoMatch) {
+            return {
+                type: 'hf-repo',
+                repo: hfRepoMatch[1],
+            };
+        }
+
+        // Direct HTTP(S) URL (non-HF)
+        if (/^https?:\/\//i.test(trimmed)) {
+            return { type: 'direct-http' };
+        }
+
+        return null;
     }
 
     extractModelId(url) {
@@ -559,8 +782,8 @@ export class DownloadManager {
             return;
         }
 
-        // In single-URL mode, validate version selection
-        if (!this.isBatchMode) {
+        // In single-URL mode, validate version selection (skip for HF)
+        if (!this.isBatchMode && this.source !== 'huggingface') {
             if (!this.currentVersion) {
                 showToast('toast.loras.pleaseSelectVersion', {}, 'error');
                 return;
@@ -784,6 +1007,75 @@ export class DownloadManager {
         }
     }
 
+    async _downloadHfSingle({ modelRoot, targetFolder, useDefaultPaths }) {
+        modalManager.closeModal('downloadModal');
+        this.loadingManager.restoreProgressBar();
+        const totalFiles = this.hfSelectedFiles.length;
+        const updateProgress = this.loadingManager.showDownloadProgress(totalFiles);
+
+        try {
+            let completedDownloads = 0;
+            for (let i = 0; i < totalFiles; i++) {
+                const filename = this.hfSelectedFiles[i];
+                updateProgress(0, completedDownloads, filename);
+                this.loadingManager.setStatus(`Downloading ${filename}...`);
+
+                const downloadId = Date.now().toString() + '_' + i;
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
+
+                await new Promise((resolve, reject) => {
+                    ws.onopen = resolve;
+                    ws.onerror = reject;
+                });
+
+                // Capture completed count at WS creation time so progress
+                // updates arriving after completedDownloads increments still
+                // show the correct "N / total" position.
+                const snapshotCompleted = completedDownloads;
+                ws.onmessage = (event) => {
+                    const data = JSON.parse(event.data);
+                    if (data.status === 'progress') {
+                        const metrics = {
+                            bytesDownloaded: data.bytes_downloaded,
+                            totalBytes: data.total_bytes,
+                            bytesPerSecond: data.bytes_per_second,
+                        };
+                        updateProgress(data.progress, snapshotCompleted, filename, metrics);
+                    }
+                };
+
+                const response = await this.apiClient.downloadHfModel({
+                    repo: this.hfRepoId,
+                    filename,
+                    revision: 'main',
+                    modelRoot,
+                    relativePath: targetFolder,
+                    useDefaultPaths,
+                    download_id: downloadId,
+                });
+
+                ws.close();
+
+                if (response?.success) {
+                    completedDownloads++;
+                    updateProgress(100, completedDownloads, filename);
+                }
+            }
+
+            showToast('toast.loras.downloadCompleted', {}, 'success');
+            // Reload page data — model is already in scanner cache via backend
+            await resetAndReload(true);
+            return true;
+        } catch (error) {
+            console.error('Failed to download HF model:', error);
+            showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            return false;
+        } finally {
+            this.loadingManager.hide();
+        }
+    }
+
     updatePathSelectionUI() {
         const manualSelection = document.getElementById('manualPathSelection');
 
@@ -812,7 +1104,11 @@ export class DownloadManager {
         document.querySelectorAll('.download-step').forEach(step => step.style.display = 'none');
         document.getElementById('batchPreviewStep').style.display = 'block';
 
-        const validCount = this.batchModels.filter(m => !m.error && m.selectedVersion).length;
+        const validCount = this.batchModels.filter(m => {
+            if (m.error) return false;
+            if (m.source === 'huggingface') return m.checked !== false;
+            return m.selectedVersion;
+        }).length;
         document.getElementById('downloadModalTitle').textContent =
             translate('modals.download.titleWithType', { type: this.apiClient.apiConfig.config.displayName }) +
             ` (${validCount})`;
@@ -837,6 +1133,33 @@ export class DownloadManager {
             }
 
             const ver = item.selectedVersion;
+
+            // HF batch item rendering with checkbox
+            if (item.source === 'huggingface') {
+                const hfSize = item.fileSizeBytes
+                    ? (item.fileSizeBytes / (1024 * 1024)).toFixed(1)
+                    : '?';
+                return `
+                    <div class="batch-preview-item" data-index="${index}">
+                        <input type="checkbox" class="batch-preview-checkbox"
+                               data-index="${index}" ${item.checked !== false ? 'checked' : ''} />
+                        <div class="batch-preview-icon" style="color: var(--lora-accent);">
+                            <i class="fas fa-cloud"></i>
+                        </div>
+                        <div class="batch-preview-info">
+                            <div class="batch-preview-name">${item.displayName || item.filename || `HF #${index}`} <span class="hf-badge">HF</span></div>
+                            <div class="batch-preview-meta">
+                                <span>${hfSize} MB</span>
+                                <span>${item.repo || ''}</span>
+                            </div>
+                        </div>
+                        <button class="batch-preview-remove" data-index="${index}" title="${translate('common.actions.remove', {}, 'Remove')}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+            }
+
             const firstImage = ver?.images?.find(img => !img.url.endsWith('.mp4'));
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
             const fileSize = ver?.modelSizeKB
@@ -881,6 +1204,24 @@ export class DownloadManager {
             }
         };
 
+        // Checkbox handler for HF batch items
+        const checkboxes = list.querySelectorAll('.batch-preview-checkbox');
+        checkboxes.forEach(cb => {
+            cb.addEventListener('change', (e) => {
+                const idx = parseInt(e.target.dataset.index);
+                if (this.batchModels[idx]) {
+                    this.batchModels[idx].checked = e.target.checked;
+                }
+                // Update valid count in title
+                const checkedCount = this.batchModels.filter(
+                    m => !m.error && m.checked !== false
+                ).length;
+                document.getElementById('downloadModalTitle').textContent =
+                    translate('modals.download.titleWithType', { type: this.apiClient.apiConfig.config.displayName }) +
+                    ` (${checkedCount})`;
+            });
+        });
+
         const nextBtn = document.getElementById('nextFromBatchBtn');
         nextBtn.disabled = validCount === 0;
         nextBtn.classList.toggle('disabled', validCount === 0);
@@ -903,7 +1244,12 @@ export class DownloadManager {
     }
 
     nextFromBatch() {
-        const validModels = this.batchModels.filter(m => !m.error && m.selectedVersion);
+        // For HF items, respect the checked flag; for CivitAI items, use selectedVersion
+        const validModels = this.batchModels.filter(m => {
+            if (m.error) return false;
+            if (m.source === 'huggingface') return m.checked !== false;
+            return m.selectedVersion;
+        });
         if (validModels.length === 0) return;
         this.proceedToLocation();
     }
@@ -953,6 +1299,15 @@ export class DownloadManager {
             targetFolder = this.folderTreeManager.getSelectedPath();
         }
         if (!this.isBatchMode) {
+            // Single-item download
+            if (this.source === 'huggingface') {
+                return this._downloadHfSingle({
+                    modelRoot,
+                    targetFolder,
+                    useDefaultPaths,
+                });
+            }
+
             const fileParams = this.selectedFile ? {
                 type: this.selectedFile.type || 'Model',
                 format: this.selectedFile.metadata?.format || 'SafeTensor',
@@ -974,7 +1329,13 @@ export class DownloadManager {
         }
 
         // Batch download mode
-        const downloadItems = this.batchModels.filter(m => !m.error && m.selectedVersion && !m.selectedVersion.existsLocally);
+        const downloadItems = this.batchModels.filter(m => {
+            if (m.error) return false;
+            if (!m.selectedVersion) return false;
+            // HF items have selectedVersion as a boolean marker + checked flag
+            if (m.source === 'huggingface') return m.checked !== false;
+            return !m.selectedVersion.existsLocally;
+        });
         if (downloadItems.length === 0) {
             showToast('toast.loras.downloadCompleted', {}, 'info');
             modalManager.closeModal('downloadModal');
@@ -1016,22 +1377,56 @@ export class DownloadManager {
 
         for (let i = 0; i < downloadItems.length; i++) {
             const item = downloadItems[i];
-            const ver = item.selectedVersion;
-            const name = ver?.name || `Model #${item.modelId}`;
+            const name = item.displayName || item.filename || (item.selectedVersion?.name || `Model #${item.modelId}`);
+            const isHf = item.source === 'huggingface';
 
             updateProgress(0, completedDownloads, name);
             loadingManager.setStatus(`${i + 1}/${downloadItems.length}: ${name}`);
 
             try {
-                const response = await this.apiClient.downloadModel(
-                    item.modelId,
-                    ver.id,
-                    modelRoot,
-                    targetFolder,
-                    useDefaultPaths,
-                    batchDownloadId,
-                    item.source
-                );
+                let response;
+                if (isHf) {
+                    // Per-file WebSocket for real-time progress
+                    const downloadId = Date.now().toString() + '_hf_' + i;
+                    const wsHf = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
+                    await new Promise((resolve, reject) => {
+                        wsHf.onopen = resolve;
+                        wsHf.onerror = reject;
+                    });
+                    const snapshotCompleted = completedDownloads;
+                    wsHf.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.status === 'progress') {
+                            const metrics = {
+                                bytesDownloaded: data.bytes_downloaded,
+                                totalBytes: data.total_bytes,
+                                bytesPerSecond: data.bytes_per_second,
+                            };
+                            updateProgress(data.progress, snapshotCompleted, name, metrics);
+                        }
+                    };
+
+                    response = await this.apiClient.downloadHfModel({
+                        repo: item.repo,
+                        filename: item.filename,
+                        revision: item.revision || 'main',
+                        modelRoot,
+                        relativePath: targetFolder,
+                        useDefaultPaths,
+                        download_id: downloadId,
+                    });
+                    wsHf.close();
+                } else {
+                    response = await this.apiClient.downloadModel(
+                        item.modelId,
+                        item.selectedVersion.id,
+                        modelRoot,
+                        targetFolder,
+                        useDefaultPaths,
+                        batchDownloadId,
+                        item.source
+                    );
+                }
 
                 if (!response.success) {
                     failedDownloads++;

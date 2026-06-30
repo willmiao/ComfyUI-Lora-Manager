@@ -47,6 +47,20 @@ SUPPORTED_MEDIA_EXTENSIONS = {
     "videos": [".mp4", ".webm"],
 }
 
+# Model weight file extensions recognised by scanners.
+# This is the union of all scanner extensions (lora, checkpoint, embedding).
+MODEL_FILE_EXTENSIONS = {
+    ".safetensors",
+    ".ckpt",
+    ".pt",
+    ".pt2",
+    ".bin",
+    ".pth",
+    ".pkl",
+    ".sft",
+    ".gguf",
+}
+
 # Valid sub-types for each scanner type
 VALID_LORA_SUB_TYPES = ["lora", "locon", "dora"]
 VALID_CHECKPOINT_SUB_TYPES = ["checkpoint", "diffusion_model"]
