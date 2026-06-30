@@ -481,8 +481,18 @@ export class DownloadManager {
         }
 
         // Hugging Face repo URL (huggingface.co/user/repo or bare user/repo path)
-        const hfRepoMatch = trimmed.match(/(?:https?:\/\/huggingface\.co\/)?([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\/?$|$)/);
+        // Require huggingface.co prefix for full URLs; bare user/repo only without ://
+        const hfRepoMatch = trimmed.match(
+            trimmed.includes('://')
+                ? /^https?:\/\/huggingface\.co\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\/?$|$)/
+                : /^([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)$/
+        );
         if (hfRepoMatch) {
+            // Reject path-traversal patterns like "../.." or "user/.."
+            const parts = hfRepoMatch[1].split('/');
+            if (parts.some(p => p === '.' || p === '..')) {
+                return null;
+            }
             return {
                 type: 'hf-repo',
                 repo: hfRepoMatch[1],
@@ -987,42 +997,44 @@ export class DownloadManager {
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
                 const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
 
-                await new Promise((resolve, reject) => {
-                    ws.onopen = resolve;
-                    ws.onerror = reject;
-                });
+                try {
+                    await new Promise((resolve, reject) => {
+                        ws.onopen = resolve;
+                        ws.onerror = reject;
+                    });
 
-                // Capture completed count at WS creation time so progress
-                // updates arriving after completedDownloads increments still
-                // show the correct "N / total" position.
-                const snapshotCompleted = completedDownloads;
-                ws.onmessage = (event) => {
-                    const data = JSON.parse(event.data);
-                    if (data.status === 'progress') {
-                        const metrics = {
-                            bytesDownloaded: data.bytes_downloaded,
-                            totalBytes: data.total_bytes,
-                            bytesPerSecond: data.bytes_per_second,
-                        };
-                        updateProgress(data.progress, snapshotCompleted, filename, metrics);
+                    // Capture completed count at WS creation time so progress
+                    // updates arriving after completedDownloads increments still
+                    // show the correct "N / total" position.
+                    const snapshotCompleted = completedDownloads;
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+                        if (data.status === 'progress') {
+                            const metrics = {
+                                bytesDownloaded: data.bytes_downloaded,
+                                totalBytes: data.total_bytes,
+                                bytesPerSecond: data.bytes_per_second,
+                            };
+                            updateProgress(data.progress, snapshotCompleted, filename, metrics);
+                        }
+                    };
+
+                    const response = await this.apiClient.downloadHfModel({
+                        repo: this.hfRepoId,
+                        filename,
+                        revision: 'main',
+                        modelRoot,
+                        relativePath: targetFolder,
+                        useDefaultPaths,
+                        download_id: downloadId,
+                    });
+
+                    if (response?.success) {
+                        completedDownloads++;
+                        updateProgress(100, completedDownloads, filename);
                     }
-                };
-
-                const response = await this.apiClient.downloadHfModel({
-                    repo: this.hfRepoId,
-                    filename,
-                    revision: 'main',
-                    modelRoot,
-                    relativePath: targetFolder,
-                    useDefaultPaths,
-                    download_id: downloadId,
-                });
-
-                ws.close();
-
-                if (response?.success) {
-                    completedDownloads++;
-                    updateProgress(100, completedDownloads, filename);
+                } finally {
+                    ws.close();
                 }
             }
 
@@ -1401,33 +1413,36 @@ export class DownloadManager {
                     // Per-file WebSocket for real-time progress
                     const downloadId = Date.now().toString() + '_hf_' + i;
                     const wsHf = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
-                    await new Promise((resolve, reject) => {
-                        wsHf.onopen = resolve;
-                        wsHf.onerror = reject;
-                    });
-                    const snapshotCompleted = completedDownloads;
-                    wsHf.onmessage = (event) => {
-                        const data = JSON.parse(event.data);
-                        if (data.status === 'progress') {
-                            const metrics = {
-                                bytesDownloaded: data.bytes_downloaded,
-                                totalBytes: data.total_bytes,
-                                bytesPerSecond: data.bytes_per_second,
-                            };
-                            updateProgress(data.progress, snapshotCompleted, name, metrics);
-                        }
-                    };
+                    try {
+                        await new Promise((resolve, reject) => {
+                            wsHf.onopen = resolve;
+                            wsHf.onerror = reject;
+                        });
+                        const snapshotCompleted = completedDownloads;
+                        wsHf.onmessage = (event) => {
+                            const data = JSON.parse(event.data);
+                            if (data.status === 'progress') {
+                                const metrics = {
+                                    bytesDownloaded: data.bytes_downloaded,
+                                    totalBytes: data.total_bytes,
+                                    bytesPerSecond: data.bytes_per_second,
+                                };
+                                updateProgress(data.progress, snapshotCompleted, name, metrics);
+                            }
+                        };
 
-                    response = await this.apiClient.downloadHfModel({
-                        repo: item.repo,
-                        filename: item.filename,
-                        revision: item.revision || 'main',
-                        modelRoot,
-                        relativePath: targetFolder,
-                        useDefaultPaths,
-                        download_id: downloadId,
-                    });
-                    wsHf.close();
+                        response = await this.apiClient.downloadHfModel({
+                            repo: item.repo,
+                            filename: item.filename,
+                            revision: item.revision || 'main',
+                            modelRoot,
+                            relativePath: targetFolder,
+                            useDefaultPaths,
+                            download_id: downloadId,
+                        });
+                    } finally {
+                        wsHf.close();
+                    }
                 } else {
                     response = await this.apiClient.downloadModel(
                         item.modelId,
