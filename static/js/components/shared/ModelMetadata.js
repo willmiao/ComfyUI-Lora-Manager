@@ -3,7 +3,7 @@
  * Handles model metadata editing functionality - General version
  */
 
-import { BASE_MODEL_CATEGORIES } from '../../utils/constants.js';
+import { BASE_MODEL_CATEGORIES, getMergedBaseModels } from '../../utils/constants.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 
@@ -267,6 +267,7 @@ export function setupBaseModelEditing(filePath) {
         
         // Add options from BASE_MODEL_CATEGORIES constants
         const baseModelCategories = BASE_MODEL_CATEGORIES;
+        const categorizedModels = new Set();
         
         // Create option groups for better organization
         Object.entries(baseModelCategories).forEach(([category, models]) => {
@@ -277,12 +278,29 @@ export function setupBaseModelEditing(filePath) {
                 const option = document.createElement('option');
                 option.value = model;
                 option.textContent = model;
-                option.selected = model === currentValue;
+                if (model === currentValue) option.selected = true;
+                categorizedModels.add(model);
                 group.appendChild(option);
             });
             
             dropdown.appendChild(group);
         });
+        
+        // Check for dynamic base models from API that aren't in any category
+        const mergedModels = getMergedBaseModels();
+        const uncategorizedModels = mergedModels.filter(model => !categorizedModels.has(model));
+        if (uncategorizedModels.length > 0) {
+            const group = document.createElement('optgroup');
+            group.label = 'Other (API)';
+            uncategorizedModels.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                if (model === currentValue) option.selected = true;
+                group.appendChild(option);
+            });
+            dropdown.appendChild(group);
+        }
         
         // Replace content with dropdown
         baseModelContent.style.display = 'none';

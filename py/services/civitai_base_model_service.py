@@ -196,6 +196,7 @@ class CivitaiBaseModelService:
             "ernie": "ERNI",
             "ernie turbo": "ETRB",
             "nucleus": "NUCL",
+            "krea 2": "KR2",
             "svd": "SVD",
             "ltxv": "LTXV",
             "ltxv2": "LTV2",
@@ -424,6 +425,7 @@ class CivitaiBaseModelService:
                 "Ernie",
                 "Ernie Turbo",
                 "Nucleus",
+                "Krea 2",
             ],
         }
 

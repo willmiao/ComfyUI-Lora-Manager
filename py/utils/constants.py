@@ -229,5 +229,6 @@ SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS = frozenset(
         "Ernie",
         "Ernie Turbo",
         "Nucleus",
+        "Krea 2",
     ]
 )
