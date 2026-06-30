@@ -1136,6 +1136,7 @@
       "placeholder": "https://civitai.com/models/...",
       "urlHint": "한 줄에 하나의 CivitAI, CivArchive 또는 Hugging Face URL을 입력하세요. 여러 URL을 일괄 다운로드할 수 있습니다.",
       "selectHfFiles": "이 저장소에서 다운로드할 파일을 선택하세요：",
+      "selectAll": "모두 선택",
       "fetchingRepoFiles": "저장소 파일을 가져오는 중...",
       "locationPreview": "다운로드 위치 미리보기",
       "useDefaultPath": "기본 경로 사용",

@@ -1136,6 +1136,7 @@
       "placeholder": "https://civitai.com/models/...",
       "urlHint": "Введите один URL CivitAI, CivArchive или Hugging Face в каждой строке. Поддерживает несколько URL для пакетной загрузки.",
       "selectHfFiles": "Выберите файл(ы) для загрузки из этого репозитория：",
+      "selectAll": "Выбрать все",
       "fetchingRepoFiles": "Получение файлов репозитория...",
       "locationPreview": "Предпросмотр места загрузки",
       "useDefaultPath": "Использовать путь по умолчанию",

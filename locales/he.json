@@ -1136,6 +1136,7 @@
       "placeholder": "https://civitai.com/models/...",
       "urlHint": "יש להזין כתובת URL אחת של CivitAI, CivArchive או Hugging Face בכל שורה. תומך במספר כתובות URL להורדה בקבוצה.",
       "selectHfFiles": "בחר קבצים להורדה ממאגר זה:",
+      "selectAll": "בחר הכל",
       "fetchingRepoFiles": "מביא קבצים מהמאגר...",
       "locationPreview": "תצוגה מקדימה של מיקום ההורדה",
       "useDefaultPath": "השתמש בנתיב ברירת מחדל",

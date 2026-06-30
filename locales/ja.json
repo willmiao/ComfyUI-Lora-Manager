@@ -1136,6 +1136,7 @@
       "placeholder": "https://civitai.com/models/...",
       "urlHint": "1行に1つのCivitAI、CivArchive、またはHugging Face URLを入力してください。複数のURLを一括ダウンロードできます。",
       "selectHfFiles": "このリポジトリからダウンロードするファイルを選択してください：",
+      "selectAll": "すべて選択",
       "fetchingRepoFiles": "リポジトリのファイルを取得中...",
       "locationPreview": "ダウンロード場所プレビュー",
       "useDefaultPath": "デフォルトパスを使用",

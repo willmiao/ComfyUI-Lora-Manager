@@ -22,24 +22,6 @@
             </div>
         </div>
 
-        <!-- Step 1b: HF Repo File Explorer (shown when HF repo URL is detected) -->
-        <div class="download-step" id="repoFileStep" style="display: none;">
-            <div class="input-group">
-                <label>{{ t('modals.download.selectHfFiles') }}</label>
-                <div class="hf-repo-header">
-                    <span id="hfRepoLabel" class="hf-repo-label"></span>
-                </div>
-                <div class="repo-file-list" id="repoFileList">
-                    <!-- Files will be inserted here dynamically -->
-                </div>
-                <div class="error-message" id="repoFileError"></div>
-            </div>
-            <div class="modal-actions">
-                <button class="secondary-btn" id="backToUrlFromHfBtn">{{ t('common.actions.back') }}</button>
-                <button class="primary-btn" id="nextFromHfFiles">{{ t('common.actions.next') }}</button>
-            </div>
-        </div>
-
         <!-- Step 2: Batch Preview (multi-URL mode) -->
         <div class="download-step" id="batchPreviewStep" style="display: none;">
             <div class="batch-preview-list" id="batchPreviewList">

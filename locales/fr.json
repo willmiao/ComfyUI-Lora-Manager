@@ -1136,6 +1136,7 @@
       "placeholder": "https://civitai.com/models/...",
       "urlHint": "Entrez une URL CivitAI, CivArchive ou Hugging Face par ligne. Prend en charge plusieurs URL pour le téléchargement par lot.",
       "selectHfFiles": "Sélectionnez le(s) fichier(s) à télécharger depuis ce dépôt :",
+      "selectAll": "Tout sélectionner",
       "fetchingRepoFiles": "Récupération des fichiers du dépôt...",
       "locationPreview": "Aperçu de l'emplacement de téléchargement",
       "useDefaultPath": "Utiliser le chemin par défaut",

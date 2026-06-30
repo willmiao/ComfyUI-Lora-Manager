@@ -1136,6 +1136,7 @@
       "placeholder": "https://civitai.com/models/...",
       "urlHint": "每行輸入一個 CivitAI、CivArchive 或 Hugging Face URL。支援批量下載多個 URL。",
       "selectHfFiles": "選擇從此倉庫下載的檔案：",
+      "selectAll": "全選",
       "fetchingRepoFiles": "正在獲取倉庫檔案...",
       "locationPreview": "下載位置預覽",
       "useDefaultPath": "使用預設路徑",

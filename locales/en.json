@@ -1136,6 +1136,7 @@
             "placeholder": "https://civitai.com/models/...",
             "urlHint": "Enter one CivitAI, CivArchive, or Hugging Face URL per line. Supports multiple URLs for batch download.",
             "selectHfFiles": "Select file(s) to download from this repository:",
+            "selectAll": "Select All",
             "fetchingRepoFiles": "Fetching repository files...",
             "locationPreview": "Download Location Preview",
             "useDefaultPath": "Use Default Path",
