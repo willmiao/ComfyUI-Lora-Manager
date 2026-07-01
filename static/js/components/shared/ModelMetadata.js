@@ -6,6 +6,72 @@
 import { BASE_MODEL_CATEGORIES, getMergedBaseModels } from '../../utils/constants.js';
 import { showToast } from '../../utils/uiHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
+import { translate } from '../../utils/i18nHelpers.js';
+
+// ── Filename-based base model inference ──────────────────────────────────────
+// Rules are ordered by specificity — first match wins for dedup.
+// Each rule checks the filename (lowercased) for a regex pattern and suggests
+// the associated base model values.
+
+const BASE_MODEL_FILENAME_RULES = [
+    { pattern: /flux\.?\s*2\s*klein/i, models: ['Flux.2 Klein 9B', 'Flux.2 Klein 9B-base', 'Flux.2 Klein 4B', 'Flux.2 Klein 4B-base'] },
+    { pattern: /flux\.?\s*2/i, models: ['Flux.2 D', 'Flux.2 Klein 9B', 'Flux.2 Klein 4B'] },
+    { pattern: /flux\.?\s*1\s*(dev|d)\b/i, models: ['Flux.1 D'] },
+    { pattern: /flux\.?\s*1\s*(schnell|s)\b/i, models: ['Flux.1 S'] },
+    { pattern: /flux/i, models: ['Flux.1 D', 'Flux.1 S', 'Flux.2 D'] },
+    { pattern: /sdxl/i, models: ['SDXL 1.0', 'SDXL Lightning', 'SDXL Hyper'] },
+    { pattern: /sd\s*1[._-\s]?5/i, models: ['SD 1.5'] },
+    { pattern: /sd\s*1[._-\s]?4/i, models: ['SD 1.4'] },
+    { pattern: /sd\s*1/i, models: ['SD 1.5', 'SD 1.4', 'SD 1.5 LCM', 'SD 1.5 Hyper'] },
+    { pattern: /sd\s*3[._-\s]?5/i, models: ['SD 3.5', 'SD 3.5 Medium', 'SD 3.5 Large', 'SD 3.5 Large Turbo'] },
+    { pattern: /sd\s*3/i, models: ['SD 3', 'SD 3.5'] },
+    { pattern: /wan\s*\.?\s*video/i, models: ['Wan Video', 'Wan Video 1.3B t2v', 'Wan Video 14B t2v', 'Wan Video 14B i2v 480p', 'Wan Video 14B i2v 720p'] },
+    { pattern: /hunyuan\s*\.?\s*video/i, models: ['Hunyuan Video'] },
+    { pattern: /ltxv/i, models: ['LTXV', 'LTXV2', 'LTXV 2.3'] },
+    { pattern: /cogvideo/i, models: ['CogVideoX'] },
+    { pattern: /pony/i, models: ['Pony', 'Pony V7'] },
+    { pattern: /illustrious/i, models: ['Illustrious'] },
+    { pattern: /noobai/i, models: ['NoobAI'] },
+    { pattern: /pixart/i, models: ['PixArt a', 'PixArt E'] },
+    { pattern: /aura\s*\.?\s*flow/i, models: ['AuraFlow'] },
+    { pattern: /kolors/i, models: ['Kolors'] },
+    { pattern: /hunyuan\s*1/i, models: ['Hunyuan 1'] },
+    { pattern: /lumina/i, models: ['Lumina'] },
+    { pattern: /hidream/i, models: ['HiDream'] },
+    { pattern: /qwen/i, models: ['Qwen'] },
+    { pattern: /chroma/i, models: ['Chroma'] },
+    { pattern: /anima/i, models: ['Anima'] },
+    { pattern: /sd\s*2[._-\s]?[01]/i, models: ['SD 2.0', 'SD 2.1'] },
+    { pattern: /mochi/i, models: ['Mochi'] },
+    { pattern: /svd/i, models: ['SVD'] },
+    { pattern: /zimage/i, models: ['ZImageTurbo', 'ZImageBase'] },
+    { pattern: /nucleus/i, models: ['Nucleus'] },
+    { pattern: /krea/i, models: ['Flux.1 Krea', 'Krea 2'] },
+    { pattern: /ernie/i, models: ['Ernie', 'Ernie Turbo'] },
+];
+
+/**
+ * Infer likely base model(s) from a filename + model name string.
+ * Returns a deduplicated array in match-priority order.
+ * @param {string} filename
+ * @returns {string[]}
+ */
+function inferBaseModelsFromFilename(filename) {
+    if (!filename || typeof filename !== 'string') return [];
+    const seen = new Set();
+    const results = [];
+    for (const rule of BASE_MODEL_FILENAME_RULES) {
+        if (rule.pattern.test(filename)) {
+            for (const model of rule.models) {
+                if (!seen.has(model)) {
+                    seen.add(model);
+                    results.push(model);
+                }
+            }
+        }
+    }
+    return results;
+}
 
 /**
  * Resolve the active file path for the currently open model modal.
@@ -226,7 +292,9 @@ export function setupModelNameEditing(filePath) {
 }
 
 /**
- * Set up base model editing functionality
+ * Set up base model editing functionality with searchable dropdown
+ * Shows filename-inferred suggestions at the top, supports keyboard navigation,
+ * and allows typing custom values.
  * @param {string} filePath - File path
  */
 export function setupBaseModelEditing(filePath) {
@@ -257,116 +325,251 @@ export function setupBaseModelEditing(filePath) {
         // Store the original value to check for changes later
         const originalValue = baseModelContent.textContent.trim();
         
-        // Create dropdown selector to replace the base model content
-        const currentValue = originalValue;
-        const dropdown = document.createElement('select');
-        dropdown.className = 'base-model-selector';
-        
-        // Flag to track if a change was made
-        let valueChanged = false;
-        
-        // Add options from BASE_MODEL_CATEGORIES constants
-        const baseModelCategories = BASE_MODEL_CATEGORIES;
+        // ── Build the full option list ────────────────────────────────────────
+        const allModels = []; // { value, label, category }
         const categorizedModels = new Set();
         
-        // Create option groups for better organization
-        Object.entries(baseModelCategories).forEach(([category, models]) => {
-            const group = document.createElement('optgroup');
-            group.label = category;
-            
+        Object.entries(BASE_MODEL_CATEGORIES).forEach(([category, models]) => {
             models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                option.textContent = model;
-                if (model === currentValue) option.selected = true;
+                allModels.push({ value: model, label: model, category });
                 categorizedModels.add(model);
-                group.appendChild(option);
             });
-            
-            dropdown.appendChild(group);
         });
         
-        // Check for dynamic base models from API that aren't in any category
         const mergedModels = getMergedBaseModels();
         const uncategorizedModels = mergedModels.filter(model => !categorizedModels.has(model));
         if (uncategorizedModels.length > 0) {
-            const group = document.createElement('optgroup');
-            group.label = 'Other (API)';
             uncategorizedModels.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                option.textContent = model;
-                if (model === currentValue) option.selected = true;
-                group.appendChild(option);
+                allModels.push({ value: model, label: model, category: 'Other (API)' });
             });
-            dropdown.appendChild(group);
         }
         
-        // Replace content with dropdown
-        baseModelContent.style.display = 'none';
-        baseModelDisplay.insertBefore(dropdown, editBtn);
+        // ── Filename-based inference ──────────────────────────────────────────
+        const fileName = (document.querySelector('.file-name-content')?.textContent || '') + ' ' +
+                         (document.querySelector('.model-name-content')?.textContent || '');
+        const inferredModels = inferBaseModelsFromFilename(fileName);
+        const inferredSet = new Set(inferredModels);
         
-        // Hide edit button during editing
-        editBtn.style.display = 'none';
+        // ── Build search widget DOM ───────────────────────────────────────────
+        const wrapper = document.createElement('div');
+        wrapper.className = 'base-model-search-wrapper';
         
-        // Focus the dropdown
-        dropdown.focus();
+        // Search input row
+        const inputWrapper = document.createElement('div');
+        inputWrapper.className = 'base-model-search-input-wrapper';
+        const searchIcon = document.createElement('i');
+        searchIcon.className = 'fas fa-search search-icon';
+        searchIcon.setAttribute('aria-hidden', 'true');
+        inputWrapper.appendChild(searchIcon);
+        const searchInput = document.createElement('input');
+        searchInput.type = 'text';
+        searchInput.className = 'base-model-search-input';
+        searchInput.placeholder = translate('modals.model.metadata.baseModelSearchPlaceholder', {}, 'Search base model…');
+        searchInput.autocomplete = 'off';
+        searchInput.spellcheck = false;
+        inputWrapper.appendChild(searchInput);
+        wrapper.appendChild(inputWrapper);
         
-        // Handle dropdown change
-        dropdown.addEventListener('change', function() {
-            const selectedModel = this.value;
-            baseModelContent.textContent = selectedModel;
+        // Dropdown list
+        const dropdown = document.createElement('div');
+        dropdown.className = 'base-model-dropdown';
+        wrapper.appendChild(dropdown);
+        
+        // ── Render ────────────────────────────────────────────────────────────
+        function renderDropdown(filterText) {
+            const lowerFilter = (filterText || '').toLowerCase().trim();
+            dropdown.innerHTML = '';
+            let hasVisibleItems = false;
+            const fragment = document.createDocumentFragment();
             
-            // Mark that a change was made if the value differs from original
-            if (selectedModel !== originalValue) {
-                valueChanged = true;
-            } else {
-                valueChanged = false;
+            // 1. Suggested section (filename-inferred, filtered by search)
+            let suggestedToShow = inferredModels;
+            if (lowerFilter) {
+                suggestedToShow = inferredModels.filter(m =>
+                    m.toLowerCase().includes(lowerFilter)
+                );
+            }
+            
+            if (suggestedToShow.length > 0) {
+                const section = document.createElement('div');
+                section.className = 'base-model-dropdown-section';
+                
+                const header = document.createElement('div');
+                header.className = 'base-model-dropdown-header suggested-header';
+                header.innerHTML = '<i class="fas fa-star" aria-hidden="true"></i> ' +
+                    translate('modals.model.metadata.baseModelSuggested', {}, 'Suggested');
+                section.appendChild(header);
+                
+                suggestedToShow.forEach(model => {
+                    const item = document.createElement('div');
+                    item.className = 'base-model-dropdown-item';
+                    if (model === originalValue) item.classList.add('selected');
+                    item.dataset.value = model;
+                    item.textContent = model;
+                    section.appendChild(item);
+                    hasVisibleItems = true;
+                });
+                
+                fragment.appendChild(section);
+            }
+            
+            // 2. Categorized options (deduplicated against suggestions)
+            const categoryMap = {};
+            allModels.forEach(m => {
+                if (inferredSet.has(m.value)) return; // already shown in Suggested
+                if (lowerFilter && !m.label.toLowerCase().includes(lowerFilter)) return;
+                if (!categoryMap[m.category]) categoryMap[m.category] = [];
+                categoryMap[m.category].push(m);
+            });
+            
+            Object.entries(categoryMap).forEach(([category, items]) => {
+                if (items.length === 0) return;
+                const section = document.createElement('div');
+                section.className = 'base-model-dropdown-section';
+                
+                const header = document.createElement('div');
+                header.className = 'base-model-dropdown-header';
+                header.textContent = category;
+                section.appendChild(header);
+                
+                items.forEach(m => {
+                    const item = document.createElement('div');
+                    item.className = 'base-model-dropdown-item';
+                    if (m.value === originalValue) item.classList.add('selected');
+                    item.dataset.value = m.value;
+                    item.textContent = m.label;
+                    section.appendChild(item);
+                    hasVisibleItems = true;
+                });
+                
+                fragment.appendChild(section);
+            });
+            
+            // 3. Empty state
+            if (!hasVisibleItems) {
+                const empty = document.createElement('div');
+                empty.className = 'base-model-dropdown-empty';
+                empty.textContent = translate('modals.model.metadata.baseModelNoMatch', {}, 'No matching base models');
+                fragment.appendChild(empty);
+            }
+            
+            dropdown.appendChild(fragment);
+            
+            // Scroll the selected item into view
+            const selected = dropdown.querySelector('.base-model-dropdown-item.selected');
+            if (selected) {
+                selected.scrollIntoView({ block: 'nearest' });
+            }
+        }
+        
+        // Initial render — show everything
+        renderDropdown('');
+        
+        // ── Events ────────────────────────────────────────────────────────────
+        let filterTimeout;
+        searchInput.addEventListener('input', () => {
+            clearTimeout(filterTimeout);
+            filterTimeout = setTimeout(() => renderDropdown(searchInput.value), 50);
+        });
+        
+        // Click to select
+        dropdown.addEventListener('click', (e) => {
+            const item = e.target.closest('.base-model-dropdown-item');
+            if (!item) return;
+            baseModelContent.textContent = item.dataset.value;
+            cleanup();
+            const finalValue = baseModelContent.textContent.trim();
+            if (finalValue !== originalValue) {
+                saveBaseModel(
+                    getActiveModalFilePath(baseModelContent.dataset.filePath),
+                    originalValue
+                );
             }
         });
         
-        // Function to save changes and exit edit mode
-        const saveAndExit = function() {
-            // Check if dropdown still exists and remove it
-            if (dropdown && dropdown.parentNode === baseModelDisplay) {
-                baseModelDisplay.removeChild(dropdown);
+        // Replace content with search widget
+        baseModelContent.style.display = 'none';
+        editBtn.style.display = 'none';
+        baseModelDisplay.insertBefore(wrapper, editBtn);
+        searchInput.focus();
+        
+        // ── Cleanup ───────────────────────────────────────────────────────────
+        function cleanup() {
+            if (wrapper.parentNode === baseModelDisplay) {
+                baseModelDisplay.removeChild(wrapper);
             }
-            
-            // Show the content and edit button
             baseModelContent.style.display = '';
             editBtn.style.display = '';
-            
-            // Remove editing class
             baseModelDisplay.classList.remove('editing');
-            
-            // Only save if the value has actually changed
-            if (valueChanged || baseModelContent.textContent.trim() !== originalValue) {
-                const resolvedPath = getActiveModalFilePath(baseModelContent.dataset.filePath);
-                saveBaseModel(resolvedPath, originalValue);
-            }
-            
-            // Remove this event listener
             document.removeEventListener('click', outsideClickHandler);
-        };
+        }
         
-        // Handle outside clicks to save and exit
+        // Outside click → save typed/custom value if any
         const outsideClickHandler = function(e) {
-            // If click is outside the dropdown and base model display
-            if (!baseModelDisplay.contains(e.target)) {
-                saveAndExit();
+            if (wrapper.contains(e.target)) return;
+            
+            // If user typed a custom value (not just empty), apply it
+            const typedValue = searchInput.value.trim();
+            if (typedValue) {
+                baseModelContent.textContent = typedValue;
+            }
+            cleanup();
+            const finalValue = baseModelContent.textContent.trim();
+            if (finalValue !== originalValue) {
+                saveBaseModel(
+                    getActiveModalFilePath(baseModelContent.dataset.filePath),
+                    originalValue
+                );
             }
         };
         
-        // Add delayed event listener for outside clicks
+        // Defer listener to avoid the opening click itself
         setTimeout(() => {
             document.addEventListener('click', outsideClickHandler);
         }, 0);
         
-        // Also handle dropdown blur event
-        dropdown.addEventListener('blur', function(e) {
-            // Only save if the related target is not the edit button or inside the baseModelDisplay
-            if (!baseModelDisplay.contains(e.relatedTarget)) {
-                saveAndExit();
+        // Keyboard navigation
+        searchInput.addEventListener('keydown', function onKeydown(e) {
+            const items = Array.from(dropdown.querySelectorAll('.base-model-dropdown-item'));
+            const activeIdx = items.findIndex(el => el.classList.contains('active'));
+            
+            if (e.key === 'ArrowDown') {
+                e.preventDefault();
+                items.forEach(el => el.classList.remove('active'));
+                const next = Math.min(activeIdx + 1, items.length - 1);
+                if (items[next]) {
+                    items[next].classList.add('active');
+                    items[next].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'ArrowUp') {
+                e.preventDefault();
+                items.forEach(el => el.classList.remove('active'));
+                const prev = Math.max(activeIdx - 1, 0);
+                if (items[prev]) {
+                    items[prev].classList.add('active');
+                    items[prev].scrollIntoView({ block: 'nearest' });
+                }
+            } else if (e.key === 'Enter') {
+                e.preventDefault();
+                const activeItem = items.find(el => el.classList.contains('active'));
+                if (activeItem) {
+                    activeItem.click();
+                } else if (searchInput.value.trim()) {
+                    // Custom value typed
+                    baseModelContent.textContent = searchInput.value.trim();
+                    cleanup();
+                    const finalValue = baseModelContent.textContent.trim();
+                    if (finalValue !== originalValue) {
+                        saveBaseModel(
+                            getActiveModalFilePath(baseModelContent.dataset.filePath),
+                            originalValue
+                        );
+                    }
+                }
+            } else if (e.key === 'Escape') {
+                e.preventDefault();
+                baseModelContent.textContent = originalValue;
+                cleanup();
             }
         });
     });

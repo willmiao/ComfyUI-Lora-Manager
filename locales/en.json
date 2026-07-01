@@ -1347,7 +1347,10 @@
                 "additionalNotes": "Additional Notes",
                 "notesHint": "Press Enter to save, Shift+Enter for new line",
                 "addNotesPlaceholder": "Add your notes here...",
-                "aboutThisVersion": "About this version"
+                "aboutThisVersion": "About this version",
+                "baseModelSearchPlaceholder": "Search base model…",
+                "baseModelSuggested": "Suggested",
+                "baseModelNoMatch": "No matching base models"
             },
             "notes": {
                 "saved": "Notes saved successfully",
