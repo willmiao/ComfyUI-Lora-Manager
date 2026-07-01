@@ -248,6 +248,7 @@ class ModelScanner:
             'civitai': civitai_slim,
             'civitai_deleted': bool(get_value('civitai_deleted', False)),
             'skip_metadata_refresh': bool(get_value('skip_metadata_refresh', False)),
+            'hf_url': get_value('hf_url', '') or '',
         }
 
         license_source: Dict[str, Any] = {}

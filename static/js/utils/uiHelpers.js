@@ -320,6 +320,15 @@ export function openCivitai(filePath) {
 }
 
 /**
+ * Open a Hugging Face model page in a new tab
+ * @param {string} hfUrl - The Hugging Face URL
+ */
+export function openHuggingFace(hfUrl) {
+  if (!hfUrl) return;
+  window.open(hfUrl, '_blank', 'noopener,noreferrer');
+}
+
+/**
  * Dynamically positions the search options panel and filter panel
  * based on the current layout and folder tags container height
  */

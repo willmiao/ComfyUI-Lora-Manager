@@ -112,7 +112,7 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
 
         # 2. Overlay HF-specific fields
         metadata._unknown_fields["hf_url"] = hf_url
-        metadata.from_civitai = True  # leave default, don't interfere with CivitAI fetch
+        metadata.from_civitai = False  # HF models are not from CivitAI
 
         # 3. Save metadata atomically
         await MetadataManager.save_metadata(dest_path, metadata)

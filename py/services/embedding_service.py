@@ -66,6 +66,7 @@ class EmbeddingService(BaseModelService):
             "civitai": self.filter_civitai_data(embedding_data.get("civitai", {}), minimal=True),
             "auto_tags": embedding_data.get("auto_tags") or extract_auto_tags(embedding_data),
             "version_count": embedding_data.get("version_count"),
+            "hf_url": embedding_data.get("hf_url", ""),
         }
     
     def find_duplicate_hashes(self) -> Dict:

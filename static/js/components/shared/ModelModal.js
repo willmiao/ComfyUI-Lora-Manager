@@ -361,6 +361,11 @@ export async function showModelModal(model, modelType) {
 <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${escapedFilePathAttr}">
     <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
 </div>`.trim() : '';
+    const escapedHfUrl = modelWithFullData.hf_url ? escapeAttribute(modelWithFullData.hf_url) : '';
+    const viewOnHuggingFaceAction = escapedHfUrl ? `
+<div class="civitai-view" title="${translate('modals.model.actions.viewOnHuggingFace', {}, 'View on Hugging Face')}" data-action="view-huggingface" data-hf-url="${escapedHfUrl}">
+    <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnHuggingFaceText', {}, 'View on Hugging Face')}
+</div>`.trim() : '';
     const creatorInfoAction = modelWithFullData.civitai?.creator ? `
 <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
     ${modelWithFullData.civitai.creator.image ?
@@ -376,6 +381,9 @@ export async function showModelModal(model, modelType) {
     const creatorActionItems = [];
     if (viewOnCivitaiAction) {
         creatorActionItems.push(indentMarkup(viewOnCivitaiAction, 24));
+    }
+    if (viewOnHuggingFaceAction) {
+        creatorActionItems.push(indentMarkup(viewOnHuggingFaceAction, 24));
     }
     if (creatorInfoAction) {
         creatorActionItems.push(indentMarkup(creatorInfoAction, 24));
@@ -868,6 +876,11 @@ function setupEventHandlers(filePath, modelType) {
                 break;
             case 'view-civitai':
                 openCivitai(target.dataset.filepath);
+                break;
+            case 'view-huggingface':
+                if (target.dataset.hfUrl) {
+                    window.open(target.dataset.hfUrl, '_blank', 'noopener,noreferrer');
+                }
                 break;
             case 'view-creator':
                 const username = target.dataset.username;

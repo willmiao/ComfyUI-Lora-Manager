@@ -1,4 +1,4 @@
-import { showToast, openCivitai, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, sendEmbeddingToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, openHuggingFace, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, sendEmbeddingToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { toggleShowcase } from './showcase/ShowcaseView.js';
@@ -66,6 +66,8 @@ function handleModelCardEvent_internal(event, modelType) {
         event.stopPropagation();
         if (card.dataset.from_civitai === 'true') {
             openCivitai(card.dataset.filepath);
+        } else if (card.dataset.hf_url) {
+            openHuggingFace(card.dataset.hf_url);
         }
         return true; // Stop propagation
     }
@@ -313,6 +315,7 @@ async function showModelModalFromCard(card, modelType) {
         modified: card.dataset.modified,
         file_size: parseInt(card.dataset.file_size || '0'),
         from_civitai: card.dataset.from_civitai === 'true',
+        hf_url: card.dataset.hf_url || '',
         base_model: card.dataset.base_model,
         notes: card.dataset.notes || '',
         favorite: card.dataset.favorite === 'true',
@@ -401,6 +404,7 @@ function showExampleAccessModal(card, modelType) {
                 modified: card.dataset.modified,
                 file_size: card.dataset.file_size,
                 from_civitai: card.dataset.from_civitai === 'true',
+                hf_url: card.dataset.hf_url || '',
                 base_model: card.dataset.base_model,
                 notes: card.dataset.notes,
                 favorite: card.dataset.favorite === 'true',
@@ -467,6 +471,7 @@ export function createModelCard(model, modelType) {
     card.dataset.base_model = model.base_model || 'Unknown';
     card.dataset.favorite = model.favorite ? 'true' : 'false';
     card.dataset.exclude = model.exclude ? 'true' : 'false';
+    card.dataset.hf_url = model.hf_url || '';
     const hasUpdateAvailable = Boolean(model.update_available);
     card.dataset.update_available = hasUpdateAvailable ? 'true' : 'false';
     card.dataset.skip_metadata_refresh = model.skip_metadata_refresh ? 'true' : 'false';
@@ -578,7 +583,10 @@ export function createModelCard(model, modelType) {
         translate('modelCard.actions.addToFavorites', {}, 'Add to favorites');
     const globeTitle = model.from_civitai ?
         translate('modelCard.actions.viewOnCivitai', {}, 'View on Civitai') :
-        translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
+        model.hf_url ?
+            translate('modelCard.actions.viewOnHuggingFace', {}, 'View on Hugging Face') :
+            translate('modelCard.actions.notAvailableFromCivitai', {}, 'Not available from Civitai');
+    const globeEnabled = model.from_civitai || !!model.hf_url;
     let sendTitle;
     let copyTitle;
     if (modelType === MODEL_TYPES.LORA) {
@@ -603,7 +611,7 @@ export function createModelCard(model, modelType) {
         </i>
         <i class="fas fa-globe" 
            title="${globeTitle}"
-           ${!model.from_civitai ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
+           ${!globeEnabled ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>
         </i>
         <i class="fas fa-paper-plane" 
            title="${sendTitle}">
