@@ -827,6 +827,23 @@ export class SettingsManager {
 
         // Update API key status display (do NOT pre-fill the input)
         this.updateApiKeyStatus();
+        this.updateLlmApiKeyStatus();
+
+        // AI Provider settings
+        const llmProviderSelect = document.getElementById('llmProvider');
+        if (llmProviderSelect) {
+            llmProviderSelect.value = state.global.settings.llm_provider || 'openai';
+        }
+
+        const llmApiBaseInput = document.getElementById('llmApiBase');
+        if (llmApiBaseInput) {
+            llmApiBaseInput.value = state.global.settings.llm_api_base || '';
+        }
+
+        const llmModelInput = document.getElementById('llmModel');
+        if (llmModelInput) {
+            llmModelInput.value = state.global.settings.llm_model || '';
+        }
 
         const civitaiHostSelect = document.getElementById('civitaiHost');
         if (civitaiHostSelect) {
@@ -2931,42 +2948,70 @@ export class SettingsManager {
         }
     }
 
-    editApiKey() {
-        const statusEl = document.getElementById('civitaiApiKeyStatus');
+    updateLlmApiKeyStatus() {
+        const hasKey = !!state.global.settings.llm_api_key;
+        const statusText = document.getElementById('llmApiKeyStatusText');
+        const actionBtn = document.getElementById('llmApiKeyActionBtn');
+        if (!statusText || !actionBtn) return;
+
+        if (hasKey) {
+            statusText.classList.remove('api-key-status--unconfigured');
+            statusText.classList.add('api-key-status--configured');
+            statusText.innerHTML = '<i class="fas fa-check-circle text-success"></i> '
+                + translate('settings.aiProvider.apiKeyConfigured', {}, 'Configured');
+            actionBtn.textContent = translate('common.actions.change', {}, 'Change');
+        } else {
+            statusText.classList.remove('api-key-status--configured');
+            statusText.classList.add('api-key-status--unconfigured');
+            statusText.innerHTML = '<i class="fas fa-times-circle text-error"></i> '
+                + translate('settings.aiProvider.apiKeyNotSet', {}, 'Not set');
+            actionBtn.textContent = translate('settings.aiProvider.apiKeySet', {}, 'Set up');
+        }
+    }
+
+    editApiKey(settingsKey = 'civitai_api_key', inputId = 'civitaiApiKey') {
+        const statusId = inputId + 'Status';
+        const editId = inputId + 'Edit';
+        const statusEl = document.getElementById(statusId);
         if (statusEl) statusEl.classList.add('is-hidden');
-        const editContainer = document.getElementById('civitaiApiKeyEdit');
+        const editContainer = document.getElementById(editId);
         if (editContainer) editContainer.classList.remove('is-hidden');
         // Focus the input
-        const input = document.getElementById('civitaiApiKey');
+        const input = document.getElementById(inputId);
         if (input) {
             input.value = '';  // Never pre-fill the secret
             setTimeout(() => input.focus(), 50);
         }
     }
 
-    cancelEditApiKey(silent) {
-        const editContainer = document.getElementById('civitaiApiKeyEdit');
+    cancelEditApiKey(silent, inputId = 'civitaiApiKey') {
+        const editId = inputId + 'Edit';
+        const statusId = inputId + 'Status';
+        const editContainer = document.getElementById(editId);
         if (editContainer) editContainer.classList.add('is-hidden');
-        const statusContainer = document.getElementById('civitaiApiKeyStatus');
+        const statusContainer = document.getElementById(statusId);
         if (statusContainer) statusContainer.classList.remove('is-hidden');
         // Clear any typed value
-        const input = document.getElementById('civitaiApiKey');
+        const input = document.getElementById(inputId);
         if (input) input.value = '';
         if (!silent) {
-            this.updateApiKeyStatus();
+            if (inputId === 'civitaiApiKey') {
+                this.updateApiKeyStatus();
+            }
         }
     }
 
-    async saveApiKey() {
-        const input = document.getElementById('civitaiApiKey');
+    async saveApiKey(settingsKey = 'civitai_api_key', inputId = 'civitaiApiKey') {
+        const input = document.getElementById(inputId);
         if (!input) return;
 
         const value = input.value.trim();
 
         try {
-            await this.saveSetting('civitai_api_key', value);
+            await this.saveSetting(settingsKey, value);
+            const labelName = settingsKey === 'civitai_api_key' ? 'CivitAI API Key' : 'LLM API Key';
             showToast('toast.settings.settingsUpdated',
-                { setting: 'CivitAI API Key' }, 'success');
+                { setting: labelName }, 'success');
         } catch (error) {
             showToast('toast.settings.settingSaveFailed',
                 { message: error.message }, 'error');
@@ -2974,9 +3019,13 @@ export class SettingsManager {
         }
 
         // Update the in-memory flag so the UI reflects the change
-        state.global.settings.civitai_api_key_set = !!value;
-        this.cancelEditApiKey(true);
-        this.updateApiKeyStatus();
+        if (settingsKey === 'civitai_api_key') {
+            state.global.settings.civitai_api_key_set = !!value;
+        }
+        this.cancelEditApiKey(true, inputId);
+        if (inputId === 'civitaiApiKey') {
+            this.updateApiKeyStatus();
+        }
     }
 
     toggleInputVisibility(button) {

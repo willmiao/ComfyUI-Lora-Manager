@@ -49,6 +49,7 @@ from ...utils.constants import (
     VALID_LORA_TYPES,
 )
 from .hf_handlers import HfHandler
+from .agent_handlers import AgentHandler
 from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.example_images_paths import (
     find_non_compliant_items_in_example_images_root,
@@ -3317,6 +3318,7 @@ class MiscHandlerSet:
         example_workflows: ExampleWorkflowsHandler,
         base_model: BaseModelHandlerSet,
         hf_handler: HfHandler | None = None,
+        agent_handler: AgentHandler | None = None,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -3336,6 +3338,7 @@ class MiscHandlerSet:
         self.example_workflows = example_workflows
         self.base_model = base_model
         self.hf_handler = hf_handler
+        self.agent_handler = agent_handler
 
     def to_route_mapping(
         self,
@@ -3384,6 +3387,10 @@ class MiscHandlerSet:
             # Hugging Face handlers
             "get_hf_repo_files": self.hf_handler.get_hf_repo_files,
             "download_hf_model": self.hf_handler.download_hf_model,
+            # Agent skill handlers
+            "get_agent_skills": self.agent_handler.get_agent_skills,
+            "execute_agent_skill": self.agent_handler.execute_agent_skill,
+            "cancel_agent_skill": self.agent_handler.cancel_agent_skill,
             # Base model handlers
             "get_base_models": self.base_model.get_base_models,
             "refresh_base_models": self.base_model.refresh_base_models,

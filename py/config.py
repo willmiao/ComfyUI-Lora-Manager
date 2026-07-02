@@ -8,6 +8,8 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 import logging
 import json
 import urllib.parse
+import sys as _sys
+import types as _types
 import time
 
 from .utils.cache_paths import CacheType, get_cache_file_path, get_legacy_cache_paths
@@ -1380,4 +1382,20 @@ class Config:
 
 
 # Global config instance
-config = Config()
+# NOTE: Guard against re-import.  When ServiceRegistry.get_lora_scanner() triggers
+# a fresh import of lora_scanner → config, we must NOT re-execute Config.__init__()
+# (which re-scans all roots, re-registers libraries, etc.).
+#
+# Strategy: store the config instance in a dedicated sentinel module
+# ('_lm_config_cache') that is NEVER removed from sys.modules (its key does
+# NOT start with 'py.'), so it survives re-imports of py.* modules.
+_CONFIG_SENTINEL = "_lm_config_cache"
+if _CONFIG_SENTINEL in _sys.modules:
+    # Re-import: reuse the existing singleton from the sentinel.
+    config: Config = _sys.modules[_CONFIG_SENTINEL].config  # type: ignore[valid-type]
+else:
+    config: Config = Config()
+    # Register the sentinel so re-imports of py.config find us.
+    _sentinel_mod = _types.ModuleType(_CONFIG_SENTINEL)
+    _sentinel_mod.config = config
+    _sys.modules[_CONFIG_SENTINEL] = _sentinel_mod

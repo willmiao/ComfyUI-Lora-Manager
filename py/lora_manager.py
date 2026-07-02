@@ -445,5 +445,12 @@ class LoraManager:
                     scanner.cancel_task()
                     logger.debug("LoRA Manager: Cancelled %s", name)
 
+            # Close shared aiohttp sessions to avoid "Unclosed client session" warnings
+            try:
+                from py.routes.handlers.hf_handlers import close_hf_api_session
+                await close_hf_api_session()
+            except Exception as exc:
+                logger.debug("Error closing HF API session: %s", exc)
+
         except Exception as e:
             logger.error(f"Error during cleanup: {e}", exc_info=True)

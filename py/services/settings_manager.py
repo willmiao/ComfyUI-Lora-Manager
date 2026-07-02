@@ -107,6 +107,11 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "backup_retention_count": 5,
     "use_new_license_icons": True,
     "group_by_model": False,
+    # AI / LLM provider configuration (BYOK)
+    "llm_provider": "openai",  # "openai" | "ollama" | "custom"
+    "llm_api_key": "",
+    "llm_api_base": "",  # empty = provider default
+    "llm_model": "",  # e.g. "gpt-4o-mini"
 }
 
 
@@ -871,6 +876,23 @@ class SettingsManager:
             logger.info("Found CIVITAI_API_KEY environment variable")
             # Always use the environment variable if it exists
             self.settings["civitai_api_key"] = env_api_key
+            self._save_settings()
+
+        # LLM provider overrides
+        llm_env_map = {
+            "LLM_API_KEY": "llm_api_key",
+            "LLM_MODEL": "llm_model",
+            "LLM_API_BASE": "llm_api_base",
+            "LLM_PROVIDER": "llm_provider",
+        }
+        llm_changed = False
+        for env_var, settings_key in llm_env_map.items():
+            env_val = os.environ.get(env_var)
+            if env_val:
+                logger.info("Found %s environment variable", env_var)
+                self.settings[settings_key] = env_val
+                llm_changed = True
+        if llm_changed:
             self._save_settings()
 
     def _default_settings_actions(self) -> List[Dict[str, Any]]:

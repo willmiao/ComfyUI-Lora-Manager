@@ -657,6 +657,23 @@
             "proxyPassword": "密碼（選填）",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "代理驗證所需的密碼（如有需要）"
+        },
+        "aiProvider": {
+            "title": "AI 提供者",
+            "provider": "提供者",
+            "providerHelp": "選擇您的 LLM 提供者。OpenAI 和 Ollama 使用預設 API 端點。自訂允許您指定任何相容 OpenAI 的端點。",
+            "custom": "自訂（相容 OpenAI）",
+            "apiBase": "API 基礎位址",
+            "apiBaseHelp": "LLM API 的基礎 URL（例如 https://api.openai.com/v1）。留空則使用提供者預設位址。",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "API 金鑰",
+            "apiKeyHelp": "您的 LLM 提供者 API 金鑰。僅儲存在本地，除了您選擇的 LLM 提供者外，不會發送到任何伺服器。",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "未設定",
+            "apiKeyConfigured": "已設定",
+            "apiKeySet": "設定",
+            "model": "模型",
+            "modelHelp": "要使用的模型名稱（例如 deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。請查看您的提供者支援的可用模型列表。"
         }
     },
     "loras": {
@@ -754,7 +771,8 @@
                 "completed": "完成：已移動 {success}，已略過 {skipped}，失敗 {failures}",
                 "complete": "自動整理完成",
                 "error": "錯誤：{error}"
-            }
+            },
+            "enrichHfAgent": "AI 中繼資料增強"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 資料",
@@ -778,7 +796,8 @@
             "shareRecipe": "分享配方",
             "viewAllLoras": "檢視全部 LoRA",
             "downloadMissingLoras": "下載缺少的 LoRA",
-            "deleteRecipe": "刪除配方"
+            "deleteRecipe": "刪除配方",
+            "enrichHfAgent": "AI 中繼資料增強"
         }
     },
     "recipes": {
@@ -2081,6 +2100,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "已複製到剪貼簿",
             "downloadStarted": "下載已開始"
+        },
+        "agent": {
+            "llmNotConfigured": "AI 提供者尚未設定。請在 設定 → AI 提供者 中進行設定。",
+            "enrichStarted": "正在使用 AI 增強中繼資料...",
+            "enrichComplete": "中繼資料增強完成：{{summary}}",
+            "enrichFailed": "中繼資料增強失敗：{{error}}"
         }
     },
     "doctor": {

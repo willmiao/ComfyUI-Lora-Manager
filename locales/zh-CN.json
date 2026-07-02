@@ -657,6 +657,23 @@
             "proxyPassword": "密码 (可选)",
             "proxyPasswordPlaceholder": "密码",
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
+        },
+        "aiProvider": {
+            "title": "AI 提供商",
+            "provider": "提供商",
+            "providerHelp": "选择您的 LLM 提供商。OpenAI 和 Ollama 使用预设的 API 端点。自定义允许您指定任何兼容 OpenAI 的端点。",
+            "custom": "自定义（兼容 OpenAI）",
+            "apiBase": "API 基础地址",
+            "apiBaseHelp": "LLM API 的基础 URL（例如 https://api.openai.com/v1）。留空则使用提供商默认地址。",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "API 密钥",
+            "apiKeyHelp": "您的 LLM 提供商 API 密钥。仅本地存储，不会发送到您选择的 LLM 提供商之外的任何服务器。",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "未设置",
+            "apiKeyConfigured": "已配置",
+            "apiKeySet": "设置",
+            "model": "模型",
+            "modelHelp": "要使用的模型名称（例如 deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。请查看您的提供商支持的可用模型列表。"
         }
     },
     "loras": {
@@ -754,7 +771,8 @@
                 "completed": "完成：已移动 {success} 个，跳过 {skipped} 个，失败 {failures} 个",
                 "complete": "自动整理已完成",
                 "error": "错误：{error}"
-            }
+            },
+            "enrichHfAgent": "AI 元数据增强"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 数据",
@@ -778,7 +796,8 @@
             "shareRecipe": "分享配方",
             "viewAllLoras": "查看所有 LoRA",
             "downloadMissingLoras": "下载缺失的 LoRA",
-            "deleteRecipe": "删除配方"
+            "deleteRecipe": "删除配方",
+            "enrichHfAgent": "AI 元数据增强"
         }
     },
     "recipes": {
@@ -2081,6 +2100,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "已复制到剪贴板",
             "downloadStarted": "下载已开始"
+        },
+        "agent": {
+            "llmNotConfigured": "AI 提供商未配置。请在 设置 → AI 提供商 中进行配置。",
+            "enrichStarted": "正在使用 AI 增强元数据...",
+            "enrichComplete": "元数据增强完成：{{summary}}",
+            "enrichFailed": "元数据增强失败：{{error}}"
         }
     },
     "doctor": {

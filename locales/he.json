@@ -657,6 +657,23 @@
             "proxyPassword": "סיסמה (אופציונלי)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "סיסמה לאימות מול הפרוקסי (אם נדרש)"
+        },
+        "aiProvider": {
+            "title": "ספק AI",
+            "provider": "ספק",
+            "providerHelp": "בחר את ספק ה-LLM שלך. OpenAI ו-Ollama משתמשים בנקודות קצה מוגדרות מראש. מותאם אישית מאפשר לך לציין כל נקודת קצה תואמת OpenAI.",
+            "custom": "מותאם אישית (תואם OpenAI)",
+            "apiBase": "כתובת בסיס API",
+            "apiBaseHelp": "כתובת ה-URL הבסיסית ל-API של LLM (לדוגמה https://api.openai.com/v1). השאר ריק לשימוש בברירת המחדל של הספק.",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "מפתח API",
+            "apiKeyHelp": "מפתח ה-API של ספק ה-LLM שלך. נשמר מקומית, לעולם לא נשלח לשרת כלשהו מלבד ספק ה-LLM שבחרת.",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "לא הוגדר",
+            "apiKeyConfigured": "הוגדר",
+            "apiKeySet": "הגדר",
+            "model": "מודל",
+            "modelHelp": "שם המודל לשימוש (לדוגמה deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). בדוק אצל הספק שלך אילו מודלים זמינים."
         }
     },
     "loras": {
@@ -754,7 +771,8 @@
                 "completed": "הושלם: {success} הועברו, {skipped} דולגו, {failures} נכשלו",
                 "complete": "ארגון אוטומטי הושלם",
                 "error": "שגיאה: {error}"
-            }
+            },
+            "enrichHfAgent": "העשרת מטא-דאטה (AI)"
         },
         "contextMenu": {
             "refreshMetadata": "רענן נתוני Civitai",
@@ -778,7 +796,8 @@
             "shareRecipe": "שתף מתכון",
             "viewAllLoras": "הצג את כל ה-LoRAs",
             "downloadMissingLoras": "הורד LoRAs חסרים",
-            "deleteRecipe": "מחק מתכון"
+            "deleteRecipe": "מחק מתכון",
+            "enrichHfAgent": "העשרת מטא-דאטה (AI)"
         }
     },
     "recipes": {
@@ -2081,6 +2100,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "הועתק ללוח",
             "downloadStarted": "ההורדה החלה"
+        },
+        "agent": {
+            "llmNotConfigured": "ספק AI לא הוגדר. הפעל אותו בהגדרות → ספק AI.",
+            "enrichStarted": "מעשיר מטא-דאטה באמצעות AI...",
+            "enrichComplete": "העשרת מטא-דאטה הושלמה: {{summary}}",
+            "enrichFailed": "העשרת מטא-דאטה נכשלה: {{error}}"
         }
     },
     "doctor": {

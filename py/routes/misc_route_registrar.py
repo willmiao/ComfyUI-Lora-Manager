@@ -101,6 +101,16 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "POST", "/api/lm/download-hf-model", "download_hf_model"
     ),
+    # Agent skill endpoints
+    RouteDefinition(
+        "GET", "/api/lm/agent/skills", "get_agent_skills"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/agent/execute/{skill_name}", "execute_agent_skill"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/agent/cancel", "cancel_agent_skill"
+    ),
 )
 
 

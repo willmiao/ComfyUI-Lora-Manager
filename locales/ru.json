@@ -657,6 +657,23 @@
             "proxyPassword": "Пароль (необязательно)",
             "proxyPasswordPlaceholder": "пароль",
             "proxyPasswordHelp": "Пароль для аутентификации на прокси (если требуется)"
+        },
+        "aiProvider": {
+            "title": "Поставщик ИИ",
+            "provider": "Поставщик",
+            "providerHelp": "Выберите поставщика LLM. OpenAI и Ollama используют предустановленные API-эндпоинты. Пользовательский позволяет указать любой совместимый с OpenAI эндпоинт.",
+            "custom": "Пользовательский (совместимый с OpenAI)",
+            "apiBase": "Базовый URL API",
+            "apiBaseHelp": "Базовый URL для LLM API (например, https://api.openai.com/v1). Оставьте пустым, чтобы использовать значение по умолчанию.",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "API-ключ",
+            "apiKeyHelp": "Ваш API-ключ поставщика LLM. Хранится локально и никогда не отправляется на другие серверы, кроме выбранного поставщика LLM.",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "Не задан",
+            "apiKeyConfigured": "Настроен",
+            "apiKeySet": "Настроить",
+            "model": "Модель",
+            "modelHelp": "Имя модели для использования (например, deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Проверьте доступные модели у вашего поставщика."
         }
     },
     "loras": {
@@ -754,7 +771,8 @@
                 "completed": "Завершено: {success} перемещено, {skipped} пропущено, {failures} не удалось",
                 "complete": "Автоматическая организация завершена",
                 "error": "Ошибка: {error}"
-            }
+            },
+            "enrichHfAgent": "Обогатить метаданные (ИИ)"
         },
         "contextMenu": {
             "refreshMetadata": "Обновить данные Civitai",
@@ -778,7 +796,8 @@
             "shareRecipe": "Поделиться рецептом",
             "viewAllLoras": "Посмотреть все LoRAs",
             "downloadMissingLoras": "Загрузить отсутствующие LoRAs",
-            "deleteRecipe": "Удалить рецепт"
+            "deleteRecipe": "Удалить рецепт",
+            "enrichHfAgent": "Обогатить метаданные (ИИ)"
         }
     },
     "recipes": {
@@ -2081,6 +2100,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "Скопировано в буфер обмена",
             "downloadStarted": "Загрузка начата"
+        },
+        "agent": {
+            "llmNotConfigured": "Поставщик ИИ не настроен. Включите его в Настройки → Поставщик ИИ.",
+            "enrichStarted": "Обогащение метаданных с помощью ИИ...",
+            "enrichComplete": "Обогащение метаданных завершено: {{summary}}",
+            "enrichFailed": "Ошибка обогащения метаданных: {{error}}"
         }
     },
     "doctor": {

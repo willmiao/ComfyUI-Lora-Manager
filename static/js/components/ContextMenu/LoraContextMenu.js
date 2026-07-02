@@ -1,7 +1,7 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
-import { copyLoraSyntax, sendLoraToWorkflow, buildLoraSyntax } from '../../utils/uiHelpers.js';
+import { copyLoraSyntax, sendLoraToWorkflow, buildLoraSyntax, showToast } from '../../utils/uiHelpers.js';
 import { showExcludeModal, showDeleteModal } from '../../utils/modalUtils.js';
 import { moveManager } from '../../managers/MoveManager.js';
 
@@ -63,12 +63,55 @@ export class LoraContextMenu extends BaseContextMenu {
             case 'refresh-metadata':
                 getModelApiClient().refreshSingleModelMetadata(this.currentCard.dataset.filepath);
                 break;
+            case 'enrich-hf-agent':
+                this.enrichWithAgent(this.currentCard.dataset.filepath);
+                break;
             case 'exclude':
                 showExcludeModal(this.currentCard.dataset.filepath);
                 break;
             case 'restore':
                 this.restoreExcludedModel(this.currentCard.dataset.filepath);
                 break;
+        }
+    }
+
+    async enrichWithAgent(filePath) {
+        const { agentManager } = await import('../../managers/AgentManager.js');
+
+        // Check if LLM is configured
+        const configured = await agentManager.isLlmConfigured();
+        if (!configured) {
+            showToast('toast.agent.llmNotConfigured', {}, 'warning');
+            return;
+        }
+
+        // Connect WebSocket for progress
+        agentManager.connect();
+
+        // Set up one-time completion handler
+        const onComplete = (data) => {
+            const idx = agentManager.completeCallbacks.indexOf(onComplete);
+            if (idx >= 0) agentManager.completeCallbacks.splice(idx, 1);
+
+            if (data.status === 'completed') {
+                showToast('toast.agent.enrichComplete', { summary: data.summary || 'Done' }, 'success');
+                // Soft reload to reflect updated metadata
+                if (typeof resetAndReload === 'function') {
+                    resetAndReload();
+                }
+            } else if (data.status === 'error') {
+                showToast('toast.agent.enrichFailed', { error: data.error || 'Unknown error' }, 'error');
+            }
+        };
+        agentManager.onComplete(onComplete);
+
+        // Show progress toast
+        showToast('toast.agent.enrichStarted', {}, 'info');
+
+        try {
+            await agentManager.executeSkill('enrich_hf_metadata', [filePath]);
+        } catch (error) {
+            showToast('toast.agent.enrichFailed', { error: error.message }, 'error');
         }
     }
 

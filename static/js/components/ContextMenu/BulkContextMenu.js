@@ -274,6 +274,9 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'resume-metadata-refresh':
                 bulkManager.setSkipMetadataRefresh(false);
                 break;
+            case 'enrich-hf-agent-bulk':
+                this.enrichBulkWithAgent();
+                break;
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();
                 break;
@@ -361,6 +364,68 @@ export class BulkContextMenu extends BaseContextMenu {
             await apiClient.downloadExampleImages([...hashes]);
         } catch (error) {
             console.error('Bulk download example images failed:', error);
+        }
+    }
+
+    /**
+     * Enrich metadata for selected models via LLM agent skill.
+     */
+    async enrichBulkWithAgent() {
+        if (state.selectedModels.size === 0) {
+            return;
+        }
+
+        const { agentManager } = await import('../../managers/AgentManager.js');
+
+        // Check if LLM is configured
+        const configured = await agentManager.isLlmConfigured();
+        if (!configured) {
+            showToast('toast.agent.llmNotConfigured', {}, 'warning');
+            return;
+        }
+
+        const modelPaths = [...state.selectedModels];
+
+        // Connect WebSocket for progress
+        agentManager.connect();
+
+        // Set up one-time completion handler
+        const onComplete = (data) => {
+            const idx = agentManager.completeCallbacks.indexOf(onComplete);
+            if (idx >= 0) agentManager.completeCallbacks.splice(idx, 1);
+
+            if (data.status === 'completed') {
+                showToast(
+                    'toast.agent.enrichComplete',
+                    { summary: data.summary || 'Done' },
+                    'success'
+                );
+                // Soft reload to reflect updated metadata
+                window.location.reload();
+            } else if (data.status === 'error') {
+                showToast(
+                    'toast.agent.enrichFailed',
+                    { error: data.error || 'Unknown error' },
+                    'error'
+                );
+            }
+        };
+        agentManager.onComplete(onComplete);
+
+        showToast(
+            'toast.agent.enrichStarted',
+            { count: modelPaths.length },
+            'info'
+        );
+
+        try {
+            await agentManager.executeSkill('enrich_hf_metadata', modelPaths);
+        } catch (error) {
+            showToast(
+                'toast.agent.enrichFailed',
+                { error: error.message },
+                'error'
+            );
         }
     }
 }
