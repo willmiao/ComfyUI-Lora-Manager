@@ -65,26 +65,30 @@ def extract_gallery_images(
 
         entry = entry.strip()
 
-        # Extract text (prompt)
+        # Extract text (prompt) — handles three YAML scalar styles:
+        #   1. "quoted inline"
+        #   2. >- folded block
+        #   3. plain (unquoted) multi-line
         text = ""
-        # Quoted inline: `"some prompt"`
         qm = re.match(r'^"((?:[^"\\]|\\.)*)"', entry)
         if qm:
             text = qm.group(1)
         else:
-            # Multi-line YAML scalar: `>-\n    line1\n    line2`
             mm = re.match(r"^>(?:-\s*)?\n((?:.+(?:\n|$))+)", entry, re.MULTILINE)
             if mm:
                 raw = mm.group(1)
-                # Take lines until a line starts with a YAML key (word + colon)
+            else:
+                # Plain YAML scalar — take lines until a YAML key
+                raw = entry
+            if raw:
                 text_lines: list[str] = []
                 for line in raw.split("\n"):
                     if re.match(r"^\s*\w+:", line):
                         break
-                    text_lines.append(line)
-                text = " ".join(
-                    line.strip() for line in text_lines if line.strip()
-                )
+                    stripped = line.strip()
+                    if stripped:
+                        text_lines.append(stripped)
+                text = " ".join(text_lines)
 
         # Extract output.url
         url = ""

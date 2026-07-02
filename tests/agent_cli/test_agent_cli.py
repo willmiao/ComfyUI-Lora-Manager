@@ -566,3 +566,20 @@ base_model: flux
         ) == "prithivMLmods/Flux-Long-Toon-LoRA"
         assert extract_repo_from_hf_url("") == ""
         assert extract_repo_from_hf_url("not a url") == ""
+
+    def test_plain_yaml_scalar_text(self):
+        """Unquoted multi-line YAML scalar (plain format) should extract prompt."""
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        md = """---
+widget:
+- text: two samurais doing a muay thai fight
+    while the other leans back. Textured abstract style
+  output:
+    url: images/00.png
+---"""
+        images = extract_gallery_images(md, "user/repo")
+        assert len(images) == 1
+        assert "two samurais doing a muay thai fight" in images[0]["meta"]["prompt"]
+        assert "Textured abstract style" in images[0]["meta"]["prompt"]
