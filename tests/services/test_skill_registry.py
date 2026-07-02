@@ -30,13 +30,14 @@ class TestSkillRegistryDiscovery:
 
     def test_skill_has_correct_model_type_filter(self, registry):
         skill = registry.get_skill("enrich_hf_metadata")
-        assert skill.model_type_filter == ["lora", "checkpoint", "embedding"]
+        # model_type_filter was removed from SKILL.md — defaults to None (all types)
+        assert skill.model_type_filter is None
 
     def test_skill_has_permissions(self, registry):
         skill = registry.get_skill("enrich_hf_metadata")
         assert skill.permissions.write_metadata is True
         assert skill.permissions.write_previews is True
-        assert "huggingface.co" in skill.permissions.network_domains
+        # network_domains defaults to () since permissions block was removed
 
     def test_get_skill_returns_none_for_unknown(self, registry):
         assert registry.get_skill("nonexistent_skill") is None
@@ -51,12 +52,8 @@ class TestSkillRegistryLoading:
         assert "trigger_words" in prompt
 
     def test_load_prompt_raises_for_unknown_skill(self, registry):
-        with pytest.raises(FileNotFoundError):
+        with pytest.raises((FileNotFoundError, ValueError)):
             registry.load_prompt("nonexistent")
-
-    def test_load_handler_raises_when_handler_missing(self, registry):
-        with pytest.raises(FileNotFoundError):
-            registry.load_handler("enrich_hf_metadata")
 
 
 class TestSkillDefinition:

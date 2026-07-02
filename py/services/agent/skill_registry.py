@@ -1,11 +1,16 @@
 """Discovery and loading of agent skills.
 
 Skills live in ``py/services/agent/skills/<name>/`` directories.  Each
-directory must contain:
+directory must contain a ``SKILL.md`` file with YAML frontmatter::
 
-- ``skill.yaml`` — metadata (name, title, description, schemas, permissions)
-- ``prompt.md`` — LLM system prompt template (Jinja2-style ``{{variable}}`` placeholders)
-- ``handler.py`` — async ``prepare`` and ``post_process`` functions
+    ---
+    name: my_skill
+    title: "My Skill"
+    description: "What this skill does"
+    llm_required: true
+    ---
+
+    Prompt template with ``{{variable}}`` placeholders.
 
 The registry scans the skills directory on first access and caches results.
 """
@@ -13,12 +18,10 @@ The registry scans the skills directory on first access and caches results.
 from __future__ import annotations
 
 import asyncio
-import importlib
-import importlib.util
 import logging
-import os
+import re
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import yaml
 
@@ -28,6 +31,31 @@ logger = logging.getLogger(__name__)
 
 # Directory where built-in skills are stored
 _SKILLS_DIR = Path(__file__).parent / "skills"
+
+
+# ---------------------------------------------------------------------------
+# Frontmatter parser
+# ---------------------------------------------------------------------------
+
+_FRONTMATTER_RE = re.compile(
+    r"^---\s*\n(.*?\n)---\s*\n?(.*)", re.DOTALL
+)
+
+
+def _parse_skill_file(path: Path) -> tuple[dict, str]:
+    """Read a ``SKILL.md`` file and return (frontmatter_dict, body_text).
+
+    Raises ``ValueError`` if the file lacks valid YAML frontmatter.
+    """
+    text = path.read_text(encoding="utf-8")
+    m = _FRONTMATTER_RE.match(text)
+    if not m:
+        raise ValueError(f"Missing or invalid YAML frontmatter in {path}")
+    frontmatter = yaml.safe_load(m.group(1))
+    if not isinstance(frontmatter, dict):
+        raise ValueError(f"Frontmatter in {path} is not a mapping")
+    body = m.group(2).strip()
+    return frontmatter, body
 
 
 class SkillRegistry:
@@ -79,31 +107,33 @@ class SkillRegistry:
         for entry in sorted(self._skills_dir.iterdir()):
             if not entry.is_dir():
                 continue
-            skill_yaml = entry / "skill.yaml"
-            if not skill_yaml.exists():
+            skill_md = entry / "SKILL.md"
+            if not skill_md.exists():
                 continue
             try:
-                definition = self._load_skill_yaml(skill_yaml)
+                definition = self._load_skill_definition(skill_md)
                 if definition is not None:
                     self._skills[definition.name] = definition
                     logger.debug("Loaded skill: %s", definition.name)
             except Exception as exc:
-                logger.warning("Failed to load skill from %s: %s", skill_yaml, exc)
+                logger.warning("Failed to load skill from %s: %s", skill_md, exc)
 
         self._loaded = True
         logger.info("Discovered %d agent skills", len(self._skills))
 
-    def _load_skill_yaml(self, path: Path) -> Optional[SkillDefinition]:
-        """Parse a skill.yaml file into a :class:`SkillDefinition`."""
+    def _load_skill_definition(self, path: Path) -> Optional[SkillDefinition]:
+        """Parse a ``SKILL.md`` frontmatter into a :class:`SkillDefinition`."""
 
-        with open(path, "r", encoding="utf-8") as f:
-            data = yaml.safe_load(f)
-
-        if not data or "name" not in data:
-            logger.warning("skill.yaml missing required 'name' field: %s", path)
+        try:
+            data, _body = _parse_skill_file(path)
+        except (ValueError, yaml.YAMLError) as exc:
+            logger.warning("Failed to parse SKILL.md %s: %s", path, exc)
             return None
 
-        # Parse permissions
+        if "name" not in data:
+            logger.warning("SKILL.md missing required 'name' field: %s", path)
+            return None
+
         perm_data = data.get("permissions", {})
         permissions = SkillPermissions(
             write_metadata=perm_data.get("write_metadata", True),
@@ -141,44 +171,14 @@ class SkillRegistry:
         return self._skills.get(name)
 
     def load_prompt(self, name: str) -> str:
-        """Load and return the prompt template for a skill."""
+        """Load and return the prompt template body from a skill's ``SKILL.md``."""
 
         skill_dir = self._skills_dir / name
-        prompt_path = skill_dir / "prompt.md"
-        if not prompt_path.exists():
-            raise FileNotFoundError(f"Prompt template not found: {prompt_path}")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            return f.read()
-
-    def load_handler(self, name: str) -> Dict[str, Callable]:
-        """Dynamically import a skill's handler module and return its functions.
-
-        Returns a dict with ``prepare`` and ``post_process`` callables.
-        ``prepare`` may be absent (the skill doesn't need pre-LLM data gathering).
-        """
-
-        skill_dir = self._skills_dir / name
-        handler_path = skill_dir / "handler.py"
-        if not handler_path.exists():
-            raise FileNotFoundError(f"Handler not found: {handler_path}")
-
-        # Use importlib to load the module by file path
-        # Important: use a fully-qualified module name so that absolute imports
-        # (e.g. ``from py.utils.metadata_manager import MetadataManager``) resolve correctly.
-        module_name = f"py.services.agent.skills.{name}.handler"
-        spec = importlib.util.spec_from_file_location(module_name, handler_path)
-        if spec is None or spec.loader is None:
-            raise ImportError(f"Cannot load handler module from {handler_path}")
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
-
-        result: Dict[str, Callable] = {}
-        if hasattr(module, "prepare"):
-            result["prepare"] = module.prepare
-        if hasattr(module, "post_process"):
-            result["post_process"] = module.post_process
-        else:
-            raise AttributeError(
-                f"Skill handler {name} is missing required 'post_process' function"
-            )
-        return result
+        skill_path = skill_dir / "SKILL.md"
+        if not skill_path.exists():
+            raise FileNotFoundError(f"SKILL.md not found: {skill_path}")
+        try:
+            _frontmatter, body = _parse_skill_file(skill_path)
+            return body
+        except (ValueError, yaml.YAMLError) as exc:
+            raise ValueError(f"Failed to parse prompt from {skill_path}: {exc}") from exc

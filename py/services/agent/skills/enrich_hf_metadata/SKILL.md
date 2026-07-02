@@ -1,3 +1,12 @@
+---
+name: enrich_hf_metadata
+title: "Enrich Metadata from HuggingFace"
+description: >
+  Parse the HuggingFace model card via LLM to extract description, trigger
+  words, base model, tags, and preview image URL.
+llm_required: true
+---
+
 You are an expert assistant for AI image generation models. Your task is to extract structured metadata from a HuggingFace model card (README.md).
 
 ## Model Information
@@ -12,6 +21,11 @@ You are an expert assistant for AI image generation models. Your task is to extr
 {{current_metadata}}
 ```
 
+## Available Base Models
+
+The following base models are currently valid in this system:
+{{base_models}}
+
 ## HuggingFace README Content
 
 ```
@@ -23,10 +37,7 @@ You are an expert assistant for AI image generation models. Your task is to extr
 Extract the following information from the README content above:
 
 ### base_model
-The base model this LoRA/checkpoint was trained on. Use EXACTLY one of the names from the **Available Base Models** list below. Do not invent new names or use aliases.
-
-Available Base Models:
-{{base_models}}
+The base model this LoRA/checkpoint was trained on. Use EXACTLY one of the names from the **Available Base Models** list above. Do not invent new names or use aliases.
 
 Check the YAML frontmatter (between --- markers) for `base_model:` first, then look at the description text and safetensors metadata. If you cannot determine it, return an empty string.
 
@@ -60,6 +71,7 @@ Your confidence level in the extracted data:
 
 Return ONLY a JSON object with exactly these fields (no markdown fences, no extra text):
 
+```json
 {
   "model_path": "{{model_path}}",
   "base_model": "<canonical name or empty string>",
@@ -69,9 +81,9 @@ Return ONLY a JSON object with exactly these fields (no markdown fences, no extr
   "preview_url": "<image URL or empty string>",
   "confidence": "<high|medium|low>"
 }
+```
 
 Important:
 - Only include the JSON object, no other text
 - If a field cannot be determined, use an empty string or empty array
 - Do not fabricate information not supported by the README
-- For base_model, the YAML frontmatter often has `base_model:` with a HuggingFace repo name like "black-forest-labs/FLUX.1-dev" — map this to "Flux.1 D"
