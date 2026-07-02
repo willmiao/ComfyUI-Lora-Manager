@@ -67,7 +67,7 @@ class TestEnrichHfMetadata:
     MIN_LLM_OUTPUT = {
         "base_model": "",
         "trigger_words": [],
-        "description": "",
+        "short_description": "",
         "tags": [],
         "preview_url": "",
         "confidence": "low",
@@ -167,23 +167,82 @@ class TestEnrichHfMetadata:
         applied = mock_apply.call_args[0][1]
         assert applied["civitai"]["trainedWords"] == ["trigger1", "trigger2"]
 
-    # -- description -----------------------------------------------------
+    # -- short_description → civitai.description -------------------------
 
     @pytest.mark.asyncio
-    async def test_description_set_when_empty(self, processor):
-        llm = {**self.MIN_LLM_OUTPUT, "description": "A model description"}
+    async def test_short_description_written_to_civitai(self, processor):
+        """short_description written to civitai.description for HF models."""
+        llm = {**self.MIN_LLM_OUTPUT, "short_description": "A short summary"}
         with (
             mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
+            mock.patch("py.agent_cli.download_preview", return_value=None),
             mock.patch("py.agent_cli.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
                 model_path="/p.safetensors",
                 llm_output=llm,
-                metadata={"modelDescription": ""},
+                metadata={"from_civitai": False},
             )
-        assert "modelDescription" in mock_apply.call_args[0][1]
+        applied = mock_apply.call_args[0][1]
+        assert applied["civitai"]["description"] == "A short summary"
+
+    @pytest.mark.asyncio
+    async def test_short_description_skipped_for_civitai_model(self, processor):
+        """short_description NOT written for CivitAI models (has own description)."""
+        llm = {**self.MIN_LLM_OUTPUT, "short_description": "A short summary"}
+        with (
+            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
+            mock.patch("py.agent_cli.download_preview", return_value=None),
+            mock.patch("py.agent_cli.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata={"from_civitai": True},
+            )
+        applied = mock_apply.call_args[0][1]
+        assert "civitai" not in applied or "description" not in applied.get("civitai", {})
+
+    # -- readme_content → modelDescription -------------------------------
+
+    @pytest.mark.asyncio
+    async def test_readme_content_converted_to_model_description(self, processor):
+        """Raw README converted to HTML and stored as modelDescription."""
+        with (
+            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
+            mock.patch("py.agent_cli.download_preview", return_value=None),
+            mock.patch("py.agent_cli.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.MIN_LLM_OUTPUT,
+                metadata={"from_civitai": False},
+                readme_content="# Hello\n\nThis is **bold**.",
+            )
+        applied = mock_apply.call_args[0][1]
+        assert "<h1>Hello</h1>" in applied.get("modelDescription", "")
+        assert "<strong>bold</strong>" in applied.get("modelDescription", "")
+
+    @pytest.mark.asyncio
+    async def test_readme_content_skipped_for_civitai_model(self, processor):
+        """README content NOT converted for CivitAI models."""
+        with (
+            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
+            mock.patch("py.agent_cli.download_preview", return_value=None),
+            mock.patch("py.agent_cli.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.MIN_LLM_OUTPUT,
+                metadata={"from_civitai": True},
+                readme_content="# Hello",
+            )
+        applied = mock_apply.call_args[0][1]
+        assert "modelDescription" not in applied
 
     # -- tags ------------------------------------------------------------
 

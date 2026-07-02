@@ -284,6 +284,7 @@ class AgentService:
                     model_path=model_path,
                     llm_output=llm_response or {},
                     metadata=metadata,
+                    readme_content=prompt_vars.get("readme_content_full", ""),
                 )
 
                 if model_result.get("success", True):
@@ -345,6 +346,7 @@ class AgentService:
             "hf_url": "",
             "repo": "",
             "readme_content": "",
+            "readme_content_full": "",
             "current_metadata": {},
             "base_models": [],
             "priority_tags": "",
@@ -367,6 +369,7 @@ class AgentService:
         if repo:
             readme = await self._fetch_readme(repo)
             context["readme_content"] = readme[:8000] if readme else "(README not available)"
+            context["readme_content_full"] = readme or ""
 
         try:
             context["base_models"] = await list_base_models()

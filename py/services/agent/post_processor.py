@@ -39,15 +39,20 @@ class PostProcessor:
         model_path: str,
         llm_output: Dict[str, Any],
         metadata: Dict[str, Any],
+        readme_content: str = "",
     ) -> Dict[str, Any]:
         """Route *llm_output* to the correct skill post-processor.
+
+        *readme_content* is optional raw markdown content (e.g. HF README)
+        that is converted to HTML and stored as ``modelDescription`` for
+        the description tab.
 
         Returns a dict with keys ``success`` (bool), ``updated_fields`` (list),
         ``preview_downloaded`` (bool), and ``errors`` (list).
         """
         if skill_name == "enrich_hf_metadata":
             return await self._process_enrich_hf_metadata(
-                model_path, llm_output, metadata,
+                model_path, llm_output, metadata, readme_content,
             )
         return {
             "success": False,
@@ -64,12 +69,14 @@ class PostProcessor:
         model_path: str,
         llm_output: Dict[str, Any],
         metadata: Dict[str, Any],
+        readme_content: str = "",
     ) -> Dict[str, Any]:
         from ...agent_cli import (
             apply_metadata_updates,
             download_preview,
             refresh_cache,
         )
+        from .skills.enrich_hf_metadata.md_to_html import convert_readme_to_html
 
         updated_fields: List[str] = []
         preview_downloaded = False
@@ -97,12 +104,21 @@ class PostProcessor:
                 civitai_updates["trainedWords"] = cleaned
                 updates["civitai"] = civitai_updates
 
-        # modelDescription
-        new_desc = (llm_output.get("description") or "").strip()
-        if new_desc:
-            current_desc = metadata.get("modelDescription", "") or ""
-            if self._should_overwrite(current_desc, is_hf_model):
-                updates["modelDescription"] = new_desc
+        # modelDescription — from raw README content (converted to HTML)
+        if readme_content and is_hf_model:
+            converted = convert_readme_to_html(readme_content)
+            if converted:
+                updates["modelDescription"] = converted
+
+        # short_description → civitai.description (for "About this version")
+        short_desc = (llm_output.get("short_description") or "").strip()
+        if short_desc and is_hf_model:
+            current_civitai = metadata.get("civitai") or {}
+            civitai_updates = dict(current_civitai)
+            if "civitai" in updates and isinstance(updates["civitai"], dict):
+                civitai_updates.update(updates["civitai"])
+            civitai_updates["description"] = short_desc
+            updates["civitai"] = civitai_updates
 
         # tags
         new_tags = llm_output.get("tags", [])

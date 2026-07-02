@@ -315,3 +315,157 @@ class TestRefreshCache:
             mock_read.return_value = {}
             result = await refresh_cache("/some/path.safetensors")
         assert result is False
+
+
+# ======================================================================
+# convert_readme_to_html  —  pure function, no mocks needed
+# ======================================================================
+
+
+class TestConvertReadmeToHtml:
+    """Tests for the inline markdown→HTML converter."""
+
+    def test_empty_input(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        assert convert_readme_to_html("") == ""
+        assert convert_readme_to_html(None) == ""  # type: ignore[arg-type]
+
+    def test_heading(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        result = convert_readme_to_html("# Title")
+        assert "<h1>" in result and "Title" in result
+
+    def test_subheadings(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "## Overview\n\n### Details"
+        result = convert_readme_to_html(md)
+        assert "<h2>Overview</h2>" in result
+        assert "<h3>Details</h3>" in result
+
+    def test_bold_and_italic(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "**bold** and *italic*"
+        result = convert_readme_to_html(md)
+        assert "<strong>bold</strong>" in result
+        assert "<em>italic</em>" in result
+
+    def test_inline_code(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "Use `model.train()`"
+        result = convert_readme_to_html(md)
+        assert "<code>" in result and "model.train()" in result
+
+    def test_fenced_code_block(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "```python\nprint('hello')\n```"
+        result = convert_readme_to_html(md)
+        assert "<pre>" in result
+        assert "print" in result and "hello" in result
+
+    def test_unordered_list(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "- item one\n- item two"
+        result = convert_readme_to_html(md)
+        assert "<ul>" in result
+        assert "<li>item one</li>" in result
+        assert "<li>item two</li>" in result
+
+    def test_ordered_list(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "1. first\n2. second"
+        result = convert_readme_to_html(md)
+        assert "<ol>" in result
+        assert "<li>first</li>" in result
+        assert "<li>second</li>" in result
+
+    def test_link(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "[click here](https://example.com)"
+        result = convert_readme_to_html(md)
+        assert '<a href="https://example.com">click here</a>' in result
+
+    def test_badge_image_stripped(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "![badge](https://img.shields.io/badge/status-active)"
+        result = convert_readme_to_html(md)
+        assert "img.shields.io" not in result
+
+    def test_gallery_stripped(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "Some text\n<Gallery />\nmore text"
+        result = convert_readme_to_html(md)
+        assert "<Gallery" not in result
+
+    def test_yaml_frontmatter_stripped(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "---\ntags:\n  - lora\nbase_model: flux\n---\n\n# Real content"
+        result = convert_readme_to_html(md)
+        assert "base_model" not in result
+        assert "<h1>Real content</h1>" in result
+
+    def test_table(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "| A | B |\n|---|---|\n| 1 | 2 |"
+        result = convert_readme_to_html(md)
+        assert "<table>" in result
+        assert "<th>A</th>" in result
+        assert "<td>1</td>" in result
+
+    def test_horizontal_rule(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "before\n\n---\n\nafter"
+        result = convert_readme_to_html(md)
+        assert "<hr>" in result
+
+    def test_inline_code_preserves_angle_bracket(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        result = convert_readme_to_html("Use `a < b` in code")
+        assert "<code>a &lt; b</code>" in result
+
+    def test_blockquote(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "> quoted text"
+        result = convert_readme_to_html(md)
+        assert "<blockquote>" in result
+        assert "quoted text" in result
+
+    def test_indented_whitespace_not_treated_as_code(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            convert_readme_to_html
+
+        md = "- item\n    \n## heading after spacing"
+        result = convert_readme_to_html(md)
+        assert "<pre>" not in result
+        assert "<h2>heading after spacing</h2>" in result

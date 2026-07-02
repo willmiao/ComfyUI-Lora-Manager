@@ -58,7 +58,7 @@ The trigger words or activation prompts needed to use this LoRA. Look for:
 - Example prompts at the start (usually the first word or phrase before any description)
 Return as an array of strings. If none found, return an empty array `[]`. **Never** return `["None"]` or any placeholder value — a truly empty list means no trigger words exist.
 
-### description
+### short_description
 A concise 1-2 sentence summary of what this model does. Extract from the "Model description" section or the first paragraph. Return empty string if the README is too minimal.
 
 ### tags
@@ -96,7 +96,7 @@ Return ONLY a JSON object with exactly these fields (no markdown fences, no extr
   "model_path": "{{model_path}}",
   "base_model": "<canonical name or empty string>",
   "trigger_words": ["<word1>", "<word2>"],
-  "description": "<1-2 sentence summary>",
+  "short_description": "<1-2 sentence summary>",
   "tags": ["<tag1>", "<tag2>"],
   "preview_url": "<image URL or empty string>",
   "confidence": "<high|medium|low>"
