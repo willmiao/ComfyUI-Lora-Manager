@@ -44,7 +44,7 @@ class TestProcessDispatch:
             mock.patch("py.agent_cli.refresh_cache") as mock_ref,
         ):
             mock_apply.return_value = ["metadata_source"]
-            mock_dl.return_value = False
+            mock_dl.return_value = None
 
             result = await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -155,7 +155,7 @@ class TestEnrichHfMetadata:
         llm = {**self.MIN_LLM_OUTPUT, "trigger_words": ["trigger1", "trigger2"]}
         with (
             mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
+            mock.patch("py.agent_cli.download_preview", return_value=None),
             mock.patch("py.agent_cli.refresh_cache"),
         ):
             await processor.process(
@@ -165,7 +165,7 @@ class TestEnrichHfMetadata:
                 metadata={"trainedWords": []},
             )
         applied = mock_apply.call_args[0][1]
-        assert applied["trainedWords"] == ["trigger1", "trigger2"]
+        assert applied["civitai"]["trainedWords"] == ["trigger1", "trigger2"]
 
     # -- description -----------------------------------------------------
 
@@ -237,7 +237,7 @@ class TestEnrichHfMetadata:
             mock.patch("py.agent_cli.download_preview") as mock_dl,
             mock.patch("py.agent_cli.refresh_cache"),
         ):
-            mock_dl.return_value = True
+            mock_dl.return_value = "/p.webp"
             result = await processor.process(
                 skill_name="enrich_hf_metadata",
                 model_path="/p.safetensors",
@@ -246,6 +246,8 @@ class TestEnrichHfMetadata:
             )
         assert result["preview_downloaded"] is True
         mock_dl.assert_awaited_once_with("/p.safetensors", "https://ex.com/img.png")
+        applied = mock_apply.call_args[0][1]
+        assert applied["preview_url"] == "/p.webp"
 
     @pytest.mark.asyncio
     async def test_preview_skipped_when_exists(self, processor):

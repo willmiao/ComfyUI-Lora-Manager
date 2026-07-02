@@ -334,10 +334,11 @@ class AgentService:
         """Gather variables for the skill's prompt template.
 
         Reads metadata, fetches the HF README (if applicable), lists available
-        base models, and returns a dict that maps to ``{{variable}}``
-        placeholders in ``prompt.md``.
+        base models, loads user priority tags, and returns a dict that maps to
+        ``{{variable}}`` placeholders in ``prompt.md``.
         """
-        from ...agent_cli import list_base_models
+        from ...agent_cli import identify_model_type, list_base_models
+        from ..settings_manager import SettingsManager
 
         context: Dict[str, Any] = {
             "model_path": model_path,
@@ -346,6 +347,7 @@ class AgentService:
             "readme_content": "",
             "current_metadata": {},
             "base_models": [],
+            "priority_tags": "",
         }
 
         context["current_metadata"] = {
@@ -370,6 +372,18 @@ class AgentService:
             context["base_models"] = await list_base_models()
         except Exception as exc:
             logger.debug("Failed to list base models: %s", exc)
+
+        # Determine model type and load the corresponding priority_tags
+        try:
+            model_type = await identify_model_type(model_path)
+            context["model_type"] = model_type
+            settings = SettingsManager()
+            priority_config = settings.get_priority_tag_config()
+            context["priority_tags"] = priority_config.get(model_type, "")
+        except Exception as exc:
+            logger.debug("Failed to load priority tags: %s", exc)
+            context["model_type"] = "lora"
+            context["priority_tags"] = ""
 
         return context
 

@@ -227,11 +227,11 @@ class TestApplyMetadataUpdates:
 class TestDownloadPreview:
 
     @pytest.mark.asyncio
-    async def test_empty_url_returns_false(self, tmp_path):
+    async def test_empty_url_returns_none(self, tmp_path):
         mp = tmp_path / "m.safetensors"
         mp.write_bytes(b"fake")
-        assert await download_preview(str(mp), "") is False
-        assert await download_preview(str(mp), "   ") is False
+        assert await download_preview(str(mp), "") is None
+        assert await download_preview(str(mp), "   ") is None
 
     @pytest.mark.asyncio
     async def test_successful_download_and_optimise(self, tmp_path):
@@ -246,12 +246,12 @@ class TestDownloadPreview:
             get_dl.return_value = dl
             exif.optimize_image.return_value = (b"optimized_webp", {})
             result = await download_preview(str(mp), "https://ex.com/i.png")
-        assert result is True
+        assert result == str(tmp_path / "t.webp")
         assert (tmp_path / "t.webp").exists()
         assert (tmp_path / "t.webp").read_bytes() == b"optimized_webp"
 
     @pytest.mark.asyncio
-    async def test_download_failure_returns_false(self, tmp_path):
+    async def test_download_failure_returns_none(self, tmp_path):
         mp = tmp_path / "t.safetensors"
         mp.write_bytes(b"fake")
         with mock.patch("py.services.downloader.get_downloader") as get_dl:
@@ -260,7 +260,7 @@ class TestDownloadPreview:
             dl.download_file = mock.AsyncMock(return_value=(False, None))
             get_dl.return_value = dl
             result = await download_preview(str(mp), "https://ex.com/i.png")
-        assert result is False
+        assert result is None
         assert not (tmp_path / "t.webp").exists()
 
 

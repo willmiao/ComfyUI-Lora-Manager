@@ -86,14 +86,16 @@ class PostProcessor:
         if new_base and self._should_overwrite(current_base, is_hf_model):
             updates["base_model"] = new_base
 
-        # trainedWords / trigger words
         new_triggers = llm_output.get("trigger_words", [])
         if isinstance(new_triggers, list):
             cleaned = [t.strip() for t in new_triggers if t.strip()]
-            if cleaned:
-                current_triggers = metadata.get("trainedWords") or []
-                if self._should_overwrite_list(current_triggers, is_hf_model):
-                    updates["trainedWords"] = cleaned
+            cleaned = [t for t in cleaned if t.lower() not in ("none", "null", "n/a")]
+            current_civitai = metadata.get("civitai") or {}
+            current_triggers = current_civitai.get("trainedWords") or []
+            if self._should_overwrite_list(current_triggers, is_hf_model):
+                civitai_updates = dict(current_civitai)
+                civitai_updates["trainedWords"] = cleaned
+                updates["civitai"] = civitai_updates
 
         # modelDescription
         new_desc = (llm_output.get("description") or "").strip()
@@ -102,7 +104,7 @@ class PostProcessor:
             if self._should_overwrite(current_desc, is_hf_model):
                 updates["modelDescription"] = new_desc
 
-        # tags — merge with existing, deduplicate (case-insensitive)
+        # tags
         new_tags = llm_output.get("tags", [])
         if isinstance(new_tags, list) and new_tags:
             existing_tags = metadata.get("tags") or []
@@ -114,15 +116,16 @@ class PostProcessor:
         updates["metadata_source"] = "agent:enrich_hf_metadata"
         updates["llm_enriched_at"] = datetime.now(timezone.utc).isoformat()
 
-        # -- Persist updates ------------------------------------------------
+        preview_remote_url = (llm_output.get("preview_url") or "").strip()
+        current_preview = metadata.get("preview_url") or ""
+        if preview_remote_url and not (current_preview and os.path.exists(current_preview)):
+            local_path = await download_preview(model_path, preview_remote_url)
+            if local_path:
+                preview_downloaded = True
+                updates["preview_url"] = local_path
+
         if updates:
             updated_fields = await apply_metadata_updates(model_path, updates)
-
-        # -- Download preview -----------------------------------------------
-        preview_url = (llm_output.get("preview_url") or "").strip()
-        current_preview = metadata.get("preview_url") or ""
-        if preview_url and not (current_preview and os.path.exists(current_preview)):
-            preview_downloaded = await download_preview(model_path, preview_url)
 
         # -- Refresh scanner cache ------------------------------------------
         if updated_fields or preview_downloaded:

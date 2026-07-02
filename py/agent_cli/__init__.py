@@ -32,6 +32,15 @@ logger = logging.getLogger(__name__)
 # Helpers
 # ---------------------------------------------------------------------------
 
+SCANNER_TYPE_MAP: dict[str, str] = {
+    "get_lora_scanner": "lora",
+    "get_checkpoint_scanner": "checkpoint",
+    "get_embedding_scanner": "embedding",
+}
+
+SCANNER_GETTER_NAMES = tuple(SCANNER_TYPE_MAP.keys())
+
+
 async def _find_scanner_for_model(
     model_path: str,
 ) -> tuple[object, object] | tuple[None, None]:
@@ -44,11 +53,7 @@ async def _find_scanner_for_model(
     from ..services.service_registry import ServiceRegistry
 
     normalized = os.path.normpath(model_path)
-    for getter_name in (
-        "get_lora_scanner",
-        "get_checkpoint_scanner",
-        "get_embedding_scanner",
-    ):
+    for getter_name in SCANNER_GETTER_NAMES:
         getter = getattr(ServiceRegistry, getter_name, None)
         if getter is None:
             continue
@@ -68,6 +73,38 @@ async def _find_scanner_for_model(
                 exc,
             )
     return None, None
+
+
+async def identify_model_type(model_path: str) -> str:
+    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``, or
+    ``\"embedding\"``) for *model_path*.
+
+    Iterates all known scanners; the first scanner that claims the path
+    determines the type.  Falls back to ``\"lora\"`` when unknown.
+    """
+    from ..services.service_registry import ServiceRegistry
+
+    normalized = os.path.normpath(model_path)
+    for getter_name in SCANNER_GETTER_NAMES:
+        getter = getattr(ServiceRegistry, getter_name, None)
+        if getter is None:
+            continue
+        try:
+            scanner = await getter()
+            if scanner is None:
+                continue
+            cache = await scanner.get_cached_data()
+            for entry in cache.raw_data:
+                if os.path.normpath(entry.get("file_path", "")) == normalized:
+                    return SCANNER_TYPE_MAP[getter_name]
+        except Exception as exc:
+            logger.debug(
+                "identify_model_type scanner %s error for %s: %s",
+                getter_name,
+                model_path,
+                exc,
+            )
+    return "lora"
 
 
 # ---------------------------------------------------------------------------
@@ -153,17 +190,17 @@ async def download_preview(
     *,
     target_width: int = 480,
     quality: int = 85,
-) -> bool:
+) -> str | None:
     """Download a preview image from *url*, optimise to .webp, and save it.
 
     The output file is placed alongside the model file with a ``.webp``
-    extension.  Returns ``True`` on success.
+    extension.  Returns the local file path on success, ``None`` on failure.
     """
     from ..services.downloader import get_downloader
     from ..utils.exif_utils import ExifUtils
 
     if not url or not url.strip():
-        return False
+        return None
 
     base_name = os.path.splitext(os.path.basename(model_path))[0]
     preview_dir = os.path.dirname(model_path)
@@ -187,7 +224,7 @@ async def download_preview(
             with open(output_path, "wb") as f:
                 f.write(optimized_data)
             logger.info("Preview downloaded and optimised for %s", model_path)
-            return True
+            return output_path
         except Exception as exc:
             logger.warning("Preview optimisation failed, saving raw: %s", exc)
             # Fall through to raw save
@@ -197,11 +234,11 @@ async def download_preview(
         ok, _ = await downloader.download_file(url, output_path, use_auth=False)
         if ok:
             logger.info("Preview downloaded (fallback) for %s", model_path)
-            return True
+            return output_path
     except Exception as exc:
         logger.warning("Preview fallback download failed for %s: %s", model_path, exc)
 
-    return False
+    return None
 
 
 async def refresh_cache(model_path: str) -> bool:
