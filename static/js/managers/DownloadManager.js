@@ -1,5 +1,5 @@
 import { modalManager } from './ModalManager.js';
-import { showToast } from '../utils/uiHelpers.js';
+import { showToast, setupAutoNewlineOnPaste } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { LoadingManager } from './LoadingManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -107,7 +107,8 @@ export class DownloadManager {
         // Default path toggle handler
         document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
 
-
+        // Auto-append newline after pasting a URL so users can paste multiple URLs in succession
+        setupAutoNewlineOnPaste('modelUrl');
     }
 
     updateModalLabels() {

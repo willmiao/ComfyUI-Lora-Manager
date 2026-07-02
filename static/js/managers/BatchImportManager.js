@@ -1,5 +1,5 @@
 import { modalManager } from './ModalManager.js';
-import { showToast } from '../utils/uiHelpers.js';
+import { showToast, setupAutoNewlineOnPaste } from '../utils/uiHelpers.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { WS_ENDPOINTS } from '../api/apiConfig.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
@@ -43,6 +43,9 @@ export class BatchImportManager {
                 setStorageItem('batch_import_skip_no_metadata', e.target.checked);
             });
         }
+
+        // Auto-append newline after pasting a URL in the batch URL input
+        setupAutoNewlineOnPaste('batchUrlInput');
     }
 
     /**
