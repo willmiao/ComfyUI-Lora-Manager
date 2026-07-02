@@ -174,7 +174,10 @@ function renderMediaItem(img, index, exampleFiles) {
     const localUrl = localFile ? localFile.path : '';
     
     // Calculate appropriate aspect ratio
-    const aspectRatio = (img.height / img.width) * 100;
+    // Defensive fallback: 0 width/height → 4:3 default (prevents NaN layout)
+    const safeW = img.width || 4;
+    const safeH = img.height || 3;
+    const aspectRatio = (safeH / safeW) * 100;
     const containerWidth = 800; // modal content maximum width
     const minHeightPercent = 40; 
     const maxHeightPercent = (window.innerHeight * 0.6 / containerWidth) * 100;

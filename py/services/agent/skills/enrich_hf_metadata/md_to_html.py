@@ -12,6 +12,120 @@ import re
 from typing import List, Tuple
 
 
+_REPO_URL_PATTERN = re.compile(r"https?://huggingface\.co/([^/]+/[^/]+)")
+
+
+def extract_repo_from_hf_url(hf_url: str) -> str:
+    """Extract ``user/repo`` from a HuggingFace URL."""
+    m = _REPO_URL_PATTERN.match(hf_url)
+    return m.group(1) if m else ""
+
+
+def extract_gallery_images(
+    markdown_text: str,
+    repo: str,
+    default_width: int = 512,
+    default_height: int = 512,
+) -> List[dict]:
+    """Extract widget/gallery images from the YAML frontmatter of a HF README.
+
+    Args:
+        markdown_text: Raw README content.
+        repo: HF repo identifier (``user/repo``).
+        default_width: Fallback width when the README provides no dimension.
+        default_height: Fallback height when the README provides no dimension.
+
+    Returns a list of dicts compatible with the ``civitai.images`` metadata
+    format, each containing ``url`` (absolute HF URL), ``meta.prompt``,
+    ``width``, ``height``, and ``type``.  Returns an empty list when no
+    widget entries are found or when *repo* is empty.
+    """
+    if not markdown_text or not repo:
+        return []
+
+    frontmatter = _extract_frontmatter(markdown_text)
+    if not frontmatter:
+        return []
+
+    images: List[dict] = []
+    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    w = default_width or 512
+    h = default_height or 512
+
+    # Find the `widget:` section
+    widget_match = re.search(r"^widget:\s*$", frontmatter, re.MULTILINE)
+    if not widget_match:
+        return images
+
+    # Split entries starting with `- text:`
+    entries = re.split(r"\n- text:", frontmatter[widget_match.end():])
+    for entry in entries:
+        if not entry.strip():
+            continue
+
+        entry = entry.strip()
+
+        # Extract text (prompt)
+        text = ""
+        # Quoted inline: `"some prompt"`
+        qm = re.match(r'^"((?:[^"\\]|\\.)*)"', entry)
+        if qm:
+            text = qm.group(1)
+        else:
+            # Multi-line YAML scalar: `>-\n    line1\n    line2`
+            mm = re.match(r"^>(?:-\s*)?\n((?:.+(?:\n|$))+)", entry, re.MULTILINE)
+            if mm:
+                raw = mm.group(1)
+                # Take lines until a line starts with a YAML key (word + colon)
+                text_lines: list[str] = []
+                for line in raw.split("\n"):
+                    if re.match(r"^\s*\w+:", line):
+                        break
+                    text_lines.append(line)
+                text = " ".join(
+                    line.strip() for line in text_lines if line.strip()
+                )
+
+        # Extract output.url
+        url = ""
+        url_match = re.search(
+            r"^\s*output:\s*\n\s+url:\s*(.+?)\s*$", entry, re.MULTILINE
+        )
+        if url_match:
+            raw_path = url_match.group(1).strip().strip("'\"")
+            if raw_path and not raw_path.startswith("http"):
+                url = f"{base_url}/{raw_path.lstrip('/')}"
+            elif raw_path.startswith("http"):
+                url = raw_path
+
+        if url:
+            image: dict = {
+                "url": url,
+                "type": "image",
+                "nsfwLevel": 0,
+                "width": w,
+                "height": h,
+                "meta": {"prompt": text, "negativePrompt": ""},
+                "hasMeta": bool(text),
+                "hasPositivePrompt": bool(text),
+            }
+            images.append(image)
+
+    return images
+
+
+def _extract_frontmatter(text: str) -> str:
+    """Return the YAML frontmatter content (without the ``---`` delimiters).
+
+    Returns empty string when no frontmatter is found.
+    """
+    if text.startswith("---"):
+        idx = text.find("---", 3)
+        if idx != -1:
+            return text[3:idx]
+    return ""
+
+
 def convert_readme_to_html(markdown_text: str | None) -> str:
     """Convert HF README markdown to sanitised HTML."""
     if not markdown_text:

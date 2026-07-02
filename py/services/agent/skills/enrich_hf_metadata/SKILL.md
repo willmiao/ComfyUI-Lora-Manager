@@ -78,6 +78,9 @@ Sources to consider:
 
 Return empty array if no meaningful content tags remain after filtering.
 
+### recommended_width, recommended_height
+The recommended image generation resolution for this model, in pixels. Look for sections like "Best Dimensions", "Recommended size", "Suggested resolution", or similar phrasing in the README. Prefer the explicitly marked "Best" or default resolution. If the table/list has multiple entries (e.g. "768 x 1024 (Best)" and "1024 x 1024 (Default)"), use the one marked "Best". Return integers. If no resolution can be determined, return 0 for both.
+
 ### preview_url
 The URL of the most suitable preview image from the README. Look for image tags (e.g. `![alt](url)`) and the YAML frontmatter `widget:` section (which often has `output.url` fields). Choose the first image that appears to be a generation example (not a logo or diagram). Construct the absolute URL as `https://huggingface.co/{{repo}}/resolve/main/{filename}`. If no suitable image is found, return an empty string.
 
@@ -98,6 +101,8 @@ Return ONLY a JSON object with exactly these fields (no markdown fences, no extr
   "trigger_words": ["<word1>", "<word2>"],
   "short_description": "<1-2 sentence summary>",
   "tags": ["<tag1>", "<tag2>"],
+  "recommended_width": 768,
+  "recommended_height": 1024,
   "preview_url": "<image URL or empty string>",
   "confidence": "<high|medium|low>"
 }

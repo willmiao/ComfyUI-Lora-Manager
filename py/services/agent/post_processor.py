@@ -76,7 +76,11 @@ class PostProcessor:
             download_preview,
             refresh_cache,
         )
-        from .skills.enrich_hf_metadata.md_to_html import convert_readme_to_html
+        from .skills.enrich_hf_metadata.md_to_html import (
+            convert_readme_to_html,
+            extract_gallery_images,
+            extract_repo_from_hf_url,
+        )
 
         updated_fields: List[str] = []
         preview_downloaded = False
@@ -93,6 +97,7 @@ class PostProcessor:
         if new_base and self._should_overwrite(current_base, is_hf_model):
             updates["base_model"] = new_base
 
+        # trigger words → civitai.trainedWords
         new_triggers = llm_output.get("trigger_words", [])
         if isinstance(new_triggers, list):
             cleaned = [t.strip() for t in new_triggers if t.strip()]
@@ -100,9 +105,11 @@ class PostProcessor:
             current_civitai = metadata.get("civitai") or {}
             current_triggers = current_civitai.get("trainedWords") or []
             if self._should_overwrite_list(current_triggers, is_hf_model):
-                civitai_updates = dict(current_civitai)
-                civitai_updates["trainedWords"] = cleaned
-                updates["civitai"] = civitai_updates
+                trig_civitai = dict(current_civitai)
+                if "civitai" in updates and isinstance(updates["civitai"], dict):
+                    trig_civitai.update(updates["civitai"])
+                trig_civitai["trainedWords"] = cleaned
+                updates["civitai"] = trig_civitai
 
         # modelDescription — from raw README content (converted to HTML)
         if readme_content and is_hf_model:
@@ -114,11 +121,30 @@ class PostProcessor:
         short_desc = (llm_output.get("short_description") or "").strip()
         if short_desc and is_hf_model:
             current_civitai = metadata.get("civitai") or {}
-            civitai_updates = dict(current_civitai)
+            desc_civitai = dict(current_civitai)
             if "civitai" in updates and isinstance(updates["civitai"], dict):
-                civitai_updates.update(updates["civitai"])
-            civitai_updates["description"] = short_desc
-            updates["civitai"] = civitai_updates
+                desc_civitai.update(updates["civitai"])
+            desc_civitai["description"] = short_desc
+            updates["civitai"] = desc_civitai
+
+        # gallery images → civitai.images (from YAML frontmatter widget entries)
+        if readme_content and is_hf_model:
+            hf_url = metadata.get("hf_url", "") or ""
+            repo = extract_repo_from_hf_url(hf_url)
+            if repo:
+                rec_w = llm_output.get("recommended_width") or 0
+                rec_h = llm_output.get("recommended_height") or 0
+                gallery = extract_gallery_images(
+                    readme_content, repo,
+                    default_width=rec_w, default_height=rec_h,
+                )
+                if gallery:
+                    current_civitai = metadata.get("civitai") or {}
+                    gallery_civitai = dict(current_civitai)
+                    if "civitai" in updates and isinstance(updates["civitai"], dict):
+                        gallery_civitai.update(updates["civitai"])
+                    gallery_civitai["images"] = gallery
+                    updates["civitai"] = gallery_civitai
 
         # tags
         new_tags = llm_output.get("tags", [])

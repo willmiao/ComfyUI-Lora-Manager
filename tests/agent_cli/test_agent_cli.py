@@ -469,3 +469,100 @@ class TestConvertReadmeToHtml:
         result = convert_readme_to_html(md)
         assert "<pre>" not in result
         assert "<h2>heading after spacing</h2>" in result
+
+
+# ======================================================================
+# extract_gallery_images  —  YAML widget → civitai.images
+# ======================================================================
+
+
+class TestExtractGalleryImages:
+
+    _REPO = "prithivMLmods/Flux-Long-Toon-LoRA"
+    _README = """---
+tags:
+- lora
+widget:
+- text: "a cat"
+  output:
+    url: images/cat.png
+- text: >-
+    multi line
+    prompt here
+  output:
+    url: images/dog.png
+base_model: flux
+---
+# Content after frontmatter
+"""
+
+    def test_extracts_widget_images(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        images = extract_gallery_images(self._README, self._REPO)
+        assert len(images) == 2
+
+        assert images[0]["url"] == (
+            "https://huggingface.co/prithivMLmods/Flux-Long-Toon-LoRA"
+            "/resolve/main/images/cat.png"
+        )
+        assert images[0]["meta"]["prompt"] == "a cat"
+        assert images[0]["type"] == "image"
+        assert images[0]["hasMeta"] is True
+        assert images[0]["hasPositivePrompt"] is True
+
+        assert images[1]["url"] == (
+            "https://huggingface.co/prithivMLmods/Flux-Long-Toon-LoRA"
+            "/resolve/main/images/dog.png"
+        )
+        assert images[1]["meta"]["prompt"] == "multi line prompt here"
+
+    def test_default_dimensions_used(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        images = extract_gallery_images(self._README, self._REPO)
+        assert images[0]["width"] == 512
+        assert images[0]["height"] == 512
+
+    def test_custom_dimensions_applied(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        images = extract_gallery_images(
+            self._README, self._REPO,
+            default_width=768, default_height=1024,
+        )
+        assert images[0]["width"] == 768
+        assert images[0]["height"] == 1024
+
+    def test_empty_readme_returns_empty(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        assert extract_gallery_images("", self._REPO) == []
+        assert extract_gallery_images("no frontmatter here", self._REPO) == []
+
+    def test_empty_repo_returns_empty(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        assert extract_gallery_images(self._README, "") == []
+
+    def test_no_widget_returns_empty(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_images
+
+        md = "---\ntags:\n  - lora\n---\n\nContent"
+        assert extract_gallery_images(md, self._REPO) == []
+
+    def test_extract_repo_from_hf_url(self):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_repo_from_hf_url
+
+        assert extract_repo_from_hf_url(
+            "https://huggingface.co/prithivMLmods/Flux-Long-Toon-LoRA"
+        ) == "prithivMLmods/Flux-Long-Toon-LoRA"
+        assert extract_repo_from_hf_url("") == ""
+        assert extract_repo_from_hf_url("not a url") == ""

@@ -69,6 +69,8 @@ class TestEnrichHfMetadata:
         "trigger_words": [],
         "short_description": "",
         "tags": [],
+        "recommended_width": 0,
+        "recommended_height": 0,
         "preview_url": "",
         "confidence": "low",
     }
@@ -243,6 +245,64 @@ class TestEnrichHfMetadata:
             )
         applied = mock_apply.call_args[0][1]
         assert "modelDescription" not in applied
+
+    # -- gallery images → civitai.images ---------------------------------
+
+    @pytest.mark.asyncio
+    async def test_gallery_images_extracted_from_readme(self, processor):
+        """Widget entries in README → civitai.images."""
+        readme = """---
+widget:
+- text: "a cat"
+  output:
+    url: images/cat.png
+---
+Content
+"""
+        with (
+            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
+            mock.patch("py.agent_cli.download_preview", return_value=None),
+            mock.patch("py.agent_cli.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.MIN_LLM_OUTPUT,
+                metadata={
+                    "from_civitai": False,
+                    "hf_url": "https://huggingface.co/user/repo",
+                },
+                readme_content=readme,
+            )
+        applied = mock_apply.call_args[0][1]
+        images = applied.get("civitai", {}).get("images", [])
+        assert len(images) == 1
+        assert images[0]["url"] == (
+            "https://huggingface.co/user/repo/resolve/main/images/cat.png"
+        )
+        assert images[0]["meta"]["prompt"] == "a cat"
+
+    @pytest.mark.asyncio
+    async def test_gallery_images_skipped_for_civitai_model(self, processor):
+        """Gallery images NOT extracted for CivitAI models."""
+        with (
+            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
+            mock.patch("py.agent_cli.download_preview", return_value=None),
+            mock.patch("py.agent_cli.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.MIN_LLM_OUTPUT,
+                metadata={
+                    "from_civitai": True,
+                    "hf_url": "https://huggingface.co/user/repo",
+                },
+                readme_content="---\nwidget:\n- text: a\n  output:\n    url: x.png\n---\n",
+            )
+        applied = mock_apply.call_args[0][1]
+        civitai = applied.get("civitai", {})
+        assert "images" not in civitai
 
     # -- tags ------------------------------------------------------------
 
