@@ -62,6 +62,20 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
         expect(result).toEqual({ type: 'civitai' });
     });
 
+    it('detects CivitAI URL on civitai.red domain', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://civitai.red/models/12345/my-model'
+        );
+        expect(result).toEqual({ type: 'civitai' });
+    });
+
+    it('detects CivitAI URL on civitai.green domain', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://civitai.green/models/67890/another-model'
+        );
+        expect(result).toEqual({ type: 'civitai' });
+    });
+
     it('detects CivArchive URL', () => {
         const result = DownloadManager.detectUrlType(
             'https://civarchive.com/models/456'

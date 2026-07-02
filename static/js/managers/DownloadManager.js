@@ -463,8 +463,8 @@ export class DownloadManager {
         const trimmed = url.trim();
         if (!trimmed) return null;
 
-        // CivitAI
-        if (/civitai\.com\/models\//i.test(trimmed) || /civitaiarchive|civarchive/i.test(trimmed)) {
+        // CivitAI — matches civitai.com, civitai.red, civitai.green, etc.
+        if (/civitai\.(?:com|red|green)\/models\//i.test(trimmed) || /civitaiarchive|civarchive/i.test(trimmed)) {
             // Will be parsed by existing CivitAI logic
             return { type: 'civitai' };
         }
