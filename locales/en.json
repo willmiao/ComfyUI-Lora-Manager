@@ -898,6 +898,19 @@
       "favorites": {
         "title": "Show Favorites Only",
         "action": "Favorites"
+      },
+      "similar": {
+        "action": "Find Similar",
+        "title": "Group recipes that use similar LoRAs (model ignored)",
+        "optionsLabel": "Similarity options",
+        "optionsTitle": "Similarity options",
+        "weightTolerance": "Split if weight differs by >",
+        "weightToleranceHint": "Recipes with the same LoRAs are split into separate groups when any shared LoRA's weight differs by more than this. 0 = never split by weight.",
+        "dropLowWeight": "Ignore low-weight LoRAs",
+        "lowWeightThreshold": "|weight| below",
+        "matchPrompt": "Prompt must match",
+        "matchConfig": "Config must match",
+        "apply": "Find Similar"
       }
     },
     "duplicates": {
@@ -2050,7 +2063,9 @@
       "noItemsSelected": "No {type} selected for deletion",
       "deleteError": "Error: {message}",
       "deleteSuccess": "Successfully deleted {count} {type}",
-      "deleteFailed": "Failed to delete {type}: {message}"
+      "deleteFailed": "Failed to delete {type}: {message}",
+      "findSimilarFailed": "Failed to find similar recipes: {message}",
+      "noSimilarFound": "No similar {type} found"
     },
     "controls": {
       "reloadFailed": "Failed to reload {pageType}: {message}",

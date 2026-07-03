@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "즐겨찾기만 표시",
                 "action": "즐겨찾기"
+            },
+            "similar": {
+                "action": "유사 항목 찾기",
+                "title": "유사한 LoRA를 사용하는 레시피 그룹화 (모델 무시)",
+                "optionsLabel": "유사성 옵션",
+                "optionsTitle": "유사성 옵션",
+                "weightTolerance": "가중치 차이가 다음을 초과하면 분리",
+                "weightToleranceHint": "동일한 LoRA를 사용하는 레시피는 공유된 LoRA의 가중치가 이 값보다 더 많이 차이 날 때 별도의 그룹으로 분리됩니다. 0 = 가중치로 분리하지 않음.",
+                "dropLowWeight": "가중치가 낮은 LoRA 무시",
+                "lowWeightThreshold": "|가중치| 미만",
+                "matchPrompt": "프롬프트가 일치해야 함",
+                "matchConfig": "설정이 일치해야 함",
+                "apply": "유사 항목 찾기"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "중복 찾기 실패: {message}",
+            "findSimilarFailed": "유사한 레시피 찾기 실패: {message}",
             "noDuplicatesFound": "중복 {type}을(를) 찾을 수 없습니다",
+            "noSimilarFound": "유사한 {type}을(를) 찾을 수 없습니다",
             "noItemsSelected": "삭제할 {type}이(가) 선택되지 않았습니다",
             "deleteError": "오류: {message}",
             "deleteSuccess": "{count}개의 {type}이(가) 성공적으로 삭제되었습니다",

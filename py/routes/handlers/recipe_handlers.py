@@ -83,6 +83,7 @@ class RecipeHandlerSet:
             "update_recipe": self.management.update_recipe,
             "reconnect_lora": self.management.reconnect_lora,
             "find_duplicates": self.query.find_duplicates,
+            "find_similar": self.query.find_similar,
             "move_recipes_bulk": self.management.move_recipes_bulk,
             "bulk_delete": self.management.bulk_delete,
             "save_recipe_from_widget": self.management.save_recipe_from_widget,
@@ -572,6 +573,137 @@ class RecipeQueryHandler:
                 "Error finding duplicate recipes: %s", exc, exc_info=True
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def find_similar(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            def _query_bool(name: str) -> bool:
+                return request.query.get(name, "").lower() in ("1", "true", "yes", "on")
+
+            def _query_float(name: str, default: float) -> float:
+                try:
+                    return float(request.query.get(name, default))
+                except (TypeError, ValueError):
+                    return default
+
+            options = {
+                "weight_tolerance": _query_float("weight_tolerance", 0.2),
+                "drop_low_weight": _query_bool("drop_low_weight"),
+                "low_weight_threshold": _query_float("low_weight_threshold", 0.3),
+                "match_prompt": _query_bool("match_prompt"),
+                "match_config": _query_bool("match_config"),
+            }
+
+            signature_groups = await recipe_scanner.find_similar_recipes(options)
+            response_data = []
+
+            for signature, recipe_ids in signature_groups.items():
+                if len(recipe_ids) <= 1:
+                    continue
+
+                recipes = []
+                for recipe_id in recipe_ids:
+                    recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
+                    if recipe:
+                        recipes.append(
+                            {
+                                "id": recipe.get("id"),
+                                "title": recipe.get("title"),
+                                "file_url": recipe.get("file_url")
+                                or self._format_recipe_file_url(
+                                    recipe.get("file_path", "")
+                                ),
+                                "modified": recipe.get("modified"),
+                                "created_date": recipe.get("created_date"),
+                                "lora_count": len(recipe.get("loras", [])),
+                                # Diff-table detail
+                                "diff_loras": self._build_similar_lora_diff(
+                                    recipe.get("loras", []), options
+                                ),
+                                "diff_params": self._build_similar_param_diff(
+                                    recipe.get("gen_params", {})
+                                ),
+                            }
+                        )
+
+                if len(recipes) >= 2:
+                    recipes.sort(
+                        key=lambda entry: entry.get("modified", 0), reverse=True
+                    )
+                    response_data.append(
+                        {
+                            "type": "similar",
+                            "fingerprint": signature,
+                            "count": len(recipes),
+                            "recipes": recipes,
+                        }
+                    )
+
+            response_data.sort(key=lambda entry: entry["count"], reverse=True)
+            return web.json_response(
+                {
+                    "success": True,
+                    "similar_groups": response_data,
+                    "options": options,
+                }
+            )
+        except Exception as exc:
+            self._logger.error(
+                "Error finding similar recipes: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    @staticmethod
+    def _build_similar_lora_diff(loras, options) -> list:
+        """Per-recipe LoRA rows for the 'Find Similar' diff table."""
+        drop_low_weight = bool(options.get("drop_low_weight"))
+        threshold = float(options.get("low_weight_threshold", 0.3) or 0.0)
+        rows = []
+        for lora in loras or []:
+            if lora.get("exclude", False):
+                continue
+            hash_value = lora.get("hash") or (
+                str(lora.get("modelVersionId")) if lora.get("modelVersionId") else ""
+            )
+            hash_value = str(hash_value).lower()
+            name = (
+                lora.get("name")
+                or lora.get("file_name")
+                or (hash_value[:10] if hash_value else "?")
+            )
+            try:
+                weight = round(float(lora.get("strength", lora.get("weight", 1.0))), 3)
+            except (ValueError, TypeError):
+                weight = 1.0
+            rows.append(
+                {
+                    "hash": hash_value,
+                    "name": name,
+                    "weight": weight,
+                    "low_weight": bool(drop_low_weight and abs(weight) < threshold),
+                }
+            )
+        return rows
+
+    @staticmethod
+    def _build_similar_param_diff(gen_params) -> dict:
+        """Prompt/config values for the 'Find Similar' diff table."""
+        gen_params = gen_params or {}
+        keys = [
+            "prompt",
+            "negative_prompt",
+            "steps",
+            "sampler",
+            "cfg_scale",
+            "size",
+            "clip_skip",
+            "denoising_strength",
+        ]
+        return {k: gen_params[k] for k in keys if gen_params.get(k) not in (None, "")}
 
     async def get_recipe_syntax(self, request: web.Request) -> web.Response:
         try:

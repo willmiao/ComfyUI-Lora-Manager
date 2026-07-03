@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "Afficher uniquement les favoris",
                 "action": "Favoris"
+            },
+            "similar": {
+                "action": "Trouver similaires",
+                "title": "Grouper les recipes utilisant des LoRAs similaires (modèle ignoré)",
+                "optionsLabel": "Options de similarité",
+                "optionsTitle": "Options de similarité",
+                "weightTolerance": "Séparer si le poids diffère de >",
+                "weightToleranceHint": "Les recipes avec les mêmes LoRAs sont séparées en groupes distincts lorsque le poids d'une LoRA partagée diffère de plus que cette valeur. 0 = ne jamais séparer par poids.",
+                "dropLowWeight": "Ignorer les LoRAs de faible poids",
+                "lowWeightThreshold": "|poids| inférieur à",
+                "matchPrompt": "Le prompt doit correspondre",
+                "matchConfig": "La configuration doit correspondre",
+                "apply": "Trouver similaires"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "Échec de la recherche de doublons : {message}",
+            "findSimilarFailed": "Échec de la recherche de recipes similaires : {message}",
             "noDuplicatesFound": "Aucun doublon {type} trouvé",
+            "noSimilarFound": "Aucun {type} similaire trouvé",
             "noItemsSelected": "Aucun {type} sélectionné pour la suppression",
             "deleteError": "Erreur : {message}",
             "deleteSuccess": "{count} {type} supprimé(s) avec succès",

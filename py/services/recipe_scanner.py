@@ -21,7 +21,13 @@ from .checkpoint_scanner import CheckpointScanner
 from .settings_manager import get_settings_manager
 from .recipes.errors import RecipeNotFoundError
 from ..utils.civitai_utils import extract_civitai_image_id
-from ..utils.utils import calculate_recipe_fingerprint, fuzzy_match
+from ..utils.utils import (
+    calculate_recipe_fingerprint,
+    calculate_recipe_similarity_signature,
+    cluster_recipes_by_weight,
+    fuzzy_match,
+    get_retained_lora_weights,
+)
 from natsort import natsorted
 import sys
 import re
@@ -2807,3 +2813,55 @@ class RecipeScanner:
         duplicate_groups = {k: v for k, v in url_groups.items() if len(v) > 1}
 
         return duplicate_groups
+
+    async def find_similar_recipes(self, options: dict) -> dict:
+        """Find groups of similar recipes.
+
+        Grouping happens in two stages. First recipes are bucketed by a
+        weight-free *base signature* (which LoRAs they use, checkpoint/model
+        always ignored, plus prompt/config when requested — see
+        :func:`calculate_recipe_similarity_signature`). Then each base group is
+        split into weight-close clusters via
+        :func:`cluster_recipes_by_weight`, so recipes with the same LoRAs but
+        very different weights land in separate groups.
+
+        Args:
+            options: Similarity options. ``weight_tolerance`` controls the
+                per-LoRA weight difference that splits a base group (``0``
+                disables splitting); other keys are forwarded to the signature.
+
+        Returns:
+            Dictionary where keys are unique group keys and values are lists of
+            recipe IDs, filtered to groups with more than one recipe.
+        """
+        cache = await self.get_cached_data()
+
+        weight_tolerance = float(options.get("weight_tolerance", 0.2) or 0.0)
+
+        base_groups = {}
+        weight_maps = {}
+        for recipe in cache.raw_data:
+            loras = recipe.get("loras", [])
+            signature = calculate_recipe_similarity_signature(
+                loras, recipe.get("gen_params", {}), options
+            )
+            if not signature:
+                continue
+
+            recipe_id = recipe.get("id")
+            base_groups.setdefault(signature, []).append(recipe_id)
+            weight_maps[recipe_id] = get_retained_lora_weights(loras, options)
+
+        similar_groups = {}
+        for signature, recipe_ids in base_groups.items():
+            if len(recipe_ids) <= 1:
+                continue
+
+            clusters = cluster_recipes_by_weight(
+                recipe_ids, weight_maps, weight_tolerance
+            )
+            for index, cluster in enumerate(clusters):
+                if len(cluster) > 1:
+                    similar_groups[f"{signature}#{index}"] = cluster
+
+        return similar_groups
