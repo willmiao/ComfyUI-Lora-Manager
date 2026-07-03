@@ -662,7 +662,15 @@
             "title": "Fournisseur d'IA",
             "provider": "Fournisseur",
             "providerHelp": "Choisissez votre fournisseur LLM. OpenAI et Ollama utilisent des endpoints prédéfinis. Personnalisé vous permet de spécifier n'importe quel endpoint compatible OpenAI.",
-            "custom": "Personnalisé (compatible OpenAI)",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (local)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "Personnalisé (compatible OpenAI)"
+            },
             "apiBase": "URL de base de l'API",
             "apiBaseHelp": "L'URL de base pour l'API LLM (ex. https://api.openai.com/v1). Laissez vide pour utiliser le fournisseur par défaut.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
@@ -673,7 +681,8 @@
             "apiKeyConfigured": "Configurée",
             "apiKeySet": "Configurer",
             "model": "Modèle",
-            "modelHelp": "Le nom du modèle à utiliser (ex. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Consultez votre fournisseur pour les modèles disponibles."
+            "modelHelp": "Le nom du modèle à utiliser (ex. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Consultez votre fournisseur pour les modèles disponibles.",
+            "modelPlaceholder": "Sélectionner un modèle..."
         }
     },
     "loras": {

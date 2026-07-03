@@ -661,10 +661,18 @@
     "aiProvider": {
       "title": "AI Provider",
       "provider": "Provider",
-      "providerHelp": "Choose your LLM provider. OpenAI and Ollama use preset API endpoints. Custom lets you specify any OpenAI-compatible endpoint.",
-      "custom": "Custom (OpenAI-compatible)",
+      "providerHelp": "Choose your LLM provider. Preset providers set the API base URL automatically. Custom lets you specify any OpenAI-compatible endpoint.",
+      "providerOptions": {
+        "openai": "OpenAI",
+        "ollama": "Ollama (local)",
+        "deepseek": "DeepSeek",
+        "groq": "Groq",
+        "openrouter": "OpenRouter",
+        "opencode-go": "OpenCode Go",
+        "custom": "Custom (OpenAI-compatible)"
+      },
       "apiBase": "API Base URL",
-      "apiBaseHelp": "The base URL for the LLM API (e.g. https://api.openai.com/v1). Leave empty to use the provider default.",
+      "apiBaseHelp": "The base URL for the LLM API. Select a preset or enter a custom URL. The dropdown shows presets for all supported providers.",
       "apiBasePlaceholder": "https://api.openai.com/v1",
       "apiKey": "API Key",
       "apiKeyHelp": "Your LLM provider API key. Stored locally, never sent to any server except your chosen LLM provider.",
@@ -673,7 +681,8 @@
       "apiKeyConfigured": "Configured",
       "apiKeySet": "Set up",
       "model": "Model",
-      "modelHelp": "The model name to use (e.g. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Check your provider for available models."
+      "modelHelp": "The model to use. Select from the dropdown (fetched from your provider) or type a custom model name.",
+      "modelPlaceholder": "Select a model..."
     }
   },
   "loras": {

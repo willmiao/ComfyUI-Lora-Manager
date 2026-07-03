@@ -662,18 +662,27 @@
             "title": "AI 提供者",
             "provider": "提供者",
             "providerHelp": "選擇您的 LLM 提供者。OpenAI 和 Ollama 使用預設 API 端點。自訂允許您指定任何相容 OpenAI 的端點。",
-            "custom": "自訂（相容 OpenAI）",
-            "apiBase": "API 基礎位址",
-            "apiBaseHelp": "LLM API 的基礎 URL（例如 https://api.openai.com/v1）。留空則使用提供者預設位址。",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama（本地）",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "自訂（OpenAI 相容）"
+            },
+            "apiBase": "API 基礎網址",
+            "apiBaseHelp": "LLM API 的基礎網址。選擇預設或輸入自訂網址，下拉選單顯示所有支援的提供者預設。",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "API 金鑰",
-            "apiKeyHelp": "您的 LLM 提供者 API 金鑰。僅儲存在本地，除了您選擇的 LLM 提供者外，不會發送到任何伺服器。",
-            "apiKeyPlaceholder": "sk-...",
+            "apiKeyHelp": "LLM 提供者的 API 金鑰。儲存在本地，除您選擇的 LLM 提供者外不會傳送到任何伺服器。",
+            "apiKeyPlaceholder": "[TODO: Translate] sk-...",
             "apiKeyNotSet": "未設定",
             "apiKeyConfigured": "已設定",
             "apiKeySet": "設定",
             "model": "模型",
-            "modelHelp": "要使用的模型名稱（例如 deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。請查看您的提供者支援的可用模型列表。"
+            "modelHelp": "要使用的模型。從下拉選單選擇（從提供者取得）或輸入自訂模型名稱。",
+            "modelPlaceholder": "選擇一個模型..."
         }
     },
     "loras": {

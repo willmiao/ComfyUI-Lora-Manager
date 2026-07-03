@@ -829,20 +829,106 @@ export class SettingsManager {
         this.updateApiKeyStatus();
         this.updateLlmApiKeyStatus();
 
-        // AI Provider settings
+        // ── AI Provider settings ──────────────────────────────────────
+        // Load provider presets from the JSON script tag embedded in the template
+        this._providerPresets = {};
+        this._providerModels = {};
+        const presetsScript = document.getElementById('llmProviderPresets');
+        if (presetsScript) {
+            try {
+                this._providerPresets = JSON.parse(presetsScript.textContent);
+            } catch (_) {
+                this._providerPresets = {};
+            }
+        }
+        const modelsScript = document.getElementById('llmProviderModels');
+        if (modelsScript) {
+            try {
+                this._providerModels = JSON.parse(modelsScript.textContent);
+            } catch (_) {
+                this._providerModels = {};
+            }
+        }
+
         const llmProviderSelect = document.getElementById('llmProvider');
         if (llmProviderSelect) {
             llmProviderSelect.value = state.global.settings.llm_provider || 'openai';
         }
 
+        // Destroy previous combobox instances before creating new ones,
+        // since loadSettingsToUI() runs on every modal open.
+        if (this._llmApiBaseCombobox) { this._llmApiBaseCombobox.destroy(); }
+        if (this._llmModelCombobox) { this._llmModelCombobox.destroy(); }
+
         const llmApiBaseInput = document.getElementById('llmApiBase');
         if (llmApiBaseInput) {
             llmApiBaseInput.value = state.global.settings.llm_api_base || '';
+            const presetUrls = Object.values(this._providerPresets)
+                .map(p => p.api_base)
+                .filter(Boolean);
+            if (typeof Combobox !== 'undefined') {
+                this._llmApiBaseCombobox = new Combobox(llmApiBaseInput, {
+                    presets: presetUrls,
+                    placeholder: 'https://api.openai.com/v1',
+                });
+            }
         }
 
+        // Helper to update model Combobox presets from catalog / Ollama API
         const llmModelInput = document.getElementById('llmModel');
-        if (llmModelInput) {
-            llmModelInput.value = state.global.settings.llm_model || '';
+        this._llmModelCombobox = null;
+        if (llmModelInput && typeof Combobox !== 'undefined') {
+            const currentProvider = llmProviderSelect ? llmProviderSelect.value : 'openai';
+            const fallbackModels = currentProvider === 'ollama' ? [] : (this._providerModels[currentProvider] || []);
+            this._llmModelCombobox = new Combobox(llmModelInput, {
+                presets: fallbackModels,
+                placeholder: translate('settings.aiProvider.modelPlaceholder', {}, 'Select a model...'),
+                onSelect: (value) => {
+                    state.global.settings.llm_model = value;
+                    this.saveSetting('llm_model', value)
+                        .then(() => showToast('toast.settings.settingsUpdated', { setting: 'model' }, 'success'))
+                        .catch(() => {});
+                },
+            });
+        }
+
+        const _loadModelPresets = async (provider) => {
+            if (!this._llmModelCombobox) return;
+            if (provider === 'ollama') {
+                try {
+                    const apiBase = document.getElementById('llmApiBase')?.value?.trim() || 'http://localhost:11434/v1';
+                    const resp = await fetch(`/api/lm/llm/models?provider=ollama&api_base=${encodeURIComponent(apiBase)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.success && Array.isArray(data.models)) {
+                            this._llmModelCombobox.updatePresets(data.models);
+                            return;
+                        }
+                    }
+                } catch (_) {}
+                this._llmModelCombobox.updatePresets([]);
+            } else {
+                this._llmModelCombobox.updatePresets(this._providerModels[provider] || []);
+            }
+        };
+        _loadModelPresets(llmProviderSelect ? llmProviderSelect.value : 'openai');
+
+        // Provider change → auto-fill API Base URL + update model presets
+        if (llmProviderSelect) {
+            llmProviderSelect.addEventListener('change', () => {
+                const provider = llmProviderSelect.value;
+                const preset = this._providerPresets[provider];
+                if (preset) {
+                    if (llmApiBaseInput && preset.api_base) {
+                        llmApiBaseInput.value = preset.api_base;
+                        if (this._llmApiBaseCombobox) {
+                            this._llmApiBaseCombobox.setValue(preset.api_base);
+                        }
+                        llmApiBaseInput.dispatchEvent(new Event('blur'));
+                    }
+                }
+                _loadModelPresets(provider);
+            });
         }
 
         const civitaiHostSelect = document.getElementById('civitaiHost');
@@ -2949,7 +3035,7 @@ export class SettingsManager {
     }
 
     updateLlmApiKeyStatus() {
-        const hasKey = !!state.global.settings.llm_api_key;
+        const hasKey = !!(state.global.settings.llm_api_key_set || state.global.settings.llm_api_key);
         const statusText = document.getElementById('llmApiKeyStatusText');
         const actionBtn = document.getElementById('llmApiKeyActionBtn');
         if (!statusText || !actionBtn) return;

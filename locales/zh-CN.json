@@ -662,18 +662,27 @@
             "title": "AI 提供商",
             "provider": "提供商",
             "providerHelp": "选择您的 LLM 提供商。OpenAI 和 Ollama 使用预设的 API 端点。自定义允许您指定任何兼容 OpenAI 的端点。",
-            "custom": "自定义（兼容 OpenAI）",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama（本地）",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "自定义（OpenAI 兼容）"
+            },
             "apiBase": "API 基础地址",
-            "apiBaseHelp": "LLM API 的基础 URL（例如 https://api.openai.com/v1）。留空则使用提供商默认地址。",
+            "apiBaseHelp": "LLM API 的基础地址。选择预设或输入自定义地址，下拉框显示所有支持的提供商预设。",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "API 密钥",
-            "apiKeyHelp": "您的 LLM 提供商 API 密钥。仅本地存储，不会发送到您选择的 LLM 提供商之外的任何服务器。",
+            "apiKeyHelp": "LLM 提供商的 API 密钥。本地存储，除您选择的 LLM 提供商外不会发送到任何服务器。",
             "apiKeyPlaceholder": "sk-...",
             "apiKeyNotSet": "未设置",
             "apiKeyConfigured": "已配置",
             "apiKeySet": "设置",
             "model": "模型",
-            "modelHelp": "要使用的模型名称（例如 deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。请查看您的提供商支持的可用模型列表。"
+            "modelHelp": "要使用的模型。从下拉框选择（从提供商获取）或输入自定义模型名称。",
+            "modelPlaceholder": "选择一个模型..."
         }
     },
     "loras": {

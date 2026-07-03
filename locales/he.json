@@ -662,7 +662,15 @@
             "title": "ספק AI",
             "provider": "ספק",
             "providerHelp": "בחר את ספק ה-LLM שלך. OpenAI ו-Ollama משתמשים בנקודות קצה מוגדרות מראש. מותאם אישית מאפשר לך לציין כל נקודת קצה תואמת OpenAI.",
-            "custom": "מותאם אישית (תואם OpenAI)",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (מקומי)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "מותאם אישית (תואם OpenAI)"
+            },
             "apiBase": "כתובת בסיס API",
             "apiBaseHelp": "כתובת ה-URL הבסיסית ל-API של LLM (לדוגמה https://api.openai.com/v1). השאר ריק לשימוש בברירת המחדל של הספק.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
@@ -673,7 +681,8 @@
             "apiKeyConfigured": "הוגדר",
             "apiKeySet": "הגדר",
             "model": "מודל",
-            "modelHelp": "שם המודל לשימוש (לדוגמה deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). בדוק אצל הספק שלך אילו מודלים זמינים."
+            "modelHelp": "שם המודל לשימוש (לדוגמה deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). בדוק אצל הספק שלך אילו מודלים זמינים.",
+            "modelPlaceholder": "בחר מודל..."
         }
     },
     "loras": {

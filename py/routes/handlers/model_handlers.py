@@ -154,6 +154,11 @@ class ModelPageView:
                 )
                 self._template_env._i18n_filter_added = True  # type: ignore[attr-defined]
 
+            from ...services.llm_service import PROVIDER_PRESETS, get_all_provider_models
+
+            catalog_provider_ids = [p for p in PROVIDER_PRESETS if p != "custom"]
+            provider_models = await get_all_provider_models(catalog_provider_ids)
+
             template_context = {
                 "is_initializing": is_initializing,
                 "settings": self._settings,
@@ -161,6 +166,8 @@ class ModelPageView:
                 "folders": [],
                 "t": self._server_i18n.get_translation,
                 "version": self._get_app_version(),
+                "provider_presets_json": json.dumps(PROVIDER_PRESETS),
+                "provider_models_json": json.dumps(provider_models),
             }
 
             if not is_initializing:

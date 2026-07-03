@@ -22,6 +22,7 @@ class RouteDefinition:
 MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/settings", "get_settings"),
     RouteDefinition("POST", "/api/lm/settings", "update_settings"),
+    RouteDefinition("GET", "/api/lm/llm/models", "get_llm_models"),
     RouteDefinition("GET", "/api/lm/doctor/diagnostics", "get_doctor_diagnostics"),
     RouteDefinition("POST", "/api/lm/doctor/repair-cache", "repair_doctor_cache"),
     RouteDefinition("POST", "/api/lm/doctor/resolve-filename-conflicts", "resolve_doctor_filename_conflicts"),

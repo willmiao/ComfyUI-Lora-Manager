@@ -662,7 +662,15 @@
             "title": "AIプロバイダー",
             "provider": "プロバイダー",
             "providerHelp": "LLMプロバイダーを選択してください。OpenAIとOllamaはプリセットのAPIエンドポイントを使用します。カスタムでは任意のOpenAI互換エンドポイントを指定できます。",
-            "custom": "カスタム（OpenAI互換）",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama（ローカル）",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "カスタム（OpenAI 互換）"
+            },
             "apiBase": "APIベースURL",
             "apiBaseHelp": "LLM APIのベースURL（例：https://api.openai.com/v1）。空の場合はプロバイダーのデフォルトが使用されます。",
             "apiBasePlaceholder": "https://api.openai.com/v1",
@@ -673,7 +681,8 @@
             "apiKeyConfigured": "設定済み",
             "apiKeySet": "設定",
             "model": "モデル",
-            "modelHelp": "使用するモデル名（例：deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。プロバイダーで利用可能なモデルをご確認ください。"
+            "modelHelp": "使用するモデル名（例：deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。プロバイダーで利用可能なモデルをご確認ください。",
+            "modelPlaceholder": "モデルを選択..."
         }
     },
     "loras": {

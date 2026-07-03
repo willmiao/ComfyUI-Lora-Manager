@@ -165,6 +165,18 @@ class AgentManager {
      *
      * @returns {Promise<boolean>}
      */
+    _readProviderRequiresKey(providerId) {
+        const script = document.getElementById('llmProviderPresets');
+        if (!script) return true; // safe default
+        try {
+            const presets = JSON.parse(script.textContent);
+            const preset = presets[providerId];
+            return preset ? preset.requires_key !== false : true;
+        } catch {
+            return true;
+        }
+    }
+
     async isLlmConfigured() {
         try {
             const response = await fetch('/api/lm/settings');
@@ -172,8 +184,9 @@ class AgentManager {
             const data = await response.json();
             const provider = data.settings?.llm_provider;
             const hasModel = !!data.settings?.llm_model;
-            const hasKey = !!data.settings?.llm_api_key;
-            return hasModel && (hasKey || provider === 'ollama');
+            const hasKey = !!(data.settings?.llm_api_key_set || data.settings?.llm_api_key);
+            const needsKey = this._readProviderRequiresKey(provider);
+            return hasModel && (hasKey || !needsKey);
         } catch {
             return false;
         }

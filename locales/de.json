@@ -662,7 +662,15 @@
             "title": "KI-Anbieter",
             "provider": "Anbieter",
             "providerHelp": "Wählen Sie Ihren LLM-Anbieter. OpenAI und Ollama verwenden voreingestellte API-Endpunkte. Mit \"Benutzerdefiniert\" können Sie jeden OpenAI-kompatiblen Endpunkt angeben.",
-            "custom": "Benutzerdefiniert (OpenAI-kompatibel)",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (lokal)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "Benutzerdefiniert (OpenAI-kompatibel)"
+            },
             "apiBase": "API-Basis-URL",
             "apiBaseHelp": "Die Basis-URL für die LLM-API (z.B. https://api.openai.com/v1). Leer lassen, um die Anbietervoreinstellung zu verwenden.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
@@ -673,7 +681,8 @@
             "apiKeyConfigured": "Konfiguriert",
             "apiKeySet": "Einrichten",
             "model": "Modell",
-            "modelHelp": "Der zu verwendende Modellname (z.B. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Prüfen Sie Ihren Anbieter auf verfügbare Modelle."
+            "modelHelp": "Der zu verwendende Modellname (z.B. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Prüfen Sie Ihren Anbieter auf verfügbare Modelle.",
+            "modelPlaceholder": "Modell auswählen..."
         }
     },
     "loras": {

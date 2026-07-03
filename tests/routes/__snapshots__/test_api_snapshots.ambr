@@ -28,6 +28,7 @@
     'settings': dict({
       'civitai_api_key_set': True,
       'language': 'en',
+      'llm_api_key_set': False,
       'theme': 'dark',
     }),
     'success': True,

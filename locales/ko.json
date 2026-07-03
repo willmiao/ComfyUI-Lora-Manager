@@ -662,7 +662,15 @@
             "title": "AI 제공자",
             "provider": "제공자",
             "providerHelp": "LLM 제공자를 선택하세요. OpenAI와 Ollama는 사전 설정된 API 엔드포인트를 사용합니다. 사용자 정의를 선택하면 모든 OpenAI 호환 엔드포인트를 지정할 수 있습니다.",
-            "custom": "사용자 정의 (OpenAI 호환)",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (로컬)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "사용자 정의 (OpenAI 호환)"
+            },
             "apiBase": "API 기본 URL",
             "apiBaseHelp": "LLM API의 기본 URL입니다 (예: https://api.openai.com/v1). 비워두면 제공자 기본값이 사용됩니다.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
@@ -673,7 +681,8 @@
             "apiKeyConfigured": "설정됨",
             "apiKeySet": "설정",
             "model": "모델",
-            "modelHelp": "사용할 모델 이름 (예: deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). 제공자에서 사용 가능한 모델을 확인하세요."
+            "modelHelp": "사용할 모델 이름 (예: deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). 제공자에서 사용 가능한 모델을 확인하세요.",
+            "modelPlaceholder": "모델 선택..."
         }
     },
     "loras": {

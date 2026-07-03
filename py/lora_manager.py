@@ -208,6 +208,10 @@ class LoraManager:
             # Initialize WebSocket manager
             await ServiceRegistry.get_websocket_manager()
 
+            # Preload LLM model catalog (background task, non-blocking)
+            from .services.llm_service import LLMService
+            await LLMService.get_instance()
+
             # Initialize scanners in background
             lora_scanner = await ServiceRegistry.get_lora_scanner()
             checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()

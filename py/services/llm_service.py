@@ -19,11 +19,165 @@ from .errors import LLMNotConfiguredError, LLMRateLimitError, LLMResponseError
 
 logger = logging.getLogger(__name__)
 
-# Default API base URLs per provider
+# ---------------------------------------------------------------------------
+# Model catalog sourced from opencode's maintained model registry.
+# maps provider_id -> list of model IDs.
+# ---------------------------------------------------------------------------
+_MODEL_CATALOG_URL = "https://models.dev/api.json"
+
+# In-memory cache: maps provider slug -> list of model ID strings.
+_catalog_cache: Optional[Dict[str, List[str]]] = None
+_CATALOG_TIMEOUT = aiohttp.ClientTimeout(total=30)
+
+
+async def _load_model_catalog() -> Dict[str, List[str]]:
+    """Fetch and parse the model catalog, returning ``{provider_id: [model_id, ...]}``.
+
+    The JSON at ``_MODEL_CATALOG_URL`` is a dict keyed by provider slug; each
+    value has a ``models`` sub-dict keyed by model ID.  Only the model IDs are
+    kept.  The result is cached in memory after the first successful fetch.
+    Subsequent calls return the cached data immediately.
+    """
+    global _catalog_cache
+    if _catalog_cache is not None:
+        return _catalog_cache
+
+    try:
+        async with aiohttp.ClientSession(timeout=_CATALOG_TIMEOUT) as session:
+            async with session.get(_MODEL_CATALOG_URL) as resp:
+                if resp.status != 200:
+                    logger.warning("Model catalog returned HTTP %s", resp.status)
+                    return _catalog_cache or {}
+                data = await resp.json()
+    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
+        logger.warning("Failed to fetch model catalog: %s", exc)
+        return _catalog_cache or {}
+
+    if not isinstance(data, dict):
+        logger.warning("Model catalog is not a dict, got %s", type(data).__name__)
+        return _catalog_cache or {}
+
+    result: Dict[str, List[str]] = {}
+    for provider_id, provider_info in data.items():
+        if not isinstance(provider_info, dict):
+            continue
+        models_dict = provider_info.get("models")
+        if not isinstance(models_dict, dict):
+            continue
+        model_ids = [str(mid) for mid in models_dict.keys() if isinstance(mid, str)]
+        if model_ids:
+            result[provider_id] = model_ids
+
+    _catalog_cache = result
+    logger.info(
+        "Loaded model catalog: %d providers, %d total models",
+        len(result),
+        sum(len(m) for m in result.values()),
+    )
+    return result
+
+
+# Short timeout for Ollama's local API
+_OLLAMA_API_TIMEOUT = aiohttp.ClientTimeout(total=8)
+
+
+async def fetch_ollama_models(api_base: str) -> List[str]:
+    """Fetch locally available models from a running Ollama instance.
+
+    Uses Ollama's OpenAI-compatible ``GET {api_base}/models`` endpoint.
+    Returns an empty list if Ollama is not reachable (not running).
+    """
+    url = f"{api_base.rstrip('/')}/models"
+    try:
+        async with aiohttp.ClientSession(timeout=_OLLAMA_API_TIMEOUT) as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    logger.debug("Ollama API returned HTTP %s from %s", resp.status, api_base)
+                    return []
+                data = await resp.json()
+    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
+        logger.debug("Ollama not reachable at %s: %s", api_base, exc)
+        return []
+
+    raw = data.get("data") if isinstance(data, dict) else None
+    if not isinstance(raw, list):
+        return []
+
+    return [
+        str(entry["id"]) for entry in raw
+        if isinstance(entry, dict) and isinstance(entry.get("id"), str)
+    ]
+
+
+async def get_provider_model_ids(provider_id: str) -> List[str]:
+    """Return the list of known model IDs for *provider_id* from the catalog.
+
+    The catalog is loaded on first call and cached thereafter.  If the
+    provider is not found an empty list is returned (never raises).
+    """
+    catalog = await _load_model_catalog()
+    return catalog.get(provider_id, [])
+
+
+async def get_all_provider_models(
+    provider_ids: List[str],
+) -> Dict[str, List[str]]:
+    """Return model lists for a subset of providers in one call.
+
+    Loads the catalog (cached) and returns only the requested providers.
+    Handy for embedding lightweight data into the template context.
+    """
+    catalog = await _load_model_catalog()
+    return {
+        pid: catalog.get(pid, [])
+        for pid in provider_ids
+    }
+
+
+# Provider preset definitions.
+# Each entry contains display metadata and defaults for the UI.
+# The key is the internal provider id stored in ``llm_provider``.
+# Models are NOT listed here — they come from the opencode model catalog at
+# runtime (see :func:`get_provider_model_ids`).
+PROVIDER_PRESETS: Dict[str, Dict[str, Any]] = {
+    "openai": {
+        "name": "OpenAI",
+        "api_base": "https://api.openai.com/v1",
+        "requires_key": True,
+    },
+    "ollama": {
+        "name": "Ollama (local)",
+        "api_base": "http://localhost:11434/v1",
+        "requires_key": False,
+    },
+    "deepseek": {
+        "name": "DeepSeek",
+        "api_base": "https://api.deepseek.com/v1",
+        "requires_key": True,
+    },
+    "groq": {
+        "name": "Groq",
+        "api_base": "https://api.groq.com/openai/v1",
+        "requires_key": True,
+    },
+    "openrouter": {
+        "name": "OpenRouter",
+        "api_base": "https://openrouter.ai/api/v1",
+        "requires_key": True,
+    },
+    "opencode-go": {
+        "name": "OpenCode Go",
+        "api_base": "https://opencode.ai/zen/go/v1",
+        "requires_key": True,
+    },
+    # "custom" is handled specially (no preset api_base, requires user input)
+}
+
+# Legacy lookup derived from PROVIDER_PRESETS for backward compat.
 _PROVIDER_DEFAULTS: Dict[str, str] = {
-    "openai": "https://api.openai.com/v1",
-    "ollama": "http://localhost:11434/v1",
-    # "custom" requires an explicit llm_api_base from the user
+    pid: info["api_base"]
+    for pid, info in PROVIDER_PRESETS.items()
+    if info.get("api_base")
 }
 
 # Request timeout for LLM calls (seconds)
@@ -57,6 +211,10 @@ class LLMService:
                     from .settings_manager import get_settings_manager
 
                     cls._instance = cls(get_settings_manager())
+                    # Start preloading the model catalog in the background so
+                    # the settings UI never blocks on it.  The catalog is
+                    # cached after the first fetch (see _load_model_catalog).
+                    asyncio.create_task(_load_model_catalog())
         return cls._instance
 
     @classmethod
@@ -79,20 +237,31 @@ class LLMService:
             "model": self._settings.get("llm_model", ""),
         }
 
+    @staticmethod
+    def _provider_requires_key(provider: str) -> bool:
+        """Return ``False`` when the given provider id does not need an API key."""
+        preset = PROVIDER_PRESETS.get(provider, {})
+        return bool(preset.get("requires_key", True))
+
     def is_configured(self) -> bool:
         """Return ``True`` when the LLM provider is minimally configured.
 
         A provider is considered configured when ``llm_model`` is set and
-        (for non-Ollama) an API key is configured.
+        an API key is configured for providers that require one (e.g.
+        Ollama does not).
         """
 
         cfg = self._get_config()
         has_model = bool(cfg["model"])
-        has_key = bool(cfg["api_key"]) or cfg["provider"] == "ollama"
+        has_key = bool(cfg["api_key"]) or not self._provider_requires_key(cfg["provider"])
         return has_model and has_key
 
     def _resolve_api_base(self, provider: str, api_base: str) -> str:
-        """Resolve the API base URL for the given provider."""
+        """Resolve the API base URL for the given provider.
+
+        If ``api_base`` is explicitly set (non-empty), it takes priority.
+        Otherwise the default from :data:`PROVIDER_PRESETS` is used.
+        """
 
         if api_base:
             return api_base.rstrip("/")
@@ -115,12 +284,13 @@ class LLMService:
 
         cfg = self._get_config()
         has_model = bool(cfg["model"])
-        has_key = bool(cfg["api_key"]) or cfg["provider"] == "ollama"
+        needs_key = self._provider_requires_key(cfg["provider"])
+        has_key = bool(cfg["api_key"]) or not needs_key
         if not (has_model and has_key):
             parts = []
             if not has_model:
                 parts.append("No LLM model specified")
-            if not has_key and cfg["provider"] != "ollama":
+            if not has_key and needs_key:
                 parts.append("No LLM API key configured")
             detail = "; ".join(parts) if parts else "LLM provider is not configured"
             raise LLMNotConfiguredError(

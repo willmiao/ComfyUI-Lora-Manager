@@ -38,6 +38,7 @@ from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...services.errors import ResourceNotFoundError
+from ...services.llm_service import get_provider_model_ids, fetch_ollama_models
 from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
 from ...utils.models import BaseModelMetadata
 from ...utils.constants import (
@@ -1400,8 +1401,9 @@ class SettingsHandler:
             "libraries",
             "active_library",
             # Sensitive — never expose the actual value to the frontend;
-            # frontend receives a boolean instead (civitai_api_key_set).
+            # frontend receives a boolean instead (*_set).
             "civitai_api_key",
+            "llm_api_key",
         }
     )
 
@@ -1459,6 +1461,8 @@ class SettingsHandler:
             # Sensitive fields: only expose a boolean indicating whether set
             raw_key = self._settings.get("civitai_api_key")
             response_data["civitai_api_key_set"] = bool(raw_key)
+            raw_llm_key = self._settings.get("llm_api_key")
+            response_data["llm_api_key_set"] = bool(raw_llm_key)
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file
@@ -1562,6 +1566,42 @@ class SettingsHandler:
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error updating settings: %s", exc, exc_info=True)
             return web.Response(status=500, text=str(exc))
+
+    async def get_llm_models(self, request: web.Request) -> web.Response:
+        """Return the model list for a provider.
+
+        For ``ollama`` the list is fetched live from the local Ollama API
+        (only models actually pulled locally are shown).  For all other
+        providers the opencode model catalog is used.
+
+        Query parameters:
+            provider (required): Internal provider id (``openai``, ``ollama``, etc.).
+
+        Returns:
+            ``{"success": true, "models": ["gpt-4o", ...]}``.
+        """
+        provider_id = request.query.get("provider", "").strip()
+        if not provider_id:
+            return web.json_response(
+                {"success": False, "error": "provider query parameter is required", "models": []},
+                status=400,
+            )
+
+        try:
+            if provider_id == "ollama":
+                api_base = request.query.get("api_base", "").strip() or self._settings.get("llm_api_base", "")
+                if not api_base:
+                    api_base = "http://localhost:11434/v1"
+                models = await fetch_ollama_models(api_base)
+            else:
+                models = await get_provider_model_ids(provider_id)
+            return web.json_response({"success": True, "models": models})
+        except Exception as exc:
+            logger.warning("get_llm_models failed for %s: %s", provider_id, exc)
+            return web.json_response(
+                {"success": False, "error": str(exc), "models": []},
+                status=500,
+            )
 
     def _validate_example_images_path(self, folder_path: str) -> str | None:
         if not os.path.exists(folder_path):
@@ -3354,6 +3394,7 @@ class MiscHandlerSet:
             "get_priority_tags": self.settings.get_priority_tags,
             "get_settings_libraries": self.settings.get_libraries,
             "activate_library": self.settings.activate_library,
+            "get_llm_models": self.settings.get_llm_models,
             "update_usage_stats": self.usage_stats.update_usage_stats,
             "get_usage_stats": self.usage_stats.get_usage_stats,
             "update_lora_code": self.lora_code.update_lora_code,

@@ -157,9 +157,13 @@
                                     </div>
                                     <div class="setting-control select-control">
                                         <select id="llmProvider" onchange="settingsManager.saveSelectSetting('llmProvider', 'llm_provider')">
-                                            <option value="openai">OpenAI</option>
-                                            <option value="ollama">Ollama (local)</option>
-                                            <option value="custom">{{ t('settings.aiProvider.custom') }}</option>
+                                            <option value="openai">{{ t('settings.aiProvider.providerOptions.openai') }}</option>
+                                            <option value="ollama">{{ t('settings.aiProvider.providerOptions.ollama') }}</option>
+                                            <option value="deepseek">{{ t('settings.aiProvider.providerOptions.deepseek') }}</option>
+                                            <option value="groq">{{ t('settings.aiProvider.providerOptions.groq') }}</option>
+                                            <option value="openrouter">{{ t('settings.aiProvider.providerOptions.openrouter') }}</option>
+                                            <option value="opencode-go">{{ t('settings.aiProvider.providerOptions.opencode-go') }}</option>
+                                            <option value="custom">{{ t('settings.aiProvider.providerOptions.custom') }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -171,10 +175,12 @@
                                         <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.apiBaseHelp') }}"></i>
                                     </div>
                                     <div class="setting-control">
-                                        <div class="text-input-wrapper">
+                                        <div class="text-input-wrapper lm-combobox-container">
                                             <input type="text" id="llmApiBase"
+                                                   class="lm-combobox-input"
                                                    value="{{ settings.get('llm_api_base', '') }}"
                                                    placeholder="{{ t('settings.aiProvider.apiBasePlaceholder') }}"
+                                                   autocomplete="off"
                                                    onblur="settingsManager.saveInputSetting('llmApiBase', 'llm_api_base')"
                                                    onkeydown="if(event.key === 'Enter') { this.blur(); }" />
                                         </div>
@@ -222,10 +228,12 @@
                                         <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.modelHelp') }}"></i>
                                     </div>
                                     <div class="setting-control">
-                                        <div class="text-input-wrapper">
+                                        <div class="text-input-wrapper lm-combobox-container">
                                             <input type="text" id="llmModel"
+                                                   class="lm-combobox-input"
                                                    value="{{ settings.get('llm_model', '') }}"
-                                                   placeholder="e.g. gpt-4o-mini"
+                                                   placeholder="{{ t('settings.aiProvider.modelPlaceholder') }}"
+                                                   autocomplete="off"
                                                    onblur="settingsManager.saveInputSetting('llmModel', 'llm_model')"
                                                    onkeydown="if(event.key === 'Enter') { this.blur(); }" />
                                         </div>
@@ -233,6 +241,14 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Provider presets + model lists for frontend -->
+                        <script id="llmProviderPresets" type="application/json">
+                            {{ provider_presets_json | safe }}
+                        </script>
+                        <script id="llmProviderModels" type="application/json">
+                            {{ provider_models_json | safe }}
+                        </script>
 
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
