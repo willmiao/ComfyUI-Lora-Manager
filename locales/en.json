@@ -470,7 +470,9 @@
       },
       "modelNameDisplayHelp": "Choose what to display in the model card footer",
       "cardBlurAmount": "Card Overlay Blur",
-      "cardBlurAmountHelp": "Adjust the blur intensity of the header and footer overlays on model and recipe cards (0 = no blur, 20 = maximum blur)."
+      "cardBlurAmountHelp": "Adjust the blur intensity of the header and footer overlays on model and recipe cards (0 = no blur, 20 = maximum blur).",
+      "recipePreviewFullImage": "Full Recipe Preview",
+      "recipePreviewFullImageHelp": "Show the entire recipe preview image within the card (letterboxed with bars) instead of cropping it to fill. Only affects the Recipes page."
     },
     "folderSettings": {
       "activeLibrary": "Active Library",
@@ -790,6 +792,7 @@
       "checkUpdates": "Check Updates",
       "linkModel": "Link Model",
       "linkCivitai": "Link to Civitai",
+      "relinkCivitai": "Re-link to Civitai",
       "linkHuggingFace": "Link to HuggingFace",
       "copySyntax": "Copy LoRA Syntax",
       "copyFilename": "Copy Model Filename",

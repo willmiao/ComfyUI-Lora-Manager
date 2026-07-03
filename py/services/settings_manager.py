@@ -112,6 +112,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "llm_api_key": "",
     "llm_api_base": "",  # empty = provider default
     "llm_model": "",  # e.g. "gpt-4o-mini"
+    "recipe_preview_full_image": False,
 }
 
 

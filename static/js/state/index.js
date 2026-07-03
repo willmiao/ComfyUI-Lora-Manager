@@ -59,6 +59,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     llm_api_key: '',
     llm_api_base: '',
     llm_model: '',
+    recipe_preview_full_image: false,
 });
 
 export function createDefaultSettings() {
