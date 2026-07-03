@@ -177,8 +177,7 @@ class Config:
 
         # Load extra folder paths from active library settings before symlink scan
         # so both primary and extra paths are discovered in a single pass.
-        if not standalone_mode:
-            self._load_extra_paths_from_settings()
+        self._load_extra_paths_from_settings()
 
         # Scan symbolic links during initialization
         self._initialize_symlink_mappings()
@@ -193,7 +192,7 @@ class Config:
         Called during ``Config.__init__`` before the symlink scan so both primary and
         extra paths are discovered in a single pass.  Mirrors the extra-path
         portion of ``_apply_library_paths`` without replacing the primary roots
-        that were already resolved from ComfyUI's ``folder_paths``.
+        that were already resolved via ``folder_paths.get_folder_paths``.
         """
         try:
             from .services.settings_manager import get_settings_manager
