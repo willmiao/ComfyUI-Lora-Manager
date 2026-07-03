@@ -138,6 +138,16 @@
     object-position: center top; /* Align the top of the image with the top of the container */
 }
 
+/* Recipe preview full-image mode: show the entire preview letterboxed with bars
+   instead of cropping to fill. Scoped to the recipes page. */
+body[data-page="recipes"].recipe-preview-contain .card-preview img,
+body[data-page="recipes"].recipe-preview-contain .card-preview video {
+    object-fit: contain;
+    object-position: center center;
+    /* Theme-matched letterbox bars: light gray in light mode, dark in dark mode */
+    background: var(--lora-surface);
+}
+
 /* NSFW Content Blur */
 .card-preview.blurred img,
 .card-preview.blurred video {
