@@ -26,6 +26,7 @@ import aiohttp
 
 import os
 
+from ...config import config
 from ..llm_service import LLMService
 from ..websocket_manager import ws_manager
 from .post_processor import PostProcessor
@@ -259,6 +260,7 @@ class AgentService:
                 "execute_skill '%s': processing model %d/%d: %s",
                 skill_name, processed + 1, total, model_path,
             )
+            updated_data: Dict[str, Any] = {}
             try:
                 from ...agent_cli import read_metadata
                 metadata = await read_metadata(model_path)
@@ -298,6 +300,11 @@ class AgentService:
                     uf = model_result.get("updated_fields", [])
                     if uf:
                         updated_models.append({"path": model_path, "updated_fields": uf})
+                    updated_data = model_result.get("updates", {})
+                    if "preview_url" in updated_data and updated_data["preview_url"]:
+                        updated_data["preview_url"] = config.get_preview_static_url(
+                            updated_data["preview_url"]
+                        )
                 else:
                     errors.extend(
                         model_result.get("errors", [model_result.get("error", "Unknown error")])
@@ -312,6 +319,7 @@ class AgentService:
                 progress_callback, skill_name, status="processing",
                 total=total, processed=processed, success=success_count,
                 current_path=model_path,
+                updated_data=updated_data,
             )
 
         result = SkillResult(

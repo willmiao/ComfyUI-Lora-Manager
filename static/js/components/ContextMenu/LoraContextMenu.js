@@ -1,5 +1,6 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
+import { state } from '../../state/index.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { copyLoraSyntax, sendLoraToWorkflow, buildLoraSyntax, showToast } from '../../utils/uiHelpers.js';
 import { showExcludeModal, showDeleteModal } from '../../utils/modalUtils.js';
@@ -78,39 +79,54 @@ export class LoraContextMenu extends BaseContextMenu {
     async enrichWithAgent(filePath) {
         const { agentManager } = await import('../../managers/AgentManager.js');
 
-        // Check if LLM is configured
         const configured = await agentManager.isLlmConfigured();
         if (!configured) {
             showToast('toast.agent.llmNotConfigured', {}, 'warning');
             return;
         }
 
-        // Connect WebSocket for progress
         agentManager.connect();
 
-        // Set up one-time completion handler
+        const progressUI = state.loadingManager.showEnhancedProgress(
+            'Enriching metadata with AI...'
+        );
+
+        const onProgress = (data) => {
+            if (data.status === 'processing' && data.current_path && data.updated_data && Object.keys(data.updated_data).length > 0) {
+                if (state.virtualScroller?.updateSingleItem) {
+                    state.virtualScroller.updateSingleItem(data.current_path, data.updated_data);
+                }
+                const pct = data.total > 0 ? Math.floor((data.processed / data.total) * 100) : 0;
+                const name = data.current_path.split('/').pop();
+                progressUI.updateProgress(pct, name, `Processing ${name}`);
+            }
+        };
+        agentManager.onProgress(onProgress);
+
         const onComplete = (data) => {
-            const idx = agentManager.completeCallbacks.indexOf(onComplete);
-            if (idx >= 0) agentManager.completeCallbacks.splice(idx, 1);
+            const pIdx = agentManager.progressCallbacks.indexOf(onProgress);
+            if (pIdx >= 0) agentManager.progressCallbacks.splice(pIdx, 1);
+            const cIdx = agentManager.completeCallbacks.indexOf(onComplete);
+            if (cIdx >= 0) agentManager.completeCallbacks.splice(cIdx, 1);
 
             if (data.status === 'completed') {
+                progressUI.complete(data.summary || 'Enrich complete');
                 showToast('toast.agent.enrichComplete', { summary: data.summary || 'Done' }, 'success');
-                // Soft reload to reflect updated metadata
-                if (typeof resetAndReload === 'function') {
-                    resetAndReload();
-                }
             } else if (data.status === 'error') {
+                state.loadingManager.hide();
                 showToast('toast.agent.enrichFailed', { error: data.error || 'Unknown error' }, 'error');
             }
         };
         agentManager.onComplete(onComplete);
 
-        // Show progress toast
-        showToast('toast.agent.enrichStarted', {}, 'info');
-
         try {
             await agentManager.executeSkill('enrich_hf_metadata', [filePath]);
         } catch (error) {
+            const pIdx = agentManager.progressCallbacks.indexOf(onProgress);
+            if (pIdx >= 0) agentManager.progressCallbacks.splice(pIdx, 1);
+            const cIdx = agentManager.completeCallbacks.indexOf(onComplete);
+            if (cIdx >= 0) agentManager.completeCallbacks.splice(cIdx, 1);
+            state.loadingManager.hide();
             showToast('toast.agent.enrichFailed', { error: error.message }, 'error');
         }
     }

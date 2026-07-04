@@ -253,6 +253,7 @@ class PostProcessor:
             "success": True,
             "updated_fields": updated_fields,
             "preview_downloaded": preview_downloaded,
+            "updates": updates,
             "errors": [],
         }
 
