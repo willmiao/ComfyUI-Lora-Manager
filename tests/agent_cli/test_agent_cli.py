@@ -583,3 +583,443 @@ widget:
         assert len(images) == 1
         assert "two samurais doing a muay thai fight" in images[0]["meta"]["prompt"]
         assert "Textured abstract style" in images[0]["meta"]["prompt"]
+
+
+# ======================================================================
+# extract_gallery_table_images  —  Sample Gallery markdown tables
+# ======================================================================
+
+
+class TestExtractGalleryTableImages:
+
+    _REPO = "Limbicnation/pixel-art-lora"
+    _README = """## Sample Gallery
+
+| Preview | Prompt |
+|---------|--------|
+| ![Knight](./samples/knight.png) | pixel art sprite, a brave knight |
+| ![Dragon](./samples/dragon.png) | pixel art sprite, a fire dragon |
+"""
+
+    @staticmethod
+    def _extract(md: str, repo: str = _REPO, existing: set | None = None):
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            extract_gallery_table_images
+        return extract_gallery_table_images(md, repo, existing_urls=existing)
+
+    def test_extracts_table_images(self):
+        images = self._extract(self._README)
+        assert len(images) == 2
+        assert "knight.png" in images[0]["url"]
+        assert images[0]["meta"]["prompt"] == "pixel art sprite, a brave knight"
+        assert "dragon.png" in images[1]["url"]
+
+    def test_skips_existing_urls(self):
+        existing = {"https://huggingface.co/Limbicnation/pixel-art-lora/resolve/main/samples/knight.png"}
+        images = self._extract(self._README, existing=existing)
+        assert len(images) == 1
+        assert "knight.png" not in images[0]["url"]
+
+    def test_empty_readme_returns_empty(self):
+        assert self._extract("") == []
+
+    def test_no_gallery_table_returns_empty(self):
+        md = "## Description\nSome text."
+        assert self._extract(md) == []
+
+    def test_non_gallery_table_skipped(self):
+        md = "| Param | Value |\n|---|---|\n| Steps | 4 |"
+        assert self._extract(md) == []
+
+    def test_absolute_url_preserved(self):
+        md = "| Preview | Prompt |\n|---|---|\n| ![img](https://cdn.example.com/img.png) | text |"
+        images = self._extract(md, repo="user/repo")
+        assert len(images) == 1
+        assert images[0]["url"] == "https://cdn.example.com/img.png"
+
+
+# ======================================================================
+# clean_readme_for_llm  —  pre-process README before LLM injection
+# ======================================================================
+
+
+class TestCleanReadmeForLlm:
+
+    @staticmethod
+    def _clean(md: str, max_length: int = 6000) -> str:
+        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+            clean_readme_for_llm
+        return clean_readme_for_llm(md, max_length=max_length)
+
+    # -- basic guards --------------------------------------------------------
+
+    def test_none_returns_empty(self):
+        assert self._clean(None) == ""  # type: ignore[arg-type]
+
+    def test_empty_returns_empty(self):
+        assert self._clean("") == ""
+
+    def test_plain_text_passes_through(self):
+        result = self._clean("Just some description text.")
+        assert "Just some description text." in result
+
+    # -- widget section stripping -------------------------------------------
+
+    def test_widget_text_preserved_in_cleaned_output(self):
+        """Widget section text is preserved — it provides useful signal
+        for tag and description extraction (example prompts describe what
+        the model generates)."""
+        md = """---
+tags:
+- lora
+- anime
+widget:
+- text: "a test prompt"
+  output:
+    url: images/test.png
+- text: >-
+    another long
+    prompt here
+  output:
+    url: images/test2.png
+base_model: black-forest-labs/FLUX.1-dev
+instance_prompt: trigger word
+---
+# Model Description
+This is the actual content.
+"""
+        result = self._clean(md)
+        # Widget text content preserved (valuable signal for tags)
+        # YAML folded scalars (``>-``) may split text across lines
+        assert "a test prompt" in result
+        assert "another long" in result
+        assert "prompt here" in result
+        # Non-widget frontmatter preserved
+        assert "base_model: black-forest-labs/FLUX.1-dev" in result
+        assert "instance_prompt: trigger word" in result
+        assert "tags:" in result
+        assert "- lora" in result
+        assert "- anime" in result
+        assert "Model Description" in result
+
+    def test_widget_last_key_in_frontmatter(self):
+        """Widget text at end of frontmatter is preserved."""
+        md = """---
+tags:
+- lora
+widget:
+- output:
+    url: img.png
+  text: prompt
+---
+# Content
+"""
+        result = self._clean(md)
+        assert "prompt" in result
+        assert "tags:" in result
+
+    def test_no_widget_untouched(self):
+        md = """---
+tags:
+- lora
+base_model: flux
+---
+# Content
+"""
+        result = self._clean(md)
+        assert "tags:" in result
+        assert "base_model: flux" in result
+
+    # -- gallery stripping ---------------------------------------------------
+
+    def test_gallery_tag_stripped(self):
+        md = "Some text\n<Gallery />\nmore text"
+        result = self._clean(md)
+        assert "<Gallery" not in result
+
+    # -- code block stripping ------------------------------------------------
+
+    def test_fenced_code_block_stripped(self):
+        md = """## Usage
+```python
+import torch
+pipe = DiffusionPipeline.from_pretrained('base')
+```
+## Description
+Some text.
+"""
+        result = self._clean(md)
+        assert "import torch" not in result
+        assert "DiffusionPipeline" not in result
+        assert "## Usage" in result
+        assert "## Description" in result
+
+    def test_bash_code_block_stripped(self):
+        md = """## Setup
+```bash
+pip install diffusers
+huggingface-cli download repo
+```
+"""
+        result = self._clean(md)
+        assert "pip install" not in result
+        assert "## Setup" in result
+
+    def test_code_block_sections_remain_separated(self):
+        md = "## Install\n```bash\npip install x\n```\n\n## Usage\nSome text."
+        result = self._clean(md)
+        assert "pip install" not in result
+        assert "## Install" in result
+        assert "## Usage" in result
+        assert "Some text." in result
+
+    def test_unmarked_code_block_preserved(self):
+        """Unmarked fenced code blocks (just ```) are kept since they
+        often contain trigger words rather than code."""
+        md = """### Trigger Words
+
+Always include:
+
+```
+pixel art sprite, game asset, transparent background
+```
+"""
+        result = self._clean(md)
+        assert "pixel art sprite" in result
+        assert "game asset" in result
+        assert "transparent background" in result
+
+    def test_unmarked_code_block_with_python_preserved(self):
+        """Even unmarked blocks with Python code are kept (false positive
+        accepted because trigger-word blocks are unmarked)."""
+        md = "## Setup\n```\nimport torch\nprint('hello')\n```\n## Desc\nText."
+        result = self._clean(md)
+        assert "import torch" in result
+
+    # -- standalone image stripping ------------------------------------------
+
+    def test_standalone_image_stripped(self):
+        md = "## Gallery\n![sample](https://cdn.hf.co/img.png)\n![another](https://cdn.hf.co/img2.png)\n\nSome text."
+        result = self._clean(md)
+        assert "cdn.hf.co" not in result
+        assert "sample" in result  # alt text preserved
+        assert "another" in result  # alt text preserved
+        assert "## Gallery" in result
+        assert "Some text." in result
+
+    def test_html_img_tag_stripped(self):
+        md = '## Preview\n<img src="https://cdn.hf.co/img.webp"></img>\n\nDescription.'
+        result = self._clean(md)
+        assert "cdn.hf.co" not in result
+        assert "Description." in result
+
+    def test_inline_image_within_paragraph_preserved(self):
+        """Inline images inside paragraphs are rare but shouldn't be stripped."""
+        md = "Click here ![icon](https://example.com/icon.png) for more info."
+        result = self._clean(md)
+        assert "Click here" in result
+        assert "for more info" in result
+
+    # -- training table stripping --------------------------------------------
+
+    def test_training_table_stripped(self):
+        md = """## Training
+| Parameter     | Value    |
+|---------------|----------|
+| LR Scheduler  | constant |
+| Optimizer     | AdamW    |
+| Network Dim   | 64       |
+## Best Dimensions
+| Resolution | Status  |
+|-----------|---------|
+| 768x1024  | Best    |
+"""
+        result = self._clean(md)
+        assert "LR Scheduler" not in result
+        assert "Optimizer" not in result
+        assert "Network Dim" not in result
+        # Normal table preserved
+        assert "Best Dimensions" in result
+        assert "768x1024" in result
+
+    def test_normal_table_preserved(self):
+        md = """## Recommended
+| Resolution | Status  |
+|-----------|---------|
+| 1024x1024 | Default |
+"""
+        result = self._clean(md)
+        assert "1024x1024" in result
+
+    # -- boilerplate section stripping ---------------------------------------
+
+    def test_boilerplate_license_stripped(self):
+        md = """## Description
+Some text.
+## License
+apache-2.0
+Some license details here.
+## More Content
+After license.
+"""
+        result = self._clean(md)
+        assert "apache-2.0" not in result
+        assert "## License" not in result
+        assert "## Description" in result
+        assert "## More Content" in result
+        assert "After license." in result
+
+    def test_boilerplate_disclaimer_stripped(self):
+        md = """## Description
+Some text.
+## DISCLAIMER
+Legal text here.
+## Citation
+Bibtex here.
+"""
+        result = self._clean(md)
+        assert "Legal text" not in result
+        assert "Bibtex" not in result
+        assert "Some text." in result
+
+    def test_boilerplate_subsection_not_stripped(self):
+        """Only top-level (##) boilerplate is stripped; ### subsections inside
+        non-boilerplate headings are left alone."""
+        md = """## Usage
+Some text.
+### Important Note
+This is a note within the usage section.
+"""
+        result = self._clean(md)
+        assert "Important Note" in result
+
+    # -- massive list stripping ----------------------------------------------
+
+    def test_massive_name_list_stripped(self):
+        lines = ["## 2026 Updates:"]
+        for i in range(12):
+            lines.append(f"Name{i}A, Name{i}B, Name{i}C, Name{i}D, Name{i}E,")
+        lines.append("## License")
+        lines.append("apache")
+        md = "\n".join(lines)
+        result = self._clean(md)
+        assert "Name0A" not in result
+        assert "Name11E" not in result
+        assert "## 2026 Updates:" in result
+        # License stripped by boilerplate
+        assert "apache" not in result
+
+    def test_short_list_preserved(self):
+        """Short lists (< 8 consecutive lines) should not be stripped."""
+        lines = ["## Tags:"]
+        for i in range(4):
+            lines.append(f"tag{i}A, tag{i}B,")
+        lines.append("## Description")
+        lines.append("Some text.")
+        md = "\n".join(lines)
+        result = self._clean(md)
+        assert "tag0A" in result
+        assert "tag3B" in result
+
+    # -- max_length truncation -----------------------------------------------
+
+    def test_truncation(self):
+        md = "A" * 100 + "\n" + "B" * 100
+        result = self._clean(md, max_length=150)
+        assert len(result) <= 150
+        assert result.startswith("A" * 100)
+
+    # -- integration: end-to-end realistic README ----------------------------
+
+    def test_realistic_flux_lora_readme(self):
+        md = """---
+tags:
+- text-to-image
+- lora
+- diffusers
+- 3D
+- Toon
+widget:
+- text: >-
+    Long toons, a close-up of a cartoon character face...
+  output:
+    url: images/LT4.png
+- text: >-
+    Long toons, Super Detail, a close-up shot...
+  output:
+    url: images/LT5.png
+base_model: black-forest-labs/FLUX.1-dev
+instance_prompt: Long toons
+license: creativeml-openrail-m
+---
+# Flux-Long-Toon-LoRA
+
+<Gallery />
+
+**The model is still in the training phase.**
+
+## Model description
+
+**prithivMLmods/Flux-Long-Toon-LoRA**
+
+Image Processing Parameters
+
+| Parameter                 | Value  | Parameter                 | Value  |
+|---------------------------|--------|---------------------------|--------|
+| LR Scheduler              | constant | Noise Offset              | 0.03   |
+| Optimizer                 | AdamW  | Multires Noise Discount   | 0.1    |
+| Network Dim               | 64     | Multires Noise Iterations | 10     |
+| Network Alpha             | 32     | Repeat & Steps           | 25 & 3270 |
+| Epoch                     | 18    | Save Every N Epochs       | 1     |
+
+## Best Dimensions
+
+- 768 x 1024 (Best)
+- 1024 x 1024 (Default)
+
+## Setting Up
+```python
+import torch
+from pipelines import DiffusionPipeline
+
+base_model = "black-forest-labs/FLUX.1-dev"
+pipe = DiffusionPipeline.from_pretrained(base_model, torch_dtype=torch.bfloat16)
+
+lora_repo = "prithivMLmods/Flux-Long-Toon-LoRA"
+trigger_word = "Long toons"
+pipe.load_lora_weights(lora_repo)
+```
+
+## Trigger words
+
+You should use `Long toons` to trigger the image generation.
+
+## Download model
+
+Weights for this model are available in Safetensors format.
+"""
+        original_len = len(md)
+        result = self._clean(md)
+
+        # Still significantly smaller (widget text is kept but training
+        # tables, code blocks, boilerplate are stripped)
+        assert len(result) < original_len * 0.7, (
+            f"Expected <70% of original, got {len(result)}/{original_len}"
+        )
+
+        # Signal preserved
+        assert "Long toons" in result
+        assert "black-forest-labs/FLUX.1-dev" in result
+        assert "3D" in result
+        assert "Toon" in result
+
+        # Widget content preserved (text is valuable signal for tags/desc)
+        assert "close-up of a cartoon character face" in result
+        assert "Super Detail" in result
+
+        # Noise stripped
+        assert "import torch" not in result
+        assert "DiffusionPipeline" not in result
+        assert "LR Scheduler" not in result
+        assert "<Gallery" not in result
+        assert "Download model" not in result

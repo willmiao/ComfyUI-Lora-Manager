@@ -28,6 +28,7 @@ from ..llm_service import LLMService
 from ..websocket_manager import ws_manager
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
+from .skills.enrich_hf_metadata.md_to_html import clean_readme_for_llm
 
 logger = logging.getLogger(__name__)
 
@@ -368,7 +369,8 @@ class AgentService:
         context["repo"] = repo or ""
         if repo:
             readme = await self._fetch_readme(repo)
-            context["readme_content"] = readme[:8000] if readme else "(README not available)"
+            cleaned = clean_readme_for_llm(readme) if readme else ""
+            context["readme_content"] = cleaned if cleaned else "(README not available)"
             context["readme_content_full"] = readme or ""
 
         try:

@@ -333,18 +333,53 @@ class LLMService:
 
         cfg = self._ensure_configured()
         api_base = self._resolve_api_base(cfg["provider"], cfg["api_base"])
-        url = f"{api_base}/chat/completions"
         model_name = model or cfg["model"]
 
-        payload: Dict[str, Any] = {
-            "model": model_name,
-            "messages": messages,
-            "temperature": temperature,
-        }
-        if response_format is not None:
-            payload["response_format"] = response_format
-        if max_tokens is not None:
-            payload["max_tokens"] = max_tokens
+        is_ollama = cfg["provider"] == "ollama"
+
+        if is_ollama:
+            # Use Ollama's native /api/chat endpoint which does NOT expose
+            # a separate reasoning/thinking field (the model's full output
+            # lands directly in message.content).  The OpenAI-compatible
+            # endpoint splits thinking into the "reasoning" field, making
+            # content empty when thinking consumes all available tokens.
+            base = api_base.rstrip("/")
+            if base.endswith("/v1"):
+                base = base[:-3]
+            url = f"{base}/api/chat"
+        else:
+            url = f"{api_base}/chat/completions"
+
+        payload: Dict[str, Any]
+        if is_ollama:
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "stream": False,
+                # Suppress separate thinking trace — thinking still happens
+                # internally (accuracy preserved) but output goes directly to
+                # message.content instead of being split across content +
+                # thinking.  Without this the model can exhaust num_predict
+                # on thinking alone and leave content empty.
+                "think": False,
+                "options": {
+                    "temperature": temperature,
+                },
+            }
+            if response_format is not None:
+                payload["format"] = "json"
+            if max_tokens is not None:
+                payload["options"]["num_predict"] = max_tokens
+        else:
+            payload = {
+                "model": model_name,
+                "messages": messages,
+                "temperature": temperature,
+            }
+            if response_format is not None:
+                payload["response_format"] = response_format
+            if max_tokens is not None:
+                payload["max_tokens"] = max_tokens
 
         headers = self._build_headers(cfg["api_key"])
 
@@ -387,8 +422,25 @@ class LLMService:
 
             # Parse response
             try:
-                content = data["choices"][0]["message"]["content"]
-                usage = data.get("usage", {})
+                if is_ollama:
+                    content = (data.get("message") or {}).get("content") or ""
+                    usage = {"completion_tokens": data.get("eval_count", 0)}
+                    finish_reason = data.get("done_reason", "")
+                    if not content:
+                        logger.warning(
+                            "LLM returned empty content. Provider=ollama, "
+                            "done_reason=%s, eval_count=%s",
+                            finish_reason,
+                            data.get("eval_count", 0),
+                        )
+                else:
+                    content = data["choices"][0]["message"].get("content") or ""
+                    usage = data.get("usage", {})
+                    if not content:
+                        logger.warning(
+                            "LLM returned empty content. Full response truncated: %s",
+                            json.dumps(data, ensure_ascii=False)[:1000],
+                        )
                 return {
                     "content": content,
                     "usage": usage,
@@ -442,13 +494,16 @@ class LLMService:
             {"role": "user", "content": user_prompt},
         ]
 
-        # First attempt with JSON mode
+        # First attempt with JSON mode.
+        # Use a generous max_tokens so thinking-enabled models (e.g.
+        # gemma4 via Ollama) have room to reason AND still emit content.
+        effective_max = max_tokens or 131072
         result = await self.chat_completion(
             messages=messages,
             model=model,
             temperature=temperature,
             response_format={"type": "json_object"},
-            max_tokens=max_tokens,
+            max_tokens=effective_max,
         )
 
         try:
@@ -458,11 +513,15 @@ class LLMService:
                 "LLM JSON parse failed on first attempt: %s. Retrying.", exc
             )
 
-        # Retry with explicit instruction to return valid JSON
+        # Retry WITHOUT response_format — some providers (Ollama with
+        # thinking-enabled models like gemma4) may return empty content
+        # when json_object mode is active.  Fall back to a textual
+        # instruction instead.
+        previous_content = result.get("content", "") or ""
         retry_messages = messages + [
             {
                 "role": "assistant",
-                "content": result["content"],
+                "content": previous_content or "(empty response)",
             },
             {
                 "role": "user",
@@ -478,14 +537,21 @@ class LLMService:
             messages=retry_messages,
             model=model,
             temperature=0.0,  # More deterministic for retry
-            response_format={"type": "json_object"},
-            max_tokens=max_tokens,
+            max_tokens=effective_max,
         )
 
-        try:
-            return json.loads(result["content"])
-        except (json.JSONDecodeError, TypeError) as exc:
+        content = result.get("content", "") or ""
+        if not content:
             raise LLMResponseError(
-                f"LLM response could not be parsed as JSON after retry: {exc}\n"
-                f"Raw content: {result['content'][:500]}"
-            ) from exc
+                "LLM response could not be parsed as JSON after retry: "
+                f"Expecting value: line 1 column 1 (char 0)\n"
+                f"Raw content: {content[:500]}"
+            )
+
+        try:
+            return json.loads(content)
+        except (json.JSONDecodeError, TypeError) as parse_err:
+            raise LLMResponseError(
+                f"LLM response could not be parsed as JSON after retry: {parse_err}\n"
+                f"Raw content: {content[:500]}"
+            ) from parse_err

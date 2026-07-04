@@ -10,6 +10,7 @@ refresh cache).  All actual I/O is delegated to :mod:`~py.agent_cli`.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from datetime import datetime, timezone
@@ -79,6 +80,7 @@ class PostProcessor:
         from .skills.enrich_hf_metadata.md_to_html import (
             convert_readme_to_html,
             extract_gallery_images,
+            extract_gallery_table_images,
             extract_repo_from_hf_url,
         )
 
@@ -127,23 +129,38 @@ class PostProcessor:
             desc_civitai["description"] = short_desc
             updates["civitai"] = desc_civitai
 
-        # gallery images → civitai.images (from YAML frontmatter widget entries)
+        # gallery images → civitai.images (from YAML frontmatter widget entries
+        # and Sample Gallery markdown tables in the README body)
+        gallery_images: List[Dict[str, Any]] = []
         if readme_content and is_hf_model:
             hf_url = metadata.get("hf_url", "") or ""
             repo = extract_repo_from_hf_url(hf_url)
             if repo:
                 rec_w = llm_output.get("recommended_width") or 0
                 rec_h = llm_output.get("recommended_height") or 0
+
+                # 1. Widget images (YAML frontmatter)
                 gallery = extract_gallery_images(
                     readme_content, repo,
                     default_width=rec_w, default_height=rec_h,
                 )
-                if gallery:
+
+                # 2. Sample Gallery table images (markdown body), deduplicated
+                existing_urls = {img["url"] for img in gallery if img.get("url")}
+                table_images = extract_gallery_table_images(
+                    readme_content, repo,
+                    existing_urls=existing_urls,
+                    default_width=rec_w, default_height=rec_h,
+                )
+
+                all_images = gallery + table_images
+                if all_images:
+                    gallery_images = all_images
                     current_civitai = metadata.get("civitai") or {}
                     gallery_civitai = dict(current_civitai)
                     if "civitai" in updates and isinstance(updates["civitai"], dict):
                         gallery_civitai.update(updates["civitai"])
-                    gallery_civitai["images"] = gallery
+                    gallery_civitai["images"] = all_images
                     updates["civitai"] = gallery_civitai
 
         # tags
@@ -159,12 +176,33 @@ class PostProcessor:
         updates["llm_enriched_at"] = datetime.now(timezone.utc).isoformat()
 
         preview_remote_url = (llm_output.get("preview_url") or "").strip()
+        # Fallback: if the LLM couldn't find a preview image in the cleaned
+        # README, use the first gallery image extracted from the YAML widget
+        # section.
+        if not preview_remote_url and gallery_images:
+            preview_remote_url = gallery_images[0].get("url", "")
         current_preview = metadata.get("preview_url") or ""
         if preview_remote_url and not (current_preview and os.path.exists(current_preview)):
             local_path = await download_preview(model_path, preview_remote_url)
             if local_path:
                 preview_downloaded = True
                 updates["preview_url"] = local_path
+
+        # notes — plain-text summary of usage info from the LLM
+        new_notes = (llm_output.get("notes") or "").strip()
+        if new_notes:
+            updates["notes"] = new_notes
+
+        # usage_tips — JSON string (e.g. {"strength_min":0.85,"strength_max":1.4})
+        raw_tips = (llm_output.get("usage_tips") or "").strip()
+        if raw_tips and raw_tips != "{}":
+            try:
+                json.loads(raw_tips)
+                updates["usage_tips"] = raw_tips
+            except (json.JSONDecodeError, TypeError):
+                logger.warning(
+                    "LLM returned invalid usage_tips JSON: %s", raw_tips[:200]
+                )
 
         if updates:
             updated_fields = await apply_metadata_updates(model_path, updates)

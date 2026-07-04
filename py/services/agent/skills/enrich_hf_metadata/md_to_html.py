@@ -1,8 +1,13 @@
-"""Inline markdown-to-HTML converter for HF README content.
+"""Inline markdown-to-HTML converter and LLM-prompt cleaner for HF README content.
 
 No external dependencies.  Strips YAML frontmatter, ``<Gallery />`` sections,
 badge images, and HTML comments before rendering.  Only used by the
 ``enrich_hf_metadata`` skill.
+
+Also provides :func:`clean_readme_for_llm` which pre-processes the raw README
+before it is injected into the LLM prompt, removing content that has zero value
+for metadata extraction (widget sections, code blocks, training tables,
+boilerplate, massive lists, etc.).
 """
 
 from __future__ import annotations
@@ -118,6 +123,88 @@ def extract_gallery_images(
     return images
 
 
+def extract_gallery_table_images(
+    markdown_text: str,
+    repo: str,
+    existing_urls: set | None = None,
+    default_width: int = 512,
+    default_height: int = 512,
+) -> list[dict]:
+    """Extract images from ``| Preview | Prompt |`` markdown gallery tables.
+
+    Many HF READMEs include a sample-gallery table in the body (outside
+    the YAML frontmatter) that shows generation examples with their
+    prompts.  This function parses those tables and merges results with
+    the widget-sourced images from :func:`extract_gallery_images`.
+
+    Returns a list of dicts in the same ``civitai.images`` format as
+    :func:`extract_gallery_images`.  Already-seen URLs (from *existing_urls*)
+    are skipped.
+    """
+    if not markdown_text or not repo:
+        return []
+
+    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    images: list[dict] = []
+    seen_urls: set = set(existing_urls) if existing_urls else set()
+    lines = markdown_text.split("\n")
+    n = len(lines)
+    i = 0
+
+    while i < n:
+        line = lines[i]
+        if "|" not in line or i + 1 >= n:
+            i += 1
+            continue
+
+        # Check for table separator row
+        if not re.match(r"^\|[\s:-]+\|", lines[i + 1]):
+            i += 1
+            continue
+
+        header_lower = line.strip().lower()
+        first_cell = header_lower.strip("|").split("|")[0].strip() if "|" in header_lower else ""
+        is_gallery = any(kw in first_cell for kw in ("preview", "sample", "gallery", "image", "thumbnail"))
+        if not is_gallery:
+            i += 1
+            continue
+
+        # Skip header + separator
+        i += 2
+        while i < n and "|" in lines[i]:
+            cells = [c.strip() for c in lines[i].strip().strip("|").split("|")]
+            if len(cells) >= 2:
+                first = cells[0]
+                prompt = cells[1]
+
+                url_match = re.search(r"!\[([^\]]*)\]\(([^)]+)\)", first)
+                if url_match:
+                    raw_path = url_match.group(2)
+                    if raw_path.startswith("http"):
+                        url = raw_path
+                    else:
+                        # Normalise: remove leading / and ./ prefixes
+                        clean = raw_path.lstrip("./").lstrip("/")
+                        url = f"{base_url}/{clean}"
+
+                    if url not in seen_urls:
+                        seen_urls.add(url)
+                        images.append({
+                            "url": url,
+                            "type": "image",
+                            "nsfwLevel": 0,
+                            "width": default_width,
+                            "height": default_height,
+                            "meta": {"prompt": prompt, "negativePrompt": ""},
+                            "hasMeta": bool(prompt),
+                            "hasPositivePrompt": bool(prompt),
+                        })
+            i += 1
+        continue
+
+    return images
+
+
 def _extract_frontmatter(text: str) -> str:
     """Return the YAML frontmatter content (without the ``---`` delimiters).
 
@@ -145,7 +232,260 @@ def convert_readme_to_html(markdown_text: str | None) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Pre-processing: strip unwanted sections
+# README cleaning for LLM prompt injection
+# ---------------------------------------------------------------------------
+
+#: Section headers that signal boilerplate content with zero metadata value.
+_BOILERPLATE_HEADERS: tuple[str, ...] = (
+    "download model",
+    "license",
+    "citation",
+    "links",
+    "disclaimer",
+    "architecture notes",
+    "training details",
+    "dataset",
+    "provenance",
+)
+
+#: Table header keywords that identify training-parameter tables.
+_TRAINING_PARAM_KEYWORDS: tuple[str, ...] = (
+    "lr scheduler",
+    "optimizer",
+    "network dim",
+    "network alpha",
+    "noise offset",
+    "multires noise",
+    "repeat",
+    "epoch",
+    "batch size",
+    "gradient accumulation",
+    "learning rate",
+    "rslora",
+    "dtype",
+)
+
+#: Maximum chars before a single-line comma list is considered massive.
+_MASSIVE_LIST_LINE_MIN_LEN = 150
+#: Minimum consecutive enumeration lines to trigger massive-list stripping.
+_MASSIVE_LIST_THRESHOLD = 8
+
+
+def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> str:
+    """Clean a HF README for injection into an LLM metadata-extraction prompt.
+
+    Removes content that carries no signal for inferring base model,
+    trigger words, short description, tags, or a preview image URL:
+
+    * ``widget:`` YAML block (example prompts + output URLs)
+    * ``<Gallery />`` tags and wrappers
+    * Fenced code blocks (Python / bash / bibtex / yaml)
+    * Standalone ``![...](...)`` image lines and ``<img>`` tags
+    * Training-parameter tables
+    * Boilerplate sections (Download / License / Citation / …)
+    * Massive enumeration lists (e.g. 3000+ celebrity names)
+
+    The post-processor still receives the **full** raw README via
+    ``readme_content_full``, so nothing is lost for HTML conversion or
+    gallery-image extraction.
+
+    Args:
+        markdown_text: Raw README.md content from HuggingFace.
+        max_length: Hard ceiling on output length (default 6 000 chars).
+
+    Returns:
+        Cleaned markdown, truncated to *max_length*.
+    """
+    if not markdown_text:
+        return ""
+
+    text = markdown_text
+
+    # Order matters — broader strips first, then finer ones.
+    text = _strip_gallery(text)
+    text = _strip_fenced_code_blocks(text)
+    text = _strip_standalone_images(text)
+    text = _strip_training_tables(text)
+    text = _strip_boilerplate_sections(text)
+    text = _strip_massive_lists(text)
+    text = _strip_badge_images(text)
+    text = _strip_html_comments(text)
+    text = _compress_blank_lines(text)
+
+    if len(text) > max_length:
+        text = text[:max_length]
+
+    return text.strip()
+
+
+def _strip_fenced_code_blocks(text: str) -> str:
+    """Strip fenced code blocks that have an explicit programming-language tag.
+
+    Blocks without a language tag (just `` ``` ``) are preserved — they
+    often contain trigger words, example prompts, or config snippets
+    rather than actual runnable code.
+    """
+    # Match opening ``` immediately followed by a word character (the language
+    # tag), then any content, then closing ```.  Plain ``` at the start of a
+    # line is left intact.  A leading \n is optional (handles blocks at the
+    # start of the text).
+    return re.sub(
+        r"(?:\n|^)```[a-zA-Z_][a-zA-Z0-9_]*\s*\n.*?\n```",
+        "",
+        text,
+        flags=re.DOTALL,
+    )
+
+
+def _strip_standalone_images(text: str) -> str:
+    """Strip image embeds that occupy their own line.
+
+    Preserves the alt text from markdown images (``![alt](url)`` → ``alt``)
+    since it often describes what the model generates, which is useful signal
+    for tag/description extraction.
+    """
+    # Markdown: ``![alt](url)`` on its own line → keep alt text
+    text = re.sub(
+        r"^\s*!\[([^\]]*)\]\([^)]+\)\s*$",
+        r"\1",
+        text,
+        flags=re.MULTILINE,
+    )
+    # HTML: ``<img src="..." ...>`` on its own line → remove entirely
+    text = re.sub(
+        r'^\s*<img\s[^>]+/?>(?:</img>)?\s*$',
+        "",
+        text,
+        flags=re.MULTILINE | re.IGNORECASE,
+    )
+    return text
+
+
+def _strip_training_tables(text: str) -> str:
+    """Strip markdown tables whose header row mentions training parameters.
+
+    Checks the header row (first line of a detected table) against
+    ``_TRAINING_PARAM_KEYWORDS``.  Non-training tables (e.g. "Best
+    Dimensions") are preserved.
+    """
+    lines = text.split("\n")
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        line = lines[i]
+        if "|" in line and i + 1 < n and re.match(r"^\|[\s:-]+\|", lines[i + 1]):
+            table_lines = [line]
+            i += 1
+            while i < n and "|" in lines[i]:
+                table_lines.append(lines[i])
+                i += 1
+
+            # Check header + first data row for training keywords
+            header_and_first = (line + "\n" + (table_lines[2] if len(table_lines) > 2 else "")).lower()
+            if any(kw in header_and_first for kw in _TRAINING_PARAM_KEYWORDS):
+                continue
+            out.extend(table_lines)
+        else:
+            out.append(line)
+            i += 1
+
+    return "\n".join(out)
+
+
+def _strip_boilerplate_sections(text: str) -> str:
+    """Strip sections whose headings match known boilerplate patterns.
+
+    When a heading (``## Download model``, ``## License``, etc.) is
+    detected, the heading and all content until the next heading of
+    equal-or-higher level is removed.
+    """
+    lines = text.split("\n")
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+    skip_until_level: int | None = None
+
+    while i < n:
+        line = lines[i]
+        h_match = re.match(r"^(#{1,4})\s+(.+?)\s*#*$", line)
+        if h_match:
+            level = len(h_match.group(1))
+            title = h_match.group(2).strip().lower()
+
+            is_boilerplate = any(
+                title == kw or title.startswith(kw + " ") or title.startswith(kw + ":")
+                for kw in _BOILERPLATE_HEADERS
+            )
+
+            if is_boilerplate:
+                skip_until_level = level
+                i += 1
+                continue
+
+            if skip_until_level is not None and level <= skip_until_level:
+                skip_until_level = None
+
+        if skip_until_level is None:
+            out.append(line)
+        i += 1
+
+    return "\n".join(out)
+
+
+def _strip_massive_lists(text: str) -> str:
+    """Strip blocks of 8+ consecutive enumeration-style lines.
+
+    Targets long comma-separated name lists (e.g. the 3000+ celebrity
+    names in some Z-Image READMEs) and dense bullet enumerations.
+    """
+    lines = text.split("\n")
+    out: list[str] = []
+    i = 0
+    n = len(lines)
+
+    while i < n:
+        stripped = lines[i].strip()
+
+        # A "list-like" line ends with comma or is a bullet with commas
+        is_list_like = bool(stripped) and (
+            stripped.endswith(",")
+            or len(stripped) >= _MASSIVE_LIST_LINE_MIN_LEN
+            or (bool(re.match(r"^[-*+]\s", stripped)) and "," in stripped)
+        )
+
+        if is_list_like:
+            count = 1
+            j = i + 1
+            while j < n:
+                s = lines[j].strip()
+                if not s:
+                    j += 1
+                    continue
+                if s.endswith(",") or (bool(re.match(r"^[-*+]\s", s)) and "," in s):
+                    count += 1
+                    j += 1
+                else:
+                    break
+
+            if count >= _MASSIVE_LIST_THRESHOLD:
+                i = j
+                continue
+
+        out.append(lines[i])
+        i += 1
+
+    return "\n".join(out)
+
+
+def _compress_blank_lines(text: str) -> str:
+    """Collapse runs of 3+ blank lines down to 2."""
+    return re.sub(r"\n{3,}", "\n\n", text)
+
+
+# ---------------------------------------------------------------------------
+# Pre-processing: strip unwanted sections (HTML conversion helpers)
 # ---------------------------------------------------------------------------
 
 

@@ -84,6 +84,25 @@ The recommended image generation resolution for this model, in pixels. Look for 
 ### preview_url
 The URL of the most suitable preview image from the README. Look for image tags (e.g. `![alt](url)`) and the YAML frontmatter `widget:` section (which often has `output.url` fields). Choose the first image that appears to be a generation example (not a logo or diagram). Construct the absolute URL as `https://huggingface.co/{{repo}}/resolve/main/{filename}`. If no suitable image is found, return an empty string.
 
+### notes
+A plain-text summary of the model card's key practical usage information. Combine trigger words, style modifiers, recommended parameters (steps, CFG, resolution, sampler), and any setup tips into a readable paragraph. Return empty string if the README has no useful usage info.
+
+### usage_tips
+A JSON string with structured usage recommendations. Extract from the README any explicit ranges or recommended values (e.g. "Set LoRA strength: **0.85 - 1.4**", "CLIP strength: 0.5"). Possible fields (include only those you can determine):
+
+```json
+{
+  "strength_min": 0.85,
+  "strength_max": 1.4,
+  "strength_range": "0.85-1.4",
+  "strength": 0.6,
+  "clip_strength": 0.5,
+  "clip_skip": 2
+}
+```
+
+Return the JSON string (e.g. `'{"strength_min":0.85,"strength_max":1.4}'`). Return `"{}"` if nothing useful is found.
+
 ### confidence
 Your confidence level in the extracted data:
 - "high" — most fields were explicitly stated in the README
@@ -104,6 +123,8 @@ Return ONLY a JSON object with exactly these fields (no markdown fences, no extr
   "recommended_width": 768,
   "recommended_height": 1024,
   "preview_url": "<image URL or empty string>",
+  "notes": "<plain-text usage summary or empty string>",
+  "usage_tips": "<JSON string like '{\"strength_min\":0.85,\"strength_max\":1.4}' or '{}'>",
   "confidence": "<high|medium|low>"
 }
 ```
