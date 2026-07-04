@@ -2218,6 +2218,31 @@ class RecipeManagementHandler:
                         "Failed to download image for recipe: %s", exc
                     )
 
+            # Fallback: try to locate a custom image on disk using model_hash + image id
+            if image_bytes is None:
+                image_id = image_data.get("id") or ""
+                if image_id and model_hash:
+                    from ...utils.example_images_paths import get_model_folder
+                    model_folder = get_model_folder(model_hash)
+                    if model_folder and os.path.exists(model_folder):
+                        for fname in os.listdir(model_folder):
+                            if f"custom_{image_id}" in fname:
+                                ext = os.path.splitext(fname)[1].lower()
+                                if ext not in (".jpg", ".jpeg", ".png", ".webp", ".gif"):
+                                    continue
+                                fpath = os.path.join(model_folder, fname)
+                                if os.path.isfile(fpath):
+                                    try:
+                                        with open(fpath, "rb") as f:
+                                            image_bytes = f.read()
+                                        extension = ext
+                                    except Exception as exc:
+                                        self._logger.warning(
+                                            "Failed to read custom image file %s: %s",
+                                            fpath, exc,
+                                        )
+                                break
+
             prompt = (
                 (parsed.get("gen_params") or {}).get("prompt") or ""
             )
