@@ -551,7 +551,103 @@ class LLMService:
         try:
             return json.loads(content)
         except (json.JSONDecodeError, TypeError) as parse_err:
+            # Last resort: attempt to salvage partial JSON (closing unclosed
+            # brackets/braces, truncating incomplete strings, etc.)
+            salvaged = _try_salvage_json(content)
+            if salvaged is not None:
+                logger.warning(
+                    "LLM JSON salvaged from partial content (%d chars raw)",
+                    len(content),
+                )
+                return salvaged
             raise LLMResponseError(
                 f"LLM response could not be parsed as JSON after retry: {parse_err}\n"
                 f"Raw content: {content[:500]}"
             ) from parse_err
+
+
+def _try_salvage_json(raw: str) -> Dict[str, Any] | None:
+    """Attempt to repair and parse a truncated JSON string.
+
+    Handles common truncation patterns:
+
+    * Incomplete string value at the end (``"foo`` → ``"foo"``)
+    * Missing closing ``}`` or ``]`` (respecting nesting order)
+    * Trailing comma before closing bracket
+    * Extra text after the JSON object (e.g. markdown fences)
+
+    Returns the parsed dict on success, ``None`` if repair is impossible.
+    """
+    if not raw:
+        return None
+
+    text = raw.strip()
+
+    # Strip markdown fences if the LLM wrapped the JSON
+    if text.startswith("```"):
+        end = text.find("\n")
+        text = text[end + 1:] if end != -1 else text[3:]
+    if text.endswith("```"):
+        text = text[:-3].rstrip()
+
+    # Find the first '{' and strip everything before it
+    start = text.find("{")
+    if start == -1:
+        return None
+    text = text[start:]
+
+    # Try to close an incomplete string at the end (e.g. ``"https://huggingf``)
+    # Pattern: ends mid-string (last quote is open)
+    if text.count('"') % 2 == 1:
+        text += '"'
+
+    # Ensure trailing commas before closing braces work
+    text = _strip_trailing_commas(text)
+
+    # Walk through the text character by character to find unclosed
+    # brackets and close them in the correct (LIFO) order.
+    # We ignore brackets inside quoted strings.
+    stack: list[str] = []
+    in_string = False
+    escape = False
+    for ch in text:
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+            continue
+        if in_string:
+            continue
+        if ch in ("{", "["):
+            stack.append(ch)
+        elif ch == "}":
+            if stack and stack[-1] == "{":
+                stack.pop()
+            else:
+                return None  # Unmatched closer — unrecoverable
+        elif ch == "]":
+            if stack and stack[-1] == "[":
+                stack.pop()
+            else:
+                return None
+
+    # Close remaining open brackets in reverse order
+    for opener in reversed(stack):
+        text += "}" if opener == "{" else "]"
+
+    try:
+        return json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+
+
+def _strip_trailing_commas(text: str) -> str:
+    """Remove commas that appear before a closing brace/bracket."""
+    import re as _re
+    text = _re.sub(r",\s*}", "}", text)
+    text = _re.sub(r",\s*]", "]", text)
+    return text

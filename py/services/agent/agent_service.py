@@ -24,11 +24,16 @@ from typing import Any, Dict, List, Optional
 
 import aiohttp
 
+import os
+
 from ..llm_service import LLMService
 from ..websocket_manager import ws_manager
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
-from .skills.enrich_hf_metadata.md_to_html import clean_readme_for_llm
+from .skills.enrich_hf_metadata.md_to_html import (
+    clean_readme_for_llm,
+    extract_relevant_section,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -344,6 +349,7 @@ class AgentService:
 
         context: Dict[str, Any] = {
             "model_path": model_path,
+            "model_basename": "",
             "hf_url": "",
             "repo": "",
             "readme_content": "",
@@ -352,6 +358,11 @@ class AgentService:
             "base_models": [],
             "priority_tags": "",
         }
+
+        # Extract model basename (filename without extension) for the LLM
+        # to use when locating the matching section in collection repos.
+        raw_basename = os.path.splitext(os.path.basename(model_path))[0]
+        context["model_basename"] = raw_basename or ""
 
         context["current_metadata"] = {
             "file_name": metadata.get("file_name", ""),
@@ -369,7 +380,13 @@ class AgentService:
         context["repo"] = repo or ""
         if repo:
             readme = await self._fetch_readme(repo)
-            cleaned = clean_readme_for_llm(readme) if readme else ""
+            # Trim README to the section relevant to this model file
+            # (collection repos often have multiple models in one README).
+            if readme and raw_basename:
+                trimmed = extract_relevant_section(readme, raw_basename)
+                cleaned = clean_readme_for_llm(trimmed) if trimmed else ""
+            else:
+                cleaned = clean_readme_for_llm(readme) if readme else ""
             context["readme_content"] = cleaned if cleaned else "(README not available)"
             context["readme_content_full"] = readme or ""
 

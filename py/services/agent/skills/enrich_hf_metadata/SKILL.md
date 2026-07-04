@@ -13,6 +13,7 @@ You are an expert assistant for AI image generation models. Your task is to extr
 
 - **Repository**: {{hf_url}}
 - **Model file path**: {{model_path}}
+- **Model filename**: {{model_basename}}
 - **Repository ID**: {{repo}}
 
 ## Current Metadata (may be incomplete)
@@ -36,6 +37,31 @@ These are the subjects, styles, and concepts the user considers useful for categ
 The following base models are currently valid in this system:
 {{base_models}}
 
+## HuggingFace → CivitAI Base Model Mapping
+
+HuggingFace repos often declare `base_model:` in YAML frontmatter using HuggingFace
+model names.  Map them to CivitAI names using this reference:
+
+| HuggingFace repo / model name                        | CivitAI base model |
+|-------------------------------------------------------|--------------------|
+| `runwayml/stable-diffusion-v1-5`                      | SD 1.5             |
+| `CompVis/stable-diffusion-v1-4`                       | SD 1.5             |
+| `stabilityai/stable-diffusion-2-1` / `-2-1-base`     | SD 2.1             |
+| `stabilityai/stable-diffusion-xl-base-1.0`            | SDXL 1.0           |
+| `stabilityai/stable-diffusion-3-5-large`              | SD 3.5 Large       |
+| `black-forest-labs/FLUX.1-dev`                        | Flux.1 D           |
+| `black-forest-labs/FLUX.1-schnell`                    | Flux.1 S           |
+| `black-forest-labs/FLUX.1-krea`                       | Flux.1 Krea        |
+| `krea/Krea-2-Raw` or `krea/Krea-2-Turbo`              | Krea 2             |
+| `Comfy-Org/z_image_turbo`                             | ZImageTurbo        |
+| `alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1`  | ZImageTurbo        |
+| `CogVideo`                                             | CogVideoX          |
+| `Wan-AI/Wan2.1-T2V-14B`                               | Wan Video 2.2 T2V-A14B |
+| `stabilityai/stable-video-diffusion-img2vid`          | SVD                |
+
+The model file name itself may also hint at the base model (e.g. "flux", "sdxl",
+"sd15", "krea2" in the filename).
+
 ## HuggingFace README Content
 
 ```
@@ -49,24 +75,26 @@ Extract the following information from the README content above:
 ### base_model
 The base model this model was trained on. Use EXACTLY one of the names from the **Available Base Models** list above. Do not invent new names or use aliases.
 
-Check the YAML frontmatter (between --- markers) for `base_model:` first, then look at the description text and safetensors metadata. If you cannot determine it, return an empty string.
+Check the YAML frontmatter (between --- markers) for `base_model:` first, then look at the description text and safetensors metadata.  If the YAML frontmatter uses a HuggingFace model name (e.g. `runwayml/stable-diffusion-v1-5`), use the mapping table above to find the correct CivitAI name.  If you cannot determine it, return an empty string.
 
 ### trigger_words
 The trigger words or activation prompts needed to use this LoRA. Look for:
 - `instance_prompt:` in the YAML frontmatter
 - Phrases like "trigger word:", "trigger:", "use this prompt:", "activation prompt:"
+- In collection repos: the trigger section **specific to this model file** (look near matching download links or anchor IDs)
 - Example prompts at the start (usually the first word or phrase before any description)
 Return as an array of strings. If none found, return an empty array `[]`. **Never** return `["None"]` or any placeholder value — a truly empty list means no trigger words exist.
 
 ### short_description
-A concise 1-2 sentence summary of what this model does. Extract from the "Model description" section or the first paragraph. Return empty string if the README is too minimal.
+A concise 1-2 sentence summary of what this model does. Extract from the "Model description" section or the first paragraph.  For collection repos, focus on the **specific model version** matching `{{model_basename}}`, not the repo as a whole.  Return empty string if the README is too minimal.
 
 ### tags
 3-8 relevant tags for categorizing this model. **Quality over quantity.**
 
 Sources to consider:
-- The YAML frontmatter `tags:` list
+- The YAML frontmatter `tags:` list (filter out technical ones — see below)
 - The subject, style, character, or concept the model represents
+- The model filename itself may give clues (e.g. "pokemon", "anime", "pixelart")
 
 **Critical filtering rules — apply them strictly:**
 
@@ -82,10 +110,15 @@ Return empty array if no meaningful content tags remain after filtering.
 The recommended image generation resolution for this model, in pixels. Look for sections like "Best Dimensions", "Recommended size", "Suggested resolution", or similar phrasing in the README. Prefer the explicitly marked "Best" or default resolution. If the table/list has multiple entries (e.g. "768 x 1024 (Best)" and "1024 x 1024 (Default)"), use the one marked "Best". Return integers. If no resolution can be determined, return 0 for both.
 
 ### preview_url
-The URL of the most suitable preview image from the README. Look for image tags (e.g. `![alt](url)`) and the YAML frontmatter `widget:` section (which often has `output.url` fields). Choose the first image that appears to be a generation example (not a logo or diagram). Construct the absolute URL as `https://huggingface.co/{{repo}}/resolve/main/{filename}`. If no suitable image is found, return an empty string.
+The URL of the most suitable preview image from the README. Look for:
+- Image tags near the section matching the model filename (`{{model_basename}}`)
+- The YAML frontmatter `widget:` section (which often has `output.url` fields)
+- In collection repos: the sample images listed **under the section** for this specific model version
+- Generic `![alt](url)` in the body
+Choose the first image that appears to be a generation example (not a logo or diagram). Construct the absolute URL as `https://huggingface.co/{{repo}}/resolve/main/{filename}`. If no suitable image is found, return an empty string.
 
 ### notes
-A plain-text summary of the model card's key practical usage information. Combine trigger words, style modifiers, recommended parameters (steps, CFG, resolution, sampler), and any setup tips into a readable paragraph. Return empty string if the README has no useful usage info.
+A plain-text summary of the model card's key practical usage information. Combine trigger words, style modifiers, recommended parameters (steps, CFG, resolution, sampler), and any setup tips into a readable paragraph.  For collection repos, focus on the **specific model version** matching `{{model_basename}}`.  Return empty string if the README has no useful usage info.
 
 ### usage_tips
 A JSON string with structured usage recommendations. Extract from the README any explicit ranges or recommended values (e.g. "Set LoRA strength: **0.85 - 1.4**", "CLIP strength: 0.5"). Possible fields (include only those you can determine):
@@ -108,6 +141,25 @@ Your confidence level in the extracted data:
 - "high" — most fields were explicitly stated in the README
 - "medium" — some fields were inferred from context
 - "low" — most fields are guesses based on limited information
+
+## Important: Handling Collection Repos (multiple model files)
+
+Many HuggingFace repos contain **multiple model files** in a single repository
+(e.g. a "LoRA collection" with different styles/characters in separate files).
+
+The model file currently being enriched is: **`{{model_basename}}`**
+
+To find the correct section in the README:
+
+1. **Search for download links** containing the filename — the surrounding paragraph is your section.
+2. **Search for anchor IDs** (`<a id="...">`) or section headings whose text matches words from the filename.
+3. **Search for HTML headings** (`<h1>`, `<h2>`, `<span>`) containing parts of the filename.
+4. If no match is found, use the full README as usual — the model may be the only one in the repo.
+
+When a matching section IS found, prefer metadata from that section.
+When no section matches (e.g. single-model repos or repos without per-file sections),
+extract metadata from the full README normally.  Do not return empty data just
+because the filename doesn't appear in the README.
 
 ## Output Format
 

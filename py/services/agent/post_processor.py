@@ -13,6 +13,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
@@ -81,6 +82,8 @@ class PostProcessor:
             convert_readme_to_html,
             extract_gallery_images,
             extract_gallery_table_images,
+            extract_simple_markdown_images,
+            extract_html_img_tags,
             extract_repo_from_hf_url,
         )
 
@@ -101,9 +104,11 @@ class PostProcessor:
 
         # trigger words → civitai.trainedWords
         new_triggers = llm_output.get("trigger_words", [])
+        trigger_words_empty = True
         if isinstance(new_triggers, list):
             cleaned = [t.strip() for t in new_triggers if t.strip()]
             cleaned = [t for t in cleaned if t.lower() not in ("none", "null", "n/a")]
+            trigger_words_empty = not cleaned
             current_civitai = metadata.get("civitai") or {}
             current_triggers = current_civitai.get("trainedWords") or []
             if self._should_overwrite_list(current_triggers, is_hf_model):
@@ -152,8 +157,24 @@ class PostProcessor:
                     existing_urls=existing_urls,
                     default_width=rec_w, default_height=rec_h,
                 )
+                existing_urls.update(img["url"] for img in table_images if img.get("url"))
 
-                all_images = gallery + table_images
+                # 3. Simple markdown images `![alt](url)` in the body
+                simple_images = extract_simple_markdown_images(
+                    readme_content, repo,
+                    existing_urls=existing_urls,
+                    default_width=rec_w, default_height=rec_h,
+                )
+                existing_urls.update(img["url"] for img in simple_images if img.get("url"))
+
+                # 4. HTML `<img>` tags (used by many collection repos)
+                html_images = extract_html_img_tags(
+                    readme_content, repo,
+                    existing_urls=existing_urls,
+                    default_width=rec_w, default_height=rec_h,
+                )
+
+                all_images = gallery + table_images + simple_images + html_images
                 if all_images:
                     gallery_images = all_images
                     current_civitai = metadata.get("civitai") or {}
@@ -174,6 +195,23 @@ class PostProcessor:
         # metadata_source & llm_enriched_at (always set)
         updates["metadata_source"] = "agent:enrich_hf_metadata"
         updates["llm_enriched_at"] = datetime.now(timezone.utc).isoformat()
+
+        # Store LLM confidence in metadata so it's accessible for evaluation
+        raw_confidence = (llm_output.get("confidence") or "").strip()
+        if raw_confidence:
+            updates["_llm_confidence"] = raw_confidence
+
+        # Fallback: extract instance_prompt from YAML frontmatter when the LLM
+        # returned empty trigger words but the README has instance_prompt.
+        if trigger_words_empty:
+            instance_prompt = _extract_yaml_instance_prompt(readme_content)
+            if instance_prompt:
+                current_civitai = metadata.get("civitai") or {}
+                trig_civitai = dict(current_civitai)
+                if "civitai" in updates and isinstance(updates["civitai"], dict):
+                    trig_civitai.update(updates["civitai"])
+                trig_civitai["trainedWords"] = [instance_prompt]
+                updates["civitai"] = trig_civitai
 
         preview_remote_url = (llm_output.get("preview_url") or "").strip()
         # Fallback: if the LLM couldn't find a preview image in the cleaned
@@ -249,3 +287,35 @@ class PostProcessor:
                 merged.append(t)
                 seen.add(t)
         return merged
+
+
+# ------------------------------------------------------------------
+# Module-level helpers
+# ------------------------------------------------------------------
+
+
+def _extract_yaml_instance_prompt(readme_content: str) -> str:
+    """Extract ``instance_prompt`` from the YAML frontmatter of a HF README.
+
+    Returns the prompt text, or empty string if not found.  Handles
+    ``null`` / ``~`` YAML null values by returning empty string.
+    """
+    if not readme_content or not readme_content.startswith("---"):
+        return ""
+
+    # Find end of frontmatter
+    end = readme_content.find("---", 3)
+    if end == -1:
+        return ""
+    frontmatter = readme_content[3:end]
+
+    for line in frontmatter.split("\n"):
+        line = line.strip()
+        m = re.match(r"^instance_prompt:\s*(.*)", line)
+        if m:
+            val = m.group(1).strip().strip('"').strip("'")
+            if val.lower() in ("null", "~", "none", ""):
+                return ""
+            return val
+
+    return ""

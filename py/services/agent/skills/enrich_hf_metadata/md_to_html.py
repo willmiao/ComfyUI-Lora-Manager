@@ -20,6 +20,155 @@ from typing import List, Tuple
 _REPO_URL_PATTERN = re.compile(r"https?://huggingface\.co/([^/]+/[^/]+)")
 
 
+def extract_simple_markdown_images(
+    markdown_text: str,
+    repo: str,
+    existing_urls: set | None = None,
+    default_width: int = 512,
+    default_height: int = 512,
+) -> list[dict]:
+    """Extract standalone markdown images from the README body.
+
+    Matches ``![alt](url)`` on lines that are NOT part of a markdown table
+    and NOT inside fenced code blocks.  These are common in DreamBooth
+    training dumps where the user uploads example images with simple
+    ``![img_0](./image_0.png)`` syntax.
+
+    Returns a list of dicts in the same ``civitai.images`` format as
+    :func:`extract_gallery_images`.
+    """
+    if not markdown_text or not repo:
+        return []
+
+    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    images: list[dict] = []
+    seen_urls: set = set(existing_urls) if existing_urls else set()
+
+    # Collect lines that are NOT inside fenced code blocks
+    lines = markdown_text.split("\n")
+    in_code_block = False
+    n = len(lines)
+    i = 0
+    while i < n:
+        line = lines[i]
+        if line.strip().startswith("```"):
+            in_code_block = not in_code_block
+            i += 1
+            continue
+        if in_code_block:
+            i += 1
+            continue
+        # Skip table rows
+        if "|" in line and i + 1 < n and re.match(r"^\|[\s:-]+\|", lines[i + 1]):
+            i += 1
+            continue
+
+        m = re.match(r"^\s*!\[([^\]]*)\]\(([^)]+)\)\s*$", line)
+        if m:
+            raw_path = m.group(2).strip()
+            if raw_path.startswith("http"):
+                url = raw_path
+            else:
+                clean = raw_path.lstrip("./").lstrip("/")
+                url = f"{base_url}/{clean}"
+            if url not in seen_urls:
+                seen_urls.add(url)
+                images.append({
+                    "url": url,
+                    "type": "image",
+                    "nsfwLevel": 0,
+                    "width": default_width,
+                    "height": default_height,
+                    "meta": {"prompt": m.group(1), "negativePrompt": ""},
+                    "hasMeta": bool(m.group(1)),
+                    "hasPositivePrompt": bool(m.group(1)),
+                })
+        i += 1
+
+    return images
+
+
+def extract_html_img_tags(
+    markdown_text: str,
+    repo: str,
+    existing_urls: set | None = None,
+    default_width: int = 512,
+    default_height: int = 512,
+) -> list[dict]:
+    """Extract image URLs from HTML ``<img src=\"...\">`` tags in the README.
+
+    Many HF collection repos (e.g. ``deadman44/Z-Image_LoRA``) use raw HTML
+    ``<img>`` tags exclusively for their sample images, with no markdown
+    ``![]()`` equivalents.  This function finds those tags and constructs
+    resolvable HF URLs.
+
+    Returns a list of dicts in the ``civitai.images`` format.
+    """
+    if not markdown_text or not repo:
+        return []
+
+    base_url = f"https://huggingface.co/{repo}/resolve/main"
+    images: list[dict] = []
+    seen_urls: set = set(existing_urls) if existing_urls else set()
+
+    for m in re.finditer(
+        r'<img\s[^>]*src=\"([^\"]+)\"',
+        markdown_text,
+        re.IGNORECASE,
+    ):
+        raw_path = m.group(1).strip()
+        if not raw_path:
+            continue
+
+        if raw_path.startswith("http"):
+            url = raw_path
+        else:
+            clean = raw_path.lstrip("./").lstrip("/")
+            url = f"{base_url}/{clean}"
+
+        if url and url not in seen_urls:
+            seen_urls.add(url)
+            images.append({
+                "url": url,
+                "type": "image",
+                "nsfwLevel": 0,
+                "width": default_width,
+                "height": default_height,
+                "meta": {"prompt": "", "negativePrompt": ""},
+                "hasMeta": False,
+                "hasPositivePrompt": False,
+            })
+
+    # Also try single-quoted src attributes
+    for m in re.finditer(
+        r"<img\s[^>]*src='([^']+)'",
+        markdown_text,
+        re.IGNORECASE,
+    ):
+        raw_path = m.group(1).strip()
+        if not raw_path:
+            continue
+        if raw_path.startswith("http"):
+            url = raw_path
+        else:
+            clean = raw_path.lstrip("./").lstrip("/")
+            url = f"{base_url}/{clean}"
+        if url and url not in seen_urls:
+            seen_urls.add(url)
+            images.append({
+                "url": url,
+                "type": "image",
+                "nsfwLevel": 0,
+                "width": default_width,
+                "height": default_height,
+                "meta": {"prompt": "", "negativePrompt": ""},
+                "hasMeta": False,
+                "hasPositivePrompt": False,
+            })
+
+    return images
+
+
 def extract_repo_from_hf_url(hf_url: str) -> str:
     """Extract ``user/repo`` from a HuggingFace URL."""
     m = _REPO_URL_PATTERN.match(hf_url)
@@ -62,43 +211,20 @@ def extract_gallery_images(
     if not widget_match:
         return images
 
-    # Split entries starting with `- text:`
-    entries = re.split(r"\n- text:", frontmatter[widget_match.end():])
+    # Split entries by YAML list marker `\n- `.  Each entry is one widget list
+    # item with `output:` and optionally `text:` sub-keys.
+    entries_raw = frontmatter[widget_match.end():]
+    entries = re.split(r"\n- ", entries_raw) if "\n- " in entries_raw else [entries_raw]
+
     for entry in entries:
-        if not entry.strip():
+        entry = entry.strip()
+        if not entry:
             continue
 
-        entry = entry.strip()
-
-        # Extract text (prompt) — handles three YAML scalar styles:
-        #   1. "quoted inline"
-        #   2. >- folded block
-        #   3. plain (unquoted) multi-line
-        text = ""
-        qm = re.match(r'^"((?:[^"\\]|\\.)*)"', entry)
-        if qm:
-            text = qm.group(1)
-        else:
-            mm = re.match(r"^>(?:-\s*)?\n((?:.+(?:\n|$))+)", entry, re.MULTILINE)
-            if mm:
-                raw = mm.group(1)
-            else:
-                # Plain YAML scalar — take lines until a YAML key
-                raw = entry
-            if raw:
-                text_lines: list[str] = []
-                for line in raw.split("\n"):
-                    if re.match(r"^\s*\w+:", line):
-                        break
-                    stripped = line.strip()
-                    if stripped:
-                        text_lines.append(stripped)
-                text = " ".join(text_lines)
-
-        # Extract output.url
+        # Extract output.url — handle both `output:` and `- output:` (dash prefix)
         url = ""
         url_match = re.search(
-            r"^\s*output:\s*\n\s+url:\s*(.+?)\s*$", entry, re.MULTILINE
+            r"^-?\s*output:\s*\n\s+url:\s*(.+?)\s*$", entry, re.MULTILINE
         )
         if url_match:
             raw_path = url_match.group(1).strip().strip("'\"")
@@ -106,6 +232,16 @@ def extract_gallery_images(
                 url = f"{base_url}/{raw_path.lstrip('/')}"
             elif raw_path.startswith("http"):
                 url = raw_path
+
+        # Extract text (prompt) — from YAML `text:` sub-key
+        text = ""
+        text_match = re.search(
+            r"^-?\s*text:\s*(.+?)\s*$", entry, re.MULTILINE
+        )
+        if text_match:
+            raw_text = text_match.group(1).strip().strip("'\"")
+            if raw_text and raw_text != "-":
+                text = raw_text
 
         if url:
             image: dict = {
@@ -338,20 +474,23 @@ def _strip_fenced_code_blocks(text: str) -> str:
 
 
 def _strip_standalone_images(text: str) -> str:
-    """Strip image embeds that occupy their own line.
+    """Strip/compress image embeds for LLM-prompt injection.
 
-    Preserves the alt text from markdown images (``![alt](url)`` → ``alt``)
-    since it often describes what the model generates, which is useful signal
-    for tag/description extraction.
+    Markdown images (``![alt](url)``) are **kept intact** so the LLM can
+    extract a ``preview_url`` from them.  Only the alt text is needed for
+    content signal; the URL is needed for image extraction.
+
+    HTML ``<img>`` tags on their own line are replaced by their alt text
+    (if any) or removed, since the LLM has difficulty extracting URLs from
+    raw HTML attributes.
     """
-    # Markdown: ``![alt](url)`` on its own line → keep alt text
+    # HTML: ``<img src="..." alt="..." ...>`` on its own line → keep alt text
     text = re.sub(
-        r"^\s*!\[([^\]]*)\]\([^)]+\)\s*$",
+        r'^\s*<img\s[^>]*alt="([^"]*)"[^>]*/?>(?:</img>)?\s*$',
         r"\1",
         text,
-        flags=re.MULTILINE,
+        flags=re.MULTILINE | re.IGNORECASE,
     )
-    # HTML: ``<img src="..." ...>`` on its own line → remove entirely
     text = re.sub(
         r'^\s*<img\s[^>]+/?>(?:</img>)?\s*$',
         "",
@@ -477,6 +616,155 @@ def _strip_massive_lists(text: str) -> str:
         i += 1
 
     return "\n".join(out)
+
+
+def extract_relevant_section(
+    readme_content: str,
+    model_basename: str,
+    *,
+    context_lines: int = 30,
+) -> str:
+    """Find the section of a HuggingFace README relevant to a specific model file.
+
+    Many HF repos bundle multiple model files (LoRA collections) in a single
+    repo.  This function trims the README to only the portion that references
+    the given *model_basename* (e.g. ``lora_zimage_myjs_turbo_beta01``),
+    dramatically reducing prompt length and focusing the LLM on the correct
+    metadata.
+
+    Matching strategies, tried in order:
+
+    1. **Download link** — a markdown or HTML link whose URL contains the
+       basename.  Returns the surrounding block (previous heading → next
+       heading).
+    2. **Anchor ID** — an ``<a id="...">`` whose ``id`` matches a token from
+       the basename (split on ``_``/``-``).
+    3. **Section heading** — an ``<h1>``-``<h4>`` or markdown heading whose
+       text overlaps with tokens from the basename.
+    4. **Fallback** — the full README unchanged.
+
+    Args:
+        readme_content: Raw README.md content.
+        model_basename: Model file basename *without* extension (e.g.
+            ``lora_zimage_myjs_turbo_beta01``).
+        context_lines: Number of lines of context before/after a matched
+            download link to include (default 30).
+
+    Returns:
+        Trimmed README text, or the original when no matching section is
+        found.
+    """
+    if not readme_content or not model_basename:
+        return readme_content or ""
+
+    lines = readme_content.split("\n")
+    n = len(lines)
+    basename_lower = model_basename.lower()
+    # Tokens from the basename split on common separators
+    tokens = {t for t in re.split(r"[_\-.\s]+", basename_lower) if len(t) > 2}
+
+    # ------------------------------------------------------------------
+    # Strategy 1: Find a download link containing the basename
+    # ------------------------------------------------------------------
+    for idx, line in enumerate(lines):
+        # Match markdown links: [text](url) and HTML links: <a href="url">
+        # whose URL contains the basename.
+        if basename_lower in line.lower() and _looks_like_download_link(line):
+            return _extract_section(lines, idx, context_lines)
+
+    # ------------------------------------------------------------------
+    # Strategy 2: Find an anchor ID matching a token
+    # ------------------------------------------------------------------
+    for idx, line in enumerate(lines):
+        m = re.search(r'<a\s+id="([^"]+)"', line, re.IGNORECASE)
+        if m:
+            aid = m.group(1).lower()
+            if any(token in aid for token in tokens):
+                return _extract_section(lines, idx, context_lines)
+
+    # ------------------------------------------------------------------
+    # Strategy 3: Find an HTML or markdown heading with overlapping tokens
+    # ------------------------------------------------------------------
+    for idx, line in enumerate(lines):
+        # HTML heading: <h1...>, <h2...>, <h3...>, <h4...>
+        hm = re.search(r'<h[1-4][^>]*>(.+?)</h[1-4]>', line, re.IGNORECASE)
+        heading_text = ""
+        if hm:
+            heading_text = hm.group(1)
+        else:
+            # Markdown heading: ## text
+            mm = re.match(r"^#{1,4}\s+(.+?)\s*#*$", line)
+            if mm:
+                heading_text = mm.group(1)
+        if heading_text:
+            heading_lower = heading_text.lower()
+            # Check if any token appears in the heading
+            if any(token in heading_lower for token in tokens):
+                return _extract_section(lines, idx, context_lines)
+
+    # ------------------------------------------------------------------
+    # Fallback: return FULL readme
+    # ------------------------------------------------------------------
+    return readme_content
+
+
+def _looks_like_download_link(line: str) -> bool:
+    """Heuristic: does *line* look like it contains a model-file download link?"""
+    # Markdown: [text](url)
+    if re.search(r'\[([^\]]*)\]\(([^)]*\.safetensors[^)]*)\)', line):
+        return True
+    # Markdown: [text](url) containing "download" or "resolve"
+    if re.search(r'\[([^\]]*)\]\(([^)]*/(resolve|download)/[^)]*)\)', line):
+        return True
+    # HTML <a href="...safetensors">
+    if re.search(r'<a\s[^>]*href="[^"]*\.safetensors', line, re.IGNORECASE):
+        return True
+    return False
+
+
+def _extract_section(
+    lines: list[str], match_idx: int, context_lines: int,
+) -> str:
+    """Return a window of *lines* around *match_idx* bounded by headings.
+
+    When *match_idx* is itself a heading line, the section starts *at*
+    that heading (no backward walk), avoiding pulling in content from
+    earlier sibling sections.
+    """
+    n = len(lines)
+
+    # Determine start — if match is a heading, start right there
+    if _is_heading(lines[match_idx]):
+        start = match_idx
+    else:
+        # Walk backward to find the nearest heading
+        start = max(0, match_idx - context_lines)
+        for i in range(match_idx - 1, max(-1, match_idx - context_lines * 3), -1):
+            if i < 0:
+                start = 0
+                break
+            if _is_heading(lines[i]):
+                start = i
+                break
+
+    # Walk forward to find the next heading at same or higher level
+    end = min(n, match_idx + context_lines)
+    for i in range(match_idx + 1, min(n, match_idx + context_lines * 3)):
+        if _is_heading(lines[i]):
+            end = i
+            break
+
+    return "\n".join(lines[start:end])
+
+
+def _is_heading(line: str) -> bool:
+    """Return True if *line* is a markdown or HTML heading (not a closing tag)."""
+    stripped = line.strip()
+    if re.match(r"^#{1,4}\s", stripped):
+        return True
+    if re.match(r"^<h[1-4](?:\s|>)", stripped, re.IGNORECASE):
+        return True
+    return False
 
 
 def _compress_blank_lines(text: str) -> str:
