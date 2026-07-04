@@ -1,4 +1,4 @@
-"""Post-processing engine for agent skill outputs.
+"""Post-processing engine for skill pipeline outputs.
 
 The :class:`PostProcessor` takes the LLM's structured JSON output and applies
 it to a model's on-disk metadata via the :mod:`~py.agent_cli` functions.
@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 class PostProcessor:
-    """Deterministic post-processor for agent skill outputs.
+    """Deterministic post-processor for skill pipeline outputs.
 
     Usage (called by :class:`~py.services.agent.agent_service.AgentService`)::
 

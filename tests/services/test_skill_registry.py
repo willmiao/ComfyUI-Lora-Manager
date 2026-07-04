@@ -1,4 +1,4 @@
-"""Tests for the SkillRegistry."""
+"""Tests for the SkillRegistry (``prompt.md`` discovery + prompt loading)."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ class TestSkillRegistryDiscovery:
 
     def test_skill_has_correct_model_type_filter(self, registry):
         skill = registry.get_skill("enrich_hf_metadata")
-        # model_type_filter was removed from SKILL.md — defaults to None (all types)
+        # model_type_filter was removed from prompt.md — defaults to None (all types)
         assert skill.model_type_filter is None
 
     def test_skill_has_permissions(self, registry):

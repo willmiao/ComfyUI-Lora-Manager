@@ -63,7 +63,7 @@ export class LoraContextMenu extends BaseContextMenu {
             case 'refresh-metadata':
                 getModelApiClient().refreshSingleModelMetadata(this.currentCard.dataset.filepath);
                 break;
-            case 'enrich-hf-agent':
+            case 'enrich-hf-llm':
                 this.enrichWithAgent(this.currentCard.dataset.filepath);
                 break;
             case 'exclude':

@@ -781,7 +781,7 @@
         "complete": "Auto-organize complete",
         "error": "Error: {error}"
       },
-      "enrichHfAgent": "Enrich Metadata (Agent)"
+      "enrichHfAgent": "Enrich Metadata (AI)"
     },
     "contextMenu": {
       "refreshMetadata": "Refresh Civitai Data",
@@ -806,7 +806,7 @@
       "viewAllLoras": "View All LoRAs",
       "downloadMissingLoras": "Download Missing LoRAs",
       "deleteRecipe": "Delete Recipe",
-      "enrichHfAgent": "Enrich Metadata (Agent)"
+      "enrichHfAgent": "Enrich Metadata (AI)"
     }
   },
   "recipes": {

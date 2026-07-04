@@ -274,7 +274,7 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'resume-metadata-refresh':
                 bulkManager.setSkipMetadataRefresh(false);
                 break;
-            case 'enrich-hf-agent-bulk':
+            case 'enrich-hf-llm-bulk':
                 this.enrichBulkWithAgent();
                 break;
             case 'delete-all':

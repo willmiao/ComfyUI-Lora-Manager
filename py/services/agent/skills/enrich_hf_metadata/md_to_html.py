@@ -1,8 +1,8 @@
 """Inline markdown-to-HTML converter and LLM-prompt cleaner for HF README content.
 
 No external dependencies.  Strips YAML frontmatter, ``<Gallery />`` sections,
-badge images, and HTML comments before rendering.  Only used by the
-``enrich_hf_metadata`` skill.
+badge images, and HTML comments before rendering.  Used by the
+``enrich_hf_metadata`` feature.
 
 Also provides :func:`clean_readme_for_llm` which pre-processes the raw README
 before it is injected into the LLM prompt, removing content that has zero value

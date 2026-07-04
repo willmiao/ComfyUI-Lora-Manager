@@ -1,7 +1,7 @@
-"""Discovery and loading of agent skills.
+"""Discovery and loading of prompt-based skills.
 
 Skills live in ``py/services/agent/skills/<name>/`` directories.  Each
-directory must contain a ``SKILL.md`` file with YAML frontmatter::
+directory must contain a ``prompt.md`` file with YAML frontmatter::
 
     ---
     name: my_skill
@@ -11,6 +11,8 @@ directory must contain a ``SKILL.md`` file with YAML frontmatter::
     ---
 
     Prompt template with ``{{variable}}`` placeholders.
+
+Legacy ``SKILL.md`` files are also supported for backward compatibility.
 
 The registry scans the skills directory on first access and caches results.
 """
@@ -32,6 +34,11 @@ logger = logging.getLogger(__name__)
 # Directory where built-in skills are stored
 _SKILLS_DIR = Path(__file__).parent / "skills"
 
+#: Preferred file names for prompt definition files (tried in order).
+#: ``prompt.md`` is the current convention; ``SKILL.md`` is the legacy name
+#: kept for backward compatibility.
+_PROMPT_FILE_NAMES: tuple[str, ...] = ("prompt.md", "SKILL.md")
+
 
 # ---------------------------------------------------------------------------
 # Frontmatter parser
@@ -43,7 +50,8 @@ _FRONTMATTER_RE = re.compile(
 
 
 def _parse_skill_file(path: Path) -> tuple[dict, str]:
-    """Read a ``SKILL.md`` file and return (frontmatter_dict, body_text).
+    """Read a prompt definition file (``prompt.md`` or legacy ``SKILL.md``) and
+    return (frontmatter_dict, body_text).
 
     Raises ``ValueError`` if the file lacks valid YAML frontmatter.
     """
@@ -95,6 +103,20 @@ class SkillRegistry:
     # Discovery
     # ------------------------------------------------------------------
 
+    @staticmethod
+    def _find_prompt_file(skill_dir: Path) -> Path | None:
+        """Return the first prompt definition file that exists in *skill_dir*.
+
+        Tries ``_PROMPT_FILE_NAMES`` in order so that new conventions
+        (``prompt.md``) take precedence while legacy ``SKILL.md`` files
+        still load without changes.
+        """
+        for name in _PROMPT_FILE_NAMES:
+            candidate = skill_dir / name
+            if candidate.exists():
+                return candidate
+        return None
+
     def _discover(self) -> None:
         """Scan the skills directory and load all valid skill definitions."""
 
@@ -107,31 +129,32 @@ class SkillRegistry:
         for entry in sorted(self._skills_dir.iterdir()):
             if not entry.is_dir():
                 continue
-            skill_md = entry / "SKILL.md"
-            if not skill_md.exists():
+            prompt_file = self._find_prompt_file(entry)
+            if prompt_file is None:
                 continue
             try:
-                definition = self._load_skill_definition(skill_md)
+                definition = self._load_skill_definition(prompt_file)
                 if definition is not None:
                     self._skills[definition.name] = definition
                     logger.debug("Loaded skill: %s", definition.name)
             except Exception as exc:
-                logger.warning("Failed to load skill from %s: %s", skill_md, exc)
+                logger.warning("Failed to load skill from %s: %s", prompt_file, exc)
 
         self._loaded = True
         logger.info("Discovered %d agent skills", len(self._skills))
 
     def _load_skill_definition(self, path: Path) -> Optional[SkillDefinition]:
-        """Parse a ``SKILL.md`` frontmatter into a :class:`SkillDefinition`."""
+        """Parse a prompt definition file's frontmatter into a
+        :class:`SkillDefinition`."""
 
         try:
             data, _body = _parse_skill_file(path)
         except (ValueError, yaml.YAMLError) as exc:
-            logger.warning("Failed to parse SKILL.md %s: %s", path, exc)
+            logger.warning("Failed to parse prompt file %s: %s", path, exc)
             return None
 
         if "name" not in data:
-            logger.warning("SKILL.md missing required 'name' field: %s", path)
+            logger.warning("Prompt file %s missing required 'name' field", path)
             return None
 
         perm_data = data.get("permissions", {})
@@ -171,12 +194,15 @@ class SkillRegistry:
         return self._skills.get(name)
 
     def load_prompt(self, name: str) -> str:
-        """Load and return the prompt template body from a skill's ``SKILL.md``."""
+        """Load and return the prompt template body for the named skill."""
 
         skill_dir = self._skills_dir / name
-        skill_path = skill_dir / "SKILL.md"
-        if not skill_path.exists():
-            raise FileNotFoundError(f"SKILL.md not found: {skill_path}")
+        skill_path = self._find_prompt_file(skill_dir)
+        if skill_path is None:
+            raise FileNotFoundError(
+                f"Prompt file not found for skill '{name}' in {skill_dir} "
+                f"(tried {list(_PROMPT_FILE_NAMES)})"
+            )
         try:
             _frontmatter, body = _parse_skill_file(skill_path)
             return body
