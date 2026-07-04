@@ -201,6 +201,13 @@ class Aria2Downloader:
             "auto-file-renaming": "false",
             "file-allocation": "none",
         }
+
+        # Pass proxy to aria2 so the actual file transfer goes through the
+        # same proxy used by the aiohttp-based URL resolution step above.
+        downloader = await get_downloader()
+        if downloader.proxy_url:
+            options["all-proxy"] = downloader.proxy_url
+
         if request_headers:
             options["header"] = [
                 f"{key}: {value}" for key, value in request_headers.items()
