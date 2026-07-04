@@ -99,12 +99,12 @@ class AgentHandler:
         # Launch execution in the background
         progress_reporter = AgentProgressReporter()
         logger.info(
-            "Agent skill '%s' starting for %d model(s) in background task",
+            "LLM enrichment '%s' starting for %d model(s) in background task",
             skill_name, len(model_paths),
         )
 
         async def _run() -> None:
-            logger.info("_run background task started for skill '%s'", skill_name)
+            logger.info("Background task started for enrichment '%s'", skill_name)
             try:
                 result = await service.execute_skill(
                     skill_name=skill_name,
@@ -112,11 +112,11 @@ class AgentHandler:
                     progress_callback=progress_reporter,
                 )
                 logger.info(
-                    "Agent skill '%s' finished: success=%s, summary='%s', errors=%s",
+                    "LLM enrichment '%s' finished: success=%s, summary='%s', errors=%s",
                     skill_name, result.success, result.summary, result.errors,
                 )
             except LLMNotConfiguredError as exc:
-                logger.warning("Agent skill '%s' not configured: %s", skill_name, exc)
+                logger.warning("LLM enrichment '%s' not configured: %s", skill_name, exc)
                 await progress_reporter.on_progress(
                     {
                         "type": "agent_progress",
@@ -126,7 +126,7 @@ class AgentHandler:
                     }
                 )
             except Exception as exc:
-                logger.error("Agent skill '%s' failed: %s", skill_name, exc, exc_info=True)
+                logger.error("LLM enrichment '%s' failed: %s", skill_name, exc, exc_info=True)
                 await progress_reporter.on_progress(
                     {
                         "type": "agent_progress",
@@ -138,7 +138,7 @@ class AgentHandler:
 
         # Fire and forget — progress comes via WebSocket
         task = asyncio.create_task(_run())
-        logger.info("Agent skill '%s' background task created (id=%s)", skill_name, task)
+        logger.info("LLM enrichment '%s' background task created (id=%s)", skill_name, task)
 
         return web.json_response(
             {

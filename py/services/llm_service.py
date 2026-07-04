@@ -187,8 +187,8 @@ _LLM_TIMEOUT = aiohttp.ClientTimeout(total=120)
 class LLMService:
     """Centralized LLM API client.
 
-    All agent skills call LLMs through this service so that BYOK config,
-    retry logic, and error handling live in one place.
+    All LLM-based enrichment features call through this service so
+    that BYOK config, retry logic, and error handling live in one place.
     """
 
     _instance: Optional["LLMService"] = None

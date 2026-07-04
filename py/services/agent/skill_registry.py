@@ -141,7 +141,7 @@ class SkillRegistry:
                 logger.warning("Failed to load skill from %s: %s", prompt_file, exc)
 
         self._loaded = True
-        logger.info("Discovered %d agent skills", len(self._skills))
+        logger.info("Discovered %d prompt-based skills", len(self._skills))
 
     def _load_skill_definition(self, path: Path) -> Optional[SkillDefinition]:
         """Parse a prompt definition file's frontmatter into a
