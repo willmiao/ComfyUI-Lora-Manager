@@ -586,6 +586,7 @@ export function initMediaControlHandlers(container) {
             const imageMetaRaw = this.dataset.imageMeta;
             const imageUrl = this.dataset.imageUrl;
             const imageNsfw = this.dataset.imageNsfw;
+            const imgId = this.dataset.imgId || '';
             const localPath = this.dataset.localPath || '';
             const showcaseSection = this.closest('.showcase-section');
             const modelHash = showcaseSection ? showcaseSection.dataset.modelHash : '';
@@ -613,6 +614,7 @@ export function initMediaControlHandlers(container) {
                             meta: imageMeta,
                             url: imageUrl,
                             nsfwLevel: imageNsfw ? parseInt(imageNsfw, 10) : undefined,
+                            id: imgId || undefined,
                         },
                         model_hash: modelHash,
                         model_name: modelName || modelHash,

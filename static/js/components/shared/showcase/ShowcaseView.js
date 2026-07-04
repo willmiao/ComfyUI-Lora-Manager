@@ -210,8 +210,8 @@ function renderMediaItem(img, index, exampleFiles) {
     const model = meta.Model || '';
     const steps = meta.steps || '';
     const sampler = meta.sampler || '';
-    const cfgScale = meta.cfgScale || '';
-    const clipSkip = meta.clipSkip || '';
+    const cfgScale = meta.cfg_scale || meta.cfgScale || '';
+    const clipSkip = meta.clip_skip || meta.clipSkip || '';
     
     // Check if we have any meaningful generation parameters
     const hasParams = seed || model || steps || sampler || cfgScale || clipSkip;
@@ -242,6 +242,7 @@ function renderMediaItem(img, index, exampleFiles) {
                     data-image-url="${img.url || ''}"
                     data-image-nsfw="${img.nsfwLevel ?? ''}"
                     data-image-id="${cdnImageId}"
+                    data-img-id="${img.id || ''}"
                     data-local-path="${localFile ? localFile.path : ''}">
                 <i class="fas fa-book-open"></i>
             </button>
