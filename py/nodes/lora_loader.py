@@ -39,6 +39,7 @@ def _collect_stack_entries(lora_stack):
         absolute_lora_path, trigger_words = get_lora_info_absolute(lora_name)
         entries.append({
             "name": lora_name,
+            "category": _infer_lora_category(lora_name),
             "absolute_path": absolute_lora_path,
             "input_path": lora_path,
             "model_strength": float(model_strength),
@@ -59,6 +60,7 @@ def _collect_widget_entries(kwargs):
         lora_path, trigger_words = get_lora_info_absolute(lora_name)
         entries.append({
             "name": lora_name,
+            "category": _infer_lora_category(lora_name),
             "absolute_path": lora_path,
             "input_path": lora_path,
             "model_strength": model_strength,
@@ -80,6 +82,57 @@ def _format_loaded_loras(loaded_loras):
     return " ".join(formatted_loras)
 
 
+def _normalise_lora_name_for_category(name):
+    return str(name or "").lower().strip().replace("_", ".").replace("-", ".").replace(" ", ".")
+
+
+def _infer_lora_category(name):
+    """Infer the same broad category used by the grouped LoRA widget.
+
+    This intentionally relies on simple naming conventions so the backend output
+    matches the proof-of-concept grouped UI without requiring metadata changes.
+    """
+    normalised = _normalise_lora_name_for_category(name)
+
+    if (
+        normalised.startswith("enhance")
+        or normalised.startswith("enhancement")
+        or normalised.startswith("quality")
+        or ".enhance." in normalised
+        or ".enhancement." in normalised
+        or ".quality." in normalised
+        or "detail" in normalised
+        or "hands" in normalised
+        or "eyes" in normalised
+    ):
+        return "Enhancements"
+
+    if (
+        normalised.startswith("concept")
+        or normalised.startswith("style")
+        or normalised.startswith("pose")
+        or normalised.startswith("outfit")
+        or normalised.startswith("clothing")
+        or normalised.startswith("background")
+        or ".concept." in normalised
+        or ".style." in normalised
+        or ".pose." in normalised
+        or ".outfit." in normalised
+        or ".clothing." in normalised
+        or ".background." in normalised
+    ):
+        return "Concepts"
+
+    return "Characters"
+
+
+def _format_loaded_loras_for_category(loaded_loras, category):
+    return _format_loaded_loras([
+        item for item in loaded_loras
+        if item.get("category") == category
+    ])
+
+
 def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
     loaded_loras = []
     all_trigger_words = []
@@ -91,6 +144,7 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
             qwen_lora_configs.append((entry["absolute_path"], entry["model_strength"]))
             loaded_loras.append({
                 "name": entry["name"],
+                "category": entry.get("category", _infer_lora_category(entry["name"])),
                 "model_strength": entry["model_strength"],
                 "clip_strength": entry["model_strength"],
                 "include_clip_strength": False,
@@ -116,6 +170,7 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
         include_clip_strength = nunchaku_model_kind is None and abs(entry["model_strength"] - entry["clip_strength"]) > 0.001
         loaded_loras.append({
             "name": entry["name"],
+            "category": entry.get("category", _infer_lora_category(entry["name"])),
             "model_strength": entry["model_strength"],
             "clip_strength": entry["clip_strength"],
             "include_clip_strength": include_clip_strength,
@@ -142,8 +197,16 @@ class LoraLoaderLM:
             "optional": FlexibleOptionalInputType(any_type),
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
-    RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = (
+        "MODEL",
+        "CLIP",
+        "trigger_words",
+        "loaded_loras",
+        "loaded_character_loras",
+        "loaded_concept_loras",
+        "loaded_enhancement_loras",
+    )
     FUNCTION = "load_loras"
 
     def load_loras(self, model, text, **kwargs):
@@ -162,7 +225,18 @@ class LoraLoaderLM:
         model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
         trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
-        return (model, clip, trigger_words_text, formatted_loras_text)
+        formatted_character_loras_text = _format_loaded_loras_for_category(loaded_loras, "Characters")
+        formatted_concept_loras_text = _format_loaded_loras_for_category(loaded_loras, "Concepts")
+        formatted_enhancement_loras_text = _format_loaded_loras_for_category(loaded_loras, "Enhancements")
+        return (
+            model,
+            clip,
+            trigger_words_text,
+            formatted_loras_text,
+            formatted_character_loras_text,
+            formatted_concept_loras_text,
+            formatted_enhancement_loras_text,
+        )
 
 
 class LoraTextLoaderLM:
@@ -185,8 +259,16 @@ class LoraTextLoaderLM:
             },
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
-    RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
+    RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING", "STRING", "STRING")
+    RETURN_NAMES = (
+        "MODEL",
+        "CLIP",
+        "trigger_words",
+        "loaded_loras",
+        "loaded_character_loras",
+        "loaded_concept_loras",
+        "loaded_enhancement_loras",
+    )
     FUNCTION = "load_loras_from_text"
 
     def parse_lora_syntax(self, text):
@@ -211,6 +293,7 @@ class LoraTextLoaderLM:
             lora_path, trigger_words = get_lora_info_absolute(lora["name"])
             lora_entries.append({
                 "name": lora["name"],
+                "category": _infer_lora_category(lora["name"]),
                 "absolute_path": lora_path,
                 "input_path": lora_path,
                 "model_strength": lora["model_strength"],
@@ -227,4 +310,15 @@ class LoraTextLoaderLM:
         model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
         trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
-        return (model, clip, trigger_words_text, formatted_loras_text)
+        formatted_character_loras_text = _format_loaded_loras_for_category(loaded_loras, "Characters")
+        formatted_concept_loras_text = _format_loaded_loras_for_category(loaded_loras, "Concepts")
+        formatted_enhancement_loras_text = _format_loaded_loras_for_category(loaded_loras, "Enhancements")
+        return (
+            model,
+            clip,
+            trigger_words_text,
+            formatted_loras_text,
+            formatted_character_loras_text,
+            formatted_concept_loras_text,
+            formatted_enhancement_loras_text,
+        )
