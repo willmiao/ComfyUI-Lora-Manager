@@ -128,7 +128,7 @@ def generate_optimisation_suggestions(
     if prev and prev.get("empty_rate_pct", 0) > 50:
         suggestions.append(
             "- **预览图下载成功率低 ({:.0f}%)**: 很多 HF 模型卡没有 embed 图片（仅使用 YAML widget "
-            "或 external link）。当前 `md_to_html.py` 的 `extract_gallery_images` 和 "
+            "或 external link）。当前 `readme_processor.py` 的 `extract_gallery_images` 和 "
             "`extract_gallery_table_images` 已覆盖了多数场景。若预览图不重要，可降低此字段权重。".format(
                 prev.get("empty_rate_pct", 0)
             )

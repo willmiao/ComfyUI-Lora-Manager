@@ -364,6 +364,9 @@ class LLMService:
                 "think": False,
                 "options": {
                     "temperature": temperature,
+                    # Allow up to 32K context so the model has room to think
+                    # AND produce output without hitting the 4K default limit.
+                    "num_ctx": 32768,
                 },
             }
             if response_format is not None:
@@ -380,6 +383,16 @@ class LLMService:
                 payload["response_format"] = response_format
             if max_tokens is not None:
                 payload["max_tokens"] = max_tokens
+
+        if is_ollama:
+            logger.info(
+                "Ollama request: model=%s num_ctx=%s num_predict=%s format=%s think=%s",
+                payload.get("model"),
+                payload.get("options", {}).get("num_ctx"),
+                payload.get("options", {}).get("num_predict"),
+                payload.get("format", "none"),
+                payload.get("think"),
+            )
 
         headers = self._build_headers(cfg["api_key"])
 
@@ -507,8 +520,23 @@ class LLMService:
         )
 
         try:
-            return json.loads(result["content"])
+            parsed = json.loads(result["content"])
+            logger.info(
+                "LLM response base_model=%s tags=%s confidence=%s",
+                parsed.get("base_model", "?")[:50],
+                parsed.get("tags", []),
+                parsed.get("confidence", "?"),
+            )
+            logger.info(
+                "LLM raw content: %s",
+                (result.get("content") or "")[:1200],
+            )
+            return parsed
         except (json.JSONDecodeError, TypeError) as exc:
+            logger.info(
+                "LLM raw response (first 800 chars): %s",
+                (result.get("content") or "")[:800],
+            )
             logger.warning(
                 "LLM JSON parse failed on first attempt: %s. Retrying.", exc
             )

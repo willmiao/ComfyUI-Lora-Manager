@@ -78,7 +78,7 @@ class PostProcessor:
             download_preview,
             refresh_cache,
         )
-        from .skills.enrich_hf_metadata.md_to_html import (
+        from .skills.enrich_hf_metadata.readme_processor import (
             convert_readme_to_html,
             extract_gallery_images,
             extract_gallery_table_images,

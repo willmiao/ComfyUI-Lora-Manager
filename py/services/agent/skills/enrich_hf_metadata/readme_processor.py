@@ -1,13 +1,8 @@
-"""Inline markdown-to-HTML converter and LLM-prompt cleaner for HF README content.
+"""HF README processing for the ``enrich_hf_metadata`` skill.
 
-No external dependencies.  Strips YAML frontmatter, ``<Gallery />`` sections,
-badge images, and HTML comments before rendering.  Used by the
-``enrich_hf_metadata`` feature.
-
-Also provides :func:`clean_readme_for_llm` which pre-processes the raw README
-before it is injected into the LLM prompt, removing content that has zero value
-for metadata extraction (widget sections, code blocks, training tables,
-boilerplate, massive lists, etc.).
+Provides README cleaning for LLM injection, gallery/image extraction from
+multiple formats (YAML widget, markdown, HTML ``<img>``, gallery tables),
+and section-based README trimming for collection repos.
 """
 
 from __future__ import annotations
@@ -241,7 +236,26 @@ def extract_gallery_images(
         if text_match:
             raw_text = text_match.group(1).strip().strip("'\"")
             if raw_text and raw_text != "-":
-                text = raw_text
+                # Handle YAML block scalar markers (>-, >, |, |-) where the
+                # actual text lives on subsequent indented lines.
+                if raw_text in (">", ">-", "|", "|-"):
+                    text_lines: list[str] = []
+                    in_block = False
+                    for line in entry.split("\n"):
+                        stripped = line.strip()
+                        if not in_block:
+                            if stripped.endswith(raw_text):
+                                in_block = True
+                            continue
+                        # Block content ends at a line with less indentation
+                        # or a YAML key at the start of a line.
+                        if not stripped or re.match(r"^\s*\w+:", line):
+                            break
+                        if stripped:
+                            text_lines.append(stripped)
+                    text = " ".join(text_lines)
+                else:
+                    text = raw_text
 
         if url:
             image: dict = {
@@ -439,6 +453,7 @@ def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> s
 
     # Order matters — broader strips first, then finer ones.
     text = _strip_gallery(text)
+    text = _strip_widget_section(text)
     text = _strip_fenced_code_blocks(text)
     text = _strip_standalone_images(text)
     text = _strip_training_tables(text)
@@ -722,6 +737,18 @@ def _looks_like_download_link(line: str) -> bool:
     return False
 
 
+def _heading_level(line: str) -> int:
+    """Return the heading level of *line* (1-4), or 0 if not a heading."""
+    stripped = line.strip()
+    m = re.match(r"^(#{1,4})\s", stripped)
+    if m:
+        return len(m.group(1))
+    m = re.match(r"^<h([1-4])(?:\s|>)", stripped, re.IGNORECASE)
+    if m:
+        return int(m.group(1))
+    return 0
+
+
 def _extract_section(
     lines: list[str], match_idx: int, context_lines: int,
 ) -> str:
@@ -729,15 +756,23 @@ def _extract_section(
 
     When *match_idx* is itself a heading line, the section starts *at*
     that heading (no backward walk), avoiding pulling in content from
-    earlier sibling sections.
+    earlier sibling sections.  The forward walk only stops at a heading
+    of **equal or higher** level (e.g. a ``#`` match includes all its
+    ``##`` children).
+
+    Always includes the YAML frontmatter if the original lines contain one,
+    because it carries critical metadata (``base_model``, ``tags``,
+    ``instance_prompt``) that the LLM needs regardless of which section
+    matches.
     """
     n = len(lines)
 
     # Determine start — if match is a heading, start right there
     if _is_heading(lines[match_idx]):
         start = match_idx
+        match_level = _heading_level(lines[match_idx])
     else:
-        # Walk backward to find the nearest heading
+        match_level = 0
         start = max(0, match_idx - context_lines)
         for i in range(match_idx - 1, max(-1, match_idx - context_lines * 3), -1):
             if i < 0:
@@ -747,12 +782,24 @@ def _extract_section(
                 start = i
                 break
 
-    # Walk forward to find the next heading at same or higher level
-    end = min(n, match_idx + context_lines)
-    for i in range(match_idx + 1, min(n, match_idx + context_lines * 3)):
-        if _is_heading(lines[i]):
+    # Walk forward.  Stop at a heading of EQUAL or HIGHER (fewer #) level,
+    # so that a ``# Title`` match encompasses all its ``## Children``.
+    # Start from the full remaining lines so we don't truncate content
+    # when the YAML frontmatter pushes the matched heading far down.
+    end = n
+    walk_limit = min(n, match_idx + max(context_lines * 3, 120))
+    for i in range(match_idx + 1, walk_limit):
+        hl = _heading_level(lines[i])
+        if hl > 0 and (match_level == 0 or hl <= match_level):
             end = i
             break
+
+    # If YAML frontmatter exists before the matched section, prepend it.
+    if start > 0 and len(lines) > 1 and lines[0].strip() == "---":
+        for i in range(1, min(start, len(lines))):
+            if lines[i].strip() == "---":
+                yaml_section = "\n".join(lines[:i+1])
+                return yaml_section + "\n" + "\n".join(lines[start:end])
 
     return "\n".join(lines[start:end])
 
@@ -799,6 +846,26 @@ def _strip_gallery(text: str) -> str:
         flags=re.IGNORECASE | re.DOTALL,
     )
     return text
+
+
+def _strip_widget_section(text: str) -> str:
+    """Strip the ``widget:`` YAML block from the README frontmatter.
+
+    The widget section contains verbose example prompts (``text: >-`` entries)
+    that are useful for post-processor gallery image extraction but carry
+    no signal for LLM metadata extraction.  Stripping them dramatically
+    reduces prompt size (e.g. 2800+ chars → ~100 chars) and lets the LLM
+    focus on the actual YAML metadata fields (``base_model``, ``tags``,
+    ``instance_prompt``, etc.).
+    """
+    # Match widget: through the end of the frontmatter (the closing ---)
+    # or until the next YAML top-level key.
+    return re.sub(
+        r"\nwidget:.*?(?=\n\w+:|\n---)",
+        "",
+        text,
+        flags=re.DOTALL,
+    )
 
 
 def _strip_badge_images(text: str) -> str:

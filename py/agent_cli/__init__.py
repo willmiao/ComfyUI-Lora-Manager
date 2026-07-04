@@ -113,38 +113,29 @@ async def identify_model_type(model_path: str) -> str:
 
 
 async def list_base_models(limit: int = 0) -> List[str]:
-    """Return deduplicated base model names from all model caches.
+    """Return all valid CivitAI base model names.
 
-    The result is ordered by frequency (most common first).  Pass
-    *limit* = 0 (default) for all models.
+    Uses ``CivitaiBaseModelService.get_base_models()`` which merges a
+    hardcoded list (``SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS``) with remote
+    models fetched from the CivitAI API.  Never empty — the hardcoded
+    fallback always provides a complete set.
+
+    The result is sorted alphabetically.  Pass *limit* = 0 for all models.
     """
-    from ..services.service_registry import ServiceRegistry
+    from ..services.civitai_base_model_service import (
+        CivitaiBaseModelService,
+    )
 
-    counts: Dict[str, int] = {}
-    for getter_name in (
-        "get_lora_scanner",
-        "get_checkpoint_scanner",
-        "get_embedding_scanner",
-    ):
-        getter = getattr(ServiceRegistry, getter_name, None)
-        if getter is None:
-            continue
-        try:
-            scanner = await getter()
-            if scanner is None:
-                continue
-            cache = await scanner.get_cached_data()
-            for entry in cache.raw_data:
-                bm = entry.get("base_model")
-                if bm:
-                    counts[bm] = counts.get(bm, 0) + 1
-        except Exception as exc:
-            logger.debug("list_base_models scanner %s error: %s", getter_name, exc)
-
-    sorted_names = [name for name, _ in sorted(counts.items(), key=lambda x: -x[1])]
+    try:
+        service = await CivitaiBaseModelService.get_instance()
+        response = await service.get_base_models()
+        names: List[str] = response.get("models", [])
+    except Exception as exc:
+        logger.warning("list_base_models failed: %s", exc)
+        names = []
     if limit > 0:
-        return sorted_names[:limit]
-    return sorted_names
+        return names[:limit]
+    return names
 
 
 async def read_metadata(model_path: str) -> Dict[str, Any]:

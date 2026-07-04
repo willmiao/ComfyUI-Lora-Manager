@@ -31,7 +31,7 @@ from ..llm_service import LLMService
 from ..websocket_manager import ws_manager
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
-from .skills.enrich_hf_metadata.md_to_html import (
+from .skills.enrich_hf_metadata.readme_processor import (
     clean_readme_for_llm,
     extract_relevant_section,
 )
@@ -397,6 +397,10 @@ class AgentService:
                 cleaned = clean_readme_for_llm(readme) if readme else ""
             context["readme_content"] = cleaned if cleaned else "(README not available)"
             context["readme_content_full"] = readme or ""
+            logger.info(
+                "Cleaned README for %s (%d chars): ---BEGIN---\n%s\n---END---",
+                repo, len(cleaned), cleaned[:800] if cleaned else "(empty)",
+            )
 
         try:
             context["base_models"] = await list_base_models()

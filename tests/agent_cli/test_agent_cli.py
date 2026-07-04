@@ -50,78 +50,74 @@ class MockScanner:
 
 class TestListBaseModels:
 
-    @pytest.mark.asyncio
-    async def test_empty_cache(self):
-        scanner = MockScanner([])
-        with mock.patch(
-            "py.services.service_registry.ServiceRegistry",
-            get_lora_scanner=mock.AsyncMock(return_value=scanner),
-            get_checkpoint_scanner=mock.AsyncMock(return_value=None),
-            get_embedding_scanner=mock.AsyncMock(return_value=None),
-        ):
-            result = await list_base_models()
-        assert result == []
+    _MOCK_MODELS = ["SDXL 1.0", "Flux.1 D", "SD 1.5"]
 
     @pytest.mark.asyncio
-    async def test_merges_all_scanners(self):
-        lora_scanner = MockScanner([
-            {"base_model": "SDXL 1.0"},
-            {"base_model": "Flux.1 D"},
-            {"base_model": "SDXL 1.0"},
-        ])
-        ckpt_scanner = MockScanner([
-            {"base_model": "SDXL 1.0"},
-            {"base_model": "SD 1.5"},
-        ])
-        with mock.patch(
-            "py.services.service_registry.ServiceRegistry",
-            get_lora_scanner=mock.AsyncMock(return_value=lora_scanner),
-            get_checkpoint_scanner=mock.AsyncMock(return_value=ckpt_scanner),
-            get_embedding_scanner=mock.AsyncMock(return_value=None),
-        ):
+    async def test_returns_all_models(self):
+        """Verifies the function delegates to CivitaiBaseModelService.
+
+        Uses a monkey-patch on ``get_instance`` to return a controlled mock
+        so we don't need to work around ``mock.patch``'s dotted-path
+        limitations with lazy imports inside function bodies."""
+        import py.services.civitai_base_model_service as _svc
+        orig = _svc.CivitaiBaseModelService.get_instance
+        mock_svc = mock.AsyncMock()
+        mock_svc.get_base_models.return_value = {
+            "models": self._MOCK_MODELS,
+        }
+        _svc.CivitaiBaseModelService.get_instance = mock.AsyncMock(
+            return_value=mock_svc,
+        )
+        try:
             result = await list_base_models()
-        assert result == ["SDXL 1.0", "Flux.1 D", "SD 1.5"]
+            assert result == self._MOCK_MODELS
+        finally:
+            _svc.CivitaiBaseModelService.get_instance = orig
 
     @pytest.mark.asyncio
     async def test_limit(self):
-        scanner = MockScanner([
-            {"base_model": "A"}, {"base_model": "B"}, {"base_model": "C"},
-        ])
-        with mock.patch(
-            "py.services.service_registry.ServiceRegistry",
-            get_lora_scanner=mock.AsyncMock(return_value=scanner),
-            get_checkpoint_scanner=mock.AsyncMock(return_value=None),
-            get_embedding_scanner=mock.AsyncMock(return_value=None),
-        ):
+        import py.services.civitai_base_model_service as _svc
+        orig = _svc.CivitaiBaseModelService.get_instance
+        mock_svc = mock.AsyncMock()
+        mock_svc.get_base_models.return_value = {"models": ["A", "B", "C"]}
+        _svc.CivitaiBaseModelService.get_instance = mock.AsyncMock(
+            return_value=mock_svc,
+        )
+        try:
             result = await list_base_models(limit=2)
-        assert result == ["A", "B"]
+            assert result == ["A", "B"]
+        finally:
+            _svc.CivitaiBaseModelService.get_instance = orig
 
     @pytest.mark.asyncio
-    async def test_all_scanners_return_none(self):
-        with mock.patch(
-            "py.services.service_registry.ServiceRegistry",
-            get_lora_scanner=mock.AsyncMock(return_value=None),
-            get_checkpoint_scanner=mock.AsyncMock(return_value=None),
-            get_embedding_scanner=mock.AsyncMock(return_value=None),
-        ):
+    async def test_empty_list_when_service_returns_empty(self):
+        import py.services.civitai_base_model_service as _svc
+        orig = _svc.CivitaiBaseModelService.get_instance
+        mock_svc = mock.AsyncMock()
+        mock_svc.get_base_models.return_value = {"models": []}
+        _svc.CivitaiBaseModelService.get_instance = mock.AsyncMock(
+            return_value=mock_svc,
+        )
+        try:
             result = await list_base_models()
-        assert result == []
+            assert result == []
+        finally:
+            _svc.CivitaiBaseModelService.get_instance = orig
 
     @pytest.mark.asyncio
-    async def test_skips_empty_or_missing_base_model(self):
-        scanner = MockScanner([
-            {"base_model": "SDXL 1.0"},
-            {"file_name": "foo.safetensors"},  # no base_model key
-            {"base_model": ""},                 # empty
-        ])
-        with mock.patch(
-            "py.services.service_registry.ServiceRegistry",
-            get_lora_scanner=mock.AsyncMock(return_value=scanner),
-            get_checkpoint_scanner=mock.AsyncMock(return_value=None),
-            get_embedding_scanner=mock.AsyncMock(return_value=None),
-        ):
+    async def test_handles_exception(self):
+        import py.services.civitai_base_model_service as _svc
+        orig = _svc.CivitaiBaseModelService.get_instance
+        mock_svc = mock.AsyncMock()
+        mock_svc.get_base_models.side_effect = RuntimeError("API error")
+        _svc.CivitaiBaseModelService.get_instance = mock.AsyncMock(
+            return_value=mock_svc,
+        )
+        try:
             result = await list_base_models()
-        assert result == ["SDXL 1.0"]
+            assert result == []
+        finally:
+            _svc.CivitaiBaseModelService.get_instance = orig
 
 
 # ======================================================================
@@ -326,21 +322,21 @@ class TestConvertReadmeToHtml:
     """Tests for the inline markdown→HTML converter."""
 
     def test_empty_input(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         assert convert_readme_to_html("") == ""
         assert convert_readme_to_html(None) == ""  # type: ignore[arg-type]
 
     def test_heading(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         result = convert_readme_to_html("# Title")
         assert "<h1>" in result and "Title" in result
 
     def test_subheadings(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "## Overview\n\n### Details"
@@ -349,7 +345,7 @@ class TestConvertReadmeToHtml:
         assert "<h3>Details</h3>" in result
 
     def test_bold_and_italic(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "**bold** and *italic*"
@@ -358,7 +354,7 @@ class TestConvertReadmeToHtml:
         assert "<em>italic</em>" in result
 
     def test_inline_code(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "Use `model.train()`"
@@ -366,7 +362,7 @@ class TestConvertReadmeToHtml:
         assert "<code>" in result and "model.train()" in result
 
     def test_fenced_code_block(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "```python\nprint('hello')\n```"
@@ -375,7 +371,7 @@ class TestConvertReadmeToHtml:
         assert "print" in result and "hello" in result
 
     def test_unordered_list(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "- item one\n- item two"
@@ -385,7 +381,7 @@ class TestConvertReadmeToHtml:
         assert "<li>item two</li>" in result
 
     def test_ordered_list(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "1. first\n2. second"
@@ -395,7 +391,7 @@ class TestConvertReadmeToHtml:
         assert "<li>second</li>" in result
 
     def test_link(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "[click here](https://example.com)"
@@ -403,7 +399,7 @@ class TestConvertReadmeToHtml:
         assert '<a href="https://example.com">click here</a>' in result
 
     def test_badge_image_stripped(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "![badge](https://img.shields.io/badge/status-active)"
@@ -411,7 +407,7 @@ class TestConvertReadmeToHtml:
         assert "img.shields.io" not in result
 
     def test_gallery_stripped(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "Some text\n<Gallery />\nmore text"
@@ -419,7 +415,7 @@ class TestConvertReadmeToHtml:
         assert "<Gallery" not in result
 
     def test_yaml_frontmatter_stripped(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "---\ntags:\n  - lora\nbase_model: flux\n---\n\n# Real content"
@@ -428,7 +424,7 @@ class TestConvertReadmeToHtml:
         assert "<h1>Real content</h1>" in result
 
     def test_table(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "| A | B |\n|---|---|\n| 1 | 2 |"
@@ -438,7 +434,7 @@ class TestConvertReadmeToHtml:
         assert "<td>1</td>" in result
 
     def test_horizontal_rule(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "before\n\n---\n\nafter"
@@ -446,14 +442,14 @@ class TestConvertReadmeToHtml:
         assert "<hr>" in result
 
     def test_inline_code_preserves_angle_bracket(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         result = convert_readme_to_html("Use `a < b` in code")
         assert "<code>a &lt; b</code>" in result
 
     def test_blockquote(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "> quoted text"
@@ -462,7 +458,7 @@ class TestConvertReadmeToHtml:
         assert "quoted text" in result
 
     def test_indented_whitespace_not_treated_as_code(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             convert_readme_to_html
 
         md = "- item\n    \n## heading after spacing"
@@ -497,7 +493,7 @@ base_model: flux
 """
 
     def test_extracts_widget_images(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         images = extract_gallery_images(self._README, self._REPO)
@@ -519,7 +515,7 @@ base_model: flux
         assert images[1]["meta"]["prompt"] == "multi line prompt here"
 
     def test_default_dimensions_used(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         images = extract_gallery_images(self._README, self._REPO)
@@ -527,7 +523,7 @@ base_model: flux
         assert images[0]["height"] == 512
 
     def test_custom_dimensions_applied(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         images = extract_gallery_images(
@@ -538,27 +534,27 @@ base_model: flux
         assert images[0]["height"] == 1024
 
     def test_empty_readme_returns_empty(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         assert extract_gallery_images("", self._REPO) == []
         assert extract_gallery_images("no frontmatter here", self._REPO) == []
 
     def test_empty_repo_returns_empty(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         assert extract_gallery_images(self._README, "") == []
 
     def test_no_widget_returns_empty(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         md = "---\ntags:\n  - lora\n---\n\nContent"
         assert extract_gallery_images(md, self._REPO) == []
 
     def test_extract_repo_from_hf_url(self):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_repo_from_hf_url
 
         assert extract_repo_from_hf_url(
@@ -568,8 +564,10 @@ base_model: flux
         assert extract_repo_from_hf_url("not a url") == ""
 
     def test_plain_yaml_scalar_text(self):
-        """Unquoted multi-line YAML scalar (plain format) should extract prompt."""
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        """Unquoted multi-line YAML scalar (plain format) extracts first line only.
+        The YAML parser only reports the value on the ``text:`` line; continuation
+        lines are handled by the post-processor from the raw README."""
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_images
 
         md = """---
@@ -581,8 +579,7 @@ widget:
 ---"""
         images = extract_gallery_images(md, "user/repo")
         assert len(images) == 1
-        assert "two samurais doing a muay thai fight" in images[0]["meta"]["prompt"]
-        assert "Textured abstract style" in images[0]["meta"]["prompt"]
+        assert images[0]["meta"]["prompt"] == "two samurais doing a muay thai fight"
 
 
 # ======================================================================
@@ -603,7 +600,7 @@ class TestExtractGalleryTableImages:
 
     @staticmethod
     def _extract(md: str, repo: str = _REPO, existing: set | None = None):
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_table_images
         return extract_gallery_table_images(md, repo, existing_urls=existing)
 
@@ -647,7 +644,7 @@ class TestCleanReadmeForLlm:
 
     @staticmethod
     def _clean(md: str, max_length: int = 6000) -> str:
-        from py.services.agent.skills.enrich_hf_metadata.md_to_html import \
+        from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             clean_readme_for_llm
         return clean_readme_for_llm(md, max_length=max_length)
 
@@ -665,10 +662,9 @@ class TestCleanReadmeForLlm:
 
     # -- widget section stripping -------------------------------------------
 
-    def test_widget_text_preserved_in_cleaned_output(self):
-        """Widget section text is preserved — it provides useful signal
-        for tag and description extraction (example prompts describe what
-        the model generates)."""
+    def test_widget_stripped_frontmatter_metadata_preserved(self):
+        """Widget section is stripped, but ``base_model``, ``tags``,
+        ``instance_prompt`` survive."""
         md = """---
 tags:
 - lora
@@ -689,11 +685,10 @@ instance_prompt: trigger word
 This is the actual content.
 """
         result = self._clean(md)
-        # Widget text content preserved (valuable signal for tags)
-        # YAML folded scalars (``>-``) may split text across lines
-        assert "a test prompt" in result
-        assert "another long" in result
-        assert "prompt here" in result
+        # Widget text stripped (it's handled by the post-processor gallery
+        # extraction instead)
+        assert "a test prompt" not in result
+        assert "another long" not in result
         # Non-widget frontmatter preserved
         assert "base_model: black-forest-labs/FLUX.1-dev" in result
         assert "instance_prompt: trigger word" in result
@@ -703,7 +698,7 @@ This is the actual content.
         assert "Model Description" in result
 
     def test_widget_last_key_in_frontmatter(self):
-        """Widget text at end of frontmatter is preserved."""
+        """Widget stripped, non-widget keys preserved."""
         md = """---
 tags:
 - lora
@@ -715,7 +710,7 @@ widget:
 # Content
 """
         result = self._clean(md)
-        assert "prompt" in result
+        assert "prompt" not in result
         assert "tags:" in result
 
     def test_no_widget_untouched(self):
@@ -798,12 +793,13 @@ pixel art sprite, game asset, transparent background
 
     # -- standalone image stripping ------------------------------------------
 
-    def test_standalone_image_stripped(self):
+    def test_standalone_image_urls_preserved_for_llm(self):
+        """Markdown image URLs are kept so the LLM can extract a ``preview_url``."""
         md = "## Gallery\n![sample](https://cdn.hf.co/img.png)\n![another](https://cdn.hf.co/img2.png)\n\nSome text."
         result = self._clean(md)
-        assert "cdn.hf.co" not in result
-        assert "sample" in result  # alt text preserved
-        assert "another" in result  # alt text preserved
+        # URLs preserved for LLM preview extraction
+        assert "cdn.hf.co/img.png" in result
+        assert "cdn.hf.co/img2.png" in result
         assert "## Gallery" in result
         assert "Some text." in result
 
@@ -1001,10 +997,10 @@ Weights for this model are available in Safetensors format.
         original_len = len(md)
         result = self._clean(md)
 
-        # Still significantly smaller (widget text is kept but training
-        # tables, code blocks, boilerplate are stripped)
-        assert len(result) < original_len * 0.7, (
-            f"Expected <70% of original, got {len(result)}/{original_len}"
+        # Significantly smaller: widget + training tables + code blocks
+        # + boilerplate all stripped
+        assert len(result) < original_len * 0.35, (
+            f"Expected <35% of original, got {len(result)}/{original_len}"
         )
 
         # Signal preserved
@@ -1013,9 +1009,8 @@ Weights for this model are available in Safetensors format.
         assert "3D" in result
         assert "Toon" in result
 
-        # Widget content preserved (text is valuable signal for tags/desc)
-        assert "close-up of a cartoon character face" in result
-        assert "Super Detail" in result
+        # Widget content stripped (post-processor handles image extraction)
+        assert "close-up of a cartoon character face" not in result
 
         # Noise stripped
         assert "import torch" not in result
