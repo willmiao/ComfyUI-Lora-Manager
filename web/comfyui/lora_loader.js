@@ -1,249 +1,950 @@
-import { app } from "../../scripts/app.js";
-import { api } from "../../scripts/api.js";
+import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState } from "./loras_widget_components.js";
 import {
-  collectActiveLorasFromChain,
-  updateConnectedTriggerWords,
-  chainCallback,
-  mergeLoras,
-  getAllGraphNodes,
-  getNodeFromGraph,
-  getWidgetByName,
-  getWidgetSerializedValue,
-} from "./utils.js";
-import { addLorasWidget } from "./loras_widget.js";
-import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
-import { applySelectionHighlight } from "./trigger_word_highlight.js";
+  parseLoraValue,
+  formatLoraValue,
+    updateWidgetHeight,
+    shouldShowClipEntry,
+    syncClipStrengthIfCollapsed,
+    LORA_ENTRY_HEIGHT,
+    HEADER_HEIGHT,
+    CONTAINER_PADDING,
+    EMPTY_CONTAINER_HEIGHT
+} from "./loras_widget_utils.js";
+import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
+import { forwardMiddleMouseToCanvas, forwardWheelToCanvas, enableListWheelScroll } from "./utils.js";
+import { PreviewTooltip } from "./preview_tooltip.js";
+import { ensureLmStyles } from "./lm_styles_loader.js";
+import { getStrengthStepPreference, getLoraWidgetMaxVisibleLoras } from "./settings.js";
 
-app.registerExtension({
-  name: "LoraManager.LoraLoader",
+export function addLorasWidget(node, name, opts, callback) {
+  ensureLmStyles();
 
-  setup() {
-    // Add message handler to listen for messages from Python
-    api.addEventListener("lora_code_update", (event) => {
-      this.handleLoraCodeUpdate(event.detail || {});
-    });
-  },
+  // Create container for loras
+  const container = document.createElement("div");
+  container.className = "lm-loras-container";
 
-  // Handle lora code updates from Python
-  handleLoraCodeUpdate(message) {
-    const nodeId = message?.node_id ?? message?.id;
-    const graphId = message?.graph_id;
-    const loraCode = message?.lora_code ?? "";
-    const mode = message?.mode ?? "append";
+  forwardMiddleMouseToCanvas(container);
+  forwardWheelToCanvas(container);
 
-    const numericNodeId =
-      typeof nodeId === "string" ? Number(nodeId) : nodeId;
+  // Set initial height using CSS variables approach
+  const defaultHeight = 200;
 
-    // Handle broadcast mode (for Desktop/non-browser support)
-    if (numericNodeId === -1) {
-      // Find all Lora Loader nodes in the current graph
-      const loraLoaderNodes = getAllGraphNodes(app.graph)
-        .map(({ node }) => node)
-        .filter((node) => node?.comfyClass === "Lora Loader (LoraManager)");
+  // In Vue/node-2.0 mode, cap the widget height so it shows at most N entries.
+  // This prevents content from driving the node size beyond the cap.
+  // canvas/legacy mode is unaffected.
+  if (typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode) {
+    const maxLoras = getLoraWidgetMaxVisibleLoras();
+    const gap = 5; // flex gap from .lm-loras-container CSS
+    const maxH = CONTAINER_PADDING + HEADER_HEIGHT + maxLoras * LORA_ENTRY_HEIGHT + maxLoras * gap;
+    container.style.maxHeight = `${maxH}px`;
+    container.style.setProperty('--comfy-widget-max-height', `${maxH}px`);
+    // Window capture-phase hook: scroll the widget instead of zooming the canvas
+    // when the wheel is over a scrollable loras list.
+    enableListWheelScroll(container);
+  }
 
-      // Update each Lora Loader node found
-      if (loraLoaderNodes.length > 0) {
-        loraLoaderNodes.forEach((node) => {
-          this.updateNodeLoraCode(node, loraCode, mode);
-        });
-        console.log(
-          `Updated ${loraLoaderNodes.length} Lora Loader nodes in broadcast mode`
-        );
-      } else {
-        console.warn(
-          "No Lora Loader nodes found in the workflow for broadcast update"
-        );
-      }
+  // Check if this is a randomizer node (lock button instead of drag handle)
+  const isRandomizerNode = opts?.isRandomizerNode === true;
 
+  // Initialize default value
+  const defaultValue = opts?.defaultVal || [];
+  const onSelectionChange = typeof opts?.onSelectionChange === "function"
+  ? opts.onSelectionChange
+  : null;
+
+  // Create preview tooltip instance
+  const previewTooltip = new PreviewTooltip({ modelType: "loras" });
+
+  // Selection state - only one LoRA can be selected at a time
+  let selectedLora = null;
+  let currentLorasData = parseLoraValue(defaultValue);
+  let lastSelectionKey = "__none__";
+  let pendingFocusTarget = null;
+
+  const PREVIEW_SUPPRESSION_AFTER_DRAG_MS = 500;
+  let strengthDragActive = false;
+  let lastStrengthDragEndAt = 0;
+
+  const shouldSuppressPreview = () => {
+    if (strengthDragActive) {
+      return true;
+    }
+    return Date.now() - lastStrengthDragEndAt < PREVIEW_SUPPRESSION_AFTER_DRAG_MS;
+  };
+
+
+  // Proof-of-concept grouped LoRA panels.
+  // This is intentionally cosmetic: the underlying widget value remains one flat LoRA list,
+  // so the existing Python loader should continue to behave exactly as before.
+  const GROUPED_PANELS = ["Characters", "Concepts", "Enhancements", "Other"];
+
+  const ensureGroupedPanelStyles = () => {
+    if (document.getElementById("lm-lora-grouped-panels-poc-style")) {
       return;
     }
 
-    // Standard mode - update a specific node
-    const node = getNodeFromGraph(graphId, numericNodeId);
+    const style = document.createElement("style");
+    style.id = "lm-lora-grouped-panels-poc-style";
+    style.textContent = `
+    .lm-lora-poc-groups {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 8px;
+      width: 100%;
+      align-items: start;
+    }
+
+    .lm-lora-category-section {
+      min-width: 0;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 8px;
+      background: rgba(0, 0, 0, 0.14);
+      padding: 8px;
+      box-sizing: border-box;
+    }
+
+    .lm-lora-category-title {
+      font-size: 16px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.92);
+      margin: 0 0 8px 0;
+      padding: 0 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .lm-lora-category-section .lm-loras-header {
+      margin-bottom: 6px;
+    }
+
+    .lm-lora-category-body {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    `;
+    document.head.appendChild(style);
+  };
+
+  const inferLoraCategory = (lora) => {
+    // Preserve future/manual category support if the value already carries it.
+    if (lora?.category) {
+      return lora.category;
+    }
+
+    const rawName = String(lora?.name || "");
+    const lowered = rawName.toLowerCase().trim();
+
+    // Normalize common separators so names like:
+    // "Enhance - Aesthetic", "Enhance_Aesthetic", "Enhance.Aesthetic"
+    // all become easy to match.
+    const normalized = lowered
+    .replace(/[_./\\]+/g, " ")
+    .replace(/\s*-\s*/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+    // Prefix rules first. These match Ryan-style naming:
+    // "Enhance - ..." -> Enhancements
+    // "Concept - ..." -> Concepts
+    // Everything else usually means Characters.
     if (
-      !node ||
-      (node.comfyClass !== "Lora Loader (LoraManager)" &&
-        node.comfyClass !== "Lora Stacker (LoraManager)" &&
-        node.comfyClass !== "WanVideo Lora Select (LoraManager)")
+      normalized.startsWith("enhance ") ||
+      normalized === "enhance" ||
+      normalized.startsWith("enhancement ") ||
+      normalized === "enhancement" ||
+      normalized.startsWith("quality ") ||
+      normalized === "quality"
     ) {
-      console.warn(
-        "Node not found or not a LoraLoader:",
-        graphId ?? "root",
-        nodeId
-      );
+      return "Enhancements";
+    }
+
+    if (
+      normalized.startsWith("concept ") ||
+      normalized === "concept" ||
+      normalized.startsWith("style ") ||
+      normalized === "style" ||
+      normalized.startsWith("pose ") ||
+      normalized === "pose" ||
+      normalized.startsWith("outfit ") ||
+      normalized === "outfit" ||
+      normalized.startsWith("clothing ") ||
+      normalized === "clothing" ||
+      normalized.startsWith("background ") ||
+      normalized === "background"
+    ) {
+      return "Concepts";
+    }
+
+    // Fallback keyword rules for LoRAs that do not use prefixes.
+    if (
+      normalized.includes("add detail") ||
+      normalized.includes("detail") ||
+      normalized.includes("quality") ||
+      normalized.includes("upscale") ||
+      normalized.includes("hands") ||
+      normalized.includes("eyes") ||
+      normalized.includes("face") ||
+      normalized.includes("skin") ||
+      normalized.includes("aesthetic") ||
+      normalized.includes("artfull") ||
+      normalized.includes("masterpiece") ||
+      normalized.includes("stabilizer")
+    ) {
+      return "Enhancements";
+    }
+
+    if (
+      normalized.includes("slider") ||
+      normalized.includes("style") ||
+      normalized.includes("concept") ||
+      normalized.includes("pose") ||
+      normalized.includes("outfit") ||
+      normalized.includes("clothing") ||
+      normalized.includes("background") ||
+      normalized.includes("lighting")
+    ) {
+      return "Concepts";
+    }
+
+    // Most unsorted anime LoRAs in Ryan's library are characters.
+    return "Characters";
+  };
+
+  const groupLorasByCategory = (loras) => {
+    const grouped = new Map();
+
+    for (const groupName of GROUPED_PANELS) {
+      grouped.set(groupName, []);
+    }
+
+    for (const lora of loras) {
+      const category = GROUPED_PANELS.includes(inferLoraCategory(lora))
+      ? inferLoraCategory(lora)
+      : "Other";
+      grouped.get(category).push(lora);
+    }
+
+    return grouped;
+  };
+
+  const markStrengthDragStart = () => {
+    strengthDragActive = true;
+    previewTooltip.hide();
+  };
+
+  const markStrengthDragEnd = () => {
+    strengthDragActive = false;
+    lastStrengthDragEndAt = Date.now();
+    previewTooltip.hide();
+  };
+
+  // Function to select a LoRA
+  const buildSelectionPayload = (loraName) => {
+    if (!loraName) {
+      return null;
+    }
+
+    const entry = currentLorasData.find((lora) => lora.name === loraName);
+    if (!entry) {
+      return null;
+    }
+
+    return {
+      name: entry.name,
+      active: !!entry.active,
+      entry: { ...entry },
+    };
+  };
+
+  const emitSelectionChange = (payload, options = {}) => {
+    if (!onSelectionChange) {
       return;
     }
 
-    this.updateNodeLoraCode(node, loraCode, mode);
-  },
+    const key = payload
+    ? `${payload.name || ""}|${payload.active ? "1" : "0"}`
+    : "__null__";
 
-  // Helper method to update a single node's lora code
-  updateNodeLoraCode(node, loraCode, mode) {
-    // Update the input widget with new lora code
-    const inputWidget = node.inputWidget;
-    if (!inputWidget) return;
-
-    // Get the current lora code
-    const currentValue = inputWidget.value || "";
-
-    // Update based on mode (replace or append)
-    if (mode === "replace") {
-      inputWidget.value = loraCode;
-    } else {
-      // Append mode - add a space if the current value isn't empty
-      inputWidget.value = currentValue.trim()
-        ? `${currentValue.trim()} ${loraCode}`
-        : loraCode;
+    if (!options.force && key === lastSelectionKey) {
+      return;
     }
 
-    // Trigger the callback to update the loras widget
-    if (typeof inputWidget.callback === "function") {
-      inputWidget.callback(inputWidget.value);
+    lastSelectionKey = key;
+    onSelectionChange(payload);
+  };
+
+  const selectLora = (loraName, options = {}) => {
+    selectedLora = loraName;
+    // Update visual feedback for all entries
+    container.querySelectorAll('.lm-lora-entry').forEach(entry => {
+      const entryLoraName = entry.dataset.loraName;
+      updateEntrySelection(entry, entryLoraName === selectedLora);
+    });
+
+    if (!options.silent) {
+      emitSelectionChange(buildSelectionPayload(loraName));
     }
-  },
+  };
 
-  async beforeRegisterNodeDef(nodeType, nodeData, app) {
-    if (nodeType.comfyClass == "Lora Loader (LoraManager)") {
-      chainCallback(nodeType.prototype, "onNodeCreated", function () {
-        // Enable widget serialization
-        this.serialize_widgets = true;
-
-        this.addInput("clip", "CLIP", {
-          shape: 7,
-        });
-
-        this.addInput("lora_stack", "LORA_STACK", {
-          shape: 7, // 7 is the shape of the optional input
-        });
-
-        // Add flags to prevent callback loops
-        let isUpdating = false;
-        let isSyncingInput = false;
-
-        // Mechanism: Property descriptor to listen for mode changes
-        const self = this;
-        let _mode = this.mode;
-        Object.defineProperty(this, 'mode', {
-          get() {
-            return _mode;
-          },
-          set(value) {
-            const oldValue = _mode;
-            _mode = value;
-
-            // Trigger mode change handler
-            if (self.onModeChange) {
-              self.onModeChange(value, oldValue);
-            }
-
-            console.log(`[Lora Loader] Node mode changed from ${oldValue} to ${value}`);
-          }
-        });
-
-        // Define the mode change handler
-        this.onModeChange = function(newMode, oldMode) {
-          console.log(`Lora Loader node mode changed: from ${oldMode} to ${newMode}`);
-
-          // Update connected trigger word toggle nodes when mode changes
-          const allActiveLoraNames = collectActiveLorasFromChain(self);
-          updateConnectedTriggerWords(self, allActiveLoraNames);
-        };
-
-        // Get the text input widget (AUTOCOMPLETE_TEXT_LORAS type, created by Vue widgets)
-        const inputWidget = getWidgetByName(this, "text");
-        if (!inputWidget) {
-          console.warn("LoRA Manager: text widget not found for Lora Loader");
-          return;
-        }
-        this.inputWidget = inputWidget;
-
-        const scheduleInputSync = debounce((lorasValue) => {
-          if (isSyncingInput) {
-            return;
-          }
-
-          isSyncingInput = true;
-          isUpdating = true;
-
-          try {
-            const nextText = applyLoraValuesToText(
-              inputWidget.value,
-              lorasValue
-            );
-
-            if (inputWidget.value !== nextText) {
-              inputWidget.value = nextText;
-            }
-          } finally {
-            isUpdating = false;
-            isSyncingInput = false;
-          }
-        });
-
-        // Get the widget object directly from the returned object
-        this.lorasWidget = addLorasWidget(
-          this,
-          "loras",
-          {
-            onSelectionChange: (selection) =>
-              applySelectionHighlight(this, selection),
-          },
-          (value) => {
-            // Prevent recursive calls
-            if (isUpdating) return;
-            isUpdating = true;
-
-            try {
-              // Collect all active loras from this node and its input chain
-              const allActiveLoraNames = collectActiveLorasFromChain(this);
-
-              // Update trigger words for connected toggle nodes with the aggregated lora names
-              updateConnectedTriggerWords(this, allActiveLoraNames);
-            } finally {
-              isUpdating = false;
-            }
-
-            scheduleInputSync(value);
-          }
-        ).widget;
-
-        // Set up callback for the text input widget to trigger merge logic
-        inputWidget.callback = (value) => {
-          if (isUpdating) return;
-          isUpdating = true;
-
-          try {
-            const currentLoras = this.lorasWidget.value || [];
-            const mergedLoras = mergeLoras(value, currentLoras);
-
-            this.lorasWidget.value = mergedLoras;
-
-            const allActiveLoraNames = collectActiveLorasFromChain(this);
-            updateConnectedTriggerWords(this, allActiveLoraNames);
-          } finally {
-            isUpdating = false;
-          }
-        };
-      });
+  // Add keyboard event listener to container
+  container.addEventListener('keydown', (e) => {
+    if (handleKeyboardNavigation(e, selectedLora, widget, renderLoras, selectLora)) {
+      e.stopPropagation();
     }
-  },
+  });
 
-  async loadedGraphNode(node) {
-    if (node.comfyClass == "Lora Loader (LoraManager)") {
-      // Restore saved value if exists
-      let existingLoras = [];
-      if (node.widgets_values && node.widgets_values.length > 0) {
-        const savedValue = getWidgetSerializedValue(node, "loras");
-        existingLoras = savedValue || [];
+  // Make container focusable for keyboard events
+  container.tabIndex = 0;
+
+  // Function to render loras from data
+  const renderLoras = (value, widget) => {
+    // Clear existing content
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
+
+    // Parse the loras data
+    const lorasData = parseLoraValue(value);
+    currentLorasData = lorasData;
+    const focusSequence = [];
+
+    const updateWidgetValue = (newValue) => {
+      widget.value = newValue;
+
+      if (typeof widget.callback === "function") {
+        widget.callback(widget.value);
       }
-      // Merge the loras data
-      const inputWidget = node.inputWidget || getWidgetByName(node, "text");
-      if (!inputWidget) {
-        console.warn("LoRA Manager: text widget not found while restoring Lora Loader");
+    };
+
+    const createFocusEntry = (loraName, type) => {
+      const entry = { name: loraName, type };
+      focusSequence.push(entry);
+      return entry;
+    };
+
+    const findFocusEntryIndex = (entry) =>
+    focusSequence.findIndex(
+      (sequenceEntry) =>
+      sequenceEntry?.name === entry?.name && sequenceEntry?.type === entry?.type
+    );
+
+    const getAdjacentFocusEntry = (currentEntry, direction) => {
+      const currentIndex = findFocusEntryIndex(currentEntry);
+      if (currentIndex === -1) {
+        return null;
+      }
+      return focusSequence[currentIndex + direction] || null;
+    };
+
+    const queueFocusEntry = (entry) => {
+      if (!entry) {
+        return false;
+      }
+      pendingFocusTarget = { ...entry };
+      return true;
+    };
+
+    const queueFocusAdjacentFrom = (currentEntry, direction) => {
+      const targetEntry = getAdjacentFocusEntry(currentEntry, direction);
+      return queueFocusEntry(targetEntry);
+    };
+
+    const escapeLoraName = (loraName) => {
+      const css =
+      (typeof window !== "undefined" && window.CSS) ||
+      (typeof globalThis !== "undefined" && globalThis.CSS);
+      if (css && typeof css.escape === "function") {
+        return css.escape(loraName);
+      }
+      return loraName.replace(/"|\\/g, "\\$&");
+    };
+
+    if (lorasData.length === 0) {
+      // Show message when no loras are added
+      const emptyMessage = document.createElement("div");
+      emptyMessage.textContent = "No LoRAs added";
+      emptyMessage.className = "lm-lora-empty-state";
+      container.appendChild(emptyMessage);
+
+      // Set fixed height for empty state
+      updateWidgetHeight(container, EMPTY_CONTAINER_HEIGHT, defaultHeight, node);
+      return;
+    }
+
+    // Create grouped panel container.
+    // Each category has its own toggle header, but all LoRAs are still stored and loaded as one flat list.
+    ensureGroupedPanelStyles();
+    const groupedLoras = groupLorasByCategory(lorasData);
+    const groupsContainer = document.createElement("div");
+    groupsContainer.className = "lm-lora-poc-groups";
+    container.appendChild(groupsContainer);
+
+    const createCategorySection = (categoryName, groupItems) => {
+      const section = document.createElement("div");
+      section.className = "lm-lora-category-section";
+      section.dataset.loraCategory = categoryName;
+
+      const title = document.createElement("div");
+      title.className = "lm-lora-category-title";
+      title.textContent = categoryName;
+      section.appendChild(title);
+
+      const header = document.createElement("div");
+      header.className = "lm-loras-header";
+
+      const allActive = groupItems.length > 0 && groupItems.every(lora => lora.active);
+      const toggleAll = createToggle(allActive, (active) => {
+        const currentLoras = parseLoraValue(widget.value);
+        currentLoras.forEach(lora => {
+          if (inferLoraCategory(lora) === categoryName) {
+            lora.active = active;
+          }
+        });
+
+        updateWidgetValue(formatLoraValue(currentLoras));
+      });
+
+      const toggleLabel = document.createElement("div");
+      toggleLabel.textContent = "Toggle All";
+      toggleLabel.className = "lm-toggle-label";
+
+      const toggleContainer = document.createElement("div");
+      toggleContainer.className = "lm-toggle-container";
+      toggleContainer.appendChild(toggleAll);
+      toggleContainer.appendChild(toggleLabel);
+
+      const strengthLabel = document.createElement("div");
+      strengthLabel.textContent = "Strength";
+      strengthLabel.className = "lm-strength-label";
+
+      const dragHint = document.createElement("span");
+      dragHint.innerHTML = "<->";
+      dragHint.className = "lm-drag-hint";
+      strengthLabel.appendChild(dragHint);
+
+      header.appendChild(toggleContainer);
+      header.appendChild(strengthLabel);
+      section.appendChild(header);
+
+      const body = document.createElement("div");
+      body.className = "lm-lora-category-body";
+      section.appendChild(body);
+
+      return { section, body };
+    };
+
+    // Track the maximum visible entries in any category for height calculation.
+    let maxGroupVisibleEntries = 0;
+
+    // Render each category panel, then each LoRA entry inside that panel.
+    GROUPED_PANELS.forEach((categoryName) => {
+      const groupItems = groupedLoras.get(categoryName) || [];
+      if (groupItems.length === 0) {
         return;
       }
-      const mergedLoras = mergeLoras(inputWidget.value, existingLoras);
-      node.lorasWidget.value = mergedLoras;
+
+      const { section, body } = createCategorySection(categoryName, groupItems);
+      groupsContainer.appendChild(section);
+      let groupVisibleEntries = groupItems.length;
+
+      groupItems.forEach((loraData) => {
+        const { name, strength, clipStrength, active } = loraData;
+
+        // Determine expansion state using our helper function
+        const isExpanded = shouldShowClipEntry(loraData);
+        const strengthFocusEntry = createFocusEntry(name, "strength");
+
+        // Create the main LoRA entry
+        const loraEl = document.createElement("div");
+        loraEl.className = "lm-lora-entry";
+
+        // Store lora name, active state, and locked state in dataset
+        loraEl.dataset.loraName = name;
+        loraEl.dataset.active = active ? "true" : "false";
+        loraEl.dataset.locked = (loraData.locked || false) ? "true" : "false";
+
+        // Add click handler for selection
+        loraEl.addEventListener('click', (e) => {
+          // Skip if clicking on interactive elements
+          if (e.target.closest('.lm-lora-toggle') ||
+            e.target.closest('input') ||
+            e.target.closest('.lm-lora-arrow') ||
+            e.target.closest('.lm-lora-drag-handle') ||
+            e.target.closest('.lm-lora-lock-button') ||
+            e.target.closest('.lm-lora-expand-button')) {
+            return;
+            }
+
+            e.preventDefault();
+          e.stopPropagation();
+          selectLora(name);
+          container.focus(); // Focus container for keyboard events
+        });
+
+        // Conditionally create drag handle OR lock button
+        let dragHandleOrLockButton;
+
+        if (isRandomizerNode) {
+          // For randomizer node, show lock button instead of drag handle
+          const isLocked = loraData.locked || false;
+          dragHandleOrLockButton = createLockButton(isLocked, (newLocked) => {
+            // Update this lora's locked state
+            const lorasData = parseLoraValue(widget.value);
+            const loraIndex = lorasData.findIndex(l => l.name === name);
+
+            if (loraIndex >= 0) {
+              lorasData[loraIndex].locked = newLocked;
+              const newValue = formatLoraValue(lorasData);
+              updateWidgetValue(newValue);
+            }
+          });
+        } else {
+          // For other nodes, show drag handle
+          dragHandleOrLockButton = createDragHandle();
+          // Initialize reorder drag functionality
+          initReorderDrag(dragHandleOrLockButton, name, widget, renderLoras);
+        }
+
+        // Create toggle for this lora
+        const toggle = createToggle(active, (newActive) => {
+          // Update this lora's active state
+          const lorasData = parseLoraValue(widget.value);
+          const loraIndex = lorasData.findIndex(l => l.name === name);
+
+          if (loraIndex >= 0) {
+            lorasData[loraIndex].active = newActive;
+
+            if (selectedLora === name) {
+              emitSelectionChange({
+                name,
+                active: newActive,
+                entry: { ...lorasData[loraIndex] },
+              });
+            }
+
+            const newValue = formatLoraValue(lorasData);
+            updateWidgetValue(newValue);
+          }
+        });
+
+        // Create expand button
+        const expandButton = createExpandButton(isExpanded, (shouldExpand) => {
+          // Toggle the clip entry expanded state
+          const lorasData = parseLoraValue(widget.value);
+          const loraIndex = lorasData.findIndex(l => l.name === name);
+
+          if (loraIndex >= 0) {
+            // Set the expansion state
+            lorasData[loraIndex].expanded = shouldExpand;
+
+            // If collapsing, set clipStrength = strength
+            if (!shouldExpand) {
+              lorasData[loraIndex].clipStrength = lorasData[loraIndex].strength;
+            }
+
+            // Update the widget value
+            updateWidgetValue(formatLoraValue(lorasData));
+
+            // Re-render to show/hide clip entry
+            renderLoras(widget.value, widget);
+          }
+        });
+
+        // Create name display
+        const nameEl = document.createElement("div");
+        nameEl.textContent = name;
+        nameEl.className = "lm-lora-name";
+
+        // Move preview tooltip events to nameEl instead of loraEl
+        let previewTimer = null; // Timer for delayed preview
+
+        const clearPreviewTimer = () => {
+          if (previewTimer) {
+            clearTimeout(previewTimer);
+            previewTimer = null;
+          }
+        };
+
+        nameEl.addEventListener('mouseenter', (e) => {
+          e.stopPropagation();
+          if (shouldSuppressPreview()) {
+            return;
+          }
+          previewTimer = setTimeout(async () => {
+            previewTimer = null;
+            if (shouldSuppressPreview()) {
+              return;
+            }
+            const rect = nameEl.getBoundingClientRect();
+            await previewTooltip.show(name, rect.right, rect.top);
+          }, 400); // 400ms delay
+        });
+
+        nameEl.addEventListener('mouseleave', (e) => {
+          e.stopPropagation();
+          clearPreviewTimer(); // Cancel if not triggered
+          previewTooltip.hide();
+        });
+
+        // Initialize drag functionality for strength adjustment
+        initDrag(loraEl, name, widget, false, previewTooltip, renderLoras, {
+          onDragStart: () => {
+            clearPreviewTimer();
+            markStrengthDragStart();
+          },
+          onDragEnd: () => {
+            clearPreviewTimer();
+            markStrengthDragEnd();
+          }
+        });
+
+        // Add context menu event
+        loraEl.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          createContextMenu(e.clientX, e.clientY, name, widget, previewTooltip, renderLoras);
+        });
+
+        // Create strength control
+        const strengthControl = document.createElement("div");
+        strengthControl.className = "lm-lora-strength-control";
+
+        // Left arrow
+        const leftArrow = createArrowButton("left", () => {
+          // Decrease strength
+          const lorasData = parseLoraValue(widget.value);
+          const loraIndex = lorasData.findIndex(l => l.name === name);
+
+          if (loraIndex >= 0) {
+            lorasData[loraIndex].strength = (parseFloat(lorasData[loraIndex].strength) - getStrengthStepPreference()).toFixed(2);
+            // Sync clipStrength if collapsed
+            syncClipStrengthIfCollapsed(lorasData[loraIndex]);
+
+            const newValue = formatLoraValue(lorasData);
+            updateWidgetValue(newValue);
+          }
+        });
+
+        // Strength display
+        const strengthEl = document.createElement("input");
+        strengthEl.classList.add("lm-lora-strength-input");
+        strengthEl.type = "text";
+        strengthEl.value = typeof strength === 'number' ? strength.toFixed(2) : Number(strength).toFixed(2);
+        strengthEl.addEventListener('pointerdown', () => {
+          pendingFocusTarget = { name, type: "strength" };
+        });
+
+        // Handle focus
+        strengthEl.addEventListener('focus', () => {
+          pendingFocusTarget = null;
+          // Auto-select all content
+          strengthEl.select();
+          selectLora(name);
+        });
+
+        // Handle input changes
+        const commitStrengthValue = () => {
+          let parsedValue = parseFloat(strengthEl.value);
+          if (isNaN(parsedValue)) {
+            parsedValue = 1.0;
+          }
+          const normalizedValue = parsedValue.toFixed(2);
+
+          const currentLoras = parseLoraValue(widget.value);
+          const loraIndex = currentLoras.findIndex(l => l.name === name);
+
+          if (loraIndex >= 0) {
+            currentLoras[loraIndex].strength = normalizedValue;
+            // Sync clipStrength if collapsed
+            syncClipStrengthIfCollapsed(currentLoras[loraIndex]);
+
+            strengthEl.value = normalizedValue;
+            const newLorasValue = formatLoraValue(currentLoras);
+            updateWidgetValue(newLorasValue);
+          } else {
+            strengthEl.value = normalizedValue;
+          }
+        };
+
+        strengthEl.addEventListener('change', commitStrengthValue);
+
+        // Handle key events
+        strengthEl.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') {
+            strengthEl.blur();
+          } else if (e.key === 'Tab') {
+            const moved = queueFocusAdjacentFrom(strengthFocusEntry, e.shiftKey ? -1 : 1);
+            commitStrengthValue();
+            if (moved) {
+              e.preventDefault();
+            }
+          }
+        });
+
+        // Right arrow
+        const rightArrow = createArrowButton("right", () => {
+          // Increase strength
+          const lorasData = parseLoraValue(widget.value);
+          const loraIndex = lorasData.findIndex(l => l.name === name);
+
+          if (loraIndex >= 0) {
+            lorasData[loraIndex].strength = (parseFloat(lorasData[loraIndex].strength) + getStrengthStepPreference()).toFixed(2);
+            // Sync clipStrength if collapsed
+            syncClipStrengthIfCollapsed(lorasData[loraIndex]);
+
+            const newValue = formatLoraValue(lorasData);
+            updateWidgetValue(newValue);
+          }
+        });
+
+        strengthControl.appendChild(leftArrow);
+        strengthControl.appendChild(strengthEl);
+        strengthControl.appendChild(rightArrow);
+
+        // Assemble entry
+        const leftSection = document.createElement("div");
+        leftSection.className = "lm-lora-entry-left";
+
+        leftSection.appendChild(dragHandleOrLockButton); // Add drag handle or lock button first
+        leftSection.appendChild(toggle);
+        leftSection.appendChild(expandButton); // Add expand button
+        leftSection.appendChild(nameEl);
+
+        loraEl.appendChild(leftSection);
+        loraEl.appendChild(strengthControl);
+
+        body.appendChild(loraEl);
+
+        // If expanded, show the clip entry
+        if (isExpanded) {
+          groupVisibleEntries++;
+          const clipEl = document.createElement("div");
+          clipEl.className = "lm-lora-clip-entry";
+
+          // Store the same lora name in clip entry dataset
+          clipEl.dataset.loraName = name;
+          clipEl.dataset.active = active ? "true" : "false";
+
+          // Create clip name display
+          const clipNameEl = document.createElement("div");
+          clipNameEl.textContent = "[clip] " + name;
+          clipNameEl.className = "lm-lora-name";
+
+          // Create clip strength control
+          const clipStrengthControl = document.createElement("div");
+          clipStrengthControl.className = "lm-lora-strength-control";
+
+          // Left arrow for clip
+          const clipLeftArrow = createArrowButton("left", () => {
+            // Decrease clip strength
+            const lorasData = parseLoraValue(widget.value);
+            const loraIndex = lorasData.findIndex(l => l.name === name);
+
+            if (loraIndex >= 0) {
+              lorasData[loraIndex].clipStrength = (parseFloat(lorasData[loraIndex].clipStrength) - getStrengthStepPreference()).toFixed(2);
+
+              const newValue = formatLoraValue(lorasData);
+              updateWidgetValue(newValue);
+            }
+          });
+
+          // Clip strength display
+          const clipStrengthEl = document.createElement("input");
+          clipStrengthEl.classList.add("lm-lora-strength-input", "lm-lora-clip-strength-input");
+          clipStrengthEl.type = "text";
+          clipStrengthEl.value = typeof clipStrength === 'number' ? clipStrength.toFixed(2) : Number(clipStrength).toFixed(2);
+          clipStrengthEl.addEventListener('pointerdown', () => {
+            pendingFocusTarget = { name, type: "clip" };
+          });
+
+          // Handle focus
+          clipStrengthEl.addEventListener('focus', () => {
+            pendingFocusTarget = null;
+            // Auto-select all content
+            clipStrengthEl.select();
+            selectLora(name);
+          });
+
+          // Handle input changes
+          const clipFocusEntry = createFocusEntry(name, "clip");
+
+          const commitClipStrengthValue = () => {
+            let parsedValue = parseFloat(clipStrengthEl.value);
+            if (isNaN(parsedValue)) {
+              parsedValue = 1.0;
+            }
+            const normalizedValue = parsedValue.toFixed(2);
+
+            const currentLoras = parseLoraValue(widget.value);
+            const loraIndex = currentLoras.findIndex(l => l.name === name);
+
+            if (loraIndex >= 0) {
+              currentLoras[loraIndex].clipStrength = normalizedValue;
+              clipStrengthEl.value = normalizedValue;
+
+              const newLorasValue = formatLoraValue(currentLoras);
+              updateWidgetValue(newLorasValue);
+            } else {
+              clipStrengthEl.value = normalizedValue;
+            }
+          };
+
+          clipStrengthEl.addEventListener('change', commitClipStrengthValue);
+
+          // Handle key events
+          clipStrengthEl.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+              clipStrengthEl.blur();
+            } else if (e.key === 'Tab') {
+              const moved = queueFocusAdjacentFrom(clipFocusEntry, e.shiftKey ? -1 : 1);
+              commitClipStrengthValue();
+              if (moved) {
+                e.preventDefault();
+              }
+            }
+          });
+
+          // Right arrow for clip
+          const clipRightArrow = createArrowButton("right", () => {
+            // Increase clip strength
+            const lorasData = parseLoraValue(widget.value);
+            const loraIndex = lorasData.findIndex(l => l.name === name);
+
+            if (loraIndex >= 0) {
+              lorasData[loraIndex].clipStrength = (parseFloat(lorasData[loraIndex].clipStrength) + getStrengthStepPreference()).toFixed(2);
+
+              const newValue = formatLoraValue(lorasData);
+              updateWidgetValue(newValue);
+            }
+          });
+
+          clipStrengthControl.appendChild(clipLeftArrow);
+          clipStrengthControl.appendChild(clipStrengthEl);
+          clipStrengthControl.appendChild(clipRightArrow);
+
+          // Assemble clip entry
+          const clipLeftSection = document.createElement("div");
+          clipLeftSection.className = "lm-lora-entry-left";
+
+          clipLeftSection.appendChild(clipNameEl);
+
+          clipEl.appendChild(clipLeftSection);
+          clipEl.appendChild(clipStrengthControl);
+
+          // Add drag functionality to clip entry
+          initDrag(clipEl, name, widget, true, previewTooltip, renderLoras, {
+            onDragStart: markStrengthDragStart,
+            onDragEnd: markStrengthDragEnd
+          });
+
+          body.appendChild(clipEl);
+        }
+
+        maxGroupVisibleEntries = Math.max(maxGroupVisibleEntries, groupVisibleEntries);
+      });
+    });
+
+    // Calculate height based on tallest category column instead of total LoRA count.
+    // This keeps the node compact when panels are shown side by side.
+    const calculatedHeight = CONTAINER_PADDING + HEADER_HEIGHT + (Math.min(maxGroupVisibleEntries, 12) * LORA_ENTRY_HEIGHT);
+    updateWidgetHeight(container, calculatedHeight, defaultHeight, node);
+
+    // After all LoRA elements are created, apply selection state as the last step
+    // This ensures the selection state is not overwritten
+    container.querySelectorAll('.lm-lora-entry').forEach(entry => {
+      const entryLoraName = entry.dataset.loraName;
+      updateEntrySelection(entry, entryLoraName === selectedLora);
+    });
+
+    const selectionExists = selectedLora
+    ? currentLorasData.some((lora) => lora.name === selectedLora)
+    : false;
+
+    if (selectedLora && !selectionExists) {
+      selectLora(null);
+    } else if (selectedLora) {
+      emitSelectionChange(buildSelectionPayload(selectedLora));
     }
-  },
-});
+
+    if (pendingFocusTarget) {
+      const focusTarget = pendingFocusTarget;
+      const safeName = escapeLoraName(focusTarget.name);
+      let selector = "";
+
+      if (focusTarget.type === "strength") {
+        selector = `.lm-lora-entry[data-lora-name="${safeName}"] .lm-lora-strength-input`;
+      } else if (focusTarget.type === "clip") {
+        selector = `.lm-lora-clip-entry[data-lora-name="${safeName}"] .lm-lora-clip-strength-input`;
+      }
+
+      if (selector) {
+        const targetInput = container.querySelector(selector);
+        if (targetInput) {
+          requestAnimationFrame(() => {
+            targetInput.focus();
+            if (typeof targetInput.select === "function") {
+              targetInput.select();
+            }
+            selectLora(focusTarget.name, { silent: true });
+          });
+        }
+      }
+
+      pendingFocusTarget = null;
+    }
+  };
+
+  // Store the value in a variable to avoid recursion
+  let widgetValue = defaultValue;
+
+  // Create widget with new DOM Widget API
+  const widget = node.addDOMWidget(name, "custom", container, {
+    getValue: function() {
+      return widgetValue;
+    },
+    setValue: function(v) {
+      // Remove duplicates by keeping the last occurrence of each lora name
+      const uniqueValue = (v || []).reduce((acc, lora) => {
+        // Remove any existing lora with the same name
+        const filtered = acc.filter(l => l.name !== lora.name);
+        // Add the current lora
+        return [...filtered, lora];
+      }, []);
+
+      // Apply existing clip strength values and transfer them to the new value
+      const updatedValue = uniqueValue.map(lora => {
+        // For new loras, default clip strength to model strength and expanded to false
+        // unless clipStrength is already different from strength
+        const clipStrength = lora.clipStrength || lora.strength;
+        return {
+          ...lora,
+          clipStrength: clipStrength,
+          expanded: lora.hasOwnProperty('expanded') ?
+          lora.expanded :
+          Number(clipStrength) !== Number(lora.strength),
+                                           locked: lora.hasOwnProperty('locked') ? lora.locked : false  // Initialize locked to false if not present
+        };
+      });
+
+      widgetValue = updatedValue;
+      renderLoras(widgetValue, widget);
+    },
+    hideOnZoom: true,
+    selectOn: ['click', 'focus']
+  });
+
+  widget.value = defaultValue;
+
+  widget.callback = callback;
+
+  widget.onRemove = () => {
+    container.remove();
+    previewTooltip.cleanup();
+    // Remove keyboard event listener
+    container.removeEventListener('keydown', handleKeyboardNavigation);
+  };
+
+  return { minWidth: 900, minHeight: defaultHeight, widget };
+}
