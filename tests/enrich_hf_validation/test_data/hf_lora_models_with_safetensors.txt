@@ -42,3 +42,5 @@ gaoxiao/pokemon-lora, pytorch_lora_weights.safetensors
 wtcherr/sd-unsplash_10k_canny-model-control-lora, diffusion_pytorch_model.safetensors
 wtcherr/sd-unsplash_10k_blur_rand_KS-model-control-lora, diffusion_pytorch_model.safetensors
 samurai-architects/lora-starbucks, starbucks_interior.safetensors
+prithivMLmods/Flux-Long-Toon-LoRA, Long-Toon.safetensors
+Limbicnation/pixel-art-lora, pytorch_lora_weights.comfyui.safetensors
