@@ -749,7 +749,9 @@ Some text.
         assert "## Usage" in result
         assert "## Description" in result
 
-    def test_bash_code_block_stripped(self):
+    def test_bash_code_block_preserved(self):
+        """Bash code blocks are preserved — they contain CLI setup commands
+        and trigger-word install instructions that carry metadata signal."""
         md = """## Setup
 ```bash
 pip install diffusers
@@ -757,13 +759,16 @@ huggingface-cli download repo
 ```
 """
         result = self._clean(md)
-        assert "pip install" not in result
+        assert "pip install" in result
+        assert "huggingface-cli download repo" in result
         assert "## Setup" in result
 
     def test_code_block_sections_remain_separated(self):
+        """Bash code blocks are preserved (they carry metadata signal),
+        and surrounding section headings survive."""
         md = "## Install\n```bash\npip install x\n```\n\n## Usage\nSome text."
         result = self._clean(md)
-        assert "pip install" not in result
+        assert "pip install x" in result
         assert "## Install" in result
         assert "## Usage" in result
         assert "Some text." in result
