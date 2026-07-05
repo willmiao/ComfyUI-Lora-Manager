@@ -495,20 +495,26 @@ def _strip_standalone_images(text: str) -> str:
     extract a ``preview_url`` from them.  Only the alt text is needed for
     content signal; the URL is needed for image extraction.
 
-    HTML ``<img>`` tags on their own line are replaced by their alt text
-    (if any) or removed, since the LLM has difficulty extracting URLs from
-    raw HTML attributes.
+    HTML ``<img>`` tags on their own line are **converted to markdown
+    image syntax** ``![alt](src)`` so both the alt text and the image URL
+    are preserved in a format the LLM can easily extract.  Previously the
+    URL was stripped entirely, making it impossible for the LLM to return
+    a ``preview_url`` for repos that use HTML ``<img>`` tags exclusively.
     """
-    # HTML: ``<img src="..." alt="..." ...>`` on its own line → keep alt text
-    text = re.sub(
-        r'^\s*<img\s[^>]*alt="([^"]*)"[^>]*/?>(?:</img>)?\s*$',
-        r"\1",
-        text,
-        flags=re.MULTILINE | re.IGNORECASE,
-    )
+    def _img_to_md(match: re.Match) -> str:
+        """Convert an ``<img>`` tag to markdown image syntax ``![alt](src)``."""
+        tag = match.group(0)
+        src_m = re.search(r'src="([^"]+)"', tag) or re.search(r"src='([^']+)'", tag)
+        if not src_m:
+            return ""
+        src = src_m.group(1)
+        alt_m = re.search(r'alt="([^"]*)"', tag) or re.search(r"alt='([^']*)'", tag)
+        alt = alt_m.group(1) if alt_m else ""
+        return f"![{alt}]({src})"
+
     text = re.sub(
         r'^\s*<img\s[^>]+/?>(?:</img>)?\s*$',
-        "",
+        _img_to_md,
         text,
         flags=re.MULTILINE | re.IGNORECASE,
     )
@@ -782,9 +788,16 @@ def _extract_section(
 
     When *match_idx* is itself a heading line, the section starts *at*
     that heading (no backward walk), avoiding pulling in content from
-    earlier sibling sections.  The forward walk only stops at a heading
-    of **equal or higher** level (e.g. a ``#`` match includes all its
-    ``##`` children).
+    earlier sibling sections.  The forward walk stops at a heading of
+    **equal or higher** level (e.g. a ``# Title`` match includes all its
+    ``## Children``).
+
+    When *match_idx* is **not** a heading (e.g. a download link matched
+    inside a sub-section like ``# Download``), the forward walk uses a
+    generous line-count-based window instead of stopping at the very next
+    heading.  This prevents same-level sub-headings (e.g. ``# Download``,
+    ``# Trigger``, ``# Sample prompt`` within a single model section)
+    from prematurely truncating the window before sample images.
 
     Always includes the YAML frontmatter if the original lines contain one,
     because it carries critical metadata (``base_model``, ``tags``,
@@ -808,17 +821,31 @@ def _extract_section(
                 start = i
                 break
 
-    # Walk forward.  Stop at a heading of EQUAL or HIGHER (fewer #) level,
-    # so that a ``# Title`` match encompasses all its ``## Children``.
-    # Start from the full remaining lines so we don't truncate content
-    # when the YAML frontmatter pushes the matched heading far down.
+    # Walk forward.
     end = n
-    walk_limit = min(n, match_idx + max(context_lines * 3, 120))
-    for i in range(match_idx + 1, walk_limit):
-        hl = _heading_level(lines[i])
-        if hl > 0 and (match_level == 0 or hl <= match_level):
-            end = i
-            break
+    if match_level == 0:
+        # Non-heading match (e.g. a download link).  Use a line-based
+        # window so that same-level sub-headings (# Download, # Trigger,
+        # # Sample prompt within a single model section) don't truncate
+        # the window.  Stop at the next <a id="..."> anchor (which
+        # typically starts a new model section in collection repos), or
+        # fall back to a generous line limit.
+        forward_limit = min(n, match_idx + max(context_lines * 3, 250))
+        for i in range(match_idx + 1, forward_limit):
+            if re.search(r'<a\s+id="', lines[i], re.IGNORECASE):
+                end = i
+                break
+        else:
+            end = forward_limit
+    else:
+        # Heading match — stop at the next heading of equal or higher
+        # level, so that a # Title encompasses all its ## Children.
+        walk_limit = min(n, match_idx + max(context_lines * 3, 120))
+        for i in range(match_idx + 1, walk_limit):
+            hl = _heading_level(lines[i])
+            if hl > 0 and hl <= match_level:
+                end = i
+                break
 
     # If YAML frontmatter exists before the matched section, prepend it.
     if start > 0 and len(lines) > 1 and lines[0].strip() == "---":

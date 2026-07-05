@@ -803,10 +803,12 @@ pixel art sprite, game asset, transparent background
         assert "## Gallery" in result
         assert "Some text." in result
 
-    def test_html_img_tag_stripped(self):
+    def test_html_img_tag_converted_to_markdown_image(self):
+        """``<img>`` converted to ``![](src)``, preserving URL for LLM."""
         md = '## Preview\n<img src="https://cdn.hf.co/img.webp"></img>\n\nDescription.'
         result = self._clean(md)
-        assert "cdn.hf.co" not in result
+        assert "![](https://cdn.hf.co/img.webp)" in result
+        assert "cdn.hf.co" in result  # URL preserved for LLM extraction
         assert "Description." in result
 
     def test_inline_image_within_paragraph_preserved(self):

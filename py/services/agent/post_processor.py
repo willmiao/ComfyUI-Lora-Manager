@@ -82,6 +82,7 @@ class PostProcessor:
             convert_readme_to_html,
             extract_gallery_images,
             extract_gallery_table_images,
+            extract_relevant_section,
             extract_simple_markdown_images,
             extract_html_img_tags,
             extract_repo_from_hf_url,
@@ -215,8 +216,21 @@ class PostProcessor:
 
         preview_remote_url = (llm_output.get("preview_url") or "").strip()
         # Fallback: if the LLM couldn't find a preview image in the cleaned
-        # README, use the first gallery image extracted from the YAML widget
-        # section.
+        # README, find the first gallery image from the *model-specific
+        # section* of the README (not the repo-wide first image, which
+        # belongs to a different model in collection repos).
+        if not preview_remote_url and readme_content and is_hf_model:
+            model_basename = os.path.splitext(os.path.basename(model_path))[0]
+            relevant_section = extract_relevant_section(
+                readme_content, model_basename,
+            )
+            if relevant_section and relevant_section != readme_content:
+                for img in gallery_images:
+                    img_url = img.get("url", "")
+                    if img_url and img_url in relevant_section:
+                        preview_remote_url = img_url
+                        break
+        # Last resort: use the first gallery image from the full README.
         if not preview_remote_url and gallery_images:
             preview_remote_url = gallery_images[0].get("url", "")
         current_preview = metadata.get("preview_url") or ""

@@ -242,11 +242,12 @@ After"""
         cleaned = R.clean_readme_for_llm(text)
         assert "./preview.png" in cleaned
 
-    def test_strips_html_img_tag(self, R):
-        """``<img src="...">`` → stripped."""
+    def test_converts_html_img_tag_to_markdown_image(self, R):
+        """``<img src="...">`` → ``![](src)`` preserving URL for LLM."""
         text = 'before\n<img src="logo.png">\nafter'
         cleaned = R.clean_readme_for_llm(text)
-        assert "logo.png" not in cleaned
+        assert "![](logo.png)" in cleaned
+        assert "logo.png" in cleaned  # URL preserved for LLM extraction
 
     def test_widget_stripped_frontmatter_preserved(self, R):
         """Widget YAML stripped but ``base_model:`` kept."""
