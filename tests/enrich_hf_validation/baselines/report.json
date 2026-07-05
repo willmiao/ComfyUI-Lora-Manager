@@ -1,85 +1,85 @@
 {
   "metadata": {
-    "generated_at": "2026-07-05T09:35:35.049000",
-    "model_count": 44
+    "generated_at": "2026-07-06T00:01:38.362360",
+    "model_count": 46
   },
   "aggregate": {
-    "model_count": 44,
-    "success_count": 44,
+    "model_count": 46,
+    "success_count": 46,
     "fail_count": 0,
     "total_score": {
-      "mean": 68.6,
+      "mean": 69.0,
       "median": 70.0,
       "min": 30,
       "max": 90,
       "bins": {
-        "excellent_80+": 14,
-        "good_60_79": 19,
-        "fair_40_59": 9,
+        "excellent_80+": 16,
+        "good_60_79": 18,
+        "fair_40_59": 10,
         "poor_20_39": 2,
         "bad_0_19": 0
       }
     },
     "field_aggregates": {
       "base_model": {
-        "mean": 11.2,
-        "fill_rate_pct": 75.0,
+        "mean": 11.7,
+        "fill_rate_pct": 78.3,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 25.0
+        "empty_rate_pct": 21.7
       },
       "trigger_words": {
-        "mean": 8.5,
-        "fill_rate_pct": 56.8,
+        "mean": 8.8,
+        "fill_rate_pct": 58.7,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 43.2
+        "empty_rate_pct": 41.3
       },
       "short_description": {
-        "mean": 8.9,
-        "fill_rate_pct": 88.6,
+        "mean": 8.7,
+        "fill_rate_pct": 87.0,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 11.4
+        "empty_rate_pct": 13.0
       },
       "tags": {
         "mean": 14.3,
-        "fill_rate_pct": 95.5,
+        "fill_rate_pct": 95.7,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 4.5
+        "empty_rate_pct": 4.3
       },
       "tags_priority_coverage": {
         "mean": 3.9,
-        "fill_rate_pct": 70.5,
-        "partial_rate_pct": 15.9,
-        "empty_rate_pct": 13.6
+        "fill_rate_pct": 71.7,
+        "partial_rate_pct": 15.2,
+        "empty_rate_pct": 13.0
       },
       "notes": {
-        "mean": 4.0,
-        "fill_rate_pct": 79.5,
+        "mean": 3.8,
+        "fill_rate_pct": 76.1,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 20.5
+        "empty_rate_pct": 23.9
       },
       "usage_tips": {
-        "mean": 1.0,
-        "fill_rate_pct": 20.5,
+        "mean": 0.8,
+        "fill_rate_pct": 15.2,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 79.5
+        "empty_rate_pct": 84.8
       },
       "modelDescription_html": {
-        "mean": 9.5,
-        "fill_rate_pct": 95.5,
+        "mean": 9.6,
+        "fill_rate_pct": 95.7,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 4.5
+        "empty_rate_pct": 4.3
       },
       "preview_downloaded": {
-        "mean": 7.3,
-        "fill_rate_pct": 72.7,
+        "mean": 7.4,
+        "fill_rate_pct": 73.9,
         "partial_rate_pct": 0.0,
-        "empty_rate_pct": 27.3
+        "empty_rate_pct": 26.1
       }
     },
     "top_issues": [
       [
         "usage_tips is empty or invalid JSON",
-        35
+        39
       ],
       [
         "trigger_words are missing or contain only placeholders",
@@ -90,20 +90,20 @@
         12
       ],
       [
-        "base_model is empty or 'Unknown'",
-        10
-      ],
-      [
         "notes are too short or empty",
-        9
+        11
       ],
       [
-        "tags have low overlap with priority_tags (< 50%)",
-        5
+        "base_model is empty or 'Unknown'",
+        7
       ],
       [
         "short_description is too short or empty",
-        5
+        6
+      ],
+      [
+        "tags have low overlap with priority_tags (< 50%)",
+        4
       ],
       [
         "tags are missing, too few, or purely technical",
@@ -114,28 +114,36 @@
         2
       ],
       [
+        "base_model 'Tongyi-MAI/Z-Image-Turbo' not in SUPPORTED_BASE_MODELS",
+        1
+      ],
+      [
         "base_model 'Illustrious-xl-early-release-v0' not in SUPPORTED_BASE_MODELS",
+        1
+      ],
+      [
+        "base_model 'Pony SDXL' not in SUPPORTED_BASE_MODELS",
         1
       ]
     ],
     "confidence_distribution": {
-      "high": 13,
-      "medium": 19,
-      "low": 12,
+      "high": 14,
+      "medium": 21,
+      "low": 11,
       "": 0
     }
   },
   "timing": {
-    "total_wall_s": 489.8,
-    "mean_s": 11.1,
-    "median_s": 9.6,
-    "min_s": 6.0,
-    "max_s": 73.9
+    "total_wall_s": 543.7,
+    "mean_s": 11.8,
+    "median_s": 10.1,
+    "min_s": 6.3,
+    "max_s": 74.7
   },
   "per_model_scores": [
     {
       "repo_id": "k2styles/krea-2-cobalt-sky-anime-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.safetensors",
       "enrichment_success": true,
       "total_score": 90,
       "field_scores": {
@@ -156,19 +164,20 @@
         "trigger_words": [
           "cobalt sky anime style"
         ],
-        "short_description": "A Krea 2 Turbo LoRA that applies the cobalt sky anime style to generated images.",
+        "short_description": "A Krea 2 style LoRA that adds a cobalt sky anime aesthetic to images. Add the trigger 'cobalt sky anime style' at the end of your prompt.",
         "tags": [
-          "anime"
+          "anime",
+          "style"
         ],
-        "notes": "Add trigger word 'cobalt sky anime style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
-        "usage_tips": "{\"strength_min\": 1.0, \"strength_max\": 1.25}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.webp",
+        "notes": "Add trigger 'cobalt sky anime style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
+        "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "k2styles/krea-2-azure-gouache-daylight-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.safetensors",
       "enrichment_success": true,
       "total_score": 87,
       "field_scores": {
@@ -189,20 +198,20 @@
         "trigger_words": [
           "azure gouache daylight style"
         ],
-        "short_description": "A Krea 2 style LoRA that applies an azure gouache daylight painting aesthetic to images.",
+        "short_description": "A Krea 2 style LoRA that adds an azure gouache daylight painting aesthetic to images.",
         "tags": [
           "style",
           "painterly"
         ],
         "notes": "Add the trigger 'azure gouache daylight style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
         "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "TheDivergentAI/krea2-turbo-distill-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.safetensors",
       "enrichment_success": true,
       "total_score": 70,
       "field_scores": {
@@ -220,24 +229,24 @@
         "trigger_words are missing or contain only placeholders",
         "usage_tips is empty or invalid JSON"
       ],
-      "confidence_from_llm": "high",
+      "confidence_from_llm": "medium",
       "raw_values": {
         "base_model": "Krea 2",
         "trigger_words": [],
-        "short_description": "Post-hoc LoRA adapters extracted from the weight delta between Krea-2 Turbo and Krea-2 Raw, approximating turbo behavior on the Raw base model using low-rank SVD factorization.",
+        "short_description": "Post-hoc LoRA adapters extracted from the weight delta between Krea-2-Turbo and Krea-2-Raw, approximating turbo behavior on the Raw base model using low-rank SVD factorization.",
         "tags": [
           "realistic",
           "style"
         ],
-        "notes": "Load Krea-2-Raw transformer with ComfyUI or HuggingFace diffusers. Apply the LoRA file and generate using turbo-style settings: 8 steps, CFG scale of 0, timestep shift mu of 1.15.",
+        "notes": "Apply LoRA on Krea-2-Raw with turbo-style settings: 8 steps, CFG=0, mu=1.15.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "DeverStyle/Krea2-Loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.safetensors",
       "enrichment_success": true,
       "total_score": 65,
       "field_scores": {
@@ -257,21 +266,21 @@
       ],
       "confidence_from_llm": "medium",
       "raw_values": {
-        "base_model": "Flux.1 Krea",
+        "base_model": "Krea 2",
         "trigger_words": [
           "n0t_f4l"
         ],
-        "short_description": "An example LoRA demonstrating poor training practices, trained on only 8 images with excessive steps and low learning rate.",
+        "short_description": "Example LoRA demonstrating poor training parameters for style adaptation, trained on only 8 images with suboptimal settings (1000 steps / LR 0.0001). Not intended for production use.",
         "tags": [],
-        "notes": "Use trigger word 'n0t_f4l' for both models. This is an example repository showing bad training parameters (1000 steps / LR 0.0001) and should not be used as a reference.",
+        "notes": "This is a demonstration model showing bad training practices (trained on only 8 images) and should not be used or copied. Use trigger word 'n0t_f4l'.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "Komorebi1995/krea2-raw-jpaf-celpaint-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.safetensors",
       "enrichment_success": true,
       "total_score": 90,
       "field_scores": {
@@ -292,34 +301,34 @@
         "trigger_words": [
           "JPAF_CELPAINT."
         ],
-        "short_description": "A LoRA trained on Krea2 Raw for generating clean celpaint-style images with restrained colors, clear lines, and life-like backgrounds.",
+        "short_description": "A LoRA trained on Krea2 Raw for generating clean celpaint style images with restrained colors, clear lines, and life-like backgrounds.",
         "tags": [
-          "style"
+          "style",
+          "realistic"
         ],
-        "notes": "Use trigger word 'JPAF_CELPAINT.' at the start of prompts. Recommended strength is 0.6 for this model version (step 1500 final). Avoid requesting readable text or logos in prompts.",
-        "usage_tips": "{\"strength\": 0.6}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.webp",
+        "notes": "Use the trigger word 'JPAF_CELPAINT.' at the start of your prompt. Recommended strength is 0.8 for balanced style and brightness (step 750), or 0.6 as a softer alternative. Avoid requesting readable text, logos, or brand names in prompts.",
+        "usage_tips": "{\"strength\":0.6}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "artificialguybr/pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5",
-      "model_path": "/tmp/hf_enrich_validation_full/models/artificialguybr__pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/artificialguybr__pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
       "enrichment_success": true,
-      "total_score": 70,
+      "total_score": 72,
       "field_scores": {
         "base_model": 15,
         "trigger_words": 15,
         "short_description": 10,
         "tags": 15,
-        "tags_priority_coverage": 0,
+        "tags_priority_coverage": 2,
         "notes": 5,
         "usage_tips": 0,
         "modelDescription_html": 10,
         "preview_downloaded": 0
       },
       "issues": [
-        "tags have low overlap with priority_tags (< 50%)",
         "usage_tips is empty or invalid JSON",
         "preview image not downloaded (URL missing or download failed)"
       ],
@@ -329,11 +338,12 @@
         "trigger_words": [
           "Pixel Art"
         ],
-        "short_description": "A LoRA designed to generate high-quality pixel art images using Stable Diffusion 1.5, suitable for creating game assets and stylized illustrations.",
+        "short_description": "A LoRA for Stable Diffusion 1.5 that generates pixel art images with a distinct PixArFK style, suitable for creating game assets and character illustrations.",
         "tags": [
-          "pixelart"
+          "pixel",
+          "style"
         ],
-        "notes": "Use the trigger word 'Pixel Art' to activate this LoRA. The model is optimized for generating pixel art style images.",
+        "notes": "Use with SD 1.5 base model. Trigger word is 'Pixel Art'. Generates pixel art style images.",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -341,7 +351,7 @@
     },
     {
       "repo_id": "Shakker-Labs/FLUX.1-dev-LoRA-Logo-Design",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.safetensors",
       "enrichment_success": true,
       "total_score": 90,
       "field_scores": {
@@ -364,21 +374,20 @@
           "logo",
           "Minimalist"
         ],
-        "short_description": "A LoRA model trained on FLUX.1-dev for logo design, featuring minimalist styles and text-to-image capabilities.",
+        "short_description": "A LoRA trained on FLUX.1-dev for logo design, utilizing trigger words like 'wablogo', 'logo', and 'Minimalist' to generate minimalist logos.",
         "tags": [
           "style",
-          "objects",
-          "assets"
+          "objects"
         ],
-        "notes": "Use trigger words 'wablogo', 'logo', or 'Minimalist' with a recommended scale of 0.8 in diffusers.",
+        "notes": "Use the LoRA with trigger words: wablogo, logo, Minimalist. Recommended scale is 0.8 in diffusers.",
         "usage_tips": "{\"strength\": 0.8}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "glif-loradex-trainer/bingbangboom_flux_surf",
-      "model_path": "/tmp/hf_enrich_validation_full/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.safetensors",
       "enrichment_success": true,
       "total_score": 65,
       "field_scores": {
@@ -402,17 +411,17 @@
         "trigger_words": [
           "SRFNGV01"
         ],
-        "short_description": "A LoRA model trained on Flux.1-dev for generating images using the trigger word SRFNGV01.",
+        "short_description": "A LoRA model trained on FLUX.1-dev, designed to be triggered with the word 'SRFNGV01' for image generation.",
         "tags": [],
-        "notes": "Use the trigger word 'SRFNGV01' to activate this LoRA for image generation. The model was trained using AI Toolkit by Ostris under the Glif Loradex program.",
+        "notes": "Use trigger word: SRFNGV01. Model is trained with AI Toolkit by Ostris under the Glif Loradex program.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "prithivMLmods/Ton618-Epic-Realism-Flux-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.safetensors",
       "enrichment_success": true,
       "total_score": 85,
       "field_scores": {
@@ -429,33 +438,34 @@
       "issues": [
         "usage_tips is empty or invalid JSON"
       ],
-      "confidence_from_llm": "medium",
+      "confidence_from_llm": "high",
       "raw_values": {
         "base_model": "Flux.1 D",
         "trigger_words": [
           "Epic Realism"
         ],
-        "short_description": "A LoRA model for Flux that generates images with an epic realism style, trained on a small dataset of high-resolution images.",
+        "short_description": "A LoRA model for Flux that generates images with an epic realism style.",
         "tags": [
-          "realistic"
+          "realistic",
+          "style"
         ],
-        "notes": "Use the trigger word 'Epic Realism' to activate the style. The model is currently in training and may contain artifacts.",
+        "notes": "Use the trigger word 'Epic Realism' to activate this LoRA. The model is currently in training and may contain artifacts.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "prithivMLmods/Fashion-Hut-Modeling-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.safetensors",
       "enrichment_success": true,
-      "total_score": 83,
+      "total_score": 85,
       "field_scores": {
         "base_model": 15,
         "trigger_words": 15,
         "short_description": 10,
         "tags": 15,
-        "tags_priority_coverage": 3,
+        "tags_priority_coverage": 5,
         "notes": 5,
         "usage_tips": 0,
         "modelDescription_html": 10,
@@ -470,21 +480,20 @@
         "trigger_words": [
           "Modeling of"
         ],
-        "short_description": "A LoRA model for Flux.1-dev designed to generate modeling photos, specifically trained on high-resolution fashion imagery.",
+        "short_description": "A LoRA model for generating modeling photos with realistic fashion subjects, trained on FLUX.1-dev.",
         "tags": [
           "clothing",
-          "realistic",
-          "photography"
+          "realistic"
         ],
-        "notes": "Use the trigger word 'Modeling of' for image generation. The model is currently in training phase and may contain artifacts.",
+        "notes": "Use the trigger word 'Modeling of' to activate the LoRA. The model is currently in training phase and may contain artifacts.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "prithivMLmods/Retro-Pixel-Flux-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.safetensors",
       "enrichment_success": true,
       "total_score": 80,
       "field_scores": {
@@ -502,26 +511,26 @@
         "tags have low overlap with priority_tags (< 50%)",
         "usage_tips is empty or invalid JSON"
       ],
-      "confidence_from_llm": "high",
+      "confidence_from_llm": "medium",
       "raw_values": {
         "base_model": "Flux.1 D",
         "trigger_words": [
           "Retro Pixel"
         ],
-        "short_description": "A LoRA model for Flux that generates retro pixel art style images.",
+        "short_description": "A LoRA model designed to add a retro pixel art style to images generated by Flux.",
         "tags": [
           "retro",
           "pixelart"
         ],
-        "notes": "Use the trigger word 'Retro Pixel' to activate the style. Recommended resolution is 1024x1024.",
+        "notes": "Use the trigger word 'Retro Pixel' when generating. The model is currently in training phase and may contain artifacts.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "D1-3105/HiDream-E1-Full_lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.safetensors",
       "enrichment_success": true,
       "total_score": 55,
       "field_scores": {
@@ -551,13 +560,13 @@
         ],
         "notes": "",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "renderartist/Classic-Painting-Z-Image-Turbo-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
       "enrichment_success": true,
       "total_score": 70,
       "field_scores": {
@@ -579,23 +588,24 @@
       "raw_values": {
         "base_model": "ZImageTurbo",
         "trigger_words": [],
-        "short_description": "A LoRA trained on public domain masterpieces from the Art Institute of Chicago to reproduce early painting styles with sharp textures, realistic brushwork, and dramatic light/shadow interplay.",
+        "short_description": "Immerse your images in the rich textures and timeless beauty of art history with Classic Painting Z. This LoRA has been trained on a curated selection of public domain masterpieces from the Art Institute of Chicago's esteemed collection, capturing the subtle nuances and defining characteristics of early paintings.",
         "tags": [
+          "realistic",
           "style"
         ],
-        "notes": "This LoRA is trained at 1750 steps and focuses on aesthetic textures rather than specific artist names. Ideal for generating portraits with Old Master gravitas, lush landscapes, intricate still lifes, or surreal classical concepts.",
+        "notes": "This LoRA is trained on public domain masterpieces from the Art Institute of Chicago to capture early painting styles. It excels at reproducing delicate brushwork, authentic canvas textures, and dramatic light/shadow interplay. Ideal for portraits with Old Master gravitas, lush landscapes, intricate still life, and surreal concepts blending classical aesthetics.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "DeverStyle/Z-Image-loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/DeverStyle__Z-Image-loras/z_image_archer_style.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Z-Image-loras/z_image_archer_style.safetensors",
       "enrichment_success": true,
-      "total_score": 70,
+      "total_score": 55,
       "field_scores": {
-        "base_model": 15,
+        "base_model": 0,
         "trigger_words": 0,
         "short_description": 10,
         "tags": 15,
@@ -606,30 +616,31 @@
         "preview_downloaded": 10
       },
       "issues": [
+        "base_model 'Tongyi-MAI/Z-Image-Turbo' not in SUPPORTED_BASE_MODELS",
         "trigger_words are missing or contain only placeholders",
         "usage_tips is empty or invalid JSON"
       ],
       "confidence_from_llm": "medium",
       "raw_values": {
-        "base_model": "ZImageTurbo",
+        "base_model": "Tongyi-MAI/Z-Image-Turbo",
         "trigger_words": [],
-        "short_description": "Archer style LoRA for Z-Image Turbo, requiring no trigger word.",
+        "short_description": "A LoRA model that applies the Archer style to Z-Image generations. No trigger word is needed.",
         "tags": [
           "style"
         ],
-        "notes": "No trigger word needed. Samples available at samples/archer.png",
+        "notes": "No specific usage tips or parameters were found in the README for this model. The style is applied without a trigger word.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/DeverStyle__Z-Image-loras/z_image_archer_style.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Z-Image-loras/z_image_archer_style.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "deadman44/Z-Image_LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.safetensors",
       "enrichment_success": true,
-      "total_score": 40,
+      "total_score": 55,
       "field_scores": {
-        "base_model": 0,
+        "base_model": 15,
         "trigger_words": 0,
         "short_description": 0,
         "tags": 15,
@@ -640,7 +651,6 @@
         "preview_downloaded": 10
       },
       "issues": [
-        "base_model is empty or 'Unknown'",
         "trigger_words are missing or contain only placeholders",
         "short_description is too short or empty",
         "notes are too short or empty",
@@ -648,7 +658,7 @@
       ],
       "confidence_from_llm": "low",
       "raw_values": {
-        "base_model": "Unknown",
+        "base_model": "ZImageTurbo",
         "trigger_words": [],
         "short_description": "",
         "tags": [
@@ -656,13 +666,13 @@
         ],
         "notes": "",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "zyuzuguldu/vton-lora-linen",
-      "model_path": "/tmp/hf_enrich_validation_full/models/zyuzuguldu__vton-lora-linen/pytorch_lora_weights.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/zyuzuguldu__vton-lora-linen/pytorch_lora_weights.safetensors",
       "enrichment_success": true,
       "total_score": 75,
       "field_scores": {
@@ -691,7 +701,7 @@
           "clothing",
           "realistic"
         ],
-        "notes": "This is a LoRA model for virtual try-on (VTON) tasks. It adds linen fabric texture to garments. Load using diffusers library with the specified weight name.",
+        "notes": "Use this LoRA with a base SDXL model to generate images of garments featuring linen fabric textures. The instance prompt 'a garment with linen fabric texture' can be used as an activation phrase.",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -699,7 +709,7 @@
     },
     {
       "repo_id": "svntax-dev/pixel_spritesheet_4walk_small_lora_v1",
-      "model_path": "/tmp/hf_enrich_validation_full/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
       "enrichment_success": true,
       "total_score": 67,
       "field_scores": {
@@ -726,15 +736,15 @@
           "pixel",
           "character"
         ],
-        "notes": "Use with FLUX.2 Klein base 4B workflows from ComfyUI (both text-to-image and edit base workflow work). Images should be 512x512 because that's the size of the spritesheets used in training. To get pixel-perfect images, downscale by a factor of 4 using k-centroid scaling before upsampling back to original resolution.",
+        "notes": "Use with FLUX.2 Klein base 4B workflows from ComfyUI (both text-to-image and edit workflows work). Images should be generated at 512x512 resolution as that is the size of spritesheets used in training. For pixel-perfect results, downscale by a factor of 4 to 128x128 using k-centroid scaling before upsampling back to 512x512.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "Haruka041/z-image-anime-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.safetensors",
       "enrichment_success": true,
       "total_score": 55,
       "field_scores": {
@@ -764,13 +774,13 @@
         ],
         "notes": "",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "systms/SYSTMS-INFL8-LoRA-Wan22",
-      "model_path": "/tmp/hf_enrich_validation_full/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
       "enrichment_success": true,
       "total_score": 85,
       "field_scores": {
@@ -787,25 +797,26 @@
       "issues": [
         "usage_tips is empty or invalid JSON"
       ],
-      "confidence_from_llm": "low",
+      "confidence_from_llm": "medium",
       "raw_values": {
         "base_model": "Wan Video 14B i2v 720p",
         "trigger_words": [
           "INFL8"
         ],
-        "short_description": "A LoRA model for the Wan AI image generation system, designed to be triggered with 'INFL8' prompts.",
+        "short_description": "SYSTMS-INFL8-LoRA-Wan22 is a LoRA model designed for the Wan-AI/Wan2.2-I2V-A14B base, intended to enhance image generation with specific instance prompts.",
         "tags": [
-          "realistic"
+          "realistic",
+          "style"
         ],
-        "notes": "Use the trigger word INFL8 for image generation. This is a LoRA model built on top of Wan AI's architecture.",
+        "notes": "Use the trigger word `INFL8` when generating images. This LoRA is trained on top of Wan-AI/Wan2.2-I2V-A14B.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "crafiq/flux-2-klein-9b-360-panorama-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.safetensors",
       "enrichment_success": true,
       "total_score": 85,
       "field_scores": {
@@ -826,23 +837,21 @@
       "raw_values": {
         "base_model": "Flux.2 Klein 9B-base",
         "trigger_words": [
-          "Equirectangular 360 panorama",
-          "Convert to an Equirectangular 360 panorama"
+          "Equirectangular 360 panorama"
         ],
-        "short_description": "A LoRA designed for Flux that generates equirectangular 360-degree panoramas.",
+        "short_description": "A LoRA for Flux that enables the generation of Equirectangular 360 panoramas.",
         "tags": [
-          "realistic",
-          "background"
+          "realistic"
         ],
-        "notes": "Use trigger words 'Equirectangular 360 panorama' or 'Convert to an Equirectangular 360 panorama'.",
+        "notes": "Use the trigger word 'Equirectangular 360 panorama' or 'Convert to an Equirectangular 360 panorama' when generating images.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "Leon1000/pixel_spritesheet_4walk_small_lora_v1",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
       "enrichment_success": true,
       "total_score": 67,
       "field_scores": {
@@ -869,15 +878,15 @@
           "pixel",
           "character"
         ],
-        "notes": "Use FLUX.2 Klein base 4B workflows from ComfyUI (text-to-image or edit). Images should be generated at 512x512 and downscale by a factor of 4 to get pixel-perfect results using k-centroid scaling.",
+        "notes": "Use with FLUX.2 Klein base 4B workflows from ComfyUI (both text-to-image and edit workflows work). Images should be generated at 512x512 resolution as that is the training size of the spritesheets used in training. For pixel-perfect images, downscale by a factor of 4 to 128x128 using k-centroid scaling before upsampling back to 512x512.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "Muapi/pov-missionary-legs-together-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.safetensors",
       "enrichment_success": true,
       "total_score": 70,
       "field_scores": {
@@ -900,23 +909,22 @@
         "base_model": "Illustrious-xl-early-release-v0",
         "trigger_words": [
           "sex",
-          "missionary"
+          "missionary",
+          "pov"
         ],
-        "short_description": "A LoRA model for generating POV missionary-style images with legs together, trained on the Illustrious base model.",
+        "short_description": "POV Missionary-Leg Together LoRA trained on Illustrious base model for generating missionary position images with legs together in a point-of-view perspective.",
         "tags": [
-          "realistic",
-          "poses",
-          "clothing"
+          "realistic"
         ],
-        "notes": "Use this LoRA to generate POV missionary-style images with legs together. The trigger words are 'sex' and 'missionary'. Requires a MUAPI key for access.",
+        "notes": "Use trigger words: sex, missionary, pov",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "ostris/ideogram_4_unconditional_lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ostris__ideogram_4_unconditional_lora/ideogram_4_unconditional_lora_r16.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ostris__ideogram_4_unconditional_lora/ideogram_4_unconditional_lora_r16.safetensors",
       "enrichment_success": true,
       "total_score": 60,
       "field_scores": {
@@ -939,11 +947,11 @@
       "raw_values": {
         "base_model": "Ideogram 4.0",
         "trigger_words": [],
-        "short_description": "A lightweight LoRA that extracts the difference between Ideogram 4's conditional and unconditional model weights, tuned with student teacher training to serve as a replacement for the full unconditional model during inference.",
+        "short_description": "A lightweight LoRA that approximates the unconditional model weights of Ideogram 4, trained to be used as a replacement for the full unconditional model during inference.",
         "tags": [
           "realistic"
         ],
-        "notes": "This LoRA can be used in conditional Ideogram 4 models to replace the full unconditional model during inference. It was originally trained for use with Ostris AI Toolkit.",
+        "notes": "This LoRA is designed to serve as a lightweight alternative to the full unconditional Ideogram 4 model. It was initialized by extracting differences between conditional and unconditional weights and tuned using student-teacher training on real data.",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -951,7 +959,113 @@
     },
     {
       "repo_id": "ilkerzgi/krea-2-bleached-surreal-uncanny-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.safetensors",
+      "enrichment_success": true,
+      "total_score": 85,
+      "field_scores": {
+        "base_model": 15,
+        "trigger_words": 15,
+        "short_description": 10,
+        "tags": 15,
+        "tags_priority_coverage": 5,
+        "notes": 5,
+        "usage_tips": 0,
+        "modelDescription_html": 10,
+        "preview_downloaded": 10
+      },
+      "issues": [
+        "usage_tips is empty or invalid JSON"
+      ],
+      "confidence_from_llm": "high",
+      "raw_values": {
+        "base_model": "Krea 2",
+        "trigger_words": [
+          "bleached surreal uncanny style"
+        ],
+        "short_description": "A Krea 2 style LoRA that adds a bleached surreal uncanny aesthetic when the trigger phrase is used in prompts.",
+        "tags": [
+          "style"
+        ],
+        "notes": "Add the trigger 'bleached surreal uncanny style' to the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
+        "usage_tips": "{}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.webp",
+        "has_modelDescription": true
+      }
+    },
+    {
+      "repo_id": "ilkerzgi/krea-2-azure-surreal-collage-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.safetensors",
+      "enrichment_success": true,
+      "total_score": 88,
+      "field_scores": {
+        "base_model": 15,
+        "trigger_words": 15,
+        "short_description": 10,
+        "tags": 15,
+        "tags_priority_coverage": 3,
+        "notes": 5,
+        "usage_tips": 5,
+        "modelDescription_html": 10,
+        "preview_downloaded": 10
+      },
+      "issues": [],
+      "confidence_from_llm": "high",
+      "raw_values": {
+        "base_model": "Krea 2",
+        "trigger_words": [
+          "azure surreal collage style"
+        ],
+        "short_description": "A Krea 2 style LoRA that adds an azure surreal collage aesthetic to images. Add the trigger phrase 'azure surreal collage style' at the end of your prompt.",
+        "tags": [
+          "style",
+          "realistic",
+          "cinematic"
+        ],
+        "notes": "Use with base model krea/Krea-2-Turbo. Add trigger 'azure surreal collage style' to the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
+        "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.webp",
+        "has_modelDescription": true
+      }
+    },
+    {
+      "repo_id": "ilkerzgi/krea-2-airy-gouache-minimalist-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.safetensors",
+      "enrichment_success": true,
+      "total_score": 82,
+      "field_scores": {
+        "base_model": 15,
+        "trigger_words": 15,
+        "short_description": 10,
+        "tags": 15,
+        "tags_priority_coverage": 2,
+        "notes": 5,
+        "usage_tips": 0,
+        "modelDescription_html": 10,
+        "preview_downloaded": 10
+      },
+      "issues": [
+        "usage_tips is empty or invalid JSON"
+      ],
+      "confidence_from_llm": "high",
+      "raw_values": {
+        "base_model": "Krea 2",
+        "trigger_words": [
+          "airy gouache minimalist style"
+        ],
+        "short_description": "A Krea 2 style LoRA that adds an airy gouache minimalist aesthetic to generated images.",
+        "tags": [
+          "style",
+          "illustration"
+        ],
+        "notes": "Add the trigger 'airy gouache minimalist style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
+        "usage_tips": "{}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.webp",
+        "has_modelDescription": true
+      }
+    },
+    {
+      "repo_id": "k2styles/krea-2-airy-watercolor-chibi-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.safetensors",
       "enrichment_success": true,
       "total_score": 90,
       "field_scores": {
@@ -970,137 +1084,32 @@
       "raw_values": {
         "base_model": "Krea 2",
         "trigger_words": [
-          "bleached surreal uncanny style"
-        ],
-        "short_description": "A Krea 2 style LoRA that adds a bleached, surreal, and uncanny aesthetic to generated images.",
-        "tags": [
-          "style"
-        ],
-        "notes": "Add the trigger 'bleached surreal uncanny style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
-        "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.webp",
-        "has_modelDescription": true
-      }
-    },
-    {
-      "repo_id": "ilkerzgi/krea-2-azure-surreal-collage-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.safetensors",
-      "enrichment_success": true,
-      "total_score": 87,
-      "field_scores": {
-        "base_model": 15,
-        "trigger_words": 15,
-        "short_description": 10,
-        "tags": 15,
-        "tags_priority_coverage": 2,
-        "notes": 5,
-        "usage_tips": 5,
-        "modelDescription_html": 10,
-        "preview_downloaded": 10
-      },
-      "issues": [],
-      "confidence_from_llm": "high",
-      "raw_values": {
-        "base_model": "Krea 2",
-        "trigger_words": [
-          "azure surreal collage style"
-        ],
-        "short_description": "A Krea 2 Turbo LoRA that applies an Azure Surreal Collage art style to images.",
-        "tags": [
-          "style",
-          "cinematic"
-        ],
-        "notes": "Add the trigger 'azure surreal collage style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
-        "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.webp",
-        "has_modelDescription": true
-      }
-    },
-    {
-      "repo_id": "ilkerzgi/krea-2-airy-gouache-minimalist-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.safetensors",
-      "enrichment_success": true,
-      "total_score": 87,
-      "field_scores": {
-        "base_model": 15,
-        "trigger_words": 15,
-        "short_description": 10,
-        "tags": 15,
-        "tags_priority_coverage": 2,
-        "notes": 5,
-        "usage_tips": 5,
-        "modelDescription_html": 10,
-        "preview_downloaded": 10
-      },
-      "issues": [],
-      "confidence_from_llm": "high",
-      "raw_values": {
-        "base_model": "Krea 2",
-        "trigger_words": [
-          "airy gouache minimalist style"
-        ],
-        "short_description": "A Krea 2 style LoRA that applies an airy gouache minimalist aesthetic to generated images.",
-        "tags": [
-          "style",
-          "illustration"
-        ],
-        "notes": "Add the trigger 'airy gouache minimalist style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
-        "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.webp",
-        "has_modelDescription": true
-      }
-    },
-    {
-      "repo_id": "k2styles/krea-2-airy-watercolor-chibi-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.safetensors",
-      "enrichment_success": true,
-      "total_score": 87,
-      "field_scores": {
-        "base_model": 15,
-        "trigger_words": 15,
-        "short_description": 10,
-        "tags": 15,
-        "tags_priority_coverage": 2,
-        "notes": 5,
-        "usage_tips": 5,
-        "modelDescription_html": 10,
-        "preview_downloaded": 10
-      },
-      "issues": [
-        "tags have low overlap with priority_tags (< 50%)"
-      ],
-      "confidence_from_llm": "high",
-      "raw_values": {
-        "base_model": "Krea 2",
-        "trigger_words": [
           "airy watercolor chibi style"
         ],
-        "short_description": "A Krea 2 style LoRA that adds an airy watercolor chibi aesthetic when the trigger phrase is used.",
+        "short_description": "A Krea 2 style LoRA that adds an airy watercolor chibi aesthetic to images when the trigger phrase is added to prompts.",
         "tags": [
-          "chibi",
-          "watercolor",
-          "anime",
+          "character",
           "style",
-          "illustration"
+          "toon"
         ],
-        "notes": "Add the trigger 'airy watercolor chibi style' to your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
+        "notes": "Add the trigger 'airy watercolor chibi style' at the end of your prompt. Recommended LoRA scale is between 1.0 and 1.25.",
         "usage_tips": "{\"strength_min\":1.0,\"strength_max\":1.25}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "TakeAswing/sdxl-lora-lofi",
-      "model_path": "/tmp/hf_enrich_validation_full/models/TakeAswing__sdxl-lora-lofi/pytorch_lora_weights.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/TakeAswing__sdxl-lora-lofi/pytorch_lora_weights.safetensors",
       "enrichment_success": true,
-      "total_score": 55,
+      "total_score": 50,
       "field_scores": {
         "base_model": 15,
         "trigger_words": 0,
         "short_description": 10,
         "tags": 15,
         "tags_priority_coverage": 0,
-        "notes": 5,
+        "notes": 0,
         "usage_tips": 0,
         "modelDescription_html": 10,
         "preview_downloaded": 0
@@ -1108,6 +1117,7 @@
       "issues": [
         "trigger_words are missing or contain only placeholders",
         "tags have low overlap with priority_tags (< 50%)",
+        "notes are too short or empty",
         "usage_tips is empty or invalid JSON",
         "preview image not downloaded (URL missing or download failed)"
       ],
@@ -1115,11 +1125,11 @@
       "raw_values": {
         "base_model": "SDXL 1.0",
         "trigger_words": [],
-        "short_description": "A LoRA adapter trained on Stable Diffusion XL to create lo-fi style images.",
+        "short_description": "A LoRA adapter trained on Stable Diffusion XL for generating lo-fi style images.",
         "tags": [
           "lofi"
         ],
-        "notes": "This is a LoRA adapter for SDXL designed to produce lo-fi aesthetic images.",
+        "notes": "",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -1127,7 +1137,7 @@
     },
     {
       "repo_id": "heville/anna-lora-krea2",
-      "model_path": "/tmp/hf_enrich_validation_full/models/heville__anna-lora-krea2/pytorch_lora_weights.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/heville__anna-lora-krea2/pytorch_lora_weights.safetensors",
       "enrichment_success": true,
       "total_score": 85,
       "field_scores": {
@@ -1154,15 +1164,15 @@
         "tags": [
           "character"
         ],
-        "notes": "Use the trigger token ANNA_LORA to invoke this character concept. The model is trained on Krea 2 RAW and demonstrated on Krea 2 Turbo with samples generated using 8 steps.",
+        "notes": "Use the token ANNA_LORA to invoke this character concept. The model is trained on Krea 2 RAW and demonstrated with samples generated using Krea 2 Turbo at 8 steps.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/heville__anna-lora-krea2/pytorch_lora_weights.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/heville__anna-lora-krea2/pytorch_lora_weights.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "Brioch/krea2_loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Brioch__krea2_loras/mashap_ohwx_woman_krea2.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Brioch__krea2_loras/mashap_ohwx_woman_krea2.safetensors",
       "enrichment_success": true,
       "total_score": 35,
       "field_scores": {
@@ -1200,11 +1210,11 @@
     },
     {
       "repo_id": "hr16/Miwano-Rag-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/hr16__Miwano-Rag-LoRA/Miwano-Rag-epoch10.lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/hr16__Miwano-Rag-LoRA/Miwano-Rag-epoch10.lora.safetensors",
       "enrichment_success": true,
-      "total_score": 60,
+      "total_score": 75,
       "field_scores": {
-        "base_model": 0,
+        "base_model": 15,
         "trigger_words": 15,
         "short_description": 10,
         "tags": 15,
@@ -1215,22 +1225,21 @@
         "preview_downloaded": 0
       },
       "issues": [
-        "base_model is empty or 'Unknown'",
         "usage_tips is empty or invalid JSON",
         "preview image not downloaded (URL missing or download failed)"
       ],
-      "confidence_from_llm": "low",
+      "confidence_from_llm": "medium",
       "raw_values": {
-        "base_model": "Unknown",
+        "base_model": "Kolors",
         "trigger_words": [
-          "masterpiece",
-          "best quality"
+          "masterpiece"
         ],
-        "short_description": "This is a LoRA model trained using Kanianime as the base, designed for anime-style image generation.",
+        "short_description": "A LoRA model trained on Kani-anime base to generate anime-style images, particularly featuring characters like '1girl'. Use prompts such as 'art by Miwano-Rag' for best results.",
         "tags": [
-          "anime"
+          "anime",
+          "character"
         ],
-        "notes": "Use prompts like 'masterpiece, best quality, 1girl, art by Miwano-Rag'.",
+        "notes": "Use prompts like 'masterpiece, best quality, 1girl, art by Miwano-Rag' to generate anime-style images. The model is a LoRA trained on the Kani-anime base.",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -1238,7 +1247,7 @@
     },
     {
       "repo_id": "ikuseiso/Personal_Lora_collections",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ikuseiso__Personal_Lora_collections/vergil_devil_may_cry.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ikuseiso__Personal_Lora_collections/vergil_devil_may_cry.safetensors",
       "enrichment_success": true,
       "total_score": 30,
       "field_scores": {
@@ -1276,7 +1285,7 @@
     },
     {
       "repo_id": "Tanger/LoraByTanger",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Tanger__LoraByTanger/(v4)layila-000005.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Tanger__LoraByTanger/(v4)layila-000005.safetensors",
       "enrichment_success": true,
       "total_score": 55,
       "field_scores": {
@@ -1299,19 +1308,20 @@
       "raw_values": {
         "base_model": "Unknown",
         "trigger_words": [],
-        "short_description": "A LoRA model trained on Genshin Impact character Layla, designed for use with Stable Diffusion to generate images of the specific character.",
+        "short_description": "A LoRA model trained on Genshin Impact character Layla, designed to help generate images of this specific character with various outfits and styles.",
         "tags": [
-          "character"
+          "character",
+          "anime"
         ],
-        "notes": "Use this LoRA model trained on Genshin Impact's Layla. To ensure generalization (e.g., changing clothes), reduce the weight slightly. If original clothing cannot be removed, add corresponding tags to the negative prompt. Adjust CFG for better image quality; different base models have suitable intervals.",
+        "notes": "Use the LoRA at an appropriate weight to ensure generalization ability for changing clothes. If original clothing cannot be eliminated, add corresponding tags to negative prompts. Adjust CFG scale beneficially to improve picture quality.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Tanger__LoraByTanger/(v4)layila-000005.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Tanger__LoraByTanger/(v4)layila-000005.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "DS-Archive/ds-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/DS-Archive__ds-LoRA/dsharu-v2_lc.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/DS-Archive__ds-LoRA/dsharu-v2_lc.safetensors",
       "enrichment_success": true,
       "total_score": 60,
       "field_scores": {
@@ -1336,12 +1346,12 @@
         "trigger_words": [
           "dsharu"
         ],
-        "short_description": "A LoRA model for Stable Diffusion 1.5 featuring Haru Okumura from Persona 5, available in base and Noir outfit variations.",
+        "short_description": "A LoRA model for Stable Diffusion 1.5 featuring Haru Okumura from Persona 5, with variations including the base outfit and Noir variant.",
         "tags": [
           "character",
           "anime"
         ],
-        "notes": "This model is a LoRA for Stable Diffusion 1.5 featuring Haru Okumura from Persona 5. Use the trigger word 'dsharu' to activate the character features.",
+        "notes": "This model is a LoRA for Stable Diffusion 1.5 featuring Haru Okumura from Persona 5. Use the trigger word 'dsharu' to activate the base outfit (brown hair, short hair, brown eyes). For the Noir variant, use 'dsnoir'. Style modifiers can be added as desired.",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -1349,7 +1359,7 @@
     },
     {
       "repo_id": "soknife/loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/soknife__loras/irys-regular-subject-more.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/soknife__loras/irys-regular-subject-more.safetensors",
       "enrichment_success": true,
       "total_score": 70,
       "field_scores": {
@@ -1367,25 +1377,25 @@
         "base_model is empty or 'Unknown'",
         "usage_tips is empty or invalid JSON"
       ],
-      "confidence_from_llm": "medium",
+      "confidence_from_llm": "low",
       "raw_values": {
         "base_model": "Unknown",
         "trigger_words": [
           "irys"
         ],
-        "short_description": "A LoRA for generating images of Irys from Hololive, a VTuber character.",
+        "short_description": "A LoRA for generating images of Irys, a character from Hololive. The model uses medium strength with weight set to 1.",
         "tags": [
           "character"
         ],
-        "notes": "Use the keyword 'irys (hololive)' to generate images of this specific VTuber character.",
+        "notes": "Use the keyword 'irys' for generation. The model is a LoRA that can be applied with medium strength (weight set to 1). Stronger and weaker versions are also available.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/soknife__loras/irys-regular-subject-more.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/soknife__loras/irys-regular-subject-more.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "prompthero/openjourney-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prompthero__openjourney-lora/openjourneyLora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prompthero__openjourney-lora/openjourneyLora.safetensors",
       "enrichment_success": true,
       "total_score": 75,
       "field_scores": {
@@ -1405,15 +1415,15 @@
       ],
       "confidence_from_llm": "medium",
       "raw_values": {
-        "base_model": "SD 2.1",
+        "base_model": "SD 1.5 LCM",
         "trigger_words": [
           "sksdog"
         ],
-        "short_description": "Openjourney LoRA adaptation weights for Openjourney, a text-to-image model trained by JHawkk.",
+        "short_description": "Openjourney LoRA adaptation weights for Openjourney, trained by JHawkk.",
         "tags": [
           "anime"
         ],
-        "notes": "This is an LoRA for Openjourney. In auto1111 webui: copy file to models/lora folder and adjust weight (default :1 may be too high).",
+        "notes": "Use in auto1111 WebUI. Copy file to stable-diffusion-webui/models/lora and select the LoRA with a weight lower than default (default :1 is usually too high).",
         "usage_tips": "{}",
         "preview_url": "",
         "has_modelDescription": true
@@ -1421,7 +1431,7 @@
     },
     {
       "repo_id": "Banano/banchan-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Banano__banchan-lora/Bananochan-PonySDXL-v2.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Banano__banchan-lora/Bananochan-PonySDXL-v2.safetensors",
       "enrichment_success": true,
       "total_score": 40,
       "field_scores": {
@@ -1436,7 +1446,7 @@
         "preview_downloaded": 0
       },
       "issues": [
-        "base_model is empty or 'Unknown'",
+        "base_model 'Pony SDXL' not in SUPPORTED_BASE_MODELS",
         "trigger_words are missing or contain only placeholders",
         "notes are too short or empty",
         "usage_tips is empty or invalid JSON",
@@ -1444,9 +1454,9 @@
       ],
       "confidence_from_llm": "low",
       "raw_values": {
-        "base_model": "Unknown",
+        "base_model": "Pony SDXL",
         "trigger_words": [],
-        "short_description": "Potassium rich LoRA infused with likeness of Banano Chan, the digital waifu embodiment of Banano cryptocurrency.",
+        "short_description": "Potassium rich LoRA infused with likeness of Banano Chan, the digital waifu embodiment of Banano, a feeless and super fast meme cryptocurrency.",
         "tags": [
           "character"
         ],
@@ -1458,9 +1468,9 @@
     },
     {
       "repo_id": "Maisman/No-Game-NoLife-LoRAs",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.safetensors",
       "enrichment_success": true,
-      "total_score": 75,
+      "total_score": 70,
       "field_scores": {
         "base_model": 0,
         "trigger_words": 15,
@@ -1468,40 +1478,35 @@
         "tags": 15,
         "tags_priority_coverage": 5,
         "notes": 5,
-        "usage_tips": 5,
+        "usage_tips": 0,
         "modelDescription_html": 10,
         "preview_downloaded": 10
       },
       "issues": [
-        "base_model is empty or 'Unknown'"
+        "base_model is empty or 'Unknown'",
+        "usage_tips is empty or invalid JSON"
       ],
       "confidence_from_llm": "medium",
       "raw_values": {
         "base_model": "Unknown",
         "trigger_words": [
-          "hatsuse izuna",
-          "izuna",
-          "no game no life",
-          "kimono",
-          "hairband",
-          "fox ears",
-          "fox tail"
+          "ngnl style",
+          "ngnl background"
         ],
-        "short_description": "A LoRA for Shiro from No Game No Life, featuring her original anime look with improved details and backgrounds. Use 'ngnl style' to trigger the anime aesthetic.",
+        "short_description": "A LoRA that gives Shiro from No Game No Life her original anime look, adding the NGNL world feeling and style. It improves the anime aesthetic, environment details, backgrounds, and allows holding chess pieces.",
         "tags": [
           "character",
-          "anime",
-          "clothing"
+          "anime"
         ],
-        "notes": "Use trigger words like 'hatsuse izuna', 'izuna', or 'no game no life' to activate the LoRA. Recommended strength is between 0.5-0.6 for artwork style, up to 0.9 for anime-like results. The model works best with SDXL base models and benefits from high CFG scales (around 5).",
-        "usage_tips": "{\n  \"strength_min\": 0.5,\n  \"strength_max\": 0.9\n}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.webp",
+        "notes": "Use 'ngnl style' in prompt to trigger anime look and 'ngnl background' for world feeling. Good weight is ~0.5-0.6; higher (0.7-0.9) gives more anime-like results while lower values give artwork-like styles.",
+        "usage_tips": "{}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "EarthnDusk/Gambit_Xmen_Anime_Lora_V1.1",
-      "model_path": "/tmp/hf_enrich_validation_full/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.safetensors",
       "enrichment_success": true,
       "total_score": 50,
       "field_scores": {
@@ -1525,26 +1530,26 @@
       "raw_values": {
         "base_model": "Unknown",
         "trigger_words": [],
-        "short_description": "Anime styled Gambit LoRA from X-men series.",
+        "short_description": "Anime styled Gambit LoRA trained for X-men characters.",
         "tags": [
           "anime",
           "character"
         ],
         "notes": "",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "EarthnDusk/DuskfallArt_LoRa",
-      "model_path": "/tmp/hf_enrich_validation_full/models/EarthnDusk__DuskfallArt_LoRa/DuskfallArt.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__DuskfallArt_LoRa/DuskfallArt.safetensors",
       "enrichment_success": true,
-      "total_score": 50,
+      "total_score": 40,
       "field_scores": {
         "base_model": 15,
         "trigger_words": 0,
-        "short_description": 10,
+        "short_description": 0,
         "tags": 15,
         "tags_priority_coverage": 0,
         "notes": 0,
@@ -1554,6 +1559,7 @@
       },
       "issues": [
         "trigger_words are missing or contain only placeholders",
+        "short_description is too short or empty",
         "tags have low overlap with priority_tags (< 50%)",
         "notes are too short or empty",
         "usage_tips is empty or invalid JSON",
@@ -1561,9 +1567,9 @@
       ],
       "confidence_from_llm": "low",
       "raw_values": {
-        "base_model": "SD 1.5",
+        "base_model": "SDXL Lightning",
         "trigger_words": [],
-        "short_description": "A LoRA based on Earth & Dusk art style.",
+        "short_description": "",
         "tags": [
           "art"
         ],
@@ -1575,15 +1581,15 @@
     },
     {
       "repo_id": "gaoxiao/pokemon-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/gaoxiao__pokemon-lora/pytorch_lora_weights.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/gaoxiao__pokemon-lora/pytorch_lora_weights.safetensors",
       "enrichment_success": true,
-      "total_score": 70,
+      "total_score": 65,
       "field_scores": {
         "base_model": 15,
         "trigger_words": 0,
         "short_description": 10,
         "tags": 15,
-        "tags_priority_coverage": 5,
+        "tags_priority_coverage": 0,
         "notes": 5,
         "usage_tips": 0,
         "modelDescription_html": 10,
@@ -1591,59 +1597,26 @@
       },
       "issues": [
         "trigger_words are missing or contain only placeholders",
+        "tags have low overlap with priority_tags (< 50%)",
         "usage_tips is empty or invalid JSON"
       ],
       "confidence_from_llm": "medium",
       "raw_values": {
-        "base_model": "SD 1.5",
+        "base_model": "SDXL Hyper",
         "trigger_words": [],
-        "short_description": "LoRA adaptation weights for generating Pokemon characters, fine-tuned on the lambdalabs/pokemon-blip-captions dataset.",
+        "short_description": "LoRA adaptation weights for runwayml/stable-diffusion-v1-5, fine-tuned on the lambdalabs/pokemon-blip-captions dataset to generate Pokemon-themed images.",
         "tags": [
-          "anime"
+          "pokemon"
         ],
-        "notes": "This is a LoRA model trained on Pokemon character images using the lambdalabs/pokemon-blip-captions dataset. It can be used with Stable Diffusion 1.5 to generate Pokemon-themed content.",
+        "notes": "This is a LoRA model trained on the pokemon-blip-captions dataset for Stable Diffusion v1.5.",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/gaoxiao__pokemon-lora/pytorch_lora_weights.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/gaoxiao__pokemon-lora/pytorch_lora_weights.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "wtcherr/sd-unsplash_10k_canny-model-control-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.safetensors",
-      "enrichment_success": true,
-      "total_score": 70,
-      "field_scores": {
-        "base_model": 15,
-        "trigger_words": 0,
-        "short_description": 10,
-        "tags": 15,
-        "tags_priority_coverage": 5,
-        "notes": 5,
-        "usage_tips": 0,
-        "modelDescription_html": 10,
-        "preview_downloaded": 10
-      },
-      "issues": [
-        "trigger_words are missing or contain only placeholders",
-        "usage_tips is empty or invalid JSON"
-      ],
-      "confidence_from_llm": "medium",
-      "raw_values": {
-        "base_model": "SD 1.5",
-        "trigger_words": [],
-        "short_description": "ControlLoRA adaptation weights for runwayml/stable-diffusion-v1-5, fine-tuned on the wtcherr/unsplash_10k_canny dataset.",
-        "tags": [
-          "realistic"
-        ],
-        "notes": "This is a ControlLoRA model trained on Unsplash images using Canny edge detection. It can be used to guide image generation with line art or edge maps.",
-        "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.webp",
-        "has_modelDescription": true
-      }
-    },
-    {
-      "repo_id": "wtcherr/sd-unsplash_10k_blur_rand_KS-model-control-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.safetensors",
       "enrichment_success": true,
       "total_score": 65,
       "field_scores": {
@@ -1666,19 +1639,54 @@
       "raw_values": {
         "base_model": "SD 1.5",
         "trigger_words": [],
+        "short_description": "ControlLoRA adaptation weights for runwayml/stable-diffusion-v1-5, fine-tuned on the wtcherr/unsplash_10k_canny dataset.",
+        "tags": [
+          "realistic"
+        ],
+        "notes": "",
+        "usage_tips": "{}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.webp",
+        "has_modelDescription": true
+      }
+    },
+    {
+      "repo_id": "wtcherr/sd-unsplash_10k_blur_rand_KS-model-control-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.safetensors",
+      "enrichment_success": true,
+      "total_score": 65,
+      "field_scores": {
+        "base_model": 15,
+        "trigger_words": 0,
+        "short_description": 10,
+        "tags": 15,
+        "tags_priority_coverage": 5,
+        "notes": 0,
+        "usage_tips": 0,
+        "modelDescription_html": 10,
+        "preview_downloaded": 10
+      },
+      "issues": [
+        "trigger_words are missing or contain only placeholders",
+        "notes are too short or empty",
+        "usage_tips is empty or invalid JSON"
+      ],
+      "confidence_from_llm": "medium",
+      "raw_values": {
+        "base_model": "SD 1.5",
+        "trigger_words": [],
         "short_description": "ControlLoRA adaptation weights for Stable Diffusion v1.5, fine-tuned on the wtcherr/unsplash_10k_blur_rand_KS dataset.",
         "tags": [
           "realistic"
         ],
         "notes": "",
         "usage_tips": "{}",
-        "preview_url": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.webp",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.webp",
         "has_modelDescription": true
       }
     },
     {
       "repo_id": "samurai-architects/lora-starbucks",
-      "model_path": "/tmp/hf_enrich_validation_full/models/samurai-architects__lora-starbucks/starbucks_interior.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/samurai-architects__lora-starbucks/starbucks_interior.safetensors",
       "enrichment_success": true,
       "total_score": 50,
       "field_scores": {
@@ -1704,13 +1712,82 @@
         "trigger_words": [
           "sks interior"
         ],
-        "short_description": "A LoRA model for generating Starbucks-themed interiors.",
+        "short_description": "A LoRA model for generating Starbucks interior scenes.",
         "tags": [
-          "character"
+          "realistic"
         ],
-        "notes": "Use the trigger word 'sks interior' to activate this LoRA for generating Starbucks-themed interiors.",
+        "notes": "Use the trigger phrase 'sks interior' to activate this model for generating Starbucks interiors. No specific resolution or strength parameters are provided in the README.",
         "usage_tips": "{}",
         "preview_url": "",
+        "has_modelDescription": true
+      }
+    },
+    {
+      "repo_id": "prithivMLmods/Flux-Long-Toon-LoRA",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Flux-Long-Toon-LoRA/Long-Toon.safetensors",
+      "enrichment_success": true,
+      "total_score": 85,
+      "field_scores": {
+        "base_model": 15,
+        "trigger_words": 15,
+        "short_description": 10,
+        "tags": 15,
+        "tags_priority_coverage": 5,
+        "notes": 5,
+        "usage_tips": 0,
+        "modelDescription_html": 10,
+        "preview_downloaded": 10
+      },
+      "issues": [
+        "usage_tips is empty or invalid JSON"
+      ],
+      "confidence_from_llm": "high",
+      "raw_values": {
+        "base_model": "Flux.1 D",
+        "trigger_words": [
+          "long toons"
+        ],
+        "short_description": "A LoRA model designed for generating long-format cartoon or animated style images using the Flux architecture.",
+        "tags": [
+          "toon"
+        ],
+        "notes": "Use 'long toons' as the trigger word. Best dimensions are 768x1024 (Default is 1024x1024). The model is currently in training phase and may contain artifacts.",
+        "usage_tips": "{}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Flux-Long-Toon-LoRA/Long-Toon.webp",
+        "has_modelDescription": true
+      }
+    },
+    {
+      "repo_id": "Limbicnation/pixel-art-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Limbicnation__pixel-art-lora/pytorch_lora_weights.comfyui.safetensors",
+      "enrichment_success": true,
+      "total_score": 87,
+      "field_scores": {
+        "base_model": 15,
+        "trigger_words": 15,
+        "short_description": 10,
+        "tags": 15,
+        "tags_priority_coverage": 2,
+        "notes": 5,
+        "usage_tips": 5,
+        "modelDescription_html": 10,
+        "preview_downloaded": 10
+      },
+      "issues": [],
+      "confidence_from_llm": "high",
+      "raw_values": {
+        "base_model": "Flux.2 Klein 4B-base",
+        "trigger_words": [
+          "pixel art sprite"
+        ],
+        "short_description": "A LoRA adapter trained on FLUX.2-klein-4B for generating pixel art character sprites optimized for game-ready assets with transparent backgrounds.",
+        "tags": [
+          "character",
+          "sprite"
+        ],
+        "notes": "Always include trigger words 'pixel art sprite' in your prompt. Style modifiers: '16-bit pixel art', '32-bit pixel art', 'chibi'. Recommended inference parameters: Steps=4, CFG Scale=1.0, Resolution=512x512, Sampler=Euler. Use LoRA strength between 0.85 and 1.4.",
+        "usage_tips": "{\"strength_min\":0.85,\"strength_max\":1.4}",
+        "preview_url": "/tmp/hf_enrich_validation_v2/models/Limbicnation__pixel-art-lora/pytorch_lora_weights.comfyui.webp",
         "has_modelDescription": true
       }
     }
@@ -1718,11 +1795,11 @@
   "enrichment_results": [
     {
       "repo_id": "k2styles/krea-2-cobalt-sky-anime-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-cobalt-sky-anime-lora/cobalt-sky-anime.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1739,15 +1816,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 10.07
+      "duration_s": 17.0
     },
     {
       "repo_id": "k2styles/krea-2-azure-gouache-daylight-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-azure-gouache-daylight-lora/azure-gouache-daylight.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1764,15 +1841,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.3
+      "duration_s": 9.5
     },
     {
       "repo_id": "TheDivergentAI/krea2-turbo-distill-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/TheDivergentAI__krea2-turbo-distill-lora/krea2_turbo_distill_r128.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1788,15 +1865,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 10.58
+      "duration_s": 9.93
     },
     {
       "repo_id": "DeverStyle/Krea2-Loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Krea2-Loras/n0t_f4l_000001000.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1811,15 +1888,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 10.79
+      "duration_s": 11.3
     },
     {
       "repo_id": "Komorebi1995/krea2-raw-jpaf-celpaint-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Komorebi1995__krea2-raw-jpaf-celpaint-lora/krea2_raw_jpaf_celpaint_full_v1.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1836,15 +1913,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.87
+      "duration_s": 11.7
     },
     {
       "repo_id": "artificialguybr/pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5",
-      "model_path": "/tmp/hf_enrich_validation_full/models/artificialguybr__pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/artificialguybr__pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/artificialguybr__pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/artificialguybr__pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5/PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1859,15 +1936,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.99
+      "duration_s": 10.31
     },
     {
       "repo_id": "Shakker-Labs/FLUX.1-dev-LoRA-Logo-Design",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Shakker-Labs__FLUX_1-dev-LoRA-Logo-Design/FLUX-dev-lora-Logo-Design.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1884,15 +1961,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 10.75
+      "duration_s": 11.13
     },
     {
       "repo_id": "glif-loradex-trainer/bingbangboom_flux_surf",
-      "model_path": "/tmp/hf_enrich_validation_full/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/glif-loradex-trainer__bingbangboom_flux_surf/flux_surf_000001500.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1907,15 +1984,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.11
+      "duration_s": 9.16
     },
     {
       "repo_id": "prithivMLmods/Ton618-Epic-Realism-Flux-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Ton618-Epic-Realism-Flux-LoRA/Epic-Realism-Unpruned.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1931,15 +2008,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 11.1
+      "duration_s": 11.63
     },
     {
       "repo_id": "prithivMLmods/Fashion-Hut-Modeling-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Fashion-Hut-Modeling-LoRA/Fashion-Modeling.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -1950,123 +2027,6 @@
             "_llm_confidence",
             "preview_url",
             "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.34
-    },
-    {
-      "repo_id": "prithivMLmods/Retro-Pixel-Flux-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.4
-    },
-    {
-      "repo_id": "D1-3105/HiDream-E1-Full_lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 7.1
-    },
-    {
-      "repo_id": "renderartist/Classic-Painting-Z-Image-Turbo-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 10.27
-    },
-    {
-      "repo_id": "DeverStyle/Z-Image-loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/DeverStyle__Z-Image-loras/z_image_archer_style.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/DeverStyle__Z-Image-loras/z_image_archer_style.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 7.93
-    },
-    {
-      "repo_id": "deadman44/Z-Image_LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.safetensors",
-          "updated_fields": [
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url"
           ]
         }
       ],
@@ -2075,35 +2035,12 @@
       "duration_s": 9.38
     },
     {
-      "repo_id": "zyuzuguldu/vton-lora-linen",
-      "model_path": "/tmp/hf_enrich_validation_full/models/zyuzuguldu__vton-lora-linen/pytorch_lora_weights.safetensors",
+      "repo_id": "prithivMLmods/Retro-Pixel-Flux-LoRA",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/zyuzuguldu__vton-lora-linen/pytorch_lora_weights.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.42
-    },
-    {
-      "repo_id": "svntax-dev/pixel_spritesheet_4walk_small_lora_v1",
-      "model_path": "/tmp/hf_enrich_validation_full/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Retro-Pixel-Flux-LoRA/Retro-Pixel.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2119,15 +2056,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 13.22
+      "duration_s": 9.16
     },
     {
-      "repo_id": "Haruka041/z-image-anime-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.safetensors",
+      "repo_id": "D1-3105/HiDream-E1-Full_lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/D1-3105__HiDream-E1-Full_lora/HiDream-E1-Full.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2142,15 +2079,156 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 7.28
+      "duration_s": 7.67
+    },
+    {
+      "repo_id": "renderartist/Classic-Painting-Z-Image-Turbo-LoRA",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/renderartist__Classic-Painting-Z-Image-Turbo-LoRA/Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 12.87
+    },
+    {
+      "repo_id": "DeverStyle/Z-Image-loras",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Z-Image-loras/z_image_archer_style.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/DeverStyle__Z-Image-loras/z_image_archer_style.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 9.63
+    },
+    {
+      "repo_id": "deadman44/Z-Image_LoRA",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/deadman44__Z-Image_LoRA/lora_zimage_turbo_myjs_alpha01.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 10.32
+    },
+    {
+      "repo_id": "zyuzuguldu/vton-lora-linen",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/zyuzuguldu__vton-lora-linen/pytorch_lora_weights.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/zyuzuguldu__vton-lora-linen/pytorch_lora_weights.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 8.73
+    },
+    {
+      "repo_id": "svntax-dev/pixel_spritesheet_4walk_small_lora_v1",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/svntax-dev__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 14.24
+    },
+    {
+      "repo_id": "Haruka041/z-image-anime-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/Haruka041__z-image-anime-lora/sk_anime_style_v1.0.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 7.37
     },
     {
       "repo_id": "systms/SYSTMS-INFL8-LoRA-Wan22",
-      "model_path": "/tmp/hf_enrich_validation_full/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/systms__SYSTMS-INFL8-LoRA-Wan22/SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2166,15 +2244,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.46
+      "duration_s": 11.69
     },
     {
       "repo_id": "crafiq/flux-2-klein-9b-360-panorama-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/crafiq__flux-2-klein-9b-360-panorama-lora/flux-2-klein-9b-360-panorama-lora.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2190,15 +2268,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.99
+      "duration_s": 9.71
     },
     {
       "repo_id": "Leon1000/pixel_spritesheet_4walk_small_lora_v1",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Leon1000__pixel_spritesheet_4walk_small_lora_v1/pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2214,15 +2292,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 11.08
+      "duration_s": 12.42
     },
     {
       "repo_id": "Muapi/pov-missionary-legs-together-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Muapi__pov-missionary-legs-together-lora/pov-missionary-legs-together-lora.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2238,15 +2316,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.57
+      "duration_s": 9.44
     },
     {
       "repo_id": "ostris/ideogram_4_unconditional_lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ostris__ideogram_4_unconditional_lora/ideogram_4_unconditional_lora_r16.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ostris__ideogram_4_unconditional_lora/ideogram_4_unconditional_lora_r16.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/ostris__ideogram_4_unconditional_lora/ideogram_4_unconditional_lora_r16.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/ostris__ideogram_4_unconditional_lora/ideogram_4_unconditional_lora_r16.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2261,15 +2339,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.19
+      "duration_s": 8.24
     },
     {
       "repo_id": "ilkerzgi/krea-2-bleached-surreal-uncanny-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-bleached-surreal-uncanny-lora/bleached-surreal-uncanny-comfy.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2279,22 +2357,21 @@
             "llm_enriched_at",
             "_llm_confidence",
             "preview_url",
-            "notes",
-            "usage_tips"
+            "notes"
           ]
         }
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 11.98
+      "duration_s": 11.54
     },
     {
       "repo_id": "ilkerzgi/krea-2-azure-surreal-collage-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-azure-surreal-collage-lora/azure-surreal-collage-comfy.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2311,15 +2388,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.64
+      "duration_s": 10.2
     },
     {
       "repo_id": "ilkerzgi/krea-2-airy-gouache-minimalist-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/ilkerzgi__krea-2-airy-gouache-minimalist-lora/airy-gouache-minimalist-comfy.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2329,22 +2406,21 @@
             "llm_enriched_at",
             "_llm_confidence",
             "preview_url",
-            "notes",
-            "usage_tips"
+            "notes"
           ]
         }
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.67
+      "duration_s": 9.43
     },
     {
       "repo_id": "k2styles/krea-2-airy-watercolor-chibi-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/k2styles__krea-2-airy-watercolor-chibi-lora/airy-watercolor-chibi.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2361,15 +2437,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.73
+      "duration_s": 10.72
     },
     {
       "repo_id": "TakeAswing/sdxl-lora-lofi",
-      "model_path": "/tmp/hf_enrich_validation_full/models/TakeAswing__sdxl-lora-lofi/pytorch_lora_weights.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/TakeAswing__sdxl-lora-lofi/pytorch_lora_weights.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/TakeAswing__sdxl-lora-lofi/pytorch_lora_weights.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/TakeAswing__sdxl-lora-lofi/pytorch_lora_weights.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2377,22 +2453,21 @@
             "tags",
             "metadata_source",
             "llm_enriched_at",
-            "_llm_confidence",
-            "notes"
+            "_llm_confidence"
           ]
         }
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 7.08
+      "duration_s": 6.61
     },
     {
       "repo_id": "heville/anna-lora-krea2",
-      "model_path": "/tmp/hf_enrich_validation_full/models/heville__anna-lora-krea2/pytorch_lora_weights.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/heville__anna-lora-krea2/pytorch_lora_weights.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/heville__anna-lora-krea2/pytorch_lora_weights.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/heville__anna-lora-krea2/pytorch_lora_weights.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2408,15 +2483,15 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 12.06
+      "duration_s": 13.67
     },
     {
       "repo_id": "Brioch/krea2_loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Brioch__krea2_loras/mashap_ohwx_woman_krea2.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Brioch__krea2_loras/mashap_ohwx_woman_krea2.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Brioch__krea2_loras/mashap_ohwx_woman_krea2.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Brioch__krea2_loras/mashap_ohwx_woman_krea2.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2430,82 +2505,17 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 6.05
+      "duration_s": 6.32
     },
     {
       "repo_id": "hr16/Miwano-Rag-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/hr16__Miwano-Rag-LoRA/Miwano-Rag-epoch10.lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/hr16__Miwano-Rag-LoRA/Miwano-Rag-epoch10.lora.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/hr16__Miwano-Rag-LoRA/Miwano-Rag-epoch10.lora.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/hr16__Miwano-Rag-LoRA/Miwano-Rag-epoch10.lora.safetensors",
           "updated_fields": [
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 7.41
-    },
-    {
-      "repo_id": "ikuseiso/Personal_Lora_collections",
-      "model_path": "/tmp/hf_enrich_validation_full/models/ikuseiso__Personal_Lora_collections/vergil_devil_may_cry.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/ikuseiso__Personal_Lora_collections/vergil_devil_may_cry.safetensors",
-          "updated_fields": [
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 73.9
-    },
-    {
-      "repo_id": "Tanger/LoraByTanger",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Tanger__LoraByTanger/(v4)layila-000005.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/Tanger__LoraByTanger/(v4)layila-000005.safetensors",
-          "updated_fields": [
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 13.4
-    },
-    {
-      "repo_id": "DS-Archive/ds-LoRA",
-      "model_path": "/tmp/hf_enrich_validation_full/models/DS-Archive__ds-LoRA/dsharu-v2_lc.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/DS-Archive__ds-LoRA/dsharu-v2_lc.safetensors",
-          "updated_fields": [
+            "base_model",
             "civitai",
             "modelDescription",
             "tags",
@@ -2521,12 +2531,33 @@
       "duration_s": 8.66
     },
     {
-      "repo_id": "soknife/loras",
-      "model_path": "/tmp/hf_enrich_validation_full/models/soknife__loras/irys-regular-subject-more.safetensors",
+      "repo_id": "ikuseiso/Personal_Lora_collections",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/ikuseiso__Personal_Lora_collections/vergil_devil_may_cry.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/soknife__loras/irys-regular-subject-more.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/ikuseiso__Personal_Lora_collections/vergil_devil_may_cry.safetensors",
+          "updated_fields": [
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 74.66
+    },
+    {
+      "repo_id": "Tanger/LoraByTanger",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Tanger__LoraByTanger/(v4)layila-000005.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/Tanger__LoraByTanger/(v4)layila-000005.safetensors",
           "updated_fields": [
             "civitai",
             "modelDescription",
@@ -2541,15 +2572,60 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 11.6
+      "duration_s": 13.64
     },
     {
-      "repo_id": "prompthero/openjourney-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/prompthero__openjourney-lora/openjourneyLora.safetensors",
+      "repo_id": "DS-Archive/ds-LoRA",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/DS-Archive__ds-LoRA/dsharu-v2_lc.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/prompthero__openjourney-lora/openjourneyLora.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/DS-Archive__ds-LoRA/dsharu-v2_lc.safetensors",
+          "updated_fields": [
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 9.62
+    },
+    {
+      "repo_id": "soknife/loras",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/soknife__loras/irys-regular-subject-more.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/soknife__loras/irys-regular-subject-more.safetensors",
+          "updated_fields": [
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 13.88
+    },
+    {
+      "repo_id": "prompthero/openjourney-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prompthero__openjourney-lora/openjourneyLora.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/prompthero__openjourney-lora/openjourneyLora.safetensors",
           "updated_fields": [
             "base_model",
             "civitai",
@@ -2564,16 +2640,17 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.53
+      "duration_s": 9.54
     },
     {
       "repo_id": "Banano/banchan-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Banano__banchan-lora/Bananochan-PonySDXL-v2.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Banano__banchan-lora/Bananochan-PonySDXL-v2.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Banano__banchan-lora/Bananochan-PonySDXL-v2.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Banano__banchan-lora/Bananochan-PonySDXL-v2.safetensors",
           "updated_fields": [
+            "base_model",
             "civitai",
             "modelDescription",
             "tags",
@@ -2585,16 +2662,200 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 6.43
+      "duration_s": 6.87
     },
     {
       "repo_id": "Maisman/No-Game-NoLife-LoRAs",
-      "model_path": "/tmp/hf_enrich_validation_full/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.safetensors",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.safetensors",
       "success": true,
       "updated_fields": [
         {
-          "path": "/tmp/hf_enrich_validation_full/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.safetensors",
+          "path": "/tmp/hf_enrich_validation_v2/models/Maisman__No-Game-NoLife-LoRAs/ShiroNGNL2_Lora.safetensors",
           "updated_fields": [
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 15.43
+    },
+    {
+      "repo_id": "EarthnDusk/Gambit_Xmen_Anime_Lora_V1.1",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.safetensors",
+          "updated_fields": [
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 10.22
+    },
+    {
+      "repo_id": "EarthnDusk/DuskfallArt_LoRa",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__DuskfallArt_LoRa/DuskfallArt.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/EarthnDusk__DuskfallArt_LoRa/DuskfallArt.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 6.39
+    },
+    {
+      "repo_id": "gaoxiao/pokemon-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/gaoxiao__pokemon-lora/pytorch_lora_weights.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/gaoxiao__pokemon-lora/pytorch_lora_weights.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 11.04
+    },
+    {
+      "repo_id": "wtcherr/sd-unsplash_10k_canny-model-control-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 9.44
+    },
+    {
+      "repo_id": "wtcherr/sd-unsplash_10k_blur_rand_KS-model-control-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 9.83
+    },
+    {
+      "repo_id": "samurai-architects/lora-starbucks",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/samurai-architects__lora-starbucks/starbucks_interior.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/samurai-architects__lora-starbucks/starbucks_interior.safetensors",
+          "updated_fields": [
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 6.9
+    },
+    {
+      "repo_id": "prithivMLmods/Flux-Long-Toon-LoRA",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Flux-Long-Toon-LoRA/Long-Toon.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/prithivMLmods__Flux-Long-Toon-LoRA/Long-Toon.safetensors",
+          "updated_fields": [
+            "base_model",
+            "civitai",
+            "modelDescription",
+            "tags",
+            "metadata_source",
+            "llm_enriched_at",
+            "_llm_confidence",
+            "preview_url",
+            "notes"
+          ]
+        }
+      ],
+      "errors": [],
+      "summary": "Processed 1/1 models, 1 succeeded",
+      "duration_s": 12.98
+    },
+    {
+      "repo_id": "Limbicnation/pixel-art-lora",
+      "model_path": "/tmp/hf_enrich_validation_v2/models/Limbicnation__pixel-art-lora/pytorch_lora_weights.comfyui.safetensors",
+      "success": true,
+      "updated_fields": [
+        {
+          "path": "/tmp/hf_enrich_validation_v2/models/Limbicnation__pixel-art-lora/pytorch_lora_weights.comfyui.safetensors",
+          "updated_fields": [
+            "base_model",
             "civitai",
             "modelDescription",
             "tags",
@@ -2609,162 +2870,25 @@
       ],
       "errors": [],
       "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 19.62
-    },
-    {
-      "repo_id": "EarthnDusk/Gambit_Xmen_Anime_Lora_V1.1",
-      "model_path": "/tmp/hf_enrich_validation_full/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/EarthnDusk__Gambit_Xmen_Anime_Lora_V1_1/RemyLebeau.safetensors",
-          "updated_fields": [
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.53
-    },
-    {
-      "repo_id": "EarthnDusk/DuskfallArt_LoRa",
-      "model_path": "/tmp/hf_enrich_validation_full/models/EarthnDusk__DuskfallArt_LoRa/DuskfallArt.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/EarthnDusk__DuskfallArt_LoRa/DuskfallArt.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 6.57
-    },
-    {
-      "repo_id": "gaoxiao/pokemon-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/gaoxiao__pokemon-lora/pytorch_lora_weights.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/gaoxiao__pokemon-lora/pytorch_lora_weights.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 10.77
-    },
-    {
-      "repo_id": "wtcherr/sd-unsplash_10k_canny-model-control-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_canny-model-control-lora/diffusion_pytorch_model.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 9.97
-    },
-    {
-      "repo_id": "wtcherr/sd-unsplash_10k_blur_rand_KS-model-control-lora",
-      "model_path": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/wtcherr__sd-unsplash_10k_blur_rand_KS-model-control-lora/diffusion_pytorch_model.safetensors",
-          "updated_fields": [
-            "base_model",
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "preview_url"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 8.95
-    },
-    {
-      "repo_id": "samurai-architects/lora-starbucks",
-      "model_path": "/tmp/hf_enrich_validation_full/models/samurai-architects__lora-starbucks/starbucks_interior.safetensors",
-      "success": true,
-      "updated_fields": [
-        {
-          "path": "/tmp/hf_enrich_validation_full/models/samurai-architects__lora-starbucks/starbucks_interior.safetensors",
-          "updated_fields": [
-            "civitai",
-            "modelDescription",
-            "tags",
-            "metadata_source",
-            "llm_enriched_at",
-            "_llm_confidence",
-            "notes"
-          ]
-        }
-      ],
-      "errors": [],
-      "summary": "Processed 1/1 models, 1 succeeded",
-      "duration_s": 6.61
+      "duration_s": 11.01
     }
   ],
   "preprocessing_audit": {
-    "model_count": 44,
+    "model_count": 46,
     "fetch_failed_count": 0,
-    "section_extraction_activated": 10,
-    "section_extraction_pct": 22.7,
-    "basename_in_section": 19,
-    "basename_in_section_pct": 43.2,
-    "with_yaml_frontmatter": 44,
+    "section_extraction_activated": 9,
+    "section_extraction_pct": 19.6,
+    "basename_in_section": 20,
+    "basename_in_section_pct": 43.5,
+    "with_yaml_frontmatter": 46,
     "with_yaml_frontmatter_pct": 100.0,
-    "with_widget_section": 23,
-    "avg_compression_pct": 40.9,
-    "avg_cleaned_length": 1768,
+    "with_widget_section": 25,
+    "avg_compression_pct": 41.1,
+    "avg_cleaned_length": 1812,
     "top_flags": [
       [
         "SECTION_EXTRACTION_NOT_ACTIVATED",
-        34
+        37
       ],
       [
         "BASENAME_NOT_IN_EXTRACTED_SECTION",

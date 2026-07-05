@@ -416,7 +416,7 @@ class AgentService:
 
         try:
             raw_models = await list_base_models()
-            context["base_models"] = _format_base_models(raw_models)
+            context["base_models"] = self._format_base_models(raw_models)
         except Exception as exc:
             logger.debug("Failed to list base models: %s", exc)
             context["base_models"] = "</not available>"

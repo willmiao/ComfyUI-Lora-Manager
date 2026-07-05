@@ -39,24 +39,6 @@ name listed — do not invent aliases or modify variant suffixes.
 
 {{base_models}}
 
-When the YAML frontmatter contains ``base_model:`` as a HuggingFace repo path,
-map it to the canonical CivitAI name as follows:
-
-- ``runwayml/stable-diffusion`` or ``CompVis/stable-diffusion`` with version number → **SD** series (v1-4 → SD 1.4, v1-5 → SD 1.5, v2-1 → SD 2.1, v3-5 → SD 3.5)
-- ``stabilityai/stable-diffusion-xl-base-1.0`` → **SDXL 1.0**
-- ``black-forest-labs/FLUX.1`` (dev, schnell, krea variant) → **Flux.1** (dev → D, schnell → S)
-- ``krea/Krea-2-Raw`` or ``krea/Krea-2-Turbo`` → **Krea 2**
-- ``Comfy-Org/z_image_turbo`` or ``Tongyi-MAI/Z-Image-Turbo`` → **ZImageTurbo**
-- ``HiDream-ai/HiDream`` with variant name → **HiDream**
-- ``OnomaAIResearch/Illustrious`` or any repo path containing ``illustrious`` → **Illustrious**
-- ``ideogram-ai/ideogram`` → **Ideogram 4.0**
-- ``Wan-AI/Wan2`` with version and task → **Wan Video** family (match: T2V or I2V + model size)
-- ``CogVideo`` → **CogVideoX**
-- ``stabilityai/stable-video-diffusion`` → **SVD**
-
-Also check the model filename for clues (e.g. "flux" → Flux family, "sdxl" → SDXL,
-"sd15" → SD 1.5, "krea2" → Krea 2, "zimage" → ZImage).
-
 ## HuggingFace README Content
 
 ```
@@ -70,7 +52,7 @@ Extract the following information from the README content above:
 ### base_model
 The base model this model was trained on. Use EXACTLY one of the names from the **Available Base Models** list above. Do not invent new names or use aliases.
 
-Check the YAML frontmatter for ``base_model:`` first (use the mapping rules above for HF repo paths). If the frontmatter has no ``base_model:``, look at the **model filename** (``{{model_basename}}``), YAML ``tags:``, README title and first paragraph for clues — the base model family is often embedded in the name (e.g. ``krea2`` → Krea 2, ``zimage`` → ZImageTurbo, ``flux`` → Flux, ``sdxl`` → SDXL).
+Check the YAML frontmatter for ``base_model:`` first. If the frontmatter has no ``base_model:``, look at the **model filename** (``{{model_basename}}``), YAML ``tags:``, README title and first paragraph for clues — the base model family is often embedded in the name
 
 ### trigger_words
 The trigger words or activation prompts needed to use this LoRA. Look for:
