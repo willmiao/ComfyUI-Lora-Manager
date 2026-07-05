@@ -18,7 +18,7 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 
 _DEFAULT_MODELS_FILE = os.path.expanduser(
-    "~/Documents/hf_lora_models.txt"
+    "~/Documents/hf_lora_models_with_safetensors.txt"
 )
 _DEFAULT_SETTINGS_PATH = os.path.expanduser(
     "~/.config/ComfyUI-LoRA-Manager/settings.json"
@@ -36,8 +36,16 @@ CIVITAI_MODEL_TAGS: List[str] = [
     "buildings", "objects", "assets", "animal", "action",
 ]
 
-# Base models recognised as valid values.
-SUPPORTED_BASE_MODELS: List[str] = [
+# ---------------------------------------------------------------------------
+# Base model resolution — dynamically fetched from production code
+# ---------------------------------------------------------------------------
+
+# Module-level cache — populated by init_supported_base_models().
+# Falls back to a comprehensive hardcoded list when the live fetch fails.
+SUPPORTED_BASE_MODELS: List[str] = []
+
+# Fallback base models when the production list_base_models() is unavailable.
+_FALLBACK_BASE_MODELS: List[str] = [
     "SD 1.4", "SD 1.5", "SD 1.5 LCM", "SD 1.5 Hyper",
     "SD 2.0", "SD 2.1",
     "SD 3", "SD 3.5", "SD 3.5 Medium", "SD 3.5 Large", "SD 3.5 Large Turbo",
@@ -60,6 +68,33 @@ SUPPORTED_BASE_MODELS: List[str] = [
     "Nucleus", "Krea 2",
 ]
 
+
+async def init_supported_base_models() -> None:
+    """Populate ``SUPPORTED_BASE_MODELS`` from the production codebase.
+
+    Calls ``py.agent_cli.list_base_models()`` which merges a hardcoded
+    fallback with models fetched from the CivitAI API.  When the call
+    fails (e.g. offline, API error), falls back to ``_FALLBACK_BASE_MODELS``.
+
+    Must be called from within an async event loop (i.e. during
+    ``run_validation.main()``, not at module level).
+    """
+    try:
+        from py.agent_cli import list_base_models
+
+        models = await list_base_models()
+        if models:
+            SUPPORTED_BASE_MODELS[:] = models
+            logger.info("Loaded %d base models from production code", len(models))
+            return
+        logger.warning("list_base_models returned empty list, using fallback")
+    except Exception as exc:
+        logger.warning("Failed to load base models from production: %s", exc)
+
+    SUPPORTED_BASE_MODELS[:] = _FALLBACK_BASE_MODELS
+    logger.info("Using fallback base model list (%d entries)", len(SUPPORTED_BASE_MODELS))
+
+
 # Placeholder values the LLM sometimes emits that should count as "empty".
 PLACEHOLDER_VALUES = frozenset({
     "none", "null", "n/a", "unknown", "not available",
@@ -70,6 +105,7 @@ PLACEHOLDER_VALUES = frozenset({
 # ---------------------------------------------------------------------------
 # User settings loader
 # ---------------------------------------------------------------------------
+
 
 def load_settings(settings_path: str) -> Dict[str, Any]:
     """Load LoRA Manager settings from *settings_path*.

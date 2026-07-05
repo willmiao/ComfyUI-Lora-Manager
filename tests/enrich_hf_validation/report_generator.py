@@ -15,6 +15,7 @@ import os
 from datetime import datetime
 from typing import Any, Dict, List
 
+from .config import SUPPORTED_BASE_MODELS
 from .evaluation_engine import ScoreRecord
 
 logger = logging.getLogger(__name__)
@@ -56,33 +57,12 @@ def generate_optimisation_suggestions(
         for s in scores
         if s["raw_values"]["base_model"]
         and s["raw_values"]["base_model"] != "Unknown"
-        and s["raw_values"]["base_model"] not in {
-            "SD 1.4", "SD 1.5", "SD 1.5 LCM", "SD 1.5 Hyper",
-            "SD 2.0", "SD 2.1", "SD 3", "SD 3.5", "SD 3.5 Medium",
-            "SD 3.5 Large", "SD 3.5 Large Turbo",
-            "SDXL 1.0", "SDXL Lightning", "SDXL Hyper",
-            "Flux.1 D", "Flux.1 S", "Flux.1 Krea", "Flux.1 Kontext",
-            "Flux.2 D", "Flux.2 Klein 9B", "Flux.2 Klein 9B-base",
-            "Flux.2 Klein 4B", "Flux.2 Klein 4B-base",
-            "AuraFlow", "Chroma", "PixArt a", "PixArt E",
-            "Hunyuan 1", "Lumina", "Kolors",
-            "NoobAI", "Illustrious", "Pony", "Pony V7",
-            "HiDream", "Qwen", "ZImageTurbo", "ZImageBase",
-            "SVD", "LTXV", "LTXV2", "LTXV 2.3",
-            "CogVideoX", "Mochi",
-            "Wan Video", "Wan Video 1.3B t2v", "Wan Video 14B t2v",
-            "Wan Video 14B i2v 480p", "Wan Video 14B i2v 720p",
-            "Wan Video 2.2 TI2V-5B", "Wan Video 2.2 T2V-A14B",
-            "Wan Video 2.2 I2V-A14B",
-            "Wan Video 2.5 T2V", "Wan Video 2.5 I2V",
-            "Hunyuan Video", "Anima", "Ernie", "Ernie Turbo",
-            "Nucleus", "Krea 2",
-        }
+        and s["raw_values"]["base_model"] not in set(SUPPORTED_BASE_MODELS)
     )
     if bm_invalid > 5:
         suggestions.append(
-            "- **base_model 含非标准值 ({} 个)**: LLM 输出了未在 `SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS` "
-            "中的 base model 名称。建议在 prompt 中强调 \"Use EXACTLY one name from the list\" 并在 "
+            "- **base_model 含非标准值 ({} 个)**: LLM 输出了未在当前生产系统的 base model 列表 "
+            "中的名称。建议在 prompt 中强调 \"Use EXACTLY one name from the list\" 并在 "
             "`PostProcessor` 中加一层验证过滤，非标准值直接丢弃。".format(bm_invalid)
         )
 
@@ -139,7 +119,8 @@ def generate_optimisation_suggestions(
     if ut and ut.get("empty_rate_pct", 0) > 70:
         suggestions.append(
             "- **usage_tips 空置率极高 ({:.0f}%)**: 这是预期行为。HF 模型卡通常不包含 LoRA "
-            "强度/CLIP skip 等结构化参数。当前提取策略已合理。若需要可用数据，" "可以考虑使用模型类型的通用默认值。".format(
+            "强度/CLIP skip 等结构化参数。当前提取策略已合理。若需要可用数据，"
+            "可以考虑使用模型类型的通用默认值。".format(
                 ut.get("empty_rate_pct", 0)
             )
         )
@@ -164,8 +145,20 @@ def generate_markdown_report(
     scores: List[ScoreRecord],
     output_dir: str,
     duration_summary: Dict[str, Any] | None = None,
+    *,
+    audit_summary: Dict[str, Any] | None = None,
+    config_warnings: List[str] | None = None,
 ) -> str:
-    """Write ``report.md`` and return its content."""
+    """Write ``report.md`` and return its content.
+
+    Args:
+        agg: Aggregate evaluation scores.
+        scores: Per-model evaluation records.
+        output_dir: Output directory for the report file.
+        duration_summary: Optional timing statistics.
+        audit_summary: Optional preprocessing audit summary (Phase 1.5).
+        config_warnings: Optional LLM config consistency warnings.
+    """
     lines: List[str] = []
     def wl(text: str = "") -> None:
         lines.append(text)
@@ -177,6 +170,60 @@ def generate_markdown_report(
     wl(f"Successful enrichments: **{agg.get('success_count', 0)}**")
     wl(f"Failures: **{agg.get('fail_count', 0)}**")
     wl()
+
+    # ---- Preprocessing Audit Section ----
+    if audit_summary and audit_summary.get("model_count", 0) > 0:
+        wl("## Preprocessing Audit")
+        wl()
+        wl(f"| Metric | Value |")
+        wl(f"|--------|-------|")
+        wl(f"| Models audited | {audit_summary.get('model_count', 0)} |")
+        wl(f"| README fetch failed | {audit_summary.get('fetch_failed_count', 0)} |")
+        wl(f"| Section extraction activated | {_fmt_pct(audit_summary.get('section_extraction_pct', 0))} |")
+        wl(f"| Basename found in section | {_fmt_pct(audit_summary.get('basename_in_section_pct', 0))} |")
+        wl(f"| Has YAML frontmatter | {_fmt_pct(audit_summary.get('with_yaml_frontmatter_pct', 0))} |")
+        wl(f"| Has YAML widget section | {_fmt_pct(audit_summary.get('with_widget_section', 0))} |")
+        wl(f"| Avg README compression | {audit_summary.get('avg_compression_pct', 0)}% |")
+        wl(f"| Avg cleaned length | {audit_summary.get('avg_cleaned_length', 0)} chars |")
+        wl()
+
+        if audit_summary.get("top_flags"):
+            wl("### Audit Flags (most frequent)")
+            wl()
+            for flag, count in audit_summary["top_flags"]:
+                wl(f"- **{flag}**: {count}x")
+            wl()
+
+        wl("**Interpretation:**")
+        wl()
+        act_pct = audit_summary.get("section_extraction_pct", 0)
+        if act_pct < 50:
+            wl(
+                "- ⚠️ Section extraction activated for fewer than 50% of repos. "
+                "This may indicate the basename doesn't match README content, or the "
+                "repos are mostly single-model (where full README is expected)."
+            )
+        else:
+            wl(
+                "- ✅ Section extraction is working for most repos — the LLM is "
+                "receiving focused README sections."
+            )
+
+        if audit_summary.get("basename_in_section_pct", 100) < 80:
+            wl(
+                "- ⚠️ The safetensors basename was NOT found in the extracted section "
+                "for many repos. This could mean the section extraction matched the wrong "
+                "section, or the README doesn't explicitly reference the filename."
+            )
+        wl()
+
+    # ---- Config warnings ----
+    if config_warnings:
+        wl("## ⚠️ Configuration Warnings")
+        wl()
+        for w in config_warnings:
+            wl(f"- {w}")
+        wl()
 
     # ---- Duration ----
     if duration_summary:
@@ -307,8 +354,21 @@ def save_json_report(
     enrichment_results: List[Dict[str, Any]],
     output_dir: str,
     duration_summary: Dict[str, Any] | None = None,
+    *,
+    audit_summary: Dict[str, Any] | None = None,
+    config_warnings: List[str] | None = None,
 ) -> str:
-    """Write ``report.json`` and return the path."""
+    """Write ``report.json`` and return the path.
+
+    Args:
+        agg: Aggregate evaluation scores.
+        scores: Per-model evaluation records.
+        enrichment_results: Raw enrichment phase results.
+        output_dir: Output directory.
+        duration_summary: Optional timing statistics.
+        audit_summary: Optional preprocessing audit summary.
+        config_warnings: Optional LLM config consistency warnings.
+    """
     report: Dict[str, Any] = {
         "metadata": {
             "generated_at": datetime.now().isoformat(),
@@ -319,6 +379,11 @@ def save_json_report(
         "per_model_scores": scores,
         "enrichment_results": enrichment_results,
     }
+    if audit_summary:
+        report["preprocessing_audit"] = audit_summary
+    if config_warnings:
+        report["config_warnings"] = config_warnings
+
     path = os.path.join(output_dir, "report.json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(report, fh, indent=2, ensure_ascii=False)

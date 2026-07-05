@@ -675,8 +675,10 @@ def extract_relevant_section(
     lines = readme_content.split("\n")
     n = len(lines)
     basename_lower = model_basename.lower()
-    # Tokens from the basename split on common separators
-    tokens = {t for t in re.split(r"[_\-.\s]+", basename_lower) if len(t) > 2}
+    # Tokens from the basename split on common separators.
+    # Exclude tokens of length ≤ 3 — 2-3 char tokens (e.g. "cry", "myjs")
+    # are too short to discriminate between different models in collection repos.
+    tokens = {t for t in re.split(r"[_\-.\s]+", basename_lower) if len(t) > 3}
 
     # ------------------------------------------------------------------
     # Strategy 1: Find a download link containing the basename
@@ -695,7 +697,13 @@ def extract_relevant_section(
         if m:
             aid = m.group(1).lower()
             if any(token in aid for token in tokens):
-                return _extract_section(lines, idx, context_lines)
+                section = _extract_section(lines, idx, context_lines)
+                # Verify the extracted section actually mentions the model —
+                # short anchor IDs can coincidentally match tokens from
+                # unrelated models (e.g. "myjs" matching a different LoRA).
+                if basename_lower in section.lower():
+                    return section
+                # False positive — continue searching
 
     # ------------------------------------------------------------------
     # Strategy 3: Find an HTML or markdown heading with overlapping tokens
@@ -712,10 +720,28 @@ def extract_relevant_section(
             if mm:
                 heading_text = mm.group(1)
         if heading_text:
+            # Skip TOC-style entries where the heading text is a markdown
+            # link or bullet list item (e.g. "### - [model_name](url)").
+            # These are table-of-contents entries, not real section headers.
+            stripped = heading_text.strip()
+            if stripped.startswith("- [") or re.match(r"^\[.+?\]\(.+?\)", stripped):
+                continue
+
             heading_lower = heading_text.lower()
-            # Check if any token appears in the heading
-            if any(token in heading_lower for token in tokens):
-                return _extract_section(lines, idx, context_lines)
+            # Require at least 2 token overlaps, or the full basename as a
+            # substring of the heading.  A single 4-5 char token match is
+            # too weak — e.g. "devil" matching "dante_devil_may_cry" when
+            # the actual model is "vergil_devil_may_cry", or "image" matching
+            # a table-of-contents heading.
+            matching = [t for t in tokens if t in heading_lower]
+            if len(matching) >= 2 or basename_lower in heading_lower:
+                section = _extract_section(lines, idx, context_lines)
+                # Verify the section contains the model name — headings in
+                # TOC areas can match tokens but produce a tiny irrelevant
+                # section (e.g. "### - [z_image_turbo](url)" matched by
+                # tokens "lora" and "turbo").
+                if basename_lower in section.lower() or len(section) > max(500, context_lines * 20):
+                    return section
 
     # ------------------------------------------------------------------
     # Fallback: return FULL readme
