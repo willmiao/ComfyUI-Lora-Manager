@@ -87,7 +87,7 @@ def _parse_args(argv: List[str]) -> argparse.Namespace:
     )
     parser.add_argument(
         "--models",
-        default="~/Documents/hf_lora_models_with_safetensors.txt",
+        default=os.path.join(os.path.dirname(__file__), "test_data", "hf_lora_models_with_safetensors.txt"),
         help="Path to the HF repo entries file (format: repo_id, model_name.safetensors per line)",
     )
     parser.add_argument(

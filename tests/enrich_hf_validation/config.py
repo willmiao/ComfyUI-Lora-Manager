@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 # Default paths
 # ---------------------------------------------------------------------------
 
-_DEFAULT_MODELS_FILE = os.path.expanduser(
-    "~/Documents/hf_lora_models_with_safetensors.txt"
+_DEFAULT_MODELS_FILE = os.path.join(
+    os.path.dirname(__file__), "test_data", "hf_lora_models_with_safetensors.txt"
 )
 _DEFAULT_SETTINGS_PATH = os.path.expanduser(
     "~/.config/ComfyUI-LoRA-Manager/settings.json"
