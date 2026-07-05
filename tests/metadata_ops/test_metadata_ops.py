@@ -1,7 +1,7 @@
-"""Tests for the AgentCLI module (py/agent_cli/).
+"""Tests for the metadata_ops module (py/metadata_ops/).
 
 All tests mock the underlying services (scanner, MetadataManager, downloader)
-since the AgentCLI is a thin delegation layer.
+since it is a thin delegation layer.
 
 Mock targets must match where imports are resolved inside each function
 (lazy imports via ``from X import Y`` inside function body).
@@ -13,7 +13,7 @@ from unittest import mock
 
 import pytest
 
-from py.agent_cli import (
+from py.metadata_ops import (
     list_base_models,
     read_metadata,
     apply_metadata_updates,
@@ -160,7 +160,7 @@ class TestApplyMetadataUpdates:
     @pytest.mark.asyncio
     async def test_updates_field(self):
         with (
-            mock.patch("py.agent_cli.read_metadata") as mock_read,
+            mock.patch("py.metadata_ops.read_metadata") as mock_read,
             mock.patch("py.utils.metadata_manager.MetadataManager") as mm,
         ):
             mock_read.return_value = {"base_model": "", "tags": []}
@@ -176,7 +176,7 @@ class TestApplyMetadataUpdates:
     @pytest.mark.asyncio
     async def test_noop_when_value_unchanged(self):
         with (
-            mock.patch("py.agent_cli.read_metadata") as mock_read,
+            mock.patch("py.metadata_ops.read_metadata") as mock_read,
             mock.patch("py.utils.metadata_manager.MetadataManager") as mm,
         ):
             mock_read.return_value = {"base_model": "Flux.1 D"}
@@ -189,7 +189,7 @@ class TestApplyMetadataUpdates:
     @pytest.mark.asyncio
     async def test_multiple_fields(self):
         with (
-            mock.patch("py.agent_cli.read_metadata") as mock_read,
+            mock.patch("py.metadata_ops.read_metadata") as mock_read,
             mock.patch("py.utils.metadata_manager.MetadataManager") as mm,
         ):
             mm.save_metadata = mock.AsyncMock(return_value=True)
@@ -207,7 +207,7 @@ class TestApplyMetadataUpdates:
     @pytest.mark.asyncio
     async def test_empty_updates_noop(self):
         with (
-            mock.patch("py.agent_cli.read_metadata"),
+            mock.patch("py.metadata_ops.read_metadata"),
             mock.patch("py.utils.metadata_manager.MetadataManager") as mm,
         ):
             updated = await apply_metadata_updates("/p.safetensors", {})
@@ -277,7 +277,7 @@ class TestRefreshCache:
                 get_checkpoint_scanner=mock.AsyncMock(return_value=None),
                 get_embedding_scanner=mock.AsyncMock(return_value=None),
             ),
-            mock.patch("py.agent_cli.read_metadata") as mock_read,
+            mock.patch("py.metadata_ops.read_metadata") as mock_read,
         ):
             mock_read.return_value = {"base_model": "SDXL 1.0"}
             result = await refresh_cache("/some/path.safetensors")
@@ -306,7 +306,7 @@ class TestRefreshCache:
                 get_checkpoint_scanner=mock.AsyncMock(return_value=None),
                 get_embedding_scanner=mock.AsyncMock(return_value=None),
             ),
-            mock.patch("py.agent_cli.read_metadata") as mock_read,
+            mock.patch("py.metadata_ops.read_metadata") as mock_read,
         ):
             mock_read.return_value = {}
             result = await refresh_cache("/some/path.safetensors")

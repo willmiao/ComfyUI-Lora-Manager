@@ -99,12 +99,11 @@ class AgentHandler:
         # Launch execution in the background
         progress_reporter = AgentProgressReporter()
         logger.info(
-            "LLM enrichment '%s' starting for %d model(s) in background task",
+            "LLM enrichment '%s' starting for %d model(s)",
             skill_name, len(model_paths),
         )
 
         async def _run() -> None:
-            logger.info("Background task started for enrichment '%s'", skill_name)
             try:
                 result = await service.execute_skill(
                     skill_name=skill_name,
@@ -137,8 +136,7 @@ class AgentHandler:
                 )
 
         # Fire and forget — progress comes via WebSocket
-        task = asyncio.create_task(_run())
-        logger.info("LLM enrichment '%s' background task created (id=%s)", skill_name, task)
+        asyncio.create_task(_run())
 
         return web.json_response(
             {

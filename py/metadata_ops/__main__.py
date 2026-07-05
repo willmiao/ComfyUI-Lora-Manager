@@ -1,17 +1,12 @@
-"""Subprocess entry point for AgentCLI (debugging / external use).
+"""Subprocess entry point for ``metadata_ops`` (debugging / external use).
 
 Usage::
 
-    python -m py.agent_cli base-models list [--limit N]
-    python -m py.agent_cli metadata read <path>
-    python -m py.agent_cli metadata update <path> --json '{...}'
-    python -m py.agent_cli preview download <path> --url <url>
-    python -m py.agent_cli cache refresh <path>
-
-NOTE: This is an **optional** convenience wrapper.  The primary consumer of
-AgentCLI is the :mod:`AgentService` (in-process).  This entry point exists
-for manual debugging and future integration with subprocess-based agent
-frameworks.
+    python -m py.metadata_ops base-models list [--limit N]
+    python -m py.metadata_ops metadata read <path>
+    python -m py.metadata_ops metadata update <path> --json '{...}'
+    python -m py.metadata_ops preview download <path> --url <url>
+    python -m py.metadata_ops cache refresh <path>
 """
 
 from __future__ import annotations

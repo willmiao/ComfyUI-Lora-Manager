@@ -1,8 +1,12 @@
-"""Agent-powered skill system for LoRA Manager.
+"""LLM-powered metadata enrichment pipeline infrastructure.
 
-This package provides the orchestration layer for LLM/agent-powered features.
+This package provides the orchestration layer for LLM-powered features.
 Skills define *what* to do (prompt template).  The :class:`AgentService`
 handles *how* (LLM calls, context gathering, validation, progress).
+
+NOTE: The current implementation is a code-driven pipeline, not a true
+agent loop.  Future agent orchestration (LLM-driven tool selection) will
+live alongside this package with its own namespace.
 """
 
 from __future__ import annotations

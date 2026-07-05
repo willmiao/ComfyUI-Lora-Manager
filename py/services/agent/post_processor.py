@@ -1,11 +1,11 @@
 """Post-processing engine for skill pipeline outputs.
 
 The :class:`PostProcessor` takes the LLM's structured JSON output and applies
-it to a model's on-disk metadata via the :mod:`~py.agent_cli` functions.
+it to a model's on-disk metadata via the :mod:`~py.metadata_ops` functions.
 
 It handles all the skill-specific business logic — conditions, transformations,
 and orchestration of multiple side-effects (write metadata, download preview,
-refresh cache).  All actual I/O is delegated to :mod:`~py.agent_cli`.
+refresh cache).  All actual I/O is delegated to :mod:`~py.metadata_ops`.
 """
 
 from __future__ import annotations
@@ -30,7 +30,7 @@ class PostProcessor:
             skill_name="enrich_hf_metadata",
             model_path="/path/to/model.safetensors",
             llm_output={...},
-            metadata={...},    # from agent_cli.read_metadata()
+            metadata={...},    # from metadata_ops.read_metadata()
         )
     """
 
@@ -73,7 +73,7 @@ class PostProcessor:
         metadata: Dict[str, Any],
         readme_content: str = "",
     ) -> Dict[str, Any]:
-        from ...agent_cli import (
+        from ...metadata_ops import (
             apply_metadata_updates,
             download_preview,
             refresh_cache,

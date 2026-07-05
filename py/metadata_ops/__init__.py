@@ -1,4 +1,4 @@
-"""Agent CLI — thin in-process wrappers around LoRA Manager internal services.
+"""Metadata operations — thin in-process wrappers around LoRA Manager internal services.
 
 All functions are simple Python async functions that delegate to the
 appropriate internal service.  They use **relative imports** within the
@@ -7,15 +7,15 @@ risk of double import or circular dependencies.
 
 Usage (in-process, primary)::
 
-    from py.agent_cli import list_base_models, read_metadata
+    from py.metadata_ops import list_base_models, read_metadata
 
     models = await list_base_models()
     meta   = await read_metadata("/path/to/model.safetensors")
 
 Usage (subprocess, debugging / external)::
 
-    python -m py.agent_cli base-models list
-    python -m py.agent_cli metadata read /path/to/model.safetensors
+    python -m py.metadata_ops base-models list
+    python -m py.metadata_ops metadata read /path/to/model.safetensors
 """
 
 from __future__ import annotations
@@ -214,7 +214,6 @@ async def download_preview(
             )
             with open(output_path, "wb") as f:
                 f.write(optimized_data)
-            logger.info("Preview downloaded and optimised for %s", model_path)
             return output_path
         except Exception as exc:
             logger.warning("Preview optimisation failed, saving raw: %s", exc)
@@ -224,7 +223,6 @@ async def download_preview(
     try:
         ok, _ = await downloader.download_file(url, output_path, use_auth=False)
         if ok:
-            logger.info("Preview downloaded (fallback) for %s", model_path)
             return output_path
     except Exception as exc:
         logger.warning("Preview fallback download failed for %s: %s", model_path, exc)

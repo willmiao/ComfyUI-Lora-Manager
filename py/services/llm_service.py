@@ -521,15 +521,9 @@ class LLMService:
 
         try:
             parsed = json.loads(result["content"])
-            logger.info(
-                "LLM response base_model=%s tags=%s confidence=%s",
-                parsed.get("base_model", "?")[:50],
-                parsed.get("tags", []),
-                parsed.get("confidence", "?"),
-            )
-            logger.info(
+            logger.debug(
                 "LLM raw content: %s",
-                (result.get("content") or "")[:1200],
+                json.dumps(parsed, ensure_ascii=False)[:2000],
             )
             return parsed
         except (json.JSONDecodeError, TypeError) as exc:

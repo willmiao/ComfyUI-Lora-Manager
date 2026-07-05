@@ -39,9 +39,9 @@ class TestProcessDispatch:
     @pytest.mark.asyncio
     async def test_enrich_hf_metadata_routes_correctly(self, processor):
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview") as mock_dl,
-            mock.patch("py.agent_cli.refresh_cache") as mock_ref,
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview") as mock_dl,
+            mock.patch("py.metadata_ops.refresh_cache") as mock_ref,
         ):
             mock_apply.return_value = ["metadata_source"]
             mock_dl.return_value = None
@@ -82,9 +82,9 @@ class TestEnrichHfMetadata:
         """Empty current base_model → new value is applied."""
         llm = {**self.MIN_LLM_OUTPUT, "base_model": "Flux.1 D"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -100,9 +100,9 @@ class TestEnrichHfMetadata:
         """Existing base_model from CivitAI → not overwritten."""
         llm = {**self.MIN_LLM_OUTPUT, "base_model": "Flux.1 D"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -119,9 +119,9 @@ class TestEnrichHfMetadata:
         """Existing base_model from HF → overwritten (LLM is more reliable)."""
         llm = {**self.MIN_LLM_OUTPUT, "base_model": "Flux.1 D"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -136,9 +136,9 @@ class TestEnrichHfMetadata:
     async def test_base_model_skipped_when_llm_empty(self, processor):
         """LLM returns empty base_model → nothing written."""
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -156,9 +156,9 @@ class TestEnrichHfMetadata:
         """New trigger words written when current list is empty."""
         llm = {**self.MIN_LLM_OUTPUT, "trigger_words": ["trigger1", "trigger2"]}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -176,9 +176,9 @@ class TestEnrichHfMetadata:
         """short_description written to civitai.description for HF models."""
         llm = {**self.MIN_LLM_OUTPUT, "short_description": "A short summary"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -194,9 +194,9 @@ class TestEnrichHfMetadata:
         """short_description NOT written for CivitAI models (has own description)."""
         llm = {**self.MIN_LLM_OUTPUT, "short_description": "A short summary"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -213,9 +213,9 @@ class TestEnrichHfMetadata:
     async def test_readme_content_converted_to_model_description(self, processor):
         """Raw README converted to HTML and stored as modelDescription."""
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -232,9 +232,9 @@ class TestEnrichHfMetadata:
     async def test_readme_content_skipped_for_civitai_model(self, processor):
         """README content NOT converted for CivitAI models."""
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -260,9 +260,9 @@ widget:
 Content
 """
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -286,9 +286,9 @@ Content
     async def test_gallery_images_skipped_for_civitai_model(self, processor):
         """Gallery images NOT extracted for CivitAI models."""
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=None),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -310,9 +310,9 @@ Content
     async def test_tags_merged_and_deduplicated(self, processor):
         llm = {**self.MIN_LLM_OUTPUT, "tags": ["flux", "lora", "STYLE"]}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -332,9 +332,9 @@ Content
     @pytest.mark.asyncio
     async def test_audit_fields_always_set(self, processor):
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -352,9 +352,9 @@ Content
     async def test_preview_downloaded_when_url_provided(self, processor):
         llm = {**self.MIN_LLM_OUTPUT, "preview_url": "https://ex.com/img.png"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates") as mock_apply,
-            mock.patch("py.agent_cli.download_preview") as mock_dl,
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview") as mock_dl,
+            mock.patch("py.metadata_ops.refresh_cache"),
         ):
             mock_dl.return_value = "/p.webp"
             result = await processor.process(
@@ -373,9 +373,9 @@ Content
         """If current_preview file exists on disk, skip download."""
         llm = {**self.MIN_LLM_OUTPUT, "preview_url": "https://ex.com/img.png"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates"),
-            mock.patch("py.agent_cli.download_preview") as mock_dl,
-            mock.patch("py.agent_cli.refresh_cache"),
+            mock.patch("py.metadata_ops.apply_metadata_updates"),
+            mock.patch("py.metadata_ops.download_preview") as mock_dl,
+            mock.patch("py.metadata_ops.refresh_cache"),
             mock.patch("os.path.exists", return_value=True),
         ):
             await processor.process(
@@ -392,9 +392,9 @@ Content
     async def test_cache_refreshed_when_updates_applied(self, processor):
         llm = {**self.MIN_LLM_OUTPUT, "base_model": "Flux.1 D"}
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates", return_value=["base_model"]),
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache") as mock_ref,
+            mock.patch("py.metadata_ops.apply_metadata_updates", return_value=["base_model"]),
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache") as mock_ref,
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",
@@ -407,9 +407,9 @@ Content
     @pytest.mark.asyncio
     async def test_cache_not_refreshed_when_nothing_changed(self, processor):
         with (
-            mock.patch("py.agent_cli.apply_metadata_updates", return_value=[]),
-            mock.patch("py.agent_cli.download_preview", return_value=False),
-            mock.patch("py.agent_cli.refresh_cache") as mock_ref,
+            mock.patch("py.metadata_ops.apply_metadata_updates", return_value=[]),
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache") as mock_ref,
         ):
             await processor.process(
                 skill_name="enrich_hf_metadata",

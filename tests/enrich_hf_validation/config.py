@@ -72,7 +72,7 @@ _FALLBACK_BASE_MODELS: List[str] = [
 async def init_supported_base_models() -> None:
     """Populate ``SUPPORTED_BASE_MODELS`` from the production codebase.
 
-    Calls ``py.agent_cli.list_base_models()`` which merges a hardcoded
+    Calls ``py.metadata_ops.list_base_models()`` which merges a hardcoded
     fallback with models fetched from the CivitAI API.  When the call
     fails (e.g. offline, API error), falls back to ``_FALLBACK_BASE_MODELS``.
 
@@ -80,7 +80,7 @@ async def init_supported_base_models() -> None:
     ``run_validation.main()``, not at module level).
     """
     try:
-        from py.agent_cli import list_base_models
+        from py.metadata_ops import list_base_models
 
         models = await list_base_models()
         if models:

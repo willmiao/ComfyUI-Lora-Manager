@@ -1,16 +1,17 @@
-"""Agent orchestration service.
+"""Pipeline orchestration service.
 
-The :class:`AgentService` coordinates skill execution:
+The :class:`AgentService` coordinates LLM-powered pipeline execution:
 
-1. Look up the skill in :class:`SkillRegistry`
-2. Validate input against the skill's ``input_schema``
-3. Prepare context via :mod:`~py.agent_cli` (read metadata, list base models, fetch HF README)
+1. Look up the pipeline definition in :class:`SkillRegistry`
+2. Validate input against its ``input_schema``
+3. Prepare context via :mod:`~py.metadata_ops` (read metadata, list base models, fetch HF README)
 4. If ``llm_required``: call :class:`LLMService` with the rendered prompt
-5. Post-process via :class:`PostProcessor` (delegates I/O to :mod:`~py.agent_cli`)
+5. Post-process via :class:`PostProcessor` (delegates I/O to :mod:`~py.metadata_ops`)
 6. Broadcast progress and completion via :class:`WebSocketManager`
 
-Skills define *what* to do (prompt template).  The AgentService handles *how*
-(LLM calls, context gathering, validation, progress).
+Pipeline definitions (*skills*) describe *what* to do (prompt template).
+The AgentService handles *how* (LLM calls, context gathering, validation,
+progress).
 """
 
 from __future__ import annotations
@@ -202,11 +203,11 @@ class AgentService:
         input_data: Dict[str, Any],
         progress_callback: Optional[AgentProgressReporter] = None,
     ) -> SkillResult:
-        """Execute an agent skill.
+        """Execute a pipeline (skill) on the given models.
 
         Args:
-            skill_name: Name of the skill to execute
-            input_data: Input validated against the skill's ``input_schema``
+            skill_name: Name of the pipeline to execute
+            input_data: Input validated against the pipeline's ``input_schema``
             progress_callback: Optional WebSocket progress reporter
 
         Returns:
@@ -214,7 +215,6 @@ class AgentService:
         """
 
         registry = await self._ensure_registry()
-        logger.info("execute_skill '%s': looking up skill", skill_name)
         skill = registry.get_skill(skill_name)
         if skill is None:
             return SkillResult(
@@ -246,7 +246,6 @@ class AgentService:
         errors: List[str] = []
         post_processor = PostProcessor()
 
-        logger.info("execute_skill '%s': starting with %d model(s)", skill_name, total)
         await self._emit_progress(
             progress_callback, skill_name, status="started",
             total=total, processed=0, success=0,
@@ -256,13 +255,14 @@ class AgentService:
         llm_configured = llm.is_configured() if skill.llm_required else True
 
         for model_path in model_paths:
+            model_filename = os.path.basename(model_path)
             logger.info(
-                "execute_skill '%s': processing model %d/%d: %s",
-                skill_name, processed + 1, total, model_path,
+                "[%s] [%d/%d] %s",
+                skill_name, processed + 1, total, model_filename,
             )
             updated_data: Dict[str, Any] = {}
             try:
-                from ...agent_cli import read_metadata
+                from ...metadata_ops import read_metadata
                 metadata = await read_metadata(model_path)
 
                 prompt_vars: Dict[str, Any] = {"model_path": model_path}
@@ -275,10 +275,6 @@ class AgentService:
                 if skill.llm_required and llm_configured:
                     prompt_template = registry.load_prompt(skill_name)
                     rendered = _render_prompt(prompt_template, prompt_vars)
-                    logger.info(
-                        "execute_skill '%s': LLM call for %s (prompt=%d chars)",
-                        skill_name, model_path, len(rendered),
-                    )
                     llm_response = await llm.chat_completion_json(
                         system_prompt=prompt_vars.get(
                             "system_prompt",
@@ -286,6 +282,13 @@ class AgentService:
                         ),
                         user_prompt=rendered,
                     )
+                    if llm_response:
+                        logger.info(
+                            "[%s] [%d/%d] %s → base_model=%s confidence=%s",
+                            skill_name, processed + 1, total, model_filename,
+                            (llm_response.get("base_model") or "?")[:50],
+                            llm_response.get("confidence", "?"),
+                        )
 
                 model_result = await post_processor.process(
                     skill_name=skill_name,
@@ -329,7 +332,6 @@ class AgentService:
             summary=f"Processed {processed}/{total} models, {success_count} succeeded",
         )
 
-        logger.info("execute_skill '%s': done — %s", skill_name, result.summary)
         await self._emit_progress(
             progress_callback, skill_name, status="completed",
             total=total, processed=processed, success=success_count,
@@ -366,7 +368,7 @@ class AgentService:
         base models, loads user priority tags, and returns a dict that maps to
         ``{{variable}}`` placeholders in ``prompt.md``.
         """
-        from ...agent_cli import identify_model_type, list_base_models
+        from ...metadata_ops import identify_model_type, list_base_models
         from ..settings_manager import SettingsManager
 
         context: Dict[str, Any] = {
@@ -411,10 +413,6 @@ class AgentService:
                 cleaned = clean_readme_for_llm(readme) if readme else ""
             context["readme_content"] = cleaned if cleaned else "(README not available)"
             context["readme_content_full"] = readme or ""
-            logger.info(
-                "Cleaned README for %s (%d chars): ---BEGIN---\n%s\n---END---",
-                repo, len(cleaned), cleaned[:800] if cleaned else "(empty)",
-            )
 
         try:
             raw_models = await list_base_models()
