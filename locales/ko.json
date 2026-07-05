@@ -781,7 +781,7 @@
                 "complete": "자동 정리 완료",
                 "error": "오류: {error}"
             },
-            "enrichHfAgent": "AI로 메타데이터 보강"
+            "enrichHfAgent": "HF AI로 메타데이터 보강"
         },
         "contextMenu": {
             "refreshMetadata": "Civitai 데이터 새로고침",
@@ -806,7 +806,7 @@
             "viewAllLoras": "모든 LoRA 보기",
             "downloadMissingLoras": "누락된 LoRA 다운로드",
             "deleteRecipe": "레시피 삭제",
-            "enrichHfAgent": "AI로 메타데이터 보강"
+            "enrichHfAgent": "HF AI로 메타데이터 보강"
         }
     },
     "recipes": {

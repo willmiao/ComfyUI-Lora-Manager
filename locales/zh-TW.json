@@ -781,7 +781,7 @@
                 "complete": "自動整理完成",
                 "error": "錯誤：{error}"
             },
-            "enrichHfAgent": "AI 中繼資料增強"
+            "enrichHfAgent": "AI HF 中繼資料增強"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 資料",
@@ -806,7 +806,7 @@
             "viewAllLoras": "檢視全部 LoRA",
             "downloadMissingLoras": "下載缺少的 LoRA",
             "deleteRecipe": "刪除配方",
-            "enrichHfAgent": "AI 中繼資料增強"
+            "enrichHfAgent": "AI HF 中繼資料增強"
         }
     },
     "recipes": {

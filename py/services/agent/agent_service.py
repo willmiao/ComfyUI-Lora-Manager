@@ -242,6 +242,7 @@ class AgentService:
         total = len(model_paths)
         processed = 0
         success_count = 0
+        skipped_count = 0
         updated_models: List[Dict[str, Any]] = []
         errors: List[str] = []
         post_processor = PostProcessor()
@@ -261,57 +262,68 @@ class AgentService:
                 skill_name, processed + 1, total, model_filename,
             )
             updated_data: Dict[str, Any] = {}
+            skip_model = False
             try:
                 from ...metadata_ops import read_metadata
                 metadata = await read_metadata(model_path)
 
-                prompt_vars: Dict[str, Any] = {"model_path": model_path}
-                if skill.llm_required and llm_configured:
-                    prompt_vars = await self._build_prompt_context(
-                        skill_name, model_path, metadata, registry, llm,
+                # Fast-fail: enrich_hf_metadata requires hf_url to have HF README context
+                if skill_name == "enrich_hf_metadata" and not metadata.get("hf_url", ""):
+                    logger.info(
+                        "[%s] SKIP %s — no hf_url in metadata",
+                        skill_name, model_filename,
                     )
+                    skipped_count += 1
+                    skip_model = True
 
-                llm_response: Optional[Dict[str, Any]] = None
-                if skill.llm_required and llm_configured:
-                    prompt_template = registry.load_prompt(skill_name)
-                    rendered = _render_prompt(prompt_template, prompt_vars)
-                    llm_response = await llm.chat_completion_json(
-                        system_prompt=prompt_vars.get(
-                            "system_prompt",
-                            "You are a helpful assistant that extracts structured metadata.",
-                        ),
-                        user_prompt=rendered,
-                    )
-                    if llm_response:
-                        logger.info(
-                            "[%s] [%d/%d] %s → base_model=%s confidence=%s",
-                            skill_name, processed + 1, total, model_filename,
-                            (llm_response.get("base_model") or "?")[:50],
-                            llm_response.get("confidence", "?"),
+                if not skip_model:
+                    prompt_vars: Dict[str, Any] = {"model_path": model_path}
+                    if skill.llm_required and llm_configured:
+                        prompt_vars = await self._build_prompt_context(
+                            skill_name, model_path, metadata, registry, llm,
                         )
 
-                model_result = await post_processor.process(
-                    skill_name=skill_name,
-                    model_path=model_path,
-                    llm_output=llm_response or {},
-                    metadata=metadata,
-                    readme_content=prompt_vars.get("readme_content_full", ""),
-                )
-
-                if model_result.get("success", True):
-                    success_count += 1
-                    uf = model_result.get("updated_fields", [])
-                    if uf:
-                        updated_models.append({"path": model_path, "updated_fields": uf})
-                    updated_data = model_result.get("updates", {})
-                    if "preview_url" in updated_data and updated_data["preview_url"]:
-                        updated_data["preview_url"] = config.get_preview_static_url(
-                            updated_data["preview_url"]
+                    llm_response: Optional[Dict[str, Any]] = None
+                    if skill.llm_required and llm_configured:
+                        prompt_template = registry.load_prompt(skill_name)
+                        rendered = _render_prompt(prompt_template, prompt_vars)
+                        llm_response = await llm.chat_completion_json(
+                            system_prompt=prompt_vars.get(
+                                "system_prompt",
+                                "You are a helpful assistant that extracts structured metadata.",
+                            ),
+                            user_prompt=rendered,
                         )
-                else:
-                    errors.extend(
-                        model_result.get("errors", [model_result.get("error", "Unknown error")])
+                        if llm_response:
+                            logger.info(
+                                "[%s] [%d/%d] %s → base_model=%s confidence=%s",
+                                skill_name, processed + 1, total, model_filename,
+                                (llm_response.get("base_model") or "?")[:50],
+                                llm_response.get("confidence", "?"),
+                            )
+
+                    model_result = await post_processor.process(
+                        skill_name=skill_name,
+                        model_path=model_path,
+                        llm_output=llm_response or {},
+                        metadata=metadata,
+                        readme_content=prompt_vars.get("readme_content_full", ""),
                     )
+
+                    if model_result.get("success", True):
+                        success_count += 1
+                        uf = model_result.get("updated_fields", [])
+                        if uf:
+                            updated_models.append({"path": model_path, "updated_fields": uf})
+                        updated_data = model_result.get("updates", {})
+                        if "preview_url" in updated_data and updated_data["preview_url"]:
+                            updated_data["preview_url"] = config.get_preview_static_url(
+                                updated_data["preview_url"]
+                            )
+                    else:
+                        errors.extend(
+                            model_result.get("errors", [model_result.get("error", "Unknown error")])
+                        )
 
             except Exception as exc:
                 logger.error("Skill %s failed for %s: %s", skill_name, model_path, exc)
@@ -321,6 +333,7 @@ class AgentService:
             await self._emit_progress(
                 progress_callback, skill_name, status="processing",
                 total=total, processed=processed, success=success_count,
+                skipped=skipped_count,
                 current_path=model_path,
                 updated_data=updated_data,
             )
@@ -329,12 +342,13 @@ class AgentService:
             success=success_count > 0,
             updated_models=updated_models,
             errors=errors,
-            summary=f"Processed {processed}/{total} models, {success_count} succeeded",
+            summary=f"Processed {processed}/{total} models, {success_count} succeeded, {skipped_count} skipped",
         )
 
         await self._emit_progress(
             progress_callback, skill_name, status="completed",
             total=total, processed=processed, success=success_count,
+            skipped=skipped_count,
             updated_models=updated_models, errors=errors, summary=result.summary,
         )
 

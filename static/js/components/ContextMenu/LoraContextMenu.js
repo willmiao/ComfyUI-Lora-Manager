@@ -24,6 +24,14 @@ export class LoraContextMenu extends BaseContextMenu {
     showMenu(x, y, card) {
         super.showMenu(x, y, card);
         this.updateExcludeMenuItem();
+        this.updateEnrichMenuItem(card);
+    }
+
+    updateEnrichMenuItem(card) {
+        const enrichItem = this.menu?.querySelector('[data-action="enrich-hf-llm"]');
+        if (!enrichItem) return;
+        const hasHfUrl = !!card.dataset.hf_url;
+        enrichItem.classList.toggle('disabled', !hasHfUrl);
     }
 
     handleMenuAction(action, menuItem) {

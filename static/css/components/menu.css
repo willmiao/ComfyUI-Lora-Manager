@@ -40,6 +40,12 @@
     margin: 3px 0;
 }
 
+.context-menu-item.disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    pointer-events: none;
+}
+
 .context-menu-item.delete-item {
     color: var(--danger-color);
 }

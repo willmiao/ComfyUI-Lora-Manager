@@ -781,7 +781,7 @@
                 "complete": "Auto-organización completada",
                 "error": "Error: {error}"
             },
-            "enrichHfAgent": "Enriquecer metadatos (IA)"
+            "enrichHfAgent": "Enriquecer metadatos HF (IA)"
         },
         "contextMenu": {
             "refreshMetadata": "Actualizar datos de Civitai",
@@ -806,7 +806,7 @@
             "viewAllLoras": "Ver todos los LoRAs",
             "downloadMissingLoras": "Descargar LoRAs faltantes",
             "deleteRecipe": "Eliminar receta",
-            "enrichHfAgent": "Enriquecer metadatos (IA)"
+            "enrichHfAgent": "Enriquecer metadatos HF (IA)"
         }
     },
     "recipes": {

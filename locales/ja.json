@@ -781,7 +781,7 @@
                 "complete": "自動整理が完了しました",
                 "error": "エラー：{error}"
             },
-            "enrichHfAgent": "メタデータをAIで補完"
+            "enrichHfAgent": "HF メタデータをAIで補完"
         },
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
@@ -806,7 +806,7 @@
             "viewAllLoras": "すべてのLoRAを表示",
             "downloadMissingLoras": "不足しているLoRAをダウンロード",
             "deleteRecipe": "レシピを削除",
-            "enrichHfAgent": "メタデータをAIで補完"
+            "enrichHfAgent": "HF メタデータをAIで補完"
         }
     },
     "recipes": {

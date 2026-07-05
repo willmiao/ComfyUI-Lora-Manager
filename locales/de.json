@@ -781,7 +781,7 @@
                 "complete": "Automatische Organisation abgeschlossen",
                 "error": "Fehler: {error}"
             },
-            "enrichHfAgent": "Metadaten mit KI anreichern"
+            "enrichHfAgent": "HF-Metadaten mit KI anreichern"
         },
         "contextMenu": {
             "refreshMetadata": "Civitai-Daten aktualisieren",
@@ -806,7 +806,7 @@
             "viewAllLoras": "Alle LoRAs anzeigen",
             "downloadMissingLoras": "Fehlende LoRAs herunterladen",
             "deleteRecipe": "Rezept löschen",
-            "enrichHfAgent": "Metadaten mit KI anreichern"
+            "enrichHfAgent": "HF-Metadaten mit KI anreichern"
         }
     },
     "recipes": {
