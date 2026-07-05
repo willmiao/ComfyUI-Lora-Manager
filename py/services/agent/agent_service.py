@@ -338,6 +338,20 @@ class AgentService:
 
         return result
 
+    # ------------------------------------------------------------------
+    # Base model grouping (keeps the prompt compact)
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _format_base_models(models: List[str]) -> str:
+        """Format the base model list as a flat, one-per-line list.
+
+        Attempts to group by family consistently degraded LLM extraction
+        accuracy — the LLM finds individual model names harder to spot
+        in comma-separated groups than in a simple ``- Name`` list.
+        """
+        return "\n".join(f"- {m}" for m in models)
+
     async def _build_prompt_context(
         self,
         skill_name: str,
@@ -403,9 +417,11 @@ class AgentService:
             )
 
         try:
-            context["base_models"] = await list_base_models()
+            raw_models = await list_base_models()
+            context["base_models"] = _format_base_models(raw_models)
         except Exception as exc:
             logger.debug("Failed to list base models: %s", exc)
+            context["base_models"] = "</not available>"
 
         # Determine model type and load the corresponding priority_tags
         try:

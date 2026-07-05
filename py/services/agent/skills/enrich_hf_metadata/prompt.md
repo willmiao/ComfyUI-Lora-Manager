@@ -34,33 +34,28 @@ These are the subjects, styles, and concepts the user considers useful for categ
 
 ## Available Base Models
 
-The following base models are currently valid in this system:
+The following base models are currently valid in this system.  Use the EXACT
+name listed — do not invent aliases or modify variant suffixes.
+
 {{base_models}}
 
-## HuggingFace → CivitAI Base Model Mapping
+When the YAML frontmatter contains ``base_model:`` as a HuggingFace repo path,
+map it to the canonical CivitAI name as follows:
 
-HuggingFace repos often declare `base_model:` in YAML frontmatter using HuggingFace
-model names.  Map them to CivitAI names using this reference:
+- ``runwayml/stable-diffusion`` or ``CompVis/stable-diffusion`` with version number → **SD** series (v1-4 → SD 1.4, v1-5 → SD 1.5, v2-1 → SD 2.1, v3-5 → SD 3.5)
+- ``stabilityai/stable-diffusion-xl-base-1.0`` → **SDXL 1.0**
+- ``black-forest-labs/FLUX.1`` (dev, schnell, krea variant) → **Flux.1** (dev → D, schnell → S)
+- ``krea/Krea-2-Raw`` or ``krea/Krea-2-Turbo`` → **Krea 2**
+- ``Comfy-Org/z_image_turbo`` or ``Tongyi-MAI/Z-Image-Turbo`` → **ZImageTurbo**
+- ``HiDream-ai/HiDream`` with variant name → **HiDream**
+- ``OnomaAIResearch/Illustrious`` or any repo path containing ``illustrious`` → **Illustrious**
+- ``ideogram-ai/ideogram`` → **Ideogram 4.0**
+- ``Wan-AI/Wan2`` with version and task → **Wan Video** family (match: T2V or I2V + model size)
+- ``CogVideo`` → **CogVideoX**
+- ``stabilityai/stable-video-diffusion`` → **SVD**
 
-| HuggingFace repo / model name                        | CivitAI base model |
-|-------------------------------------------------------|--------------------|
-| `runwayml/stable-diffusion-v1-5`                      | SD 1.5             |
-| `CompVis/stable-diffusion-v1-4`                       | SD 1.5             |
-| `stabilityai/stable-diffusion-2-1` / `-2-1-base`     | SD 2.1             |
-| `stabilityai/stable-diffusion-xl-base-1.0`            | SDXL 1.0           |
-| `stabilityai/stable-diffusion-3-5-large`              | SD 3.5 Large       |
-| `black-forest-labs/FLUX.1-dev`                        | Flux.1 D           |
-| `black-forest-labs/FLUX.1-schnell`                    | Flux.1 S           |
-| `black-forest-labs/FLUX.1-krea`                       | Flux.1 Krea        |
-| `krea/Krea-2-Raw` or `krea/Krea-2-Turbo`              | Krea 2             |
-| `Comfy-Org/z_image_turbo`                             | ZImageTurbo        |
-| `alibaba-pai/Z-Image-Turbo-Fun-Controlnet-Union-2.1`  | ZImageTurbo        |
-| `CogVideo`                                             | CogVideoX          |
-| `Wan-AI/Wan2.1-T2V-14B`                               | Wan Video 2.2 T2V-A14B |
-| `stabilityai/stable-video-diffusion-img2vid`          | SVD                |
-
-The model file name itself may also hint at the base model (e.g. "flux", "sdxl",
-"sd15", "krea2" in the filename).
+Also check the model filename for clues (e.g. "flux" → Flux family, "sdxl" → SDXL,
+"sd15" → SD 1.5, "krea2" → Krea 2, "zimage" → ZImage).
 
 ## HuggingFace README Content
 
@@ -75,7 +70,7 @@ Extract the following information from the README content above:
 ### base_model
 The base model this model was trained on. Use EXACTLY one of the names from the **Available Base Models** list above. Do not invent new names or use aliases.
 
-Check the YAML frontmatter (between --- markers) for `base_model:` first, then look at the description text and safetensors metadata.  If the YAML frontmatter uses a HuggingFace model name (e.g. `runwayml/stable-diffusion-v1-5`), use the mapping table above to find the correct CivitAI name.  If you cannot determine it, return an empty string.
+Check the YAML frontmatter for ``base_model:`` first (use the mapping rules above for HF repo paths). If the frontmatter has no ``base_model:``, look at the **model filename** (``{{model_basename}}``), YAML ``tags:``, README title and first paragraph for clues — the base model family is often embedded in the name (e.g. ``krea2`` → Krea 2, ``zimage`` → ZImageTurbo, ``flux`` → Flux, ``sdxl`` → SDXL).
 
 ### trigger_words
 The trigger words or activation prompts needed to use this LoRA. Look for:

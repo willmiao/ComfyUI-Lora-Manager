@@ -69,7 +69,7 @@ async def _load_model_catalog() -> Dict[str, List[str]]:
             result[provider_id] = model_ids
 
     _catalog_cache = result
-    logger.info(
+    logger.debug(
         "Loaded model catalog: %d providers, %d total models",
         len(result),
         sum(len(m) for m in result.values()),
