@@ -469,19 +469,32 @@ def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> s
     return text.strip()
 
 
+#: Language tags that should be preserved (not stripped) because they
+#: contain CLI commands, installation instructions, or shell snippets
+#: that carry metadata signal (e.g. trigger word setup, model usage).
+_PRESERVED_CODE_LANGS: frozenset[str] = frozenset({
+    "bash", "sh", "shell", "console", "zsh",
+})
+
+
 def _strip_fenced_code_blocks(text: str) -> str:
     """Strip fenced code blocks that have an explicit programming-language tag.
 
     Blocks without a language tag (just `` ``` ``) are preserved — they
     often contain trigger words, example prompts, or config snippets
     rather than actual runnable code.
+
+    Blocks tagged with shell languages (``bash``, ``sh``, ``shell``,
+    ``console``, ``zsh``) are also preserved — they frequently contain
+    CLI installation instructions or usage commands that carry signal for
+    LLM metadata extraction.
     """
     # Match opening ``` immediately followed by a word character (the language
-    # tag), then any content, then closing ```.  Plain ``` at the start of a
-    # line is left intact.  A leading \n is optional (handles blocks at the
-    # start of the text).
+    # tag) that is NOT a preserved shell language, then any content, then
+    # closing ```.  Plain ``` at the start of a line is left intact.  A
+    # leading \n is optional (handles blocks at the start of the text).
     return re.sub(
-        r"(?:\n|^)```[a-zA-Z_][a-zA-Z0-9_]*\s*\n.*?\n```",
+        r"(?:\n|^)```(?!(?:" + "|".join(_PRESERVED_CODE_LANGS) + r")\b)[a-zA-Z_][a-zA-Z0-9_]*\s*\n.*?\n```",
         "",
         text,
         flags=re.DOTALL,
