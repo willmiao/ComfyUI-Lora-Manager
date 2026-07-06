@@ -99,6 +99,15 @@ export class LoraContextMenu extends BaseContextMenu {
             'Enriching metadata with AI...'
         );
 
+        function cleanupCallbacks() {
+            const pIdx = agentManager.progressCallbacks.indexOf(onProgress);
+            if (pIdx >= 0) agentManager.progressCallbacks.splice(pIdx, 1);
+            const cIdx = agentManager.completeCallbacks.indexOf(onComplete);
+            if (cIdx >= 0) agentManager.completeCallbacks.splice(cIdx, 1);
+            const eIdx = agentManager.errorCallbacks.indexOf(onError);
+            if (eIdx >= 0) agentManager.errorCallbacks.splice(eIdx, 1);
+        }
+
         const onProgress = (data) => {
             if (data.status === 'processing' && data.current_path && data.updated_data && Object.keys(data.updated_data).length > 0) {
                 if (state.virtualScroller?.updateSingleItem) {
@@ -112,28 +121,26 @@ export class LoraContextMenu extends BaseContextMenu {
         agentManager.onProgress(onProgress);
 
         const onComplete = (data) => {
-            const pIdx = agentManager.progressCallbacks.indexOf(onProgress);
-            if (pIdx >= 0) agentManager.progressCallbacks.splice(pIdx, 1);
-            const cIdx = agentManager.completeCallbacks.indexOf(onComplete);
-            if (cIdx >= 0) agentManager.completeCallbacks.splice(cIdx, 1);
+            cleanupCallbacks();
 
             if (data.status === 'completed') {
                 progressUI.complete(data.summary || 'Enrich complete');
                 showToast('toast.agent.enrichComplete', { summary: data.summary || 'Done' }, 'success');
-            } else if (data.status === 'error') {
-                state.loadingManager.hide();
-                showToast('toast.agent.enrichFailed', { error: data.error || 'Unknown error' }, 'error');
             }
         };
         agentManager.onComplete(onComplete);
 
+        const onError = (data) => {
+            cleanupCallbacks();
+            state.loadingManager.hide();
+            showToast('toast.agent.enrichFailed', { error: data.error || 'Unknown error' }, 'error');
+        };
+        agentManager.onError(onError);
+
         try {
             await agentManager.executeSkill('enrich_hf_metadata', [filePath]);
         } catch (error) {
-            const pIdx = agentManager.progressCallbacks.indexOf(onProgress);
-            if (pIdx >= 0) agentManager.progressCallbacks.splice(pIdx, 1);
-            const cIdx = agentManager.completeCallbacks.indexOf(onComplete);
-            if (cIdx >= 0) agentManager.completeCallbacks.splice(cIdx, 1);
+            cleanupCallbacks();
             state.loadingManager.hide();
             showToast('toast.agent.enrichFailed', { error: error.message }, 'error');
         }
