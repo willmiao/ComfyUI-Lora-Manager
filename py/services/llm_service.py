@@ -282,15 +282,17 @@ class LLMService:
     def is_configured(self) -> bool:
         """Return ``True`` when the LLM provider is minimally configured.
 
-        A provider is considered configured when ``llm_model`` is set and
+        A provider is considered configured when ``llm_model`` is set,
         an API key is configured for providers that require one (e.g.
-        Ollama does not).
+        Ollama does not), and an API base URL is set for providers that
+        have no preset default (e.g. ``custom``).
         """
 
         cfg = self._get_config()
         has_model = bool(cfg["model"])
         has_key = bool(cfg["api_key"]) or not self._provider_requires_key(cfg["provider"])
-        return has_model and has_key
+        has_base = bool(cfg["api_base"]) or bool(_PROVIDER_DEFAULTS.get(cfg["provider"]))
+        return has_model and has_key and has_base
 
     def _resolve_api_base(self, provider: str, api_base: str) -> str:
         """Resolve the API base URL for the given provider.
@@ -314,20 +316,26 @@ class LLMService:
     def _ensure_configured(self) -> Dict[str, Any]:
         """Validate configuration and return it, or raise.
 
-        A provider is considered configured when ``llm_model`` is set and
-        (for non-Ollama) an API key is configured.
+        A provider is considered configured when ``llm_model`` is set,
+        an API key is configured for providers that require one, and
+        an API base URL is set for providers without a preset default.
         """
 
         cfg = self._get_config()
         has_model = bool(cfg["model"])
         needs_key = self._provider_requires_key(cfg["provider"])
         has_key = bool(cfg["api_key"]) or not needs_key
-        if not (has_model and has_key):
+        has_base = bool(cfg["api_base"]) or bool(_PROVIDER_DEFAULTS.get(cfg["provider"]))
+        if not (has_model and has_key and has_base):
             parts = []
             if not has_model:
                 parts.append("No LLM model specified")
             if not has_key and needs_key:
                 parts.append("No LLM API key configured")
+            if not has_base:
+                parts.append(
+                    f"No API base URL for provider '{cfg['provider']}'"
+                )
             detail = "; ".join(parts) if parts else "LLM provider is not configured"
             raise LLMNotConfiguredError(
                 f"{detail}. Configure it in Settings → AI Provider."

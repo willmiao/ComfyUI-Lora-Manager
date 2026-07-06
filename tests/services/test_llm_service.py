@@ -136,6 +136,32 @@ class TestLLMServiceConfiguration:
         with pytest.raises(LLMNotConfiguredError):
             service._ensure_configured()
 
+    def test_not_configured_custom_without_api_base(self):
+        settings = MockSettings(
+            llm_enabled=True, llm_provider="custom",
+            llm_api_key="sk-test", llm_api_base="", llm_model="gpt-4o",
+        )
+        service = LLMService(settings)
+        assert service.is_configured() is False
+
+    def test_custom_configured_with_api_base(self):
+        settings = MockSettings(
+            llm_enabled=True, llm_provider="custom",
+            llm_api_key="sk-test",
+            llm_api_base="https://my.api.com/v1", llm_model="gpt-4o",
+        )
+        service = LLMService(settings)
+        assert service.is_configured() is True
+
+    def test_ensure_configured_raises_custom_without_api_base(self):
+        settings = MockSettings(
+            llm_enabled=True, llm_provider="custom",
+            llm_api_key="sk-test", llm_api_base="", llm_model="gpt-4o",
+        )
+        service = LLMService(settings)
+        with pytest.raises(LLMNotConfiguredError, match="API base URL"):
+            service._ensure_configured()
+
 
 class TestLLMServiceChatCompletion:
     @pytest.mark.asyncio
