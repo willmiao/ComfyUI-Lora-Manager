@@ -219,7 +219,7 @@ class TestLLMServiceChatCompletionJson:
 
     @pytest.mark.asyncio
     async def test_chat_completion_json_raises_on_non_json(self, llm_service):
-        # First attempt: non-JSON; second attempt (retry): also non-JSON
+        # Non-JSON content raises LLMResponseError (salvage also fails)
         mock_response = MockResponse(
             200,
             json_data={

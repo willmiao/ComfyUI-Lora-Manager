@@ -27,18 +27,27 @@ _MODEL_CATALOG_URL = "https://models.dev/api.json"
 
 # In-memory cache: maps provider slug -> list of model ID strings.
 _catalog_cache: Optional[Dict[str, List[str]]] = None
+
+# Per-model max output token limits parsed from the catalog.
+# ``{provider_id: {model_id: max_output_tokens}}``.
+_model_output_limits: Dict[str, Dict[str, int]] = {}
+
 _CATALOG_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
 
 async def _load_model_catalog() -> Dict[str, List[str]]:
-    """Fetch and parse the model catalog, returning ``{provider_id: [model_id, ...]}``.
+    """Fetch and parse the model catalog.
+
+    Returns ``{provider_id: [model_id, ...]}`` and also populates
+    :data:`_model_output_limits` with per-model ``limit.output`` values
+    for use by :func:`_get_model_max_output`.
 
     The JSON at ``_MODEL_CATALOG_URL`` is a dict keyed by provider slug; each
-    value has a ``models`` sub-dict keyed by model ID.  Only the model IDs are
-    kept.  The result is cached in memory after the first successful fetch.
+    value has a ``models`` sub-dict keyed by model ID.  The result is cached
+    in memory after the first successful fetch.
     Subsequent calls return the cached data immediately.
     """
-    global _catalog_cache
+    global _catalog_cache, _model_output_limits
     if _catalog_cache is not None:
         return _catalog_cache
 
@@ -58,23 +67,50 @@ async def _load_model_catalog() -> Dict[str, List[str]]:
         return _catalog_cache or {}
 
     result: Dict[str, List[str]] = {}
+    output_limits: Dict[str, Dict[str, int]] = {}
     for provider_id, provider_info in data.items():
         if not isinstance(provider_info, dict):
             continue
         models_dict = provider_info.get("models")
         if not isinstance(models_dict, dict):
             continue
-        model_ids = [str(mid) for mid in models_dict.keys() if isinstance(mid, str)]
+        model_ids: List[str] = []
+        provider_limits: Dict[str, int] = {}
+        for mid, model_info in models_dict.items():
+            if not isinstance(mid, str):
+                continue
+            model_ids.append(mid)
+            if isinstance(model_info, dict):
+                limit = model_info.get("limit")
+                if isinstance(limit, dict):
+                    output = limit.get("output")
+                    if isinstance(output, (int, float)) and output > 0:
+                        provider_limits[mid] = int(output)
         if model_ids:
             result[provider_id] = model_ids
+        if provider_limits:
+            output_limits[provider_id] = provider_limits
 
     _catalog_cache = result
+    _model_output_limits = output_limits
     logger.debug(
-        "Loaded model catalog: %d providers, %d total models",
+        "Loaded model catalog: %d providers, %d total models "
+        "(%d providers have output limits)",
         len(result),
         sum(len(m) for m in result.values()),
+        len(output_limits),
     )
     return result
+
+
+def _get_model_max_output(provider: str, model: str) -> Optional[int]:
+    """Return the model's max output token limit from the catalog, or ``None``.
+
+    Returns ``None`` when the provider or model is not found in the catalog
+    (e.g. local Ollama models, custom models, or user-typed model names).
+    Callers should fall back to a safe default.
+    """
+    return _model_output_limits.get(provider, {}).get(model)
 
 
 # Short timeout for Ollama's local API
@@ -364,9 +400,11 @@ class LLMService:
                 "think": False,
                 "options": {
                     "temperature": temperature,
-                    # Allow up to 32K context so the model has room to think
-                    # AND produce output without hitting the 4K default limit.
-                    "num_ctx": 32768,
+                    # 8K context is sufficient for metadata enrichment
+                    # (prompt ~2-5K, output ~0.2-1K tokens).  The old 32K
+                    # value was excessive for this use case and increased
+                    # Ollama VRAM usage unnecessarily.
+                    "num_ctx": 8192,
                 },
             }
             if response_format is not None:
@@ -480,11 +518,15 @@ class LLMService:
         temperature: float = 0.3,
         max_tokens: Optional[int] = None,
     ) -> Dict[str, Any]:
-        """Call the LLM and return parsed JSON.
+        """Call the LLM with ``response_format=json_object`` and return parsed JSON.
 
-        Sends ``response_format: {"type": "json_object"}`` when the provider
-        supports it, and parses the response content as JSON.  If parsing
-        fails, retries once with a clarifying system message.
+        ``max_tokens`` is resolved in this order:
+        1. Explicit caller-supplied ``max_tokens``
+        2. Per-model ``limit.output`` from the model catalog
+        3. A safe default of 4096 (sufficient for metadata enrichment)
+
+        If the response content is empty or not valid JSON, attempts
+        :func:`_try_salvage_json` before raising.
 
         Args:
             system_prompt: System-level instructions
@@ -499,7 +541,7 @@ class LLMService:
         Raises:
             LLMNotConfiguredError: Provider not configured
             LLMRateLimitError: Rate limited
-            LLMResponseError: JSON parse failure after retry
+            LLMResponseError: Empty response or JSON parse failure
         """
 
         messages = [
@@ -507,10 +549,15 @@ class LLMService:
             {"role": "user", "content": user_prompt},
         ]
 
-        # First attempt with JSON mode.
-        # Use a generous max_tokens so thinking-enabled models (e.g.
-        # gemma4 via Ollama) have room to reason AND still emit content.
-        effective_max = max_tokens or 131072
+        # Resolve max_tokens: caller override → catalog lookup → safe default
+        if max_tokens is None:
+            cfg = self._get_config()
+            effective_max = _get_model_max_output(cfg["provider"], cfg["model"])
+        else:
+            effective_max = max_tokens
+        if effective_max is None:
+            effective_max = 4096
+
         result = await self.chat_completion(
             messages=messages,
             model=model,
@@ -519,8 +566,15 @@ class LLMService:
             max_tokens=effective_max,
         )
 
+        content = result.get("content", "") or ""
+        if not content:
+            raise LLMResponseError(
+                "LLM returned empty content in json_object mode. "
+                f"Raw response: {json.dumps(result)[:500]}"
+            )
+
         try:
-            parsed = json.loads(result["content"])
+            parsed = json.loads(content)
             logger.debug(
                 "LLM raw content: %s",
                 json.dumps(parsed, ensure_ascii=False)[:2000],
@@ -529,63 +583,21 @@ class LLMService:
         except (json.JSONDecodeError, TypeError) as exc:
             logger.info(
                 "LLM raw response (first 800 chars): %s",
-                (result.get("content") or "")[:800],
+                content[:800],
             )
+
+        # Last resort: attempt to salvage partial/truncated JSON
+        salvaged = _try_salvage_json(content)
+        if salvaged is not None:
             logger.warning(
-                "LLM JSON parse failed on first attempt: %s. Retrying.", exc
+                "LLM JSON salvaged from partial content (%d chars raw)",
+                len(content),
             )
+            return salvaged
 
-        # Retry WITHOUT response_format — some providers (Ollama with
-        # thinking-enabled models like gemma4) may return empty content
-        # when json_object mode is active.  Fall back to a textual
-        # instruction instead.
-        previous_content = result.get("content", "") or ""
-        retry_messages = messages + [
-            {
-                "role": "assistant",
-                "content": previous_content or "(empty response)",
-            },
-            {
-                "role": "user",
-                "content": (
-                    "The previous response could not be parsed as JSON. "
-                    "Please respond with ONLY a valid JSON object, no "
-                    "markdown fences or extra text."
-                ),
-            },
-        ]
-
-        result = await self.chat_completion(
-            messages=retry_messages,
-            model=model,
-            temperature=0.0,  # More deterministic for retry
-            max_tokens=effective_max,
+        raise LLMResponseError(
+            f"LLM response could not be parsed as JSON: {content[:200]}"
         )
-
-        content = result.get("content", "") or ""
-        if not content:
-            raise LLMResponseError(
-                "LLM response could not be parsed as JSON after retry: "
-                f"Expecting value: line 1 column 1 (char 0)\n"
-                f"Raw content: {content[:500]}"
-            )
-
-        try:
-            return json.loads(content)
-        except (json.JSONDecodeError, TypeError) as parse_err:
-            # Last resort: attempt to salvage partial JSON (closing unclosed
-            # brackets/braces, truncating incomplete strings, etc.)
-            salvaged = _try_salvage_json(content)
-            if salvaged is not None:
-                logger.warning(
-                    "LLM JSON salvaged from partial content (%d chars raw)",
-                    len(content),
-                )
-                return salvaged
-            raise LLMResponseError(
-                f"LLM response could not be parsed as JSON after retry: {parse_err}\n"
-                f"Raw content: {content[:500]}"
-            ) from parse_err
 
 
 def _try_salvage_json(raw: str) -> Dict[str, Any] | None:
