@@ -164,7 +164,7 @@ async def test_pause_resume_blocks_processing(
             await first_release.wait()
         else:
             second_call_started.set()
-        return True, False, []
+        return True, False, [], []
 
     async def fake_get_downloader():
         class _Downloader:
@@ -288,7 +288,7 @@ async def test_legacy_folder_migrated_and_skipped(
     async def fake_download_model_images(*_args, **_kwargs):
         nonlocal download_called
         download_called = True
-        return True, False, []
+        return True, False, [], []
 
     async def fake_get_downloader():
         class _Downloader:

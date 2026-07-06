@@ -46,6 +46,30 @@ def is_ssl_cert_verify_error(exc: BaseException) -> bool:
     return "CERTIFICATE_VERIFY_FAILED" in str(exc)
 
 
+def _parse_retry_after(value: str) -> int:
+    """Parse a Retry-After header value into seconds.
+
+    Supports both integer seconds and HTTP-date formats.
+    Returns a default of 60 seconds on invalid/missing input.
+    """
+    if not value or not value.strip():
+        return 60
+
+    value = value.strip()
+    try:
+        return max(1, int(value))
+    except ValueError:
+        pass
+
+    try:
+        parsed = parsedate_to_datetime(value)
+        now = datetime.now().astimezone()
+        delta = (parsed - now).total_seconds()
+        return max(1, int(delta))
+    except (ValueError, OverflowError, OSError):
+        return 60
+
+
 @dataclass(frozen=True)
 class DownloadProgress:
     """Snapshot of a download transfer at a moment in time."""
@@ -911,6 +935,19 @@ class Downloader:
                 elif response.status == 404:
                     error_msg = "File not found"
                     return False, error_msg, None
+                elif response.status == 429:
+                    raw_retry_after = response.headers.get("Retry-After")
+                    retry_after = _parse_retry_after(raw_retry_after or "")
+                    if raw_retry_after:
+                        logger.warning(
+                            "Rate limited (429) for %s, Retry-After: %ss", url, retry_after
+                        )
+                    else:
+                        logger.warning(
+                            "Rate limited (429) for %s, no Retry-After header; defaulting to %ss",
+                            url, retry_after,
+                        )
+                    return False, f"Rate limited (429), retry after {retry_after}s", None
                 else:
                     error_msg = f"Download failed with status {response.status}"
                     return False, error_msg, None

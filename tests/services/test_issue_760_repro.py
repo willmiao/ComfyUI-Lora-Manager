@@ -77,7 +77,7 @@ async def test_reprocessing_triggered_when_folder_missing(monkeypatch, tmp_path)
         model_dir = args[3]
         Path(model_dir).mkdir(parents=True, exist_ok=True)
         (Path(model_dir) / "image_0.png").write_text("fixed")
-        return True, False, []
+        return True, False, [], []
         
     monkeypatch.setattr(download_module.ExampleImagesProcessor, "download_model_images_with_tracking", fake_download_model_images)
     

@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import re
@@ -195,15 +196,21 @@ class ExampleImagesProcessor:
         return model_success, False  # (success, is_metadata_stale)
     
     @staticmethod
+    def _extract_retry_after(error_message: str) -> int:
+        if not error_message:
+            return 60
+        match = re.search(r"retry after (\d+)s", str(error_message))
+        if match:
+            return max(1, int(match.group(1)))
+        return 60
+
+    @staticmethod
     async def download_model_images_with_tracking(model_hash, model_name, model_images, model_dir, optimize, downloader):
-        """Download images for a single model with tracking of failed image URLs
-        
-        Returns:
-            tuple: (success, is_stale_metadata, failed_images) - whether download was successful, whether metadata is stale, list of failed image URLs
-        """
         model_success = True
         failed_images = []
-        
+        rate_limited_images = []
+        any_successful_download = False
+
         for i, image in enumerate(model_images):
             image_url = image.get('url')
             if not image_url:
@@ -221,64 +228,110 @@ class ExampleImagesProcessor:
             original_url = image_url
             if optimize and 'civitai.com' in image_url:
                 image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
-            
-            # Download the file first to determine the actual file type
-            try:
-                logger.debug(f"Downloading media file {i} for {model_name}")
-                
-                # Download using the unified downloader with headers
-                success, content, headers = await downloader.download_to_memory(
+
+            async def _attempt_download() -> tuple:
+                logger.debug("Downloading media file %s for %s", i, model_name)
+                return await downloader.download_to_memory(
                     image_url,
-                    use_auth=False,  # Example images don't need auth
-                    return_headers=True
+                    use_auth=False,
+                    return_headers=True,
                 )
-                
+
+            try:
+                success, content, headers = await _attempt_download()
+
                 if success:
-                    # Determine file extension from content or headers
                     media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
                         content, headers, original_url, image.get("type")
                     )
-                    
-                    # Check if the detected file type is supported
                     is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
                     is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
-                    
+
                     if not (is_image or is_video):
-                        logger.debug(f"Skipping unsupported file type: {media_ext}")
+                        logger.debug("Skipping unsupported file type: %s", media_ext)
                         continue
-                    
-                    # Use 0-based indexing with the detected extension
+
                     save_filename = f"image_{i}{media_ext}"
                     save_path = os.path.join(model_dir, save_filename)
-                    
-                    # Check if already downloaded
+
                     if os.path.exists(save_path):
-                        logger.debug(f"File already exists: {save_path}")
+                        logger.debug("File already exists: %s", save_path)
                         continue
-                    
-                    # Save the file
+
                     with open(save_path, 'wb') as f:
                         f.write(content)
-                    
+                    any_successful_download = True
+
                 elif ExampleImagesProcessor._is_not_found_error(content):
                     error_msg = f"Failed to download file: {image_url}, status code: 404 - Model metadata might be stale"
                     logger.warning(error_msg)
-                    model_success = False  # Mark the model as failed due to 404 error
-                    failed_images.append(image_url)  # Track failed URL
-                    # Return early to trigger metadata refresh attempt
-                    return False, True, failed_images  # (success, is_metadata_stale, failed_images)
+                    model_success = False
+                    failed_images.append(image_url)
+                    return False, True, failed_images, rate_limited_images
+
+                elif "Rate limited (429)" in str(content):
+                    max_attempts = 3
+                    for attempt in range(1, max_attempts + 1):
+                        wait = ExampleImagesProcessor._extract_retry_after(str(content)) * (2 ** (attempt - 1))
+                        logger.warning(
+                            "Rate limited (429) for %s, retry %d/%d after %ds",
+                            image_url, attempt, max_attempts, wait,
+                        )
+                        await asyncio.sleep(wait)
+
+                        success, content, headers = await _attempt_download()
+                        if success:
+                            media_ext = ExampleImagesProcessor._get_file_extension_from_content_or_headers(
+                                content, headers, original_url, image.get("type")
+                            )
+                            is_image = media_ext in SUPPORTED_MEDIA_EXTENSIONS['images']
+                            is_video = media_ext in SUPPORTED_MEDIA_EXTENSIONS['videos']
+
+                            if not (is_image or is_video):
+                                logger.debug("Skipping unsupported file type: %s", media_ext)
+                                break
+
+                            save_filename = f"image_{i}{media_ext}"
+                            save_path = os.path.join(model_dir, save_filename)
+                            if os.path.exists(save_path):
+                                logger.debug("File already exists: %s", save_path)
+                                break
+
+                            with open(save_path, 'wb') as f:
+                                f.write(content)
+                            any_successful_download = True
+                            break
+                        elif "Rate limited (429)" in str(content):
+                            continue
+                        elif ExampleImagesProcessor._is_not_found_error(content):
+                            logger.warning("Failed to download file: %s, status code: 404", image_url)
+                            model_success = False
+                            failed_images.append(image_url)
+                            break
+                        else:
+                            logger.warning("Failed to download file: %s, error: %s", image_url, content)
+                            model_success = False
+                            failed_images.append(image_url)
+                            break
+                    else:
+                        logger.warning(
+                            "Giving up on %s after %d retries due to rate limiting",
+                            image_url, max_attempts,
+                        )
+                        rate_limited_images.append(image_url)
+                        model_success = False
                 else:
                     error_msg = f"Failed to download file: {image_url}, error: {content}"
                     logger.warning(error_msg)
-                    model_success = False  # Mark the model as failed
-                    failed_images.append(image_url)  # Track failed URL
+                    model_success = False
+                    failed_images.append(image_url)
             except Exception as e:
                 error_msg = f"Error downloading file {image_url}: {str(e)}"
                 logger.error(error_msg)
-                model_success = False  # Mark the model as failed
-                failed_images.append(image_url)  # Track failed URL
-        
-        return model_success, False, failed_images  # (success, is_metadata_stale, failed_images)
+                model_success = False
+                failed_images.append(image_url)
+
+        return any_successful_download or model_success, False, failed_images, rate_limited_images
     
     @staticmethod
     async def process_local_examples(model_file_path, model_file_name, model_name, model_dir, optimize):

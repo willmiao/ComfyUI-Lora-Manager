@@ -72,6 +72,7 @@ class _DownloadProgress(dict):
             refreshed_models=set(),
             failed_models=set(),
             reprocessed_models=set(),
+            rate_limited_models=set(),
         )
 
     def snapshot(self) -> dict:
@@ -82,6 +83,7 @@ class _DownloadProgress(dict):
         snapshot["refreshed_models"] = list(self["refreshed_models"])
         snapshot["failed_models"] = list(self["failed_models"])
         snapshot["reprocessed_models"] = list(self.get("reprocessed_models", set()))
+        snapshot["rate_limited_models"] = list(self.get("rate_limited_models", set()))
         return snapshot
 
 
@@ -153,13 +155,15 @@ class DownloadManager:
         # Step 3: Load progress file (I/O operation, done outside lock)
         processed_models = set()
         failed_models = set()
+        rate_limited_models = set()
         
         try:
-            progress_file, processed_models, failed_models = await self._load_progress_file(output_dir)
+            progress_file, processed_models, failed_models, rate_limited_models = await self._load_progress_file(output_dir)
             logger.debug(
-                "Loaded previous progress, %s models already processed, %s models marked as failed",
+                "Loaded previous progress, %s models already processed, %s models marked as failed, %s models rate-limited",
                 len(processed_models),
                 len(failed_models),
+                len(rate_limited_models),
             )
         except Exception as e:
             logger.error(f"Failed to load progress file: {e}")
@@ -175,6 +179,7 @@ class DownloadManager:
                 self._progress.reset()
                 self._progress["processed_models"] = processed_models
                 self._progress["failed_models"] = failed_models
+                self._progress["rate_limited_models"] = rate_limited_models
                 self._stop_requested = False
                 self._progress["status"] = "running"
                 self._progress["start_time"] = time.time()
@@ -242,8 +247,8 @@ class DownloadManager:
             "status": self._progress.snapshot(),
         }
 
-    async def _load_progress_file(self, output_dir: str) -> tuple[str, set, set]:
-        """Load progress file from disk. Returns (progress_file_path, processed_models, failed_models).
+    async def _load_progress_file(self, output_dir: str) -> tuple[str, set, set, set]:
+        """Load progress file from disk. Returns (progress_file_path, processed_models, failed_models, rate_limited_models).
 
         This is a separate async method to allow running in executor to avoid blocking event loop.
         """
@@ -252,8 +257,12 @@ class DownloadManager:
             None, self._load_progress_file_sync, output_dir
         )
 
-    def _load_progress_file_sync(self, output_dir: str) -> tuple[str, set, set]:
-        """Synchronous implementation of progress file loading."""
+    def _load_progress_file_sync(self, output_dir: str) -> tuple[str, set, set, set]:
+        """Synchronous implementation of progress file loading.
+
+        Returns:
+            tuple: (progress_file_path, processed_models, failed_models, rate_limited_models)
+        """
         progress_file = os.path.join(output_dir, ".download_progress.json")
         progress_source = progress_file
 
@@ -289,6 +298,7 @@ class DownloadManager:
 
         processed_models = set()
         failed_models = set()
+        rate_limited_models = set()
 
         if os.path.exists(progress_source):
             try:
@@ -296,11 +306,11 @@ class DownloadManager:
                     saved_progress = json.load(f)
                     processed_models = set(saved_progress.get("processed_models", []))
                     failed_models = set(saved_progress.get("failed_models", []))
+                    rate_limited_models = set(saved_progress.get("rate_limited_models", []))
             except Exception:
-                # Return empty sets on error
                 pass
 
-        return progress_file, processed_models, failed_models
+        return progress_file, processed_models, failed_models, rate_limited_models
 
     def _load_progress_sets_sync(self, progress_file: str) -> tuple[set, set]:
         """Load only the processed and failed model sets from progress file.
@@ -732,11 +742,13 @@ class DownloadManager:
                     success,
                     is_stale,
                     failed_images,
+                    rate_limited_images,
                 ) = await ExampleImagesProcessor.download_model_images_with_tracking(
                     model_hash, model_name, images, model_dir, optimize, downloader
                 )
 
                 failed_urls: Set[str] = set(failed_images)
+                rate_limited_urls: Set[str] = set(rate_limited_images)
 
                 # If metadata is stale, try to refresh it
                 if is_stale and model_hash not in self._progress["refreshed_models"]:
@@ -760,6 +772,7 @@ class DownloadManager:
                             success,
                             _,
                             additional_failed,
+                            additional_rate_limited,
                         ) = await ExampleImagesProcessor.download_model_images_with_tracking(
                             model_hash,
                             model_name,
@@ -770,29 +783,50 @@ class DownloadManager:
                         )
 
                         failed_urls.update(additional_failed)
+                        rate_limited_urls.update(additional_rate_limited)
 
                     self._progress["refreshed_models"].add(model_hash)
 
-                if failed_urls:
+                # Separate permanent failures from rate-limited ones
+                permanent_failures = failed_urls - rate_limited_urls
+
+                if permanent_failures:
                     await self._remove_failed_images_from_metadata(
                         model_hash,
                         model_name,
                         model_dir,
-                        failed_urls,
+                        permanent_failures,
                         scanner,
                     )
 
-                if failed_urls:
+                if rate_limited_urls:
+                    self._progress["rate_limited_models"].add(model_hash)
+                    logger.warning(
+                        "%d example images for %s are rate-limited (429), will retry next time",
+                        len(rate_limited_urls),
+                        model_name,
+                    )
+                    # Clear failed_models so non-force runs can retry
+                    if force and model_hash in self._progress["failed_models"]:
+                        self._progress["failed_models"].discard(model_hash)
+                        logger.info(
+                            f"Removed {model_name} from failed_models after force retry with rate-limited images"
+                        )
+
+                if rate_limited_urls:
+                    # Don't mark as failed or fully processed — rate-limited
+                    # images will be retried next time.
+                    pass
+                elif permanent_failures:
                     self._progress["failed_models"].add(model_hash)
                     self._progress["processed_models"].add(model_hash)
                     logger.info(
                         "Removed %s failed example images for %s",
-                        len(failed_urls),
+                        len(permanent_failures),
                         model_name,
                     )
                 elif success:
                     self._progress["processed_models"].add(model_hash)
-                    # Remove from failed_models if force mode enabled and model was previously failed
                     if force and model_hash in self._progress["failed_models"]:
                         self._progress["failed_models"].discard(model_hash)
                         logger.info(
@@ -850,6 +884,7 @@ class DownloadManager:
                 "processed_models": list(self._progress["processed_models"]),
                 "refreshed_models": list(self._progress["refreshed_models"]),
                 "failed_models": list(self._progress["failed_models"]),
+                "rate_limited_models": list(self._progress.get("rate_limited_models", set())),
                 "completed": self._progress["completed"],
                 "total": self._progress["total"],
                 "last_update": time.time(),
@@ -1155,11 +1190,13 @@ class DownloadManager:
                     success,
                     is_stale,
                     failed_images,
+                    rate_limited_images,
                 ) = await ExampleImagesProcessor.download_model_images_with_tracking(
                     model_hash, model_name, images, model_dir, optimize, downloader
                 )
 
                 failed_urls: Set[str] = set(failed_images)
+                rate_limited_urls: Set[str] = set(rate_limited_images)
 
                 # If metadata is stale, try to refresh it
                 if is_stale and model_hash not in self._progress["refreshed_models"]:
@@ -1183,6 +1220,7 @@ class DownloadManager:
                             success,
                             _,
                             additional_failed_images,
+                            additional_rate_limited,
                         ) = await ExampleImagesProcessor.download_model_images_with_tracking(
                             model_hash,
                             model_name,
@@ -1192,21 +1230,35 @@ class DownloadManager:
                             downloader,
                         )
 
-                        # Combine failed images from both attempts
                         failed_urls.update(additional_failed_images)
+                        rate_limited_urls.update(additional_rate_limited)
 
                     self._progress["refreshed_models"].add(model_hash)
 
-                # For forced downloads, remove failed images from metadata
-                if failed_urls:
+                # Separate permanent failures from rate-limited ones
+                permanent_failures = failed_urls - rate_limited_urls
+
+                # Only remove permanently failed images from metadata
+                if permanent_failures:
                     await self._remove_failed_images_from_metadata(
-                        model_hash, model_name, model_dir, failed_urls, scanner
+                        model_hash, model_name, model_dir, permanent_failures, scanner
                     )
 
-                # Mark as processed
-                if (
-                    success or failed_urls
-                ):  # Mark as processed if we successfully downloaded some images or removed failed ones
+                if rate_limited_urls:
+                    self._progress["rate_limited_models"].add(model_hash)
+                    logger.warning(
+                        "%d example images for %s are rate-limited (429), will retry next time",
+                        len(rate_limited_urls),
+                        model_name,
+                    )
+
+                # Mark as processed only when no rate-limited images remain
+                if rate_limited_urls:
+                    pass
+                elif permanent_failures:
+                    self._progress["processed_models"].add(model_hash)
+                    self._progress["failed_models"].add(model_hash)
+                elif success:
                     self._progress["processed_models"].add(model_hash)
 
                 return True  # Return True to indicate a remote download happened
@@ -1229,15 +1281,20 @@ class DownloadManager:
         model_dir: str,
         failed_images: Iterable[str],
         scanner,
+        error_type: str = "not_found",
     ) -> None:
-        """Mark failed images in model metadata so they won't be retried."""
+        """Mark failed images in model metadata so they won't be retried.
+
+        Args:
+            error_type: Reason string stored in the image's ``downloadError`` field
+                        (default ``"not_found"``).
+        """
 
         failed_set: Set[str] = {url for url in failed_images if url}
         if not failed_set:
             return
 
         try:
-            # Get current model data
             model_data = await MetadataUpdater.get_updated_model(model_hash, scanner)
             if not model_data:
                 logger.warning(
@@ -1268,7 +1325,7 @@ class DownloadManager:
                     continue
 
                 image["downloadFailed"] = True
-                image.setdefault("downloadError", "not_found")
+                image.setdefault("downloadError", error_type)
                 logger.debug(
                     "Marked example image %s for %s as failed due to missing remote asset",
                     image_url,
