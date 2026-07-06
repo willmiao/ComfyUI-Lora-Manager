@@ -633,7 +633,7 @@ export class BulkManager {
                 filePaths.forEach(path => {
                     state.virtualScroller.removeItemByFilePath(path);
                 });
-                this.clearSelection();
+                if (state.bulkMode) this.toggleBulkMode();
 
                 if (window.modelDuplicatesManager) {
                     window.modelDuplicatesManager.updateDuplicatesBadgeAfterRefresh();
@@ -763,8 +763,9 @@ export class BulkManager {
                     `Re-import complete: ${completed} re-imported, ${failed} failed`
                 );
                 const { resetAndReload: recipeResetAndReload } = await import('../api/recipeApi.js');
-                recipeResetAndReload(false, { preserveScroll: false });
                 this.clearSelection();
+                if (state.bulkMode) this.toggleBulkMode();
+                recipeResetAndReload(false, { preserveScroll: false });
             } else {
                 state.loadingManager.hide();
                 showToast('toast.recipes.reimportBulkFailed', {}, 'error');
@@ -829,7 +830,7 @@ export class BulkManager {
                     );
                 }
 
-                this.clearSelection();
+                if (state.bulkMode) this.toggleBulkMode();
             } else {
                 throw new Error(result.error || 'Bulk repair failed');
             }
@@ -874,6 +875,8 @@ export class BulkManager {
                 if (this.isStripVisible) {
                     this.updateThumbnailStrip();
                 }
+
+                if (state.bulkMode) this.toggleBulkMode();
             }
 
         } catch (error) {
@@ -927,6 +930,7 @@ export class BulkManager {
                 showToast('toast.models.bulkUpdatesNone', { type: typeLabel }, 'info');
             }
 
+            if (state.bulkMode) this.toggleBulkMode();
             await resetAndReload(false);
         } catch (error) {
             console.error('Error checking updates for selected models:', error);
@@ -1273,6 +1277,8 @@ export class BulkManager {
                 showToast(toastKey, { count: failCount }, 'warning');
             }
 
+            if (state.bulkMode) this.toggleBulkMode();
+
         } catch (error) {
             console.error('Error during bulk tag operation:', error);
             const toastKey = mode === 'replace' ? 'toast.models.bulkTagsReplaceFailed' : 'toast.models.bulkTagsAddFailed';
@@ -1398,6 +1404,8 @@ export class BulkManager {
         } else {
             showToast('toast.models.bulkFavoriteFailed', {}, 'error');
         }
+
+        if (state.bulkMode) this.toggleBulkMode();
     }
 
     /**
@@ -1526,6 +1534,8 @@ export class BulkManager {
             showToast('toast.models.bulkContentRatingFailed', {}, 'error');
         }
 
+        if (state.bulkMode) this.toggleBulkMode();
+
         return successCount > 0;
     }
 
@@ -1580,6 +1590,8 @@ export class BulkManager {
         } else {
             showToast('toast.models.skipMetadataRefreshFailed', {}, 'error');
         }
+
+        if (state.bulkMode) this.toggleBulkMode();
     }
 
     /**
@@ -1674,6 +1686,8 @@ export class BulkManager {
                 showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
             }
 
+            if (state.bulkMode) this.toggleBulkMode();
+
         } catch (error) {
             console.error('Error during bulk base model operation:', error);
             showToast('toast.models.bulkBaseModelUpdateFailed', {}, 'error');
@@ -1711,6 +1725,7 @@ export class BulkManager {
             // Call the auto-organize method with selected file paths
             await apiClient.autoOrganizeModels(filePaths);
 
+            if (state.bulkMode) this.toggleBulkMode();
             resetAndReload(true);
         } catch (error) {
             console.error('Error during bulk auto-organize:', error);

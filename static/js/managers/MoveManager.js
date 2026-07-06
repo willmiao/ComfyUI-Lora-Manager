@@ -330,8 +330,9 @@ class MoveManager {
                     .filter(r => r.success)
                     .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
 
-                // Deselect moving items
+                // Deselect moving items and exit bulk mode
                 this.bulkFilePaths.forEach(path => bulkManager.deselectItem(path));
+                if (state.bulkMode) bulkManager.toggleBulkMode();
             } else {
                 // Single move mode
                 const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
