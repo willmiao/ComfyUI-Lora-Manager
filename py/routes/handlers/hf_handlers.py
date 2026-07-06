@@ -122,8 +122,12 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
         metadata._unknown_fields["hf_url"] = hf_url
         metadata.from_civitai = False  # HF models are not from CivitAI
 
+        metadata_dict = metadata.to_dict()
+        if "trainedWords" in metadata_dict and not metadata_dict["trainedWords"]:
+            del metadata_dict["trainedWords"]
+
         # 3. Save metadata atomically
-        await MetadataManager.save_metadata(dest_path, metadata)
+        await MetadataManager.save_metadata(dest_path, metadata_dict)
         logger.info("Saved HF metadata (with hf_url) for %s", dest_path)
 
         # 4. Determine relative folder path for cache
