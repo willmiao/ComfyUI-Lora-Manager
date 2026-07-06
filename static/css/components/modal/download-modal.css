@@ -577,13 +577,14 @@
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-sm);
     cursor: pointer;
-    transition: var(--transition-base);
+    transition: var(--transition-base), box-shadow var(--transition-fast), transform var(--transition-fast);
     background: var(--bg-color);
 }
 
 .file-option:hover {
     border-color: var(--lora-accent);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
 }
 
 .file-option.selected {
@@ -698,10 +699,25 @@
     color: var(--lora-accent);
 }
 
-/* Batch Preview List */
+/* BUG 1 FIX: Single scrollbar — modal-content becomes a flex column so the
+   batch preview step can flex; the list scrolls instead of the modal-content. */
+#downloadModal .modal-content {
+    display: flex;
+    flex-direction: column;
+}
+
+#batchPreviewStep {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1;
+}
+
+/* Batch Preview List — no max-height; flexes inside #batchPreviewStep */
 .batch-preview-list {
-    max-height: 400px;
+    flex: 1;
     overflow-y: auto;
+    min-height: 0;
     margin: var(--space-2) 0;
     display: flex;
     flex-direction: column;
@@ -859,6 +875,8 @@
     position: sticky;
     top: 0;
     z-index: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
 }
 
 .batch-preview-select-all input[type="checkbox"] {
@@ -883,4 +901,101 @@
 
 [data-theme="dark"] .batch-preview-select-all {
     background: var(--lora-surface);
+}
+
+/* FEATURE 2: HF repo grouping — collapsible groups by repo */
+.batch-preview-group {
+    display: flex;
+    flex-direction: column;
+    background: var(--surface-base);
+}
+
+.batch-preview-group-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--color-accent-subtle);
+    border-bottom: 1px solid var(--color-accent-border);
+    cursor: pointer;
+    user-select: none;
+    transition: background var(--transition-fast);
+}
+
+.batch-preview-group-header:hover {
+    background: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.18);
+}
+
+.batch-preview-group-toggle {
+    width: 14px;
+    font-size: 0.75em;
+    color: var(--text-color);
+    opacity: 0.7;
+    transition: transform var(--transition-fast);
+    flex-shrink: 0;
+}
+
+.batch-preview-group-toggle.expanded {
+    transform: rotate(90deg);
+}
+
+.batch-preview-group-name {
+    flex: 1;
+    min-width: 0;
+    font-weight: 600;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.95em;
+}
+
+.batch-preview-group-count {
+    font-size: 0.8em;
+    color: var(--text-color);
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
+.batch-preview-group-select-all {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    accent-color: var(--lora-accent);
+    flex-shrink: 0;
+    padding: 0;
+    margin: 0;
+}
+
+.batch-preview-group-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--border-color);
+    overflow: hidden;
+    max-height: 0;
+    opacity: 0;
+    transition: max-height 0.35s ease, opacity 0.2s ease;
+}
+
+.batch-preview-group-body.expanded {
+    opacity: 1;
+    max-height: 9999px; /* rest state: content visible; JS inline style overrides during transitions */
+}
+
+/* Dark theme overrides for group styles */
+[data-theme="dark"] .batch-preview-group {
+    background: var(--surface-base);
+}
+
+[data-theme="dark"] .batch-preview-group-header {
+    background: var(--color-accent-subtle);
+}
+
+[data-theme="dark"] .batch-preview-group-header:hover {
+    background: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.22);
+}
+
+[data-theme="dark"] .batch-preview-group-body {
+    background: var(--border-color);
 }

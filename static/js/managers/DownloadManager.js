@@ -31,6 +31,7 @@ export class DownloadManager {
         // HF download state
         this.hfRepoId = null;
         this.hfSelectedFiles = [];
+        this.hfRepoCollapsed = {};
 
         this.loadingManager = new LoadingManager();
         this.folderTreeManager = new FolderTreeManager();
@@ -174,6 +175,7 @@ export class DownloadManager {
         // Reset HF state
         this.hfRepoId = null;
         this.hfSelectedFiles = [];
+        this.hfRepoCollapsed = {};
     }
 
     async retrieveVersionsForModel(modelId, source = null) {
@@ -1078,7 +1080,7 @@ export class DownloadManager {
 
     showBatchPreviewStep() {
         document.querySelectorAll('.download-step').forEach(step => step.style.display = 'none');
-        document.getElementById('batchPreviewStep').style.display = 'block';
+        document.getElementById('batchPreviewStep').style.display = 'flex';
 
         const validCount = this.batchModels.filter(m => {
             if (m.error) return false;
@@ -1092,56 +1094,36 @@ export class DownloadManager {
         const list = document.getElementById('batchPreviewList');
         const hasHfItems = this.batchModels.some(m => m.source === 'huggingface' && !m.error);
 
-        let itemsHtml = this.batchModels.map((item, index) => {
-            if (item.error) {
-                return `
-                    <div class="batch-preview-item batch-preview-error" data-index="${index}">
-                        <div class="batch-preview-icon">
-                            <i class="fas fa-exclamation-triangle"></i>
-                        </div>
-                        <div class="batch-preview-info">
-                            <div class="batch-preview-name">${item.url}</div>
-                            <div class="batch-preview-meta batch-preview-error-text">${item.error}</div>
-                        </div>
-                        <button class="batch-preview-remove" data-index="${index}" title="${translate('common.actions.remove', {}, 'Remove')}">
-                            <i class="fas fa-times"></i>
-                        </button>
+        // Error items render flat, outside any group
+        const errorItemsHtml = this.batchModels.map((item, index) => {
+            if (!item.error) return null;
+            return `
+                <div class="batch-preview-item batch-preview-error" data-index="${index}">
+                    <div class="batch-preview-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
                     </div>
-                `;
-            }
+                    <div class="batch-preview-info">
+                        <div class="batch-preview-name">${item.url}</div>
+                        <div class="batch-preview-meta batch-preview-error-text">${item.error}</div>
+                    </div>
+                    <button class="batch-preview-remove" data-index="${index}" title="${translate('common.actions.remove', {}, 'Remove')}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        }).filter(Boolean).join('');
 
+        // CivitAI items render flat, outside any group (unchanged)
+        const civitaiItemsHtml = this.batchModels.map((item, index) => {
+            if (item.error) return null;
+            if (item.source === 'huggingface') return null;
             const ver = item.selectedVersion;
-
-            // HF batch item rendering with checkbox
-            if (item.source === 'huggingface') {
-                const hfSize = item.fileSizeBytes
-                    ? formatFileSize(item.fileSizeBytes)
-                    : '?';
-                return `
-                    <div class="batch-preview-item" data-index="${index}">
-                        <input type="checkbox" class="batch-preview-checkbox"
-                               data-index="${index}" ${item.checked !== false ? 'checked' : ''} />
-                        <div class="batch-preview-info">
-                            <div class="batch-preview-name">${item.displayName || item.filename || `HF #${index}`} <span class="hf-badge">HF</span></div>
-                            <div class="batch-preview-meta">
-                                <span>${hfSize}</span>
-                                <span>${item.repo || ''}</span>
-                            </div>
-                        </div>
-                        <button class="batch-preview-remove" data-index="${index}" title="${translate('common.actions.remove', {}, 'Remove')}">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                `;
-            }
-
             const firstImage = ver?.images?.find(img => !img.url.endsWith('.mp4'));
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
             const fileSize = ver?.modelSizeKB
                 ? (ver.modelSizeKB / 1024).toFixed(1)
                 : (ver?.files?.[0]?.sizeKB ? (ver.files[0].sizeKB / 1024).toFixed(1) : '?');
             const existsLocally = ver?.existsLocally;
-
             return `
                 <div class="batch-preview-item ${existsLocally ? 'batch-preview-local' : ''}" data-index="${index}">
                     <div class="batch-preview-thumbnail">
@@ -1162,7 +1144,58 @@ export class DownloadManager {
                     ` : ''}
                 </div>
             `;
+        }).filter(Boolean).join('');
+
+        // Group HF items by repo (data model stays flat — only rendering groups)
+        const hfGroups = {};
+        this.batchModels.forEach((item, index) => {
+            if (item.error || item.source !== 'huggingface') return;
+            const repo = item.repo || 'unknown';
+            if (!hfGroups[repo]) hfGroups[repo] = [];
+            hfGroups[repo].push({ item, index });
+        });
+
+        const renderHfItem = ({ item, index }) => {
+            const hfSize = item.fileSizeBytes ? formatFileSize(item.fileSizeBytes) : '?';
+            return `
+                <div class="batch-preview-item" data-index="${index}">
+                    <input type="checkbox" class="batch-preview-checkbox"
+                           data-index="${index}" ${item.checked !== false ? 'checked' : ''} />
+                    <div class="batch-preview-info">
+                        <div class="batch-preview-name">${item.displayName || item.filename || `HF #${index}`} <span class="hf-badge">HF</span></div>
+                        <div class="batch-preview-meta">
+                            <span>${hfSize}</span>
+                            <span>${item.repo || ''}</span>
+                        </div>
+                    </div>
+                    <button class="batch-preview-remove" data-index="${index}" title="${translate('common.actions.remove', {}, 'Remove')}">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            `;
+        };
+
+        const hfGroupsHtml = Object.keys(hfGroups).map(repo => {
+            const items = hfGroups[repo];
+            const isCollapsed = this.hfRepoCollapsed[repo] === true;
+            const allChecked = items.every(({ item }) => item.checked !== false);
+            const fileCount = items.length;
+            return `
+                <div class="batch-preview-group" data-repo="${repo}">
+                    <div class="batch-preview-group-header">
+                        <i class="fas fa-chevron-right batch-preview-group-toggle ${isCollapsed ? '' : 'expanded'}"></i>
+                        <span class="batch-preview-group-name">${repo}</span>
+                        <span class="batch-preview-group-count">${fileCount} ${translate('modals.download.fileSelection.files', {}, 'files')}</span>
+                        <input type="checkbox" class="batch-preview-group-select-all" data-repo="${repo}" ${allChecked ? 'checked' : ''} />
+                    </div>
+                    <div class="batch-preview-group-body ${isCollapsed ? '' : 'expanded'}">
+                        ${items.map(renderHfItem).join('')}
+                    </div>
+                </div>
+            `;
         }).join('');
+
+        let itemsHtml = errorItemsHtml + civitaiItemsHtml + hfGroupsHtml;
 
         // Prepend select-all toolbar if there are HF items with checkboxes
         if (hasHfItems) {
@@ -1179,7 +1212,90 @@ export class DownloadManager {
 
         list.innerHTML = itemsHtml;
 
+        const updateCountAndSelectAll = () => {
+            const checkedCount = this.batchModels.filter(
+                m => !m.error && m.checked !== false
+            ).length;
+            document.getElementById('downloadModalTitle').textContent =
+                translate('modals.download.titleWithType', { type: this.apiClient.apiConfig.config.displayName }) +
+                ` (${checkedCount})`;
+            const nextBtn = document.getElementById('nextFromBatchBtn');
+            nextBtn.disabled = checkedCount === 0;
+            nextBtn.classList.toggle('disabled', checkedCount === 0);
+            // Global select-all
+            const selectAll = document.getElementById('batchSelectAll');
+            if (selectAll) {
+                const hfItems = this.batchModels.filter(m => m.source === 'huggingface' && !m.error);
+                selectAll.checked = hfItems.length > 0 && hfItems.every(m => m.checked !== false);
+            }
+            // Per-group select-all
+            list.querySelectorAll('.batch-preview-group-select-all').forEach(gsa => {
+                const repo = gsa.dataset.repo;
+                const repoItems = this.batchModels.filter(m => m.source === 'huggingface' && !m.error && m.repo === repo);
+                gsa.checked = repoItems.length > 0 && repoItems.every(m => m.checked !== false);
+            });
+        };
+
         list.onclick = (e) => {
+            // Per-group select-all checkbox
+            const groupSelectAll = e.target.closest('.batch-preview-group-select-all');
+            if (groupSelectAll) {
+                const repo = groupSelectAll.dataset.repo;
+                const checked = groupSelectAll.checked;
+                this.batchModels.forEach((m, idx) => {
+                    if (m.source === 'huggingface' && !m.error && m.repo === repo) {
+                        m.checked = checked;
+                        const cb = list.querySelector(`.batch-preview-checkbox[data-index="${idx}"]`);
+                        if (cb) cb.checked = checked;
+                    }
+                });
+                updateCountAndSelectAll();
+                return;
+            }
+
+            const header = e.target.closest('.batch-preview-group-header');
+            if (header) {
+                const group = header.closest('.batch-preview-group');
+                const repo = group.dataset.repo;
+                const body = group.querySelector('.batch-preview-group-body');
+                const toggle = group.querySelector('.batch-preview-group-toggle');
+                const isCollapsed = this.hfRepoCollapsed[repo];
+                if (isCollapsed) {
+                    this.hfRepoCollapsed[repo] = false;
+                    body.style.transition = ''; // restore in case collapse was interrupted
+                    body.classList.add('expanded');
+                    toggle.classList.add('expanded');
+                    // force reflow so expanded class is registered before setting height
+                    void body.offsetHeight;
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                    const onEnd = (e) => {
+                        if (e.propertyName !== 'max-height') return;
+                        if (this.hfRepoCollapsed[repo] !== false) return;
+                        body.style.maxHeight = ''; // fall back to .expanded's 9999px
+                        body.removeEventListener('transitionend', onEnd);
+                    };
+                    body.addEventListener('transitionend', onEnd);
+                } else {
+                    this.hfRepoCollapsed[repo] = true;
+                    body.style.maxHeight = body.scrollHeight + 'px';
+                    requestAnimationFrame(() => {
+                        // animate only max-height; keep expanded so opacity stays 1
+                        body.style.transition = 'max-height 0.35s ease';
+                        body.style.maxHeight = '0';
+                        toggle.classList.remove('expanded');
+                        const onEnd = (e) => {
+                            if (e.propertyName !== 'max-height') return;
+                            if (this.hfRepoCollapsed[repo] !== true) return; // state changed since
+                            body.classList.remove('expanded');
+                            body.style.transition = '';
+                            body.removeEventListener('transitionend', onEnd);
+                        };
+                        body.addEventListener('transitionend', onEnd);
+                    });
+                }
+                return;
+            }
+
             const removeBtn = e.target.closest('.batch-preview-remove');
             if (removeBtn) {
                 const idx = parseInt(removeBtn.dataset.index);
@@ -1194,7 +1310,7 @@ export class DownloadManager {
             }
         };
 
-        // Checkbox handler for HF batch items
+        // Individual HF checkbox handler
         const checkboxes = list.querySelectorAll('.batch-preview-checkbox');
         checkboxes.forEach(cb => {
             cb.addEventListener('change', (e) => {
@@ -1202,26 +1318,11 @@ export class DownloadManager {
                 if (this.batchModels[idx]) {
                     this.batchModels[idx].checked = e.target.checked;
                 }
-                // Update valid count in title and Next button
-                const checkedCount = this.batchModels.filter(
-                    m => !m.error && m.checked !== false
-                ).length;
-                document.getElementById('downloadModalTitle').textContent =
-                    translate('modals.download.titleWithType', { type: this.apiClient.apiConfig.config.displayName }) +
-                    ` (${checkedCount})`;
-                const nextBtn = document.getElementById('nextFromBatchBtn');
-                nextBtn.disabled = checkedCount === 0;
-                nextBtn.classList.toggle('disabled', checkedCount === 0);
-                // Update select-all checkbox state
-                const selectAll = document.getElementById('batchSelectAll');
-                if (selectAll) {
-                    const hfItems = this.batchModels.filter(m => m.source === 'huggingface' && !m.error);
-                    selectAll.checked = hfItems.length > 0 && hfItems.every(m => m.checked !== false);
-                }
+                updateCountAndSelectAll();
             });
         });
 
-        // Select-all handler
+        // Global select-all handler
         const selectAll = document.getElementById('batchSelectAll');
         if (selectAll) {
             selectAll.addEventListener('change', (e) => {
@@ -1234,16 +1335,7 @@ export class DownloadManager {
                         this.batchModels[idx].checked = checked;
                     }
                 });
-                // Update valid count in title and Next button
-                const checkedCount = this.batchModels.filter(
-                    m => !m.error && m.checked !== false
-                ).length;
-                document.getElementById('downloadModalTitle').textContent =
-                    translate('modals.download.titleWithType', { type: this.apiClient.apiConfig.config.displayName }) +
-                    ` (${checkedCount})`;
-                const nextBtn = document.getElementById('nextFromBatchBtn');
-                nextBtn.disabled = checkedCount === 0;
-                nextBtn.classList.toggle('disabled', checkedCount === 0);
+                updateCountAndSelectAll();
             });
         }
 
