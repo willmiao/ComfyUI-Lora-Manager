@@ -60,21 +60,21 @@ class AgentHandler:
         skill_name = request.match_info.get("skill_name", "")
         if not skill_name:
             return web.json_response(
-                {"error": "Skill name is required"}, status_code=400
+                {"error": "Skill name is required"}, status=400
             )
 
         try:
             body = await request.json()
         except Exception:
             return web.json_response(
-                {"error": "Invalid JSON body"}, status_code=400
+                {"error": "Invalid JSON body"}, status=400
             )
 
         model_paths = body.get("model_paths", [])
         if not model_paths or not isinstance(model_paths, list):
             return web.json_response(
                 {"error": "model_paths must be a non-empty array"},
-                status_code=400,
+                status=400,
             )
 
         service = await self._ensure_service()
@@ -161,5 +161,5 @@ class AgentHandler:
         # TODO: implement cooperative cancellation in AgentService
         return web.json_response(
             {"status": "acknowledged", "note": "Cancellation not yet implemented"},
-            status_code=200,
+            status=200,
         )
