@@ -38,7 +38,12 @@ from ...services.settings_manager import get_settings_manager
 from ...services.websocket_manager import ws_manager
 from ...services.downloader import get_downloader
 from ...services.errors import ResourceNotFoundError
-from ...services.llm_service import get_provider_model_ids, fetch_ollama_models
+from ...services.llm_service import (
+    PROVIDER_PRESETS,
+    fetch_ollama_models,
+    get_all_provider_models,
+    get_provider_model_ids,
+)
 from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
 from ...utils.models import BaseModelMetadata
 from ...utils.constants import (
@@ -1624,6 +1629,20 @@ class SettingsHandler:
 
     def _is_dedicated_example_images_folder(self, folder_path: str) -> bool:
         return is_valid_example_images_root(folder_path)
+
+    async def get_provider_models(self, request: web.Request) -> web.Response:
+        """Return the model catalog for all preset providers.
+
+        This endpoint is called asynchronously by the settings UI so that
+        page rendering never blocks on the remote model catalog fetch.
+        """
+        catalog_provider_ids = [p for p in PROVIDER_PRESETS if p != "custom"]
+        try:
+            provider_models = await get_all_provider_models(catalog_provider_ids)
+            return web.json_response({"success": True, "models": provider_models})
+        except Exception as exc:
+            logger.warning("Failed to fetch provider models: %s", exc)
+            return web.json_response({"success": False, "models": {}, "error": str(exc)})
 
 
 class UsageStatsHandler:
@@ -3395,6 +3414,7 @@ class MiscHandlerSet:
             "get_settings_libraries": self.settings.get_libraries,
             "activate_library": self.settings.activate_library,
             "get_llm_models": self.settings.get_llm_models,
+            "get_provider_models": self.settings.get_provider_models,
             "update_usage_stats": self.usage_stats.update_usage_stats,
             "get_usage_stats": self.usage_stats.get_usage_stats,
             "update_lora_code": self.lora_code.update_lora_code,

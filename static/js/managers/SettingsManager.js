@@ -789,6 +789,27 @@ export class SettingsManager {
         }
     }
 
+    async _fetchProviderModelsAsync() {
+        try {
+            const resp = await fetch('/api/lm/llm/provider-models');
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (data.success && data.models) {
+                this._providerModels = data.models;
+                // Refresh model combobox if the settings modal is still open.
+                // Skip when provider is Ollama — it fetches its own live list
+                // from the local Ollama API and we must not overwrite it.
+                const llmProviderSelect = document.getElementById('llmProvider');
+                const provider = llmProviderSelect ? llmProviderSelect.value : 'openai';
+                if (this._llmModelCombobox && provider !== 'ollama') {
+                    this._llmModelCombobox.updatePresets(this._providerModels[provider] || []);
+                }
+            }
+        } catch (_) {
+            // Silently ignore — models stay empty until next modal open
+        }
+    }
+
     async loadSettingsToUI() {
         // Set frontend settings from state
         const blurMatureContentCheckbox = document.getElementById('blurMatureContent');
@@ -848,6 +869,12 @@ export class SettingsManager {
             } catch (_) {
                 this._providerModels = {};
             }
+        }
+
+        // If the embedded provider models is empty (server did not block on
+        // the remote catalog during page render), fetch asynchronously.
+        if (!this._providerModels || Object.keys(this._providerModels).length === 0) {
+            this._fetchProviderModelsAsync();
         }
 
         const llmProviderSelect = document.getElementById('llmProvider');
