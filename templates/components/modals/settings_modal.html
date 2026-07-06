@@ -144,6 +144,112 @@
                             </div>
                         </div>
 
+                        <!-- AI Provider Configuration (BYOK) -->
+                        <div class="settings-subsection">
+                            <div class="settings-subsection-header">
+                                <h4>{{ t('settings.aiProvider.title') }}</h4>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="llmProvider">{{ t('settings.aiProvider.provider') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.providerHelp') }}"></i>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="llmProvider" onchange="settingsManager.saveSelectSetting('llmProvider', 'llm_provider')">
+                                            <option value="openai">{{ t('settings.aiProvider.providerOptions.openai') }}</option>
+                                            <option value="ollama">{{ t('settings.aiProvider.providerOptions.ollama') }}</option>
+                                            <option value="deepseek">{{ t('settings.aiProvider.providerOptions.deepseek') }}</option>
+                                            <option value="groq">{{ t('settings.aiProvider.providerOptions.groq') }}</option>
+                                            <option value="openrouter">{{ t('settings.aiProvider.providerOptions.openrouter') }}</option>
+                                            <option value="opencode-go">{{ t('settings.aiProvider.providerOptions.opencode-go') }}</option>
+                                            <option value="custom">{{ t('settings.aiProvider.providerOptions.custom') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="llmApiBase">{{ t('settings.aiProvider.apiBase') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.apiBaseHelp') }}"></i>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper lm-combobox-container">
+                                            <input type="text" id="llmApiBase"
+                                                   class="lm-combobox-input"
+                                                   value="{{ settings.get('llm_api_base', '') }}"
+                                                   placeholder="{{ t('settings.aiProvider.apiBasePlaceholder') }}"
+                                                   autocomplete="off"
+                                                   onblur="settingsManager.saveInputSetting('llmApiBase', 'llm_api_base')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item api-key-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label>{{ t('settings.aiProvider.apiKey') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.apiKeyHelp') }}"></i>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div id="llmApiKeyStatus" class="api-key-status">
+                                            <span id="llmApiKeyStatusText" class="api-key-status-text api-key-status--unconfigured">
+                                                <i class="fas fa-times-circle text-error"></i>
+                                                {{ t('settings.aiProvider.apiKeyNotSet') }}
+                                            </span>
+                                            <button type="button" class="secondary-btn" id="llmApiKeyActionBtn" onclick="settingsManager.editApiKey('llm_api_key', 'llmApiKey')">
+                                                {{ t('settings.aiProvider.apiKeySet') }}
+                                            </button>
+                                        </div>
+                                        <div id="llmApiKeyEdit" class="api-key-edit is-hidden">
+                                            <div class="api-key-input">
+                                                <input type="text"
+                                                    id="llmApiKey"
+                                                    class="api-key-masked"
+                                                    placeholder="{{ t('settings.aiProvider.apiKeyPlaceholder') }}"
+                                                    autocomplete="off"
+                                                    data-mask="css" />
+                                                <button type="button" class="toggle-visibility">
+                                                    <i class="fas fa-eye"></i>
+                                                </button>
+                                            </div>
+                                            <button type="button" class="primary-btn" onclick="settingsManager.saveApiKey('llm_api_key', 'llmApiKey')">{{ t('common.actions.save') }}</button>
+                                            <button type="button" class="secondary-btn" onclick="settingsManager.cancelEditApiKey(true, 'llmApiKey')">{{ t('common.actions.cancel') }}</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="llmModel">{{ t('settings.aiProvider.model') }}</label>
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.modelHelp') }}"></i>
+                                    </div>
+                                    <div class="setting-control">
+                                        <div class="text-input-wrapper lm-combobox-container">
+                                            <input type="text" id="llmModel"
+                                                   class="lm-combobox-input"
+                                                   value="{{ settings.get('llm_model', '') }}"
+                                                   placeholder="{{ t('settings.aiProvider.modelPlaceholder') }}"
+                                                   autocomplete="off"
+                                                   onblur="settingsManager.saveInputSetting('llmModel', 'llm_model')"
+                                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Provider presets + model lists for frontend -->
+                        <script id="llmProviderPresets" type="application/json">
+                            {{ provider_presets_json | safe }}
+                        </script>
+                        <script id="llmProviderModels" type="application/json">
+                            {{ provider_models_json | safe }}
+                        </script>
+
                         <div class="settings-subsection">
                             <div class="settings-subsection-header">
                                 <h4>{{ t('settings.sections.downloads') }}</h4>

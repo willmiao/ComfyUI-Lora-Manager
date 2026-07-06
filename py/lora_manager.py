@@ -208,6 +208,10 @@ class LoraManager:
             # Initialize WebSocket manager
             await ServiceRegistry.get_websocket_manager()
 
+            # Preload LLM model catalog (background task, non-blocking)
+            from .services.llm_service import LLMService
+            await LLMService.get_instance()
+
             # Initialize scanners in background
             lora_scanner = await ServiceRegistry.get_lora_scanner()
             checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
@@ -444,6 +448,13 @@ class LoraManager:
                 if scanner is not None and hasattr(scanner, "cancel_task"):
                     scanner.cancel_task()
                     logger.debug("LoRA Manager: Cancelled %s", name)
+
+            # Close shared aiohttp sessions to avoid "Unclosed client session" warnings
+            try:
+                from py.routes.handlers.hf_handlers import close_hf_api_session
+                await close_hf_api_session()
+            except Exception as exc:
+                logger.debug("Error closing HF API session: %s", exc)
 
         except Exception as e:
             logger.error(f"Error during cleanup: {e}", exc_info=True)

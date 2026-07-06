@@ -154,6 +154,14 @@ class ModelPageView:
                 )
                 self._template_env._i18n_filter_added = True  # type: ignore[attr-defined]
 
+            from ...services.llm_service import PROVIDER_PRESETS
+
+            # Provider presets are embedded directly (local, no await needed).
+            # Provider model catalogs are fetched asynchronously by the
+            # frontend via GET /api/lm/llm/provider-models so page rendering
+            # never blocks on the remote model catalog (which can take up to
+            # 30s on cold cache).
+
             template_context = {
                 "is_initializing": is_initializing,
                 "settings": self._settings,
@@ -161,6 +169,8 @@ class ModelPageView:
                 "folders": [],
                 "t": self._server_i18n.get_translation,
                 "version": self._get_app_version(),
+                "provider_presets_json": json.dumps(PROVIDER_PRESETS),
+                "provider_models_json": "{}",
             }
 
             if not is_initializing:

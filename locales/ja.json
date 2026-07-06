@@ -657,6 +657,32 @@
             "proxyPassword": "パスワード（任意）",
             "proxyPasswordPlaceholder": "パスワード",
             "proxyPasswordHelp": "プロキシ認証用のパスワード（必要な場合）"
+        },
+        "aiProvider": {
+            "title": "AIプロバイダー",
+            "provider": "プロバイダー",
+            "providerHelp": "LLMプロバイダーを選択してください。OpenAIとOllamaはプリセットのAPIエンドポイントを使用します。カスタムでは任意のOpenAI互換エンドポイントを指定できます。",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama（ローカル）",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "カスタム（OpenAI 互換）"
+            },
+            "apiBase": "APIベースURL",
+            "apiBaseHelp": "LLM APIのベースURL（例：https://api.openai.com/v1）。空の場合はプロバイダーのデフォルトが使用されます。",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "APIキー",
+            "apiKeyHelp": "LLMプロバイダーのAPIキー。ローカルに保存され、選択したLLMプロバイダー以外のサーバーに送信されることはありません。",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "未設定",
+            "apiKeyConfigured": "設定済み",
+            "apiKeySet": "設定",
+            "model": "モデル",
+            "modelHelp": "使用するモデル名（例：deepseek-v4-flash, gemini-2.5-flash, gemma4:12b）。プロバイダーで利用可能なモデルをご確認ください。",
+            "modelPlaceholder": "モデルを選択..."
         }
     },
     "loras": {
@@ -754,7 +780,8 @@
                 "completed": "完了：{success} 移動、{skipped} スキップ、{failures} 失敗",
                 "complete": "自動整理が完了しました",
                 "error": "エラー：{error}"
-            }
+            },
+            "enrichHfAgent": "HF メタデータをAIで補完"
         },
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
@@ -778,7 +805,8 @@
             "shareRecipe": "レシピを共有",
             "viewAllLoras": "すべてのLoRAを表示",
             "downloadMissingLoras": "不足しているLoRAをダウンロード",
-            "deleteRecipe": "レシピを削除"
+            "deleteRecipe": "レシピを削除",
+            "enrichHfAgent": "HF メタデータをAIで補完"
         }
     },
     "recipes": {
@@ -2081,6 +2109,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "クリップボードにコピーしました",
             "downloadStarted": "ダウンロードを開始しました"
+        },
+        "agent": {
+            "llmNotConfigured": "AIプロバイダーが設定されていません。設定 → AIプロバイダーで有効にしてください。",
+            "enrichStarted": "AIでメタデータを補完中...",
+            "enrichComplete": "メタデータの補完が完了しました：{{summary}}",
+            "enrichFailed": "メタデータの補完に失敗しました：{{error}}"
         }
     },
     "doctor": {

@@ -657,6 +657,32 @@
             "proxyPassword": "Passwort (optional)",
             "proxyPasswordPlaceholder": "passwort",
             "proxyPasswordHelp": "Passwort für die Proxy-Authentifizierung (falls erforderlich)"
+        },
+        "aiProvider": {
+            "title": "KI-Anbieter",
+            "provider": "Anbieter",
+            "providerHelp": "Wählen Sie Ihren LLM-Anbieter. OpenAI und Ollama verwenden voreingestellte API-Endpunkte. Mit \"Benutzerdefiniert\" können Sie jeden OpenAI-kompatiblen Endpunkt angeben.",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (lokal)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "Benutzerdefiniert (OpenAI-kompatibel)"
+            },
+            "apiBase": "API-Basis-URL",
+            "apiBaseHelp": "Die Basis-URL für die LLM-API (z.B. https://api.openai.com/v1). Leer lassen, um die Anbietervoreinstellung zu verwenden.",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "API-Schlüssel",
+            "apiKeyHelp": "Ihr LLM-API-Schlüssel. Wird lokal gespeichert und niemals an einen anderen Server außer Ihrem gewählten LLM-Anbieter gesendet.",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "Nicht festgelegt",
+            "apiKeyConfigured": "Konfiguriert",
+            "apiKeySet": "Einrichten",
+            "model": "Modell",
+            "modelHelp": "Der zu verwendende Modellname (z.B. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Prüfen Sie Ihren Anbieter auf verfügbare Modelle.",
+            "modelPlaceholder": "Modell auswählen..."
         }
     },
     "loras": {
@@ -754,7 +780,8 @@
                 "completed": "Abgeschlossen: {success} verschoben, {skipped} übersprungen, {failures} fehlgeschlagen",
                 "complete": "Automatische Organisation abgeschlossen",
                 "error": "Fehler: {error}"
-            }
+            },
+            "enrichHfAgent": "HF-Metadaten mit KI anreichern"
         },
         "contextMenu": {
             "refreshMetadata": "Civitai-Daten aktualisieren",
@@ -778,7 +805,8 @@
             "shareRecipe": "Rezept teilen",
             "viewAllLoras": "Alle LoRAs anzeigen",
             "downloadMissingLoras": "Fehlende LoRAs herunterladen",
-            "deleteRecipe": "Rezept löschen"
+            "deleteRecipe": "Rezept löschen",
+            "enrichHfAgent": "HF-Metadaten mit KI anreichern"
         }
     },
     "recipes": {
@@ -2081,6 +2109,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "In die Zwischenablage kopiert",
             "downloadStarted": "Download gestartet"
+        },
+        "agent": {
+            "llmNotConfigured": "KI-Anbieter nicht konfiguriert. Aktivieren Sie ihn unter Einstellungen → KI-Anbieter.",
+            "enrichStarted": "Metadaten werden mit KI angereichert...",
+            "enrichComplete": "Metadatenanreicherung abgeschlossen: {{summary}}",
+            "enrichFailed": "Metadatenanreicherung fehlgeschlagen: {{error}}"
         }
     },
     "doctor": {

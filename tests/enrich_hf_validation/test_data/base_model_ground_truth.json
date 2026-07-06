@@ -1,0 +1,376 @@
+{
+  "description": "Ground truth base_model mapping for HF LoRA enrichment test data",
+  "generated_at": "2026-07-05T18:20:00+08:00",
+  "inference_method": "Manual analysis of YAML base_model field + README content + filename clues",
+  "canonical_list_source": "Fallback list in config.py + CivitAI production API (73 models total)",
+  "entries": [
+    {
+      "repo_id": "k2styles/krea-2-cobalt-sky-anime-lora",
+      "safetensors_name": "cobalt-sky-anime.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "k2styles/krea-2-azure-gouache-daylight-lora",
+      "safetensors_name": "azure-gouache-daylight.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "TheDivergentAI/krea2-turbo-distill-lora",
+      "safetensors_name": "krea2_turbo_distill_r128.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Raw",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "DeverStyle/Krea2-Loras",
+      "safetensors_name": "n0t_f4l_000001000.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "Komorebi1995/krea2-raw-jpaf-celpaint-lora",
+      "safetensors_name": "krea2_raw_jpaf_celpaint_full_v1.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "Filename contains 'krea2'"
+    },
+    {
+      "repo_id": "artificialguybr/pixelartredmond-1-5v-pixel-art-loras-for-sd-1-5",
+      "safetensors_name": "PixelArtRedmond15V-PixelArt-PIXARFK.safetensors",
+      "yaml_base_model_raw": "runwayml/stable-diffusion-v1-5",
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "Shakker-Labs/FLUX.1-dev-LoRA-Logo-Design",
+      "safetensors_name": "FLUX-dev-lora-Logo-Design.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.1-dev",
+      "correct_base_model": "Flux.1 D",
+      "confidence": "high",
+      "evidence": "YAML base_model: FLUX.1-dev → dev → D"
+    },
+    {
+      "repo_id": "glif-loradex-trainer/bingbangboom_flux_surf",
+      "safetensors_name": "flux_surf_000001500.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.1-dev",
+      "correct_base_model": "Flux.1 D",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "prithivMLmods/Ton618-Epic-Realism-Flux-LoRA",
+      "safetensors_name": "Epic-Realism-Unpruned.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.1-dev",
+      "correct_base_model": "Flux.1 D",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "prithivMLmods/Fashion-Hut-Modeling-LoRA",
+      "safetensors_name": "Fashion-Modeling.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.1-dev",
+      "correct_base_model": "Flux.1 D",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "prithivMLmods/Retro-Pixel-Flux-LoRA",
+      "safetensors_name": "Retro-Pixel.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.1-dev",
+      "correct_base_model": "Flux.1 D",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "D1-3105/HiDream-E1-Full_lora",
+      "safetensors_name": "HiDream-E1-Full.safetensors",
+      "yaml_base_model_raw": "HiDream-ai/HiDream-E1-Full",
+      "correct_base_model": "HiDream",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field; filename contains 'HiDream'"
+    },
+    {
+      "repo_id": "renderartist/Classic-Painting-Z-Image-Turbo-LoRA",
+      "safetensors_name": "Classic_Painting_Z_Image_Turbo_v1_renderartist_1750.safetensors",
+      "yaml_base_model_raw": "Tongyi-MAI/Z-Image-Turbo",
+      "correct_base_model": "ZImageTurbo",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field; filename contains 'Z-Image-Turbo'"
+    },
+    {
+      "repo_id": "DeverStyle/Z-Image-loras",
+      "safetensors_name": "z_image_archer_style.safetensors",
+      "yaml_base_model_raw": "Tongyi-MAI/Z-Image-Turbo",
+      "correct_base_model": "ZImageTurbo",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "deadman44/Z-Image_LoRA",
+      "safetensors_name": "lora_zimage_turbo_myjs_alpha01.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "ZImageTurbo",
+      "confidence": "high",
+      "evidence": "Filename contains 'zimage_turbo'"
+    },
+    {
+      "repo_id": "zyuzuguldu/vton-lora-linen",
+      "safetensors_name": "pytorch_lora_weights.safetensors",
+      "yaml_base_model_raw": "stabilityai/stable-diffusion-xl-base-1.0",
+      "correct_base_model": "SDXL 1.0",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "svntax-dev/pixel_spritesheet_4walk_small_lora_v1",
+      "safetensors_name": "pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.2-klein-base-4B",
+      "correct_base_model": "Flux.2 Klein 4B-base",
+      "confidence": "high",
+      "evidence": "YAML base_model: FLUX.2-klein-base-4B"
+    },
+    {
+      "repo_id": "Haruka041/z-image-anime-lora",
+      "safetensors_name": "sk_anime_style_v1.0.safetensors",
+      "yaml_base_model_raw": "Tongyi-MAI/Z-Image-Turbo",
+      "correct_base_model": "ZImageTurbo",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "systms/SYSTMS-INFL8-LoRA-Wan22",
+      "safetensors_name": "SYSTMS_INFL8_LORA_WAN22_low_noise.safetensors",
+      "yaml_base_model_raw": "Wan-AI/Wan2.2-I2V-A14B",
+      "correct_base_model": "Wan Video 2.2 I2V-A14B",
+      "confidence": "high",
+      "evidence": "YAML base_model: Wan2.2-I2V-A14B"
+    },
+    {
+      "repo_id": "crafiq/flux-2-klein-9b-360-panorama-lora",
+      "safetensors_name": "flux-2-klein-9b-360-panorama-lora.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.2-klein-base-9B",
+      "correct_base_model": "Flux.2 Klein 9B-base",
+      "confidence": "high",
+      "evidence": "YAML base_model: FLUX.2-klein-base-9B; filename contains 'flux-2-klein-9b'"
+    },
+    {
+      "repo_id": "Leon1000/pixel_spritesheet_4walk_small_lora_v1",
+      "safetensors_name": "pixel_4walk_small_flux2_klein_base_4b_v1_000002750.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.2-klein-base-4B",
+      "correct_base_model": "Flux.2 Klein 4B-base",
+      "confidence": "high",
+      "evidence": "YAML base_model: FLUX.2-klein-base-4B; filename contains 'flux2_klein_base_4b'"
+    },
+    {
+      "repo_id": "Muapi/pov-missionary-legs-together-lora",
+      "safetensors_name": "pov-missionary-legs-together-lora.safetensors",
+      "yaml_base_model_raw": "OnomaAIResearch/Illustrious-xl-early-release-v0",
+      "correct_base_model": "Illustrious",
+      "confidence": "high",
+      "evidence": "YAML base_model: OnomaAIResearch/Illustrious-*"
+    },
+    {
+      "repo_id": "ostris/ideogram_4_unconditional_lora",
+      "safetensors_name": "ideogram_4_unconditional_lora_r16.safetensors",
+      "yaml_base_model_raw": "ideogram-ai/ideogram-4-fp8",
+      "correct_base_model": "Ideogram 4.0",
+      "confidence": "high",
+      "evidence": "YAML base_model: ideogram-ai/ideogram-4 → Ideogram 4.0; filename contains 'ideogram_4'"
+    },
+    {
+      "repo_id": "ilkerzgi/krea-2-bleached-surreal-uncanny-lora",
+      "safetensors_name": "bleached-surreal-uncanny-comfy.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "ilkerzgi/krea-2-azure-surreal-collage-lora",
+      "safetensors_name": "azure-surreal-collage-comfy.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "ilkerzgi/krea-2-airy-gouache-minimalist-lora",
+      "safetensors_name": "airy-gouache-minimalist-comfy.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "k2styles/krea-2-airy-watercolor-chibi-lora",
+      "safetensors_name": "airy-watercolor-chibi.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Turbo",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "TakeAswing/sdxl-lora-lofi",
+      "safetensors_name": "pytorch_lora_weights.safetensors",
+      "yaml_base_model_raw": "stabilityai/stable-diffusion-xl-base-1.0",
+      "correct_base_model": "SDXL 1.0",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field; repo name contains 'sdxl'"
+    },
+    {
+      "repo_id": "heville/anna-lora-krea2",
+      "safetensors_name": "pytorch_lora_weights.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Raw",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field; repo name contains 'krea2'"
+    },
+    {
+      "repo_id": "Brioch/krea2_loras",
+      "safetensors_name": "mashap_ohwx_woman_krea2.safetensors",
+      "yaml_base_model_raw": "krea/Krea-2-Raw",
+      "correct_base_model": "Krea 2",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "hr16/Miwano-Rag-LoRA",
+      "safetensors_name": "Miwano-Rag-epoch10.lora.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "README: base model is Kanianime (SD 1.5 fine-tune)"
+    },
+    {
+      "repo_id": "ikuseiso/Personal_Lora_collections",
+      "safetensors_name": "vergil_devil_may_cry.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "Sample prompt shows Model: AbyssOrangeMix (SD 1.5), 512x768"
+    },
+    {
+      "repo_id": "Tanger/LoraByTanger",
+      "safetensors_name": "(v4)layila-000005.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "README: trained on anything4.5 (SD 1.5) and nai (SD 1.5); test images on AbyssOrangeMix2_hard"
+    },
+    {
+      "repo_id": "DS-Archive/ds-LoRA",
+      "safetensors_name": "dsharu-v2_lc.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "README explicitly states 'Stable Diffusion 1.5'"
+    },
+    {
+      "repo_id": "soknife/loras",
+      "safetensors_name": "irys-regular-subject-more.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "README mentions SD 1.5 fine-tune models (PastelMix, AbyssOrangeMix, Anything)"
+    },
+    {
+      "repo_id": "prompthero/openjourney-lora",
+      "safetensors_name": "openjourneyLora.safetensors",
+      "yaml_base_model_raw": "stabilityai/stable-diffusion-2-1-base",
+      "correct_base_model": "SD 2.1",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "Banano/banchan-lora",
+      "safetensors_name": "Bananochan-PonySDXL-v2.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "Pony",
+      "confidence": "medium",
+      "evidence": "Filename contains 'PonySDXL-v2' → Pony base model"
+    },
+    {
+      "repo_id": "Maisman/No-Game-NoLife-LoRAs",
+      "safetensors_name": "ShiroNGNL2_Lora.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "Sample prompts show Model: abyssorangemix2_Hardcore (SD 1.5), 512x768"
+    },
+    {
+      "repo_id": "EarthnDusk/Gambit_Xmen_Anime_Lora_V1.1",
+      "safetensors_name": "RemyLebeau.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "Trained Feb 2023 via Kohya LoRA (pre-SDXL era), SD 1.5 lineage"
+    },
+    {
+      "repo_id": "EarthnDusk/DuskfallArt_LoRa",
+      "safetensors_name": "DuskfallArt.safetensors",
+      "yaml_base_model_raw": "stable-diffusion-v1-5/stable-diffusion-v1-5",
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "gaoxiao/pokemon-lora",
+      "safetensors_name": "pytorch_lora_weights.safetensors",
+      "yaml_base_model_raw": "runwayml/stable-diffusion-v1-5",
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "wtcherr/sd-unsplash_10k_canny-model-control-lora",
+      "safetensors_name": "diffusion_pytorch_model.safetensors",
+      "yaml_base_model_raw": "runwayml/stable-diffusion-v1-5",
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "wtcherr/sd-unsplash_10k_blur_rand_KS-model-control-lora",
+      "safetensors_name": "diffusion_pytorch_model.safetensors",
+      "yaml_base_model_raw": "runwayml/stable-diffusion-v1-5",
+      "correct_base_model": "SD 1.5",
+      "confidence": "high",
+      "evidence": "YAML frontmatter base_model field"
+    },
+    {
+      "repo_id": "samurai-architects/lora-starbucks",
+      "safetensors_name": "starbucks_interior.safetensors",
+      "yaml_base_model_raw": null,
+      "correct_base_model": null,
+      "confidence": "none",
+      "evidence": "README too minimal, no base_model in YAML, cannot determine"
+    },
+    {
+      "repo_id": "prithivMLmods/Flux-Long-Toon-LoRA",
+      "safetensors_name": "Long-Toon.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.1-dev",
+      "correct_base_model": "Flux.1 D",
+      "confidence": "high",
+      "evidence": "YAML base_model: FLUX.1-dev (dev → D)"
+    },
+    {
+      "repo_id": "Limbicnation/pixel-art-lora",
+      "safetensors_name": "pytorch_lora_weights.comfyui.safetensors",
+      "yaml_base_model_raw": "black-forest-labs/FLUX.2-klein-4B",
+      "correct_base_model": "Flux.2 Klein 4B",
+      "confidence": "high",
+      "evidence": "YAML base_model: FLUX.2-klein-4B; README explicitly states base model"
+    }
+  ]
+}

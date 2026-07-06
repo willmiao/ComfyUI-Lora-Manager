@@ -36,3 +36,7 @@ vue-widgets/dist/
 
 # Working/research notes (not committed)
 .docs/
+
+# HF enrichment validation baseline snapshots (contain potentially
+# NSFW README content fetched from community model repos)
+tests/enrich_hf_validation/baselines/

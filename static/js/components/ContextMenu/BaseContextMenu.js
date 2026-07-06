@@ -27,8 +27,9 @@ export class BaseContextMenu {
             const menuItem = e.target.closest('.context-menu-item');
             if (!menuItem || !this.currentCard) return;
 
-            // Ignore clicks on submenu trigger (has-submenu parent)
+            // Ignore clicks on submenu trigger (has-submenu parent) or disabled items
             if (menuItem.classList.contains('has-submenu')) return;
+            if (menuItem.classList.contains('disabled')) return;
 
             const action = menuItem.dataset.action;
             if (!action) return;

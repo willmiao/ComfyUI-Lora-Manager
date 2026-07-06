@@ -657,6 +657,32 @@
             "proxyPassword": "Contraseña (opcional)",
             "proxyPasswordPlaceholder": "contraseña",
             "proxyPasswordHelp": "Contraseña para autenticación de proxy (si es necesario)"
+        },
+        "aiProvider": {
+            "title": "Proveedor de IA",
+            "provider": "Proveedor",
+            "providerHelp": "Elija su proveedor de LLM. OpenAI y Ollama usan endpoints predefinidos. Personalizado le permite especificar cualquier endpoint compatible con OpenAI.",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (local)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "Personalizado (compatible con OpenAI)"
+            },
+            "apiBase": "URL base de la API",
+            "apiBaseHelp": "La URL base para la API LLM (p.ej. https://api.openai.com/v1). Déjelo vacío para usar el valor predeterminado del proveedor.",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "Clave de API",
+            "apiKeyHelp": "Su clave de API del proveedor LLM. Se almacena localmente y nunca se envía a ningún servidor excepto a su proveedor LLM elegido.",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "No configurada",
+            "apiKeyConfigured": "Configurada",
+            "apiKeySet": "Configurar",
+            "model": "Modelo",
+            "modelHelp": "El nombre del modelo a usar (p.ej. deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). Consulte a su proveedor para ver los modelos disponibles.",
+            "modelPlaceholder": "Seleccionar un modelo..."
         }
     },
     "loras": {
@@ -754,7 +780,8 @@
                 "completed": "Completado: {success} movidos, {skipped} omitidos, {failures} fallidos",
                 "complete": "Auto-organización completada",
                 "error": "Error: {error}"
-            }
+            },
+            "enrichHfAgent": "Enriquecer metadatos HF (IA)"
         },
         "contextMenu": {
             "refreshMetadata": "Actualizar datos de Civitai",
@@ -778,7 +805,8 @@
             "shareRecipe": "Compartir receta",
             "viewAllLoras": "Ver todos los LoRAs",
             "downloadMissingLoras": "Descargar LoRAs faltantes",
-            "deleteRecipe": "Eliminar receta"
+            "deleteRecipe": "Eliminar receta",
+            "enrichHfAgent": "Enriquecer metadatos HF (IA)"
         }
     },
     "recipes": {
@@ -2081,6 +2109,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "Copiado al portapapeles",
             "downloadStarted": "Descarga iniciada"
+        },
+        "agent": {
+            "llmNotConfigured": "Proveedor de IA no configurado. Actívelo en Configuración → Proveedor de IA.",
+            "enrichStarted": "Enriqueciendo metadatos con IA...",
+            "enrichComplete": "Enriquecimiento de metadatos completado: {{summary}}",
+            "enrichFailed": "Enriquecimiento de metadatos fallido: {{error}}"
         }
     },
     "doctor": {

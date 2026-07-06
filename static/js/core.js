@@ -15,6 +15,7 @@ import { initTheme, initBackToTop } from './utils/uiHelpers.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
+import './components/Combobox.js';
 import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
 import { createPageContextMenu, createGlobalContextMenu } from './components/ContextMenu/index.js';
 import { initializeEventManagement } from './utils/eventManagementInit.js';

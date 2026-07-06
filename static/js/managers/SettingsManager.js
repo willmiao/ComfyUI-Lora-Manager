@@ -789,6 +789,27 @@ export class SettingsManager {
         }
     }
 
+    async _fetchProviderModelsAsync() {
+        try {
+            const resp = await fetch('/api/lm/llm/provider-models');
+            if (!resp.ok) return;
+            const data = await resp.json();
+            if (data.success && data.models) {
+                this._providerModels = data.models;
+                // Refresh model combobox if the settings modal is still open.
+                // Skip when provider is Ollama — it fetches its own live list
+                // from the local Ollama API and we must not overwrite it.
+                const llmProviderSelect = document.getElementById('llmProvider');
+                const provider = llmProviderSelect ? llmProviderSelect.value : 'openai';
+                if (this._llmModelCombobox && provider !== 'ollama') {
+                    this._llmModelCombobox.updatePresets(this._providerModels[provider] || []);
+                }
+            }
+        } catch (_) {
+            // Silently ignore — models stay empty until next modal open
+        }
+    }
+
     async loadSettingsToUI() {
         // Set frontend settings from state
         const blurMatureContentCheckbox = document.getElementById('blurMatureContent');
@@ -827,6 +848,115 @@ export class SettingsManager {
 
         // Update API key status display (do NOT pre-fill the input)
         this.updateApiKeyStatus();
+        this.updateLlmApiKeyStatus();
+
+        // ── AI Provider settings ──────────────────────────────────────
+        // Load provider presets from the JSON script tag embedded in the template
+        this._providerPresets = {};
+        this._providerModels = {};
+        const presetsScript = document.getElementById('llmProviderPresets');
+        if (presetsScript) {
+            try {
+                this._providerPresets = JSON.parse(presetsScript.textContent);
+            } catch (_) {
+                this._providerPresets = {};
+            }
+        }
+        const modelsScript = document.getElementById('llmProviderModels');
+        if (modelsScript) {
+            try {
+                this._providerModels = JSON.parse(modelsScript.textContent);
+            } catch (_) {
+                this._providerModels = {};
+            }
+        }
+
+        // If the embedded provider models is empty (server did not block on
+        // the remote catalog during page render), fetch asynchronously.
+        if (!this._providerModels || Object.keys(this._providerModels).length === 0) {
+            this._fetchProviderModelsAsync();
+        }
+
+        const llmProviderSelect = document.getElementById('llmProvider');
+        if (llmProviderSelect) {
+            llmProviderSelect.value = state.global.settings.llm_provider || 'openai';
+        }
+
+        // Destroy previous combobox instances before creating new ones,
+        // since loadSettingsToUI() runs on every modal open.
+        if (this._llmApiBaseCombobox) { this._llmApiBaseCombobox.destroy(); }
+        if (this._llmModelCombobox) { this._llmModelCombobox.destroy(); }
+
+        const llmApiBaseInput = document.getElementById('llmApiBase');
+        if (llmApiBaseInput) {
+            llmApiBaseInput.value = state.global.settings.llm_api_base || '';
+            const presetUrls = Object.values(this._providerPresets)
+                .map(p => p.api_base)
+                .filter(Boolean);
+            if (typeof Combobox !== 'undefined') {
+                this._llmApiBaseCombobox = new Combobox(llmApiBaseInput, {
+                    presets: presetUrls,
+                    placeholder: 'https://api.openai.com/v1',
+                });
+            }
+        }
+
+        // Helper to update model Combobox presets from catalog / Ollama API
+        const llmModelInput = document.getElementById('llmModel');
+        this._llmModelCombobox = null;
+        if (llmModelInput && typeof Combobox !== 'undefined') {
+            const currentProvider = llmProviderSelect ? llmProviderSelect.value : 'openai';
+            const fallbackModels = currentProvider === 'ollama' ? [] : (this._providerModels[currentProvider] || []);
+            this._llmModelCombobox = new Combobox(llmModelInput, {
+                presets: fallbackModels,
+                placeholder: translate('settings.aiProvider.modelPlaceholder', {}, 'Select a model...'),
+                onSelect: (value) => {
+                    state.global.settings.llm_model = value;
+                    this.saveSetting('llm_model', value)
+                        .then(() => showToast('toast.settings.settingsUpdated', { setting: 'model' }, 'success'))
+                        .catch(() => {});
+                },
+            });
+        }
+
+        const _loadModelPresets = async (provider) => {
+            if (!this._llmModelCombobox) return;
+            if (provider === 'ollama') {
+                try {
+                    const apiBase = document.getElementById('llmApiBase')?.value?.trim() || 'http://localhost:11434/v1';
+                    const resp = await fetch(`/api/lm/llm/models?provider=ollama&api_base=${encodeURIComponent(apiBase)}`);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data.success && Array.isArray(data.models)) {
+                            this._llmModelCombobox.updatePresets(data.models);
+                            return;
+                        }
+                    }
+                } catch (_) {}
+                this._llmModelCombobox.updatePresets([]);
+            } else {
+                this._llmModelCombobox.updatePresets(this._providerModels[provider] || []);
+            }
+        };
+        _loadModelPresets(llmProviderSelect ? llmProviderSelect.value : 'openai');
+
+        // Provider change → auto-fill API Base URL + update model presets
+        if (llmProviderSelect) {
+            llmProviderSelect.addEventListener('change', () => {
+                const provider = llmProviderSelect.value;
+                const preset = this._providerPresets[provider];
+                if (preset) {
+                    if (llmApiBaseInput && preset.api_base) {
+                        llmApiBaseInput.value = preset.api_base;
+                        if (this._llmApiBaseCombobox) {
+                            this._llmApiBaseCombobox.setValue(preset.api_base);
+                        }
+                        llmApiBaseInput.dispatchEvent(new Event('blur'));
+                    }
+                }
+                _loadModelPresets(provider);
+            });
+        }
 
         const civitaiHostSelect = document.getElementById('civitaiHost');
         if (civitaiHostSelect) {
@@ -2931,42 +3061,70 @@ export class SettingsManager {
         }
     }
 
-    editApiKey() {
-        const statusEl = document.getElementById('civitaiApiKeyStatus');
+    updateLlmApiKeyStatus() {
+        const hasKey = !!(state.global.settings.llm_api_key_set || state.global.settings.llm_api_key);
+        const statusText = document.getElementById('llmApiKeyStatusText');
+        const actionBtn = document.getElementById('llmApiKeyActionBtn');
+        if (!statusText || !actionBtn) return;
+
+        if (hasKey) {
+            statusText.classList.remove('api-key-status--unconfigured');
+            statusText.classList.add('api-key-status--configured');
+            statusText.innerHTML = '<i class="fas fa-check-circle text-success"></i> '
+                + translate('settings.aiProvider.apiKeyConfigured', {}, 'Configured');
+            actionBtn.textContent = translate('common.actions.change', {}, 'Change');
+        } else {
+            statusText.classList.remove('api-key-status--configured');
+            statusText.classList.add('api-key-status--unconfigured');
+            statusText.innerHTML = '<i class="fas fa-times-circle text-error"></i> '
+                + translate('settings.aiProvider.apiKeyNotSet', {}, 'Not set');
+            actionBtn.textContent = translate('settings.aiProvider.apiKeySet', {}, 'Set up');
+        }
+    }
+
+    editApiKey(settingsKey = 'civitai_api_key', inputId = 'civitaiApiKey') {
+        const statusId = inputId + 'Status';
+        const editId = inputId + 'Edit';
+        const statusEl = document.getElementById(statusId);
         if (statusEl) statusEl.classList.add('is-hidden');
-        const editContainer = document.getElementById('civitaiApiKeyEdit');
+        const editContainer = document.getElementById(editId);
         if (editContainer) editContainer.classList.remove('is-hidden');
         // Focus the input
-        const input = document.getElementById('civitaiApiKey');
+        const input = document.getElementById(inputId);
         if (input) {
             input.value = '';  // Never pre-fill the secret
             setTimeout(() => input.focus(), 50);
         }
     }
 
-    cancelEditApiKey(silent) {
-        const editContainer = document.getElementById('civitaiApiKeyEdit');
+    cancelEditApiKey(silent, inputId = 'civitaiApiKey') {
+        const editId = inputId + 'Edit';
+        const statusId = inputId + 'Status';
+        const editContainer = document.getElementById(editId);
         if (editContainer) editContainer.classList.add('is-hidden');
-        const statusContainer = document.getElementById('civitaiApiKeyStatus');
+        const statusContainer = document.getElementById(statusId);
         if (statusContainer) statusContainer.classList.remove('is-hidden');
         // Clear any typed value
-        const input = document.getElementById('civitaiApiKey');
+        const input = document.getElementById(inputId);
         if (input) input.value = '';
         if (!silent) {
-            this.updateApiKeyStatus();
+            if (inputId === 'civitaiApiKey') {
+                this.updateApiKeyStatus();
+            }
         }
     }
 
-    async saveApiKey() {
-        const input = document.getElementById('civitaiApiKey');
+    async saveApiKey(settingsKey = 'civitai_api_key', inputId = 'civitaiApiKey') {
+        const input = document.getElementById(inputId);
         if (!input) return;
 
         const value = input.value.trim();
 
         try {
-            await this.saveSetting('civitai_api_key', value);
+            await this.saveSetting(settingsKey, value);
+            const labelName = settingsKey === 'civitai_api_key' ? 'CivitAI API Key' : 'LLM API Key';
             showToast('toast.settings.settingsUpdated',
-                { setting: 'CivitAI API Key' }, 'success');
+                { setting: labelName }, 'success');
         } catch (error) {
             showToast('toast.settings.settingSaveFailed',
                 { message: error.message }, 'error');
@@ -2974,9 +3132,13 @@ export class SettingsManager {
         }
 
         // Update the in-memory flag so the UI reflects the change
-        state.global.settings.civitai_api_key_set = !!value;
-        this.cancelEditApiKey(true);
-        this.updateApiKeyStatus();
+        if (settingsKey === 'civitai_api_key') {
+            state.global.settings.civitai_api_key_set = !!value;
+        }
+        this.cancelEditApiKey(true, inputId);
+        if (inputId === 'civitaiApiKey') {
+            this.updateApiKeyStatus();
+        }
     }
 
     toggleInputVisibility(button) {

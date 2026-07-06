@@ -657,6 +657,32 @@
             "proxyPassword": "비밀번호 (선택사항)",
             "proxyPasswordPlaceholder": "password",
             "proxyPasswordHelp": "프록시 인증에 필요한 비밀번호 (필요한 경우)"
+        },
+        "aiProvider": {
+            "title": "AI 제공자",
+            "provider": "제공자",
+            "providerHelp": "LLM 제공자를 선택하세요. OpenAI와 Ollama는 사전 설정된 API 엔드포인트를 사용합니다. 사용자 정의를 선택하면 모든 OpenAI 호환 엔드포인트를 지정할 수 있습니다.",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama (로컬)",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "사용자 정의 (OpenAI 호환)"
+            },
+            "apiBase": "API 기본 URL",
+            "apiBaseHelp": "LLM API의 기본 URL입니다 (예: https://api.openai.com/v1). 비워두면 제공자 기본값이 사용됩니다.",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "API 키",
+            "apiKeyHelp": "LLM 제공자의 API 키입니다. 로컬에 저장되며 선택한 LLM 제공자 외의 서버로 전송되지 않습니다.",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "설정되지 않음",
+            "apiKeyConfigured": "설정됨",
+            "apiKeySet": "설정",
+            "model": "모델",
+            "modelHelp": "사용할 모델 이름 (예: deepseek-v4-flash, gemini-2.5-flash, gemma4:12b). 제공자에서 사용 가능한 모델을 확인하세요.",
+            "modelPlaceholder": "모델 선택..."
         }
     },
     "loras": {
@@ -754,7 +780,8 @@
                 "completed": "완료: {success}개 이동, {skipped}개 건너뜀, {failures}개 실패",
                 "complete": "자동 정리 완료",
                 "error": "오류: {error}"
-            }
+            },
+            "enrichHfAgent": "HF AI로 메타데이터 보강"
         },
         "contextMenu": {
             "refreshMetadata": "Civitai 데이터 새로고침",
@@ -778,7 +805,8 @@
             "shareRecipe": "레시피 공유",
             "viewAllLoras": "모든 LoRA 보기",
             "downloadMissingLoras": "누락된 LoRA 다운로드",
-            "deleteRecipe": "레시피 삭제"
+            "deleteRecipe": "레시피 삭제",
+            "enrichHfAgent": "HF AI로 메타데이터 보강"
         }
     },
     "recipes": {
@@ -2081,6 +2109,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "클립보드에 복사됨",
             "downloadStarted": "다운로드 시작됨"
+        },
+        "agent": {
+            "llmNotConfigured": "AI 제공자가 설정되지 않았습니다. 설정 → AI 제공자에서 활성화하세요.",
+            "enrichStarted": "AI로 메타데이터 보강 중...",
+            "enrichComplete": "메타데이터 보강 완료: {{summary}}",
+            "enrichFailed": "메타데이터 보강 실패: {{error}}"
         }
     },
     "doctor": {

@@ -49,6 +49,14 @@ async def _get_hf_api_session() -> aiohttp.ClientSession:
     return _hf_api_session
 
 
+async def close_hf_api_session() -> None:
+    """Close the shared HF API session, if it was ever created."""
+    global _hf_api_session
+    if _hf_api_session is not None and not _hf_api_session.closed:
+        await _hf_api_session.close()
+        _hf_api_session = None
+
+
 def _infer_model_type(model_root: str) -> tuple[Any, str]:
     """Determine model class and scanner by matching ``model_root`` against the
     configured root paths for each model type (from ``Config``).

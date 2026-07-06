@@ -22,6 +22,8 @@ class RouteDefinition:
 MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("GET", "/api/lm/settings", "get_settings"),
     RouteDefinition("POST", "/api/lm/settings", "update_settings"),
+    RouteDefinition("GET", "/api/lm/llm/models", "get_llm_models"),
+    RouteDefinition("GET", "/api/lm/llm/provider-models", "get_provider_models"),
     RouteDefinition("GET", "/api/lm/doctor/diagnostics", "get_doctor_diagnostics"),
     RouteDefinition("POST", "/api/lm/doctor/repair-cache", "repair_doctor_cache"),
     RouteDefinition("POST", "/api/lm/doctor/resolve-filename-conflicts", "resolve_doctor_filename_conflicts"),
@@ -100,6 +102,16 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     ),
     RouteDefinition(
         "POST", "/api/lm/download-hf-model", "download_hf_model"
+    ),
+    # Agent skill endpoints
+    RouteDefinition(
+        "GET", "/api/lm/agent/skills", "get_agent_skills"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/agent/execute/{skill_name}", "execute_agent_skill"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/agent/cancel", "cancel_agent_skill"
     ),
 )
 

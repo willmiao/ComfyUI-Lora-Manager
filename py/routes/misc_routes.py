@@ -40,6 +40,7 @@ from .handlers.misc_handlers import (
 )
 from .handlers.base_model_handlers import BaseModelHandlerSet
 from .handlers.hf_handlers import HfHandler
+from .handlers.agent_handlers import AgentHandler
 from .misc_route_registrar import MiscRouteRegistrar
 
 logger = logging.getLogger(__name__)
@@ -138,6 +139,7 @@ class MiscRoutes:
         example_workflows = ExampleWorkflowsHandler()
         base_model = BaseModelHandlerSet()
         hf_handler = HfHandler()
+        agent_handler = AgentHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -158,6 +160,7 @@ class MiscRoutes:
             example_workflows=example_workflows,
             base_model=base_model,
             hf_handler=hf_handler,
+            agent_handler=agent_handler,
         )
 
 

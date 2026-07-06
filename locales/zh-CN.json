@@ -657,6 +657,32 @@
             "proxyPassword": "密码 (可选)",
             "proxyPasswordPlaceholder": "密码",
             "proxyPasswordHelp": "代理认证的密码 (如果需要)"
+        },
+        "aiProvider": {
+            "title": "AI 提供商",
+            "provider": "提供商",
+            "providerHelp": "选择您的 LLM 提供商。OpenAI 和 Ollama 使用预设的 API 端点。自定义允许您指定任何兼容 OpenAI 的端点。",
+            "providerOptions": {
+                "openai": "OpenAI",
+                "ollama": "Ollama（本地）",
+                "deepseek": "DeepSeek",
+                "groq": "Groq",
+                "openrouter": "OpenRouter",
+                "opencode-go": "OpenCode Go",
+                "custom": "自定义（OpenAI 兼容）"
+            },
+            "apiBase": "API 基础地址",
+            "apiBaseHelp": "LLM API 的基础地址。选择预设或输入自定义地址，下拉框显示所有支持的提供商预设。",
+            "apiBasePlaceholder": "https://api.openai.com/v1",
+            "apiKey": "API 密钥",
+            "apiKeyHelp": "LLM 提供商的 API 密钥。本地存储，除您选择的 LLM 提供商外不会发送到任何服务器。",
+            "apiKeyPlaceholder": "sk-...",
+            "apiKeyNotSet": "未设置",
+            "apiKeyConfigured": "已配置",
+            "apiKeySet": "设置",
+            "model": "模型",
+            "modelHelp": "要使用的模型。从下拉框选择（从提供商获取）或输入自定义模型名称。",
+            "modelPlaceholder": "选择一个模型..."
         }
     },
     "loras": {
@@ -754,7 +780,8 @@
                 "completed": "完成：已移动 {success} 个，跳过 {skipped} 个，失败 {failures} 个",
                 "complete": "自动整理已完成",
                 "error": "错误：{error}"
-            }
+            },
+            "enrichHfAgent": "AI HF 元数据增强"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 数据",
@@ -778,7 +805,8 @@
             "shareRecipe": "分享配方",
             "viewAllLoras": "查看所有 LoRA",
             "downloadMissingLoras": "下载缺失的 LoRA",
-            "deleteRecipe": "删除配方"
+            "deleteRecipe": "删除配方",
+            "enrichHfAgent": "AI HF 元数据增强"
         }
     },
     "recipes": {
@@ -2081,6 +2109,12 @@
             "moveFailed": "Failed to move item: {message}",
             "copiedToClipboard": "已复制到剪贴板",
             "downloadStarted": "下载已开始"
+        },
+        "agent": {
+            "llmNotConfigured": "AI 提供商未配置。请在 设置 → AI 提供商 中进行配置。",
+            "enrichStarted": "正在使用 AI 增强元数据...",
+            "enrichComplete": "元数据增强完成：{{summary}}",
+            "enrichFailed": "元数据增强失败：{{error}}"
         }
     },
     "doctor": {

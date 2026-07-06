@@ -1592,3 +1592,45 @@ input:checked + .toggle-slider:before {
     animation: settings-highlight-pulse 1.5s ease-in-out 3;
     border-radius: var(--border-radius-xs);
 }
+
+/* ---- Combobox panel for AI Provider settings ---- */
+/* The panel is appended to <body> by Combobox.js and positioned relative to
+   the enhanced <input>. Styles reuse settings-modal CSS variables. */
+
+.lm-combobox-panel {
+    position: absolute;
+    z-index: 10002;
+    max-height: 240px;
+    overflow-y: auto;
+    background: var(--lora-surface, #2a2a2a);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.12));
+    border-radius: var(--border-radius-xs, 6px);
+    box-shadow: var(--shadow-elevated, 0 6px 18px rgba(0, 0, 0, 0.45));
+    font-size: 0.95em;
+    color: var(--text-color, rgba(226, 232, 240, 0.9));
+    padding: 4px 0;
+    box-sizing: border-box;
+}
+
+.lm-combobox-option {
+    padding: 6px 12px;
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lm-combobox-option:hover,
+.lm-combobox-option.is-active {
+    background: rgba(from var(--lora-accent) r g b / 0.2);
+    color: var(--lora-accent);
+}
+
+.lm-combobox-empty {
+    padding: 8px 12px;
+    color: var(--text-color);
+    opacity: 0.45;
+    font-style: italic;
+    user-select: none;
+}
