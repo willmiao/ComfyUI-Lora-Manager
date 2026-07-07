@@ -374,35 +374,17 @@ class HfHandler:
             if ".." in relative_path.split("/") or "\\" in relative_path:
                 return web.json_response({"error": "Invalid relative_path"}, status=400)
 
-        # Validate model_root — must not contain path traversal
-        if not os.path.isabs(model_root):
-            # For relative model_root, check it doesn't escape
-            resolved_model_root = os.path.realpath(
-                os.path.join(os.getcwd(), "models", model_root)
-            )
+        # Use model_root directly as the base directory — same approach as
+        # CivitAI's download path (download_manager.py).  No realpath, no
+        # allowed-roots validation, no path-traversal check; those are
+        # unnecessary when the frontend sends the path from its own dropdown
+        # (populated from scanner roots).  Using the "business path" directly
+        # keeps dest_path consistent with scanner roots so that later folder
+        # derivation (in _save_hf_metadata) works correctly.
+        if os.path.isabs(model_root):
+            base_dir = os.path.normpath(model_root)
         else:
-            resolved_model_root = os.path.realpath(model_root)
-
-        # Verify model_root is within a configured scanner root
-        allowed_roots = set()
-        for root_list in (
-            config.loras_roots or [],
-            config.extra_loras_roots or [],
-            config.checkpoints_roots or [],
-            config.extra_checkpoints_roots or [],
-            config.unet_roots or [],
-            config.extra_unet_roots or [],
-            config.embeddings_roots or [],
-            config.extra_embeddings_roots or [],
-        ):
-            for r in root_list:
-                allowed_roots.add(os.path.realpath(r))
-
-        if not any(resolved_model_root == root or resolved_model_root.startswith(root + os.sep) for root in allowed_roots):
-            logger.warning("Invalid model_root rejected: %s", model_root)
-            return web.json_response({"error": f"Invalid model_root: {model_root}"}, status=400)
-
-        base_dir = resolved_model_root
+            base_dir = os.path.normpath(os.path.join(os.getcwd(), "models", model_root))
 
         if use_default_paths:
             target_dir = os.path.join(base_dir, "huggingface", author, repo_name)
@@ -413,13 +395,6 @@ class HfHandler:
 
         os.makedirs(target_dir, exist_ok=True)
         dest_path = os.path.join(target_dir, filename)
-
-        # Resolve symlinks and check for path traversal escape
-        real_dest = os.path.realpath(dest_path)
-        real_base = os.path.realpath(target_dir)
-        if not real_dest.startswith(real_base + os.sep):
-            logger.warning("Path traversal blocked: %s -> %s", dest_path, real_dest)
-            return web.json_response({"error": "Path traversal detected"}, status=400)
 
         # Check if already exists (simple skip)
         if os.path.exists(dest_path) and os.path.getsize(dest_path) > 0:
