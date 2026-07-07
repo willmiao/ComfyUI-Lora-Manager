@@ -416,6 +416,7 @@ export class BulkContextMenu extends BaseContextMenu {
             cleanupCallbacks();
 
             if (data.status === 'completed') {
+                if (state.bulkMode) bulkManager.toggleBulkMode();
                 progressUI.complete(data.summary || 'Enrich complete');
                 showToast(
                     'toast.agent.enrichComplete',
@@ -428,6 +429,7 @@ export class BulkContextMenu extends BaseContextMenu {
 
         const onError = (data) => {
             cleanupCallbacks();
+            if (state.bulkMode) bulkManager.toggleBulkMode();
             state.loadingManager.hide();
             showToast(
                 'toast.agent.enrichFailed',
@@ -441,6 +443,7 @@ export class BulkContextMenu extends BaseContextMenu {
             await agentManager.executeSkill('enrich_hf_metadata', modelPaths);
         } catch (error) {
             cleanupCallbacks();
+            if (state.bulkMode) bulkManager.toggleBulkMode();
             state.loadingManager.hide();
             showToast(
                 'toast.agent.enrichFailed',
