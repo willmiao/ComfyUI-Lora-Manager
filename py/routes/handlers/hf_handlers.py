@@ -96,7 +96,7 @@ def _infer_model_type(model_root: str) -> tuple[Any, str]:
     return _DEFAULT_MODEL_CLASS, _DEFAULT_SCANNER_GETTER
 
 
-async def _save_hf_metadata(dest_path: str, repo: str, model_root: str, folder: str = "") -> None:
+async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
     """Create a proper .metadata.json and add the model to the scanner cache.
 
     Uses ``MetadataManager.create_default_metadata()`` which computes the
@@ -105,11 +105,6 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str, folder: 
     ``EmbeddingMetadata``) object.  We then overlay HF-specific fields and
     register the model in the in-memory scanner cache so it appears
     immediately without a full filesystem walk.
-
-    Args:
-        folder: Relative folder path within the model root. Passed by the
-            caller rather than re-derived from file paths to avoid mismatches
-            when ``dest_path`` was realpath-resolved but scanner roots are not.
     """
     try:
         hf_url = f"https://huggingface.co/{repo}"
@@ -135,14 +130,22 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str, folder: 
         await MetadataManager.save_metadata(dest_path, metadata_dict)
         logger.info("Saved HF metadata (with hf_url) for %s", dest_path)
 
-        # 4. Add to scanner cache (same as CivitAI's _execute_download does)
+        # 4. Determine relative folder path for cache
+        #    model_root is an absolute path; dest_path is under it
+        folder = ""
+        if os.path.isabs(model_root) and dest_path.startswith(model_root):
+            rel = os.path.relpath(os.path.dirname(dest_path), model_root)
+            folder = rel.replace(os.sep, "/") if rel != "." else ""
+
+        # 5. Add to scanner cache (same as CivitAI's _execute_download does)
         scanner_getter = getattr(ServiceRegistry, scanner_getter_name, None)
-        scanner = await scanner_getter() if scanner_getter is not None else None
-        if scanner is not None:
-            metadata_dict = metadata.to_dict()
-            metadata_dict["hf_url"] = hf_url
-            await scanner.add_model_to_cache(metadata_dict, folder)
-            logger.info("Added %s to scanner cache (folder=%s)", dest_path, folder)
+        if scanner_getter is not None:
+            scanner = await scanner_getter()
+            if scanner is not None:
+                metadata_dict = metadata.to_dict()
+                metadata_dict["hf_url"] = hf_url
+                await scanner.add_model_to_cache(metadata_dict, folder)
+                logger.info("Added %s to scanner cache (folder=%s)", dest_path, folder)
 
     except Exception as exc:
         logger.warning("Failed to save HF metadata for %s: %s", dest_path, exc)
@@ -400,13 +403,11 @@ class HfHandler:
             return web.json_response({"error": f"Invalid model_root: {model_root}"}, status=400)
 
         base_dir = resolved_model_root
-        folder: str = ""
+
         if use_default_paths:
             target_dir = os.path.join(base_dir, "huggingface", author, repo_name)
-            folder = f"huggingface/{author}/{repo_name}"
         elif relative_path:
             target_dir = os.path.join(base_dir, relative_path)
-            folder = relative_path
         else:
             target_dir = base_dir
 
@@ -482,7 +483,7 @@ class HfHandler:
                     progress_callback=progress_callback,
                 )
                 if hf_success:
-                    await _save_hf_metadata(dest_path, repo, model_root, folder=folder)
+                    await _save_hf_metadata(dest_path, repo, model_root)
                     return web.json_response({
                         "success": True,
                         "message": f"Downloaded to {dest_path}",
@@ -510,7 +511,7 @@ class HfHandler:
                 progress_callback=progress_callback,
             )
             if success:
-                await _save_hf_metadata(dest_path, repo, model_root, folder=folder)
+                await _save_hf_metadata(dest_path, repo, model_root)
                 return web.json_response({
                     "success": True,
                     "message": f"Downloaded to {result}",
