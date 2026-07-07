@@ -12,7 +12,19 @@
 <div id="checkpointContextMenu" class="context-menu" style="display: none;">
     <!-- Metadata -->
     <div class="context-menu-item" data-action="refresh-metadata"><i class="fas fa-sync"></i> {{ t('loras.contextMenu.refreshMetadata') }}</div>
-    <div class="context-menu-item" data-action="relink-civitai"><i class="fas fa-link"></i> {{ t('loras.contextMenu.relinkCivitai') }}</div>
+    <div class="context-menu-item has-submenu" data-has-submenu="link-model">
+        <i class="fas fa-link"></i>
+        <span>{{ t('loras.contextMenu.linkModel') }}</span>
+        <i class="fas fa-chevron-right submenu-arrow"></i>
+        <div class="context-submenu">
+            <div class="context-menu-item" data-action="relink-civitai">
+                <i class="fas fa-external-link-alt"></i> <span>{{ t('loras.contextMenu.linkCivitai') }}</span>
+            </div>
+            <div class="context-menu-item" data-action="link-hf">
+                <i class="fas fa-robot"></i> <span>{{ t('loras.contextMenu.linkHuggingFace') }}</span>
+            </div>
+        </div>
+    </div>
     <div class="context-menu-separator menu-section-break"></div>
     <!-- Workflow -->
     <div class="context-menu-item" data-action="copyname"><i class="fas fa-copy"></i> {{ t('loras.contextMenu.copyFilename') }}</div>

@@ -148,8 +148,116 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str, folder: 
         logger.warning("Failed to save HF metadata for %s: %s", dest_path, exc)
 
 
+def _find_matching_root(dest_dir: str) -> str | None:
+    """Walk up *dest_dir* to find which configured scanner root it belongs to."""
+    norm = os.path.normpath(dest_dir).replace(os.sep, "/")
+    all_roots = []
+    for root_list in (
+        config.loras_roots or [],
+        config.extra_loras_roots or [],
+        config.checkpoints_roots or [],
+        config.extra_checkpoints_roots or [],
+        config.unet_roots or [],
+        config.extra_unet_roots or [],
+        config.embeddings_roots or [],
+        config.extra_embeddings_roots or [],
+    ):
+        all_roots.extend([os.path.normpath(p).replace(os.sep, "/") for p in root_list])
+    # Find the longest matching prefix
+    match: str | None = None
+    for root in all_roots:
+        if norm.startswith(root):
+            if match is None or len(root) > len(match):
+                match = root
+    return match
+
+
+async def _add_to_scanner_cache(dest_path: str, metadata: dict[str, Any]) -> None:
+    model_dir = os.path.dirname(dest_path)
+    model_root = _find_matching_root(model_dir)
+    if not model_root:
+        raise ValueError(f"File path {dest_path} is not within any configured scanner root")
+    scanner_getter_name = _infer_model_type(model_root)[1]
+    scanner_getter = getattr(ServiceRegistry, scanner_getter_name, None)
+    if scanner_getter is None:
+        raise RuntimeError(f"Scanner getter '{scanner_getter_name}' not found in ServiceRegistry")
+    scanner = await scanner_getter()
+    if scanner is None:
+        raise RuntimeError(f"Scanner '{scanner_getter_name}' returned None")
+    await scanner.update_single_model_cache(dest_path, dest_path, metadata)
+
+
 class HfHandler:
     """Handle Hugging Face model browsing and download."""
+
+    async def set_hf_url(self, request: web.Request) -> web.Response:
+        try:
+            payload: dict[str, Any] = await request.json()
+        except json.JSONDecodeError:
+            return web.json_response({"success": False, "error": "Invalid JSON"}, status=400)
+
+        file_path = (payload.get("file_path") or "").strip()
+        hf_url = (payload.get("hf_url") or "").strip()
+
+        if not file_path or not hf_url:
+            return web.json_response(
+                {"success": False, "error": "Missing required fields: 'file_path' and 'hf_url'"},
+                status=400,
+            )
+
+        m = re.match(r"^https?://huggingface\.co/([^/]+/[^/]+)/?$", hf_url)
+        if not m:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Invalid HuggingFace URL. Expected format: https://huggingface.co/user/repo",
+                },
+                status=400,
+            )
+
+        if not os.path.isfile(file_path):
+            return web.json_response(
+                {"success": False, "error": f"File not found: {file_path}"},
+                status=404,
+            )
+
+        model_root = _find_matching_root(os.path.dirname(file_path))
+        if not model_root:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "File is not within any configured model directory. Cannot link to HuggingFace.",
+                },
+                status=400,
+            )
+
+        try:
+            existing = await MetadataManager.load_metadata_payload(file_path)
+            if existing.get("hf_url") == hf_url:
+                return web.json_response({
+                    "success": True,
+                    "message": "hf_url already set",
+                    "hf_url": hf_url,
+                })
+
+            existing["hf_url"] = hf_url
+            existing["from_civitai"] = False
+            await MetadataManager.save_metadata(file_path, existing)
+
+            await _add_to_scanner_cache(file_path, existing)
+
+            logger.info("Set hf_url=%s for %s", hf_url, file_path)
+            return web.json_response({
+                "success": True,
+                "message": f"hf_url set to {hf_url}",
+                "hf_url": hf_url,
+            })
+        except Exception as exc:
+            logger.error("Failed to set hf_url for %s: %s", file_path, exc)
+            return web.json_response(
+                {"success": False, "error": str(exc)},
+                status=500,
+            )
 
     async def get_hf_repo_files(self, request: web.Request) -> web.Response:
         """List model-weight files from a HF repo with real file sizes.

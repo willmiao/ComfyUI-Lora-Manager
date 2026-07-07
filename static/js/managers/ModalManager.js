@@ -264,6 +264,19 @@ export class ModalManager {
             });
         }
 
+        // Add linkHfModal registration
+        const linkHfModal = document.getElementById('linkHfModal');
+        if (linkHfModal) {
+            this.registerModal('linkHfModal', {
+                element: linkHfModal,
+                onClose: () => {
+                    this.getModal('linkHfModal').element.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         // Add exampleAccessModal registration
         const exampleAccessModal = document.getElementById('exampleAccessModal');
         if (exampleAccessModal) {

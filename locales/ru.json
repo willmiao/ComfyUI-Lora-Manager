@@ -786,7 +786,9 @@
         "contextMenu": {
             "refreshMetadata": "Обновить данные Civitai",
             "checkUpdates": "Проверить обновления",
-            "relinkCivitai": "Пересвязать с Civitai",
+            "linkModel": "Связать модель",
+            "linkCivitai": "Пересвязать с Civitai",
+            "linkHuggingFace": "Связать с HuggingFace",
             "copySyntax": "Копировать синтаксис LoRA",
             "copyFilename": "Копировать имя файла модели",
             "copyRecipeSyntax": "Копировать синтаксис рецепта",
@@ -1318,6 +1320,14 @@
             "createNewFolder": "Создать новую папку",
             "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
             "root": "Корень"
+        },
+        "linkHuggingFace": {
+            "title": "Связать с HuggingFace",
+            "infoText": "Вставьте URL репозитория HuggingFace, чтобы связать эту модель с её источником. Это позволит обогащать метаданные с помощью ИИ.",
+            "urlLabel": "URL репозитория HuggingFace:",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "Введите полный URL репозитория HuggingFace.",
+            "confirmAction": "Сохранить и связать"
         },
         "relinkCivitai": {
             "title": "Пересвязать с Civitai",
@@ -2048,6 +2058,8 @@
             "contentRatingFailed": "Не удалось установить рейтинг контента: {message}",
             "relinkSuccess": "Модель успешно пересвязана с Civitai",
             "relinkFailed": "Ошибка: {message}",
+            "linkHfSuccess": "Модель успешно связана с HuggingFace",
+            "linkHfFailed": "Ошибка: {message}",
             "fetchMetadataFirst": "Пожалуйста, сначала получите метаданные с CivitAI",
             "noCivitaiInfo": "Информация CivitAI недоступна",
             "missingHash": "Хеш модели недоступен"

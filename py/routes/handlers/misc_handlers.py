@@ -3448,6 +3448,7 @@ class MiscHandlerSet:
             # Hugging Face handlers
             "get_hf_repo_files": self.hf_handler.get_hf_repo_files,
             "download_hf_model": self.hf_handler.download_hf_model,
+            "set_hf_url": self.hf_handler.set_hf_url,
             # Agent skill handlers
             "get_agent_skills": self.agent_handler.get_agent_skills,
             "execute_agent_skill": self.agent_handler.execute_agent_skill,

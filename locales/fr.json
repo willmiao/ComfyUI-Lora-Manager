@@ -786,7 +786,9 @@
         "contextMenu": {
             "refreshMetadata": "Actualiser les données Civitai",
             "checkUpdates": "Vérifier les mises à jour",
-            "relinkCivitai": "Relier à nouveau à Civitai",
+            "linkModel": "Lier le modèle",
+            "linkCivitai": "Relier à nouveau à Civitai",
+            "linkHuggingFace": "Lier à HuggingFace",
             "copySyntax": "Copier la syntaxe LoRA",
             "copyFilename": "Copier le nom de fichier du modèle",
             "copyRecipeSyntax": "Copier la syntaxe de la recipe",
@@ -1318,6 +1320,14 @@
             "createNewFolder": "Créer un nouveau dossier",
             "pathPlaceholder": "Tapez le chemin du dossier ou sélectionnez dans l'arbre ci-dessous...",
             "root": "Racine"
+        },
+        "linkHuggingFace": {
+            "title": "Lier à HuggingFace",
+            "infoText": "Collez l'URL du dépôt HuggingFace pour associer ce modèle à sa source. Cela permet l'enrichissement des métadonnées par IA.",
+            "urlLabel": "URL du dépôt HuggingFace :",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "Entrez l'URL complète du dépôt HuggingFace.",
+            "confirmAction": "Enregistrer & lier"
         },
         "relinkCivitai": {
             "title": "Relier à nouveau à Civitai",
@@ -2048,6 +2058,8 @@
             "contentRatingFailed": "Échec de la définition de la classification du contenu : {message}",
             "relinkSuccess": "Modèle relié à Civitai avec succès",
             "relinkFailed": "Erreur : {message}",
+            "linkHfSuccess": "Modèle lié à HuggingFace avec succès",
+            "linkHfFailed": "Erreur : {message}",
             "fetchMetadataFirst": "Veuillez d'abord récupérer les métadonnées depuis CivitAI",
             "noCivitaiInfo": "Aucune information CivitAI disponible",
             "missingHash": "Hash du modèle non disponible"

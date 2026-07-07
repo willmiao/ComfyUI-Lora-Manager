@@ -786,7 +786,9 @@
         "contextMenu": {
             "refreshMetadata": "רענן נתוני Civitai",
             "checkUpdates": "בדוק עדכונים",
-            "relinkCivitai": "קשר מחדש ל-Civitai",
+            "linkModel": "קישור מודל",
+            "linkCivitai": "קשר מחדש ל-Civitai",
+            "linkHuggingFace": "קישור ל-HuggingFace",
             "copySyntax": "העתק תחביר LoRA",
             "copyFilename": "העתק שם קובץ מודל",
             "copyRecipeSyntax": "העתק תחביר מתכון",
@@ -1318,6 +1320,14 @@
             "createNewFolder": "צור תיקייה חדשה",
             "pathPlaceholder": "הקלד נתיב תיקייה או בחר מהעץ למטה...",
             "root": "שורש"
+        },
+        "linkHuggingFace": {
+            "title": "קישור ל-HuggingFace",
+            "infoText": "הדבק את כתובת ה-URL של מאגר HuggingFace כדי לשייך מודל זה למקורו. פעולה זו מאפשרת העשרת מטא-דאטה באמצעות AI.",
+            "urlLabel": "כתובת URL של מאגר HuggingFace:",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "הזן את כתובת ה-URL המלאה של מאגר HuggingFace.",
+            "confirmAction": "שמור וקשר"
         },
         "relinkCivitai": {
             "title": "קשר מחדש ל-Civitai",
@@ -2048,6 +2058,8 @@
             "contentRatingFailed": "הגדרת דירוג התוכן נכשלה: {message}",
             "relinkSuccess": "המודל קושר מחדש ל-Civitai בהצלחה",
             "relinkFailed": "שגיאה: {message}",
+            "linkHfSuccess": "המודל נקשר בהצלחה ל-HuggingFace",
+            "linkHfFailed": "שגיאה: {message}",
             "fetchMetadataFirst": "אנא אחזר מטא-דאטה מ-CivitAI תחילה",
             "noCivitaiInfo": "אין מידע מ-CivitAI זמין",
             "missingHash": "ה-hash של המודל אינו זמין"

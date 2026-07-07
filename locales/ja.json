@@ -786,7 +786,9 @@
         "contextMenu": {
             "refreshMetadata": "Civitaiデータを更新",
             "checkUpdates": "更新確認",
-            "relinkCivitai": "Civitaiに再リンク",
+            "linkModel": "モデルをリンク",
+            "linkCivitai": "Civitai にリンク",
+            "linkHuggingFace": "HuggingFace にリンク",
             "copySyntax": "LoRA構文をコピー",
             "copyFilename": "モデルファイル名をコピー",
             "copyRecipeSyntax": "レシピ構文をコピー",
@@ -1318,6 +1320,14 @@
             "createNewFolder": "新しいフォルダを作成",
             "pathPlaceholder": "フォルダパスを入力するか、下のツリーから選択...",
             "root": "ルート"
+        },
+        "linkHuggingFace": {
+            "title": "HuggingFace にリンク",
+            "infoText": "HuggingFace リポジトリの URL を貼り付けてモデルを関連付けます。AI によるメタデータ補完が有効になります。",
+            "urlLabel": "HuggingFace リポジトリ URL：",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "完全な HuggingFace リポジトリ URL を入力してください。",
+            "confirmAction": "保存＆リンク"
         },
         "relinkCivitai": {
             "title": "Civitaiに再リンク",
@@ -2048,6 +2058,8 @@
             "contentRatingFailed": "コンテンツレーティングの設定に失敗しました：{message}",
             "relinkSuccess": "モデルがCivitaiに正常に再リンクされました",
             "relinkFailed": "エラー：{message}",
+            "linkHfSuccess": "モデルを HuggingFace にリンクしました",
+            "linkHfFailed": "エラー：{message}",
             "fetchMetadataFirst": "最初にCivitAIからメタデータを取得してください",
             "noCivitaiInfo": "CivitAI情報が利用できません",
             "missingHash": "モデルハッシュが利用できません"

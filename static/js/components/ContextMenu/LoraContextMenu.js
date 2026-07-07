@@ -32,6 +32,9 @@ export class LoraContextMenu extends BaseContextMenu {
         if (!enrichItem) return;
         const hasHfUrl = !!card.dataset.hf_url;
         enrichItem.classList.toggle('disabled', !hasHfUrl);
+        enrichItem.title = hasHfUrl
+            ? ''
+            : 'Link this model to a HuggingFace repo first (Link Model \u2192 Link to HuggingFace)';
     }
 
     handleMenuAction(action, menuItem) {

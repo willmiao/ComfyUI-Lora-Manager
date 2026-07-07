@@ -786,7 +786,9 @@
         "contextMenu": {
             "refreshMetadata": "刷新 Civitai 資料",
             "checkUpdates": "檢查更新",
-            "relinkCivitai": "重新連結 Civitai",
+            "linkModel": "連結模型",
+            "linkCivitai": "連結到 Civitai",
+            "linkHuggingFace": "連結到 HuggingFace",
             "copySyntax": "複製 LoRA 語法",
             "copyFilename": "複製模型檔名",
             "copyRecipeSyntax": "複製配方語法",
@@ -1318,6 +1320,14 @@
             "createNewFolder": "建立新資料夾",
             "pathPlaceholder": "輸入資料夾路徑或從下方樹狀結構選擇...",
             "root": "根目錄"
+        },
+        "linkHuggingFace": {
+            "title": "連結到 HuggingFace",
+            "infoText": "貼上 HuggingFace 倉庫 URL 以關聯此模型。關聯後可啟用 AI 中繼資料增強功能。",
+            "urlLabel": "HuggingFace 倉庫 URL：",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "請輸入完整的 HuggingFace 倉庫 URL。",
+            "confirmAction": "儲存並連結"
         },
         "relinkCivitai": {
             "title": "重新連結至 Civitai",
@@ -2048,6 +2058,8 @@
             "contentRatingFailed": "設定內容分級失敗：{message}",
             "relinkSuccess": "模型已成功重新連結至 Civitai",
             "relinkFailed": "錯誤：{message}",
+            "linkHfSuccess": "模型已成功連結到 HuggingFace",
+            "linkHfFailed": "錯誤：{message}",
             "fetchMetadataFirst": "請先從 CivitAI 取得 metadata",
             "noCivitaiInfo": "無 CivitAI 資訊",
             "missingHash": "模型雜湊不可用"

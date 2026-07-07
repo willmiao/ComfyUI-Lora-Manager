@@ -21,18 +21,22 @@
   margin-bottom: 4px;
 }
 
-.input-group {
+#relinkCivitaiModal .input-group,
+#linkHfModal .input-group {
   display: flex;
   flex-direction: column;
   margin-bottom: var(--space-2);
 }
 
-.input-group label {
+#relinkCivitaiModal .input-group label,
+#linkHfModal .input-group label {
   margin-bottom: var(--space-1);
   font-weight: 500;
 }
 
-.input-group input {
+#relinkCivitaiModal .input-group input,
+#linkHfModal .input-group input {
+  width: auto;
   padding: 8px 12px;
   border-radius: var(--border-radius-xs);
   border: 1px solid var(--border-color);

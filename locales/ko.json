@@ -786,7 +786,9 @@
         "contextMenu": {
             "refreshMetadata": "Civitai 데이터 새로고침",
             "checkUpdates": "업데이트 확인",
-            "relinkCivitai": "Civitai에 다시 연결",
+            "linkModel": "모델 연결",
+            "linkCivitai": "Civitai에 연결",
+            "linkHuggingFace": "HuggingFace에 연결",
             "copySyntax": "LoRA 문법 복사",
             "copyFilename": "모델 파일명 복사",
             "copyRecipeSyntax": "레시피 문법 복사",
@@ -1318,6 +1320,14 @@
             "createNewFolder": "새 폴더 만들기",
             "pathPlaceholder": "폴더 경로를 입력하거나 아래 트리에서 선택하세요...",
             "root": "루트"
+        },
+        "linkHuggingFace": {
+            "title": "HuggingFace에 연결",
+            "infoText": "HuggingFace 저장소 URL을 붙여넣어 모델을 연결합니다. AI 메타데이터 보강 기능을 사용할 수 있습니다.",
+            "urlLabel": "HuggingFace 저장소 URL：",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "전체 HuggingFace 저장소 URL을 입력하세요.",
+            "confirmAction": "저장 및 연결"
         },
         "relinkCivitai": {
             "title": "Civitai에 다시 연결",
@@ -2048,6 +2058,8 @@
             "contentRatingFailed": "콘텐츠 등급 설정 실패: {message}",
             "relinkSuccess": "모델이 Civitai에 성공적으로 다시 연결되었습니다",
             "relinkFailed": "오류: {message}",
+            "linkHfSuccess": "모델이 HuggingFace에 연결되었습니다",
+            "linkHfFailed": "오류: {message}",
             "fetchMetadataFirst": "먼저 CivitAI에서 메타데이터를 가져와주세요",
             "noCivitaiInfo": "사용 가능한 CivitAI 정보가 없습니다",
             "missingHash": "모델 해시를 사용할 수 없습니다"

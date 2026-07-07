@@ -1,0 +1,24 @@
+<!-- Link to HuggingFace Modal -->
+<div id="linkHfModal" class="modal">
+    <div class="modal-content">
+        <button class="close" onclick="modalManager.closeModal('linkHfModal')">&times;</button>
+        <h2>{{ t('modals.linkHuggingFace.title') }}</h2>
+        <div class="warning-box">
+            <i class="fas fa-info-circle"></i>
+            <p>{{ t('modals.linkHuggingFace.infoText') }}</p>
+        </div>
+        <div class="input-group">
+            <label for="hfModelUrl">{{ t('modals.linkHuggingFace.urlLabel') }}</label>
+            <input type="text" id="hfModelUrl" placeholder="{{ t('modals.linkHuggingFace.urlPlaceholder') }}" />
+            <div class="input-error" id="hfModelUrlError"></div>
+            <div class="input-help">
+                {{ t('modals.linkHuggingFace.helpText') }}<br>
+                <strong>https://huggingface.co/user/repo</strong>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="modalManager.closeModal('linkHfModal')">{{ t('common.actions.cancel') }}</button>
+            <button class="confirm-btn" id="confirmLinkHfBtn">{{ t('modals.linkHuggingFace.confirmAction') }}</button>
+        </div>
+    </div>
+</div>
