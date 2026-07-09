@@ -363,8 +363,8 @@ class HfHandler:
         if ".." in (author, repo_name) or "." in (author, repo_name):
             return web.json_response({"error": f"Invalid repo format: {repo}"}, status=400)
 
-        # Validate filename — must not contain path separators or ..
-        if "/" in filename or "\\" in filename or ".." in filename:
+        # Validate filename — must not contain path traversal
+        if ".." in filename:
             return web.json_response({"error": "Invalid filename"}, status=400)
 
         # Validate relative_path — must not be absolute or escape base directory
@@ -393,8 +393,12 @@ class HfHandler:
         else:
             target_dir = base_dir
 
+        # Strip HF repo subdirectory — "diffusion_models/xxx.safetensors"
+        # is an HF repo convention, not meaningful for local storage.
+        file_base = os.path.basename(filename)
+
         os.makedirs(target_dir, exist_ok=True)
-        dest_path = os.path.join(target_dir, filename)
+        dest_path = os.path.join(target_dir, file_base)
 
         # Check if already exists (simple skip)
         if os.path.exists(dest_path) and os.path.getsize(dest_path) > 0:
