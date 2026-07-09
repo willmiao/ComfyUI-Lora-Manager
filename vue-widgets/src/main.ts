@@ -553,22 +553,22 @@ function normalizeAutocompleteWidgetValues(node: any, info: any) {
 
 function applyAutocompleteTextLayoutFix(
   widget: any,
-  container: HTMLElement | undefined,
+  _container: HTMLElement | undefined,
   isVueMode: boolean
 ): void {
+  // In Vue rendering mode the WidgetDOM wrapper handles sizing, so we
+  // only provide a computeSize hint and leave the container unconstrained.
+  // In canvas mode we clear all custom sizing so LiteGraph's default
+  // widget-area layout takes over.  Neither path sets a hard max-height;
+  // the textarea can grow freely (e.g. in app mode where
+  // [&_textarea]:resize-y applies).
   if (isVueMode) {
     ;(widget as any).computeLayoutSize = undefined
     widget.computeSize = (width?: number) =>
       [width ?? 200, AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT - 4]
-    if (container) {
-      container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT}px`
-    }
   } else {
     delete (widget as any).computeLayoutSize
     delete (widget as any).computeSize
-    if (container) {
-      container.style.minHeight = ''
-    }
   }
 }
 
@@ -743,8 +743,12 @@ function createAutocompleteTextWidgetFactory(
   vueApps.set(appKey, vueApp)
 
   if (maxHeight) {
-    container.style.maxHeight = `${maxHeight}px`
-    container.style.minHeight = `${maxHeight}px`
+    // Set only minHeight as a true minimum — remove maxHeight so the
+    // textarea can grow when the user resizes it in app mode (where
+    // [&_textarea]:resize-y applies).  Graph mode (canvas & Vue render)
+    // is unaffected because LiteGraph's layout system still governs
+    // the widget area size.
+    container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT}px`
   }
 
   if (modelType === 'loras') {

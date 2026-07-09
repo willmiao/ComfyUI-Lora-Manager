@@ -271,12 +271,14 @@ onUnmounted(() => {
   overflow: hidden;
   overflow-y: auto;
   padding: 2px 2px 24px 2px;  /* Reserve bottom space for clear button */
-  resize: none;
   border: none;
   border-radius: 0;
   box-sizing: border-box;
   font-size: var(--comfy-textarea-font-size, 10px);
   font-family: monospace;
+  /* resize:none set here (0,2,0). Overridden to vertical in app mode
+     by the :global(.\[\&_textarea\]\:resize-y) .text-input rule below. */
+  resize: none;
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
@@ -349,5 +351,20 @@ onUnmounted(() => {
 .text-input.vue-dom-mode ~ .clear-button svg {
   width: 14px;
   height: 14px;
+}
+
+</style>
+
+<!--
+  Non-scoped !important override: scoped .text-input[data-v-xxx] (0,2,0)
+  beats the app-mode Tailwind rule (0,1,1), so we use !important here to
+  force resize:vertical only when inside the app-mode widget list.
+  The data-testid attribute scoping prevents it from leaking into graph
+  mode.  This is the only !important in the widget stylesheets.
+-->
+<style>
+[data-testid="app-mode-widget-item"] textarea,
+[data-testid="builder-widget-item"] textarea {
+  resize: vertical !important;
 }
 </style>

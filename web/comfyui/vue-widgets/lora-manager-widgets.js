@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-8555b560] {
+.autocomplete-text-widget[data-v-3f3d7a1a] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-8555b560] {
+.input-wrapper[data-v-3f3d7a1a] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-8555b560] {
+.text-input[data-v-3f3d7a1a] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2141,16 +2141,18 @@ to { transform: rotate(360deg);
   overflow: hidden;
   overflow-y: auto;
   padding: 2px 2px 24px 2px;  /* Reserve bottom space for clear button */
-  resize: none;
   border: none;
   border-radius: 0;
   box-sizing: border-box;
   font-size: var(--comfy-textarea-font-size, 10px);
   font-family: monospace;
+  /* resize:none set here (0,2,0). Overridden to vertical in app mode
+     by the :global(.\\[\\&_textarea\\]\\:resize-y) .text-input rule below. */
+  resize: none;
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-8555b560] {
+.text-input.vue-dom-mode[data-v-3f3d7a1a] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2159,12 +2161,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-8555b560]:focus {
+.text-input[data-v-3f3d7a1a]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-8555b560] {
+.clear-button[data-v-3f3d7a1a] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2187,33 +2189,39 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-8555b560] {
+.input-wrapper:hover .clear-button[data-v-3f3d7a1a] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-8555b560]:hover {
+.clear-button[data-v-3f3d7a1a]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-8555b560] {
+.clear-button svg[data-v-3f3d7a1a] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-8555b560] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-3f3d7a1a] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-8555b560]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-3f3d7a1a]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-8555b560] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-3f3d7a1a] {
   width: 14px;
   height: 14px;
+}
+
+
+[data-testid="app-mode-widget-item"] textarea,
+[data-testid="builder-widget-item"] textarea {
+  resize: vertical !important;
 }`));
       document.head.appendChild(elementStyle);
     }
@@ -14952,7 +14960,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-8555b560"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-3f3d7a1a"]]);
 function createVueWidgetCleanup(vueApp, onCleanup) {
   let didUnmount = false;
   return () => {
@@ -15718,19 +15726,13 @@ function normalizeAutocompleteWidgetValues(node, info) {
     info.widgets_values = repairedValues;
   }
 }
-function applyAutocompleteTextLayoutFix(widget, container, isVueMode) {
+function applyAutocompleteTextLayoutFix(widget, _container, isVueMode) {
   if (isVueMode) {
     widget.computeLayoutSize = void 0;
     widget.computeSize = (width) => [width ?? 200, AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT - 4];
-    if (container) {
-      container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT}px`;
-    }
   } else {
     delete widget.computeLayoutSize;
     delete widget.computeSize;
-    if (container) {
-      container.style.minHeight = "";
-    }
   }
 }
 const initVueDomModeListener = () => {
@@ -15875,8 +15877,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
   const appKey = instanceId;
   vueApps.set(appKey, vueApp);
   if (maxHeight) {
-    container.style.maxHeight = `${maxHeight}px`;
-    container.style.minHeight = `${maxHeight}px`;
+    container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT}px`;
   }
   if (modelType === "loras") {
     applyAutocompleteTextLayoutFix(
