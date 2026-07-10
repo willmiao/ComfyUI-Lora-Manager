@@ -757,7 +757,7 @@ class RecipeModal {
                     `<video class="thumbnail-video" autoplay loop muted playsinline>
                         <source src="${lora.preview_url}" type="video/mp4">
                      </video>` :
-                    `<img src="${lora.preview_url || '/loras_static/images/no-preview.png'}" alt="LoRA preview">`;
+                    `<img src="${lora.preview_url || '/loras_static/images/no-preview.png'}" alt="LoRA preview" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`;
 
                 let loraItemClass = 'recipe-lora-item';
                 if (existsLocally) {
@@ -1606,7 +1606,7 @@ class RecipeModal {
             <video class="thumbnail-video" autoplay loop muted playsinline>
                 <source src="${previewUrl}" type="video/mp4">
             </video>
-        ` : `<img src="${previewUrl}" alt="Checkpoint preview">`;
+        ` : `<img src="${previewUrl}" alt="Checkpoint preview" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`;
 
         const badge = existsLocally ? `
             <div class="local-badge">

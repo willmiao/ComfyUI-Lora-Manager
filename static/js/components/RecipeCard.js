@@ -358,7 +358,7 @@ class RecipeCard {
                         <div class="delete-preview">
                             ${isVideo ?
                     `<video src="${previewUrl}" controls muted loop playsinline style="max-width: 100%;"></video>` :
-                    `<img src="${previewUrl}" alt="${this.recipe.title}">`
+                `<img src="${previewUrl}" alt="${this.recipe.title}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
                 }
                         </div>
                         <div class="delete-info">

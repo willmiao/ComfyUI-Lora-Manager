@@ -643,7 +643,7 @@ export function createModelCard(model, modelType) {
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
             ${isVideo ?
             `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
-            `<img src="${versionedPreviewUrl}" alt="${model.model_name}">`
+            `<img src="${versionedPreviewUrl}" alt="${model.model_name}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
         }
             <div class="card-header">
                 ${shouldBlur ?

@@ -41,7 +41,12 @@ async def api_json_error(
         if exc.status < 400:
             raise
 
-        logger.warning(
+        # Preview 404 is routine (file deleted from disk) — not worth a warning.
+        logger_method = logger.warning
+        if request.path.startswith("/api/lm/previews") and exc.status == 404:
+            logger_method = logger.debug
+
+        logger_method(
             "API %s %s returned HTTP %d: %s",
             request.method,
             request.path,

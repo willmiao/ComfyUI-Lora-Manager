@@ -432,7 +432,7 @@ function renderMediaMarkup(version) {
 
     return `
         <div class="version-media">
-            <img src="${escapeHtml(version.previewUrl)}" alt="${escapeHtml(version.name || 'preview')}">
+            <img src="${escapeHtml(version.previewUrl)}" alt="${escapeHtml(version.name || 'preview')}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">
         </div>
     `;
 }

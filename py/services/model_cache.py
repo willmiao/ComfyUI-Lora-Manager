@@ -338,3 +338,24 @@ class ModelCache:
                 return False  # Model not found
                     
             return True
+
+    async def clear_preview_by_path(self, preview_file_path: str) -> int:
+        """Clear ``preview_url`` for every cached entry referencing a file path.
+
+        When a preview file has been deleted from disk, this removes its
+        reference from all matching cache entries so the next list-API
+        response returns an empty ``preview_url`` instead of a stale URL
+        that produces 404s.
+
+        Returns the number of entries that were updated.
+        """
+        normalized = preview_file_path.replace("\\", "/")
+        cleared = 0
+        async with self._lock:
+            for item in self.raw_data:
+                cached_url = item.get("preview_url", "")
+                if cached_url.replace("\\", "/") == normalized:
+                    item["preview_url"] = ""
+                    item["preview_nsfw_level"] = 0
+                    cleared += 1
+        return cleared

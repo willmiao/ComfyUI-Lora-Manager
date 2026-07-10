@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import mimetypes
 import urllib.parse
@@ -53,6 +54,7 @@ class PreviewHandler:
 
         if not resolved.is_file():
             logger.debug("Preview file not found at %s", str(resolved))
+            asyncio.create_task(self._cleanup_stale_preview_url(normalized))
             raise web.HTTPNotFound(text="Preview file not found")
 
         # aiohttp's FileResponse handles range requests, content headers, and
@@ -68,6 +70,35 @@ class PreviewHandler:
         resp = web.FileResponse(path=resolved, chunk_size=_CHUNK_SIZE)
         resp.headers["Cache-Control"] = "public, max-age=86400"
         return resp
+
+    async def _cleanup_stale_preview_url(self, normalized_preview_path: str) -> None:
+        """Fire-and-forget: clear stale preview_url from all model caches.
+
+        When a preview file is no longer on disk, remove its reference from
+        every cached entry so subsequent list API responses return an empty
+        ``preview_url``, letting the frontend show the no-preview placeholder.
+        """
+        try:
+            from ...services.service_registry import ServiceRegistry
+
+            for service_name in ("lora_scanner", "checkpoint_scanner", "embedding_scanner"):
+                scanner = ServiceRegistry.get_service_sync(service_name)
+                if scanner is None or not hasattr(scanner, "_cache"):
+                    continue
+                cache = getattr(scanner, "_cache", None)
+                if cache is None or not hasattr(cache, "clear_preview_by_path"):
+                    continue
+                cleared = await cache.clear_preview_by_path(normalized_preview_path)
+                if cleared and hasattr(scanner, "_persist_current_cache"):
+                    await scanner._persist_current_cache()
+                    logger.info(
+                        "Cleared stale preview_url for %d %s entries (%s)",
+                        cleared,
+                        service_name,
+                        normalized_preview_path,
+                    )
+        except Exception as exc:
+            logger.debug("Failed to clean up stale preview_url: %s", exc)
 
     async def _stream_file(
         self, request: web.Request, path: Path
