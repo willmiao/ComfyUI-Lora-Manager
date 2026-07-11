@@ -304,6 +304,20 @@ class CivArchiveClient:
             version_id = file_data.get("model_version_id") or file_data.get("modelVersionId")
             if model_id is None or version_id is None:
                 continue
+            # CivitAI / CivArchive model IDs are small integers (typically ≤ 7
+            # digits).  Reject suspiciously large values that indicate the API
+            # returned a malformed payload (e.g. a hash reinterpreted as an ID)
+            # to avoid pointless HTTP 500 errors from CivArchive.
+            _MAX_VALID_CIVITAI_ID = 100_000_000
+            try:
+                if int(model_id) >= _MAX_VALID_CIVITAI_ID or int(version_id) >= _MAX_VALID_CIVITAI_ID:
+                    logger.debug(
+                        "Skipping implausible CivArchive model_id=%s / version_id=%s",
+                        model_id, version_id,
+                    )
+                    continue
+            except (TypeError, ValueError):
+                continue
             resolved = await self.get_model_version(model_id, version_id)
             if resolved:
                 return resolved

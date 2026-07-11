@@ -209,7 +209,21 @@ class MetadataSyncService:
                         error_msg = "CivitAI model is deleted and no archive provider is available"
                     return False, error_msg
             else:
-                provider_attempts.append((None, await self._get_default_provider()))
+                is_hf_source = bool(model_data.get("hf_url"))
+                if is_hf_source:
+                    # HF-sourced model: only check CivitAI API directly.
+                    # CivArchive is almost guaranteed to have no record, and
+                    # hitting it wastes rate-limit budget.
+                    # Use a distinct provider name ("civitai_api" not None) so
+                    # downstream code does NOT interpret a "Model not found"
+                    # response as civitai_api_not_found — which would mark the
+                    # model civitai_deleted=True when it was never on CivitAI.
+                    try:
+                        provider_attempts.append(("civitai_api", await self._get_provider("civitai_api")))
+                    except Exception as exc:  # pragma: no cover - provider resolution fault
+                        logger.debug("Unable to resolve civitai_api provider: %s", exc)
+                if not provider_attempts:
+                    provider_attempts.append((None, await self._get_default_provider()))
 
             civitai_metadata: Optional[Dict[str, Any]] = None
             metadata_provider: Optional[MetadataProviderProtocol] = None
