@@ -12,6 +12,7 @@ from platformdirs import user_config_dir
 
 
 APP_NAME = "ComfyUI-LoRA-Manager"
+_LM_PORTABLE_ENV = "LORA_MANAGER_PORTABLE"
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -100,7 +101,11 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
 
 
 def _should_use_portable_settings(path: str, logger: logging.Logger) -> bool:
-    """Return ``True`` when the repository settings file enables portable mode."""
+    """Return ``True`` when the env var forces it or the settings file enables it."""
+
+    if os.environ.get(_LM_PORTABLE_ENV, "0") == "1":
+        logger.debug("Portable mode enabled via %s", _LM_PORTABLE_ENV)
+        return True
 
     if not os.path.exists(path):
         return False

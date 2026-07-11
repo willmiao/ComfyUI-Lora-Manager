@@ -152,6 +152,9 @@ class SettingsManager:
         self._check_environment_variables()
         self._collect_configuration_warnings()
 
+        if os.environ.get("LORA_MANAGER_PORTABLE", "0") == "1":
+            self.settings.setdefault("use_portable_settings", True)
+
         if self._needs_initial_save:
             self._save_settings()
             self._needs_initial_save = False
