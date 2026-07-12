@@ -1,12 +1,5 @@
 import { app } from "../../scripts/app.js";
 
-// Fixed sizes for component calculations
-export const LORA_ENTRY_HEIGHT = 40; // Height of a single lora entry
-export const CLIP_ENTRY_HEIGHT = 40; // Height of a clip entry
-export const HEADER_HEIGHT = 32; // Height of the header section
-export const CONTAINER_PADDING = 12; // Top and bottom padding
-export const EMPTY_CONTAINER_HEIGHT = 100; // Height when no loras are present
-
 // Parse LoRA entries from value
 export function parseLoraValue(value) {
   if (!value) return [];
@@ -16,23 +9,6 @@ export function parseLoraValue(value) {
 // Format LoRA data
 export function formatLoraValue(loras) {
   return loras;
-}
-
-// Function to update widget height consistently
-export function updateWidgetHeight(container, height, defaultHeight, node) {
-  // Ensure minimum height
-  const finalHeight = Math.max(defaultHeight, height);
-  
-  // Update CSS variables
-  container.style.setProperty('--comfy-widget-min-height', `${finalHeight}px`);
-  container.style.setProperty('--comfy-widget-height', `${finalHeight}px`);
-  
-  // Force node to update size after a short delay to ensure DOM is updated
-  if (node) {
-    setTimeout(() => {
-      node.setDirtyCanvas(true, true);
-    }, 10);
-  }
 }
 
 // Determine if clip entry should be shown - now based on expanded property or initial diff values

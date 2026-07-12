@@ -39,9 +39,6 @@ const NEW_TAB_ZOOM_LEVEL = 0.8;
 const STRENGTH_STEP_SETTING_ID = "loramanager.strength_step";
 const STRENGTH_STEP_DEFAULT = 0.05;
 
-const LORA_WIDGET_MAX_VISIBLE_SETTING_ID = "loramanager.lora_widget_max_visible_loras";
-const LORA_WIDGET_MAX_VISIBLE_DEFAULT = 12;
-
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -363,32 +360,6 @@ const getStrengthStepPreference = (() => {
     };
 })();
 
-const getLoraWidgetMaxVisibleLoras = (() => {
-    let settingsUnavailableLogged = false;
-
-    return () => {
-        const settingManager = app?.extensionManager?.setting;
-        if (!settingManager || typeof settingManager.get !== "function") {
-            if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: settings API unavailable, using default max visible loras.");
-                settingsUnavailableLogged = true;
-            }
-            return LORA_WIDGET_MAX_VISIBLE_DEFAULT;
-        }
-
-        try {
-            const value = settingManager.get(LORA_WIDGET_MAX_VISIBLE_SETTING_ID);
-            return value ?? LORA_WIDGET_MAX_VISIBLE_DEFAULT;
-        } catch (error) {
-            if (!settingsUnavailableLogged) {
-                console.warn("LoRA Manager: unable to read max visible loras setting, using default.", error);
-                settingsUnavailableLogged = true;
-            }
-            return LORA_WIDGET_MAX_VISIBLE_DEFAULT;
-        }
-    };
-})();
-
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -492,19 +463,6 @@ app.registerExtension({
             tooltip: "Step size for adjusting LoRA strength via arrow buttons or keyboard (default: 0.05)",
             category: ["LoRA Manager", "LoRA Widget", "Strength Step"],
         },
-        {
-            id: LORA_WIDGET_MAX_VISIBLE_SETTING_ID,
-            name: "Node 2.0: Maximum visible LoRA entries",
-            type: "slider",
-            attrs: {
-                min: 3,
-                max: 50,
-                step: 1,
-            },
-            defaultValue: LORA_WIDGET_MAX_VISIBLE_DEFAULT,
-            tooltip: "When using Node 2.0 rendering, limit the loras widget height to show at most this many entries (default: 12). Excess entries are accessible via scrollbar.",
-            category: ["LoRA Manager", "LoRA Widget", "Max Visible"],
-        },
     ],
     async setup() {
         await loadWorkflowOptions();
@@ -591,5 +549,4 @@ export {
     getUsageStatisticsPreference,
     getNewTabTemplatePreference,
     getStrengthStepPreference,
-    getLoraWidgetMaxVisibleLoras,
 };

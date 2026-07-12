@@ -120,6 +120,15 @@
   outline: none;
 }
 
+/* Vue node mode: prevent content from pushing node size via ResizeObserver.
+   contain:size breaks the feedback loop — the container's intrinsic size
+   is determined solely by CSS, not by how many LoRAs are inside. */
+.lm-loras-container.lm-vue-node {
+  height: 100%;
+  min-height: var(--comfy-widget-min-height, 200px);
+  contain: layout size;
+}
+
 .lm-loras-container:focus {
   outline: none;
 }
