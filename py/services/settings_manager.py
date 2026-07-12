@@ -153,7 +153,9 @@ class SettingsManager:
         self._collect_configuration_warnings()
 
         if os.environ.get("LORA_MANAGER_PORTABLE", "0") == "1":
-            self.settings.setdefault("use_portable_settings", True)
+            if not self.settings.get("use_portable_settings"):
+                self.settings["use_portable_settings"] = True
+                self._save_settings()
 
         if self._needs_initial_save:
             self._save_settings()
@@ -1799,6 +1801,9 @@ class SettingsManager:
             for key in CORE_USER_SETTING_KEYS:
                 if key in self.settings:
                     minimal[key] = copy.deepcopy(self.settings[key])
+
+            if self.settings.get("use_portable_settings"):
+                minimal["use_portable_settings"] = True
 
             if self._seed_template:
                 for key, value in self._seed_template.items():
