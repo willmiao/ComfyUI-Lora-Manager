@@ -728,13 +728,22 @@ export class DownloadManager {
 
     confirmFileSelection() {
         const selectedRadio = document.querySelector('#fileSelectionList input[type="radio"]:checked');
-        if (!selectedRadio) return;
+        if (!selectedRadio) {
+            console.warn('[download] confirmFileSelection: no radio button checked');
+            return;
+        }
 
         const version = this.currentVersion;
-        if (!version) return;
+        if (!version) {
+            console.warn('[download] confirmFileSelection: no currentVersion set');
+            return;
+        }
 
         const modelFiles = (version.files || []).filter(f => f.type === 'Model' || f.type === 'UNet' || f.type === 'Diffusion Model');
         this.selectedFile = modelFiles.find(f => f.id.toString() === selectedRadio.value);
+
+        console.log('[download] confirmFileSelection: selected file id=%s, name="%s", type="%s", metadata=%o',
+            this.selectedFile?.id, this.selectedFile?.name, this.selectedFile?.type, this.selectedFile?.metadata);
 
         document.getElementById('fileSelectionStep').style.display = 'none';
         document.getElementById('locationStep').style.display = 'block';
@@ -1477,11 +1486,20 @@ export class DownloadManager {
             }
 
             const fileParams = this.selectedFile ? {
+                id: this.selectedFile.id,
                 type: this.selectedFile.type || 'Model',
-                format: this.selectedFile.metadata?.format || 'SafeTensor',
-                size: this.selectedFile.metadata?.size || 'full',
-                fp: this.selectedFile.metadata?.fp,
+                format: this.selectedFile.metadata?.format || null,
+                size: this.selectedFile.metadata?.size || null,
+                fp: this.selectedFile.metadata?.fp || null,
             } : null;
+
+            if (fileParams) {
+                console.log('[download] startDownload (single): fileParams built from selectedFile — id=%s, type=%s, format=%s, size=%s, fp=%s',
+                    fileParams.id, fileParams.type, fileParams.format, fileParams.size, fileParams.fp);
+            } else {
+                console.log('[download] startDownload (single): this.selectedFile is null — no file selection, will download primary/default file. version=%s has %d files',
+                    this.currentVersion?.id, (this.currentVersion?.files || []).length);
+            }
 
             return this.executeDownloadWithProgress({
                 modelId: this.modelId,
@@ -1605,6 +1623,8 @@ export class DownloadManager {
                         wsHf.close();
                     }
                 } else {
+                    console.log('[download] batch download: fileParams NOT passed for modelId=%s, versionId=%s — backend will use primary file',
+                        item.modelId, item.selectedVersion?.id);
                     response = await this.apiClient.downloadModel(
                         item.modelId,
                         item.selectedVersion.id,
@@ -1656,6 +1676,10 @@ export class DownloadManager {
         modelRoot = '',
         targetFolder = ''
     } = {}) {
+        console.warn('[download] downloadVersionWithDefaults: NO fileParams will be sent — backend will always use primary file. '
+            + 'modelType=%s, modelId=%s, versionId=%s, versionName="%s"',
+            modelType, modelId, versionId, versionName);
+
         try {
             this.apiClient = getModelApiClient(modelType);
         } catch (error) {

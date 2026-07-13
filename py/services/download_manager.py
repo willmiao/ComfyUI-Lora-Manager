@@ -230,6 +230,12 @@ class DownloadManager:
         Returns:
             Dict with download result
         """
+        logger.debug(
+            "[download] download_from_civitai called: model_id=%s, model_version_id=%s, "
+            "source=%s, file_params=%s",
+            model_id, model_version_id, source, file_params,
+        )
+
         # Validate that at least one identifier is provided
         if not model_id and not model_version_id:
             return {
@@ -250,6 +256,7 @@ class DownloadManager:
             "source": source,
             "file_params": copy.deepcopy(file_params) if file_params is not None else None,
             "progress": 0,
+
             "status": "queued",
             "transfer_backend": self._get_model_download_backend(),
             "bytes_downloaded": 0,
@@ -1421,14 +1428,35 @@ class DownloadManager:
 
             # If file_params is provided, try to find matching file
             if file_params and model_version_id:
+                target_file_id = file_params.get("id")
                 target_type = file_params.get("type", "Model")
-                target_format = file_params.get("format", "SafeTensor")
-                target_size = file_params.get("size", "full")
+                target_format = file_params.get("format")
+                target_size = file_params.get("size")
                 target_fp = file_params.get("fp")
                 is_primary = file_params.get("isPrimary", False)
 
-                if is_primary:
-                    # Find primary file
+                logger.debug(
+                    "[download] file_params received: id=%s, type=%s, format=%s, size=%s, fp=%s, isPrimary=%s, "
+                    "model_version_id=%s, total_files=%d",
+                    target_file_id, target_type, target_format, target_size, target_fp, is_primary,
+                    model_version_id, len(files),
+                )
+
+                if target_file_id:
+                    target_id_str = str(target_file_id)
+                    for f in files:
+                        f_id = f.get("id")
+                        if str(f_id) == target_id_str:
+                            file_info = f
+                            logger.debug(
+                                "[download] MATCH by ID: id=%s name='%s'",
+                                f_id, f.get("name"),
+                            )
+                            break
+                    if not file_info:
+                        logger.debug("[download] No file found with id=%s", target_file_id)
+
+                elif is_primary:
                     file_info = next(
                         (
                             f
@@ -1439,28 +1467,41 @@ class DownloadManager:
                         None,
                     )
                 else:
-                    # Match by metadata
+                    # Lenient metadata match: only compare fields present on both sides
                     for f in files:
                         f_type = f.get("type", "")
-                        f_meta = f.get("metadata", {})
-
-                        # Check type match
                         if f_type != target_type:
                             continue
 
-                        # Check metadata match
-                        if f_meta.get("format") != target_format:
+                        f_meta = f.get("metadata", {})
+                        f_format = f_meta.get("format") or f.get("format")
+                        f_size = f_meta.get("size") or f.get("size")
+                        f_fp = f_meta.get("fp") or f.get("fp")
+
+                        if target_format and f_format != target_format:
                             continue
-                        if f_meta.get("size") != target_size:
+                        if target_size and f_size and f_size != target_size:
                             continue
-                        if target_fp and f_meta.get("fp") != target_fp:
+                        if target_fp and f_fp and f_fp != target_fp:
                             continue
 
                         file_info = f
                         break
 
+                if not file_info:
+                    logger.debug(
+                        "[download] No match found via file_params — falling back to primary file lookup",
+                    )
+            elif not file_params:
+                logger.debug(
+                    "[download] No file_params provided (null/None) — will use primary file lookup. "
+                    "model_version_id=%s, total_files=%d",
+                    model_version_id, len(files),
+                )
+
             # Fallback to primary file if no match found
             if not file_info:
+                logger.debug("[download] Looking for primary file as fallback")
                 file_info = next(
                     (
                         f
@@ -1469,6 +1510,13 @@ class DownloadManager:
                     ),
                     None,
                 )
+                if file_info:
+                    logger.debug(
+                        "[download] Fallback primary file selected: id=%s, name=%s",
+                        file_info.get("id"), file_info.get("name"),
+                    )
+                else:
+                    logger.debug("[download] No primary file found in fallback lookup")
 
             if not file_info:
                 return {"success": False, "error": "No suitable file found in metadata"}
