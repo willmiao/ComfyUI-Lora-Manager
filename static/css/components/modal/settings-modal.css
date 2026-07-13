@@ -1562,6 +1562,29 @@ input:checked + .toggle-slider:before {
     box-shadow: 0 0 0 2px rgba(var(--lora-accent-rgb, 79, 70, 229), 0.1);
 }
 
+.extra-folder-path-row .path-controls .extra-folder-path-input.has-error {
+    border-color: var(--lora-error);
+    background-color: rgba(220, 53, 69, 0.08);
+    background-color: rgba(from var(--lora-error) r g b / 0.08);
+}
+
+.extra-folder-path-row .path-controls .extra-folder-path-input.has-error:focus {
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.15);
+    box-shadow: 0 0 0 2px rgba(from var(--lora-error) r g b / 0.15);
+}
+
+.extra-folder-path-error {
+    color: var(--lora-error);
+    font-size: 0.8em;
+    margin-top: 4px;
+    line-height: 1.4;
+    display: none;
+}
+
+.extra-folder-path-error.visible {
+    display: block;
+}
+
 .extra-folder-path-row .path-controls .remove-path-btn {
     width: 32px;
     height: 32px;

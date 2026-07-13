@@ -505,7 +505,9 @@
             "saveSuccess": "Zusätzliche Ordnerpfade aktualisiert. Neustart erforderlich, um Änderungen anzuwenden.",
             "saveError": "Fehler beim Aktualisieren der zusätzlichen Ordnerpfade: {message}",
             "validation": {
-                "duplicatePath": "Dieser Pfad ist bereits konfiguriert"
+                "duplicatePath": "Dieser Pfad ist bereits konfiguriert",
+                "checkpointUnetOverlap": "Derselbe Pfad kann nicht für Checkpoints und Diffusionsmodelle verwendet werden: {paths}",
+                "checkpointUnetOverlapInline": "Dieser Pfad wird bereits für einen anderen Modelltyp verwendet. Bitte verwenden Sie separate Ordner für Checkpoints und Diffusionsmodelle."
             }
         },
         "priorityTags": {

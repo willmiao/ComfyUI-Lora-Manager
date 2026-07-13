@@ -505,7 +505,9 @@
             "saveSuccess": "נתיבי תיקיות נוספים עודכנו. נדרשת הפעלה מחדש כדי להחיל את השינויים.",
             "saveError": "נכשל בעדכון נתיבי תיקיות נוספים: {message}",
             "validation": {
-                "duplicatePath": "נתיב זה כבר מוגדר"
+                "duplicatePath": "נתיב זה כבר מוגדר",
+                "checkpointUnetOverlap": "לא ניתן להשתמש באותו נתיב עבור checkpoints ומודלי דיפוזיה: {paths}",
+                "checkpointUnetOverlapInline": "הנתיב הזה כבר נמצא בשימוש עבור סוג מודל אחר. יש להשתמש בתיקיות נפרדות עבור checkpoints ומודלי דיפוזיה."
             }
         },
         "priorityTags": {

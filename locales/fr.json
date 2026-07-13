@@ -505,7 +505,9 @@
             "saveSuccess": "Chemins de dossiers supplémentaires mis à jour. Redémarrage requis pour appliquer les changements.",
             "saveError": "Échec de la mise à jour des chemins de dossiers supplémentaires: {message}",
             "validation": {
-                "duplicatePath": "Ce chemin est déjà configuré"
+                "duplicatePath": "Ce chemin est déjà configuré",
+                "checkpointUnetOverlap": "Impossible d'utiliser le même chemin pour les checkpoints et les modèles de diffusion : {paths}",
+                "checkpointUnetOverlapInline": "Ce chemin est déjà utilisé pour un autre type de modèle. Utilisez des dossiers séparés pour les checkpoints et les modèles de diffusion."
             }
         },
         "priorityTags": {

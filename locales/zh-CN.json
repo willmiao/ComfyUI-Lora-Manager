@@ -505,7 +505,9 @@
             "saveSuccess": "额外文件夹路径已更新，需要重启才能生效。",
             "saveError": "更新额外文件夹路径失败：{message}",
             "validation": {
-                "duplicatePath": "此路径已配置"
+                "duplicatePath": "此路径已配置",
+                "checkpointUnetOverlap": "checkpoints 和 diffusion models 不能使用相同的路径：{paths}",
+                "checkpointUnetOverlapInline": "此路径已被用于另一种模型类型。请为 checkpoints 和 diffusion models 使用不同的文件夹。"
             }
         },
         "priorityTags": {

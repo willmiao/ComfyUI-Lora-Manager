@@ -505,7 +505,9 @@
             "saveSuccess": "Rutas de carpetas adicionales actualizadas. Se requiere reinicio para aplicar los cambios.",
             "saveError": "Error al actualizar las rutas de carpetas adicionales: {message}",
             "validation": {
-                "duplicatePath": "Esta ruta ya está configurada"
+                "duplicatePath": "Esta ruta ya está configurada",
+                "checkpointUnetOverlap": "No se puede usar la misma ruta para checkpoints y modelos de difusión: {paths}",
+                "checkpointUnetOverlapInline": "Esta ruta ya se usa para otro tipo de modelo. Use carpetas separadas para checkpoints y modelos de difusión."
             }
         },
         "priorityTags": {

@@ -505,7 +505,9 @@
             "saveSuccess": "額外資料夾路徑已更新，需要重啟才能生效。",
             "saveError": "更新額外資料夾路徑失敗：{message}",
             "validation": {
-                "duplicatePath": "此路徑已設定"
+                "duplicatePath": "此路徑已設定",
+                "checkpointUnetOverlap": "checkpoints 和 diffusion models 不能使用相同的路徑：{paths}",
+                "checkpointUnetOverlapInline": "此路徑已被用於另一種模型類型。請為 checkpoints 和 diffusion models 使用不同的資料夾。"
             }
         },
         "priorityTags": {

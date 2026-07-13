@@ -1693,13 +1693,15 @@ export class SettingsManager {
                 <input type="text" class="extra-folder-path-input"
                        placeholder="${translate('settings.extraFolderPaths.pathPlaceholder', {}, '/path/to/models')}" value="${path}"
                        onblur="settingsManager.updateExtraFolderPaths('${modelType}')"
+                       onfocus="settingsManager.clearExtraFolderPathError(this)"
                        onkeydown="if(event.key === 'Enter') { this.blur(); }" />
                 <button type="button" class="remove-path-btn"
-                        onclick="this.parentElement.parentElement.remove(); settingsManager.updateExtraFolderPaths('${modelType}')"
+                        onclick="settingsManager.removeExtraFolderPathRow(this, '${modelType}')"
                         title="${translate('common.actions.delete', {}, 'Delete')}">
                     <i class="fas fa-times"></i>
                 </button>
             </div>
+            <div class="extra-folder-path-error"></div>
         `;
 
         container.appendChild(row);
@@ -1713,7 +1715,63 @@ export class SettingsManager {
         }
     }
 
+    clearExtraFolderPathError(input) {
+        input.classList.remove('has-error');
+        const row = input.closest('.extra-folder-path-row');
+        if (row) {
+            const errEl = row.querySelector('.extra-folder-path-error');
+            if (errEl) {
+                errEl.classList.remove('visible');
+                errEl.textContent = '';
+            }
+        }
+    }
+
+    _clearAllExtraFolderPathErrors() {
+        document.querySelectorAll('.extra-folder-path-input.has-error').forEach((input) => {
+            input.classList.remove('has-error');
+        });
+        document.querySelectorAll('.extra-folder-path-error.visible').forEach((el) => {
+            el.classList.remove('visible');
+            el.textContent = '';
+        });
+    }
+
+    _markExtraFolderPathsError(modelType, overlappingPaths, showMessage = false) {
+        const container = document.getElementById(`extraFolderPaths-${modelType}`);
+        if (!container) return;
+
+        const inputs = container.querySelectorAll('.extra-folder-path-input');
+        inputs.forEach((input) => {
+            const val = input.value.trim();
+            if (val && overlappingPaths.includes(val)) {
+                input.classList.add('has-error');
+                if (showMessage) {
+                    const row = input.closest('.extra-folder-path-row');
+                    if (row) {
+                        const errEl = row.querySelector('.extra-folder-path-error');
+                        if (errEl) {
+                            errEl.textContent = translate('settings.extraFolderPaths.validation.checkpointUnetOverlapInline', {}, 'This path is also used for a different model type. Use separate folders for checkpoints and diffusion models.');
+                            errEl.classList.add('visible');
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    removeExtraFolderPathRow(btn, modelType) {
+        const row = btn.closest('.extra-folder-path-row');
+        if (row) {
+            row.remove();
+            this.updateExtraFolderPaths(modelType);
+        }
+    }
+
     async updateExtraFolderPaths(changedModelType) {
+        // Clear previous errors
+        this._clearAllExtraFolderPathErrors();
+
         const extraFolderPaths = {};
 
         // Collect paths for all model types
@@ -1733,6 +1791,32 @@ export class SettingsManager {
 
             extraFolderPaths[modelType] = paths;
         });
+
+        // Client-side pre-check: checkpoints and unet must not share the same path.
+        // Normalise paths to reduce false negatives vs the backend's realpath + normcase.
+        const normalise = (p) => p.replace(/[/\\]+$/, '').toLowerCase();
+        const ckptSet = new Set((extraFolderPaths.checkpoints || []).map(normalise));
+        const unetSet = new Set((extraFolderPaths.unet || []).map(normalise));
+        const ckptOverlap = (extraFolderPaths.checkpoints || []).filter(p => p && unetSet.has(normalise(p)));
+        const unetOverlap = (extraFolderPaths.unet || []).filter(p => p && ckptSet.has(normalise(p)));
+        const hasOverlap = ckptOverlap.length > 0 || unetOverlap.length > 0;
+
+        if (hasOverlap) {
+            // Error message only on the side the user just edited.
+            // The other side gets red border only (passive conflict indicator).
+            if (changedModelType === 'checkpoints') {
+                this._markExtraFolderPathsError('checkpoints', ckptOverlap, true);
+                this._markExtraFolderPathsError('unet', unetOverlap, false);
+            } else if (changedModelType === 'unet') {
+                this._markExtraFolderPathsError('unet', unetOverlap, true);
+                this._markExtraFolderPathsError('checkpoints', ckptOverlap, false);
+            } else {
+                // Pre-existing conflict from direct config edit — mark both without messages
+                this._markExtraFolderPathsError('checkpoints', ckptOverlap, false);
+                this._markExtraFolderPathsError('unet', unetOverlap, false);
+            }
+            return;
+        }
 
         // Check if paths have actually changed
         const currentPaths = state.global.settings.extra_folder_paths || {};

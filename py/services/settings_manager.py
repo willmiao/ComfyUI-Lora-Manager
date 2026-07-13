@@ -630,12 +630,37 @@ class SettingsManager:
 
         return False
 
+    @staticmethod
+    def _normalize_path_set(paths: Iterable[str]) -> set[str]:
+        """Normalize an iterable of paths for set-based overlap comparison.
+
+        Resolves symlinks via ``os.path.realpath`` when the path exists on disk,
+        then applies ``os.path.normcase`` + ``os.path.normpath`` for consistent
+        cross-platform comparison.  Non-string / empty entries are skipped.
+        """
+        result: set[str] = set()
+        for p in paths:
+            if not isinstance(p, str):
+                continue
+            stripped = p.strip()
+            if not stripped:
+                continue
+            if os.path.exists(stripped):
+                stripped = os.path.normpath(os.path.realpath(stripped))
+            result.add(os.path.normcase(stripped))
+        return result
+
     def _validate_folder_paths(
         self,
         library_name: str,
         folder_paths: Mapping[str, Iterable[str]],
     ) -> None:
-        """Ensure folder paths do not overlap with other libraries."""
+        """Ensure folder paths do not overlap with other libraries.
+
+        Also detects checkpoints ↔ unet path overlap within the same library
+        (including via symlink resolution), which is a configuration error since
+        these model types must use separate physical folders.
+        """
         libraries = self.settings.get("libraries", {})
         normalized_new: Dict[str, Dict[str, str]] = {}
         for key, values in folder_paths.items():
@@ -672,6 +697,22 @@ class SettingsManager:
                     raise ValueError(
                         f"Folder path(s) {collisions} already assigned to library '{other_name}'"
                     )
+
+        # Checkpoints ↔ unet overlap within the same library
+        ckpt_paths = folder_paths.get("checkpoints", []) or []
+        unet_paths = folder_paths.get("unet", []) or []
+        if ckpt_paths and unet_paths:
+            ckpt_real = self._normalize_path_set(ckpt_paths)
+            unet_real = self._normalize_path_set(unet_paths)
+            overlap = ckpt_real & unet_real
+            if overlap:
+                collisions = ", ".join(sorted(overlap))
+                raise ValueError(
+                    f"Path(s) {collisions} are configured for both "
+                    f"'checkpoints' and 'unet' (diffusion models). "
+                    f"These model types must use separate physical folders. "
+                    f"Please remove one of the conflicting entries."
+                )
 
     def _update_active_library_entry(
         self,
@@ -1547,8 +1588,12 @@ class SettingsManager:
             portable_switch_pending = True
             self._prepare_portable_switch(value)
         if key == "folder_paths" and isinstance(value, Mapping):
+            active_name = self.get_active_library_name()
+            self._validate_folder_paths(active_name, value)
             self._update_active_library_entry(folder_paths=value)  # type: ignore[arg-type]
         elif key == "extra_folder_paths" and isinstance(value, Mapping):
+            active_name = self.get_active_library_name()
+            self._validate_folder_paths(active_name, value)
             self._update_active_library_entry(extra_folder_paths=value)  # type: ignore[arg-type]
         elif key == "default_lora_root":
             self._update_active_library_entry(default_lora_root=str(value))

@@ -505,7 +505,9 @@
       "saveSuccess": "Extra folder paths updated. Restart required to apply changes.",
       "saveError": "Failed to update extra folder paths: {message}",
       "validation": {
-        "duplicatePath": "This path is already configured"
+        "duplicatePath": "This path is already configured",
+        "checkpointUnetOverlap": "Cannot use the same path for both checkpoints and diffusion models: {paths}",
+        "checkpointUnetOverlapInline": "This path is also used for a different model type. Use separate folders for checkpoints and diffusion models."
       }
     },
     "priorityTags": {

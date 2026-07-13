@@ -505,7 +505,9 @@
             "saveSuccess": "追加フォルダーパスを更新しました。変更を適用するには再起動が必要です。",
             "saveError": "追加フォルダーパスの更新に失敗しました: {message}",
             "validation": {
-                "duplicatePath": "このパスはすでに設定されています"
+                "duplicatePath": "このパスはすでに設定されています",
+                "checkpointUnetOverlap": "checkpoints と diffusion models に同じパスは使用できません：{paths}",
+                "checkpointUnetOverlapInline": "このパスは別のモデルタイプですでに使用されています。checkpoints と diffusion models には別々のフォルダを使用してください。"
             }
         },
         "priorityTags": {
