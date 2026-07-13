@@ -1,6 +1,7 @@
 import { app } from "../../scripts/app.js";
 import { forwardMiddleMouseToCanvas, forwardWheelToCanvas } from "./utils.js";
 import { copyToClipboard } from "./loras_widget_utils.js";
+import { ensureLmStyles } from "./lm_styles_loader.js";
 
 const MIN_HEIGHT = 150;
 const GROUP_EDITOR_ID = "lm-trigger-group-editor";
@@ -695,6 +696,16 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     alignContent: "flex-start",
     outline: "none",
   });
+
+  // Set a fixed minimum height so the node has a reasonable starting size.
+  // Adding or removing tags does NOT change the node size — the container
+  // scrolls when content exceeds the allocated space.
+  ensureLmStyles();
+  container.style.setProperty("--comfy-widget-min-height", `${MIN_HEIGHT}px`);
+
+  if (typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode) {
+    container.classList.add("lm-vue-node");
+  }
 
   const initialTagsData = opts?.defaultVal || [];
 

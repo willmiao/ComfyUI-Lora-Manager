@@ -133,6 +133,14 @@
   outline: none;
 }
 
+/* Vue node mode: prevent content from pushing node size via ResizeObserver.
+   Same technique as .lm-loras-container.lm-vue-node above. */
+.comfy-tags-container.lm-vue-node {
+  height: 100%;
+  min-height: var(--comfy-widget-min-height, 150px);
+  contain: layout size;
+}
+
 .lm-lora-empty-state {
   text-align: center;
   padding: 20px 0;
