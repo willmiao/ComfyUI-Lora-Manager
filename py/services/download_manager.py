@@ -296,8 +296,8 @@ class DownloadManager:
             return result
         except asyncio.CancelledError:
             return {
-                "success": False,
-                "error": "Download was cancelled",
+                "success": True,
+                "cancelled": True,
                 "download_id": task_id,
             }
         finally:
