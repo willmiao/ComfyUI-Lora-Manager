@@ -2017,7 +2017,8 @@
             "imagesCompleted": "Images d'exemple {action} terminées",
             "imagesFailed": "Images d'exemple {action} échouées",
             "loadError": "Erreur lors du chargement des téléchargements : {message}",
-            "downloadError": "Erreur de téléchargement : {message}"
+            "downloadError": "Erreur de téléchargement : {message}",
+            "downloadStopped": "Téléchargement annulé"
         },
         "import": {
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",

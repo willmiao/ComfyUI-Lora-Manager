@@ -2017,7 +2017,8 @@
             "imagesCompleted": "Imágenes de ejemplo {action} completadas",
             "imagesFailed": "Imágenes de ejemplo {action} fallidas",
             "loadError": "Error al cargar descargas: {message}",
-            "downloadError": "Error de descarga: {message}"
+            "downloadError": "Error de descarga: {message}",
+            "downloadStopped": "Descarga cancelada"
         },
         "import": {
             "folderTreeFailed": "Error al cargar árbol de carpetas",

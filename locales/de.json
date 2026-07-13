@@ -2017,7 +2017,8 @@
             "imagesCompleted": "Beispielbilder {action} abgeschlossen",
             "imagesFailed": "Beispielbilder {action} fehlgeschlagen",
             "loadError": "Fehler beim Laden der Downloads: {message}",
-            "downloadError": "Download-Fehler: {message}"
+            "downloadError": "Download-Fehler: {message}",
+            "downloadStopped": "Download abgebrochen"
         },
         "import": {
             "folderTreeFailed": "Fehler beim Laden des Ordnerbaums",

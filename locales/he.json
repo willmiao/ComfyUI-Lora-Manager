@@ -2017,7 +2017,8 @@
             "imagesCompleted": "{action} תמונות הדוגמה הושלם",
             "imagesFailed": "{action} תמונות הדוגמה נכשל",
             "loadError": "שגיאה בטעינת הורדות: {message}",
-            "downloadError": "שגיאת הורדה: {message}"
+            "downloadError": "שגיאת הורדה: {message}",
+            "downloadStopped": "ההורדה בוטלה"
         },
         "import": {
             "folderTreeFailed": "טעינת עץ התיקיות נכשלה",

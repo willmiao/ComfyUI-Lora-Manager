@@ -2017,7 +2017,8 @@
             "imagesCompleted": "範例圖片{action}完成",
             "imagesFailed": "範例圖片{action}失敗",
             "loadError": "載入下載時發生錯誤：{message}",
-            "downloadError": "下載錯誤：{message}"
+            "downloadError": "下載錯誤：{message}",
+            "downloadStopped": "下載已取消"
         },
         "import": {
             "folderTreeFailed": "載入資料夾樹狀結構失敗",

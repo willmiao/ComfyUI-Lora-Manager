@@ -2017,7 +2017,8 @@
             "imagesCompleted": "例画像 {action} が完了しました",
             "imagesFailed": "例画像 {action} が失敗しました",
             "loadError": "ダウンロード読み込みエラー：{message}",
-            "downloadError": "ダウンロードエラー：{message}"
+            "downloadError": "ダウンロードエラー：{message}",
+            "downloadStopped": "ダウンロードをキャンセルしました"
         },
         "import": {
             "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",
