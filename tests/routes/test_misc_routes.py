@@ -729,6 +729,54 @@ async def test_register_nodes_includes_capabilities():
 
 
 @pytest.mark.asyncio
+async def test_register_nodes_accepts_compound_node_ids():
+    """Subgraph nodes from expanded group nodes have compound IDs like '252:0'."""
+    node_registry = NodeRegistry()
+    handler = NodeRegistryHandler(
+        node_registry=node_registry,
+        prompt_server=FakePromptServer,
+        standalone_mode=False,
+    )
+
+    request = FakeRequest(
+        json_data={
+            "nodes": [
+                {
+                    "node_id": "252:0",
+                    "graph_id": "252",
+                    "type": "CheckpointLoaderSimple",
+                    "title": "Checkpoint Loader (subgraph)",
+                },
+                {
+                    "node_id": "252:1",
+                    "graph_id": "252",
+                    "type": "CLIPLoader",
+                    "title": "CLIP Loader (subgraph)",
+                },
+            ],
+            "client_id": "test-client-1",
+        }
+    )
+
+    response = await handler.register_nodes(request)
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert "2 nodes registered" in payload["message"]
+
+    registry = await node_registry.get_merged_registry()
+    assert registry["node_count"] == 2
+
+    nodes_map = registry["nodes"]
+    assert "252:0" in nodes_map
+    assert "252:1" in nodes_map
+    assert nodes_map["252:0"]["id"] == 0
+    assert nodes_map["252:0"]["graph_id"] == "252"
+    assert nodes_map["252:1"]["id"] == 1
+
+
+@pytest.mark.asyncio
 async def test_update_node_widget_sends_payload():
     send_calls: list[tuple[str, dict]] = []
 

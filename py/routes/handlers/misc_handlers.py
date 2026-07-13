@@ -573,12 +573,18 @@ class NodeRegistry:
             tab_nodes[nd["unique_id"]] = nd
 
         async with self._lock:
+            prev_count = len(self._tab_nodes.get(sid, {}))
             self._tab_nodes[sid] = tab_nodes
             self._waiting_clients.discard(sid)
             if not self._waiting_clients:
                 self._ready.set()
+            total_tabs = len(self._tab_nodes)
 
-        logger.debug("Registered %s nodes from client %s", len(nodes), sid)
+        if len(nodes) != prev_count or len(nodes) > 0:
+            logger.debug(
+                "[LM:Registry] stored %s nodes (was %s) for client %s (total tabs: %s)",
+                len(nodes), prev_count, sid, total_tabs,
+            )
 
     def prepare_for_refresh(self, active_sids: list[str]) -> None:
         """Set the list of client IDs we expect to hear from during the next refresh cycle."""
@@ -601,10 +607,17 @@ class NodeRegistry:
         longer connected."""
         async with self._lock:
             # Garbage-collect stale entries (disconnected tabs)
+            stale_sids = []
             if active_sids is not None:
                 for sid in list(self._tab_nodes):
                     if sid not in active_sids:
+                        stale_sids.append(sid)
                         del self._tab_nodes[sid]
+            if stale_sids:
+                logger.debug(
+                    "[LM:Registry] GC pruned %s disconnected tabs: %s",
+                    len(stale_sids), stale_sids,
+                )
 
             merged: dict[str, dict] = {}
             tab_info: dict[str, dict] = {}
@@ -3116,6 +3129,8 @@ class NodeRegistryHandler:
         self._node_registry = node_registry
         self._prompt_server = prompt_server
         self._standalone_mode = standalone_mode
+        self._refresh_lock = asyncio.Lock()
+        self._last_slow_path_ts: float = 0.0
 
     async def register_nodes(self, request: web.Request) -> web.Response:
         try:
@@ -3162,7 +3177,12 @@ class NodeRegistryHandler:
                     )
                 graph_name = node.get("graph_name")
                 try:
-                    node["node_id"] = int(node_id)
+                    # Handle compound node IDs from expanded group subgraphs,
+                    # e.g. "252:0" → 0 (parent scope is already in graph_id)
+                    if isinstance(node_id, str) and ":" in node_id:
+                        node["node_id"] = int(node_id.rsplit(":", 1)[-1])
+                    else:
+                        node["node_id"] = int(node_id)
                 except (TypeError, ValueError):
                     return web.json_response(
                         {
@@ -3203,39 +3223,95 @@ class NodeRegistryHandler:
                     status=503,
                 )
 
-            # Snapshot of currently-connected ComfyUI tabs
-            active_sids = list(self._prompt_server.instance.sockets.keys())
-            self._node_registry.prepare_for_refresh(active_sids)
-
-            try:
-                self._prompt_server.instance.send_sync("lora_registry_refresh", {})
-                logger.debug(
-                    "Sent registry refresh request (expecting %s clients)", len(active_sids)
-                )
-            except Exception as exc:
-                logger.error("Failed to send registry refresh message: %s", exc)
-                return web.json_response(
-                    {
-                        "success": False,
-                        "error": "Communication Error",
-                        "message": f"Failed to communicate with ComfyUI frontend: {exc}",
-                    },
-                    status=500,
-                )
-
-            if not await self._node_registry.wait_for_all(timeout=2.0):
-                logger.warning(
-                    "Registry refresh timeout after 2s (%s/%s clients responded)",
-                    len(active_sids) - self._node_registry.pending_client_count,
-                    len(active_sids),
-                )
-
-            # Re-read current sockets after the wait: a tab may have connected
-            # while we were waiting, and we don't want to garbage-collect it.
             current_sids = set(self._prompt_server.instance.sockets.keys())
+
+            # Fast path: if the frontend has already pushed node data (via
+            # afterConfigureGraph / graphChanged hooks), return it immediately
+            # without triggering a WebSocket round-trip.
             registry_info = await self._node_registry.get_merged_registry(
                 active_sids=current_sids
             )
+            if registry_info["tab_count"] > 0:
+                logger.debug(
+                    "[LM:Registry] fast path: %s nodes across %s tabs %s",
+                    registry_info["node_count"],
+                    registry_info["tab_count"],
+                    dict(registry_info.get("tabs", {})),
+                )
+                return web.json_response({"success": True, "data": registry_info})
+
+            # Slow path: registry is empty — trigger refresh via WebSocket.
+            # Serialize with an async lock so concurrent callers don't all
+            # trigger separate WS refresh cycles.  The second caller will
+            # re-check the fast path and (usually) find populated data.
+            async with self._refresh_lock:
+                # Re-check after acquiring the lock — another concurrent call
+                # may have populated the cache while we were waiting.
+                registry_info = await self._node_registry.get_merged_registry(
+                    active_sids=current_sids
+                )
+                if registry_info["tab_count"] > 0:
+                    logger.debug(
+                        "[LM:Registry] fast path after lock wait: %s nodes across %s tabs",
+                        registry_info["node_count"],
+                        registry_info["tab_count"],
+                    )
+                    return web.json_response({"success": True, "data": registry_info})
+
+                # Cooldown: if the slow path ran recently (< 2 s) and
+                # returned empty, skip another WS round-trip.
+                elapsed = time.monotonic() - self._last_slow_path_ts
+                if elapsed < 2.0:
+                    logger.debug(
+                        "[LM:Registry] slow path cooldown (%.1fs since last refresh), returning empty",
+                        elapsed,
+                    )
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": "Empty Registry",
+                            "message": "No workflow nodes found — ensure ComfyUI is open and the extension is loaded.",
+                        },
+                        status=408,
+                    )
+
+                logger.debug(
+                    "[LM:Registry] slow path: cache empty, triggering WS refresh (%s connected tabs: %s)",
+                    len(current_sids), list(current_sids)[:5],
+                )
+                active_sids = list(current_sids)
+                self._node_registry.prepare_for_refresh(active_sids)
+
+                try:
+                    self._prompt_server.instance.send_sync("lora_registry_refresh", {})
+                    logger.debug(
+                        "Sent registry refresh request (expecting %s clients)", len(active_sids)
+                    )
+                except Exception as exc:
+                    logger.error("Failed to send registry refresh message: %s", exc)
+                    return web.json_response(
+                        {
+                            "success": False,
+                            "error": "Communication Error",
+                            "message": f"Failed to communicate with ComfyUI frontend: {exc}",
+                        },
+                        status=500,
+                    )
+
+                if not await self._node_registry.wait_for_all(timeout=0.5):
+                    logger.warning(
+                        "Registry refresh timeout after 0.5s (%s/%s clients responded)",
+                        len(active_sids) - self._node_registry.pending_client_count,
+                        len(active_sids),
+                    )
+
+                # Re-read current sockets after the wait: a tab may have connected
+                # while we were waiting, and we don't want to garbage-collect it.
+                current_sids = set(self._prompt_server.instance.sockets.keys())
+                registry_info = await self._node_registry.get_merged_registry(
+                    active_sids=current_sids
+                )
+                self._last_slow_path_ts = time.monotonic()
 
             if registry_info["node_count"] == 0:
                 logger.warning("No nodes registered after refresh")
