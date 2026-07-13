@@ -1207,7 +1207,9 @@
                 "preparing": "正在准备下载...",
                 "downloadedPreview": "预览图片已下载",
                 "downloadingFile": "正在下载 {type} 文件",
-                "finalizing": "正在完成下载..."
+                "finalizing": "正在完成下载...",
+                "cancelling": "取消下载中...",
+                "cancelled": "下载已取消"
             },
             "progress": {
                 "currentFile": "当前文件：",

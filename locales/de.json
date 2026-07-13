@@ -1207,7 +1207,9 @@
                 "preparing": "Download wird vorbereitet...",
                 "downloadedPreview": "Vorschaubild heruntergeladen",
                 "downloadingFile": "{type}-Datei wird heruntergeladen",
-                "finalizing": "Download wird abgeschlossen..."
+                "finalizing": "Download wird abgeschlossen...",
+                "cancelling": "Download wird abgebrochen...",
+                "cancelled": "Download abgebrochen"
             },
             "progress": {
                 "currentFile": "Aktuelle Datei:",

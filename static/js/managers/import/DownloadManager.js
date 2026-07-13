@@ -168,6 +168,18 @@ export class DownloadManager {
         let failedDownloads = 0;
         let accessFailures = 0;
         let currentLoraProgress = 0;
+        let cancelled = false;
+
+        this.importManager.loadingManager.showCancelButton(async () => {
+            if (cancelled) return;
+            cancelled = true;
+            try {
+                const loraClient = getModelApiClient(MODEL_TYPES.LORA);
+                await loraClient.cancelDownload(batchDownloadId);
+            } catch (e) {
+                console.error('Cancel request failed:', e);
+            }
+        });
 
         // Set up progress tracking for current download
         ws.onmessage = (event) => {
@@ -176,6 +188,11 @@ export class DownloadManager {
             // Handle download ID confirmation
             if (data.type === 'download_id') {
                 console.log(`Connected to batch download progress with ID: ${data.download_id}`);
+                return;
+            }
+
+            if (data.status === 'cancelled') {
+                cancelled = true;
                 return;
             }
 
@@ -221,6 +238,8 @@ export class DownloadManager {
         const useDefaultPaths = getStorageItem('use_default_path_loras', false);
 
         for (let i = 0; i < this.importManager.downloadableLoRAs.length; i++) {
+            if (cancelled) break;
+
             const lora = this.importManager.downloadableLoRAs[i];
 
             // Reset current LoRA progress for new download
@@ -241,15 +260,13 @@ export class DownloadManager {
                     batchDownloadId
                 );
 
+                if (cancelled) break;
+
                 if (!response.success) {
                     console.error(`Failed to download LoRA ${lora.name}: ${response.error}`);
-
                     failedDownloads++;
-                    // Continue with next download
                 } else {
                     completedDownloads++;
-
-                    // Update progress to show completion of current LoRA
                     updateProgress(100, completedDownloads, '');
 
                     if (completedDownloads + failedDownloads < this.importManager.downloadableLoRAs.length) {
@@ -259,9 +276,10 @@ export class DownloadManager {
                     }
                 }
             } catch (downloadError) {
-                console.error(`Error downloading LoRA ${lora.name}:`, downloadError);
-                failedDownloads++;
-                // Continue with next download
+                if (!cancelled) {
+                    console.error(`Error downloading LoRA ${lora.name}:`, downloadError);
+                    failedDownloads++;
+                }
             }
         }
 
@@ -269,7 +287,10 @@ export class DownloadManager {
         ws.close();
 
         // Show appropriate completion message based on results
-        if (failedDownloads === 0) {
+        if (cancelled) {
+            showToast('toast.downloads.downloadStopped', {}, 'info',
+                `Download cancelled. ${completedDownloads} item(s) completed.`);
+        } else if (failedDownloads === 0) {
             showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
         } else {
             if (accessFailures > 0) {

@@ -112,6 +112,18 @@ export class BaseModelApiClient {
         }
     }
 
+    async cancelDownload(downloadId) {
+        try {
+            const response = await fetch(
+                `${DOWNLOAD_ENDPOINTS.cancelGet}?download_id=${encodeURIComponent(downloadId)}`
+            );
+            return await response.json();
+        } catch (error) {
+            console.error('Error cancelling download:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
     async loadMoreWithVirtualScroll(resetPage = false, updateFolders = false) {
         const pageState = this.getPageState();
 

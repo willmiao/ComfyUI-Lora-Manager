@@ -281,6 +281,10 @@ export class LoadingManager {
         // Initialize transfer stats with empty data
         updateTransferStats();
 
+        if (this.cancelButton) {
+            this.loadingContent.appendChild(this.cancelButton);
+        }
+
         // Return update function
         return (currentProgress, currentIndex = 0, currentName = '', metrics = {}) => {
             // Update current item progress

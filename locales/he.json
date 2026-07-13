@@ -1207,7 +1207,9 @@
                 "preparing": "מכין הורדה...",
                 "downloadedPreview": "תמונת תצוגה מקדימה הורדה",
                 "downloadingFile": "מוריד קובץ {type}",
-                "finalizing": "מסיים הורדה..."
+                "finalizing": "מסיים הורדה...",
+                "cancelling": "מבטל הורדה...",
+                "cancelled": "ההורדה בוטלה"
             },
             "progress": {
                 "currentFile": "הקובץ הנוכחי:",

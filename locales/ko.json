@@ -1207,7 +1207,9 @@
                 "preparing": "다운로드 준비 중...",
                 "downloadedPreview": "미리보기 이미지 다운로드됨",
                 "downloadingFile": "{type} 파일 다운로드 중",
-                "finalizing": "다운로드 완료 중..."
+                "finalizing": "다운로드 완료 중...",
+                "cancelling": "다운로드 취소 중...",
+                "cancelled": "다운로드가 취소되었습니다"
             },
             "progress": {
                 "currentFile": "현재 파일:",

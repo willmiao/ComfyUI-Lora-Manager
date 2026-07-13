@@ -196,6 +196,17 @@ export class BulkMissingLoraDownloadManager {
         let completedDownloads = 0;
         let failedDownloads = 0;
         let currentLoraProgress = 0;
+        let cancelled = false;
+
+        loadingManager.showCancelButton(async () => {
+            if (cancelled) return;
+            cancelled = true;
+            try {
+                await this.loraApiClient.cancelDownload(batchDownloadId);
+            } catch (e) {
+                console.error('Cancel request failed:', e);
+            }
+        });
 
         // Set up WebSocket message handler
         ws.onmessage = (event) => {
@@ -204,6 +215,11 @@ export class BulkMissingLoraDownloadManager {
             // Handle download ID confirmation
             if (data.type === 'download_id') {
                 console.log(`Connected to batch download progress with ID: ${data.download_id}`);
+                return;
+            }
+
+            if (data.status === 'cancelled') {
+                cancelled = true;
                 return;
             }
 
@@ -249,6 +265,8 @@ export class BulkMissingLoraDownloadManager {
 
         // Download each LoRA sequentially
         for (let i = 0; i < lorasToDownload.length; i++) {
+            if (cancelled) break;
+
             const lora = lorasToDownload[i];
             
             currentLoraProgress = 0;
@@ -275,10 +293,12 @@ export class BulkMissingLoraDownloadManager {
                     modelId,
                     versionId,
                     loraRoot,
-                    '', // Empty relative path, use default paths
+                    '',
                     useDefaultPaths,
                     batchDownloadId
                 );
+
+                if (cancelled) break;
 
                 if (!response.success) {
                     console.error(`Failed to download LoRA ${lora.name || lora.file_name}: ${response.error}`);
@@ -288,8 +308,10 @@ export class BulkMissingLoraDownloadManager {
                     updateProgress(100, completedDownloads, '');
                 }
             } catch (error) {
-                console.error(`Error downloading LoRA ${lora.name || lora.file_name}:`, error);
-                failedDownloads++;
+                if (!cancelled) {
+                    console.error(`Error downloading LoRA ${lora.name || lora.file_name}:`, error);
+                    failedDownloads++;
+                }
             }
         }
 
@@ -300,7 +322,10 @@ export class BulkMissingLoraDownloadManager {
         loadingManager.hide();
 
         // Show completion message
-        if (failedDownloads === 0) {
+        if (cancelled) {
+            showToast('toast.downloads.downloadStopped', {}, 'info',
+                `Download cancelled. ${completedDownloads} item(s) completed.`);
+        } else if (failedDownloads === 0) {
             showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
         } else {
             showToast('toast.loras.downloadPartialSuccess', {

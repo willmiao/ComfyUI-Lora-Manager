@@ -1207,7 +1207,9 @@
                 "preparing": "Подготовка загрузки...",
                 "downloadedPreview": "Превью изображение загружено",
                 "downloadingFile": "Загрузка файла {type}",
-                "finalizing": "Завершение загрузки..."
+                "finalizing": "Завершение загрузки...",
+                "cancelling": "Отмена загрузки...",
+                "cancelled": "Загрузка отменена"
             },
             "progress": {
                 "currentFile": "Текущий файл:",

@@ -872,6 +872,7 @@ export class DownloadManager {
         const displayName = versionName || `#${versionId}`;
         let ws = null;
         let updateProgress = () => { };
+        let cancelled = false;
 
         try {
             this.loadingManager.restoreProgressBar();
@@ -882,11 +883,27 @@ export class DownloadManager {
             const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
 
+            this.loadingManager.showCancelButton(async () => {
+                if (cancelled) return;
+                cancelled = true;
+                try {
+                    await this.apiClient.cancelDownload(downloadId);
+                } catch (e) {
+                    console.error('Cancel request failed:', e);
+                }
+            });
+
             ws.onmessage = event => {
                 const data = JSON.parse(event.data);
 
                 if (data.type === 'download_id') {
                     console.log(`Connected to download progress with ID: ${data.download_id}`);
+                    return;
+                }
+
+                if (data.status === 'cancelled') {
+                    cancelled = true;
+                    this.loadingManager.setStatus(translate('modals.download.status.cancelled', {}, 'Download cancelled'));
                     return;
                 }
 
@@ -928,6 +945,10 @@ export class DownloadManager {
                 fileParams
             );
 
+            if (cancelled) {
+                return false;
+            }
+
             if (response?.skipped) {
                 this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
                 updateProgress(100, 0, displayName);
@@ -968,8 +989,12 @@ export class DownloadManager {
 
             return true;
         } catch (error) {
-            console.error('Failed to download model version:', error);
-            showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            if (cancelled) {
+                console.log('Download cancelled by user:', downloadId);
+            } else {
+                console.error('Failed to download model version:', error);
+                showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            }
             return false;
         } finally {
             try {
@@ -989,16 +1014,33 @@ export class DownloadManager {
         const totalFiles = this.hfSelectedFiles.length;
         const updateProgress = this.loadingManager.showDownloadProgress(totalFiles);
 
+        let cancelled = false;
+        let currentDownloadId = null;
+
+        this.loadingManager.showCancelButton(async () => {
+            if (cancelled) return;
+            cancelled = true;
+            if (currentDownloadId) {
+                try {
+                    await this.apiClient.cancelDownload(currentDownloadId);
+                } catch (e) {
+                    console.error('Cancel request failed:', e);
+                }
+            }
+        });
+
         try {
             let completedDownloads = 0;
             for (let i = 0; i < totalFiles; i++) {
+                if (cancelled) break;
+
                 const filename = this.hfSelectedFiles[i];
                 updateProgress(0, completedDownloads, filename);
                 this.loadingManager.setStatus(`Downloading ${filename}...`);
 
-                const downloadId = Date.now().toString() + '_' + i;
+                currentDownloadId = Date.now().toString() + '_' + i;
                 const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
-                const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
+                const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${currentDownloadId}`);
 
                 try {
                     await new Promise((resolve, reject) => {
@@ -1006,12 +1048,13 @@ export class DownloadManager {
                         ws.onerror = reject;
                     });
 
-                    // Capture completed count at WS creation time so progress
-                    // updates arriving after completedDownloads increments still
-                    // show the correct "N / total" position.
                     const snapshotCompleted = completedDownloads;
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
+                        if (data.status === 'cancelled') {
+                            cancelled = true;
+                            return;
+                        }
                         if (data.status === 'progress') {
                             const metrics = {
                                 bytesDownloaded: data.bytes_downloaded,
@@ -1029,8 +1072,10 @@ export class DownloadManager {
                         modelRoot,
                         relativePath: targetFolder,
                         useDefaultPaths,
-                        download_id: downloadId,
+                        download_id: currentDownloadId,
                     });
+
+                    if (cancelled) break;
 
                     if (response?.success) {
                         completedDownloads++;
@@ -1041,13 +1086,19 @@ export class DownloadManager {
                 }
             }
 
-            showToast('toast.loras.downloadCompleted', {}, 'success');
-            // Reload page data — model is already in scanner cache via backend
+            if (cancelled) {
+                showToast('toast.downloads.downloadStopped', {}, 'info',
+                    `Download cancelled. ${completedDownloads} item(s) completed.`);
+            } else {
+                showToast('toast.loras.downloadCompleted', {}, 'success');
+            }
             await resetAndReload(true);
             return true;
         } catch (error) {
-            console.error('Failed to download HF model:', error);
-            showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            if (!cancelled) {
+                console.error('Failed to download HF model:', error);
+                showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+            }
             return false;
         } finally {
             this.loadingManager.hide();
@@ -1470,10 +1521,26 @@ export class DownloadManager {
 
         let completedDownloads = 0;
         let failedDownloads = 0;
+        let cancelled = false;
+
+        loadingManager.showCancelButton(async () => {
+            if (cancelled) return;
+            cancelled = true;
+            try {
+                await this.apiClient.cancelDownload(batchDownloadId);
+            } catch (e) {
+                console.error('Cancel request failed:', e);
+            }
+        });
 
         ws.onmessage = (event) => {
             const data = JSON.parse(event.data);
             if (data.type === 'download_id') return;
+
+            if (data.status === 'cancelled') {
+                cancelled = true;
+                return;
+            }
 
             if (data.status === 'progress' && data.download_id?.startsWith(batchDownloadId)) {
                 const current = downloadItems[completedDownloads + failedDownloads];
@@ -1493,6 +1560,8 @@ export class DownloadManager {
         });
 
         for (let i = 0; i < downloadItems.length; i++) {
+            if (cancelled) break;
+
             const item = downloadItems[i];
             const name = item.displayName || item.filename || (item.selectedVersion?.name || `Model #${item.modelId}`);
             const isHf = item.source === 'huggingface';
@@ -1503,7 +1572,6 @@ export class DownloadManager {
             try {
                 let response;
                 if (isHf) {
-                    // Per-file WebSocket for real-time progress
                     const downloadId = Date.now().toString() + '_hf_' + i;
                     const wsHf = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
                     try {
@@ -1548,6 +1616,8 @@ export class DownloadManager {
                     );
                 }
 
+                if (cancelled) break;
+
                 if (!response.success) {
                     failedDownloads++;
                 } else {
@@ -1555,15 +1625,20 @@ export class DownloadManager {
                     updateProgress(100, completedDownloads, '');
                 }
             } catch (err) {
-                console.error(`Failed to download ${name}:`, err);
-                failedDownloads++;
+                if (!cancelled) {
+                    console.error(`Failed to download ${name}:`, err);
+                    failedDownloads++;
+                }
             }
         }
 
         ws.close();
         loadingManager.hide();
 
-        if (failedDownloads === 0) {
+        if (cancelled) {
+            showToast('toast.downloads.downloadStopped', {}, 'info',
+                `Download cancelled. ${completedDownloads} item(s) completed.`);
+        } else if (failedDownloads === 0) {
             showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
         } else {
             showToast('toast.loras.downloadPartialSuccess', {
