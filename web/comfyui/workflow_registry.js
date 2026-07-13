@@ -84,7 +84,7 @@ app.registerExtension({
         this._log("extension initialized, clientId=%s", api.clientId ?? api.initialClientId ?? "(pending)");
 
         api.addEventListener("lora_registry_refresh", () => {
-            this.refreshRegistry();
+            this.refreshRegistry(true);
         });
 
         api.addEventListener("lm_widget_update", (event) => {
@@ -151,7 +151,7 @@ app.registerExtension({
         console.debug(`[LM:Registry ${ts}] ${msg}`);
     },
 
-    async refreshRegistry() {
+    async refreshRegistry(force = false) {
         try {
             const workflowNodes = [];
             const nodeEntries = getAllGraphNodes(app.graph);
@@ -204,11 +204,13 @@ app.registerExtension({
 
             const clientId = api.clientId ?? api.initialClientId ?? "";
 
-            // Content-based dedup: skip POST if identical to last sent payload.
+            // Content-based dedup: skip POST if identical to last sent payload,
+            // unless forced (e.g. responding to a lora_registry_refresh WS message
+            // where the backend explicitly requests a re-registration).
             const fingerprint = JSON.stringify(
                 workflowNodes.map(n => `${n.graph_id}:${n.node_id}|${n.marker_role ?? ""}|${n.mode ?? 0}`).sort()
             );
-            if (fingerprint === this._lastFingerprint) {
+            if (!force && fingerprint === this._lastFingerprint) {
                 return;
             }
             this._lastFingerprint = fingerprint;

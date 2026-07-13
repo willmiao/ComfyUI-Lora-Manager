@@ -3314,7 +3314,10 @@ class NodeRegistryHandler:
                 self._last_slow_path_ts = time.monotonic()
 
             if registry_info["node_count"] == 0:
-                logger.warning("No nodes registered after refresh")
+                logger.debug(
+                    "[LM:Registry] refresh OK — %s connected tab(s) but 0 compatible nodes found",
+                    registry_info["tab_count"],
+                )
                 return web.json_response(
                     {
                         "success": False,
