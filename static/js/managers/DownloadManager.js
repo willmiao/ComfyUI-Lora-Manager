@@ -882,13 +882,12 @@ export class DownloadManager {
         let ws = null;
         let updateProgress = () => { };
         let cancelled = false;
+        const downloadId = Date.now().toString();
 
         try {
             this.loadingManager.restoreProgressBar();
             updateProgress = this.loadingManager.showDownloadProgress(1);
             updateProgress(0, 0, displayName);
-
-            const downloadId = Date.now().toString();
             const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
             ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
 
@@ -1500,6 +1499,8 @@ export class DownloadManager {
                 console.log('[download] startDownload (single): this.selectedFile is null — no file selection, will download primary/default file. version=%s has %d files',
                     this.currentVersion?.id, (this.currentVersion?.files || []).length);
             }
+
+            modalManager.closeModal('downloadModal');
 
             return this.executeDownloadWithProgress({
                 modelId: this.modelId,
