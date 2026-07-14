@@ -955,13 +955,21 @@ class BaseModelService(ABC):
 
         return unified_tree
 
-    async def get_model_notes(self, model_name: str) -> Optional[str]:
-        """Get notes for a specific model file"""
+    async def get_model_notes(self, model_name: str) -> Optional[dict]:
+        """Get notes and file_path for a specific model file.
+
+        Supports both simple names (``OWSMianne_ANIMA_V1``) and full-path
+        syntax (``Anima/character/OWSMianne_ANIMA_V1``).
+        """
         cache = await self.scanner.get_cached_data()
 
         for model in cache.raw_data:
-            if model["file_name"] == model_name:
-                return model.get("notes", "")
+            file_name = model.get("file_name", "")
+            if file_name == model_name or model_name.endswith("/" + file_name) or model_name.endswith("\\" + file_name):
+                return {
+                    "notes": model.get("notes", ""),
+                    "file_path": model.get("file_path", ""),
+                }
 
         return None
 

@@ -1275,9 +1275,13 @@ class ModelQueryHandler:
                     text=f"{self._service.model_type.capitalize()} file name is required",
                     status=400,
                 )
-            notes = await self._service.get_model_notes(model_name)
-            if notes is not None:
-                return web.json_response({"success": True, "notes": notes})
+            result = await self._service.get_model_notes(model_name)
+            if result is not None:
+                return web.json_response({
+                    "success": True,
+                    "notes": result["notes"],
+                    "file_path": result["file_path"],
+                })
             return web.json_response(
                 {
                     "success": False,

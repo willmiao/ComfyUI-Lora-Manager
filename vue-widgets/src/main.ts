@@ -5,6 +5,7 @@ import LoraRandomizerWidget from '@/components/LoraRandomizerWidget.vue'
 import LoraCyclerWidget from '@/components/LoraCyclerWidget.vue'
 import JsonDisplayWidget from '@/components/JsonDisplayWidget.vue'
 import AutocompleteTextWidget from '@/components/AutocompleteTextWidget.vue'
+import LoraInfoWidget from '@/components/LoraInfoWidget.vue'
 import { createVueWidgetCleanup } from './vue-widget-cleanup'
 import type { LoraPoolConfig, RandomizerConfig, CyclerConfig } from './composables/types'
 import {
@@ -23,6 +24,8 @@ const LORA_CYCLER_WIDGET_MIN_HEIGHT = 408
 const LORA_CYCLER_WIDGET_MAX_HEIGHT = LORA_CYCLER_WIDGET_MIN_HEIGHT
 const JSON_DISPLAY_WIDGET_MIN_WIDTH = 300
 const JSON_DISPLAY_WIDGET_MIN_HEIGHT = 200
+const LORA_INFO_WIDGET_MIN_WIDTH = 300
+const LORA_INFO_WIDGET_MIN_HEIGHT = 200
 const AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT = 60
 const AUTOCOMPLETE_TEXT_WIDGET_MAX_HEIGHT = 100
 // Per-modelType min size hints for node initial sizing.
@@ -642,6 +645,74 @@ if (app.ui?.settings) {
   }, 100)
 }
 
+// @ts-ignore
+function createLoraInfoWidget(node: any) {
+  const container = document.createElement('div')
+  container.id = `lora-info-widget-${node.id}`
+  container.style.width = '100%'
+  container.style.height = '100%'
+  container.style.display = 'flex'
+  container.style.flexDirection = 'column'
+  container.style.overflow = 'hidden'
+
+  forwardMiddleMouseToCanvas(container)
+
+  let internalValue: { name?: string; notes?: string; filePath?: string } | undefined
+
+  const widget = node.addDOMWidget(
+    'lora_info_display',
+    'LORA_INFO_DISPLAY',
+    container,
+    {
+      getValue() {
+        return internalValue
+      },
+      setValue(v: { name?: string; notes?: string; filePath?: string }) {
+        internalValue = v
+        if (typeof widget.onSetValue === 'function') {
+          widget.onSetValue(v)
+        }
+      },
+      serialize: false, // Display-only widget
+      getMinHeight() {
+        return LORA_INFO_WIDGET_MIN_HEIGHT
+      }
+    }
+  )
+
+  const vueApp = createApp(LoraInfoWidget, {
+    widget,
+    node,
+    api,
+    app,
+  })
+
+  vueApp.use(PrimeVue, {
+    unstyled: true,
+    ripple: false
+  })
+
+  vueApp.mount(container)
+  vueApps.set(node.id + 40000, vueApp) // Offset to avoid collision
+
+  widget.computeLayoutSize = () => {
+    const minWidth = LORA_INFO_WIDGET_MIN_WIDTH
+    const minHeight = LORA_INFO_WIDGET_MIN_HEIGHT
+
+    return { minHeight, minWidth }
+  }
+
+  widget.onRemove = () => {
+    const vueApp = vueApps.get(node.id + 40000)
+    if (vueApp) {
+      vueApp.unmount()
+      vueApps.delete(node.id + 40000)
+    }
+  }
+
+  return { widget }
+}
+
 // Factory function for creating autocomplete text widgets
 // @ts-ignore
 function createAutocompleteTextWidgetFactory(
@@ -804,7 +875,75 @@ app.registerExtension({
           updateDownstreamLoaders(node)
         } : null
 
-        return addLorasWidgetCache(node, 'loras', { isRandomizerNode }, callback)
+        const opts: { isRandomizerNode?: boolean; onSelectionChange?: (selection: any) => void } = {
+          isRandomizerNode,
+        }
+        if (isRandomizerNode) {
+          opts.onSelectionChange = async (selection: any) => {
+            if (!selection?.name || !selection?.active) return
+
+            // Walk outputs to find directly connected Lora Info nodes
+            const infoNodes: any[] = []
+            if (node.outputs) {
+              for (const output of node.outputs) {
+                if (!output?.links?.length) continue
+                for (const linkId of output.links) {
+                  const links = node.graph?.links
+                  if (!links) continue
+                  const link = Array.isArray(links) ? links[linkId] : links.get?.(linkId)
+                  if (!link) continue
+                  const targetNode = node.graph?.getNodeById?.(link.target_id)
+                  if (targetNode?.comfyClass === 'Lora Info (LoraManager)') {
+                    infoNodes.push(targetNode)
+                  }
+                }
+              }
+            }
+
+            if (infoNodes.length === 0) return
+
+            // Bump request token to guard against stale async responses
+            for (const infoNode of infoNodes) {
+              infoNode.__loraInfoReqId = (infoNode.__loraInfoReqId || 0) + 1
+            }
+            const reqIdSnapshot = new Map<any, number>()
+            for (const infoNode of infoNodes) {
+              reqIdSnapshot.set(infoNode, infoNode.__loraInfoReqId)
+            }
+
+            // Fetch notes via the real ComfyUI api
+            let infoData: any
+            try {
+              const response = await api.fetchApi(
+                `/lm/loras/get-notes?name=${encodeURIComponent(selection.name)}`,
+                { method: 'GET' }
+              )
+              if (response?.ok) {
+                const data = await response.json()
+                infoData = {
+                  name: selection.name,
+                  notes: data?.notes || '',
+                  filePath: data?.file_path || '',
+                }
+              } else {
+                infoData = { name: selection.name, notes: '[Error loading notes]', filePath: '' }
+              }
+            } catch {
+              infoData = { name: selection.name, notes: '[Error loading notes]', filePath: '' }
+            }
+
+            for (const infoNode of infoNodes) {
+              if (infoNode.__loraInfoReqId !== reqIdSnapshot.get(infoNode)) {
+                continue
+              }
+              if (typeof infoNode._setLoraInfo === 'function') {
+                infoNode._setLoraInfo(infoData)
+              }
+            }
+          }
+        }
+
+        return addLorasWidgetCache(node, 'loras', opts, callback)
       },
       // Autocomplete text widget for LoRAs (used by Lora Loader, Lora Stacker, WanVideo Lora Select)
       // @ts-ignore
@@ -823,7 +962,7 @@ app.registerExtension({
       AUTOCOMPLETE_TEXT_PROMPT(node) {
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
         return createAutocompleteTextWidgetFactory(node, 'text', 'prompt', options)
-      }
+      },
     }
   },
 
@@ -901,6 +1040,18 @@ app.registerExtension({
 
         // Add the JSON display widget
         createJsonDisplayWidget(this)
+      }
+    }
+
+    // Add the Lora Info display widget
+    if (nodeData.name === 'Lora Info (LoraManager)') {
+      const onNodeCreated = nodeType.prototype.onNodeCreated
+
+      nodeType.prototype.onNodeCreated = function () {
+        onNodeCreated?.apply(this, [])
+
+        // Create the lora info display widget
+        createLoraInfoWidget(this)
       }
     }
   }

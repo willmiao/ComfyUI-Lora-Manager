@@ -227,6 +227,11 @@ class ModelScanner:
 
         entry: Dict[str, Any] = {
             'file_path': normalized_path,
+            # file_name is always stored WITHOUT extension (e.g. "OWSMianne_ANIMA_V1",
+            # not "OWSMianne_ANIMA_V1.safetensors"). All upstream population points
+            # (MetadataManager, from_civitai_info, download manager, etc.) strip the
+            # extension via os.path.splitext before writing. Code consuming this field
+            # should match against names that are likewise extension-free.
             'file_name': get_value('file_name', '') or '',
             'model_name': get_value('model_name', '') or '',
             'folder': normalized_folder,

@@ -9,6 +9,7 @@ import {
 } from "./utils.js";
 import { addLorasWidget } from "./loras_widget.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
+import { updateConnectedLoraInfoNodes } from "./lora_info.js";
 
 app.registerExtension({
   name: "LoraManager.WanVideoLoraSelect",
@@ -63,7 +64,11 @@ app.registerExtension({
           }
         });
 
-        const result = addLorasWidget(this, "loras", {}, (value) => {
+        const result = addLorasWidget(this, "loras", {
+          onSelectionChange: (selection) => {
+            updateConnectedLoraInfoNodes(this, selection);
+          },
+        }, (value) => {
           // Prevent recursive calls
           if (isUpdating) return;
           isUpdating = true;
