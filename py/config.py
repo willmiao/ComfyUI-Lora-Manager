@@ -208,6 +208,12 @@ class Config:
             if not isinstance(library_config, dict):
                 return
 
+            # Always read recipes_path — it is independent of extra folder paths
+            # and must be set before any early returns below.
+            recipes_path = library_config.get("recipes_path", "")
+            if isinstance(recipes_path, str) and recipes_path:
+                self.recipes_path = recipes_path
+
             extra_folder_paths = library_config.get("extra_folder_paths")
             if not isinstance(extra_folder_paths, dict):
                 return
@@ -232,10 +238,6 @@ class Config:
             self.extra_embeddings_roots = self._prepare_embedding_paths(
                 extra_embedding
             )
-
-            recipes_path = library_config.get("recipes_path", "")
-            if isinstance(recipes_path, str) and recipes_path:
-                self.recipes_path = recipes_path
 
             if self.extra_loras_roots:
                 logger.info(
