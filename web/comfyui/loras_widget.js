@@ -280,8 +280,8 @@ export function addLorasWidget(node, name, opts, callback) {
 
         e.preventDefault();
         e.stopPropagation();
-        selectLora(name);
-        container.focus(); // Focus container for keyboard events
+        selectLora(name === selectedLora ? null : name);
+        container.focus();
       });
 
       // Conditionally create drag handle OR lock button
