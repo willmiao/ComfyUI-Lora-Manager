@@ -154,13 +154,23 @@ class DownloadQueueService:
         """Insert a new download into the queue.
 
         Returns the inserted row as a dict (or an empty dict if the
-        download_id already exists).
+        download_id already exists in the queue or has a terminal
+        record in history).
         """
         now = time.time()
         file_params_json = json.dumps(file_params) if file_params is not None else None
 
         async with self._lock:
             conn = self._get_conn()
+
+            # Reject download_ids that already have a terminal record in history.
+            history_row = conn.execute(
+                "SELECT 1 FROM download_history WHERE download_id = ? LIMIT 1",
+                (download_id,),
+            ).fetchone()
+            if history_row is not None:
+                return {}
+
             conn.execute(
                 """
                 INSERT OR IGNORE INTO download_queue (
