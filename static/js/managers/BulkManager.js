@@ -556,7 +556,8 @@ export class BulkManager {
             return;
         }
 
-        await sendLoraToWorkflow(loraSyntaxes.join(', '), replaceMode, 'lora');
+        const exitBulkMode = () => { if (state.bulkMode) this.toggleBulkMode(); };
+        await sendLoraToWorkflow(loraSyntaxes.join(', '), replaceMode, 'lora', exitBulkMode);
     }
 
     async _sendAllEmbeddingsToWorkflow() {
@@ -578,7 +579,8 @@ export class BulkManager {
         }
 
         const joinedCode = embeddingCodes.join(', ');
-        await sendEmbeddingToWorkflow(joinedCode);
+        const exitBulkMode = () => { if (state.bulkMode) this.toggleBulkMode(); };
+        await sendEmbeddingToWorkflow(joinedCode, exitBulkMode);
     }
 
     showBulkDeleteModal() {

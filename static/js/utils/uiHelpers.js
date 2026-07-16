@@ -656,7 +656,7 @@ async function ensureRelativeModelPath(modelPath, collectionType) {
  * @param {string} syntaxType - The type of syntax ('lora' or 'recipe')
  * @returns {Promise<boolean>} - Whether the operation was successful
  */
-export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntaxType = 'lora') {
+export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntaxType = 'lora', onComplete = null) {
   const registry = await fetchWorkflowRegistry();
   if (!registry) {
     return false;
@@ -681,7 +681,9 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
   }
 
   if (nodeKeys.length === 1) {
-    return await sendLoraToNodes([nodeKeys[0]], loraNodes, loraSyntax, replaceMode, syntaxType);
+    const result = await sendLoraToNodes([nodeKeys[0]], loraNodes, loraSyntax, replaceMode, syntaxType);
+    if (result && typeof onComplete === 'function') onComplete();
+    return result;
   }
 
   const actionType =
@@ -695,8 +697,11 @@ export async function sendLoraToWorkflow(loraSyntax, replaceMode = false, syntax
   showNodeSelector(loraNodes, {
     actionType,
     actionMode,
-    onSend: (selectedNodeIds) =>
-      sendLoraToNodes(selectedNodeIds, loraNodes, loraSyntax, replaceMode, syntaxType),
+    onSend: async (selectedNodeIds) => {
+      const result = await sendLoraToNodes(selectedNodeIds, loraNodes, loraSyntax, replaceMode, syntaxType);
+      if (result && typeof onComplete === 'function') onComplete();
+      return result;
+    },
   });
   return true;
 }
@@ -967,7 +972,7 @@ async function sendTextToNodes(nodeIds, nodesMap, text, mode, messages = {}) {
   }
 }
 
-export async function sendEmbeddingToWorkflow(embeddingCode) {
+export async function sendEmbeddingToWorkflow(embeddingCode, onComplete = null) {
   const registry = await fetchWorkflowRegistry();
   if (!registry) {
     return false;
@@ -995,8 +1000,11 @@ export async function sendEmbeddingToWorkflow(embeddingCode) {
     missingTargetMessage: translate('uiHelpers.workflow.noTargetNodeSelected', {}, 'No target node selected'),
   };
 
-  const handleSend = (selectedNodeIds) =>
-    sendTextToNodes(selectedNodeIds, textNodes, embeddingCode, 'append', messages);
+  const handleSend = async (selectedNodeIds) => {
+    const result = await sendTextToNodes(selectedNodeIds, textNodes, embeddingCode, 'append', messages);
+    if (result && typeof onComplete === 'function') onComplete();
+    return result;
+  };
 
   if (nodeKeys.length === 1) {
     return await handleSend([nodeKeys[0]]);
