@@ -1,6 +1,5 @@
 import importlib
 import logging
-import re
 
 import comfy.sd  # type: ignore
 import comfy.utils  # type: ignore
@@ -14,6 +13,7 @@ from .utils import (
     extract_lora_name,
     get_loras_list,
     nunchaku_load_lora,
+    parse_lora_syntax,
 )
 
 logger = logging.getLogger(__name__)
@@ -189,25 +189,10 @@ class LoraTextLoaderLM:
     RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
     FUNCTION = "load_loras_from_text"
 
-    def parse_lora_syntax(self, text):
-        """Parse LoRA syntax from text input."""
-        pattern = r"<lora:([^:>]+):([^:>]+)(?::([^:>]+))?>"
-        matches = re.findall(pattern, text, re.IGNORECASE)
-
-        loras = []
-        for match in matches:
-            model_strength = float(match[1])
-            loras.append({
-                "name": match[0],
-                "model_strength": model_strength,
-                "clip_strength": float(match[2]) if match[2] else model_strength,
-            })
-        return loras
-
     def load_loras_from_text(self, model, lora_syntax, clip=None, lora_stack=None):
         """Load LoRAs based on text syntax input."""
         lora_entries = _collect_stack_entries(lora_stack)
-        for lora in self.parse_lora_syntax(lora_syntax):
+        for lora in parse_lora_syntax(lora_syntax):
             lora_path, trigger_words = get_lora_info_absolute(lora["name"])
             lora_entries.append({
                 "name": lora["name"],
