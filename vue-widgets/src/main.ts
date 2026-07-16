@@ -74,7 +74,7 @@ function forwardMiddleMouseToCanvas(container: HTMLElement) {
   })
 }
 
-const vueApps = new Map<number, VueApp>()
+const vueApps = new Map<number | string, VueApp>()
 let autocompleteTextWidgetInstanceId = 0
 
 export function createAutocompleteTextWidgetInstanceId() {
@@ -405,7 +405,6 @@ function createJsonDisplayWidget(node) {
   return { widget }
 }
 
-// Store nodeData options per widget type for autocomplete widgets
 const widgetInputOptions: Map<string, { placeholder?: string }> = new Map()
 
 function getSerializableWidgetNames(node: any): string[] {
@@ -722,16 +721,30 @@ function createAutocompleteTextWidgetFactory(
   inputOptions: { placeholder?: string } = {}
 ) {
   const metadataWidgetName = `__lm_autocomplete_meta_${widgetName}`
-  const instanceId = createAutocompleteTextWidgetInstanceId()
-  const container = document.createElement('div')
-  container.id = `autocomplete-text-widget-${instanceId}`
-  container.style.width = '100%'
-  container.style.height = '100%'
-  container.style.display = 'flex'
-  container.style.flexDirection = 'column'
-  container.style.overflow = 'hidden'
 
-  forwardMiddleMouseToCanvas(container)
+  let container: HTMLElement | null = null
+
+  const existingContainers = document.querySelectorAll<HTMLElement>(
+    '[id^="autocomplete-text-widget-"]'
+  )
+  for (const el of existingContainers) {
+    if (el.children.length === 0) {
+      container = el
+      break
+    }
+  }
+
+  if (!container) {
+    const instanceId = String(createAutocompleteTextWidgetInstanceId())
+    container = document.createElement('div')
+    container.id = `autocomplete-text-widget-${instanceId}`
+    container.style.width = '100%'
+    container.style.height = '100%'
+    container.style.display = 'flex'
+    container.style.flexDirection = 'column'
+    container.style.overflow = 'hidden'
+    forwardMiddleMouseToCanvas(container)
+  }
 
   // Store textarea reference on the container element so cloned widgets can access it
   // This is necessary because when widgets are promoted to subgraph nodes,
@@ -810,15 +823,10 @@ function createAutocompleteTextWidgetFactory(
   })
 
   vueApp.mount(container)
-  const appKey = instanceId
+  const appKey = container.id
   vueApps.set(appKey, vueApp)
 
   if (maxHeight) {
-    // Set only minHeight as a true minimum — remove maxHeight so the
-    // textarea can grow when the user resizes it in app mode (where
-    // [&_textarea]:resize-y applies).  Graph mode (canvas & Vue render)
-    // is unaffected because LiteGraph's layout system still governs
-    // the widget area size.
     container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT}px`
   }
 
@@ -830,9 +838,13 @@ function createAutocompleteTextWidgetFactory(
     )
   }
 
-  widget.onRemove = createVueWidgetCleanup(vueApp, () => {
+  const vueCleanup = createVueWidgetCleanup(vueApp, () => {
     vueApps.delete(appKey)
   })
+
+  widget.onRemove = () => {
+    vueCleanup()
+  }
 
   // Return minWidth/minHeight hints so ComfyUI's _initialMinSize mechanism
   // sets a sensible initial node width (and height for prompt/embeddings).
@@ -1007,9 +1019,7 @@ app.registerExtension({
           info.widgets_values = [...(info.widgets_values ?? []), null]
         }
 
-        const result = originalConfigure?.apply(this, arguments)
-
-        return result
+        return originalConfigure?.apply(this, arguments)
       }
     }
 

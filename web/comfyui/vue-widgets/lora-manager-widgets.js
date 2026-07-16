@@ -16081,15 +16081,27 @@ function createLoraInfoWidget(node) {
 function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputOptions = {}) {
   var _a2, _b, _c;
   const metadataWidgetName = `__lm_autocomplete_meta_${widgetName}`;
-  const instanceId = createAutocompleteTextWidgetInstanceId();
-  const container = document.createElement("div");
-  container.id = `autocomplete-text-widget-${instanceId}`;
-  container.style.width = "100%";
-  container.style.height = "100%";
-  container.style.display = "flex";
-  container.style.flexDirection = "column";
-  container.style.overflow = "hidden";
-  forwardMiddleMouseToCanvas(container);
+  let container = null;
+  const existingContainers = document.querySelectorAll(
+    '[id^="autocomplete-text-widget-"]'
+  );
+  for (const el of existingContainers) {
+    if (el.children.length === 0) {
+      container = el;
+      break;
+    }
+  }
+  if (!container) {
+    const instanceId = String(createAutocompleteTextWidgetInstanceId());
+    container = document.createElement("div");
+    container.id = `autocomplete-text-widget-${instanceId}`;
+    container.style.width = "100%";
+    container.style.height = "100%";
+    container.style.display = "flex";
+    container.style.flexDirection = "column";
+    container.style.overflow = "hidden";
+    forwardMiddleMouseToCanvas(container);
+  }
   const widgetElementRef = { inputEl: void 0 };
   container.__widgetInputEl = widgetElementRef;
   const metadataWidget = node.addWidget("text", metadataWidgetName, {
@@ -16154,7 +16166,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
     ripple: false
   });
   vueApp.mount(container);
-  const appKey = instanceId;
+  const appKey = container.id;
   vueApps.set(appKey, vueApp);
   if (maxHeight) {
     container.style.minHeight = `${AUTOCOMPLETE_TEXT_WIDGET_MIN_HEIGHT}px`;
@@ -16166,9 +16178,12 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
       typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode
     );
   }
-  widget.onRemove = createVueWidgetCleanup(vueApp, () => {
+  const vueCleanup = createVueWidgetCleanup(vueApp, () => {
     vueApps.delete(appKey);
   });
+  widget.onRemove = () => {
+    vueCleanup();
+  };
   const minWidth = AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT;
   const minHeight = modelType === "loras" ? void 0 : AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT;
   return { widget, minWidth, minHeight };
@@ -16315,8 +16330,7 @@ app$1.registerExtension({
         if (bypassResult) {
           info.widgets_values = [...info.widgets_values ?? [], null];
         }
-        const result = originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
-        return result;
+        return originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
       };
     }
     if (LORA_CHAIN_NODE_TYPES$1.includes(comfyClass)) {
