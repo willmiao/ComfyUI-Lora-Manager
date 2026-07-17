@@ -438,6 +438,7 @@ export function mergeLoras(lorasText, lorasArr) {
         active: lora.active !== undefined ? lora.active : true,
         expanded: lora.expanded !== undefined ? lora.expanded : false,
         clipStrength: lora.clipStrength !== undefined ? lora.clipStrength : parsedLoras[lora.name].clipStrength,
+        selected: !!lora.selected,
       });
       usedNames.add(lora.name);
     }
@@ -451,6 +452,7 @@ export function mergeLoras(lorasText, lorasArr) {
         strength: parsedLoras[name].strength,
         active: true,
         clipStrength: parsedLoras[name].clipStrength,
+        selected: false,
       });
     }
   }

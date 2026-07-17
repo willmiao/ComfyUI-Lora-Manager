@@ -711,7 +711,11 @@ export function addLorasWidget(node, name, opts, callback) {
   // Create widget with new DOM Widget API
   const widget = node.addDOMWidget(name, "custom", container, {
     getValue: function() {
-      return widgetValue;
+      return widgetValue.map(lora => {
+        const entry = { ...lora };
+        entry.selected = lora.name === selectedLora;
+        return entry;
+      });
     },
     setValue: function(v) {
       // Remove duplicates by keeping the last occurrence of each lora name
@@ -738,6 +742,15 @@ export function addLorasWidget(node, name, opts, callback) {
       });
 
       widgetValue = updatedValue;
+
+      // Restore selection state when loading a saved workflow
+      if (!selectedLora) {
+        const selectedEntry = updatedValue.find(lora => lora.selected);
+        if (selectedEntry) {
+          selectedLora = selectedEntry.name;
+        }
+      }
+
       renderLoras(widgetValue, widget);
     },
     hideOnZoom: true,

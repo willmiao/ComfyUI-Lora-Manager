@@ -97,6 +97,12 @@ interface LoraInfoWidget {
   value?: unknown
   onSetValue?: (v: unknown) => void
   callback?: unknown
+  options?: {
+    getValue?: () => LoraInfoWidgetValue
+    setValue?: (v: unknown) => void
+  }
+  node?: { widgets?: Array<{ id?: string }>; widgets_values?: Array<unknown> }
+  id?: string
   _setLoraInfo?: (data: { name: string; notes: string; filePath: string; activeTab?: string } | null) => void
   __pendingLoraInfo?: { name: string; notes: string; filePath: string; activeTab?: string } | null
 }
@@ -267,38 +273,59 @@ function onWheel(event: WheelEvent) {
 }
 
 onMounted(() => {
-  // Persist tab state along with other widget data
-  props.widget.serializeValue = async (): Promise<LoraInfoWidgetValue> => ({
+  // Build current state snapshot for serialization
+  const buildValue = (): LoraInfoWidgetValue => ({
     name: loraName.value,
     notes: notes.value,
     filePath: filePath.value,
     activeTab: activeTab.value,
   })
 
-  // Handle external value updates (e.g., loading workflow, paste)
-  props.widget.onSetValue = (v: unknown) => {
+  // Set value from external source (workflow load, paste, etc.)
+  const applyValue = (v: unknown) => {
     if (v && typeof v === 'object') {
       const data = v as LoraInfoWidgetValue
+      // Set activeTab before filePath so the filePath watcher sees the correct tab
+      // and triggers fetchDescription() when restoring description tab
+      if (data.activeTab !== undefined) activeTab.value = data.activeTab
       if (data.name !== undefined) loraName.value = data.name
       if (data.notes !== undefined) {
         notes.value = data.notes
         originalNotes.value = data.notes
       }
       if (data.filePath !== undefined) filePath.value = data.filePath
-      if (data.activeTab !== undefined) activeTab.value = data.activeTab
     }
   }
 
-  // Restore from saved value if exists (for workflow loading)
-  if (props.widget.value && typeof props.widget.value === 'object') {
-    const data = props.widget.value as LoraInfoWidgetValue
-    if (data.name !== undefined) loraName.value = data.name
-    if (data.notes !== undefined) {
-      notes.value = data.notes
-      originalNotes.value = data.notes
+  // ComponentWidgetImpl.value getter/setter delegates to options.getValue/options.setValue.
+  // These must be set for workflow JSON persistence (LGraphNode.serialize/configure) to work.
+  props.widget.options.getValue = buildValue
+  props.widget.options.setValue = applyValue
+
+  // Also set serializeValue for prompt/API serialization path (executionUtil.ts)
+  props.widget.serializeValue = async () => buildValue()
+
+  // Handle external value updates (e.g., loading workflow, paste)
+  props.widget.onSetValue = applyValue
+
+  // Restore from saved value. Because configure() may call widget.value = data
+  // before onMounted fires (and before options.setValue is assigned), we check
+  // widgets_values directly in case the value was already pushed.
+  const widgetIndex = props.widget.node?.widgets?.findIndex(
+    (w: { id?: string }) => w.id === props.widget.id
+  )
+  let restored = false
+  if (widgetIndex !== undefined && widgetIndex >= 0) {
+    const savedValue = props.widget.node?.widgets_values?.[widgetIndex]
+    if (savedValue && typeof savedValue === 'object') {
+      applyValue(savedValue)
+      restored = true
     }
-    if (data.filePath !== undefined) filePath.value = data.filePath
-    if (data.activeTab !== undefined) activeTab.value = data.activeTab
+  }
+  // Fallback: if configure() ran after onMounted, widget.value (via options.getValue)
+  // already has the saved data. Only use this path if the widgets_values lookup didn't restore.
+  if (!restored && props.widget.value && typeof props.widget.value === 'object') {
+    applyValue(props.widget.value)
   }
 
   // Expose setLoraInfo on the widget object for external callers (e.g., lora_info.js).
