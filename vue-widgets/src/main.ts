@@ -656,7 +656,7 @@ function createLoraInfoWidget(node: any) {
 
   forwardMiddleMouseToCanvas(container)
 
-  let internalValue: { name?: string; notes?: string; filePath?: string } | undefined
+  let internalValue: { name?: string; notes?: string; filePath?: string; activeTab?: string } | undefined
 
   const widget = node.addDOMWidget(
     'lora_info_display',
@@ -666,13 +666,13 @@ function createLoraInfoWidget(node: any) {
       getValue() {
         return internalValue
       },
-      setValue(v: { name?: string; notes?: string; filePath?: string }) {
+      setValue(v: { name?: string; notes?: string; filePath?: string; activeTab?: string }) {
         internalValue = v
         if (typeof widget.onSetValue === 'function') {
           widget.onSetValue(v)
         }
       },
-      serialize: false, // Display-only widget
+      serialize: true,
       getMinHeight() {
         return LORA_INFO_WIDGET_MIN_HEIGHT
       }
@@ -684,6 +684,7 @@ function createLoraInfoWidget(node: any) {
     node,
     api,
     app,
+    isVueMode: typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode,
   })
 
   vueApp.use(PrimeVue, {
