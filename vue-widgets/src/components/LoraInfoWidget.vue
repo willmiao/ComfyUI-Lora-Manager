@@ -470,6 +470,10 @@ onMounted(() => {
   color: var(--fg-color, #fff);
   word-break: break-all;
   margin-bottom: 8px;
+  /* Override node-level grab cursor and user-select:none from .lg-node.cursor-grab */
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .notes-field {
@@ -568,6 +572,10 @@ onMounted(() => {
   color: var(--fg-color, #fff);
   opacity: 0.85;
   word-break: break-word;
+  /* Override node-level grab cursor and user-select:none from .lg-node.cursor-grab */
+  cursor: auto;
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .description-text :deep(p) {
