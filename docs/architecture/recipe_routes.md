@@ -42,7 +42,7 @@ set of invariants before returning:
 | --- | --- | --- | --- |
 | `RecipePageView` | `/loras/recipes` | `SettingsManager`, `server_i18n`, Jinja environment, recipe scanner getter | Template rendered with `is_initializing` flag when caches are still warming; i18n filter registered exactly once per environment instance. |
 | `RecipeListingHandler` | `/api/lm/recipes`, `/api/lm/recipe/{id}` | `recipe_scanner.get_paginated_data`, `recipe_scanner.get_recipe_by_id` | Listings respect pagination and search filters; every item receives a `file_url` fallback even when metadata is incomplete; missing recipes become HTTP 404. |
-| `RecipeQueryHandler` | Tag/base-model stats, syntax, LoRA lookups | Recipe scanner cache, `format_recipe_file_url` helper | Cache snapshots are reused without forcing refresh; duplicate lookups collapse groups by fingerprint; syntax lookups return helpful errors when LoRAs are absent. |
+| `RecipeQueryHandler` | Tag/base-model stats, syntax, LoRA lookups, `find_duplicates`, `find_similar` | Recipe scanner cache, `format_recipe_file_url` helper | Cache snapshots are reused without forcing refresh; duplicate lookups collapse groups by exact fingerprint; similar lookups collapse groups by a fuzzy signature (see below); syntax lookups return helpful errors when LoRAs are absent. |
 | `RecipeManagementHandler` | Save, update, reconnect, bulk delete, widget ingest | `RecipePersistenceService`, `RecipeAnalysisService`, recipe scanner | Persistence results propagate HTTP status codes; fingerprint/index updates flow through the scanner before returning; validation errors surface as HTTP 400 without touching disk. |
 | `RecipeAnalysisHandler` | Uploaded/local/remote analysis | `RecipeAnalysisService`, `civitai_client`, recipe scanner | Unsupported content types map to HTTP 400; download errors (`RecipeDownloadError`) are not retried; every response includes a `loras` array for client compatibility. |
 | `RecipeSharingHandler` | Share + download | `RecipeSharingService`, recipe scanner | Share responses provide a stable download URL and filename; expired shares surface as HTTP 404; downloads stream via `web.FileResponse` with attachment headers. |
@@ -67,6 +67,24 @@ The dedicated services encapsulate long-running work so handlers stay thin.
   fingerprints whenever LoRA metadata changes and duplicate lookups use those
   fingerprints to group recipes. Handlers bubble the resulting IDs so clients
   can merge duplicates without an extra fetch.
+* **Similarity grouping (two stages)** – `GET /api/lm/recipes/find-similar`
+  groups recipes deterministically in two passes (all in `py/utils/utils.py`):
+  1. **Base signature** (`calculate_recipe_similarity_signature`) — a
+     *weight-free* key capturing which LoRAs a recipe uses (checkpoint/model
+     always ignored), plus the normalized prompt (`match_prompt`) and/or config
+     (`match_config`, = steps/sampler/cfg/size/clip_skip/denoising_strength;
+     seed always excluded). `drop_low_weight` + `low_weight_threshold` ignore
+     LoRAs by weight *magnitude* (`-0.1` drops, `-0.6` stays).
+  2. **Weight clustering** (`cluster_recipes_by_weight`) — each base group is
+     split into single-linkage connected components where two recipes link only
+     if every shared LoRA's weight differs by at most `weight_tolerance` (`0`
+     disables splitting). Keeps groups transitive while catching "same LoRAs,
+     very different weights".
+  The handler enriches each recipe with `diff_loras` (name/weight/low_weight)
+  and `diff_params` so the frontend can render an expandable per-group **diff
+  table** (LoRAs × recipes, differing weights highlighted, plus prompt/config
+  match rows). The UI lives in a popover on the recipes-tab "Find Similar"
+  button and reuses the duplicate-group banner/grid for review + bulk delete.
 * **Metadata synchronisation** – Saving or reconnecting a recipe updates the
   JSON sidecar, refreshes embedded metadata via `ExifUtils`, and instructs the
   scanner to resort its cache. Sharing relies on this metadata to generate

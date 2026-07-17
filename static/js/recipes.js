@@ -263,6 +263,20 @@ class RecipeManager {
             duplicatesButton.addEventListener('click', () => this.findDuplicateRecipes());
         }
 
+        const similarButton = document.getElementById('findSimilarBtn');
+        if (similarButton) {
+            similarButton.addEventListener('click', () => this.findSimilarRecipes());
+        }
+
+        const similarApplyBtn = document.getElementById('similarApplyBtn');
+        if (similarApplyBtn) {
+            similarApplyBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.closeDropdowns();
+                this.findSimilarRecipes();
+            });
+        }
+
         const favoriteFilterBtn = document.getElementById('favoriteFilterBtn');
         if (favoriteFilterBtn) {
             favoriteFilterBtn.addEventListener('click', () => {
@@ -370,6 +384,30 @@ class RecipeManager {
     // Duplicate detection and management methods
     async findDuplicateRecipes() {
         return await this.duplicatesManager.findDuplicates();
+    }
+
+    // Read the current values from the "Find Similar" options popover
+    getSimilarOptions() {
+        const num = (id, fallback) => {
+            const el = document.getElementById(id);
+            const value = el ? parseFloat(el.value) : NaN;
+            return Number.isFinite(value) ? value : fallback;
+        };
+        const checked = (id) => {
+            const el = document.getElementById(id);
+            return el ? el.checked : false;
+        };
+        return {
+            weightTolerance: num('similarWeightTolerance', 0.1),
+            dropLowWeight: checked('similarDropLowWeight'),
+            lowWeightThreshold: num('similarLowWeightThreshold', 0.3),
+            matchPrompt: checked('similarMatchPrompt'),
+            matchConfig: checked('similarMatchConfig'),
+        };
+    }
+
+    async findSimilarRecipes() {
+        return await this.duplicatesManager.findSimilar(this.getSimilarOptions());
     }
 
     selectLatestDuplicates() {

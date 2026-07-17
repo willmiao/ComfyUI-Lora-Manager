@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "僅顯示收藏",
                 "action": "收藏"
+            },
+            "similar": {
+                "action": "尋找相似",
+                "title": "將使用相似 LoRA 的配方分組（忽略模型）",
+                "optionsLabel": "相似度選項",
+                "optionsTitle": "相似度選項",
+                "weightTolerance": "權重差異大於此值時拆分",
+                "weightToleranceHint": "當任一共用 LoRA 的權重差異超過此值時，使用相同 LoRA 的配方將被拆分為不同的群組。0 = 永不依權重拆分。",
+                "dropLowWeight": "忽略低權重 LoRA",
+                "lowWeightThreshold": "|權重| 低於",
+                "matchPrompt": "提示詞必須相符",
+                "matchConfig": "設定必須相符",
+                "apply": "尋找相似"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "尋找重複項失敗：{message}",
+            "findSimilarFailed": "尋找相似配方失敗：{message}",
             "noDuplicatesFound": "未找到重複的 {type}",
+            "noSimilarFound": "未找到相似的 {type}",
             "noItemsSelected": "未選擇要刪除的 {type}",
             "deleteError": "錯誤：{message}",
             "deleteSuccess": "成功刪除 {count} 個 {type}",

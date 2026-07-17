@@ -422,6 +422,182 @@ def calculate_recipe_fingerprint(loras):
     return fingerprint
 
 
+# Generation params considered "config" (deterministic settings), excluding
+# prompt/negative_prompt (handled separately) and seed (per-generation noise).
+SIMILARITY_CONFIG_KEYS = [
+    "steps",
+    "sampler",
+    "cfg_scale",
+    "size",
+    "clip_skip",
+    "denoising_strength",
+]
+
+
+def _normalize_prompt_text(text) -> str:
+    """Normalize a prompt for comparison: lowercase, collapse whitespace."""
+    if not text:
+        return ""
+    return " ".join(str(text).lower().split())
+
+
+def _lora_hash(lora) -> str:
+    """Resolve a comparable hash for a recipe LoRA entry (lowercased)."""
+    hash_value = lora.get("hash", "")
+    if isinstance(hash_value, str):
+        hash_value = hash_value.lower()
+    else:
+        hash_value = str(hash_value).lower() if hash_value else ""
+    if not hash_value and lora.get("modelVersionId"):
+        hash_value = str(lora.get("modelVersionId"))
+    return hash_value
+
+
+def _lora_weight(lora) -> float:
+    """Resolve a numeric weight for a recipe LoRA entry."""
+    strength_val = lora.get("strength", lora.get("weight", 1.0))
+    try:
+        return float(strength_val)
+    except (ValueError, TypeError):
+        return 1.0
+
+
+def get_retained_lora_weights(loras, options=None) -> dict:
+    """Map hash -> weight for the LoRAs that define a recipe's identity.
+
+    Excluded LoRAs are always skipped; when ``drop_low_weight`` is set, LoRAs
+    whose weight *magnitude* is below ``low_weight_threshold`` are also skipped
+    (so ``-0.1`` is dropped but a strong ``-0.6`` is kept). Used both for the
+    similarity signature and for weight-based clustering.
+    """
+    options = options or {}
+    drop_low_weight = bool(options.get("drop_low_weight", False))
+    low_weight_threshold = float(options.get("low_weight_threshold", 0.3) or 0.0)
+
+    retained = {}
+    for lora in loras or []:
+        if lora.get("exclude", False):
+            continue
+        hash_value = _lora_hash(lora)
+        if not hash_value:
+            continue
+        weight = _lora_weight(lora)
+        if drop_low_weight and abs(weight) < low_weight_threshold:
+            continue
+        retained[hash_value] = weight
+    return retained
+
+
+def calculate_recipe_similarity_signature(loras, gen_params=None, options=None) -> str:
+    """Calculate a normalized *base* similarity signature for a recipe.
+
+    Unlike :func:`calculate_recipe_fingerprint` (which requires identical
+    hashes and strengths), this groups recipes that are merely similar. The
+    signature is deliberately weight-free: it captures *which* LoRAs are used
+    (checkpoint/model always ignored), plus the prompt/config when requested.
+    Weight closeness is handled separately by clustering
+    (:func:`cluster_recipes_by_weight`) so groups stay deterministic while the
+    UI can still show a per-weight diff.
+
+    Options (all optional):
+        drop_low_weight (bool): Ignore LoRAs whose weight magnitude is below
+            ``low_weight_threshold`` when building the signature. Default ``False``.
+        low_weight_threshold (float): Magnitude threshold. Default ``0.3``.
+        match_prompt (bool): Include the normalized prompt/negative_prompt in
+            the signature. Default ``False``.
+        match_config (bool): Include generation config (steps, sampler, cfg,
+            size, clip_skip, denoising_strength) in the signature. Default ``False``.
+
+    Returns:
+        str: The base signature, or ``""`` if there are no valid LoRAs.
+    """
+    options = options or {}
+    match_prompt = bool(options.get("match_prompt", False))
+    match_config = bool(options.get("match_config", False))
+
+    retained = get_retained_lora_weights(loras, options)
+    if not retained:
+        return ""
+
+    lora_part = "|".join(sorted(retained.keys()))
+    parts = [f"loras={lora_part}"]
+
+    gen_params = gen_params or {}
+    if match_prompt:
+        prompt = _normalize_prompt_text(gen_params.get("prompt"))
+        negative = _normalize_prompt_text(gen_params.get("negative_prompt"))
+        parts.append(f"prompt={prompt}##neg={negative}")
+
+    if match_config:
+        config_bits = []
+        for key in SIMILARITY_CONFIG_KEYS:
+            value = gen_params.get(key)
+            if value in (None, ""):
+                continue
+            config_bits.append(f"{key}={str(value).strip().lower()}")
+        parts.append("config=" + ",".join(config_bits))
+
+    return "||".join(parts)
+
+
+def cluster_recipes_by_weight(recipe_ids, weight_maps, tolerance) -> list:
+    """Split recipes that share a base signature into weight-close clusters.
+
+    All ``recipe_ids`` are assumed to share the same retained LoRA set (they
+    came from one base signature group). Two recipes are *linked* when every
+    shared LoRA's weight differs by at most ``tolerance``; clusters are the
+    connected components of that link graph (single-linkage). This keeps the
+    result deterministic and order-independent while matching the intent
+    "split a group only when weights differ a lot".
+
+    A ``tolerance`` of ``0`` (or negative) disables splitting: all recipes stay
+    in one cluster regardless of weight.
+
+    Args:
+        recipe_ids: Recipe ids belonging to one base group.
+        weight_maps: ``{recipe_id: {hash: weight}}`` for those recipes.
+        tolerance: Maximum per-LoRA weight difference to still link two recipes.
+
+    Returns:
+        List of clusters, each a list of recipe ids.
+    """
+    if tolerance is None or tolerance <= 0 or len(recipe_ids) <= 1:
+        return [list(recipe_ids)]
+
+    parent = {rid: rid for rid in recipe_ids}
+
+    def find(x):
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    def union(a, b):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[rb] = ra
+
+    def linked(a, b):
+        wa = weight_maps.get(a, {})
+        wb = weight_maps.get(b, {})
+        for hash_value in set(wa) | set(wb):
+            if abs(wa.get(hash_value, 0.0) - wb.get(hash_value, 0.0)) > tolerance:
+                return False
+        return True
+
+    ids = list(recipe_ids)
+    for i in range(len(ids)):
+        for j in range(i + 1, len(ids)):
+            if linked(ids[i], ids[j]):
+                union(ids[i], ids[j])
+
+    clusters = {}
+    for rid in ids:
+        clusters.setdefault(find(rid), []).append(rid)
+
+    return list(clusters.values())
+
+
 def calculate_relative_path_for_model(
     model_data: Dict, model_type: str = "lora"
 ) -> str:

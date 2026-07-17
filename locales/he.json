@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "הצג מועדפים בלבד",
                 "action": "מועדפים"
+            },
+            "similar": {
+                "action": "מצא דומים",
+                "title": "קבץ מתכונים המשתמשים ב-LoRA דומים (המודל לא נחשב)",
+                "optionsLabel": "אפשרויות דמיון",
+                "optionsTitle": "אפשרויות דמיון",
+                "weightTolerance": "פצל אם המשקל שונה ביותר מ-",
+                "weightToleranceHint": "מתכונים עם אותם LoRA מפוצלים לקבוצות נפרדות כאשר המשקל של LoRA משותף כלשהו שונה ביותר מערך זה. 0 = לעולם אל תפצל לפי משקל.",
+                "dropLowWeight": "התעלם מ-LoRA בעלי משקל נמוך",
+                "lowWeightThreshold": "|משקל| מתחת ל-",
+                "matchPrompt": "הפרומפט חייב להתאים",
+                "matchConfig": "התצורה חייבת להתאים",
+                "apply": "מצא דומים"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "מציאת כפילויות נכשלה: {message}",
+            "findSimilarFailed": "מציאת מתכונים דומים נכשלה: {message}",
             "noDuplicatesFound": "לא נמצאו {type} כפולים",
+            "noSimilarFound": "לא נמצאו {type} דומים",
             "noItemsSelected": "לא נבחרו {type} למחיקה",
             "deleteError": "שגיאה: {message}",
             "deleteSuccess": "נמחקו בהצלחה {count} {type}",

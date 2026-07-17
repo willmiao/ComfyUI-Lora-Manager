@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "Nur Favoriten anzeigen",
                 "action": "Favoriten"
+            },
+            "similar": {
+                "action": "Ähnliche finden",
+                "title": "Rezepte mit ähnlichen LoRAs gruppieren (Modell ignoriert)",
+                "optionsLabel": "Ähnlichkeitsoptionen",
+                "optionsTitle": "Ähnlichkeitsoptionen",
+                "weightTolerance": "Aufteilen, wenn Gewicht abweicht um >",
+                "weightToleranceHint": "Rezepte mit denselben LoRAs werden in separate Gruppen aufgeteilt, wenn das Gewicht einer gemeinsamen LoRA um mehr als diesen Wert abweicht. 0 = niemals nach Gewicht aufteilen.",
+                "dropLowWeight": "LoRAs mit geringem Gewicht ignorieren",
+                "lowWeightThreshold": "|Gewicht| unter",
+                "matchPrompt": "Prompt muss übereinstimmen",
+                "matchConfig": "Konfiguration muss übereinstimmen",
+                "apply": "Ähnliche finden"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "Fehler beim Suchen nach Duplikaten: {message}",
+            "findSimilarFailed": "Fehler beim Suchen ähnlicher Rezepte: {message}",
             "noDuplicatesFound": "Keine doppelten {type} gefunden",
+            "noSimilarFound": "Keine ähnlichen {type} gefunden",
             "noItemsSelected": "Keine {type} zum Löschen ausgewählt",
             "deleteError": "Fehler: {message}",
             "deleteSuccess": "{count} {type} erfolgreich gelöscht",

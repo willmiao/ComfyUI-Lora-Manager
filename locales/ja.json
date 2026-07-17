@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "お気に入りのみ表示",
                 "action": "お気に入り"
+            },
+            "similar": {
+                "action": "類似を検索",
+                "title": "類似したLoRAを使用するレシピをグループ化（モデルは無視）",
+                "optionsLabel": "類似性オプション",
+                "optionsTitle": "類似性オプション",
+                "weightTolerance": "重みの差がこれを超えたら分割",
+                "weightToleranceHint": "同じLoRAを使用するレシピは、共有するいずれかのLoRAの重みがこの値を超えて異なる場合、別々のグループに分割されます。0 = 重みで分割しない。",
+                "dropLowWeight": "重みの低いLoRAを無視",
+                "lowWeightThreshold": "|重み| が次の値未満",
+                "matchPrompt": "プロンプトが一致する必要がある",
+                "matchConfig": "設定が一致する必要がある",
+                "apply": "類似を検索"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "重複の検索に失敗しました：{message}",
+            "findSimilarFailed": "類似レシピの検索に失敗しました：{message}",
             "noDuplicatesFound": "重複 {type} が見つかりませんでした",
+            "noSimilarFound": "類似する {type} が見つかりませんでした",
             "noItemsSelected": "削除する {type} が選択されていません",
             "deleteError": "エラー：{message}",
             "deleteSuccess": "{count} {type} が正常に削除されました",

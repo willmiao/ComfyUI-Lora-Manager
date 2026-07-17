@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "仅显示收藏",
                 "action": "收藏"
+            },
+            "similar": {
+                "action": "查找相似",
+                "title": "将使用相似 LoRA 的配方分组（忽略模型）",
+                "optionsLabel": "相似度选项",
+                "optionsTitle": "相似度选项",
+                "weightTolerance": "权重差异大于此值时拆分",
+                "weightToleranceHint": "当任一共享 LoRA 的权重差异超过此值时，使用相同 LoRA 的配方将被拆分为不同的组。0 = 从不按权重拆分。",
+                "dropLowWeight": "忽略低权重 LoRA",
+                "lowWeightThreshold": "|权重| 低于",
+                "matchPrompt": "提示词必须匹配",
+                "matchConfig": "配置必须匹配",
+                "apply": "查找相似"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "查找重复项失败：{message}",
+            "findSimilarFailed": "查找相似配方失败：{message}",
             "noDuplicatesFound": "未找到重复的 {type}",
+            "noSimilarFound": "未找到相似的 {type}",
             "noItemsSelected": "未选中要删除的 {type}",
             "deleteError": "错误：{message}",
             "deleteSuccess": "成功删除 {count} 个 {type}",

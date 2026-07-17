@@ -97,6 +97,42 @@
                     <span id="duplicatesBadge" class="badge"></span>
                 </button>
             </div>
+            {% if page_id == 'recipes' %}
+            <div class="control-group dropdown-group find-similar-group">
+                <button id="findSimilarBtn" class="dropdown-main" data-action="find-similar" title="{{ t('recipes.controls.similar.title') }}">
+                    <i class="fas fa-object-group"></i> <span>{{ t('recipes.controls.similar.action') }}</span>
+                </button>
+                <button class="dropdown-toggle" aria-label="{{ t('recipes.controls.similar.optionsLabel') }}">
+                    <i class="fas fa-caret-down"></i>
+                </button>
+                <div class="dropdown-menu similar-options-menu">
+                    <div class="similar-options-title">{{ t('recipes.controls.similar.optionsTitle') }}</div>
+                    <label class="similar-option-row similar-option-check">
+                        <input type="checkbox" id="similarDropLowWeight" checked>
+                        <span>{{ t('recipes.controls.similar.dropLowWeight') }}</span>
+                    </label>
+                    <label class="similar-option-row similar-option-indent">
+                        <span>{{ t('recipes.controls.similar.lowWeightThreshold') }}</span>
+                        <input type="number" id="similarLowWeightThreshold" min="0" max="2" step="0.05" value="0.3">
+                    </label>
+                    <label class="similar-option-row" title="{{ t('recipes.controls.similar.weightToleranceHint') }}">
+                        <span>{{ t('recipes.controls.similar.weightTolerance') }}</span>
+                        <input type="number" id="similarWeightTolerance" min="0" max="2" step="0.05" value="0.2">
+                    </label>
+                    <label class="similar-option-row similar-option-check">
+                        <input type="checkbox" id="similarMatchPrompt">
+                        <span>{{ t('recipes.controls.similar.matchPrompt') }}</span>
+                    </label>
+                    <label class="similar-option-row similar-option-check">
+                        <input type="checkbox" id="similarMatchConfig">
+                        <span>{{ t('recipes.controls.similar.matchConfig') }}</span>
+                    </label>
+                    <button type="button" id="similarApplyBtn" class="similar-apply-btn">
+                        <i class="fas fa-object-group"></i> {{ t('recipes.controls.similar.apply') }}
+                    </button>
+                </div>
+            </div>
+            {% endif %}
             <div class="control-group">
                 <button id="favoriteFilterBtn" data-action="toggle-favorites" class="favorite-filter" title="{{ t('loras.controls.favorites.title') }}">
                     <i class="fas fa-star"></i> <span>{{ t('loras.controls.favorites.action') }}</span>

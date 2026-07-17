@@ -898,6 +898,19 @@
             "favorites": {
                 "title": "Только избранные",
                 "action": "Избранное"
+            },
+            "similar": {
+                "action": "Найти похожие",
+                "title": "Группировать рецепты с похожими LoRA (модель игнорируется)",
+                "optionsLabel": "Параметры сходства",
+                "optionsTitle": "Параметры сходства",
+                "weightTolerance": "Разделять, если вес отличается на >",
+                "weightToleranceHint": "Рецепты с одинаковыми LoRA разделяются на отдельные группы, когда вес любой общей LoRA отличается больше, чем на это значение. 0 = никогда не разделять по весу.",
+                "dropLowWeight": "Игнорировать LoRA с низким весом",
+                "lowWeightThreshold": "|вес| ниже",
+                "matchPrompt": "Промпт должен совпадать",
+                "matchConfig": "Конфигурация должна совпадать",
+                "apply": "Найти похожие"
             }
         },
         "duplicates": {
@@ -2046,7 +2059,9 @@
         },
         "duplicates": {
             "findFailed": "Не удалось найти дубликаты: {message}",
+            "findSimilarFailed": "Не удалось найти похожие рецепты: {message}",
             "noDuplicatesFound": "Дубликаты {type} не найдены",
+            "noSimilarFound": "Похожие {type} не найдены",
             "noItemsSelected": "Не выбрано {type} для удаления",
             "deleteError": "Ошибка: {message}",
             "deleteSuccess": "Успешно удалено {count} {type}",
