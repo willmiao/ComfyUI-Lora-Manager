@@ -3471,7 +3471,7 @@ class NodeRegistryHandler:
                     status=400,
                 )
 
-            if not isinstance(value, str) or not value:
+            if value is None or (isinstance(value, str) and not value):
                 return web.json_response(
                     {"success": False, "error": "Missing value parameter"}, status=400
                 )
@@ -3578,7 +3578,7 @@ class NodeRegistryHandler:
                     status=400,
                 )
 
-            if not isinstance(value, str) or not value:
+            if value is None or (isinstance(value, str) and not value):
                 return web.json_response(
                     {"success": False, "error": "Missing value parameter"}, status=400
                 )

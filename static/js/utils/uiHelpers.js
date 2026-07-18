@@ -1144,8 +1144,8 @@ export async function sendGenParamsToWorkflow(genParams) {
       const node = targetNodes[nodeKey];
       if (!node) continue;
 
-      const widgetNames = node.widget_names || [];
-      const updates = findMatchingWidgets(widgetNames, raw);
+      const widgetNames = getWidgetNames(node);
+      const updates = findMatchingWidgets(widgetNames, raw, node.type_name);
 
       if (updates.length === 0) {
         showToast(`Node "${node.title || node.type}" has no matching widgets for these parameters`, {}, 'warning');

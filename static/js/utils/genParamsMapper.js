@@ -142,6 +142,20 @@ const PARAM_TO_WIDGET_CANDIDATES = {
 };
 
 // ---------------------------------------------------------------------------
+// Node-type-specific widget name overrides.
+// Keys are ComfyUI node class names (e.g. "GlobalSeed //Inspire").
+// Values are partial PARAM_TO_WIDGET_CANDIDATES maps; the per-node candidates
+// are tried *before* the global ones.  Only the params listed here are
+// overridden — every other param still uses the global candidates.
+// ---------------------------------------------------------------------------
+const NODE_TYPE_WIDGET_OVERRIDES = {
+    // Inspire Pack — Global Seed node stores the seed in a widget named "value"
+    'GlobalSeed //Inspire': {
+        seed: ['value'],
+    },
+};
+
+// ---------------------------------------------------------------------------
 // Parse a combined sampler+scheduler value (space-separated or underscore)
 // e.g., "Euler a Karras", "DPM++ 2M beta", "er_sde_beta"
 // Returns { sampler: internalName|null, scheduler: internalName|null } or null
@@ -235,13 +249,33 @@ function resolveSamplerScheduler(rawValue) {
 // Find which gen params can be sent to a given node, matching by widget names
 // Returns array of { widgetName, value } objects
 // ---------------------------------------------------------------------------
-function findMatchingWidgets(nodeWidgetNames, resolvedParams) {
+function findMatchingWidgets(nodeWidgetNames, resolvedParams, nodeType) {
     if (!nodeWidgetNames || !Array.isArray(nodeWidgetNames) || nodeWidgetNames.length === 0) {
         return [];
     }
 
     const widgetSet = new Set(nodeWidgetNames.map(w => String(w).toLowerCase()));
     const updates = [];
+
+    // Resolve node-type-specific overrides (if any)
+    const typeOverrides =
+        nodeType && typeof nodeType === 'string'
+            ? (NODE_TYPE_WIDGET_OVERRIDES[nodeType] || {})
+            : {};
+
+    /**
+     * Build the effective candidate list for a parameter:
+     * type-specific overrides (if any) come first, then the global candidates.
+     */
+    function getCandidates(key) {
+        const global = PARAM_TO_WIDGET_CANDIDATES[key] || [key];
+        const extra = typeOverrides[key];
+        if (extra && Array.isArray(extra) && extra.length > 0) {
+            // Prepend type-specific candidates; keep global as fallback
+            return [...extra, ...global];
+        }
+        return global;
+    }
 
     // Simple numeric/string params: seed, steps, cfg
     const simpleParams = [
@@ -251,7 +285,7 @@ function findMatchingWidgets(nodeWidgetNames, resolvedParams) {
     ];
     for (const { key, value } of simpleParams) {
         if (value === undefined || value === null || value === '') continue;
-        const candidates = PARAM_TO_WIDGET_CANDIDATES[key] || [key];
+        const candidates = getCandidates(key);
         for (const candidate of candidates) {
             if (widgetSet.has(candidate.toLowerCase())) {
                 updates.push({ widgetName: candidate, value });
@@ -262,7 +296,7 @@ function findMatchingWidgets(nodeWidgetNames, resolvedParams) {
 
     // Sampler
     if (resolvedParams.sampler) {
-        const candidates = PARAM_TO_WIDGET_CANDIDATES.sampler;
+        const candidates = getCandidates('sampler');
         for (const candidate of candidates) {
             if (widgetSet.has(candidate.toLowerCase())) {
                 updates.push({ widgetName: candidate, value: resolvedParams.sampler });
@@ -273,7 +307,7 @@ function findMatchingWidgets(nodeWidgetNames, resolvedParams) {
 
     // Scheduler
     if (resolvedParams.scheduler) {
-        const candidates = PARAM_TO_WIDGET_CANDIDATES.scheduler;
+        const candidates = getCandidates('scheduler');
         for (const candidate of candidates) {
             if (widgetSet.has(candidate.toLowerCase())) {
                 updates.push({ widgetName: candidate, value: resolvedParams.scheduler });
@@ -290,6 +324,7 @@ export {
     SCHEDULER_SUFFIXES,
     SCHEDULER_ONLY_VALUES,
     PARAM_TO_WIDGET_CANDIDATES,
+    NODE_TYPE_WIDGET_OVERRIDES,
     parseCombinedSamplerName,
     resolveSamplerScheduler,
     findMatchingWidgets,
