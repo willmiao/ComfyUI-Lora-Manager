@@ -204,9 +204,9 @@ describe('findMatchingWidgets', () => {
 
     it('matches seed to seed widget', () => {
         const updates = findMatchingWidgets(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler'], resolved);
-        expect(updates).toContainEqual({ widgetName: 'seed', value: '42' });
-        expect(updates).toContainEqual({ widgetName: 'steps', value: '30' });
-        expect(updates).toContainEqual({ widgetName: 'cfg', value: '7' });
+        expect(updates).toContainEqual({ widgetName: 'seed', value: 42 });
+        expect(updates).toContainEqual({ widgetName: 'steps', value: 30 });
+        expect(updates).toContainEqual({ widgetName: 'cfg', value: 7 });
         expect(updates).toContainEqual({ widgetName: 'sampler_name', value: 'euler_ancestral' });
         expect(updates).toContainEqual({ widgetName: 'scheduler', value: 'karras' });
     });
@@ -221,7 +221,7 @@ describe('findMatchingWidgets', () => {
         const updates = findMatchingWidgets(['noise_seed', 'steps', 'cfg', 'sampler_name', 'scheduler'], resolved);
         const seedUpdate = updates.find(u => u.widgetName === 'noise_seed');
         expect(seedUpdate).toBeDefined();
-        expect(seedUpdate.value).toBe('42');
+        expect(seedUpdate.value).toBe(42);
     });
 
     it('matches rgthree-style sampler widget name', () => {

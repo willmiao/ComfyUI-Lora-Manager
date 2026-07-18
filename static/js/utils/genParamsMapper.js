@@ -254,7 +254,7 @@ function findMatchingWidgets(nodeWidgetNames, resolvedParams) {
         const candidates = PARAM_TO_WIDGET_CANDIDATES[key] || [key];
         for (const candidate of candidates) {
             if (widgetSet.has(candidate.toLowerCase())) {
-                updates.push({ widgetName: candidate, value: String(value) });
+                updates.push({ widgetName: candidate, value });
                 break;
             }
         }

@@ -605,7 +605,7 @@ function isNodeEnabled(node) {
   if (!node) {
     return false;
   }
-  // ComfyUI node mode: 0 = Normal/Enabled, others = Always/Never/OnEvent
+  // ComfyUI node mode (LGraphEventMode): 0 = Always, 2 = Never, 4 = Bypass
   return node.mode === undefined || node.mode === 0;
 }
 
