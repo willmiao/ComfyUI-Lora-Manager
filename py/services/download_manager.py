@@ -682,7 +682,10 @@ class DownloadManager:
                     u for u in download_urls if not u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
                 ]
                 download_urls = non_civitai_urls + civitai_urls
-        else:
+
+        # Fallback: when mirrors is empty or all mirrors have been deleted,
+        # use the file's downloadUrl directly (e.g. CivitAI download endpoint).
+        if not download_urls:
             download_url = file_info.get("downloadUrl")
             if download_url:
                 download_urls.append(normalize_civitai_download_url(download_url))
@@ -1520,35 +1523,8 @@ class DownloadManager:
 
             if not file_info:
                 return {"success": False, "error": "No suitable file found in metadata"}
-            mirrors = file_info.get("mirrors") or []
-            download_urls = []
-            if mirrors:
-                for mirror in mirrors:
-                    if mirror.get("deletedAt") is None and mirror.get("url"):
-                        download_urls.append(
-                            normalize_civitai_download_url(mirror["url"])
-                        )
 
-                # When source is 'civarchive', prioritize non-Civitai URLs
-                # This avoids failed downloads from deleted Civitai models
-                if source == "civarchive" and len(download_urls) > 1:
-                    civitai_urls = [
-                        u
-                        for u in download_urls
-                        if u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
-                    ]
-                    non_civitai_urls = [
-                        u
-                        for u in download_urls
-                        if not u.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES)
-                    ]
-                    download_urls = non_civitai_urls + civitai_urls
-            else:
-                download_url = file_info.get("downloadUrl")
-                if download_url:
-                    download_urls.append(
-                        normalize_civitai_download_url(download_url)
-                    )
+            download_urls = self._build_download_urls_from_file_info(file_info, source=source)
 
             if not download_urls:
                 return {"success": False, "error": "No mirror URL found"}
