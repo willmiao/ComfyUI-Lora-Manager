@@ -434,6 +434,8 @@
         "layoutSettings": {
             "groupByModel": "按模型分组",
             "groupByModelHelp": "开启后，每个 Civitai 模型仅显示最新版本的单张卡片，旧版本将被隐藏。",
+            "recipePreviewFullImage": "完整配方预览",
+            "recipePreviewFullImageHelp": "在卡片中以信箱模式（两侧留边）显示完整的配方预览图，而不是裁剪填满。仅影响配方页面。",
             "displayDensity": "显示密度",
             "displayDensityOptions": {
                 "default": "默认",

@@ -434,6 +434,8 @@
         "layoutSettings": {
             "groupByModel": "모델별 그룹화",
             "groupByModelHelp": "활성화하면 각 Civitai 모델의 최신 버전만 단일 카드로 표시되며, 이전 버전은 숨겨집니다.",
+            "recipePreviewFullImage": "레시피 미리보기 전체 표시",
+            "recipePreviewFullImageHelp": "레시피 미리보기 이미지를 잘라서 채우는 대신 카드 안에 전체를 표시합니다(양옆에 여백 바 포함). 레시피 페이지에만 적용됩니다.",
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
                 "default": "기본",

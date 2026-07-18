@@ -1041,6 +1041,12 @@ export class SettingsManager {
             groupByModelCheckbox.checked = !!state.global.settings.group_by_model;
         }
 
+        // Set recipe preview full image
+        const recipePreviewFullImageCheckbox = document.getElementById('recipePreviewFullImage');
+        if (recipePreviewFullImageCheckbox) {
+            recipePreviewFullImageCheckbox.checked = !!state.global.settings.recipe_preview_full_image;
+        }
+
         // Set model name display setting
         const modelNameDisplaySelect = document.getElementById('modelNameDisplay');
         if (modelNameDisplaySelect) {
@@ -3305,6 +3311,10 @@ export class SettingsManager {
         // Apply group-by-model mode
         const groupByModel = !!state.global.settings.group_by_model;
         document.body.classList.toggle('group-by-model', groupByModel);
+
+        // Apply recipe preview full-image (letterboxed) mode
+        const recipePreviewFullImage = !!state.global.settings.recipe_preview_full_image;
+        document.body.classList.toggle('recipe-preview-contain', recipePreviewFullImage);
 
     }
 }

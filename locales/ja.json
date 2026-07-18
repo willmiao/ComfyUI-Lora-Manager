@@ -434,6 +434,8 @@
         "layoutSettings": {
             "groupByModel": "モデルでグループ化",
             "groupByModelHelp": "有効にすると、各Civitaiモデルの最新バージョンのみが1枚のカードとして表示され、古いバージョンは非表示になります。",
+            "recipePreviewFullImage": "レシピプレビューを全体表示",
+            "recipePreviewFullImageHelp": "レシピのプレビュー画像を切り抜いて埋める代わりに、カード内に全体を表示します（両側に余白の帯が入ります）。レシピページのみに適用されます。",
             "displayDensity": "表示密度",
             "displayDensityOptions": {
                 "default": "デフォルト",

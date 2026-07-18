@@ -434,6 +434,8 @@
         "layoutSettings": {
             "groupByModel": "Nach Modell gruppieren",
             "groupByModelHelp": "Wenn aktiviert, wird nur die neueste Version jedes Civitai-Modells als einzelne Karte angezeigt. Ältere Versionen werden ausgeblendet.",
+            "recipePreviewFullImage": "Vollständige Rezeptvorschau",
+            "recipePreviewFullImageHelp": "Das gesamte Rezept-Vorschaubild in der Karte anzeigen (mit Balken an den Rändern), anstatt es zum Ausfüllen zuzuschneiden. Betrifft nur die Rezeptseite.",
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
                 "default": "Standard",

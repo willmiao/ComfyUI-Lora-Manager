@@ -434,6 +434,8 @@
         "layoutSettings": {
             "groupByModel": "קיבוץ לפי דגם",
             "groupByModelHelp": "כאשר מופעל, רק הגרסה העדכנית ביותר של כל דגם Civitai מוצגת ככרטיס בודד. גרסאות ישנות יותר מוסתרות.",
+            "recipePreviewFullImage": "תצוגה מקדימה מלאה של מתכון",
+            "recipePreviewFullImageHelp": "הצגת תמונת התצוגה המקדימה המלאה של המתכון בתוך הכרטיס (עם פסים בצדדים) במקום חיתוך למילוי. משפיע רק על עמוד המתכונים.",
             "displayDensity": "צפיפות תצוגה",
             "displayDensityOptions": {
                 "default": "ברירת מחדל",

@@ -661,6 +661,25 @@
                                 </div>
                             </div>
 
+                            <!-- Recipe preview full image toggle -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="recipePreviewFullImage">
+                                        {{ t('settings.layoutSettings.recipePreviewFullImage') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.recipePreviewFullImageHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="recipePreviewFullImage"
+                                                   onchange="settingsManager.saveToggleSetting('recipePreviewFullImage', 'recipe_preview_full_image')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">

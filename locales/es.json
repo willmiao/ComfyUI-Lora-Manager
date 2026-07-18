@@ -434,6 +434,8 @@
         "layoutSettings": {
             "groupByModel": "Agrupar por modelo",
             "groupByModelHelp": "Cuando está activado, solo se muestra la versión más reciente de cada modelo de Civitai como una tarjeta única. Las versiones anteriores están ocultas.",
+            "recipePreviewFullImage": "Vista previa completa de la receta",
+            "recipePreviewFullImageHelp": "Mostrar la imagen de vista previa completa de la receta dentro de la tarjeta (con barras a los lados) en lugar de recortarla para rellenar. Solo afecta a la página de Recetas.",
             "displayDensity": "Densidad de visualización",
             "displayDensityOptions": {
                 "default": "Predeterminado",
