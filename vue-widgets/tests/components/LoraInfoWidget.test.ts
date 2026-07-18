@@ -30,6 +30,7 @@ function createMockToast() {
 function createMockWidget(value?: unknown) {
   type PendingInfo = { name: string; notes: string; filePath: string; activeTab?: string } | null
   const widget = {
+    options: {} as { getValue?: () => unknown; setValue?: (v: unknown) => void },
     serializeValue: (async () => null) as () => Promise<unknown>,
     value: (value ?? undefined) as unknown,
     onSetValue: undefined as unknown as ((v: unknown) => void),
