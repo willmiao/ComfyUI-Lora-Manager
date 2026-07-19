@@ -587,6 +587,95 @@ class PersistentModelCache:
         placeholders = ", ".join(["?"] * len(self._MODEL_COLUMNS))
         return f"INSERT INTO models ({columns}) VALUES ({placeholders})"
 
+    def update_single_model(
+        self,
+        model_type: str,
+        new_item: Dict,
+        old_item: Optional[Dict] = None,
+    ) -> None:
+        """Update a single model row in the persistent cache.
+
+        A lightweight alternative to :meth:`save_cache` that performs a targeted
+        DELETE + INSERT for the model row and computes incremental tag / hash-index
+        deltas from *old_item*.  When *old_item* is omitted the previous tags and
+        hash are not cleaned up (callers should only omit it for brand-new entries).
+
+        All operations run inside a single transaction so readers see a consistent
+        view.
+        """
+        if not self.is_enabled():
+            return
+        if not self._schema_initialized:
+            self._initialize_schema()
+        if not self._schema_initialized:
+            return
+
+        file_path: Optional[str] = new_item.get("file_path")
+        if not file_path:
+            return
+
+        try:
+            with self._db_lock:
+                conn = self._connect()
+                try:
+                    conn.execute("PRAGMA foreign_keys = ON")
+                    conn.execute("BEGIN")
+
+                    # --- model row (DELETE + INSERT = upsert) ---
+                    conn.execute(
+                        "DELETE FROM models WHERE model_type = ? AND file_path = ?",
+                        (model_type, file_path),
+                    )
+                    row = self._prepare_model_row(model_type, new_item)
+                    conn.execute(self._insert_model_sql(), row)
+
+                    # --- tags ---
+                    new_tags: set = set(new_item.get("tags") or [])
+                    old_tags: set = set(old_item.get("tags") or []) if old_item else set()
+                    tags_to_delete = old_tags - new_tags
+                    tags_to_insert = new_tags - old_tags
+
+                    if tags_to_delete:
+                        conn.executemany(
+                            "DELETE FROM model_tags WHERE model_type = ? AND file_path = ? AND tag = ?",
+                            [(model_type, file_path, t) for t in tags_to_delete],
+                        )
+                    if tags_to_insert:
+                        conn.executemany(
+                            "INSERT INTO model_tags (model_type, file_path, tag) VALUES (?, ?, ?)",
+                            [(model_type, file_path, t) for t in tags_to_insert],
+                        )
+
+                    # --- hash_index ---
+                    new_sha: Optional[str] = (new_item.get("sha256") or "").lower() or None
+                    old_sha: Optional[str] = (
+                        (old_item.get("sha256") or "").lower() or None
+                    ) if old_item else None
+                    if new_sha != old_sha:
+                        if old_sha:
+                            conn.execute(
+                                "DELETE FROM hash_index WHERE model_type = ? AND sha256 = ? AND file_path = ?",
+                                (model_type, old_sha, file_path),
+                            )
+                        if new_sha:
+                            conn.execute(
+                                "INSERT OR IGNORE INTO hash_index (model_type, sha256, file_path) VALUES (?, ?, ?)",
+                                (model_type, new_sha, file_path),
+                            )
+
+                    conn.execute("COMMIT")
+                except Exception:
+                    conn.execute("ROLLBACK")
+                    raise
+                finally:
+                    conn.close()
+        except Exception as exc:
+            logger.warning(
+                "Failed to update single model in persistent cache (%s): %s",
+                file_path,
+                exc,
+            )
+
     def _load_tags(self, conn: sqlite3.Connection, model_type: str) -> Dict[str, List[str]]:
         tag_rows = conn.execute(
             "SELECT file_path, tag FROM model_tags WHERE model_type = ?",

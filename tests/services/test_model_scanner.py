@@ -667,3 +667,310 @@ async def test_log_duplicate_filename_summary_silent_when_no_duplicates(tmp_path
     # No warning should be logged when there are no duplicates
     for record in caplog.records:
         assert "Duplicate filename conflict detected" not in record.message
+
+
+# ── _cache_entries_differ ────────────────────────────────────────────
+
+
+@pytest.mark.parametrize(
+    "a_tags, b_tags, expect_differ",
+    [
+        (["alpha", "beta"], ["beta", "alpha"], False),  # order-insensitive
+        (["alpha"], ["alpha", "beta"], True),            # count differs
+        ([], ["alpha"], True),
+        (None, [], False),                               # None ≈ []
+        (["alpha"], None, True),
+    ],
+)
+def test_cache_entries_differ_tags(a_tags, b_tags, expect_differ):
+    base = {"file_path": "/m/a.safetensors", "model_name": "A", "size": 1}
+    entry_a = {**base, "tags": a_tags}
+    entry_b = {**base, "tags": b_tags}
+    assert ModelScanner._cache_entries_differ(entry_a, entry_b) == expect_differ
+
+
+def test_cache_entries_differ_identical():
+    entry = {
+        "file_path": "/m/a.safetensors", "model_name": "A", "size": 1,
+        "tags": ["x"], "civitai": {"id": 1}, "notes": "hi",
+    }
+    assert ModelScanner._cache_entries_differ(entry, dict(entry)) is False
+
+
+def test_cache_entries_differ_field_changed():
+    a = {"file_path": "/m/a.safetensors", "model_name": "A", "size": 1}
+    b = {**a, "model_name": "B"}
+    assert ModelScanner._cache_entries_differ(a, b) is True
+
+
+def test_cache_entries_differ_extra_key():
+    a = {"file_path": "/m/a.safetensors", "model_name": "A"}
+    b = {**a, "extra_field": "value"}
+    assert ModelScanner._cache_entries_differ(a, b) is True
+
+
+# ── sync_cache_from_metadata ─────────────────────────────────────────
+
+
+def _make_cache_entry(**overrides) -> dict:
+    entry = {
+        "file_path": "/m/a.safetensors",
+        "model_name": "TestModel",
+        "file_name": "a",
+        "folder": "",
+        "size": 100,
+        "modified": 10.0,
+        "sha256": "abc123",
+        "base_model": "SD1.5",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "favorite": False,
+        "notes": "old note",
+        "usage_tips": "{}",
+        "metadata_source": None,
+        "exclude": False,
+        "db_checked": False,
+        "last_checked_at": 0.0,
+        "tags": ["alpha"],
+        "civitai": {"id": 111, "modelId": 222, "name": "v1"},
+        "civitai_deleted": False,
+        "skip_metadata_refresh": False,
+        "hf_url": "",
+        "license_flags": 113,
+        "hash_status": "completed",
+    }
+    entry.update(overrides)
+    return entry
+
+
+@pytest.mark.asyncio
+async def test_sync_cache_no_change(tmp_path: Path):
+    """When metadata matches the cache entry, return False and mutate nothing."""
+    scanner = DummyScanner(tmp_path)
+    entry = _make_cache_entry()
+    scanner._cache = ModelCache(
+        raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
+    )
+    await scanner._cache.resort()
+    scanner._tags_count = {"alpha": 1}
+    scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
+
+    # metadata_dict that would produce the identical cache entry
+    metadata_dict = {
+        "file_path": "/m/a.safetensors",
+        "model_name": "TestModel",
+        "file_name": "a",
+        "folder": "",
+        "size": 100,
+        "modified": 10.0,
+        "sha256": "abc123",
+        "base_model": "SD1.5",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "favorite": False,
+        "notes": "old note",
+        "usage_tips": "{}",
+        "tags": ["alpha"],
+        "civitai": {"id": 111, "modelId": 222, "name": "v1"},
+        "hf_url": "",
+    }
+
+    changed = await scanner.sync_cache_from_metadata(
+        "/m/a.safetensors", metadata_dict
+    )
+    assert changed is False
+    # Verify cache was NOT mutated
+    cached = await scanner.get_cached_data()
+    assert cached.raw_data[0]["notes"] == "old note"
+
+
+@pytest.mark.asyncio
+async def test_sync_cache_in_place_update(tmp_path: Path):
+    """When metadata differs, update the cache entry in-place."""
+    scanner = DummyScanner(tmp_path)
+    entry = _make_cache_entry(notes="old note", tags=["alpha"], model_name="OldName")
+    scanner._cache = ModelCache(
+        raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
+    )
+    await scanner._cache.resort()
+    scanner._tags_count = {"alpha": 1}
+    scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
+
+    # Capture the exact dict object in raw_data before sync
+    original_entry_ref = scanner._cache.raw_data[0]
+
+    metadata_dict = {
+        "file_path": "/m/a.safetensors",
+        "model_name": "NewName",
+        "file_name": "a",
+        "folder": "",
+        "size": 100,
+        "modified": 10.0,
+        "sha256": "abc123",
+        "base_model": "SD1.5",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "favorite": False,
+        "notes": "new note",
+        "usage_tips": "{}",
+        "tags": ["beta", "gamma"],
+        "civitai": {"id": 111, "modelId": 222, "name": "v1"},
+        "hf_url": "",
+    }
+
+    changed = await scanner.sync_cache_from_metadata(
+        "/m/a.safetensors", metadata_dict
+    )
+    assert changed is True
+
+    cached = await scanner.get_cached_data()
+    updated = cached.raw_data[0]
+    # In-place: the same dict object persisted in raw_data
+    assert updated is original_entry_ref
+    assert updated["notes"] == "new note"
+    assert updated["model_name"] == "NewName"
+    assert sorted(updated["tags"]) == ["beta", "gamma"]
+    # Tag counts updated incrementally
+    assert scanner._tags_count.get("alpha", 0) == 0
+    assert scanner._tags_count.get("beta", 0) == 1
+    assert scanner._tags_count.get("gamma", 0) == 1
+
+
+@pytest.mark.asyncio
+async def test_sync_cache_not_in_cache_delegates(tmp_path: Path):
+    """When the file_path is not in the cache at all, fall back to full update."""
+    scanner = DummyScanner(tmp_path)
+    scanner._cache = ModelCache(raw_data=[], folders=[], name_display_mode="model_name")
+    await scanner._cache.resort()
+
+    metadata_dict = {
+        "file_path": "/m/b.safetensors",
+        "model_name": "BrandNew",
+        "file_name": "b",
+        "folder": "",
+        "size": 200,
+        "modified": 20.0,
+        "sha256": "def456",
+        "base_model": "SDXL",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "favorite": False,
+        "notes": "",
+        "usage_tips": "{}",
+        "tags": [],
+        "civitai": {},
+        "hf_url": "",
+    }
+
+    changed = await scanner.sync_cache_from_metadata(
+        "/m/b.safetensors", metadata_dict
+    )
+    assert changed is True
+    cached = await scanner.get_cached_data()
+    assert len(cached.raw_data) == 1
+    assert cached.raw_data[0]["model_name"] == "BrandNew"
+
+
+@pytest.mark.asyncio
+async def test_sync_cache_conditional_resort_skipped(tmp_path: Path, monkeypatch):
+    """When only non-sort-key fields change, resort() is NOT called."""
+    scanner = DummyScanner(tmp_path)
+    entry = _make_cache_entry(notes="old note", model_name="SameName")
+    scanner._cache = ModelCache(
+        raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
+    )
+    await scanner._cache.resort()
+    scanner._cache._last_sort = ("name", "asc")  # name sort is active
+    scanner._tags_count = {"alpha": 1}
+    scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
+
+    # Track resort calls
+    resort_called = False
+    original_resort = scanner._cache.resort
+
+    async def tracking_resort():
+        nonlocal resort_called
+        resort_called = True
+        await original_resort()
+
+    monkeypatch.setattr(scanner._cache, "resort", tracking_resort)
+
+    metadata_dict = {
+        "file_path": "/m/a.safetensors",
+        "model_name": "SameName",  # unchanged — no resort needed
+        "file_name": "a",
+        "folder": "",
+        "size": 100,
+        "modified": 10.0,
+        "sha256": "abc123",
+        "base_model": "SD1.5",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "favorite": False,
+        "notes": "updated note",  # changed, but not sort-relevant
+        "usage_tips": "{}",
+        "tags": ["alpha"],
+        "civitai": {"id": 111, "modelId": 222, "name": "v1"},
+        "hf_url": "",
+    }
+
+    changed = await scanner.sync_cache_from_metadata(
+        "/m/a.safetensors", metadata_dict
+    )
+    assert changed is True
+    assert resort_called is False
+
+
+@pytest.mark.asyncio
+async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypatch):
+    """When the sort-key field changes, resort() IS called."""
+    scanner = DummyScanner(tmp_path)
+    entry = _make_cache_entry(model_name="OldName")
+    scanner._cache = ModelCache(
+        raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
+    )
+    await scanner._cache.resort()
+    scanner._cache._last_sort = ("name", "asc")
+    scanner._tags_count = {"alpha": 1}
+    scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
+
+    resort_calls = 0
+    original_resort = scanner._cache.resort
+
+    async def tracking_resort():
+        nonlocal resort_calls
+        resort_calls += 1
+        await original_resort()
+
+    monkeypatch.setattr(scanner._cache, "resort", tracking_resort)
+
+    metadata_dict = {
+        "file_path": "/m/a.safetensors",
+        "model_name": "NewName",  # changed — should trigger resort
+        "file_name": "a",
+        "folder": "",
+        "size": 100,
+        "modified": 10.0,
+        "sha256": "abc123",
+        "base_model": "SD1.5",
+        "preview_url": "",
+        "preview_nsfw_level": 0,
+        "from_civitai": True,
+        "favorite": False,
+        "notes": "old note",
+        "usage_tips": "{}",
+        "tags": ["alpha"],
+        "civitai": {"id": 111, "modelId": 222, "name": "v1"},
+        "hf_url": "",
+    }
+
+    changed = await scanner.sync_cache_from_metadata(
+        "/m/a.safetensors", metadata_dict
+    )
+    assert changed is True
+    assert resort_calls == 1

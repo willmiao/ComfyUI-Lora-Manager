@@ -1092,6 +1092,11 @@ class BaseModelService(ABC):
 
         Listing/search endpoints return lightweight cache entries; this method performs
         a lazy read of the on-disk metadata snapshot when callers need full detail.
+
+        As a beneficial side effect, the in-memory and persistent caches are
+        opportunistically synchronised with the on-disk metadata — this keeps the
+        caches fresh even when a ``.metadata.json`` file was edited outside of the
+        normal save path (e.g. manually or by an external script).
         """
         metadata, should_skip = await MetadataManager.load_metadata(
             file_path, self.metadata_class
@@ -1108,6 +1113,19 @@ class BaseModelService(ABC):
             asyncio.create_task(
                 MetadataManager.save_metadata(file_path, metadata)
             )
+
+        # Opportunistically sync the in-memory + persistent caches.
+        # The .metadata.json disk read is already paid for; the sync only
+        # performs work when the cache is actually stale, and uses targeted,
+        # in-place operations to minimise overhead even with large model sets.
+        #
+        # Fire-and-forget by design: the task is intentionally untracked.
+        # sync_cache_from_metadata handles its own errors internally.
+        asyncio.create_task(
+            self.scanner.sync_cache_from_metadata(
+                file_path, metadata.to_dict()
+            )
+        )
 
         return self.filter_civitai_data(metadata.to_dict().get("civitai", {}))
 
