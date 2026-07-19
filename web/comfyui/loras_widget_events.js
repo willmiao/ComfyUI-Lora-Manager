@@ -438,7 +438,9 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
       if (firstEntry) {
         const rect = firstEntry.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        dropIndicator.style.top = `${(rect.top - containerRect.top - 2) / scale}px`;
+        // Convert GBCR visual offset to container-local space (rect/containerRect are post-scale,
+        // scrollTop is pre-scale), so only the visual-diff portion is divided by scale
+        dropIndicator.style.top = `${(rect.top - containerRect.top) / scale + container.scrollTop - 2}px`;
         dropIndicator.style.opacity = '1';
       }
     } else if (targetIndex < entries.length) {
@@ -447,7 +449,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
       if (targetEntry) {
         const rect = targetEntry.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        dropIndicator.style.top = `${(rect.top - containerRect.top - 2) / scale}px`;
+        dropIndicator.style.top = `${(rect.top - containerRect.top) / scale + container.scrollTop - 2}px`;
         dropIndicator.style.opacity = '1';
       }
     } else {
@@ -456,7 +458,7 @@ export function initReorderDrag(dragHandle, loraName, widget, renderFunction) {
       if (lastEntry) {
         const rect = lastEntry.getBoundingClientRect();
         const containerRect = container.getBoundingClientRect();
-        dropIndicator.style.top = `${(rect.bottom - containerRect.top + 2) / scale}px`;
+        dropIndicator.style.top = `${(rect.bottom - containerRect.top) / scale + container.scrollTop + 2}px`;
         dropIndicator.style.opacity = '1';
       }
     }
