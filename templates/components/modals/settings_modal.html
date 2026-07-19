@@ -1401,7 +1401,26 @@
                                 <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
                             </div>
                             
-                            <!-- Metadata Archive -->
+                            <!-- CivArchive API provider toggle -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="enableCivarchiveApi">
+                                            {{ t('settings.metadataArchive.enableCivarchiveApi') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataArchive.enableCivarchiveApiHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="enableCivarchiveApi"
+                                                   onchange="settingsManager.saveToggleSetting('enableCivarchiveApi', 'enable_civarchive_api')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Metadata Archive DB -->
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
@@ -1419,13 +1438,13 @@
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <div class="setting-item">
                                 <div class="metadata-archive-status" id="metadataArchiveStatus">
                                     <!-- Status will be populated by JavaScript -->
                                 </div>
                             </div>
-                            
+
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
@@ -1441,6 +1460,24 @@
                                         <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
                                             {{ t('settings.metadataArchive.removeButton') }}
                                         </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Metadata provider fallback order -->
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="metadataProviderOrder">
+                                            {{ t('settings.metadataArchive.providerOrder') }}
+                                            <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataArchive.providerOrderHelp') }}"></i>
+                                        </label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="metadataProviderOrder" onchange="settingsManager.saveSelectSetting('metadataProviderOrder', 'metadata_provider_order')">
+                                            <option value="civitai_archive_sqlite">{{ t('settings.metadataArchive.providerOrderCivitaiArchiveSqlite') }}</option>
+                                            <option value="civitai_sqlite_archive">{{ t('settings.metadataArchive.providerOrderCivitaiSqliteArchive') }}</option>
+                                        </select>
                                     </div>
                                 </div>
                             </div>

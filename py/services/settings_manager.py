@@ -65,6 +65,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "onboarding_completed": False,
     "dismissed_banners": [],
     "enable_metadata_archive_db": False,
+    "enable_civarchive_api": True,
+    "metadata_provider_order": "civitai_archive_sqlite",
     "proxy_enabled": False,
     "proxy_host": "",
     "proxy_port": "",

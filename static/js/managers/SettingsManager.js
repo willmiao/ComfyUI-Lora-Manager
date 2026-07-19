@@ -2346,6 +2346,16 @@ export class SettingsManager {
                 enableMetadataArchiveCheckbox.checked = state.global.settings.enable_metadata_archive_db || false;
             }
 
+            const enableCivarchiveApiCheckbox = document.getElementById('enableCivarchiveApi');
+            if (enableCivarchiveApiCheckbox) {
+                enableCivarchiveApiCheckbox.checked = state.global.settings.enable_civarchive_api ?? true;
+            }
+
+            const metadataProviderOrderSelect = document.getElementById('metadataProviderOrder');
+            if (metadataProviderOrderSelect) {
+                metadataProviderOrderSelect.value = state.global.settings.metadata_provider_order || 'civitai_archive_sqlite';
+            }
+
             // Load status
             await this.updateMetadataArchiveStatus();
         } catch (error) {

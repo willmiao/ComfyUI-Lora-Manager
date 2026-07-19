@@ -640,7 +640,13 @@
       "preparing": "Preparing download...",
       "connecting": "Connecting to download server...",
       "completed": "Completed",
-      "downloadComplete": "Download completed successfully"
+      "downloadComplete": "Download completed successfully",
+      "enableCivarchiveApi": "Enable CivArchive API as metadata provider",
+      "enableCivarchiveApiHelp": "When on, CivArchive API is used as a fallback source for model metadata (e.g. for models deleted from CivitAI). Turn off to avoid CivArchive rate limits entirely.",
+      "providerOrder": "Metadata provider fallback order",
+      "providerOrderHelp": "CivitAI API is always tried first. Choose the order of the remaining providers when looking up metadata.",
+      "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
+      "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
     },
     "proxySettings": {
       "enableProxy": "Enable App-level Proxy",

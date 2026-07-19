@@ -1570,7 +1570,11 @@ class SettingsHandler:
                 else:
                     self._settings.set(key, value)
 
-                if key == "enable_metadata_archive_db":
+                if key in (
+                    "enable_metadata_archive_db",
+                    "enable_civarchive_api",
+                    "metadata_provider_order",
+                ):
                     await self._metadata_provider_updater()
 
                 if key in self._PROXY_KEYS:
