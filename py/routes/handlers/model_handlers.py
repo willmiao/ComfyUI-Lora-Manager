@@ -973,10 +973,28 @@ class ModelQueryHandler:
             limit = int(request.query.get("limit", "20"))
             if limit < 0:
                 limit = 20
+            elif limit > 200:
+                limit = 20
             top_tags = await self._service.get_top_tags(limit)
             return web.json_response({"success": True, "tags": top_tags})
         except Exception as exc:
             self._logger.error("Error getting top tags: %s", exc, exc_info=True)
+            return web.json_response(
+                {"success": False, "error": "Internal server error"}, status=500
+            )
+
+    async def search_tags(self, request: web.Request) -> web.Response:
+        try:
+            query = request.query.get("q", "")
+            limit = int(request.query.get("limit", "20"))
+            if limit < 0:
+                limit = 20
+            elif limit > 200:
+                limit = 20
+            tags = await self._service.search_tags(query, limit)
+            return web.json_response({"success": True, "tags": tags})
+        except Exception as exc:
+            self._logger.error("Error searching tags: %s", exc, exc_info=True)
             return web.json_response(
                 {"success": False, "error": "Internal server error"}, status=500
             )
@@ -2947,6 +2965,7 @@ class ModelHandlerSet:
             "bulk_delete_models": self.management.bulk_delete_models,
             "verify_duplicates": self.management.verify_duplicates,
             "get_top_tags": self.query.get_top_tags,
+            "search_tags": self.query.search_tags,
             "get_base_models": self.query.get_base_models,
             "get_model_types": self.query.get_model_types,
             "scan_models": self.query.scan_models,

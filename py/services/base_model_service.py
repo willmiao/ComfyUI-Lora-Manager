@@ -804,6 +804,12 @@ class BaseModelService(ABC):
         """Get top tags sorted by frequency"""
         return await self.scanner.get_top_tags(limit)
 
+    async def search_tags(
+        self, query: str, limit: int = 50
+    ) -> List[Dict]:
+        """Search tags by substring, sorted by frequency"""
+        return await self.scanner.search_tags(query, limit)
+
     async def get_base_models(self, limit: int = 20) -> List[Dict]:
         """Get base models sorted by frequency"""
         return await self.scanner.get_base_models(limit)

@@ -274,6 +274,11 @@
     font-style: italic;
 }
 
+/* Inline extra tags (selected but not in top-20/appended after API results) */
+.filter-tag.extra-tag {
+    border-style: dashed;
+}
+
 /* Ensure solid border and full opacity when active or excluded */
 .filter-tag.special-tag.active,
 .filter-tag.special-tag.exclude {

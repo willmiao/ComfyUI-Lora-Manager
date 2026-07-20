@@ -1830,7 +1830,32 @@ class ModelScanner:
         if limit == 0:
             return sorted_tags
         return sorted_tags[:limit]
-        
+
+    async def search_tags(
+        self, query: str, limit: int = 50
+    ) -> List[Dict[str, any]]:
+        """Search tags by case-insensitive substring match, sorted by count.
+
+        If query is empty, behaves like get_top_tags (returns top ``limit``
+        tags). If limit is 0, all matching tags are returned.
+        """
+        await self.get_cached_data()
+
+        normalized_query = (query or "").strip().lower()
+        if not normalized_query:
+            return await self.get_top_tags(limit if limit > 0 else 20)
+
+        matched = [
+            {"tag": tag, "count": count}
+            for tag, count in self._tags_count.items()
+            if normalized_query in tag.lower()
+        ]
+        matched.sort(key=lambda x: x["count"], reverse=True)
+
+        if limit == 0:
+            return matched
+        return matched[:limit]
+
     async def get_base_models(self, limit: int = 20) -> List[Dict[str, any]]:
         """Get base models sorted by count. If limit is 0, return all."""
         cache = await self.get_cached_data()

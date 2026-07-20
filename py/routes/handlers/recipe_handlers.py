@@ -72,6 +72,7 @@ class RecipeHandlerSet:
             "save_recipe": self.management.save_recipe,
             "delete_recipe": self.management.delete_recipe,
             "get_top_tags": self.query.get_top_tags,
+            "search_tags": self.query.search_tags,
             "get_base_models": self.query.get_base_models,
             "get_roots": self.query.get_roots,
             "get_folders": self.query.get_folders,
@@ -317,12 +318,11 @@ class RecipeQueryHandler:
                 raise RuntimeError("Recipe scanner unavailable")
 
             limit = int(request.query.get("limit", "20"))
-            cache = await recipe_scanner.get_cached_data()
-
-            tag_counts: Dict[str, int] = {}
-            for recipe in getattr(cache, "raw_data", []):
-                for tag in recipe.get("tags", []) or []:
-                    tag_counts[tag] = tag_counts.get(tag, 0) + 1
+            if limit < 0:
+                limit = 20
+            elif limit > 200:
+                limit = 20
+            tag_counts = await self._get_recipe_tag_counts(recipe_scanner)
 
             sorted_tags = [
                 {"tag": tag, "count": count} for tag, count in tag_counts.items()
@@ -332,6 +332,55 @@ class RecipeQueryHandler:
         except Exception as exc:
             self._logger.error("Error retrieving top tags: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def search_tags(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            query = request.query.get("q", "")
+            limit = int(request.query.get("limit", "20"))
+            if limit < 0:
+                limit = 20
+            elif limit > 200:
+                limit = 20
+
+            tag_counts = await self._get_recipe_tag_counts(recipe_scanner)
+            normalized_query = (query or "").strip().lower()
+            if not normalized_query:
+                sorted_tags = [
+                    {"tag": tag, "count": count} for tag, count in tag_counts.items()
+                ]
+                sorted_tags.sort(key=lambda entry: entry["count"], reverse=True)
+                return web.json_response(
+                    {"success": True, "tags": sorted_tags[: (limit if limit > 0 else 20)]}
+                )
+
+            matched = [
+                {"tag": tag, "count": count}
+                for tag, count in tag_counts.items()
+                if normalized_query in tag.lower()
+            ]
+            matched.sort(key=lambda entry: entry["count"], reverse=True)
+            if limit == 0:
+                result = matched
+            else:
+                result = matched[:limit]
+            return web.json_response({"success": True, "tags": result})
+        except Exception as exc:
+            self._logger.error("Error searching recipe tags: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def _get_recipe_tag_counts(self, recipe_scanner) -> Dict[str, int]:
+        """Compute tag->count mapping from cached recipe data."""
+        cache = await recipe_scanner.get_cached_data()
+        tag_counts: Dict[str, int] = {}
+        for recipe in getattr(cache, "raw_data", []):
+            for tag in recipe.get("tags", []) or []:
+                tag_counts[tag] = tag_counts.get(tag, 0) + 1
+        return tag_counts
 
     async def get_base_models(self, request: web.Request) -> web.Response:
         try:

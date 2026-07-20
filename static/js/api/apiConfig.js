@@ -93,6 +93,7 @@ export function getApiEndpoints(modelType) {
         // Query operations
         scan: `/api/lm/${modelType}/scan`,
         topTags: `/api/lm/${modelType}/top-tags`,
+        searchTags: `/api/lm/${modelType}/search-tags`,
         baseModels: `/api/lm/${modelType}/base-models`,
         roots: `/api/lm/${modelType}/roots`,
         folders: `/api/lm/${modelType}/folders`,

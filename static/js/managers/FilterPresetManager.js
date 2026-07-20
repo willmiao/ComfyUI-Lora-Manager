@@ -478,11 +478,9 @@ export class FilterPresetManager {
             const pageState = getCurrentPageState();
             pageState.filters = this.filterManager.cloneFilters();
 
-            // If tags haven't been loaded yet, load them first
-            if (!this.filterManager.tagsLoaded) {
-                await this.filterManager.loadTopTags();
-                this.filterManager.tagsLoaded = true;
-            }
+            // Refresh tag display so preset's non-top-20 tags appear inline
+            await this.filterManager.loadTopTags();
+            this.filterManager.tagsLoaded = true;
 
             // Check again after async operation
             if (requestId !== this.applyPresetRequestId) return;

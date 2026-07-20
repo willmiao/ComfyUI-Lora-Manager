@@ -29,6 +29,7 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/recipes/save", "save_recipe"),
     RouteDefinition("DELETE", "/api/lm/recipe/{recipe_id}", "delete_recipe"),
     RouteDefinition("GET", "/api/lm/recipes/top-tags", "get_top_tags"),
+    RouteDefinition("GET", "/api/lm/recipes/search-tags", "search_tags"),
     RouteDefinition("GET", "/api/lm/recipes/base-models", "get_base_models"),
     RouteDefinition("GET", "/api/lm/recipes/roots", "get_roots"),
     RouteDefinition("GET", "/api/lm/recipes/folders", "get_folders"),

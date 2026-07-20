@@ -1,6 +1,7 @@
 import { getCurrentPageState } from '../state/index.js';
 import { showToast, updatePanelPositions } from '../utils/uiHelpers.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
+import { getApiEndpoints } from '../api/apiConfig.js';
 import { removeStorageItem, setStorageItem, getStorageItem } from '../utils/storageHelpers.js';
 import { MODEL_TYPE_DISPLAY_NAMES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
@@ -23,6 +24,12 @@ export class FilterManager {
         this.baseModelSearchInput = document.getElementById('baseModelSearchInput');
         this.baseModelOptions = [];
         this.tagsLoaded = false;
+
+        // Tag search state
+        this.modelTagsSearchInput = document.getElementById('modelTagsSearchInput');
+        this.tagSearchDebounceTimer = null;
+        this.tagSearchAbortController = null;
+        this.tagSearchQuery = '';
 
         // Initialize preset manager
         this.presetManager = new FilterPresetManager({
@@ -123,6 +130,60 @@ export class FilterManager {
                 this.renderBaseModelTags();
             });
         }
+
+        if (this.modelTagsSearchInput) {
+            this.modelTagsSearchInput.addEventListener('input', () => {
+                clearTimeout(this.tagSearchDebounceTimer);
+                this.tagSearchDebounceTimer = setTimeout(() => {
+                    this.handleTagSearchInput();
+                }, 150);
+            });
+        }
+    }
+
+    handleTagSearchInput() {
+        const query = (this.modelTagsSearchInput?.value || '').trim();
+        const trimmedQuery = query.toLowerCase();
+        if (trimmedQuery === this.tagSearchQuery) return;
+        this.tagSearchQuery = trimmedQuery;
+
+        if (!trimmedQuery) {
+            // Empty query: reload top tags (default/common view)
+            this.loadTopTags();
+            return;
+        }
+        this.searchTags(trimmedQuery);
+    }
+
+    async searchTags(query) {
+        // Abort any in-flight search request
+        if (this.tagSearchAbortController) {
+            this.tagSearchAbortController.abort();
+        }
+        this.tagSearchAbortController = new AbortController();
+        const controller = this.tagSearchAbortController;
+
+        try {
+            const tagsEndpoint = `${getApiEndpoints(this.currentPage).searchTags}?q=${encodeURIComponent(query)}&limit=20`;
+            const response = await fetch(tagsEndpoint, { signal: controller.signal });
+            if (!response.ok) throw new Error('Failed to search tags');
+            const data = await response.json();
+            if (controller.signal.aborted) return; // stale response
+            if (data.success && data.tags) {
+                this.createTagFilterElements(data.tags);
+            } else {
+                throw new Error('Invalid response format');
+            }
+        } catch (error) {
+            if (error.name === 'AbortError') return; // expected, ignore
+            console.error('Error searching tags:', error);
+            const tagsContainer = document.getElementById('modelTagsFilter');
+            if (tagsContainer) {
+                tagsContainer.innerHTML = '<div class="tags-error">Failed to search tags</div>';
+            }
+            const emptyState = document.getElementById('modelTagsEmptyState');
+            if (emptyState) emptyState.hidden = true;
+        }
     }
 
     getNormalizedSearchQuery(input) {
@@ -146,15 +207,24 @@ export class FilterManager {
     }
 
     async loadTopTags() {
+        // Abort any in-flight tag search request
+        if (this.tagSearchAbortController) {
+            this.tagSearchAbortController.abort();
+            this.tagSearchAbortController = null;
+        }
+        this.tagSearchQuery = '';
+
         try {
             // Show loading state
             const tagsContainer = document.getElementById('modelTagsFilter');
+            const emptyState = document.getElementById('modelTagsEmptyState');
             if (!tagsContainer) return;
+            if (emptyState) emptyState.hidden = true;
 
             tagsContainer.innerHTML = '<div class="tags-loading">Loading tags...</div>';
 
             // Determine the API endpoint based on the page type
-            const tagsEndpoint = `/api/lm/${this.currentPage}/top-tags?limit=20`;
+            const tagsEndpoint = `${getApiEndpoints(this.currentPage).topTags}?limit=20`;
 
             const response = await fetch(tagsEndpoint);
             if (!response.ok) throw new Error('Failed to fetch tags');
@@ -179,29 +249,38 @@ export class FilterManager {
 
     createTagFilterElements(tags) {
         const tagsContainer = document.getElementById('modelTagsFilter');
+        const emptyState = document.getElementById('modelTagsEmptyState');
         if (!tagsContainer) return;
 
         tagsContainer.innerHTML = '';
+        if (emptyState) emptyState.hidden = true;
 
         // Collect existing tag names from the API response
         const existingTagNames = new Set(tags.map(t => t.tag));
 
-        // Add any active filter tags that aren't in the top 20
+        // Collect active filter tags that aren't in the response (excluding __no_tags__)
+        const missingSelectedTags = [];
         if (this.filters.tags) {
             Object.keys(this.filters.tags).forEach(tagName => {
-                // Skip special tags like __no_tags__
                 if (tagName.startsWith('__')) return;
-
                 if (!existingTagNames.has(tagName)) {
-                    // Add this tag to the list with count 0 (unknown)
-                    tags.push({ tag: tagName, count: 0 });
+                    missingSelectedTags.push({ tag: tagName, count: 0 });
                     existingTagNames.add(tagName);
                 }
             });
         }
 
+        // Append missing selected tags after the API results so they appear inline
+        for (const t of missingSelectedTags) {
+            tags.push(t);
+        }
+
         if (!tags.length) {
-            tagsContainer.innerHTML = `<div class="no-tags">No ${this.currentPage === 'recipes' ? 'recipe ' : ''}tags available</div>`;
+            if (this.tagSearchQuery) {
+                if (emptyState) emptyState.hidden = false;
+            } else {
+                tagsContainer.innerHTML = `<div class="no-tags">No ${this.currentPage === 'recipes' ? 'recipe ' : ''}tags available</div>`;
+            }
             return;
         }
 
@@ -209,6 +288,10 @@ export class FilterManager {
             const tagEl = document.createElement('div');
             tagEl.className = 'filter-tag tag-filter';
             const tagName = tag.tag;
+
+            if (missingSelectedTags.some(t => t.tag === tagName)) {
+                tagEl.classList.add('extra-tag');
+            }
             tagEl.dataset.tag = tagName;
 
             // Show count only if it's > 0 (known count)
@@ -234,26 +317,28 @@ export class FilterManager {
             tagsContainer.appendChild(tagEl);
         });
 
-        // Add "No tags" as a special filter at the end
-        const noTagsEl = document.createElement('div');
-        noTagsEl.className = 'filter-tag tag-filter special-tag';
-        const noTagsLabel = translate('header.filter.noTags', {}, 'No tags');
-        const noTagsKey = '__no_tags__';
-        noTagsEl.dataset.tag = noTagsKey;
-        noTagsEl.innerHTML = noTagsLabel;
+        // Add "No tags" as a special filter at the end (skip during search)
+        if (!this.tagSearchQuery) {
+            const noTagsEl = document.createElement('div');
+            noTagsEl.className = 'filter-tag tag-filter special-tag';
+            const noTagsLabel = translate('header.filter.noTags', {}, 'No tags');
+            const noTagsKey = '__no_tags__';
+            noTagsEl.dataset.tag = noTagsKey;
+            noTagsEl.innerHTML = noTagsLabel;
 
-        noTagsEl.addEventListener('click', async () => {
-            const currentState = (this.filters.tags && this.filters.tags[noTagsKey]) || 'none';
-            const newState = this.getNextTriStateState(currentState);
-            this.setTagFilterState(noTagsKey, newState);
-            this.applyTagElementState(noTagsEl, newState);
+            noTagsEl.addEventListener('click', async () => {
+                const currentState = (this.filters.tags && this.filters.tags[noTagsKey]) || 'none';
+                const newState = this.getNextTriStateState(currentState);
+                this.setTagFilterState(noTagsKey, newState);
+                this.applyTagElementState(noTagsEl, newState);
 
-            this.updateActiveFiltersCount();
+                this.updateActiveFiltersCount();
 
-            await this.applyFilters(false);
-        });
+                await this.applyFilters(false);
+            });
 
-        tagsContainer.appendChild(noTagsEl);
+            tagsContainer.appendChild(noTagsEl);
+        }
         this.updateTagSelections();
     }
 
@@ -341,7 +426,7 @@ export class FilterManager {
         if (!baseModelTagsContainer) return;
 
         // Set the API endpoint based on current page
-        const apiEndpoint = `/api/lm/${this.currentPage}/base-models?limit=0`;
+        const apiEndpoint = `${getApiEndpoints(this.currentPage).baseModels}?limit=0`;
 
         // Fetch base models
         fetch(apiEndpoint)
@@ -721,6 +806,16 @@ export class FilterManager {
             tagLogic: 'any'
         });
 
+        // Clear tag search input and reset search state
+        if (this.modelTagsSearchInput) {
+            this.modelTagsSearchInput.value = '';
+        }
+        this.tagSearchQuery = '';
+        if (this.tagSearchAbortController) {
+            this.tagSearchAbortController.abort();
+            this.tagSearchAbortController = null;
+        }
+
         // Update tag logic toggle UI
         this.updateTagLogicToggleUI();
 
@@ -731,6 +826,10 @@ export class FilterManager {
         // Update UI
         this.updateTagSelections();
         this.updateActiveFiltersCount();
+        // Reload tag area to drop any non-top-20 tags from the deactivated preset
+        if (this.tagsLoaded) {
+            await this.loadTopTags();
+        }
         this.presetManager.renderPresets(); // Re-render to remove active state
 
         // Remove from local Storage

@@ -113,6 +113,8 @@ function renderControlsDom(pageKey) {
       <div id="baseModelEmptyState" hidden></div>
       <div id="filterPresets" class="filter-presets"></div>
       <div id="modelTagsFilter" class="filter-tags"></div>
+      <input id="modelTagsSearchInput" />
+      <div id="modelTagsEmptyState" hidden></div>
       <button class="clear-filter"></button>
     </div>
     <div class="controls">
@@ -960,5 +962,199 @@ describe('PageControls favorites, sorting, and duplicates scenarios', () => {
     expect(enterDuplicateMode).toHaveBeenCalledTimes(1);
     expect(stateModule.state.bulkMode).toBe(true);
     expect(pageState.duplicatesMode).toBe(true);
+  });
+
+  describe('tag search', () => {
+    it('fetches /search-tags when typing in the tag search input (debounced)', async () => {
+      vi.useFakeTimers();
+      const searchTagsUrls = [];
+      global.fetch = vi.fn((url) => {
+        if (url.includes('/search-tags')) {
+          searchTagsUrls.push(url);
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ success: true, tags: [{ tag: 'anime', count: 3 }] }),
+          });
+        }
+        if (url.includes('/top-tags')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, tags: [] }) });
+        }
+        if (url.includes('/base-models')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, base_models: [] }) });
+        }
+        if (url.includes('/model-types')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, model_types: [] }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      });
+
+      renderControlsDom('loras');
+      const stateModule = await import('../../../static/js/state/index.js');
+      stateModule.initPageState('loras');
+      const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+      const manager = new FilterManager({ page: 'loras' });
+
+      // Open the panel so tags load
+      manager.toggleFilterPanel();
+      await vi.runAllTimersAsync();
+
+      const input = document.getElementById('modelTagsSearchInput');
+      input.value = 'ani';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+
+      // Before debounce fires, no search-tags call yet
+      expect(searchTagsUrls.length).toBe(0);
+
+      // Advance past the 150ms debounce
+      vi.advanceTimersByTime(160);
+      await vi.runAllTimersAsync();
+
+      expect(searchTagsUrls.length).toBe(1);
+      expect(searchTagsUrls[0]).toContain('/search-tags');
+      expect(searchTagsUrls[0]).toContain('q=ani');
+
+      vi.useRealTimers();
+    });
+
+    it('renders selected-but-missing tags in a dedicated group at the top', async () => {
+      vi.useFakeTimers();
+      global.fetch = vi.fn((url) => {
+        if (url.includes('/search-tags')) {
+          return Promise.resolve({
+            ok: true,
+            json: async () => ({ success: true, tags: [{ tag: 'anime', count: 3 }] }),
+          });
+        }
+        if (url.includes('/top-tags')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, tags: [] }) });
+        }
+        if (url.includes('/base-models')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, base_models: [] }) });
+        }
+        if (url.includes('/model-types')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, model_types: [] }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      });
+
+      renderControlsDom('loras');
+      const stateModule = await import('../../../static/js/state/index.js');
+      stateModule.initPageState('loras');
+      const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+      const manager = new FilterManager({ page: 'loras' });
+
+      // Pre-seed an active tag filter that won't appear in search results
+      manager.filters.tags = { 'my-custom-tag': 'include' };
+
+      // Open panel and let top-tags load (empty)
+      manager.toggleFilterPanel();
+      await vi.runAllTimersAsync();
+
+      // Type a search query
+      const input = document.getElementById('modelTagsSearchInput');
+      input.value = 'ani';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      vi.advanceTimersByTime(160);
+      await vi.runAllTimersAsync();
+
+      const container = document.getElementById('modelTagsFilter');
+      const extraTag = container.querySelector('.filter-tag.extra-tag');
+      expect(extraTag).not.toBeNull();
+      expect(extraTag.dataset.tag).toBe('my-custom-tag');
+
+      // The search result tag should also be present
+      const resultTag = container.querySelector('.filter-tag.tag-filter[data-tag="anime"]');
+      expect(resultTag).not.toBeNull();
+
+      vi.useRealTimers();
+    });
+
+    it('shows empty state when search returns no matches and no selected tags', async () => {
+      vi.useFakeTimers();
+      global.fetch = vi.fn((url) => {
+        if (url.includes('/search-tags')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, tags: [] }) });
+        }
+        if (url.includes('/top-tags')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, tags: [] }) });
+        }
+        if (url.includes('/base-models')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, base_models: [] }) });
+        }
+        if (url.includes('/model-types')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, model_types: [] }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      });
+
+      renderControlsDom('loras');
+      const stateModule = await import('../../../static/js/state/index.js');
+      stateModule.initPageState('loras');
+      const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+      const manager = new FilterManager({ page: 'loras' });
+
+      manager.toggleFilterPanel();
+      await vi.runAllTimersAsync();
+
+      const input = document.getElementById('modelTagsSearchInput');
+      input.value = 'zzz';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      vi.advanceTimersByTime(160);
+      await vi.runAllTimersAsync();
+
+      const emptyState = document.getElementById('modelTagsEmptyState');
+      expect(emptyState.hidden).toBe(false);
+
+      vi.useRealTimers();
+    });
+
+    it('reloads top tags when search input is cleared', async () => {
+      vi.useFakeTimers();
+      let topTagsCallCount = 0;
+      global.fetch = vi.fn((url) => {
+        if (url.includes('/search-tags')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, tags: [{ tag: 'anime', count: 3 }] }) });
+        }
+        if (url.includes('/top-tags')) {
+          topTagsCallCount++;
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, tags: [] }) });
+        }
+        if (url.includes('/base-models')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, base_models: [] }) });
+        }
+        if (url.includes('/model-types')) {
+          return Promise.resolve({ ok: true, json: async () => ({ success: true, model_types: [] }) });
+        }
+        return Promise.resolve({ ok: true, json: async () => ({ success: true }) });
+      });
+
+      renderControlsDom('loras');
+      const stateModule = await import('../../../static/js/state/index.js');
+      stateModule.initPageState('loras');
+      const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+      const manager = new FilterManager({ page: 'loras' });
+
+      manager.toggleFilterPanel();
+      await vi.runAllTimersAsync();
+      const callsAfterOpen = topTagsCallCount;
+      expect(callsAfterOpen).toBeGreaterThanOrEqual(1);
+
+      // Type, then clear
+      const input = document.getElementById('modelTagsSearchInput');
+      input.value = 'ani';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      vi.advanceTimersByTime(160);
+      await vi.runAllTimersAsync();
+
+      input.value = '';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      vi.advanceTimersByTime(160);
+      await vi.runAllTimersAsync();
+
+      // An additional top-tags call should have happened after clearing
+      expect(topTagsCallCount).toBeGreaterThan(callsAfterOpen);
+
+      vi.useRealTimers();
+    });
   });
 });

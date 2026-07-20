@@ -251,9 +251,14 @@
         <button class="tag-logic-option" data-value="all" title="{{ t('header.filter.tagLogicAll') }}">{{ t('header.filter.all') }}</button>
       </div>
     </div>
+    <input type="text" id="modelTagsSearchInput" class="filter-search-input"
+      placeholder="{{ t('header.filter.tagSearchPlaceholder') }}" autocomplete="off">
     <div class="filter-tags" id="modelTagsFilter">
       <!-- Top tags will be dynamically inserted here -->
       <div class="tags-loading">{{ t('common.status.loading') }}</div>
+    </div>
+    <div id="modelTagsEmptyState" class="filter-empty-state" hidden>
+      {{ t('header.filter.noTagMatches') }}
     </div>
   </div>
   {% if current_page == 'loras' or current_page == 'checkpoints' %}
