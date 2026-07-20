@@ -1665,13 +1665,19 @@ export class BulkManager {
                 cancelled = true;
             });
 
+            const isRecipesPage = state.currentPageType === 'recipes';
+
             for (const filepath of state.selectedModels) {
                 if (cancelled) {
                     showToast('toast.api.operationCancelled', {}, 'info');
                     break;
                 }
                 try {
-                    await getModelApiClient().saveModelMetadata(filepath, { base_model: newBaseModel });
+                    if (isRecipesPage) {
+                        await updateRecipeMetadata(filepath, { base_model: newBaseModel });
+                    } else {
+                        await getModelApiClient().saveModelMetadata(filepath, { base_model: newBaseModel });
+                    }
                     successCount++;
                 } catch (error) {
                     errorCount++;
