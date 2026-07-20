@@ -15,6 +15,17 @@ from .service_registry import ServiceRegistry
 
 logger = logging.getLogger(__name__)
 
+_PROVIDER_DISPLAY_NAMES = {
+    "civitai_api": "CivitAI",
+    "civarchive_api": "CivArchive",
+    "sqlite": "Archive DB",
+}
+
+_PRESET_PROVIDER_ORDERS = {
+    "civitai_archive_sqlite": ["civitai_api", "civarchive_api", "sqlite"],
+    "civitai_sqlite_archive": ["civitai_api", "sqlite", "civarchive_api"],
+}
+
 async def initialize_metadata_providers():
     """Initialize and configure all metadata providers based on settings"""
     provider_manager = await ModelMetadataProviderManager.get_instance()
@@ -26,7 +37,9 @@ async def initialize_metadata_providers():
     # Get settings
     settings_manager = get_settings_manager()
     enable_archive_db = settings_manager.get('enable_metadata_archive_db', False)
-    
+    enable_civarchive_api = settings_manager.get('enable_civarchive_api', True)
+    provider_order = settings_manager.get('metadata_provider_order', 'civitai_archive_sqlite')
+
     providers = []
     
     # Initialize archive database provider if enabled
@@ -59,27 +72,48 @@ async def initialize_metadata_providers():
     except Exception as e:
         logger.error(f"Failed to initialize Civitai API metadata provider: {e}")
 
-    # Register CivArchive provider, and all add to fallback providers
-    try:
-        civarchive_client = await ServiceRegistry.get_civarchive_client()
-        civarchive_provider = CivArchiveModelMetadataProvider(civarchive_client)
-        provider_manager.register_provider('civarchive_api', civarchive_provider)
-        providers.append(('civarchive_api', civarchive_provider))
-        logger.debug("CivArchive metadata provider registered (also included in fallback)")
-    except Exception as e:
-        logger.error(f"Failed to initialize CivArchive metadata provider: {e}")
+    # Register CivArchive provider when enabled. Civitai API is always
+    # preferred (better metadata); CivArchive mainly recovers metadata for
+    # models deleted from Civitai, so it can be turned off to avoid its long
+    # rate-limit windows entirely.
+    if enable_civarchive_api:
+        try:
+            civarchive_client = await ServiceRegistry.get_civarchive_client()
+            civarchive_provider = CivArchiveModelMetadataProvider(civarchive_client)
+            provider_manager.register_provider('civarchive_api', civarchive_provider)
+            providers.append(('civarchive_api', civarchive_provider))
+            logger.debug("CivArchive metadata provider registered (also included in fallback)")
+        except Exception as e:
+            logger.error(f"Failed to initialize CivArchive metadata provider: {e}")
+    else:
+        logger.debug("CivArchive metadata provider disabled by setting 'enable_civarchive_api'")
+
+    # Preset fallback orderings (see module-level _PRESET_PROVIDER_ORDERS).
+    # civitai_api is always first (better metadata); the remaining providers
+    # are arranged by the configured preset.  Providers that are not
+    # registered (disabled/unavailable) are simply skipped, so each preset
+    # degrades gracefully.
+    desired_order = _PRESET_PROVIDER_ORDERS.get(
+        provider_order, _PRESET_PROVIDER_ORDERS["civitai_archive_sqlite"]
+    )
 
     # Set up fallback provider based on available providers
     if len(providers) > 1:
-        # Always use Civitai API (it has better metadata), then CivArchive API, then Archive DB
         ordered_providers: list[tuple[str, ModelMetadataProvider]] = []
-        ordered_providers.extend([p for p in providers if p[0] == 'civitai_api'])
-        ordered_providers.extend([p for p in providers if p[0] == 'civarchive_api'])
-        ordered_providers.extend([p for p in providers if p[0] == 'sqlite'])
-        
+        for name in desired_order:
+            ordered_providers.extend([p for p in providers if p[0] == name])
+        # Include any provider not covered by the preset (defensive) at the end
+        for p in providers:
+            if p not in ordered_providers:
+                ordered_providers.append(p)
+
         if ordered_providers:
             fallback_provider = FallbackMetadataProvider(ordered_providers)
             provider_manager.register_provider('fallback', fallback_provider, is_default=True)
+            logger.debug(
+                "Metadata fallback provider order: %s",
+                ", ".join(name for name, _ in ordered_providers),
+            )
     elif len(providers) == 1:
         # Only one provider available, set it as default
         provider_name, provider = providers[0]
@@ -96,11 +130,30 @@ async def update_metadata_providers():
         # Get current settings
         settings_manager = get_settings_manager()
         enable_archive_db = settings_manager.get('enable_metadata_archive_db', False)
+        enable_civarchive_api = settings_manager.get('enable_civarchive_api', True)
+        provider_order = settings_manager.get('metadata_provider_order', 'civitai_archive_sqlite')
         
         # Reinitialize all providers with new settings
         provider_manager = await initialize_metadata_providers()
         
-        logger.info(f"Updated metadata providers, archive_db enabled: {enable_archive_db}")
+        # Build effective provider chain for logging (use actually-registered
+        # providers, not just settings, so a failed init is reflected correctly)
+        registered = set(provider_manager.providers.keys())
+        desired = _PRESET_PROVIDER_ORDERS.get(
+            provider_order, _PRESET_PROVIDER_ORDERS["civitai_archive_sqlite"]
+        )
+        chain = " → ".join(
+            _PROVIDER_DISPLAY_NAMES[p]
+            for p in desired
+            if p in registered and p in _PROVIDER_DISPLAY_NAMES
+        )
+        
+        logger.info(
+            "Updated metadata providers: archive_db=%s, civarchive_api=%s, chain=%s",
+            enable_archive_db,
+            enable_civarchive_api,
+            chain,
+        )
         return provider_manager
     except Exception as e:
         logger.error(f"Failed to update metadata providers: {e}")

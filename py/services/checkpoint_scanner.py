@@ -114,6 +114,13 @@ class CheckpointScanner(ModelScanner):
                 and metadata.hash_status == "completed"
                 and metadata.sha256
             ):
+                # Ensure the in-memory hash index is populated even when
+                # the hash was already computed and persisted to the metadata
+                # file.  Without this, usage tracking (and any other caller
+                # that queries get_hash_by_filename first) will miss on every
+                # lookup and keep calling back into this method, creating a
+                # tight loop that never populates the index.
+                self._hash_index.add_entry(metadata.sha256.lower(), file_path)
                 return metadata.sha256
 
             async with self._hash_calculation_lock:
@@ -125,6 +132,7 @@ class CheckpointScanner(ModelScanner):
                     and metadata.hash_status == "completed"
                     and metadata.sha256
                 ):
+                    self._hash_index.add_entry(metadata.sha256.lower(), file_path)
                     return metadata.sha256
 
                 task = self._hash_calculation_tasks.get(real_path)
@@ -175,6 +183,9 @@ class CheckpointScanner(ModelScanner):
 
             # Check if hash is already calculated
             if metadata.hash_status == "completed" and metadata.sha256:
+                # Populate the in-memory hash index even for pre-computed
+                # hashes, mirroring the fix in calculate_hash_for_model.
+                self._hash_index.add_entry(metadata.sha256.lower(), file_path)
                 return metadata.sha256
 
             # Update status to calculating
@@ -192,6 +203,20 @@ class CheckpointScanner(ModelScanner):
 
             # Update hash index
             self._hash_index.add_entry(sha256.lower(), file_path)
+
+            # Update the in-memory cache entry so that subsequent
+            # _persist_current_cache / _save_persistent_cache calls
+            # write the hash back to the SQLite models table.  Without
+            # this the hash only lives in the metadata file and the
+            # in-memory hash index, both of which are lost across
+            # restarts, causing the same re-computation loop on the
+            # next session.
+            if self._cache is not None and self._cache.raw_data:
+                for entry in self._cache.raw_data:
+                    if entry.get("file_path") == file_path:
+                        entry["sha256"] = sha256.lower()
+                        entry["hash_status"] = "completed"
+                        break
 
             logger.info(f"Hash calculated for checkpoint: {file_path}")
             return sha256

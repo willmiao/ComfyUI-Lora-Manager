@@ -1,7 +1,6 @@
 import asyncio
 from typing import Iterable, List, Dict, Optional
 from dataclasses import dataclass, field
-from operator import itemgetter
 from natsort import natsorted
 
 
@@ -149,5 +148,10 @@ class RecipeCache:
         )
         if not name_only:
             self.sorted_by_date = sorted(
-                self.raw_data, key=itemgetter("created_date", "file_path"), reverse=True
+                self.raw_data,
+                key=lambda x: (
+                    x.get("modified", x.get("created_date", 0)),
+                    x.get("file_path", ""),
+                ),
+                reverse=True,
             )

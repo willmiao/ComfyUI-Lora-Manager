@@ -228,6 +228,11 @@ class ModelScanner:
 
         entry: Dict[str, Any] = {
             'file_path': normalized_path,
+            # file_name is always stored WITHOUT extension (e.g. "OWSMianne_ANIMA_V1",
+            # not "OWSMianne_ANIMA_V1.safetensors"). All upstream population points
+            # (MetadataManager, from_civitai_info, download manager, etc.) strip the
+            # extension via os.path.splitext before writing. Code consuming this field
+            # should match against names that are likewise extension-free.
             'file_name': get_value('file_name', '') or '',
             'model_name': get_value('model_name', '') or '',
             'folder': normalized_folder,
@@ -1717,6 +1722,218 @@ class ModelScanner:
 
         return cache_entry if metadata else True
         
+    async def sync_cache_from_metadata(
+        self, file_path: str, metadata_dict: Dict[str, Any]
+    ) -> bool:
+        """Opportunistically sync in-memory and persistent caches from metadata.
+
+        Builds a prospective cache entry from *metadata_dict* (deserialized
+        ``.metadata.json`` content) and compares it against the current cache
+        entry.  When the two are already identical this method returns
+        ``False`` without touching anything — avoiding the overhead of
+        ``update_single_model_cache``, which always removes and re-inserts
+        the entry, triggers a full resort, and persists via the heavyweight
+        ``save_cache()``.
+
+        When differences are detected the update is applied **in-place** with
+        targeted operations:
+
+        * The existing ``raw_data`` entry is modified rather than removed and
+          re-appended (O(1) instead of O(n)).
+        * Tag counts and the hash index are updated incrementally.
+        * The version index is rebuilt only for the affected entry.
+        * ``resort()`` is called **only** when a sort-relevant field changed
+          (``model_name`` / ``file_name`` for name-sort, ``modified`` for
+          date-sort, ``size`` for size-sort).
+        * The persistent (SQLite) cache receives a targeted single-row update
+          via :meth:`PersistentModelCache.update_single_model` rather than a
+          full-table ``save_cache()``.
+
+        Returns:
+            ``True`` if any cache update was performed, ``False`` if the
+            caches were already in sync.
+
+        .. note::
+
+            This is a **best-effort** operation.  Failures are logged but
+            never propagated — callers should fire-and-forget via
+            :func:`asyncio.create_task`.
+        """
+        try:
+            return await self._sync_cache_from_metadata_impl(
+                file_path, metadata_dict
+            )
+        except Exception:
+            logger.warning(
+                "sync_cache_from_metadata failed for %s",
+                file_path,
+                exc_info=True,
+            )
+            return False
+
+    async def _sync_cache_from_metadata_impl(
+        self, file_path: str, metadata_dict: Dict[str, Any]
+    ) -> bool:
+        cache = await self.get_cached_data()
+
+        # Locate the existing cache entry -----------------------------------
+        existing_idx: Optional[int] = None
+        existing_entry: Optional[Dict[str, Any]] = None
+        for i, item in enumerate(cache.raw_data):
+            if item.get("file_path") == file_path:
+                existing_entry = item
+                existing_idx = i
+                break
+
+        # Build the desired entry from metadata ------------------------------
+        folder_value = (
+            existing_entry.get("folder", "")
+            if existing_entry
+            else self._calculate_folder(file_path)
+        )
+        desired_entry = self._build_cache_entry(
+            metadata_dict,
+            folder=folder_value,
+            file_path_override=file_path,
+        )
+
+        # Ensure sha256 is populated (defensive — metadata should have it)
+        if (
+            not desired_entry.get("sha256")
+            and file_path
+            and os.path.exists(file_path)
+        ):
+            try:
+                sha256 = await calculate_sha256(file_path)
+                if sha256:
+                    desired_entry["sha256"] = sha256.lower()
+            except Exception:
+                pass
+
+        # Not in cache at all — delegate to the full update path ------------
+        if existing_entry is None:
+            result = await self.update_single_model_cache(
+                file_path, file_path, metadata_dict
+            )
+            return bool(result)
+
+        # Compare — skip everything if already in sync -----------------------
+        if not self._cache_entries_differ(existing_entry, desired_entry):
+            return False
+
+        # Re-validate: the cache may have been replaced concurrently
+        # (e.g. by _apply_scan_result).  Use identity check, not equality,
+        # so we detect when the raw_data list was swapped out from under us.
+        if self._cache is None or not any(
+            item is existing_entry for item in self._cache.raw_data
+        ):
+            return False
+
+        # ---- Differences detected: apply targeted, in-place updates --------
+
+        # Snapshot old values for delta computations
+        old_tags = list(existing_entry.get("tags") or [])
+        old_sha256: str = existing_entry.get("sha256", "") or ""
+        old_model_name: str = existing_entry.get("model_name", "") or ""
+        old_file_name: str = existing_entry.get("file_name", "") or ""
+        old_modified: float = float(existing_entry.get("modified", 0.0) or 0.0)
+        old_size: int = int(existing_entry.get("size", 0) or 0)
+        old_civitai = existing_entry.get("civitai")
+
+        # ---- In-place update of the cache entry ----
+        existing_entry.clear()
+        existing_entry.update(desired_entry)
+
+        # ---- Incremental tag count update ----
+        new_tags: set = set(desired_entry.get("tags") or [])
+        old_tag_set: set = set(old_tags)
+        for tag in old_tag_set - new_tags:
+            current = self._tags_count.get(tag, 0)
+            if current <= 1:
+                self._tags_count.pop(tag, None)
+            else:
+                self._tags_count[tag] = current - 1
+        for tag in new_tags - old_tag_set:
+            self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
+
+        # ---- Incremental hash index update ----
+        new_sha = (desired_entry.get("sha256", "") or "").lower()
+        old_sha = (old_sha256 or "").lower()
+        if new_sha != old_sha:
+            if old_sha:
+                self._hash_index.remove_by_path(file_path)
+            if new_sha:
+                self._hash_index.add_entry(new_sha, file_path)
+
+        # ---- Incremental version index update ----
+        new_civitai = desired_entry.get("civitai")
+        if old_civitai != new_civitai:
+            temp_old = {
+                "file_path": file_path,
+                "file_name": old_file_name,
+                "civitai": old_civitai,
+            }
+            cache.remove_from_version_index(temp_old)
+            cache.add_to_version_index(existing_entry)
+
+        # ---- Conditional resort (only when sort-key fields changed) ----
+        need_resort = False
+        _last = cache._last_sort
+        sort_key: Optional[str] = _last[0] if _last != (None, None) else None
+        if sort_key == "name":
+            if (
+                old_model_name != desired_entry.get("model_name", "")
+                or old_file_name != desired_entry.get("file_name", "")
+            ):
+                need_resort = True
+        elif sort_key == "date":
+            if old_modified != float(desired_entry.get("modified", 0.0) or 0.0):
+                need_resort = True
+        elif sort_key == "size":
+            if old_size != int(desired_entry.get("size", 0) or 0):
+                need_resort = True
+
+        if need_resort:
+            await cache.resort()
+
+        # ---- Targeted SQL update (single row, not full save_cache) ----
+        persistent = getattr(self, "_persistent_cache", None)
+        if persistent is not None:
+            old_item_for_sql: Dict[str, Any] = {
+                "file_path": file_path,
+                "tags": old_tags,
+                "sha256": old_sha256,
+            }
+            await asyncio.get_event_loop().run_in_executor(
+                None,
+                persistent.update_single_model,
+                self.model_type,
+                desired_entry,
+                old_item_for_sql,
+            )
+
+        return True
+
+    @staticmethod
+    def _cache_entries_differ(a: Dict[str, Any], b: Dict[str, Any]) -> bool:
+        """Return ``True`` when two cache-entry dicts differ in any field.
+
+        Tag lists are compared order-insensitively; all other keys use
+        standard equality.
+        """
+        a_tags = sorted(a.get("tags") or [])
+        b_tags = sorted(b.get("tags") or [])
+        if a_tags != b_tags:
+            return True
+
+        all_keys = set(a.keys()) | set(b.keys())
+        for key in all_keys:
+            if key == "tags":
+                continue
+            if a.get(key) != b.get(key):
+                return True
+        return False
+
     def has_hash(self, sha256: str) -> bool:
         """Check if a model with given hash exists"""
         return self._hash_index.has_hash(sha256.lower())

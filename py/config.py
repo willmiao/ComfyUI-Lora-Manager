@@ -208,6 +208,12 @@ class Config:
             if not isinstance(library_config, dict):
                 return
 
+            # Always read recipes_path — it is independent of extra folder paths
+            # and must be set before any early returns below.
+            recipes_path = library_config.get("recipes_path", "")
+            if isinstance(recipes_path, str) and recipes_path:
+                self.recipes_path = recipes_path
+
             extra_folder_paths = library_config.get("extra_folder_paths")
             if not isinstance(extra_folder_paths, dict):
                 return
@@ -232,10 +238,6 @@ class Config:
             self.extra_embeddings_roots = self._prepare_embedding_paths(
                 extra_embedding
             )
-
-            recipes_path = library_config.get("recipes_path", "")
-            if isinstance(recipes_path, str) and recipes_path:
-                self.recipes_path = recipes_path
 
             if self.extra_loras_roots:
                 logger.info(
@@ -356,6 +358,47 @@ class Config:
                     logger.debug(
                         "Failed to rename legacy 'default' library: %s", rename_error
                     )
+
+            # Clean up a stale "default" library entry that has no meaningful
+            # paths configured (e.g. leftover bootstrap artifact).  This only
+            # fires when "comfyui" already exists so we never delete the last
+            # remaining library.
+            if (
+                "default" in libraries
+                and "comfyui" in libraries
+                and isinstance(default_library, Mapping)
+            ):
+                default_folder_paths = _normalize_library_folder_paths(
+                    default_library
+                )
+                default_extra_paths = default_library.get("extra_folder_paths", {})
+                has_meaningful_paths = bool(default_folder_paths) or bool(
+                    default_extra_paths
+                ) or any(
+                    default_library.get(key)
+                    for key in (
+                        "default_lora_root",
+                        "default_checkpoint_root",
+                        "default_unet_root",
+                        "default_embedding_root",
+                        "recipes_path",
+                    )
+                )
+                if not has_meaningful_paths:
+                    try:
+                        settings_service.delete_library("default")
+                        libraries_changed = True
+                        logger.info(
+                            "Removed stale 'default' library entry "
+                            "with no meaningful paths configured"
+                        )
+                        libraries = settings_service.get_libraries()
+                        comfy_library = libraries.get("comfyui", {})
+                    except Exception as delete_error:
+                        logger.debug(
+                            "Failed to remove stale 'default' library: %s",
+                            delete_error,
+                        )
 
             default_lora_root = _resolve_valid_default_root(
                 comfy_library.get("default_lora_root", ""),

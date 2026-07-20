@@ -1,6 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
-import { getAllGraphNodes, getNodeReference, getNodeFromGraph, chainCallback } from "./utils.js";
+import { getAllGraphNodes, getNodeReference, getNodeFromGraph, chainCallback, getLinkFromGraph } from "./utils.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 
 const DEBOUNCE_DELAY = 500;
@@ -74,6 +74,84 @@ function fadeWidgetTextColor(widget, fromColor, toColor, duration) {
     };
     rafId = requestAnimationFrame(tick);
     return () => { if (rafId) cancelAnimationFrame(rafId); };
+}
+
+// ---------------------------------------------------------------------------
+// Primitive node helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Set of node type names that represent Primitive value nodes.
+ * Includes both the dynamic PrimitiveNode (created by double-clicking
+ * a widget input) and the static typed primitives from the node library.
+ */
+const PRIMITIVE_NODE_TYPES = new Set([
+    "PrimitiveNode",          // dynamic (double-click a widget input)
+    "PrimitiveInt",
+    "PrimitiveFloat",
+    "PrimitiveString",
+    "PrimitiveBoolean",
+    "PrimitiveStringMultiline",
+]);
+
+/**
+ * Return true when `node` is any flavour of Primitive node.
+ * @param {Object} node - LiteGraph node instance
+ * @returns {boolean}
+ */
+function isPrimitiveNodeType(node) {
+    return PRIMITIVE_NODE_TYPES.has(node?.type);
+}
+
+/**
+ * Find the 0-based input slot index whose widget name matches `widgetName`.
+ * Returns -1 when no matching input is found.
+ *
+ * Matching strategy (in order):
+ *  1. `input.widget?.name === widgetName` — direct widget ref (preferred)
+ *  2. `input.name === widgetName`        — fallback by slot name
+ *
+ * @param {Object} node       - LiteGraph node instance
+ * @param {string} widgetName
+ * @returns {number}
+ */
+function findInputSlotForWidget(node, widgetName) {
+    if (!node || !Array.isArray(node.inputs)) {
+        return -1;
+    }
+    return node.inputs.findIndex(
+        (inp) => inp?.widget?.name === widgetName || inp?.name === widgetName
+    );
+}
+
+/**
+ * If the input slot that backs `widgetName` on `node` is connected to a
+ * Primitive node, return that Primitive node. Otherwise return null.
+ *
+ * This is the key bridge for the "send gen params → Primitive" flow:
+ * when a KSampler widget (e.g. "steps") has an incoming wire from a
+ * Primitive node, we want to update the Primitive's value instead of the
+ * KSampler widget, because ComfyUI's execution engine reads from the
+ * connected input, not the widget.
+ *
+ * @param {Object} node       - the target node (e.g. KSampler)
+ * @param {string} widgetName - e.g. "steps", "cfg", "seed"
+ * @returns {Object|null}     - the connected Primitive node, or null
+ */
+function tryResolvePrimitiveConnection(node, widgetName) {
+    const slotIndex = findInputSlotForWidget(node, widgetName);
+    if (slotIndex === -1) return null;
+
+    const input = node.inputs[slotIndex];
+    if (input?.link == null) return null;
+
+    const link = getLinkFromGraph(node.graph, input.link);
+    if (!link) return null;
+
+    const originNode = node.graph?.getNodeById?.(link.origin_id);
+    if (!originNode) return null;
+
+    return isPrimitiveNodeType(originNode) ? originNode : null;
 }
 
 app.registerExtension({
@@ -307,6 +385,60 @@ app.registerExtension({
         } else {
             console.warn("LoRA Manager: no action or widget_name in payload", message);
             return;
+        }
+
+        // ---- Redirect to connected Primitive node when present ----
+        // When a widget input (e.g. "steps", "cfg", "seed" on KSampler)
+        // is wired to a Primitive node, the Primitive's value overrides
+        // the widget value during execution.  Update the Primitive
+        // directly so the change actually takes effect.
+        if (widgetName) {
+            const primitiveNode = tryResolvePrimitiveConnection(node, widgetName);
+            if (primitiveNode) {
+                const primWidget = primitiveNode.widgets?.[0];
+                if (primWidget) {
+                    let primNewValue = value;
+                    if (mode === "append") {
+                        const sep =
+                            primWidget.value && primWidget.value.length > 0
+                                ? " "
+                                : "";
+                        primNewValue = primWidget.value + sep + value;
+                    }
+                    primWidget.value = primNewValue;
+                    if (
+                        Array.isArray(primitiveNode.widgets_values) &&
+                        primitiveNode.widgets_values.length > 0
+                    ) {
+                        primitiveNode.widgets_values[0] = primNewValue;
+                    }
+                    if (typeof primWidget.callback === "function") {
+                        try {
+                            primWidget.callback(primNewValue);
+                        } catch (callbackError) {
+                            console.error(
+                                "LoRA Manager: primitive widget callback failed",
+                                callbackError
+                            );
+                        }
+                    }
+                    if (typeof primitiveNode.setDirtyCanvas === "function") {
+                        primitiveNode.setDirtyCanvas(true);
+                    }
+                    if (typeof app.graph?.setDirtyCanvas === "function") {
+                        app.graph.setDirtyCanvas(true, true);
+                    }
+                    this.flashWidget(primitiveNode, primWidget);
+                    console.debug(
+                        "LoRA Manager: redirected widget update to Primitive node %s (id=%d) ← %s = %o",
+                        primitiveNode.type,
+                        primitiveNode.id,
+                        widgetName,
+                        primNewValue
+                    );
+                    return;
+                }
+            }
         }
 
         // ---- Update widget value ----

@@ -14,12 +14,31 @@ import { getStrengthStepPreference } from "./settings.js";
 export function addLorasWidget(node, name, opts, callback) {
   ensureLmStyles();
 
-  // Create container for loras
-  const container = document.createElement("div");
-  container.className = "lm-loras-container";
+  // Create container for loras — search for an empty container already
+  // in the DOM first. During undo/redo in ComfyUI Vue render mode,
+  // WidgetDOM.vue reuses its component without re-calling
+  // mountWidgetElement(), so we must reuse the existing DOM element
+  // instead of creating an orphaned replacement.
+  let container = null;
+  let reuseExisting = false;
+  const existingContainers = document.querySelectorAll('.lm-loras-container');
+  for (const el of existingContainers) {
+    if (el.children.length === 0) {
+      container = el;
+      reuseExisting = true;
+      break;
+    }
+  }
 
-  forwardMiddleMouseToCanvas(container);
-  forwardWheelToCanvas(container);
+  if (!container) {
+    container = document.createElement("div");
+    container.className = "lm-loras-container";
+  }
+
+  if (!reuseExisting) {
+    forwardMiddleMouseToCanvas(container);
+    forwardWheelToCanvas(container);
+  }
 
   // Set initial height using CSS variables approach
   const defaultHeight = 200;
@@ -29,10 +48,8 @@ export function addLorasWidget(node, name, opts, callback) {
   // scrolls when content exceeds the allocated space.
   container.style.setProperty('--comfy-widget-min-height', `${defaultHeight}px`);
 
-  if (typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode) {
+  if (!reuseExisting && typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode) {
     container.classList.add('lm-vue-node');
-    // Window capture-phase hook: scroll the widget instead of zooming the canvas
-    // when the wheel is over a scrollable loras list.
     enableListWheelScroll(container);
   }
 
@@ -280,8 +297,8 @@ export function addLorasWidget(node, name, opts, callback) {
 
         e.preventDefault();
         e.stopPropagation();
-        selectLora(name);
-        container.focus(); // Focus container for keyboard events
+        selectLora(name === selectedLora ? null : name);
+        container.focus();
       });
 
       // Conditionally create drag handle OR lock button
@@ -694,7 +711,11 @@ export function addLorasWidget(node, name, opts, callback) {
   // Create widget with new DOM Widget API
   const widget = node.addDOMWidget(name, "custom", container, {
     getValue: function() {
-      return widgetValue;
+      return widgetValue.map(lora => {
+        const entry = { ...lora };
+        entry.selected = lora.name === selectedLora;
+        return entry;
+      });
     },
     setValue: function(v) {
       // Remove duplicates by keeping the last occurrence of each lora name
@@ -721,6 +742,15 @@ export function addLorasWidget(node, name, opts, callback) {
       });
 
       widgetValue = updatedValue;
+
+      // Restore selection state when loading a saved workflow
+      if (!selectedLora) {
+        const selectedEntry = updatedValue.find(lora => lora.selected);
+        if (selectedEntry) {
+          selectedLora = selectedEntry.name;
+        }
+      }
+
       renderLoras(widgetValue, widget);
     },
     hideOnZoom: true,
@@ -732,9 +762,10 @@ export function addLorasWidget(node, name, opts, callback) {
   widget.callback = callback;
 
   widget.onRemove = () => {
-    container.remove(); 
+    while (container.firstChild) {
+      container.removeChild(container.firstChild);
+    }
     previewTooltip.cleanup();
-    // Remove keyboard event listener
     container.removeEventListener('keydown', handleKeyboardNavigation);
   };
 

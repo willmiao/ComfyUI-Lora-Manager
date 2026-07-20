@@ -1570,7 +1570,11 @@ class SettingsHandler:
                 else:
                     self._settings.set(key, value)
 
-                if key == "enable_metadata_archive_db":
+                if key in (
+                    "enable_metadata_archive_db",
+                    "enable_civarchive_api",
+                    "metadata_provider_order",
+                ):
                     await self._metadata_provider_updater()
 
                 if key in self._PROXY_KEYS:
@@ -1782,6 +1786,124 @@ class LoraCodeHandler:
             return web.json_response({"success": True, "results": results})
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to update lora code: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_update_lora_code(self, request: web.Request) -> web.Response:
+        """GET version of update_lora_code — reads parameters from query string.
+
+        Query params:
+          lora_code (required)  — the LoRA syntax to send
+          mode     (optional)   — "append" (default) or "replace"
+          node_id  (repeatable) — target node id(s), e.g. node_id=3&node_id=5
+          node_ids (optional)   — JSON-encoded array for complex references with graph_id:
+                                   [{"node_id":3,"graph_id":"g1"}, ...]
+        """
+        try:
+            node_ids_raw = request.query.get("node_ids")
+            node_id_list = request.query.getall("node_id", [])
+            lora_code = request.query.get("lora_code", "")
+            mode = request.query.get("mode", "append")
+
+            if not lora_code:
+                return web.json_response(
+                    {"success": False, "error": "Missing lora_code parameter"},
+                    status=400,
+                )
+
+            node_ids = None
+            if node_ids_raw:
+                try:
+                    node_ids = json.loads(node_ids_raw)
+                except (json.JSONDecodeError, TypeError):
+                    return web.json_response(
+                        {"success": False, "error": "node_ids must be a valid JSON array"},
+                        status=400,
+                    )
+                if not isinstance(node_ids, list) or not node_ids:
+                    return web.json_response(
+                        {"success": False, "error": "node_ids must be a non-empty JSON array"},
+                        status=400,
+                    )
+            elif node_id_list:
+                node_ids = node_id_list
+
+            results = []
+            if node_ids is None:
+                try:
+                    self._prompt_server.instance.send_sync(
+                        "lora_code_update",
+                        {"id": -1, "lora_code": lora_code, "mode": mode},
+                    )
+                    results.append({"node_id": "broadcast", "success": True})
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    logger.error("Error broadcasting lora code: %s", exc)
+                    results.append(
+                        {"node_id": "broadcast", "success": False, "error": str(exc)}
+                    )
+            else:
+                for entry in node_ids:
+                    node_identifier = entry
+                    graph_identifier = None
+                    if isinstance(entry, dict):
+                        node_identifier = entry.get("node_id")
+                        graph_identifier = entry.get("graph_id")
+
+                    if node_identifier is None:
+                        results.append(
+                            {
+                                "node_id": node_identifier,
+                                "graph_id": graph_identifier,
+                                "success": False,
+                                "error": "Missing node_id parameter",
+                            }
+                        )
+                        continue
+
+                    try:
+                        parsed_node_id = int(node_identifier)
+                    except (TypeError, ValueError):
+                        parsed_node_id = node_identifier
+
+                    payload = {
+                        "id": parsed_node_id,
+                        "lora_code": lora_code,
+                        "mode": mode,
+                    }
+
+                    if graph_identifier is not None:
+                        payload["graph_id"] = str(graph_identifier)
+
+                    try:
+                        self._prompt_server.instance.send_sync(
+                            "lora_code_update",
+                            payload,
+                        )
+                        results.append(
+                            {
+                                "node_id": parsed_node_id,
+                                "graph_id": payload.get("graph_id"),
+                                "success": True,
+                            }
+                        )
+                    except Exception as exc:  # pragma: no cover - defensive logging
+                        logger.error(
+                            "Error sending lora code to node %s (graph %s): %s",
+                            parsed_node_id,
+                            graph_identifier,
+                            exc,
+                        )
+                        results.append(
+                            {
+                                "node_id": parsed_node_id,
+                                "graph_id": payload.get("graph_id"),
+                                "success": False,
+                                "error": str(exc),
+                            }
+                        )
+
+            return web.json_response({"success": True, "results": results})
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to update lora code (GET): %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
@@ -3353,7 +3475,7 @@ class NodeRegistryHandler:
                     status=400,
                 )
 
-            if not isinstance(value, str) or not value:
+            if value is None or (isinstance(value, str) and not value):
                 return web.json_response(
                     {"success": False, "error": "Missing value parameter"}, status=400
                 )
@@ -3431,6 +3553,130 @@ class NodeRegistryHandler:
             logger.error("Failed to update node widget: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def get_update_node_widget(self, request: web.Request) -> web.Response:
+        """GET version of update_node_widget — reads parameters from query string.
+
+        Query params:
+          widget_name  (optional)   — the widget name to update (required unless action is set)
+          action       (optional)   — alternative action, e.g. "inject_text" (required unless widget_name is set)
+          value        (required)   — the value to set
+          mode         (optional)   — "replace" (default) or "append"
+          node_id      (repeatable) — target node id(s), e.g. node_id=3&node_id=5
+          node_ids     (optional)   — JSON-encoded array for complex references:
+                                       [{"node_id":3,"graph_id":"g1"}, ...]
+        """
+        try:
+            widget_name = request.query.get("widget_name")
+            action = request.query.get("action")
+            value = request.query.get("value")
+            mode = request.query.get("mode", "replace")
+            node_ids_raw = request.query.get("node_ids")
+            node_id_list = request.query.getall("node_id", [])
+
+            if not action and (not isinstance(widget_name, str) or not widget_name):
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "Missing parameter: provide either 'action' or 'widget_name'",
+                    },
+                    status=400,
+                )
+
+            if value is None or (isinstance(value, str) and not value):
+                return web.json_response(
+                    {"success": False, "error": "Missing value parameter"}, status=400
+                )
+
+            node_ids = None
+            if node_ids_raw:
+                try:
+                    node_ids = json.loads(node_ids_raw)
+                except (json.JSONDecodeError, TypeError):
+                    return web.json_response(
+                        {"success": False, "error": "node_ids must be a valid JSON array"},
+                        status=400,
+                    )
+                if not isinstance(node_ids, list) or not node_ids:
+                    return web.json_response(
+                        {"success": False, "error": "node_ids must be a non-empty JSON array"},
+                        status=400,
+                    )
+            elif node_id_list:
+                node_ids = node_id_list
+
+            if not isinstance(node_ids, list) or not node_ids:
+                return web.json_response(
+                    {"success": False, "error": "node_ids must be a non-empty list"},
+                    status=400,
+                )
+
+            results = []
+            for entry in node_ids:
+                node_identifier = entry
+                graph_identifier = None
+                if isinstance(entry, dict):
+                    node_identifier = entry.get("node_id")
+                    graph_identifier = entry.get("graph_id")
+
+                if node_identifier is None:
+                    results.append(
+                        {
+                            "node_id": node_identifier,
+                            "graph_id": graph_identifier,
+                            "success": False,
+                            "error": "Missing node_id parameter",
+                        }
+                    )
+                    continue
+
+                try:
+                    parsed_node_id = int(node_identifier)
+                except (TypeError, ValueError):
+                    parsed_node_id = node_identifier
+
+                payload: dict = {
+                    "id": parsed_node_id,
+                    "value": value,
+                    "mode": mode,
+                }
+                if action:
+                    payload["action"] = action
+                if widget_name:
+                    payload["widget_name"] = widget_name
+
+                if graph_identifier is not None:
+                    payload["graph_id"] = str(graph_identifier)
+
+                try:
+                    self._prompt_server.instance.send_sync("lm_widget_update", payload)
+                    results.append(
+                        {
+                            "node_id": parsed_node_id,
+                            "graph_id": payload.get("graph_id"),
+                            "success": True,
+                        }
+                    )
+                except Exception as exc:  # pragma: no cover - defensive logging
+                    logger.error(
+                        "Error sending widget update to node %s (graph %s): %s",
+                        parsed_node_id,
+                        graph_identifier,
+                        exc,
+                    )
+                    results.append(
+                        {
+                            "node_id": parsed_node_id,
+                            "graph_id": payload.get("graph_id"),
+                            "success": False,
+                            "error": str(exc),
+                        }
+                    )
+
+            return web.json_response({"success": True, "results": results})
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to update node widget (GET): %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class MiscHandlerSet:
     """Aggregate handlers into a lookup compatible with the registrar."""
@@ -3497,10 +3743,12 @@ class MiscHandlerSet:
             "update_usage_stats": self.usage_stats.update_usage_stats,
             "get_usage_stats": self.usage_stats.get_usage_stats,
             "update_lora_code": self.lora_code.update_lora_code,
+            "get_update_lora_code": self.lora_code.get_update_lora_code,
             "get_trained_words": self.trained_words.get_trained_words,
             "get_model_example_files": self.model_examples.get_model_example_files,
             "register_nodes": self.node_registry.register_nodes,
             "update_node_widget": self.node_registry.update_node_widget,
+            "get_update_node_widget": self.node_registry.get_update_node_widget,
             "get_registry": self.node_registry.get_registry,
             "check_model_exists": self.model_library.check_model_exists,
             "check_models_exist": self.model_library.check_models_exist,

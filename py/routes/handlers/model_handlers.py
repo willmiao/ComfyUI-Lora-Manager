@@ -1341,9 +1341,13 @@ class ModelQueryHandler:
                     text=f"{self._service.model_type.capitalize()} file name is required",
                     status=400,
                 )
-            notes = await self._service.get_model_notes(model_name)
-            if notes is not None:
-                return web.json_response({"success": True, "notes": notes})
+            result = await self._service.get_model_notes(model_name)
+            if result is not None:
+                return web.json_response({
+                    "success": True,
+                    "notes": result["notes"],
+                    "file_path": result["file_path"],
+                })
             return web.json_response(
                 {
                     "success": False,
@@ -1849,14 +1853,20 @@ class ModelDownloadHandler:
 
     async def delete_download_history_item(self, request: web.Request) -> web.Response:
         try:
-            item_id = int(request.query.get("id", "0"))
-            if not item_id:
+            download_id = request.query.get("download_id")
+            id_str = request.query.get("id")
+            item_id = int(id_str) if id_str else None
+
+            if not download_id and not item_id:
                 return web.json_response(
-                    {"success": False, "error": "id is required"}, status=400
+                    {"success": False, "error": "id or download_id is required"},
+                    status=400,
                 )
 
             service = await DownloadQueueService.get_instance()
-            deleted = await service.delete_history_item(item_id)
+            deleted = await service.delete_history_item(
+                id=item_id, download_id=download_id
+            )
             return web.json_response({"success": deleted})
         except Exception as exc:
             self._logger.error(
@@ -1866,14 +1876,20 @@ class ModelDownloadHandler:
 
     async def retry_download_from_history(self, request: web.Request) -> web.Response:
         try:
-            item_id = int(request.query.get("id", "0"))
-            if not item_id:
+            download_id = request.query.get("download_id")
+            id_str = request.query.get("id")
+            item_id = int(id_str) if id_str else None
+
+            if not download_id and not item_id:
                 return web.json_response(
-                    {"success": False, "error": "id is required"}, status=400
+                    {"success": False, "error": "id or download_id is required"},
+                    status=400,
                 )
 
             service = await DownloadQueueService.get_instance()
-            item = await service.retry_from_history(item_id)
+            item = await service.retry_from_history(
+                item_id=item_id, download_id=download_id
+            )
             if item is None:
                 return web.json_response(
                     {"success": False, "error": "History item not found or not retryable"},

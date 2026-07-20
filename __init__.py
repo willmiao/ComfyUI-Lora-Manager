@@ -15,6 +15,8 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.lora_pool import LoraPoolLM
     from .py.nodes.lora_randomizer import LoraRandomizerLM
     from .py.nodes.lora_cycler import LoraCyclerLM
+    from .py.nodes.lora_info import LoraInfoLM
+    from .py.nodes.lora_syntax_to_path import LoraSyntaxToPath
     from .py.metadata_collector import init as init_metadata_collector
 except (
     ImportError
@@ -56,6 +58,10 @@ except (
         "py.nodes.lora_randomizer"
     ).LoraRandomizerLM
     LoraCyclerLM = importlib.import_module("py.nodes.lora_cycler").LoraCyclerLM
+    LoraInfoLM = importlib.import_module("py.nodes.lora_info").LoraInfoLM
+    LoraSyntaxToPath = importlib.import_module(
+        "py.nodes.lora_syntax_to_path"
+    ).LoraSyntaxToPath
     init_metadata_collector = importlib.import_module("py.metadata_collector").init
 
 NODE_CLASS_MAPPINGS = {
@@ -75,6 +81,8 @@ NODE_CLASS_MAPPINGS = {
     LoraPoolLM.NAME: LoraPoolLM,
     LoraRandomizerLM.NAME: LoraRandomizerLM,
     LoraCyclerLM.NAME: LoraCyclerLM,
+    LoraInfoLM.NAME: LoraInfoLM,
+    LoraSyntaxToPath.NAME: LoraSyntaxToPath,
 }
 
 WEB_DIRECTORY = "./web/comfyui"

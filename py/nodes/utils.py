@@ -36,6 +36,7 @@ any_type = AnyType("*")
 
 # Common methods extracted from lora_loader.py and lora_stacker.py
 import os
+import re
 import logging
 import copy
 import sys
@@ -67,6 +68,25 @@ def extract_lora_name(lora_path):
     if dirname and dirname not in (".", "/") and not normalized.startswith("/"):
         return apply_lora_syntax_format(f"{dirname}/{name_no_ext}")
     return apply_lora_syntax_format(name_no_ext)
+
+
+def parse_lora_syntax(text: str) -> list[dict]:
+    """Parse <lora:name:strength> syntax from text input into a list of dicts.
+
+    Each entry contains: name, model_strength, clip_strength.
+    Supports both ``<lora:name:strength>`` and ``<lora:name:model_strength:clip_strength>``.
+    """
+    pattern = r"<lora:([^:>]+):([^:>]+)(?::([^:>]+))?>"
+    matches = re.findall(pattern, text, re.IGNORECASE)
+    loras = []
+    for match in matches:
+        model_strength = float(match[1])
+        loras.append({
+            "name": match[0],
+            "model_strength": model_strength,
+            "clip_strength": float(match[2]) if match[2] else model_strength,
+        })
+    return loras
 
 
 def get_loras_list(kwargs):

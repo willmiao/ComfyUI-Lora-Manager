@@ -271,12 +271,16 @@ class LoraService(BaseModelService):
         return letters
 
     async def get_lora_trigger_words(self, lora_name: str) -> List[str]:
-        """Get trigger words for a specific LoRA file"""
+        """Get trigger words for a specific LoRA file.
+
+        Supports both simple names and full-path syntax.
+        """
         cache = await self.scanner.get_cached_data()
 
         for lora in cache.raw_data:
-            if lora["file_name"] == lora_name:
-                civitai_data = lora.get("civitai", {})
+            file_name = lora.get("file_name", "")
+            if file_name == lora_name or lora_name.endswith("/" + file_name) or lora_name.endswith("\\" + file_name):
+                civitai_data = lora.get("civitai") or {}
                 return civitai_data.get("trainedWords", [])
 
         return []

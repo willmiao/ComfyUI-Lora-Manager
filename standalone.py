@@ -1,6 +1,10 @@
 import os
 import sys
 import json
+# Ensure the script's directory is on sys.path so that py.* imports resolve
+# regardless of the current working directory (e.g. when launched via
+# ComfyUI's python_embeded from the ComfyUI root directory).
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from py.middleware.cache_middleware import cache_control
 from py.middleware.error_middleware import api_json_error
 from py.utils.settings_paths import ensure_settings_file

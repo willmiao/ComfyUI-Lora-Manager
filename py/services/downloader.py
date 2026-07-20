@@ -270,14 +270,14 @@ class Downloader:
 
         Note: This is private and caller MUST hold self._session_lock.
         """
-        # Close existing session if any
-        if self._session is not None:
-            try:
-                await self._session.close()
-            except Exception as e:  # pragma: no cover
-                logger.warning(f"Error closing previous session: {e}")
-            finally:
-                self._session = None
+        # Snapshot and clear old session reference before creating the new
+        # one.  This ensures self._session is always valid (or None, which
+        # triggers a fresh creation) and avoids a race where concurrent
+        # requests hold a reference to a session whose connector has been
+        # torn down by a premature close() call — the root cause of the
+        # intermittent "NoneType has no attribute connect" crash.
+        old_session = self._session
+        self._session = None
 
         # Check for app-level proxy settings
         proxy_url = None  # http(s) proxy, passed via the per-request `proxy=` kwarg
@@ -371,6 +371,13 @@ class Downloader:
         # would re-trigger the original aiohttp parse error.
         self._proxy_url = proxy_url
         self._session_created_at = datetime.now()
+
+        # Close the previous session now that the replacement is live.
+        if old_session is not None:
+            try:
+                await old_session.close()
+            except Exception as e:  # pragma: no cover
+                logger.warning(f"Error closing previous session: {e}")
 
         logger.debug(
             "Created new HTTP session with proxy settings. App-level proxy: %s, System-level proxy (trust_env): %s",
@@ -753,7 +760,8 @@ class Downloader:
                             else:
                                 resume_offset = 0
                                 total_size = 0
-                            await self._create_session()
+                            async with self._session_lock:
+                                await self._create_session()
                             continue
 
                         return False, integrity_error
@@ -843,7 +851,8 @@ class Downloader:
                         logger.info(f"Will resume from byte {resume_offset}")
 
                     # Refresh session to get new connection
-                    await self._create_session()
+                    async with self._session_lock:
+                        await self._create_session()
                     continue
                 else:
                     logger.error(f"Max retries exceeded for download: {e}")

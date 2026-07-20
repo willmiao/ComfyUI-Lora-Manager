@@ -102,6 +102,7 @@ npm run test:coverage       # Generate coverage report
 - ComfyUI: `app.registerExtension()`, `node.addDOMWidget(name, type, element, options)`
 - Event handlers via `addEventListener` or widget callbacks
 - Shared utilities: `web/comfyui/utils.js`
+- Dual-mode rendering patterns (canvas vs Vue): see `docs/comfyui-dual-mode-widgets.md`
 
 ### Vue Composables Pattern
 

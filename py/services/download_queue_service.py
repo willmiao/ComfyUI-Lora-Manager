@@ -74,6 +74,8 @@ class DownloadQueueService:
         );
         CREATE INDEX IF NOT EXISTS idx_dh_completed ON download_history(completed_at DESC);
         CREATE INDEX IF NOT EXISTS idx_dh_status ON download_history(status);
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_dh_download_id
+            ON download_history(download_id) WHERE download_id IS NOT NULL;
     """
 
     @classmethod
@@ -154,13 +156,23 @@ class DownloadQueueService:
         """Insert a new download into the queue.
 
         Returns the inserted row as a dict (or an empty dict if the
-        download_id already exists).
+        download_id already exists in the queue or has a terminal
+        record in history).
         """
         now = time.time()
         file_params_json = json.dumps(file_params) if file_params is not None else None
 
         async with self._lock:
             conn = self._get_conn()
+
+            # Reject download_ids that already have a terminal record in history.
+            history_row = conn.execute(
+                "SELECT 1 FROM download_history WHERE download_id = ? LIMIT 1",
+                (download_id,),
+            ).fetchone()
+            if history_row is not None:
+                return {}
+
             conn.execute(
                 """
                 INSERT OR IGNORE INTO download_queue (
@@ -380,7 +392,7 @@ class DownloadQueueService:
             )
             conn.execute(
                 """
-                INSERT INTO download_history (
+                INSERT OR IGNORE INTO download_history (
                     download_id, model_id, model_version_id, model_name,
                     version_name, thumbnail_url, status, error, file_path,
                     bytes_downloaded, total_bytes, completed_at
@@ -537,17 +549,27 @@ class DownloadQueueService:
             "offset": offset,
         }
 
-    async def delete_history_item(self, id: int) -> bool:
-        """Delete a single history entry by its *id*.
+    async def delete_history_item(
+        self, id: Optional[int] = None, download_id: Optional[str] = None
+    ) -> bool:
+        """Delete a single history entry by *download_id* (preferred) or *id*.
 
         Returns ``True`` if a row was deleted.
         """
         async with self._lock:
             conn = self._get_conn()
-            cursor = conn.execute(
-                "DELETE FROM download_history WHERE id = ?",
-                (id,),
-            )
+            if download_id:
+                cursor = conn.execute(
+                    "DELETE FROM download_history WHERE download_id = ?",
+                    (download_id,),
+                )
+            elif id is not None:
+                cursor = conn.execute(
+                    "DELETE FROM download_history WHERE id = ?",
+                    (id,),
+                )
+            else:
+                return False
             conn.commit()
         return cursor.rowcount > 0
 
@@ -604,21 +626,34 @@ class DownloadQueueService:
     # Retry
     # ------------------------------------------------------------------
 
-    async def retry_from_history(self, item_id: int) -> Optional[dict[str, Any]]:
+    async def retry_from_history(
+        self,
+        item_id: Optional[int] = None,
+        download_id: Optional[str] = None,
+    ) -> Optional[dict[str, Any]]:
         """Re-queue a failed or canceled download from history.
 
-        Looks up the history record by its primary key.  If the status is
-        ``failed`` or ``canceled`` a new queue entry is created with the
-        same model metadata and a fresh download id, and the original
-        history entry is **deleted** to prevent exponential growth when
-        the retried item is later canceled or fails again and re-retried.
+        Looks up the history record by *download_id* (preferred) or
+        *item_id*.  If the status is ``failed`` or ``canceled`` a new
+        queue entry is created with the same model metadata and a fresh
+        download id, and the original history entry is **deleted** to
+        prevent exponential growth when the retried item is later
+        canceled or fails again and re-retried.
         """
         async with self._lock:
             conn = self._get_conn()
-            row = conn.execute(
-                "SELECT * FROM download_history WHERE id = ?",
-                (item_id,),
-            ).fetchone()
+            if download_id:
+                row = conn.execute(
+                    "SELECT * FROM download_history WHERE download_id = ?",
+                    (download_id,),
+                ).fetchone()
+            elif item_id is not None:
+                row = conn.execute(
+                    "SELECT * FROM download_history WHERE id = ?",
+                    (item_id,),
+                ).fetchone()
+            else:
+                return None
             if row is None:
                 return None
             status = str(row["status"])
@@ -650,7 +685,7 @@ class DownloadQueueService:
             )
             conn.execute(
                 "DELETE FROM download_history WHERE id = ?",
-                (item_id,),
+                (row["id"],),
             )
             conn.commit()
             queued = conn.execute(

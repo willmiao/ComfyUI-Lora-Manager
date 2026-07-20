@@ -216,11 +216,12 @@ class RecipePersistenceService:
             "preview_nsfw_level",
             "favorite",
             "gen_params",
+            "base_model",
         )
 
         if not any(key in updates for key in allowed_fields):
             raise RecipeValidationError(
-                "At least one field to update must be provided (title or tags or source_path or preview_nsfw_level or favorite or gen_params)"
+                "At least one field to update must be provided (title or tags or source_path or preview_nsfw_level or favorite or gen_params or base_model)"
             )
 
         if "gen_params" in updates and not isinstance(updates["gen_params"], dict):

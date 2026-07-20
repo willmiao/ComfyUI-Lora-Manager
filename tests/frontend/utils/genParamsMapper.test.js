@@ -9,6 +9,7 @@ import {
     parseCombinedSamplerName,
     resolveSamplerScheduler,
     findMatchingWidgets,
+    NODE_TYPE_WIDGET_OVERRIDES,
 } from '../../../static/js/utils/genParamsMapper.js';
 
 // ---------------------------------------------------------------------------
@@ -204,9 +205,9 @@ describe('findMatchingWidgets', () => {
 
     it('matches seed to seed widget', () => {
         const updates = findMatchingWidgets(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler'], resolved);
-        expect(updates).toContainEqual({ widgetName: 'seed', value: '42' });
-        expect(updates).toContainEqual({ widgetName: 'steps', value: '30' });
-        expect(updates).toContainEqual({ widgetName: 'cfg', value: '7' });
+        expect(updates).toContainEqual({ widgetName: 'seed', value: 42 });
+        expect(updates).toContainEqual({ widgetName: 'steps', value: 30 });
+        expect(updates).toContainEqual({ widgetName: 'cfg', value: 7 });
         expect(updates).toContainEqual({ widgetName: 'sampler_name', value: 'euler_ancestral' });
         expect(updates).toContainEqual({ widgetName: 'scheduler', value: 'karras' });
     });
@@ -221,7 +222,7 @@ describe('findMatchingWidgets', () => {
         const updates = findMatchingWidgets(['noise_seed', 'steps', 'cfg', 'sampler_name', 'scheduler'], resolved);
         const seedUpdate = updates.find(u => u.widgetName === 'noise_seed');
         expect(seedUpdate).toBeDefined();
-        expect(seedUpdate.value).toBe('42');
+        expect(seedUpdate.value).toBe(42);
     });
 
     it('matches rgthree-style sampler widget name', () => {
@@ -242,5 +243,54 @@ describe('findMatchingWidgets', () => {
     it('returns updates in param order (seed, steps, cfg, sampler, scheduler)', () => {
         const updates = findMatchingWidgets(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler'], resolved);
         expect(updates.map(u => u.widgetName)).toEqual(['seed', 'steps', 'cfg', 'sampler_name', 'scheduler']);
+    });
+
+    // --- node-type-specific overrides ---
+    it('matches GlobalSeed //Inspire value widget for seed param', () => {
+        const updates = findMatchingWidgets(
+            ['value', 'mode', 'action', 'last_seed'],
+            { seed: 42 },
+            'GlobalSeed //Inspire'
+        );
+        expect(updates).toHaveLength(1);
+        expect(updates[0]).toEqual({ widgetName: 'value', value: 42 });
+    });
+
+    it('ignores nodeType when it does not match any override entry', () => {
+        const updates = findMatchingWidgets(
+            ['value', 'mode', 'action', 'last_seed'],
+            { seed: 42 },
+            'SomeOtherNode'
+        );
+        expect(updates).toEqual([]);
+    });
+
+    it('still falls back to global candidates when override candidates do not match', () => {
+        // GlobalSeed override does not include steps — should use global candidate "steps"
+        const updates = findMatchingWidgets(
+            ['steps', 'cfg', 'sampler_name'],
+            { steps: 20 },
+            'GlobalSeed //Inspire'
+        );
+        expect(updates).toHaveLength(1);
+        expect(updates[0]).toEqual({ widgetName: 'steps', value: 20 });
+    });
+
+    it('prefers overrides when both override and global candidates match', () => {
+        // If a hypothetical node has both "value" and "seed" widgets AND a
+        // GlobalSeed override, the override candidate "value" should take precedence
+        const updates = findMatchingWidgets(
+            ['seed', 'noise_seed', 'value', 'mode'],
+            { seed: 99 },
+            'GlobalSeed //Inspire'
+        );
+        expect(updates).toHaveLength(1);
+        expect(updates[0].widgetName).toBe('value');
+    });
+
+    it('omits nodeType argument and still matches via global candidates', () => {
+        const updates = findMatchingWidgets(['seed', 'steps', 'cfg'], { seed: 7 });
+        expect(updates).toHaveLength(1);
+        expect(updates[0]).toEqual({ widgetName: 'seed', value: 7 });
     });
 });
