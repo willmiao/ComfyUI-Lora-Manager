@@ -114,6 +114,38 @@ def test_calculate_relative_path_sanitizes_model_and_version_names(isolated_sett
     assert relative_path == "Fancy_Model/Version_One"
 
 
+def test_calculate_relative_path_sanitizes_leading_slash(isolated_settings):
+    """Test that empty base_model does NOT produce a leading slash in the path."""
+    isolated_settings["download_path_templates"]["lora"] = "{base_model}/{first_tag}"
+
+    model_data = {
+        "base_model": "",
+        "tags": [],
+        "civitai": {"id": 1, "creator": {"username": "Author"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert not relative_path.startswith("/")
+    assert relative_path == "no tags"
+
+
+def test_calculate_relative_path_sanitizes_double_slashes(isolated_settings):
+    """Test that empty substitutions don't produce double slashes."""
+    isolated_settings["download_path_templates"]["lora"] = "{base_model}/{first_tag}/{author}"
+
+    model_data = {
+        "base_model": "",
+        "tags": [],
+        "civitai": {"id": 1, "creator": {"username": "Author"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert "//" not in relative_path
+    assert relative_path == "no tags/Author"
+
+
 def test_calculate_recipe_fingerprint_filters_and_sorts():
     loras = [
         {"hash": "ABC", "strength": 0.1234},

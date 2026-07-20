@@ -1389,7 +1389,17 @@ class DownloadManager:
 
             # Update save directory with relative path if provided
             if relative_path:
+                base_save_dir = save_dir
                 save_dir = os.path.join(save_dir, relative_path)
+                # Security: validate path containment after joining
+                resolved_dir = os.path.realpath(os.path.normpath(save_dir))
+                base_dir = os.path.realpath(os.path.normpath(base_save_dir))
+                if not resolved_dir.startswith(base_dir + os.sep) and resolved_dir != base_dir:
+                    logger.warning(
+                        "Path traversal detected: %s escapes %s",
+                        resolved_dir, base_dir,
+                    )
+                    return {"success": False, "error": "Download path is outside allowed directory"}
                 # Create directory if it doesn't exist
                 os.makedirs(save_dir, exist_ok=True)
 
@@ -1827,6 +1837,9 @@ class DownloadManager:
             model_tags, model_type
         )
 
+        if not first_tag:
+            first_tag = "no tags"  # Default if no tags available
+
         # Format the template with available data
         formatted_path = path_template
         formatted_path = formatted_path.replace("{base_model}", mapped_base_model)
@@ -1841,6 +1854,15 @@ class DownloadManager:
 
         if model_type == "embedding":
             formatted_path = formatted_path.replace(" ", "_")
+
+        # Sanitize the resolved path to prevent path traversal:
+        # - Strip leading slashes (prevents os.path.join from treating path as absolute)
+        # - Collapse double slashes from empty placeholder substitutions
+        # - Strip trailing slashes for cleanliness
+        formatted_path = formatted_path.lstrip("/")
+        while "//" in formatted_path:
+            formatted_path = formatted_path.replace("//", "/")
+        formatted_path = formatted_path.rstrip("/")
 
         return formatted_path
 

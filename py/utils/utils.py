@@ -488,6 +488,12 @@ def calculate_relative_path_for_model(
     if model_type == "embedding":
         formatted_path = formatted_path.replace(" ", "_")
 
+    # Sanitize the resolved path to prevent path traversal
+    formatted_path = formatted_path.lstrip("/")
+    while "//" in formatted_path:
+        formatted_path = formatted_path.replace("//", "/")
+    formatted_path = formatted_path.rstrip("/")
+
     return formatted_path
 
 

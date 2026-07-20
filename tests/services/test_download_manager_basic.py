@@ -1189,6 +1189,65 @@ def test_relative_path_sanitizes_model_and_version_placeholders():
     assert relative_path == "Fancy_Model/Version_One"
 
 
+def test_relative_path_empty_first_tag_fallback():
+    """Test that empty first_tag falls back to 'no tags'."""
+    manager = DownloadManager()
+    settings_manager = get_settings_manager()
+    settings_manager.settings["download_path_templates"]["lora"] = (
+        "{base_model}/{first_tag}"
+    )
+
+    version_info = {
+        "baseModel": "SDXL",
+        "model": {"name": "Test Model", "tags": []},
+        "creator": {"username": "Author"},
+    }
+
+    relative_path = manager._calculate_relative_path(version_info, "lora")
+
+    assert relative_path == "SDXL/no tags"
+
+
+def test_relative_path_empty_base_model_and_first_tag():
+    """Test that empty base_model + empty first_tag does NOT produce a leading slash."""
+    manager = DownloadManager()
+    settings_manager = get_settings_manager()
+    settings_manager.settings["download_path_templates"]["lora"] = (
+        "{base_model}/{first_tag}"
+    )
+
+    version_info = {
+        "baseModel": "",
+        "model": {"name": "Test Model", "tags": []},
+        "creator": {"username": "Author"},
+    }
+
+    relative_path = manager._calculate_relative_path(version_info, "lora")
+
+    assert not relative_path.startswith("/")
+    assert relative_path == "no tags"
+
+
+def test_relative_path_sanitizes_double_slashes():
+    """Test that empty placeholder substitutions don't produce double slashes."""
+    manager = DownloadManager()
+    settings_manager = get_settings_manager()
+    settings_manager.settings["download_path_templates"]["lora"] = (
+        "{base_model}/{first_tag}/{author}"
+    )
+
+    version_info = {
+        "baseModel": "SDXL",
+        "model": {"name": "Test Model", "tags": []},
+        "creator": {"username": "Author"},
+    }
+
+    relative_path = manager._calculate_relative_path(version_info, "lora")
+
+    assert "//" not in relative_path
+    assert relative_path == "SDXL/no tags/Author"
+
+
 def test_distribute_preview_to_entries_moves_and_copies(tmp_path):
     """Test that preview distribution moves file to first entry and copies to others."""
     manager = DownloadManager()
