@@ -134,7 +134,10 @@ export async function copyToClipboard(text, successMessage = null) {
 }
 
 export function showToast(key, params = {}, type = 'info', fallback = null) {
-  const message = translate(key, params, fallback);
+  // Plain messages (contain spaces) are not i18n dot-notation keys — use verbatim
+  // to avoid spurious "Translation key not found" warnings from i18next
+  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
+  const message = isPlainMessage ? key : translate(key, params, fallback);
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
