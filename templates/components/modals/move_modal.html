@@ -62,10 +62,19 @@
                 </div>
             </div>
         </div>
+        <div id="moveProgressContainer" class="move-progress-container" hidden aria-live="polite">
+            <div class="move-progress-header">
+                <span id="moveProgressText">{{ t('modals.moveModel.preparingMove', default='Preparing move...') }}</span>
+                <span id="moveProgressPercent">0%</span>
+            </div>
+            <div class="move-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                <div id="moveProgressBar" class="move-progress-bar" style="width: 0%"></div>
+            </div>
+        </div>
         <div class="modal-actions">
-            <button class="cancel-btn" onclick="modalManager.closeModal('moveModal')">{{ t('common.actions.cancel')
+            <button id="moveCancelBtn" class="cancel-btn" onclick="modalManager.closeModal('moveModal')">{{ t('common.actions.cancel')
                 }}</button>
-            <button class="primary-btn" onclick="moveManager.moveModel()">{{ t('common.actions.move') }}</button>
+            <button id="moveConfirmBtn" class="primary-btn" onclick="moveManager.moveModel()">{{ t('common.actions.move') }}</button>
         </div>
     </div>
 </div>

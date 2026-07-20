@@ -73,6 +73,12 @@
                 <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><i class="fas fa-download"></i> <span>{{ t('loras.controls.fetch.action') }}</span></button>
             </div>
             <div class="control-group">
+                <button data-action="retry-skipped" title="{{ t('loras.controls.retrySkipped.title', default='Retry models previously skipped as not found') }}"><i class="fas fa-redo-alt"></i> <span>{{ t('loras.controls.retrySkipped.action', default='Retry skipped') }}</span></button>
+            </div>
+            <div class="control-group">
+                <button data-action="smart-rename" title="{{ t('loras.controls.smartRename.title', default='Preview safe names generated from model metadata') }}"><i class="fas fa-signature"></i> <span>{{ t('loras.controls.smartRename.action', default='Smart rename') }}</span></button>
+            </div>
+            <div class="control-group">
                 <button data-action="download" title="{{ t('loras.controls.download.title') }}">
                     <i class="fas fa-cloud-download-alt"></i> <span>{{ t('loras.controls.download.action') }}</span>
                 </button>

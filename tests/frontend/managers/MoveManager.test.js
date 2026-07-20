@@ -145,14 +145,21 @@ describe('MoveManager', () => {
         // Manually set a selected path
         moveManager.folderTreeManager.selectedPath = 'wrong/folder';
         
-        mockApiClient.moveBulkModels = vi.fn().mockResolvedValue({ success: true });
-        
         await moveManager.moveModel();
         
-        // Should call moveBulkModels with the root path, NOT including the 'wrong/folder'
-        expect(mockApiClient.moveBulkModels).toHaveBeenCalledWith(
-            moveManager.bulkFilePaths,
+        // Each item is moved separately so the UI can report real progress.
+        expect(mockApiClient.moveSingleModel).toHaveBeenNthCalledWith(
+            1,
+            '/models/loras/flux/lora1.safetensors',
             '/models/loras',
+            true,
+            true
+        );
+        expect(mockApiClient.moveSingleModel).toHaveBeenNthCalledWith(
+            2,
+            '/models/loras/flux/lora2.safetensors',
+            '/models/loras',
+            true,
             true
         );
     });

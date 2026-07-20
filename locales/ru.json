@@ -717,6 +717,14 @@
                 "title": "Получить метаданные с Civitai",
                 "action": "Получить"
             },
+            "retrySkipped": {
+                "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai",
+                "action": "[TODO: Translate] Retry skipped"
+            },
+            "smartRename": {
+                "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata",
+                "action": "[TODO: Translate] Smart rename"
+            },
             "download": {
                 "title": "Загрузить по URL",
                 "action": "Загрузить"
@@ -1159,6 +1167,15 @@
         }
     },
     "modals": {
+        "smartRename": {
+            "title": "[TODO: Translate] Smart Rename Preview",
+            "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide.",
+            "oldName": "[TODO: Translate] Current name",
+            "newName": "[TODO: Translate] Proposed name",
+            "status": "[TODO: Translate] Status",
+            "apply": "[TODO: Translate] Apply safe renames",
+            "undo": "[TODO: Translate] Undo this batch"
+        },
         "exclude": {
             "confirm": "Исключить"
         },
@@ -1323,7 +1340,9 @@
             "browseFolders": "Обзор папок:",
             "createNewFolder": "Создать новую папку",
             "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
-            "root": "Корень"
+            "root": "Корень",
+            "preparingMove": "[TODO: Translate] Preparing move...",
+            "movingProgress": "[TODO: Translate] Moving {current} / {total}"
         },
         "linkHuggingFace": {
             "title": "Связать с HuggingFace",
@@ -1947,6 +1966,9 @@
             "invalidCharactersRemoved": "Недопустимые символы удалены из имени файла",
             "filenameCannotBeEmpty": "Имя файла не может быть пустым",
             "renameFailed": "Не удалось переименовать файл: {message}",
+            "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+            "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)",
+            "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
             "moveFailed": "Не удалось переместить модель(и): {message}",
             "pleaseSelectRoot": "Пожалуйста, выберите корневую папку {type}",
             "nameTooLong": "Название модели ограничено 100 символами",

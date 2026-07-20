@@ -61,6 +61,9 @@ export function getApiEndpoints(modelType) {
         exclude: `/api/lm/${modelType}/exclude`,
         unexclude: `/api/lm/${modelType}/unexclude`,
         rename: `/api/lm/${modelType}/rename`,
+        smartRenamePreview: `/api/lm/${modelType}/smart-rename/preview`,
+        smartRenameApply: `/api/lm/${modelType}/smart-rename/apply`,
+        smartRenameUndo: `/api/lm/${modelType}/smart-rename/undo`,
         save: `/api/lm/${modelType}/save-metadata`,
         cancelTask: `/api/lm/${modelType}/cancel-task`,
 

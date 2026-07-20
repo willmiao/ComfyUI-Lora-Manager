@@ -717,6 +717,14 @@
                 "title": "Civitai에서 메타데이터 가져오기",
                 "action": "가져오기"
             },
+            "retrySkipped": {
+                "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai",
+                "action": "[TODO: Translate] Retry skipped"
+            },
+            "smartRename": {
+                "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata",
+                "action": "[TODO: Translate] Smart rename"
+            },
             "download": {
                 "title": "URL에서 다운로드",
                 "action": "다운로드"
@@ -1159,6 +1167,15 @@
         }
     },
     "modals": {
+        "smartRename": {
+            "title": "[TODO: Translate] Smart Rename Preview",
+            "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide.",
+            "oldName": "[TODO: Translate] Current name",
+            "newName": "[TODO: Translate] Proposed name",
+            "status": "[TODO: Translate] Status",
+            "apply": "[TODO: Translate] Apply safe renames",
+            "undo": "[TODO: Translate] Undo this batch"
+        },
         "exclude": {
             "confirm": "제외"
         },
@@ -1323,7 +1340,9 @@
             "browseFolders": "폴더 탐색:",
             "createNewFolder": "새 폴더 만들기",
             "pathPlaceholder": "폴더 경로를 입력하거나 아래 트리에서 선택하세요...",
-            "root": "루트"
+            "root": "루트",
+            "preparingMove": "[TODO: Translate] Preparing move...",
+            "movingProgress": "[TODO: Translate] Moving {current} / {total}"
         },
         "linkHuggingFace": {
             "title": "HuggingFace에 연결",
@@ -1947,6 +1966,9 @@
             "invalidCharactersRemoved": "파일명에서 잘못된 문자가 제거되었습니다",
             "filenameCannotBeEmpty": "파일 이름은 비어있을 수 없습니다",
             "renameFailed": "파일 이름 변경 실패: {message}",
+            "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+            "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)",
+            "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
             "moveFailed": "모델 이동 실패: {message}",
             "pleaseSelectRoot": "{type} 루트 디렉토리를 선택해주세요",
             "nameTooLong": "모델 이름은 100자로 제한됩니다",

@@ -62,6 +62,15 @@ function handleModelCardEvent_internal(event, modelType) {
         return true; // Stop propagation
     }
 
+    if (event.target.closest('.smart-rename-card-btn')) {
+        event.stopPropagation();
+        const trigger = event.target.closest('.smart-rename-card-btn');
+        if (window.pageControls?.showSmartRenamePreview) {
+            window.pageControls.showSmartRenamePreview([card.dataset.filepath], trigger);
+        }
+        return true;
+    }
+
     if (event.target.closest('.fa-globe')) {
         event.stopPropagation();
         if (card.dataset.from_civitai === 'true') {
@@ -609,6 +618,8 @@ export function createModelCard(model, modelType) {
         <i class="${isFavorite ? 'fas fa-star favorite-active' : 'far fa-star'}" 
            title="${favoriteTitle}">
         </i>
+        <i class="fas fa-signature smart-rename-card-btn"
+           title="${translate('loras.controls.smartRename.action', {}, 'Smart rename')}"></i>
         <i class="fas fa-globe" 
            title="${globeTitle}"
            ${!globeEnabled ? 'style="opacity: 0.5; cursor: not-allowed"' : ''}>

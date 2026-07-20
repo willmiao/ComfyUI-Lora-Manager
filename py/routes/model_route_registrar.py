@@ -36,6 +36,15 @@ COMMON_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/{prefix}/save-metadata", "save_metadata"),
     RouteDefinition("POST", "/api/lm/{prefix}/add-tags", "add_tags"),
     RouteDefinition("POST", "/api/lm/{prefix}/rename", "rename_model"),
+    RouteDefinition(
+        "POST", "/api/lm/{prefix}/smart-rename/preview", "preview_smart_renames"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/{prefix}/smart-rename/apply", "apply_smart_renames"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/{prefix}/smart-rename/undo", "undo_smart_renames"
+    ),
     RouteDefinition("POST", "/api/lm/{prefix}/bulk-delete", "bulk_delete_models"),
     RouteDefinition("POST", "/api/lm/{prefix}/verify-duplicates", "verify_duplicates"),
     RouteDefinition("POST", "/api/lm/{prefix}/move_model", "move_model"),

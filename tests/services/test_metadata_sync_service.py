@@ -113,6 +113,37 @@ async def test_update_model_metadata_merges_and_persists():
 
 
 @pytest.mark.asyncio
+async def test_update_model_metadata_is_saved_before_preview_failure():
+    helpers = build_service()
+
+    async def fail_preview(*_args, **_kwargs):
+        assert helpers.metadata_manager.save_metadata.await_count == 1
+        raise TimeoutError("preview CDN stalled")
+
+    helpers.preview_service.ensure_preview_for_metadata.side_effect = fail_preview
+    local = {"model_name": "Local", "civitai": {}}
+    remote = {
+        "source": "api",
+        "model": {"name": "Remote"},
+        "baseModel": "sdxl",
+        "images": [{"url": "https://image.civitai.com/stalled.mp4"}],
+    }
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        local,
+        remote,
+        helpers.default_provider,
+    )
+
+    assert result["model_name"] == "Remote"
+    helpers.metadata_manager.save_metadata.assert_awaited_once_with(
+        "path/to/model.metadata.json",
+        result,
+    )
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     helpers = build_service()
 
@@ -294,6 +325,53 @@ async def test_fetch_and_update_model_respects_deleted_without_archive():
     helpers.default_provider_factory.assert_not_awaited()
     helpers.metadata_manager.hydrate_model_data.assert_not_awaited()
     # Now update_cache_func IS called to persist the not-found flags to SQLite
+    update_cache.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_force_retry_queries_civitai_for_deleted_model(tmp_path):
+    civitai_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(
+            return_value=(
+                {
+                    "source": "api",
+                    "model": {"name": "Recovered", "description": "", "tags": []},
+                    "images": [],
+                    "baseModel": "sdxl",
+                },
+                None,
+            )
+        ),
+        get_model_version=AsyncMock(),
+    )
+    provider_selector = AsyncMock(return_value=civitai_provider)
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": False},
+        provider_selector=provider_selector,
+    )
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "civitai_deleted": True,
+        "from_civitai": False,
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock(return_value=True)
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="recovered_hash",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+        force_civitai_retry=True,
+    )
+
+    assert ok and error is None
+    provider_selector.assert_awaited_once_with("civitai_api")
+    civitai_provider.get_model_by_hash.assert_awaited_once_with("recovered_hash")
+    helpers.default_provider_factory.assert_not_awaited()
+    assert model_data["from_civitai"] is True
+    assert model_data["civitai_deleted"] is False
+    assert model_data["metadata_source"] == "civitai_api"
     update_cache.assert_awaited_once()
 
 

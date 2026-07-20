@@ -999,3 +999,65 @@
 [data-theme="dark"] .batch-preview-group-body {
     background: var(--border-color);
 }
+
+.move-progress-container {
+    margin: 16px 0 4px;
+    padding: 12px 14px;
+    border: 1px solid var(--border-color, #3f3f46);
+    border-radius: 8px;
+    background: var(--card-bg, rgba(255, 255, 255, 0.04));
+}
+
+.move-progress-container[hidden] {
+    display: none;
+}
+
+.move-progress-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+#moveProgressText {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+#moveProgressPercent {
+    flex: 0 0 auto;
+    font-variant-numeric: tabular-nums;
+}
+
+.move-progress-track {
+    height: 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgba(127, 127, 127, 0.22);
+}
+
+.move-progress-bar {
+    height: 100%;
+    border-radius: inherit;
+    background: var(--accent-color, #3b82f6);
+    transition: width 180ms ease;
+}
+
+.move-progress-bar.indeterminate {
+    width: 38% !important;
+    animation: move-progress-indeterminate 1.1s ease-in-out infinite;
+}
+
+#moveModal.move-in-progress .close {
+    opacity: 0.35;
+    pointer-events: none;
+}
+
+@keyframes move-progress-indeterminate {
+    from { transform: translateX(-115%); }
+    to { transform: translateX(300%); }
+}

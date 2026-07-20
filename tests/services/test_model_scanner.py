@@ -1,4 +1,5 @@
 import asyncio
+import json
 import os
 import sqlite3
 from pathlib import Path
@@ -519,6 +520,62 @@ async def test_reconcile_cache_adds_new_files_and_updates_hash_index(tmp_path: P
     assert scanner._hash_index.get_path("hash-two") is None
     assert scanner._tags_count == {"alpha": 1, "beta": 1}
     assert cache.folders == [""]
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_repairs_external_rename_by_unique_sha(tmp_path: Path):
+    old_file = tmp_path / "old-name.txt"
+    old_file.write_text("same content", encoding="utf-8")
+    old_metadata = tmp_path / "old-name.metadata.json"
+    old_metadata.write_text(
+        json.dumps(
+            {
+                "file_path": _normalize_path(old_file),
+                "file_name": "old-name",
+                "model_name": "Friendly Model",
+                "sha256": "stable-hash",
+                "notes": "keep me",
+                "tags": ["kept-tag"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    scanner = DummyScanner(tmp_path)
+
+    async def stable_process(self, file_path, root_path, **_kwargs):
+        return {
+            "file_path": file_path.replace(os.sep, "/"),
+            "file_name": Path(file_path).stem,
+            "folder": "",
+            "sha256": "stable-hash",
+            "tags": [],
+            "model_name": Path(file_path).stem,
+            "size": os.path.getsize(file_path),
+            "modified": os.path.getmtime(file_path),
+        }
+
+    scanner._process_model_file = MethodType(stable_process, scanner)
+    await scanner._initialize_cache()
+
+    new_file = tmp_path / "new-name.txt"
+    old_file.rename(new_file)
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 1
+    item = cache.raw_data[0]
+    assert item["file_path"] == _normalize_path(new_file)
+    assert item["file_name"] == "new-name"
+    assert item["model_name"] == "Friendly Model"
+    assert item["notes"] == "keep me"
+    assert item["tags"] == ["kept-tag"]
+    assert not old_metadata.exists()
+    new_metadata = tmp_path / "new-name.metadata.json"
+    assert new_metadata.exists()
+    saved = json.loads(new_metadata.read_text(encoding="utf-8"))
+    assert saved["file_path"] == _normalize_path(new_file)
+    assert saved["notes"] == "keep me"
 
 
 @pytest.mark.asyncio

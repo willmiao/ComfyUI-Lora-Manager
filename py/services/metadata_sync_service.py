@@ -152,11 +152,31 @@ class MetadataSyncService:
             civitai_metadata.get("baseModel")
         )
 
-        await self._preview_service.ensure_preview_for_metadata(
-            metadata_path, local_metadata, civitai_metadata.get("images", [])
-        )
-
+        # Persist the useful metadata before touching the preview CDN. Preview
+        # downloads are optional and must never hold the whole refresh hostage.
         await self._metadata_manager.save_metadata(metadata_path, local_metadata)
+
+        preview_state_before = (
+            local_metadata.get("preview_url"),
+            local_metadata.get("preview_nsfw_level"),
+        )
+        try:
+            await self._preview_service.ensure_preview_for_metadata(
+                metadata_path, local_metadata, civitai_metadata.get("images", [])
+            )
+        except Exception as exc:  # pragma: no cover - preview is best effort
+            logger.warning(
+                "Preview processing failed for %s; metadata was already saved: %s",
+                metadata_path,
+                exc,
+            )
+
+        preview_state_after = (
+            local_metadata.get("preview_url"),
+            local_metadata.get("preview_nsfw_level"),
+        )
+        if preview_state_after != preview_state_before:
+            await self._metadata_manager.save_metadata(metadata_path, local_metadata)
         return local_metadata
 
     async def fetch_and_update_model(
@@ -166,6 +186,7 @@ class MetadataSyncService:
         file_path: str,
         model_data: Dict[str, Any],
         update_cache_func: Callable[[str, str, Dict[str, Any]], Awaitable[bool]],
+        force_civitai_retry: bool = False,
     ) -> tuple[bool, Optional[str]]:
         """Fetch metadata for a model and update both disk and cache state.
 
@@ -187,7 +208,16 @@ class MetadataSyncService:
             provider_attempts: list[tuple[Optional[str], MetadataProviderProtocol]] = []
             sqlite_attempted = False
 
-            if model_data.get("civitai_deleted") is True:
+            if force_civitai_retry:
+                # A user-triggered retry must bypass the negative-cache/archive
+                # branch and ask CivitAI itself whether the hash exists now.
+                try:
+                    provider_attempts.append(
+                        ("civitai_api_retry", await self._get_provider("civitai_api"))
+                    )
+                except Exception as exc:  # pragma: no cover - provider resolution fault
+                    logger.debug("Unable to resolve civitai_api provider: %s", exc)
+            elif model_data.get("civitai_deleted") is True:
                 if previous_source in (None, "civarchive"):
                     try:
                         provider_attempts.append(("civarchive_api", await self._get_provider("civarchive_api")))
@@ -258,7 +288,8 @@ class MetadataSyncService:
                     provider_used = provider_name
                     break
 
-                if is_default_provider and error == "Model not found":
+                is_forced_civitai_retry = provider_name == "civitai_api_retry"
+                if (is_default_provider or is_forced_civitai_retry) and error == "Model not found":
                     civitai_api_not_found = True
 
                 last_error = error or last_error
@@ -320,7 +351,7 @@ class MetadataSyncService:
                 return False, error_msg
 
             model_data["from_civitai"] = True
-            if provider_used is None:
+            if provider_used is None or provider_used == "civitai_api_retry":
                 model_data["civitai_deleted"] = False
             elif civitai_api_not_found:
                 model_data["civitai_deleted"] = True
