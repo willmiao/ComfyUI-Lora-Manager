@@ -49,10 +49,6 @@ export const MODEL_CONFIG = {
  * @returns {Object} Object containing all API endpoints for the model type
  */
 export function getApiEndpoints(modelType) {
-    if (!Object.values(MODEL_TYPES).includes(modelType)) {
-        throw new Error(`Invalid model type: ${modelType}`);
-    }
-
     return {
         // Base CRUD operations
         list: `/api/lm/${modelType}/list`,
