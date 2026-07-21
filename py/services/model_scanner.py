@@ -14,7 +14,7 @@ from ..utils.metadata_manager import MetadataManager
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
-from .model_lifecycle_service import delete_model_artifacts
+from .model_lifecycle_service import delete_model_artifacts, _require_path_in_library_roots
 from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
 from .persistent_model_cache import get_persistent_cache
@@ -1394,6 +1394,9 @@ class ModelScanner:
                 
             base_name = os.path.splitext(os.path.basename(source_path))[0]
             source_dir = os.path.dirname(source_path)
+
+            _require_path_in_library_roots(source_path, self, label="Source path")
+            _require_path_in_library_roots(target_path, self, label="Target path")
             
             os.makedirs(target_path, exist_ok=True)
             
@@ -1971,6 +1974,8 @@ class ModelScanner:
                     break
 
                 try:
+                    _require_path_in_library_roots(file_path, self, label="File path")
+
                     target_dir = os.path.dirname(file_path)
                     base_name = os.path.basename(file_path)
                     file_name, main_extension = os.path.splitext(base_name)

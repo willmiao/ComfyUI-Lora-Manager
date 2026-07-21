@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ..services.settings_manager import get_settings_manager
+from ..services.model_lifecycle_service import _require_path_in_library_roots
 
 logger = logging.getLogger(__name__)
 
@@ -493,6 +494,9 @@ class ModelMoveService:
             Dictionary with move result
         """
         try:
+            _require_path_in_library_roots(file_path, self.scanner, label="Source path")
+            _require_path_in_library_roots(target_path, self.scanner, label="Target path")
+
             if use_default_paths:
                 # Find the model in cache to get metadata
                 cache = await self.scanner.get_cached_data()

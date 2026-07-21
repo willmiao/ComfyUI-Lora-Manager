@@ -85,6 +85,7 @@ sys.modules['comfy.utils'] = comfy_mock.utils
 sys.modules['comfy.sd'] = comfy_mock.sd
 sys.modules['comfy.model_management'] = comfy_mock.model_management
 sys.modules['comfy.comfy_types'] = comfy_mock.comfy_types
+sys.modules['comfy.hooks'] = MockModule("comfy.hooks")
 
 execution_mock = MockModule("execution")
 execution_mock.PromptExecutor = mock.MagicMock()

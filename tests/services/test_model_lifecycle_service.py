@@ -3,9 +3,162 @@ from pathlib import Path
 
 import pytest
 
-from py.services.model_lifecycle_service import ModelLifecycleService
+from py.services.model_lifecycle_service import ModelLifecycleService, _require_path_in_library_roots
 from py.utils.metadata_manager import MetadataManager
 from py.utils.models import LoraMetadata
+
+
+class ScannerWithRoots:
+    def __init__(self, roots):
+        self._roots = list(roots)
+
+    def get_model_roots(self):
+        return self._roots
+
+
+class TestRequirePathInLibraryRoots:
+    def test_accepts_path_within_root(self, tmp_path):
+        root = tmp_path / "loras"
+        root.mkdir()
+        model = root / "model.safetensors"
+        model.write_text("")
+
+        scanner = ScannerWithRoots([str(root)])
+        _require_path_in_library_roots(str(model), scanner)
+
+    def test_rejects_path_outside_roots(self, tmp_path):
+        root = tmp_path / "loras"
+        root.mkdir()
+        outside = tmp_path / "outside" / "model.safetensors"
+        outside.parent.mkdir(parents=True)
+        outside.write_text("")
+
+        scanner = ScannerWithRoots([str(root)])
+        with pytest.raises(ValueError, match="outside configured library"):
+            _require_path_in_library_roots(str(outside), scanner)
+
+    def test_passes_when_no_roots_configured(self, tmp_path):
+        f = tmp_path / "model.safetensors"
+        f.write_text("")
+
+        scanner = ScannerWithRoots([])
+        _require_path_in_library_roots(str(f), scanner)
+
+    def test_accepts_path_matching_root_exactly(self, tmp_path):
+        root = tmp_path / "loras"
+        root.mkdir()
+
+        scanner = ScannerWithRoots([str(root)])
+        _require_path_in_library_roots(str(root), scanner)
+
+    def test_rejects_symlink_escape(self, tmp_path):
+        root = tmp_path / "loras"
+        root.mkdir()
+        model = root / "model.safetensors"
+        model.write_text("")
+
+        outside_dir = tmp_path / "outside"
+        outside_dir.mkdir()
+        outside_file = outside_dir / "escaped.safetensors"
+        outside_file.write_text("")
+
+        symlink = root / "link.safetensors"
+        symlink.symlink_to(outside_file)
+
+        scanner = ScannerWithRoots([str(root)])
+        with pytest.raises(ValueError, match="outside configured library"):
+            _require_path_in_library_roots(str(symlink), scanner)
+
+
+class ScannerForDelete:
+    def __init__(self, raw_data, roots, model_type="lora"):
+        self.model_type = model_type
+        self.cache = DummyCache(raw_data)
+        self._hash_index = DummyHashIndex()
+        self._roots = list(roots)
+        self._persist_calls = []
+
+    def get_model_roots(self):
+        return self._roots
+
+    async def get_cached_data(self):
+        return self.cache
+
+    async def _persist_current_cache(self):
+        self._persist_calls.append(True)
+
+
+@pytest.mark.asyncio
+async def test_delete_model_rejects_path_outside_roots(tmp_path: Path):
+    root = tmp_path / "loras"
+    root.mkdir()
+    model = root / "model.safetensors"
+    model.write_bytes(b"data")
+
+    scanner = ScannerForDelete(
+        raw_data=[{"file_path": str(model)}],
+        roots=[str(root)],
+    )
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=DummyMetadataManager({"civitai": {"modelId": 1}}),
+        metadata_loader=lambda x: {},
+    )
+    # Path within root should work (model file exists)
+    result = await service.delete_model(str(model))
+    assert result["success"] is True
+
+    # Path outside root should be rejected
+    outside = tmp_path / "outside.safetensors"
+    outside.write_bytes(b"data")
+    scanner2 = ScannerForDelete(
+        raw_data=[],
+        roots=[str(root)],
+    )
+    service2 = ModelLifecycleService(
+        scanner=scanner2,
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+    with pytest.raises(ValueError, match="outside configured library"):
+        await service2.delete_model(str(outside))
+
+
+@pytest.mark.asyncio
+async def test_rename_model_rejects_path_outside_roots(tmp_path: Path):
+    root = tmp_path / "loras"
+    root.mkdir()
+
+    scanner = ScannerWithRoots([str(root)])
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+    outside = tmp_path / "outside.safetensors"
+    outside.write_bytes(b"data")
+
+    with pytest.raises(ValueError, match="outside configured library"):
+        await service.rename_model(file_path=str(outside), new_file_name="new_name")
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_rejects_any_path_outside_roots(tmp_path: Path):
+    root = tmp_path / "loras"
+    root.mkdir()
+    model_ok = root / "model.safetensors"
+    model_ok.write_bytes(b"data")
+    outside = tmp_path / "outside.safetensors"
+    outside.write_bytes(b"data")
+
+    scanner = ScannerWithRoots([str(root)])
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=DummyMetadataManager({}),
+        metadata_loader=lambda x: {},
+    )
+    with pytest.raises(ValueError, match="outside configured library"):
+        await service.bulk_delete_models([str(model_ok), str(outside)])
 
 
 class DummyCache:
