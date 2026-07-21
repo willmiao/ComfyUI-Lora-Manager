@@ -9,9 +9,6 @@ from __future__ import annotations
 import logging
 import os
 
-import comfy.hooks  # type: ignore
-import comfy.utils  # type: ignore
-
 from ..utils.utils import get_lora_info_absolute
 from .utils import (
     FlexibleOptionalInputType,
@@ -58,6 +55,10 @@ class CreateHookLoraLM:
         summary of the active LoRAs.
         """
         del text  # used by the frontend widget only
+
+        # Lazy imports: comfy is not available in CI/test environment at module level
+        import comfy.hooks  # type: ignore  # noqa: C0415
+        import comfy.utils  # type: ignore  # noqa: C0415
 
         prev_hooks: comfy.hooks.HookGroup | None = kwargs.get("prev_hooks")
 
