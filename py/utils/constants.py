@@ -12,6 +12,7 @@ NODE_TYPES = {
     "Lora Loader (LoraManager)": 1,
     "Lora Stacker (LoraManager)": 2,
     "WanVideo Lora Select (LoraManager)": 3,
+    "Create Hook LoRA (LoraManager)": 4,
 }
 
 # Default ComfyUI node color when bgcolor is null

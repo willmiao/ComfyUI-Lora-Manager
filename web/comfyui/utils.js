@@ -8,6 +8,7 @@ export const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
   "Lora Cycler (LoraManager)",
+  "Create Hook LoRA (LoraManager)",
 ];
 
 export const LORA_STACK_AGGREGATOR_NODE_TYPES = [

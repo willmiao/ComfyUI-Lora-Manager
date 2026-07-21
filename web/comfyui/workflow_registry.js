@@ -9,6 +9,7 @@ const LORA_NODE_CLASSES = new Set([
     "Lora Loader (LoraManager)",
     "Lora Stacker (LoraManager)",
     "WanVideo Lora Select (LoraManager)",
+    "Create Hook LoRA (LoraManager)",
 ]);
 
 const TARGET_WIDGET_NAMES = new Set(["ckpt_name", "unet_name"]);

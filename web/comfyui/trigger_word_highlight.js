@@ -12,6 +12,7 @@ const LORA_NODE_CLASSES = new Set([
   "Lora Loader (LoraManager)",
   "Lora Stacker (LoraManager)",
   "WanVideo Lora Select (LoraManager)",
+  "Create Hook LoRA (LoraManager)",
 ]);
 
 function normalizeTriggerWordList(triggerWords) {

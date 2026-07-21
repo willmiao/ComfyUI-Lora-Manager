@@ -15656,7 +15656,8 @@ function createVueWidgetCleanup(vueApp, onCleanup) {
 const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
-  "Lora Cycler (LoraManager)"
+  "Lora Cycler (LoraManager)",
+  "Create Hook LoRA (LoraManager)"
 ];
 const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
   "Lora Stack Combiner (LoraManager)"
@@ -15781,7 +15782,8 @@ const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
-  "Lora Cycler (LoraManager)"
+  "Lora Cycler (LoraManager)",
+  "Create Hook LoRA (LoraManager)"
 ];
 const LORA_STACK_AGGREGATOR_NODE_TYPES = [
   "Lora Stack Combiner (LoraManager)"
