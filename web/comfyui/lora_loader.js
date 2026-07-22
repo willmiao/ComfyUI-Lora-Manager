@@ -37,22 +37,28 @@ app.registerExtension({
 
     // Handle broadcast mode (for Desktop/non-browser support)
     if (numericNodeId === -1) {
-      // Find all Lora Loader nodes in the current graph
-      const loraLoaderNodes = getAllGraphNodes(app.graph)
+      // Find all compatible nodes in the current graph
+      const compatibleClasses = new Set([
+        "Lora Loader (LoraManager)",
+        "Lora Stacker (LoraManager)",
+        "WanVideo Lora Select (LoraManager)",
+        "Create Hook LoRA (LoraManager)",
+      ]);
+      const targetNodes = getAllGraphNodes(app.graph)
         .map(({ node }) => node)
-        .filter((node) => node?.comfyClass === "Lora Loader (LoraManager)");
+        .filter((node) => compatibleClasses.has(node?.comfyClass));
 
-      // Update each Lora Loader node found
-      if (loraLoaderNodes.length > 0) {
-        loraLoaderNodes.forEach((node) => {
+      // Update each node found
+      if (targetNodes.length > 0) {
+        targetNodes.forEach((node) => {
           this.updateNodeLoraCode(node, loraCode, mode);
         });
         console.log(
-          `Updated ${loraLoaderNodes.length} Lora Loader nodes in broadcast mode`
+          `Updated ${targetNodes.length} nodes in broadcast mode`
         );
       } else {
         console.warn(
-          "No Lora Loader nodes found in the workflow for broadcast update"
+          "No compatible LoRA nodes found in the workflow for broadcast update"
         );
       }
 
@@ -65,10 +71,11 @@ app.registerExtension({
       !node ||
       (node.comfyClass !== "Lora Loader (LoraManager)" &&
         node.comfyClass !== "Lora Stacker (LoraManager)" &&
-        node.comfyClass !== "WanVideo Lora Select (LoraManager)")
+        node.comfyClass !== "WanVideo Lora Select (LoraManager)" &&
+        node.comfyClass !== "Create Hook LoRA (LoraManager)")
     ) {
       console.warn(
-        "Node not found or not a LoraLoader:",
+        "Node not found or not a compatible LoRA node:",
         graphId ?? "root",
         nodeId
       );
