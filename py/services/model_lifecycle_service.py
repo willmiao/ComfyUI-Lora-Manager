@@ -51,9 +51,10 @@ async def delete_model_artifacts(
 def _require_path_in_library_roots(file_path: str, scanner, *, label: str = "path") -> None:
     """Raise ``ValueError`` if *file_path* is not inside a configured model root.
 
-    Uses ``os.path.realpath()`` to resolve symlinks before comparing,
-    so symlink-based escapes are also caught.  Skips when the scanner
-    does not expose ``get_model_roots`` or the list is empty.
+    Uses ``os.path.abspath()`` (NOT ``realpath``) to resolve ``..`` and ``.``
+    while preserving symlinks — this keeps the check in business-path space.
+    Skips when the scanner does not expose ``get_model_roots`` or the list
+    is empty.
     """
 
     roots = None
@@ -65,10 +66,10 @@ def _require_path_in_library_roots(file_path: str, scanner, *, label: str = "pat
     if not roots:
         return
 
-    resolved = os.path.realpath(os.path.normpath(file_path))
+    resolved = os.path.abspath(os.path.normpath(file_path))
 
     for root in roots:
-        root_resolved = os.path.realpath(os.path.normpath(root))
+        root_resolved = os.path.abspath(os.path.normpath(root))
         if resolved == root_resolved or resolved.startswith(root_resolved + os.sep):
             return
 

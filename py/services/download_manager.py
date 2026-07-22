@@ -1392,8 +1392,8 @@ class DownloadManager:
                 base_save_dir = save_dir
                 save_dir = os.path.join(save_dir, relative_path)
                 # Security: validate path containment after joining
-                resolved_dir = os.path.realpath(os.path.normpath(save_dir))
-                base_dir = os.path.realpath(os.path.normpath(base_save_dir))
+                resolved_dir = os.path.abspath(os.path.normpath(save_dir))
+                base_dir = os.path.abspath(os.path.normpath(base_save_dir))
                 if not resolved_dir.startswith(base_dir + os.sep) and resolved_dir != base_dir:
                     logger.warning(
                         "Path traversal detected: %s escapes %s",

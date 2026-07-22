@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 
 import pytest
@@ -51,11 +52,12 @@ class TestRequirePathInLibraryRoots:
         scanner = ScannerWithRoots([str(root)])
         _require_path_in_library_roots(str(root), scanner)
 
-    def test_rejects_symlink_escape(self, tmp_path):
+    def test_accepts_symlink_within_root(self, tmp_path):
+        """Symlinks under a configured root are legitimate business paths
+        and should be accepted — containment works on business-path space,
+        not resolved physical paths."""
         root = tmp_path / "loras"
         root.mkdir()
-        model = root / "model.safetensors"
-        model.write_text("")
 
         outside_dir = tmp_path / "outside"
         outside_dir.mkdir()
@@ -66,8 +68,21 @@ class TestRequirePathInLibraryRoots:
         symlink.symlink_to(outside_file)
 
         scanner = ScannerWithRoots([str(root)])
+        # Symlink path is under root in business-path space → accepted
+        _require_path_in_library_roots(str(symlink), scanner)
+
+    def test_rejects_dot_dot_traversal(self, tmp_path):
+        """Verify that ``..`` components are still resolved and blocked —
+        ``abspath`` normalises dot-dot but does not resolve symlinks."""
+        root = tmp_path / "loras"
+        root.mkdir()
+
+        # A path that traverses up out of the root via ..
+        escaped = os.path.join(str(root), "..", "..", "etc", "passwd")
+
+        scanner = ScannerWithRoots([str(root)])
         with pytest.raises(ValueError, match="outside configured library"):
-            _require_path_in_library_roots(str(symlink), scanner)
+            _require_path_in_library_roots(escaped, scanner)
 
 
 class ScannerForDelete:

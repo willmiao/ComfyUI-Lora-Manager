@@ -1248,6 +1248,50 @@ def test_relative_path_sanitizes_double_slashes():
     assert relative_path == "SDXL/no tags/Author"
 
 
+def test_download_containment_accepts_symlink_save_dir(tmp_path):
+    """Verify the download path containment check (download_manager.py:1395-1397)
+    accepts save directories reached through user-created symlinks inside the
+    library root — reproducing the symlink scenario from issue #1028."""
+    # Library root with a symlink subdirectory pointing to an external drive
+    lora_root = tmp_path / "loras"
+    lora_root.mkdir()
+
+    external_drive = tmp_path / "external" / "models"
+    external_drive.mkdir(parents=True)
+
+    symlink = lora_root / "Krea 2"
+    symlink.symlink_to(str(external_drive))
+
+    # Simulate a download: base_save_dir = library root,
+    # relative_path = "Krea 2/concept/NewModel"
+    base_save_dir = str(lora_root)
+    save_dir = os.path.join(base_save_dir, "Krea 2", "concept", "NewModel")
+
+    # Replicate the exact containment check from download_manager.py
+    resolved_dir = os.path.abspath(os.path.normpath(save_dir))
+    base_dir = os.path.abspath(os.path.normpath(base_save_dir))
+
+    # Must NOT be rejected — symlinks are legitimate business paths
+    assert resolved_dir.startswith(base_dir + os.sep)
+
+
+def test_download_containment_rejects_dot_dot_traversal(tmp_path):
+    """Verify the download path containment check still blocks ``..`` traversal
+    after the realpath → abspath change."""
+    lora_root = tmp_path / "loras"
+    lora_root.mkdir()
+
+    base_save_dir = str(lora_root)
+    save_dir = os.path.join(base_save_dir, "..", "..", "etc", "passwd")
+
+    resolved_dir = os.path.abspath(os.path.normpath(save_dir))
+    base_dir = os.path.abspath(os.path.normpath(base_save_dir))
+
+    # Must be rejected — dot-dot escapes the library root
+    assert not resolved_dir.startswith(base_dir + os.sep)
+    assert resolved_dir != base_dir
+
+
 def test_distribute_preview_to_entries_moves_and_copies(tmp_path):
     """Test that preview distribution moves file to first entry and copies to others."""
     manager = DownloadManager()

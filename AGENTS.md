@@ -137,7 +137,13 @@ npm run test:coverage       # Generate coverage report
 - Dual mode: ComfyUI plugin (folder_paths) vs standalone (settings.json)
 - Detection: `os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"`
 - Run `python scripts/sync_translation_keys.py` after adding UI strings to `locales/en.json`
-- Symlinks require normalized paths
+- Symlinks require normalized paths.
+  **Business paths vs real paths**: All stored paths and operation routing use the
+  original paths as they appear under configured model roots — symlinks are NOT
+  resolved. `os.path.realpath` is only for scanner dedup and the symlink cache.
+  Any path passed to `os.remove`/`os.rename`/`shutil.move` or validated by a
+  containment check MUST use the business path (i.e. `os.path.abspath`, not
+  `realpath`).
 
 ## Git / Commit Messages
 
