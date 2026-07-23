@@ -566,18 +566,52 @@ class LLMService:
         if effective_max is None:
             effective_max = 4096
 
-        result = await self.chat_completion(
-            messages=messages,
-            model=model,
-            temperature=temperature,
-            response_format={"type": "json_object"},
-            max_tokens=effective_max,
-        )
+        # Use json_schema (not json_object) for broader provider compatibility:
+        # LM Studio and some other OpenAI-compatible servers reject
+        # json_object but accept json_schema.  {"type": "object"} is
+        # functionally equivalent — it accepts any JSON object without
+        # constraining specific fields.
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": "metadata",
+                "schema": {"type": "object"},
+            },
+        }
+
+        try:
+            result = await self.chat_completion(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                response_format=response_format,
+                max_tokens=effective_max,
+            )
+        except LLMResponseError as e:
+            # Only fall back when the provider rejects the response_format
+            # type value (e.g. "'response_format.type' must be...").  Avoid
+            # catching unrelated 400 errors whose body happens to mention
+            # "response_format" (e.g. "model does not support
+            # response_format restrictions on this endpoint").
+            if "'response_format.type'" not in str(e).lower():
+                raise
+            logger.info(
+                "Provider rejected response_format, retrying without it. "
+                "Falling back to prompt-only JSON mode. Error: %s",
+                e,
+            )
+            result = await self.chat_completion(
+                messages=messages,
+                model=model,
+                temperature=temperature,
+                response_format=None,
+                max_tokens=effective_max,
+            )
 
         content = result.get("content", "") or ""
         if not content:
             raise LLMResponseError(
-                "LLM returned empty content in json_object mode. "
+                "LLM returned empty content. "
                 f"Raw response: {json.dumps(result)[:500]}"
             )
 

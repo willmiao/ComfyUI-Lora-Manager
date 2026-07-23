@@ -244,6 +244,56 @@ class TestLLMServiceChatCompletionJson:
         assert result == {"key": "value"}
 
     @pytest.mark.asyncio
+    async def test_chat_completion_json_falls_back_on_response_format_rejection(
+        self, llm_service,
+    ):
+        """Retry without response_format when provider rejects it (HTTP 400)."""
+        error_response = MockResponse(
+            400,
+            text_data=(
+                '{"error":"\'response_format.type\' must be '
+                '\'json_schema\' or \'text\'"}'
+            ),
+        )
+        success_response = MockResponse(
+            200,
+            json_data={
+                "choices": [{"message": {"content": '{"key": "value"}'}}],
+                "usage": {},
+                "model": "local-model",
+            },
+        )
+
+        call_index = 0
+
+        class FallbackMockSession:
+            def __init__(self):
+                self.last_url = None
+                self.last_json = None
+
+            def post(self, url, json=None, headers=None):
+                nonlocal call_index
+                self.last_url = url
+                self.last_json = json
+                call_index += 1
+                return error_response if call_index == 1 else success_response
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *args):
+                pass
+
+        with mock.patch("aiohttp.ClientSession", return_value=FallbackMockSession()):
+            result = await llm_service.chat_completion_json(
+                system_prompt="You are helpful.",
+                user_prompt="Return JSON.",
+            )
+
+        assert result == {"key": "value"}
+        assert call_index == 2
+
+    @pytest.mark.asyncio
     async def test_chat_completion_json_raises_on_non_json(self, llm_service):
         # Non-JSON content raises LLMResponseError (salvage also fails)
         mock_response = MockResponse(
