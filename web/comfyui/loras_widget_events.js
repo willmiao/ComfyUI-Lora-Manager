@@ -37,17 +37,18 @@ export function handleStrengthDrag(name, initialStrength, initialX, event, widge
       syncClipStrengthIfCollapsed(lorasData[loraIndex]);
     }
     
-    // Update the widget value only if updateWidget flag is true
-    // This allows us to update inputs directly during drag without triggering re-render
-    if (updateWidget) {
-      widget.value = formatLoraValue(lorasData);
-    }
+    // Always write back to widget.value to persist the mutation.
+    // During drag (updateWidget=false), setValue skips renderLoras via __dragActive flag,
+    // so the DOM survives and pointer capture is preserved.
+    widget.value = formatLoraValue(lorasData);
     
-    // Force re-render via callback only if updateWidget is true
+    // Only fire callback on the final commit, not during drag
     if (updateWidget && widget.callback) {
       widget.callback(widget.value);
     }
   }
+  
+  return newStrength;
 }
 
 // Function to handle proportional strength adjustment for all LoRAs via header dragging
@@ -90,12 +91,11 @@ export function handleAllStrengthsDrag(initialStrengths, initialX, event, widget
     lorasData[index].clipStrength = Number(newClipStrength);
   });
   
-  // Update widget value only if updateWidget flag is true
-  if (updateWidget) {
-    widget.value = formatLoraValue(lorasData);
-  }
+  // Always write back to widget.value to persist mutations.
+  // During drag (updateWidget=false), setValue skips renderLoras via __dragActive flag.
+  widget.value = formatLoraValue(lorasData);
   
-  // Force re-render via callback only if updateWidget is true
+  // Only fire callback on the final commit, not during drag
   if (updateWidget && widget.callback) {
     widget.callback(widget.value);
   }
@@ -149,6 +149,13 @@ export function initDrag(
     activePointerId = e.pointerId;
     currentDragElement = e.currentTarget;
 
+    // Suppress renderLoras in setValue during drag so the DOM survives.
+    // The getter creates a new array on every read, so mutations to a
+    // parsed copy are lost unless we write back through widget.value.
+    // Writing back would normally trigger a full DOM re-render via setValue,
+    // destroying pointer capture. __dragActive tells setValue to skip the render.
+    widget.__dragActive = true;
+
     // Capture pointer to receive all subsequent events regardless of stopPropagation
     const target = e.currentTarget;
     target.setPointerCapture(e.pointerId);
@@ -181,17 +188,12 @@ export function initDrag(
     }
 
     // Call the strength adjustment function without updating widget.value during drag
-    handleStrengthDrag(name, initialStrength, initialX, e, widget, isClipStrength, false);
+    const newStrength = handleStrengthDrag(name, initialStrength, initialX, e, widget, isClipStrength, false);
     
     // Update strength input directly instead of re-rendering to avoid losing event listeners
     const strengthInput = currentDragElement.querySelector('.lm-lora-strength-input');
-    if (strengthInput) {
-      const lorasData = parseLoraValue(widget.value);
-      const loraData = lorasData.find(l => l.name === name);
-      if (loraData) {
-        const strengthValue = isClipStrength ? loraData.clipStrength : loraData.strength;
-        strengthInput.value = Number(strengthValue).toFixed(2);
-      }
+    if (strengthInput && typeof newStrength === 'number') {
+      strengthInput.value = newStrength.toFixed(2);
     }
     
     // Prevent showing the preview tooltip during drag
@@ -226,23 +228,30 @@ export function initDrag(
     // Remove the class to restore normal cursor behavior
     document.body.classList.remove('lm-lora-strength-dragging');
 
-    // Only call onDragEnd and re-render if we actually dragged
-    if (wasDragging) {
-      if (typeof onDragEnd === 'function') {
-        onDragEnd();
-      }
+    // Only call onDragEnd and re-render if we actually dragged.
+    // try-finally guarantees __dragActive is always cleared, preventing a
+    // permanent UI freeze if onDragEnd or setValue throws during cleanup.
+    try {
+      if (wasDragging) {
+        if (typeof onDragEnd === 'function') {
+          onDragEnd();
+        }
 
-      // Commit final value through options.setValue so external observers are notified.
-      // During drag, handleStrengthDrag mutates widgetValue in-place (updateWidget=false),
-      // bypassing widget.value setter and options.setValue entirely. This assignment
-      // flushes the in-place mutation through the setter so any setValue wrappers fire.
-      widget.value = widget.value;
-      if (typeof widget.callback === 'function') {
-        widget.callback(widget.value);
+        // Re-enable renderLoras in setValue and flush final value through setter.
+        // The last handleStrengthDrag call already wrote the final strength to
+        // widgetValue via setValue (with render suppressed). widget.value = widget.value
+        // triggers setValue again, which now calls renderLoras since __dragActive is false.
+        widget.__dragActive = false;
+        widget.value = widget.value;
+        if (typeof widget.callback === 'function') {
+          widget.callback(widget.value);
+        }
       }
+    } finally {
+      widget.__dragActive = false;
     }
   };
-  
+
   dragEl.addEventListener('pointerup', endDrag);
   dragEl.addEventListener('pointercancel', endDrag);
 }
@@ -284,6 +293,9 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     hasMoved = false;
     activePointerId = e.pointerId;
     currentHeaderElement = e.currentTarget;
+
+    // Suppress renderLoras in setValue during drag (see initDrag for rationale)
+    widget.__dragActive = true;
 
     // Capture pointer to receive all subsequent events regardless of stopPropagation
     const target = e.currentTarget;
@@ -352,13 +364,20 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     // Remove the class to restore normal cursor behavior
     document.body.classList.remove('lm-lora-strength-dragging');
 
-    // Only re-render if we actually dragged
-    if (wasDragging) {
-      // Commit final value through options.setValue so external observers are notified.
-      widget.value = widget.value;
-      if (typeof widget.callback === 'function') {
-        widget.callback(widget.value);
+    // Only re-render if we actually dragged.
+    // try-finally guarantees __dragActive is always cleared, preventing a
+    // permanent UI freeze if setValue throws during cleanup.
+    try {
+      if (wasDragging) {
+        // Re-enable renderLoras in setValue and flush final value through setter
+        widget.__dragActive = false;
+        widget.value = widget.value;
+        if (typeof widget.callback === 'function') {
+          widget.callback(widget.value);
+        }
       }
+    } finally {
+      widget.__dragActive = false;
     }
   };
 

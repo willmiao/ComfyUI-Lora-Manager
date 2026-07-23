@@ -751,7 +751,11 @@ export function addLorasWidget(node, name, opts, callback) {
         }
       }
 
-      renderLoras(widgetValue, widget);
+      // Skip DOM re-render during drag to preserve pointer capture and event listeners.
+      // The strength inputs are updated directly via the pointermove handler instead.
+      if (!widget.__dragActive) {
+        renderLoras(widgetValue, widget);
+      }
     },
     hideOnZoom: true,
     selectOn: ['click', 'focus']
