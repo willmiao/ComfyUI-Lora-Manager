@@ -54,10 +54,60 @@ class MoveManager {
         this.initialized = true;
     }
 
+    resetMoveProgress() {
+        const container = document.getElementById('moveProgressContainer');
+        const bar = document.getElementById('moveProgressBar');
+        const percent = document.getElementById('moveProgressPercent');
+        const track = container?.querySelector('[role="progressbar"]');
+        if (container) container.hidden = true;
+        if (bar) {
+            bar.classList.remove('indeterminate');
+            bar.style.width = '0%';
+        }
+        if (percent) percent.textContent = '0%';
+        if (track) track.setAttribute('aria-valuenow', '0');
+    }
+
+    setMoveBusy(isBusy) {
+        const modal = document.getElementById('moveModal');
+        modal?.classList.toggle('move-in-progress', isBusy);
+        ['moveCancelBtn', 'moveConfirmBtn', 'moveModelRoot', 'moveFolderPath', 'moveCreateFolderBtn', 'moveUseDefaultPath']
+            .forEach(id => {
+                const element = document.getElementById(id);
+                if (element) element.disabled = isBusy;
+            });
+    }
+
+    updateMoveProgress(completed, total, currentPath = '', isActive = true) {
+        const container = document.getElementById('moveProgressContainer');
+        const text = document.getElementById('moveProgressText');
+        const percent = document.getElementById('moveProgressPercent');
+        const bar = document.getElementById('moveProgressBar');
+        const track = container?.querySelector('[role="progressbar"]');
+        if (!container || !bar) return;
+
+        container.hidden = false;
+        const safeTotal = Math.max(1, total || 1);
+        const value = Math.max(0, Math.min(100, Math.round((completed / safeTotal) * 100)));
+        const fileName = currentPath ? currentPath.split('/').pop() : '';
+        const movingLabel = translate(
+            'modals.moveModel.movingProgress',
+            { current: Math.min(completed + (isActive ? 1 : 0), safeTotal), total: safeTotal },
+            `Moving ${Math.min(completed + (isActive ? 1 : 0), safeTotal)} / ${safeTotal}`
+        );
+        if (text) text.textContent = fileName ? `${movingLabel}: ${fileName}` : movingLabel;
+        if (percent) percent.textContent = `${value}%`;
+        bar.classList.toggle('indeterminate', safeTotal === 1 && completed === 0 && isActive);
+        if (!bar.classList.contains('indeterminate')) bar.style.width = `${value}%`;
+        if (track) track.setAttribute('aria-valuenow', String(value));
+    }
+
     async showMoveModal(filePath, modelType = null) {
         // Reset state
         this.currentFilePath = null;
         this.bulkFilePaths = null;
+        this.resetMoveProgress();
+        this.setMoveBusy(false);
 
         const apiClient = this._getApiClient(modelType);
         const currentPageType = state.currentPageType;
@@ -320,21 +370,64 @@ class MoveManager {
             targetPath = `${targetPath}/${targetFolder}`;
         }
 
+        this.setMoveBusy(true);
         try {
             let movedFiles = []; // Array of { original_file_path, new_file_path }
 
             if (this.bulkFilePaths) {
-                // Bulk move mode
-                const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
-                movedFiles = (results || [])
-                    .filter(r => r.success)
-                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
+                // Move one item per request so the progress bar represents completed work.
+                const total = this.bulkFilePaths.length;
+                const failures = [];
+                let skipped = 0;
+                for (let index = 0; index < total; index += 1) {
+                    const filePath = this.bulkFilePaths[index];
+                    this.updateMoveProgress(index, total, filePath, true);
+                    try {
+                        const result = await apiClient.moveSingleModel(
+                            filePath,
+                            targetPath,
+                            this.useDefaultPath,
+                            true
+                        );
+                        if (result?.new_file_path) {
+                            movedFiles.push({
+                                original_file_path: result.original_file_path || filePath,
+                                new_file_path: result.new_file_path
+                            });
+                        } else {
+                            skipped += 1;
+                        }
+                    } catch (error) {
+                        failures.push({ filePath, message: error.message });
+                    }
+                    this.updateMoveProgress(index + 1, total, filePath, false);
+                }
+
+                if (failures.length > 0) {
+                    showToast('toast.api.bulkMovePartial', {
+                        successCount: movedFiles.length,
+                        type: config.displayName,
+                        failureCount: failures.length
+                    }, 'warning');
+                    const failureMessage = failures.slice(0, 3)
+                        .map(item => `${item.filePath.split('/').pop()}: ${item.message}`)
+                        .join('\n');
+                    showToast('toast.api.bulkMoveFailures', { failures: failureMessage }, 'warning', 6000);
+                } else if (movedFiles.length > 0) {
+                    showToast('toast.api.bulkMoveSuccess', {
+                        successCount: movedFiles.length,
+                        type: config.displayName
+                    }, 'success');
+                } else if (skipped > 0) {
+                    showToast('toast.api.allAlreadyInFolder', { type: config.displayName }, 'info');
+                }
 
                 // Deselect moving items and exit bulk mode
                 this.bulkFilePaths.forEach(path => bulkManager.deselectItem(path));
                 if (state.bulkMode) bulkManager.toggleBulkMode();
             } else {
                 // Single move mode
+                this.updateMoveProgress(0, 1, this.currentFilePath, true);
                 const result = await apiClient.moveSingleModel(this.currentFilePath, targetPath, this.useDefaultPath);
                 if (result) {
                     movedFiles.push({
@@ -342,6 +435,7 @@ class MoveManager {
                         new_file_path: result.new_file_path
                     });
                 }
+                this.updateMoveProgress(1, 1, this.currentFilePath, false);
 
                 // Deselect moving item
                 bulkManager.deselectItem(this.currentFilePath);
@@ -412,11 +506,13 @@ class MoveManager {
             // Refresh folder tree in sidebar (no model data reload)
             await sidebarManager.refresh();
 
+            this.setMoveBusy(false);
             modalManager.closeModal('moveModal');
 
         } catch (error) {
             console.error('Error moving model(s):', error);
             showToast('toast.models.moveFailed', { message: error.message }, 'error');
+            this.setMoveBusy(false);
         }
     }
 }

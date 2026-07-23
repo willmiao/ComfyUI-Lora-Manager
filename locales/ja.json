@@ -747,6 +747,14 @@
         "menuLabel": "更新オプションを表示",
         "check": "アップデートを確認",
         "checkTooltip": "確認には時間がかかる場合があります。"
+      },
+      "retrySkipped": {
+        "action": "[TODO: Translate] Retry skipped",
+        "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai"
+      },
+      "smartRename": {
+        "action": "[TODO: Translate] Smart rename",
+        "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "フォルダを参照：",
       "createNewFolder": "新しいフォルダを作成",
       "pathPlaceholder": "フォルダパスを入力するか、下のツリーから選択...",
-      "root": "ルート"
+      "root": "ルート",
+      "movingProgress": "[TODO: Translate] Moving {current} / {total}",
+      "preparingMove": "[TODO: Translate] Preparing move..."
     },
     "linkHuggingFace": {
       "title": "HuggingFace にリンク",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "CSVをダウンロード",
       "columnModelName": "モデル名",
       "columnError": "エラー"
+    },
+    "smartRename": {
+      "apply": "[TODO: Translate] Apply safe renames",
+      "newName": "[TODO: Translate] Proposed name",
+      "oldName": "[TODO: Translate] Current name",
+      "status": "[TODO: Translate] Status",
+      "title": "[TODO: Translate] Smart Rename Preview",
+      "undo": "[TODO: Translate] Undo this batch",
+      "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide."
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "{count} モデルへのタグ追加に失敗しました",
       "tagsReplaceFailed": "{count} モデルのタグ置換に失敗しました",
       "bulkTagsAddFailed": "モデルへのタグ追加に失敗しました",
-      "bulkTagsReplaceFailed": "モデルのタグ置換に失敗しました"
+      "bulkTagsReplaceFailed": "モデルのタグ置換に失敗しました",
+      "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+      "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
+      "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)"
     },
     "search": {
       "atLeastOneOption": "少なくとも1つの検索オプションを選択する必要があります"

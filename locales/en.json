@@ -725,6 +725,14 @@
         "title": "Fetch metadata from Civitai",
         "action": "Fetch"
       },
+      "retrySkipped": {
+        "title": "Retry models previously skipped as not found on Civitai",
+        "action": "Retry skipped"
+      },
+      "smartRename": {
+        "title": "Preview safe filenames generated from Civitai metadata",
+        "action": "Smart rename"
+      },
       "download": {
         "title": "Download from URL",
         "action": "Download"
@@ -1167,6 +1175,15 @@
     }
   },
   "modals": {
+    "smartRename": {
+      "title": "Smart Rename Preview",
+      "warning": "Existing workflows may still reference old filenames. No model file will be deleted when names collide.",
+      "oldName": "Current name",
+      "newName": "Proposed name",
+      "status": "Status",
+      "apply": "Apply safe renames",
+      "undo": "Undo this batch"
+    },
     "exclude": {
       "confirm": "Exclude"
     },
@@ -1331,7 +1348,9 @@
       "browseFolders": "Browse Folders:",
       "createNewFolder": "Create new folder",
       "pathPlaceholder": "Type folder path or select from tree below...",
-      "root": "Root"
+      "root": "Root",
+      "preparingMove": "Preparing move...",
+      "movingProgress": "Moving {current} / {total}"
     },
     "linkHuggingFace": {
       "title": "Link to HuggingFace",
@@ -1955,6 +1974,9 @@
       "invalidCharactersRemoved": "Invalid characters removed from filename",
       "filenameCannotBeEmpty": "File name cannot be empty",
       "renameFailed": "Failed to rename file: {message}",
+      "smartRenameComplete": "Smart rename complete: {count} model(s) renamed",
+      "smartRenameUndoComplete": "Restored {count} model filename(s)",
+      "smartRenameFailed": "Smart rename failed: {message}",
       "moveFailed": "Failed to move model(s): {message}",
       "pleaseSelectRoot": "Please select a {type} root directory",
       "nameTooLong": "Model name is limited to 100 characters",

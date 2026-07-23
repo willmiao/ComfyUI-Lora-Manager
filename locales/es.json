@@ -747,6 +747,14 @@
         "menuLabel": "Mostrar opciones de actualización",
         "check": "Buscar actualizaciones",
         "checkTooltip": "Comprobar actualizaciones puede tardar."
+      },
+      "retrySkipped": {
+        "action": "[TODO: Translate] Retry skipped",
+        "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai"
+      },
+      "smartRename": {
+        "action": "[TODO: Translate] Smart rename",
+        "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "Explorar carpetas:",
       "createNewFolder": "Crear nueva carpeta",
       "pathPlaceholder": "Escribe la ruta de la carpeta o selecciona del árbol de abajo...",
-      "root": "Raíz"
+      "root": "Raíz",
+      "movingProgress": "[TODO: Translate] Moving {current} / {total}",
+      "preparingMove": "[TODO: Translate] Preparing move..."
     },
     "linkHuggingFace": {
       "title": "Vincular a HuggingFace",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "Descargar CSV",
       "columnModelName": "Nombre del modelo",
       "columnError": "Error"
+    },
+    "smartRename": {
+      "apply": "[TODO: Translate] Apply safe renames",
+      "newName": "[TODO: Translate] Proposed name",
+      "oldName": "[TODO: Translate] Current name",
+      "status": "[TODO: Translate] Status",
+      "title": "[TODO: Translate] Smart Rename Preview",
+      "undo": "[TODO: Translate] Undo this batch",
+      "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide."
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "Error al añadir etiquetas a {count} modelo(s)",
       "tagsReplaceFailed": "Error al reemplazar etiquetas para {count} modelo(s)",
       "bulkTagsAddFailed": "Error al añadir etiquetas a los modelos",
-      "bulkTagsReplaceFailed": "Error al reemplazar etiquetas para los modelos"
+      "bulkTagsReplaceFailed": "Error al reemplazar etiquetas para los modelos",
+      "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+      "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
+      "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)"
     },
     "search": {
       "atLeastOneOption": "Al menos una opción de búsqueda debe estar seleccionada"

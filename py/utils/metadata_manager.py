@@ -63,33 +63,50 @@ class MetadataManager:
         """
 
         payload: Dict = {}
+        metadata_path = (
+            file_path
+            if file_path.endswith(".metadata.json")
+            else f"{os.path.splitext(file_path)[0]}.metadata.json"
+        )
+        raw_payload: Dict = {}
+        if os.path.exists(metadata_path):
+            try:
+                with open(metadata_path, "r", encoding="utf-8") as handle:
+                    raw = json.load(handle)
+                if isinstance(raw, dict):
+                    raw_payload = raw
+            except json.JSONDecodeError:
+                logger.warning(
+                    "Failed to parse metadata file %s while loading payload",
+                    metadata_path,
+                )
+            except Exception as exc:  # pragma: no cover - defensive logging
+                logger.warning("Failed to read metadata file %s: %s", metadata_path, exc)
+
         metadata_obj, should_skip = await MetadataManager.load_metadata(file_path)
 
         if metadata_obj:
-            payload = metadata_obj.to_dict()
+            parsed_payload = metadata_obj.to_dict()
             unknown_fields = getattr(metadata_obj, "_unknown_fields", None)
             if isinstance(unknown_fields, dict):
-                payload.update(unknown_fields)
-        else:
-            if not should_skip:
-                metadata_path = (
-                    file_path
-                    if file_path.endswith(".metadata.json")
-                    else f"{os.path.splitext(file_path)[0]}.metadata.json"
-                )
-                if os.path.exists(metadata_path):
-                    try:
-                        with open(metadata_path, "r", encoding="utf-8") as handle:
-                            raw = json.load(handle)
-                        if isinstance(raw, dict):
-                            payload = raw
-                    except json.JSONDecodeError:
-                        logger.warning(
-                            "Failed to parse metadata file %s while loading payload",
-                            metadata_path,
-                        )
-                    except Exception as exc:  # pragma: no cover - defensive logging
-                        logger.warning("Failed to read metadata file %s: %s", metadata_path, exc)
+                parsed_payload.update(unknown_fields)
+            payload = dict(raw_payload)
+            for key, value in parsed_payload.items():
+                if (
+                    key == "civitai"
+                    and isinstance(payload.get(key), dict)
+                    and isinstance(value, dict)
+                ):
+                    merged = dict(payload[key])
+                    for nested_key, nested_value in value.items():
+                        if nested_value not in (None, "", [], {}) or nested_key not in merged:
+                            merged[nested_key] = nested_value
+                    payload[key] = merged
+                    continue
+                if value not in (None, "", [], {}) or key not in payload:
+                    payload[key] = value
+        elif not should_skip:
+            payload = raw_payload
 
         if not isinstance(payload, dict):
             payload = {}

@@ -511,15 +511,15 @@ export class RecipeSidebarApiClient {
         return result.results || [];
     }
 
-    async moveSingleModel(filePath, targetPath) {
+    async moveSingleModel(filePath, targetPath, _useDefaultPaths = false, silent = false) {
         if (!this.apiConfig.config.supportsMove) {
-            showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
+            if (!silent) showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return null;
         }
 
         const recipeId = extractRecipeId(filePath);
         if (!recipeId) {
-            showToast('toast.api.moveFailed', { message: 'Recipe ID missing' }, 'error');
+            if (!silent) showToast('toast.api.moveFailed', { message: 'Recipe ID missing' }, 'error');
             return null;
         }
 
@@ -540,10 +540,12 @@ export class RecipeSidebarApiClient {
             throw new Error(result.error || `Failed to move ${this.apiConfig.config.displayName}`);
         }
 
-        if (result.message) {
-            showToast('toast.api.moveInfo', { message: result.message }, 'info');
-        } else {
-            showToast('toast.api.moveSuccess', { type: this.apiConfig.config.displayName }, 'success');
+        if (!silent) {
+            if (result.message) {
+                showToast('toast.api.moveInfo', { message: result.message }, 'info');
+            } else {
+                showToast('toast.api.moveSuccess', { type: this.apiConfig.config.displayName }, 'success');
+            }
         }
 
         return {

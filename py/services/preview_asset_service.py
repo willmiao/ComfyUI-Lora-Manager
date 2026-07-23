@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 from typing import Awaitable, Callable, Dict, Optional, Sequence
@@ -24,12 +25,43 @@ class PreviewAssetService:
         metadata_manager,
         downloader_factory: Callable[[], Awaitable],
         exif_utils,
+        download_timeout_seconds: float = 15.0,
     ) -> None:
         self._metadata_manager = metadata_manager
         self._downloader_factory = downloader_factory
         self._exif_utils = exif_utils
+        self._download_timeout_seconds = max(0.01, float(download_timeout_seconds))
 
     async def ensure_preview_for_metadata(
+        self,
+        metadata_path: str,
+        local_metadata: Dict[str, object],
+        images: Sequence[Dict[str, object]] | None,
+    ) -> None:
+        """Best-effort preview fetch with a strict total time limit."""
+
+        try:
+            await asyncio.wait_for(
+                self._ensure_preview_for_metadata(
+                    metadata_path, local_metadata, images
+                ),
+                timeout=self._download_timeout_seconds,
+            )
+        except asyncio.TimeoutError:
+            logger.warning(
+                "Preview download timed out after %.1f seconds for %s; "
+                "continuing without a local preview",
+                self._download_timeout_seconds,
+                metadata_path,
+            )
+        except Exception as exc:  # pragma: no cover - defensive isolation
+            logger.warning(
+                "Preview download failed for %s; continuing without it: %s",
+                metadata_path,
+                exc,
+            )
+
+    async def _ensure_preview_for_metadata(
         self,
         metadata_path: str,
         local_metadata: Dict[str, object],

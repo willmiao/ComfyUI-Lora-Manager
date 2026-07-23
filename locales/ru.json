@@ -747,6 +747,14 @@
         "menuLabel": "Показать параметры обновления",
         "check": "Проверить обновления",
         "checkTooltip": "Проверка может занять время."
+      },
+      "retrySkipped": {
+        "action": "[TODO: Translate] Retry skipped",
+        "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai"
+      },
+      "smartRename": {
+        "action": "[TODO: Translate] Smart rename",
+        "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "Обзор папок:",
       "createNewFolder": "Создать новую папку",
       "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
-      "root": "Корень"
+      "root": "Корень",
+      "movingProgress": "[TODO: Translate] Moving {current} / {total}",
+      "preparingMove": "[TODO: Translate] Preparing move..."
     },
     "linkHuggingFace": {
       "title": "Связать с HuggingFace",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "Скачать CSV",
       "columnModelName": "Имя модели",
       "columnError": "Ошибка"
+    },
+    "smartRename": {
+      "apply": "[TODO: Translate] Apply safe renames",
+      "newName": "[TODO: Translate] Proposed name",
+      "oldName": "[TODO: Translate] Current name",
+      "status": "[TODO: Translate] Status",
+      "title": "[TODO: Translate] Smart Rename Preview",
+      "undo": "[TODO: Translate] Undo this batch",
+      "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide."
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "Не удалось добавить теги к {count} модель(ям)",
       "tagsReplaceFailed": "Не удалось заменить теги для {count} модель(ей)",
       "bulkTagsAddFailed": "Не удалось добавить теги к моделям",
-      "bulkTagsReplaceFailed": "Не удалось заменить теги для моделей"
+      "bulkTagsReplaceFailed": "Не удалось заменить теги для моделей",
+      "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+      "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
+      "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)"
     },
     "search": {
       "atLeastOneOption": "Должен быть выбран хотя бы один вариант поиска"

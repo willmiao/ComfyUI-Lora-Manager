@@ -747,6 +747,14 @@
         "menuLabel": "顯示更新選項",
         "check": "檢查更新",
         "checkTooltip": "檢查更新可能耗時。"
+      },
+      "retrySkipped": {
+        "action": "[TODO: Translate] Retry skipped",
+        "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai"
+      },
+      "smartRename": {
+        "action": "[TODO: Translate] Smart rename",
+        "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "瀏覽資料夾：",
       "createNewFolder": "建立新資料夾",
       "pathPlaceholder": "輸入資料夾路徑或從下方樹狀結構選擇...",
-      "root": "根目錄"
+      "root": "根目錄",
+      "movingProgress": "[TODO: Translate] Moving {current} / {total}",
+      "preparingMove": "[TODO: Translate] Preparing move..."
     },
     "linkHuggingFace": {
       "title": "連結到 HuggingFace",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "下載 CSV",
       "columnModelName": "模型名稱",
       "columnError": "錯誤"
+    },
+    "smartRename": {
+      "apply": "[TODO: Translate] Apply safe renames",
+      "newName": "[TODO: Translate] Proposed name",
+      "oldName": "[TODO: Translate] Current name",
+      "status": "[TODO: Translate] Status",
+      "title": "[TODO: Translate] Smart Rename Preview",
+      "undo": "[TODO: Translate] Undo this batch",
+      "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide."
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "新增標籤到 {count} 個模型失敗",
       "tagsReplaceFailed": "取代 {count} 個模型的標籤失敗",
       "bulkTagsAddFailed": "批量新增標籤到模型失敗",
-      "bulkTagsReplaceFailed": "批量取代模型標籤失敗"
+      "bulkTagsReplaceFailed": "批量取代模型標籤失敗",
+      "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+      "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
+      "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)"
     },
     "search": {
       "atLeastOneOption": "至少需選擇一個搜尋選項"

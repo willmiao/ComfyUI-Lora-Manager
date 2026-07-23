@@ -747,6 +747,14 @@
         "menuLabel": "업데이트 옵션 표시",
         "check": "업데이트 확인",
         "checkTooltip": "업데이트 확인에는 시간이 걸릴 수 있습니다."
+      },
+      "retrySkipped": {
+        "action": "[TODO: Translate] Retry skipped",
+        "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai"
+      },
+      "smartRename": {
+        "action": "[TODO: Translate] Smart rename",
+        "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "폴더 탐색:",
       "createNewFolder": "새 폴더 만들기",
       "pathPlaceholder": "폴더 경로를 입력하거나 아래 트리에서 선택하세요...",
-      "root": "루트"
+      "root": "루트",
+      "movingProgress": "[TODO: Translate] Moving {current} / {total}",
+      "preparingMove": "[TODO: Translate] Preparing move..."
     },
     "linkHuggingFace": {
       "title": "HuggingFace에 연결",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "CSV 다운로드",
       "columnModelName": "모델 이름",
       "columnError": "오류"
+    },
+    "smartRename": {
+      "apply": "[TODO: Translate] Apply safe renames",
+      "newName": "[TODO: Translate] Proposed name",
+      "oldName": "[TODO: Translate] Current name",
+      "status": "[TODO: Translate] Status",
+      "title": "[TODO: Translate] Smart Rename Preview",
+      "undo": "[TODO: Translate] Undo this batch",
+      "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide."
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "{count}개의 모델에 태그 추가에 실패했습니다",
       "tagsReplaceFailed": "{count}개의 모델의 태그 교체에 실패했습니다",
       "bulkTagsAddFailed": "모델에 태그 추가에 실패했습니다",
-      "bulkTagsReplaceFailed": "모델의 태그 교체에 실패했습니다"
+      "bulkTagsReplaceFailed": "모델의 태그 교체에 실패했습니다",
+      "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+      "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
+      "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)"
     },
     "search": {
       "atLeastOneOption": "최소 하나의 검색 옵션을 선택해야 합니다"

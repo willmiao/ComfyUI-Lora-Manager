@@ -747,6 +747,14 @@
         "menuLabel": "显示更新选项",
         "check": "检查更新",
         "checkTooltip": "检查更新可能耗时。"
+      },
+      "retrySkipped": {
+        "action": "重试跳过项",
+        "title": "重新查询此前被标记为 Civitai 未找到的模型"
+      },
+      "smartRename": {
+        "action": "智能改名",
+        "title": "根据 Civitai 元数据预览安全文件名"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "浏览文件夹：",
       "createNewFolder": "新建文件夹",
       "pathPlaceholder": "输入文件夹路径或从下方树中选择...",
-      "root": "根目录"
+      "root": "根目录",
+      "movingProgress": "正在移动 {current} / {total}",
+      "preparingMove": "正在准备移动..."
     },
     "linkHuggingFace": {
       "title": "链接到 HuggingFace",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "下载 CSV",
       "columnModelName": "模型名称",
       "columnError": "错误"
+    },
+    "smartRename": {
+      "apply": "执行安全改名",
+      "newName": "建议名称",
+      "oldName": "当前名称",
+      "status": "状态",
+      "title": "智能改名预览",
+      "undo": "撤销本次改名",
+      "warning": "已有工作流可能仍引用旧文件名。发生重名时不会删除任何模型文件。"
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "为 {count} 个模型添加标签失败",
       "tagsReplaceFailed": "为 {count} 个模型替换标签失败",
       "bulkTagsAddFailed": "批量添加标签失败",
-      "bulkTagsReplaceFailed": "批量替换标签失败"
+      "bulkTagsReplaceFailed": "批量替换标签失败",
+      "smartRenameComplete": "智能改名完成：已重命名 {count} 个模型",
+      "smartRenameFailed": "智能改名失败：{message}",
+      "smartRenameUndoComplete": "已恢复 {count} 个模型文件名"
     },
     "search": {
       "atLeastOneOption": "至少选择一个搜索选项"

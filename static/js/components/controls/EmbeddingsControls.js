@@ -35,8 +35,20 @@ export class EmbeddingsControls extends PageControls {
             },
             
             // Add fetch from Civitai functionality for embeddings
-            fetchFromCivitai: async () => {
-                return await getModelApiClient().fetchCivitaiMetadata();
+            fetchFromCivitai: async (options = {}) => {
+                return await getModelApiClient().fetchCivitaiMetadata(options);
+            },
+
+            previewSmartRenames: async (filePaths = null, onProgress = null) => {
+                return await getModelApiClient().previewSmartRenames(filePaths, onProgress);
+            },
+
+            applySmartRenames: async (filePaths = null) => {
+                return await getModelApiClient().applySmartRenames(filePaths);
+            },
+
+            undoSmartRenames: async (historyId) => {
+                return await getModelApiClient().undoSmartRenames(historyId);
             },
             
             // Add show download modal functionality

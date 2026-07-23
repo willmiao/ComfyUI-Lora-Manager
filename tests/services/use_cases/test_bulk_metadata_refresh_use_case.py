@@ -216,6 +216,155 @@ async def test_normal_model_with_existing_hash_not_affected(mock_hydrate, use_ca
 
 @pytest.mark.asyncio
 @patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_missing_metadata_sidecar_is_refetched_from_cached_hash(
+    mock_hydrate,
+    use_case,
+    mock_service,
+    mock_metadata_sync,
+    tmp_path,
+):
+    """A deleted sidecar must override stale cached CivitAI metadata."""
+    mock_hydrate.return_value = None
+
+    missing_sidecar_model = tmp_path / "missing.safetensors"
+    missing_sidecar_model.write_bytes(b"model")
+
+    intact_model = tmp_path / "intact.safetensors"
+    intact_model.write_bytes(b"model")
+    intact_model.with_suffix(".metadata.json").write_text("{}", encoding="utf-8")
+
+    models = [
+        {
+            "file_path": str(missing_sidecar_model),
+            "sha256": "cached_hash_missing",
+            "hash_status": "completed",
+            "model_name": "Missing Sidecar",
+            "civitai": {"id": 101},
+            "from_civitai": True,
+        },
+        {
+            "file_path": str(intact_model),
+            "sha256": "cached_hash_intact",
+            "hash_status": "completed",
+            "model_name": "Intact Sidecar",
+            "civitai": {"id": 202},
+            "from_civitai": True,
+        },
+    ]
+    cache = SimpleNamespace(raw_data=models, resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    call_args = mock_metadata_sync.fetch_and_update_model.call_args.kwargs
+    assert call_args["file_path"] == str(missing_sidecar_model)
+    assert call_args["sha256"] == "cached_hash_missing"
+    assert not mock_service.scanner.calculate_hash_for_model.called
+    assert result["processed"] == 1
+    assert result["updated"] == 1
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_huggingface_model_with_missing_sidecar_can_query_civitai(
+    mock_hydrate,
+    use_case,
+    mock_service,
+    mock_metadata_sync,
+    tmp_path,
+):
+    """HF provenance must not block repair after its sidecar is deleted."""
+    mock_hydrate.return_value = None
+
+    missing_sidecar_model = tmp_path / "hf_missing.safetensors"
+    missing_sidecar_model.write_bytes(b"model")
+
+    intact_model = tmp_path / "hf_intact.safetensors"
+    intact_model.write_bytes(b"model")
+    intact_model.with_suffix(".metadata.json").write_text("{}", encoding="utf-8")
+
+    models = [
+        {
+            "file_path": str(missing_sidecar_model),
+            "sha256": "cached_hf_hash_missing",
+            "hash_status": "completed",
+            "model_name": "HF Missing Sidecar",
+            "hf_url": "https://huggingface.co/example/missing",
+            "civitai": {},
+        },
+        {
+            "file_path": str(intact_model),
+            "sha256": "cached_hf_hash_intact",
+            "hash_status": "completed",
+            "model_name": "HF Intact Sidecar",
+            "hf_url": "https://huggingface.co/example/intact",
+            "civitai": {},
+        },
+    ]
+    cache = SimpleNamespace(raw_data=models, resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    call_args = mock_metadata_sync.fetch_and_update_model.call_args.kwargs
+    assert call_args["file_path"] == str(missing_sidecar_model)
+    assert call_args["sha256"] == "cached_hf_hash_missing"
+    assert not mock_service.scanner.calculate_hash_for_model.called
+    assert result["processed"] == 1
+    assert result["updated"] == 1
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_missing_sidecar_hydration_preserves_cached_model_identity(
+    mock_hydrate,
+    use_case,
+    mock_service,
+    mock_metadata_sync,
+    tmp_path,
+):
+    """Hydrating a missing sidecar must not erase the cached hash or path."""
+    model_file = tmp_path / "anima.safetensors"
+    model_file.write_bytes(b"model")
+    model = {
+        "file_path": str(model_file),
+        "file_name": "anima",
+        "model_name": "Anima",
+        "size": 5,
+        "sha256": "cached_anima_hash",
+        "hash_status": "completed",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": True,
+        "db_checked": True,
+    }
+
+    async def clear_like_missing_sidecar(model_data):
+        file_path = model_data["file_path"]
+        model_data.clear()
+        model_data["file_path"] = file_path
+        return model_data
+
+    mock_hydrate.side_effect = clear_like_missing_sidecar
+    cache = SimpleNamespace(raw_data=[model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    call_args = mock_metadata_sync.fetch_and_update_model.call_args.kwargs
+    assert call_args["sha256"] == "cached_anima_hash"
+    assert call_args["file_path"] == str(model_file)
+    assert model["sha256"] == "cached_anima_hash"
+    assert model["file_name"] == "anima"
+    assert not mock_service.scanner.calculate_hash_for_model.called
+    assert result["updated"] == 1
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
 async def test_mixed_models_some_pending_some_existing(mock_hydrate, use_case, mock_service, mock_metadata_sync):
     """Test handling of mixed models: some with pending hash, some with existing hash."""
     mock_hydrate.return_value = None
@@ -379,8 +528,8 @@ async def test_respects_skip_paths(mock_hydrate, use_case, mock_service, mock_me
 
 
 @pytest.mark.asyncio
-async def test_model_without_hash_skipped(use_case, mock_service, mock_metadata_sync):
-    """Test that models without hash (and not pending) are skipped."""
+async def test_model_without_hash_is_recalculated(use_case, mock_service, mock_metadata_sync):
+    """A missing hash is recovered even when stale status says completed."""
     no_hash_model = {
         "file_path": "/models/no_hash_model.safetensors",
         "sha256": "",  # Empty but NOT pending
@@ -397,8 +546,68 @@ async def test_model_without_hash_skipped(use_case, mock_service, mock_metadata_
     # Execute
     result = await use_case.execute()
 
-    # Verify metadata sync was NOT called
-    mock_metadata_sync.fetch_and_update_model.assert_not_called()
+    mock_service.scanner.calculate_hash_for_model.assert_called_once_with(
+        "/models/no_hash_model.safetensors"
+    )
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    call_args = mock_metadata_sync.fetch_and_update_model.call_args.kwargs
+    assert call_args["sha256"] == "calculated_hash_123"
 
     assert result["processed"] == 1
-    assert result["updated"] == 0
+    assert result["updated"] == 1
+
+
+@pytest.mark.asyncio
+@patch.object(metadata_manager.MetadataManager, "hydrate_model_data")
+async def test_retry_not_found_mode_processes_only_negative_cache(
+    mock_hydrate,
+    use_case,
+    mock_service,
+    mock_metadata_sync,
+):
+    """The explicit retry mode must not mix in normal fetch candidates."""
+    mock_hydrate.return_value = None
+    confirmed_not_found = {
+        "file_path": "/models/not_found.safetensors",
+        "sha256": "not_found_hash",
+        "model_name": "Not Found",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": True,
+        "db_checked": True,
+    }
+    normal_candidate = {
+        "file_path": "/models/new.safetensors",
+        "sha256": "new_hash",
+        "model_name": "New",
+        "civitai": {},
+        "from_civitai": None,
+        "civitai_deleted": False,
+    }
+    complete_model = {
+        "file_path": "/models/complete.safetensors",
+        "sha256": "complete_hash",
+        "model_name": "Complete",
+        "civitai": {"id": 123},
+        "from_civitai": True,
+    }
+    cache = SimpleNamespace(
+        raw_data=[confirmed_not_found, normal_candidate, complete_model],
+        resort=AsyncMock(),
+    )
+    mock_service.scanner.get_cached_data.return_value = cache
+    reporter = MockProgressReporter()
+
+    result = await use_case.execute(
+        progress_callback=reporter,
+        retry_not_found_only=True,
+    )
+
+    mock_metadata_sync.fetch_and_update_model.assert_called_once()
+    call_args = mock_metadata_sync.fetch_and_update_model.call_args.kwargs
+    assert call_args["file_path"] == "/models/not_found.safetensors"
+    assert call_args["force_civitai_retry"] is True
+    assert result["processed"] == 1
+    assert result["updated"] == 1
+    assert reporter.progress_calls[0]["candidate_total"] == 1
+    assert reporter.progress_calls[0]["retry_not_found_only"] is True

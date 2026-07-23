@@ -329,6 +329,68 @@ export class BaseModelApiClient {
         }
     }
 
+    async previewSmartRenames(filePaths = null, onProgress = null) {
+        let ws = null;
+        const jobId = onProgress
+            ? (globalThis.crypto?.randomUUID?.() || `smart-rename-${Date.now()}-${Math.random()}`)
+            : null;
+        try {
+            if (jobId) {
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+                await new Promise((resolve, reject) => {
+                    ws.onopen = resolve;
+                    ws.onerror = () => reject(new Error('Failed to connect to smart rename progress'));
+                });
+                ws.onmessage = event => {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'smart_rename_progress' && data.job_id === jobId) {
+                        onProgress(data);
+                    }
+                };
+            }
+
+            const response = await fetch(this.apiConfig.endpoints.smartRenamePreview, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ file_paths: filePaths, job_id: jobId })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to preview smart renames');
+            }
+            return result;
+        } finally {
+            ws?.close();
+        }
+    }
+
+    async applySmartRenames(filePaths = null) {
+        const response = await fetch(this.apiConfig.endpoints.smartRenameApply, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ file_paths: filePaths })
+        });
+        const result = await response.json();
+        if (!response.ok) {
+            throw new Error(result.error || 'Failed to apply smart renames');
+        }
+        return result;
+    }
+
+    async undoSmartRenames(historyId) {
+        const response = await fetch(this.apiConfig.endpoints.smartRenameUndo, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ history_id: historyId })
+        });
+        const result = await response.json();
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Failed to undo smart renames');
+        }
+        return result;
+    }
+
     replaceModelPreview(filePath) {
         const input = document.createElement('input');
         input.type = 'file';
@@ -579,7 +641,7 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchCivitaiMetadata() {
+    async fetchCivitaiMetadata({ retryNotFoundOnly = false } = {}) {
         let ws = null;
 
         await state.loadingManager.showWithProgress(async (loading) => {
@@ -602,7 +664,11 @@ export class BaseModelApiClient {
 
                         switch (data.status) {
                             case 'started':
-                                loading.setStatus('Starting metadata fetch...');
+                                loading.setStatus(
+                                    retryNotFoundOnly
+                                        ? `Retrying ${data.candidate_total || 0} previously skipped models...`
+                                        : `Starting metadata fetch (${data.candidate_total || 0} candidates)...`
+                                );
                                 break;
 
                             case 'processing': {
@@ -640,6 +706,11 @@ export class BaseModelApiClient {
                                 resolve(data);
                                 break;
 
+                            case 'rate_limited':
+                                loading.setStatus('Stopped after repeated Civitai rate limits');
+                                resolve(data);
+                                break;
+
                             case 'error':
                                 reject(new Error(data.error));
                                 break;
@@ -654,7 +725,9 @@ export class BaseModelApiClient {
                 const response = await fetch(this.apiConfig.endpoints.fetchAllCivitai, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({})
+                    body: JSON.stringify({
+                        retry_not_found_only: retryNotFoundOnly
+                    })
                 });
 
                 if (!response.ok) {
@@ -1474,14 +1547,14 @@ export class BaseModelApiClient {
         }
     }
 
-    async moveSingleModel(filePath, targetPath, useDefaultPaths = false) {
+    async moveSingleModel(filePath, targetPath, useDefaultPaths = false, silent = false) {
         // Only allow move if supported
         if (!this.apiConfig.config.supportsMove) {
-            showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
+            if (!silent) showToast('toast.api.moveNotSupported', { type: this.apiConfig.config.displayName }, 'warning');
             return null;
         }
         if (filePath.substring(0, filePath.lastIndexOf('/')) === targetPath && !useDefaultPaths) {
-            showToast('toast.api.alreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
+            if (!silent) showToast('toast.api.alreadyInFolder', { type: this.apiConfig.config.displayName }, 'info');
             return null;
         }
 
@@ -1506,10 +1579,12 @@ export class BaseModelApiClient {
             throw new Error(`Failed to move ${this.apiConfig.config.displayName}`);
         }
 
-        if (result && result.message) {
-            showToast('toast.api.moveInfo', { message: result.message }, 'info');
-        } else {
-            showToast('toast.api.moveSuccess', { type: this.apiConfig.config.displayName }, 'success');
+        if (!silent) {
+            if (result && result.message) {
+                showToast('toast.api.moveInfo', { message: result.message }, 'info');
+            } else {
+                showToast('toast.api.moveSuccess', { type: this.apiConfig.config.displayName }, 'success');
+            }
         }
 
         if (result.success) {

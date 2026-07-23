@@ -911,6 +911,72 @@ class ModelManagementHandler:
             self._logger.error("Error renaming model: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def preview_smart_renames(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            file_paths = data.get("file_paths")
+            job_id = str(data.get("job_id") or "")
+            if file_paths is not None and not isinstance(file_paths, list):
+                return web.json_response(
+                    {"success": False, "error": "file_paths must be a list"},
+                    status=400,
+                )
+
+            progress_callback = None
+            if job_id:
+                async def report_progress(progress: Dict[str, object]) -> None:
+                    from ...services.websocket_manager import ws_manager
+
+                    await ws_manager.broadcast(
+                        {
+                            "type": "smart_rename_progress",
+                            "job_id": job_id,
+                            **progress,
+                        }
+                    )
+
+                progress_callback = report_progress
+
+            result = await self._lifecycle_service.preview_smart_renames(
+                file_paths, progress_callback=progress_callback
+            )
+            return web.json_response(result)
+        except Exception as exc:
+            self._logger.error("Error previewing smart renames: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def apply_smart_renames(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            file_paths = data.get("file_paths")
+            if file_paths is not None and not isinstance(file_paths, list):
+                return web.json_response(
+                    {"success": False, "error": "file_paths must be a list"},
+                    status=400,
+                )
+            result = await self._lifecycle_service.apply_smart_renames(file_paths)
+            return web.json_response(result)
+        except Exception as exc:
+            self._logger.error("Error applying smart renames: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def undo_smart_renames(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+            history_id = data.get("history_id")
+            if not history_id:
+                return web.json_response(
+                    {"success": False, "error": "history_id is required"},
+                    status=400,
+                )
+            result = await self._lifecycle_service.undo_smart_renames(history_id)
+            return web.json_response(result)
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
+        except Exception as exc:
+            self._logger.error("Error undoing smart renames: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def bulk_delete_models(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -1985,8 +2051,15 @@ class ModelCivitaiHandler:
 
     async def fetch_all_civitai(self, request: web.Request) -> web.Response:
         try:
+            payload = await request.json() if request.can_read_body else {}
+            retry_not_found_only = bool(
+                payload.get("retry_not_found_only", False)
+                if isinstance(payload, dict)
+                else False
+            )
             result = await self._metadata_refresh_use_case.execute_with_error_handling(
-                progress_callback=self._metadata_progress_callback
+                progress_callback=self._metadata_progress_callback,
+                retry_not_found_only=retry_not_found_only,
             )
             return web.json_response(result)
         except Exception as exc:
@@ -2962,6 +3035,9 @@ class ModelHandlerSet:
             "save_metadata": self.management.save_metadata,
             "add_tags": self.management.add_tags,
             "rename_model": self.management.rename_model,
+            "preview_smart_renames": self.management.preview_smart_renames,
+            "apply_smart_renames": self.management.apply_smart_renames,
+            "undo_smart_renames": self.management.undo_smart_renames,
             "bulk_delete_models": self.management.bulk_delete_models,
             "verify_duplicates": self.management.verify_duplicates,
             "get_top_tags": self.query.get_top_tags,

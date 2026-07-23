@@ -11,6 +11,37 @@
     </div>
 </div>
 
+<!-- Smart Rename Preview Modal -->
+<div id="smartRenameModal" class="modal">
+    <div class="modal-content" style="max-width: 980px;">
+        <span class="close" onclick="modalManager.closeModal('smartRenameModal')">&times;</span>
+        <h2>{{ t('modals.smartRename.title', default='Smart Rename Preview') }}</h2>
+        <p>{{ t('modals.smartRename.warning', default='Existing workflows may still reference old filenames. No model file will be deleted when names collide.') }}</p>
+        <p id="smartRenameSummary"></p>
+        <div style="max-height: 55vh; overflow: auto;">
+            <table class="data-table" style="width: 100%; table-layout: fixed;">
+                <thead>
+                    <tr>
+                        <th>{{ t('modals.smartRename.oldName', default='Current name') }}</th>
+                        <th>{{ t('modals.smartRename.newName', default='Proposed name') }}</th>
+                        <th style="width: 110px;">{{ t('modals.smartRename.status', default='Status') }}</th>
+                    </tr>
+                </thead>
+                <tbody id="smartRenameList"></tbody>
+            </table>
+        </div>
+        <div class="modal-actions">
+            <button class="cancel-btn" onclick="modalManager.closeModal('smartRenameModal')">{{ t('common.actions.close', default='Close') }}</button>
+            <button class="secondary-btn" id="smartRenameUndoBtn" hidden>
+                <i class="fas fa-undo"></i> {{ t('modals.smartRename.undo', default='Undo this batch') }}
+            </button>
+            <button class="primary-btn" id="smartRenameApplyBtn">
+                <i class="fas fa-signature"></i> {{ t('modals.smartRename.apply', default='Apply safe renames') }}
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Exclude Confirmation Modal -->
 <div id="excludeModal" class="modal delete-modal">
     <div class="modal-content delete-modal-content">

@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from pathlib import Path
@@ -229,6 +230,306 @@ class DummyMetadataManager:
         return dict(self._payload)
 
 
+def test_smart_name_uses_sha_matched_uploaded_filename():
+    payload = {
+        "file_path": "/models/local-name.safetensors",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [{
+                "name": "RedCraft_FP8_rank128.safetensors",
+                "hashes": {"SHA256": "A" * 64},
+            }],
+        },
+    }
+
+    result = ModelLifecycleService._build_smart_name(payload)
+
+    assert result == "RedCraft_FP8_rank128"
+
+
+def test_smart_name_requires_exact_sha_match():
+    payload = {
+        "file_path": "/models/current-name.safetensors",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [{
+                "name": "wrong-file.safetensors",
+                "hashes": {"SHA256": "b" * 64},
+            }],
+        },
+    }
+
+    assert ModelLifecycleService._build_smart_name(payload) == "current-name"
+
+
+def test_smart_name_does_not_append_local_quantization_to_civitai_filename():
+    payload = {
+        "file_path": "/models/Wan2.2-I2V-A14B-HighNoise-Q8_0.gguf",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [{
+                "name": "Wan2.2-I2V-A14B-HighNoise.gguf",
+                "hashes": {"SHA256": "a" * 64},
+            }],
+        },
+    }
+
+    result = ModelLifecycleService._build_smart_name(payload)
+
+    assert result == "Wan2.2-I2V-A14B-HighNoise"
+
+
+def test_smart_name_keeps_author_uploaded_characters_but_removes_extension():
+    payload = {
+        "file_path": "/models/animate-Q8_0.gguf",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [{
+                "name": "💀 Wan Animate Q8_0.gguf",
+                "hashes": {"SHA256": "a" * 64},
+            }],
+        },
+    }
+
+    result = ModelLifecycleService._build_smart_name(payload)
+
+    assert result == "💀 Wan Animate Q8_0"
+
+
+def test_smart_name_keeps_descriptive_local_name_over_long_marketing_name():
+    current = "wan21-lightx2v-i2v-14b-480p-cfg-step-distill-rank128-bf16"
+    payload = {
+        "file_path": f"/models/{current}.safetensors",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [{
+                "name": f"{current}.safetensors",
+                "hashes": {"SHA256": "a" * 64},
+            }],
+        },
+    }
+
+    assert ModelLifecycleService._build_smart_name(payload) == current
+
+
+def test_smart_name_keeps_descriptive_name_for_generic_civitai_filename():
+    payload = {
+        "file_path": "/models/useful-local-name.safetensors",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [{
+                "name": "lora.safetensors",
+                "hashes": {"SHA256": "a" * 64},
+            }],
+        },
+    }
+
+    assert ModelLifecycleService._build_smart_name(payload) == "useful-local-name"
+
+
+def test_smart_name_keeps_current_when_same_sha_has_multiple_uploaded_names():
+    payload = {
+        "file_path": "/models/current-name.safetensors",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [
+                {"name": "first.safetensors", "hashes": {"SHA256": "a" * 64}},
+                {"name": "second.safetensors", "hashes": {"SHA256": "a" * 64}},
+            ],
+        },
+    }
+
+    assert ModelLifecycleService._build_smart_name(payload) == "current-name"
+
+
+def test_smart_name_selects_clear_technical_match_from_same_sha_aliases():
+    payload = {
+        "file_path": "/models/Wan2.1-I2V-jiggle-tits.safetensors",
+        "sha256": "a" * 64,
+        "civitai": {
+            "files": [
+                {
+                    "name": "I2V-jiggle_tits.safetensors",
+                    "hashes": {"SHA256": "a" * 64},
+                },
+                {
+                    "name": "T2V-jiggle_tits-14b.safetensors",
+                    "hashes": {"SHA256": "a" * 64},
+                },
+            ],
+        },
+    }
+
+    assert ModelLifecycleService._build_smart_name(payload) == "I2V-jiggle_tits"
+
+
+def test_ambiguous_match_rejects_conflicting_precision_even_if_name_is_similar():
+    selected = ModelLifecycleService._select_ambiguous_uploaded_name(
+        "portrait_rank128_fp16",
+        ["portrait_rank128_fp8.safetensors", "unrelated_fp16.safetensors"],
+    )
+
+    assert selected is None
+
+
+def test_parse_current_civitai_files_uses_page_name_and_sha():
+    sha256 = "89821C3D2094ECA90CDD543FA88CFE33B74855512E14B1D55402CBE3B20DA31A"
+    page = (
+        '<script>{"id":2352229,"url":"https://example/model.safetensors",'
+        '"sizeKB":12021392,"name":"REDZ-v1.5-bf16.safetensors",'
+        '"overrideName":null,"type":"Model","modelVersionId":2462789,'
+        '"hashes":[{"type":"SHA256","hash":"' + sha256 + '"}]}</script>'
+    )
+
+    files = ModelLifecycleService._parse_current_civitai_files(page, 2462789)
+
+    assert files == [{
+        "name": "REDZ-v1.5-bf16.safetensors",
+        "hashes": {"SHA256": sha256.casefold()},
+    }]
+
+
+def test_parse_current_civitai_files_rejects_other_version():
+    page = (
+        '{"id":1,"name":"wrong.safetensors","modelVersionId":22,'
+        '"hashes":[{"type":"SHA256","hash":"' + "a" * 64 + '"}]}'
+    )
+    assert ModelLifecycleService._parse_current_civitai_files(page, 11) == []
+
+
+@pytest.mark.asyncio
+async def test_metadata_payload_preserves_raw_civitai_fields(tmp_path: Path):
+    model = tmp_path / "example.safetensors"
+    model.write_bytes(b"model")
+    sidecar = model.with_suffix(".metadata.json")
+    sidecar.write_text(json.dumps({
+        "file_name": "example",
+        "model_name": "Example",
+        "file_path": model.as_posix(),
+        "size": 5,
+        "modified": 1.0,
+        "sha256": "a" * 64,
+        "base_model": "Unknown",
+        "preview_url": "",
+        "civitai": {
+            "id": 2462789,
+            "modelId": 958009,
+            "files": [{"name": "official.safetensors"}],
+        },
+    }), encoding="utf-8")
+
+    payload = await MetadataManager.load_metadata_payload(model.as_posix())
+
+    assert payload["civitai"]["id"] == 2462789
+    assert payload["civitai"]["files"][0]["name"] == "official.safetensors"
+
+
+@pytest.mark.asyncio
+async def test_preview_smart_renames_keeps_names_when_upload_names_collide(tmp_path: Path):
+    first = tmp_path / "first.safetensors"
+    second = tmp_path / "second.safetensors"
+    first.write_bytes(b"first")
+    second.write_bytes(b"second")
+    entries = [
+        {
+            "file_path": first.as_posix(),
+            "file_name": "first",
+            "model_name": "Shared Model",
+            "sha256": "a" * 64,
+            "civitai": {"files": [{
+                "name": "shared.safetensors",
+                "hashes": {"SHA256": "a" * 64},
+            }]},
+        },
+        {
+            "file_path": second.as_posix(),
+            "file_name": "second",
+            "model_name": "Shared Model",
+            "sha256": "b" * 64,
+            "civitai": {"files": [{
+                "name": "shared.safetensors",
+                "hashes": {"SHA256": "b" * 64},
+            }]},
+        },
+    ]
+    scanner = VersionAwareScanner(entries)
+    manager = DummyMetadataManager({})
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=manager,
+        metadata_loader=manager.load_metadata_payload,
+    )
+
+    plan = await service.preview_smart_renames()
+
+    assert not [item for item in plan["items"] if item["status"] == "ready"]
+    assert all(item["status"] == "unchanged" for item in plan["items"])
+    assert all(
+        item["reason"] == "duplicate_uploaded_filename" for item in plan["items"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_preview_smart_renames_warms_three_at_a_time_and_reports_progress(
+    tmp_path: Path,
+):
+    entries = []
+    sha_by_version = {}
+    for index in range(5):
+        model = tmp_path / f"local-{index}.safetensors"
+        model.write_bytes(f"model-{index}".encode())
+        sha256 = str(index + 1) * 64
+        version_id = 200 + index
+        sha_by_version[version_id] = sha256
+        entries.append(
+            {
+                "file_path": model.as_posix(),
+                "file_name": f"local-{index}",
+                "sha256": sha256,
+                "civitai": {"modelId": 100 + index, "id": version_id},
+            }
+        )
+
+    scanner = VersionAwareScanner(entries)
+    manager = DummyMetadataManager({})
+    service = ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=manager,
+        metadata_loader=manager.load_metadata_payload,
+    )
+    active = 0
+    max_active = 0
+
+    async def fetch_files(_model_id, version_id):
+        nonlocal active, max_active
+        active += 1
+        max_active = max(max_active, active)
+        await asyncio.sleep(0.02)
+        active -= 1
+        return [
+            {
+                "name": f"official-{version_id}.safetensors",
+                "hashes": {"SHA256": sha_by_version[version_id]},
+            }
+        ]
+
+    service._fetch_current_civitai_files = fetch_files
+    progress = []
+
+    async def report(payload):
+        progress.append(dict(payload))
+
+    plan = await service.preview_smart_renames(progress_callback=report)
+
+    assert max_active == 3
+    assert len(plan["items"]) == 5
+    assert progress[0] == {"status": "started", "completed": 0, "total": 5}
+    assert progress[-1] == {"status": "completed", "completed": 5, "total": 5}
+    assert [
+        item["completed"] for item in progress if item["status"] == "processing"
+    ] == [1, 2, 3, 4, 5]
+
+
 class DummyUpdateService:
     def __init__(self):
         self.calls = []
@@ -311,6 +612,81 @@ async def test_rename_model_preserves_compound_extensions(tmp_path: Path):
     assert old_call_path.endswith(f"{old_name}.safetensors")
     assert new_call_path.endswith(f"{new_name}.safetensors")
     assert payload["file_name"] == new_name
+
+
+@pytest.mark.asyncio
+async def test_rename_model_merges_same_sha_orphan_target_metadata(tmp_path: Path):
+    old_name = "friendly-name"
+    new_name = "author-upload-name"
+    model_path = tmp_path / f"{old_name}.safetensors"
+    model_path.write_bytes(b"model")
+    source_metadata_path = tmp_path / f"{old_name}.metadata.json"
+    source_payload = {
+        "file_name": old_name,
+        "file_path": model_path.as_posix(),
+        "sha256": "a" * 64,
+        "size": 5,
+        "notes": "",
+    }
+    source_metadata_path.write_text(json.dumps(source_payload))
+    target_metadata_path = tmp_path / f"{new_name}.metadata.json"
+    target_metadata_path.write_text(
+        json.dumps(
+            {
+                "file_name": new_name,
+                "file_path": (tmp_path / f"{new_name}.safetensors").as_posix(),
+                "sha256": "a" * 64,
+                "size": 5,
+                "notes": "keep this note",
+            }
+        )
+    )
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=PassthroughMetadataManager(),
+        metadata_loader=metadata_loader,
+    )
+
+    await service.rename_model(
+        file_path=model_path.as_posix(), new_file_name=new_name
+    )
+
+    assert not model_path.exists()
+    assert not source_metadata_path.exists()
+    assert (tmp_path / f"{new_name}.safetensors").exists()
+    merged = json.loads(target_metadata_path.read_text())
+    assert merged["sha256"] == "a" * 64
+    assert merged["notes"] == "keep this note"
+
+
+@pytest.mark.asyncio
+async def test_rename_model_rejects_different_sha_orphan_target_metadata(tmp_path: Path):
+    model_path = tmp_path / "old.safetensors"
+    model_path.write_bytes(b"model")
+    (tmp_path / "old.metadata.json").write_text(
+        json.dumps({"sha256": "a" * 64, "file_path": model_path.as_posix()})
+    )
+    (tmp_path / "new.metadata.json").write_text(
+        json.dumps({"sha256": "b" * 64, "file_path": "new.safetensors"})
+    )
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=PassthroughMetadataManager(),
+        metadata_loader=metadata_loader,
+    )
+
+    with pytest.raises(ValueError, match="Associated target already exists"):
+        await service.rename_model(file_path=model_path.as_posix(), new_file_name="new")
 
 
 @pytest.mark.asyncio

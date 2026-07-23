@@ -5,6 +5,7 @@ import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
 import { initSortDropdown } from './SortDropdown.js';
+import { modalManager } from '../../managers/ModalManager.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -283,6 +284,29 @@ export class PageControls {
         if (fetchButton) {
             fetchButton.addEventListener('click', () => this.fetchFromCivitai());
         }
+
+        const retrySkippedButton = document.querySelector('[data-action="retry-skipped"]');
+        if (retrySkippedButton) {
+            retrySkippedButton.addEventListener('click', () => this.fetchFromCivitai(true));
+        }
+
+        const smartRenameButton = document.querySelector('[data-action="smart-rename"]');
+        if (smartRenameButton) {
+            smartRenameButton.addEventListener('click', () => {
+                const selectedPaths = state.selectedModels?.size ? Array.from(state.selectedModels) : null;
+                this.showSmartRenamePreview(selectedPaths);
+            });
+        }
+
+        const smartRenameApplyButton = document.getElementById('smartRenameApplyBtn');
+        if (smartRenameApplyButton) {
+            smartRenameApplyButton.addEventListener('click', () => this.applySmartRenames());
+        }
+
+        const smartRenameUndoButton = document.getElementById('smartRenameUndoBtn');
+        if (smartRenameUndoButton) {
+            smartRenameUndoButton.addEventListener('click', () => this.undoSmartRenames());
+        }
         
         const downloadButton = document.querySelector('[data-action="download"]');
         if (downloadButton) {
@@ -310,6 +334,173 @@ export class PageControls {
         if (updateFilterBtn) {
             updateFilterBtn.addEventListener('click', () => this.toggleUpdateAvailableOnly());
         }
+    }
+
+    async warmSmartRenameCandidates(filePaths, onProgress) {
+        const paths = Array.isArray(filePaths) ? filePaths : [];
+        if (paths.length <= 1) return;
+        let nextIndex = 0;
+        let completed = 0;
+        const worker = async () => {
+            while (nextIndex < paths.length) {
+                const index = nextIndex;
+                nextIndex += 1;
+                try {
+                    await this.api.previewSmartRenames([paths[index]]);
+                } catch (error) {
+                    console.warn('Failed to warm smart rename candidate:', paths[index], error);
+                } finally {
+                    completed += 1;
+                    onProgress?.(completed, paths.length);
+                }
+            }
+        };
+        const workerCount = Math.min(3, paths.length);
+        await Promise.all(Array.from({ length: workerCount }, () => worker()));
+    }
+
+    async showSmartRenamePreview(filePaths = null, triggerElement = null) {
+        if (!this.api?.previewSmartRenames) return;
+        const normalizedPaths = Array.isArray(filePaths) && filePaths.length ? [...filePaths] : null;
+        const button = triggerElement || document.querySelector('[data-action="smart-rename"]');
+        const isCardIcon = button?.classList?.contains('smart-rename-card-btn');
+        const originalButtonHtml = button?.innerHTML;
+        const originalButtonTitle = button?.title;
+        const originalButtonClassName = button?.className;
+        const originalPointerEvents = button?.style?.pointerEvents;
+        const workingLabel = button?.textContent?.trim() || button?.title || 'Smart rename';
+        const startedAt = Date.now();
+        let completedCandidates = 0;
+        let candidateTotal = normalizedPaths?.length || 0;
+        let feedbackTimer = null;
+        const updateFeedback = () => {
+            if (!button) return;
+            const elapsedSeconds = Math.floor((Date.now() - startedAt) / 1000);
+            const progressText = candidateTotal > 1
+                ? `${completedCandidates}/${candidateTotal} · ${elapsedSeconds}s`
+                : `${elapsedSeconds}s`;
+            if (!isCardIcon) {
+                button.innerHTML = `<i class="fas fa-spinner fa-spin"></i> <span>${this.escapeHtml(workingLabel)}… ${progressText}</span>`;
+            }
+            button.title = `${workingLabel}: ${progressText}`;
+        };
+        if (button) {
+            if ('disabled' in button) button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            if (isCardIcon) {
+                button.className = 'fas fa-spinner fa-spin smart-rename-card-btn';
+                button.style.pointerEvents = 'none';
+            }
+            updateFeedback();
+            feedbackTimer = window.setInterval(updateFeedback, 1000);
+        }
+        try {
+            if (candidateTotal > 1) {
+                await this.warmSmartRenameCandidates(normalizedPaths, completed => {
+                    completedCandidates = completed;
+                    updateFeedback();
+                });
+            }
+            const progressHandler = normalizedPaths === null
+                ? progress => {
+                    completedCandidates = Number(progress.completed) || 0;
+                    candidateTotal = Number(progress.total) || candidateTotal;
+                    updateFeedback();
+                }
+                : null;
+            const plan = await this.api.previewSmartRenames(
+                normalizedPaths, progressHandler
+            );
+            this.smartRenamePlan = plan;
+            this.smartRenameFilePaths = normalizedPaths;
+            const summary = document.getElementById('smartRenameSummary');
+            const list = document.getElementById('smartRenameList');
+            const applyButton = document.getElementById('smartRenameApplyBtn');
+            const undoButton = document.getElementById('smartRenameUndoBtn');
+            if (summary) {
+                const counts = plan.counts || {};
+                summary.textContent = `Ready: ${counts.ready || 0} · Unchanged: ${counts.unchanged || 0} · Skipped: ${counts.skipped || 0} · Conflicts: ${counts.conflict || 0}`;
+            }
+            if (list) {
+                const visibleItems = (plan.items || []).filter(item => item.status !== 'unchanged');
+                list.innerHTML = visibleItems.length
+                    ? visibleItems.map(item => `
+                        <tr class="smart-rename-row smart-rename-${item.status}">
+                            <td title="${this.escapeHtml(item.old_path)}">${this.escapeHtml(item.old_name)}</td>
+                            <td title="${this.escapeHtml(item.new_path)}">${this.escapeHtml(item.new_name)}</td>
+                            <td>${this.escapeHtml(item.status)}</td>
+                        </tr>
+                    `).join('')
+                    : '<tr><td colspan="3">No rename is needed.</td></tr>';
+            }
+            if (applyButton) applyButton.disabled = !(plan.counts?.ready > 0);
+            if (undoButton) {
+                undoButton.hidden = true;
+                undoButton.dataset.historyId = '';
+            }
+            modalManager.showModal('smartRenameModal');
+        } catch (error) {
+            console.error('Failed to preview smart renames:', error);
+            showToast('toast.models.smartRenameFailed', { message: error.message }, 'error', `Smart rename preview failed: ${error.message}`);
+        } finally {
+            if (feedbackTimer !== null) window.clearInterval(feedbackTimer);
+            if (button) {
+                if ('disabled' in button) button.disabled = false;
+                button.removeAttribute('aria-busy');
+                if (originalButtonHtml !== undefined) button.innerHTML = originalButtonHtml;
+                if (originalButtonTitle !== undefined) button.title = originalButtonTitle;
+                if (originalButtonClassName !== undefined) button.className = originalButtonClassName;
+                if (originalPointerEvents !== undefined) {
+                    button.style.pointerEvents = originalPointerEvents;
+                }
+            }
+        }
+    }
+
+    async applySmartRenames() {
+        if (!this.api?.applySmartRenames) return;
+        const applyButton = document.getElementById('smartRenameApplyBtn');
+        const summary = document.getElementById('smartRenameSummary');
+        if (applyButton) applyButton.disabled = true;
+        try {
+            const result = await this.api.applySmartRenames(this.smartRenameFilePaths || null);
+            if (summary) {
+                summary.textContent = `Renamed: ${result.renamed_count || 0} · Failed: ${result.failed_count || 0} · Skipped: ${result.skipped_count || 0}`;
+            }
+            const undoButton = document.getElementById('smartRenameUndoBtn');
+            if (undoButton && result.history_id) {
+                undoButton.hidden = false;
+                undoButton.dataset.historyId = result.history_id;
+            }
+            showToast('toast.models.smartRenameComplete', { count: result.renamed_count || 0 }, result.failed_count ? 'warning' : 'success', `Smart rename complete: ${result.renamed_count || 0} renamed`);
+            await this.api.resetAndReload(true);
+        } catch (error) {
+            console.error('Failed to apply smart renames:', error);
+            showToast('toast.models.smartRenameFailed', { message: error.message }, 'error', `Smart rename failed: ${error.message}`);
+            if (applyButton) applyButton.disabled = false;
+        }
+    }
+
+    async undoSmartRenames() {
+        const button = document.getElementById('smartRenameUndoBtn');
+        const historyId = button?.dataset.historyId;
+        if (!historyId || !this.api?.undoSmartRenames) return;
+        button.disabled = true;
+        try {
+            const result = await this.api.undoSmartRenames(historyId);
+            showToast('toast.models.smartRenameUndoComplete', { count: result.restored_count || 0 }, 'success', `Restored ${result.restored_count || 0} names`);
+            modalManager.closeModal('smartRenameModal');
+            await this.api.resetAndReload(true);
+        } catch (error) {
+            showToast('toast.models.smartRenameFailed', { message: error.message }, 'error', `Undo failed: ${error.message}`);
+            button.disabled = false;
+        }
+    }
+
+    escapeHtml(value) {
+        const element = document.createElement('div');
+        element.textContent = String(value ?? '');
+        return element.innerHTML;
     }
     
     /**
@@ -445,14 +636,20 @@ export class PageControls {
     /**
      * Fetch metadata from Civitai (available for both LoRAs and Checkpoints)
      */
-    async fetchFromCivitai() {
+    async fetchFromCivitai(retryNotFoundOnly = false) {
         if (!this.api) {
             console.error('API methods not registered');
             return;
         }
+
+        if (retryNotFoundOnly && !window.confirm(
+            'Retry models previously marked as not found on Civitai?'
+        )) {
+            return;
+        }
         
         try {
-            await this.api.fetchFromCivitai();
+            await this.api.fetchFromCivitai({ retryNotFoundOnly });
         } catch (error) {
             console.error('Error fetching metadata:', error);
             showToast('toast.controls.fetchMetadataFailed', { message: error.message }, 'error');

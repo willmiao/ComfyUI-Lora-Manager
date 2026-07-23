@@ -11,6 +11,7 @@ from ..utils.models import BaseModelMetadata
 from ..config import config
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256
 from ..utils.metadata_manager import MetadataManager
+from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
@@ -836,6 +837,7 @@ class ModelScanner:
             
             # Process new files in batches
             total_added = 0
+            added_entries: List[Dict[str, Any]] = []
             if new_files:
                 logger.info(f"{self.model_type.capitalize()} Scanner: Found {len(new_files)} new files to process")
                 batch_size = 50
@@ -876,6 +878,7 @@ class ModelScanner:
                                     self._ensure_license_flags(model_data)
                                     # Add to cache
                                     self._cache.raw_data.append(model_data)
+                                    added_entries.append(model_data)
                                     self._cache.add_to_version_index(model_data)
 
                                     # Update hash index if available
@@ -900,6 +903,12 @@ class ModelScanner:
             # Find missing files (in cache but not in filesystem)
             missing_files = cached_paths - found_paths
             total_removed = 0
+
+            repaired_moves = await self._repair_moved_models(
+                missing_files=missing_files,
+                path_to_item=path_to_item,
+                added_entries=added_entries,
+            )
             
             if missing_files:
                 logger.info(f"{self.model_type.capitalize()} Scanner: Found {len(missing_files)} files to remove from cache")
@@ -929,6 +938,11 @@ class ModelScanner:
             
             # Resort cache if changes were made
             if total_added > 0 or total_removed > 0:
+                self._tags_count = {}
+                for item in self._cache.raw_data:
+                    for tag in item.get('tags') or []:
+                        self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
+
                 # Update folders list
                 all_folders = set(item.get('folder', '') for item in self._cache.raw_data)
                 self._cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
@@ -940,11 +954,153 @@ class ModelScanner:
 
                 await self._persist_current_cache()
                 
-            logger.info(f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in {time.time() - start_time:.2f} seconds. Added {total_added}, removed {total_removed} models.")
+            logger.info(
+                "%s Scanner: Cache reconciliation completed in %.2f seconds. "
+                "Added %d, removed %d, repaired %d moved/renamed models.",
+                self.model_type.capitalize(),
+                time.time() - start_time,
+                total_added,
+                total_removed,
+                repaired_moves,
+            )
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error reconciling cache: {e}", exc_info=True)
         finally:
             self._is_initializing = False # Unset flag
+
+    async def _repair_moved_models(
+        self,
+        *,
+        missing_files: Set[str],
+        path_to_item: Mapping[str, Dict[str, Any]],
+        added_entries: List[Dict[str, Any]],
+    ) -> int:
+        """Transfer cached metadata when a unique SHA moved to a new path."""
+
+        old_by_hash: Dict[str, List[Dict[str, Any]]] = {}
+        for path in missing_files:
+            item = path_to_item.get(path)
+            sha256 = str((item or {}).get("sha256") or "").lower()
+            if sha256:
+                old_by_hash.setdefault(sha256, []).append(item)
+
+        new_by_hash: Dict[str, List[Dict[str, Any]]] = {}
+        for item in added_entries:
+            sha256 = str(item.get("sha256") or "").lower()
+            if sha256:
+                new_by_hash.setdefault(sha256, []).append(item)
+
+        repaired = 0
+        for sha256, old_items in old_by_hash.items():
+            new_items = new_by_hash.get(sha256, [])
+            if len(old_items) != 1 or len(new_items) != 1:
+                continue
+
+            old_item = old_items[0]
+            new_item = new_items[0]
+            old_path = str(old_item.get("file_path") or "")
+            new_path = str(new_item.get("file_path") or "")
+            if not old_path or not new_path or old_path == new_path:
+                continue
+
+            try:
+                await self._transfer_moved_model_metadata(
+                    old_item=old_item,
+                    new_item=new_item,
+                    old_path=old_path,
+                    new_path=new_path,
+                )
+                repaired += 1
+                logger.info(
+                    "%s Scanner: Repaired moved model by SHA %s: %s -> %s",
+                    self.model_type.capitalize(),
+                    sha256[:10],
+                    old_path,
+                    new_path,
+                )
+            except Exception as exc:
+                logger.warning(
+                    "Failed to repair moved model %s -> %s: %s",
+                    old_path,
+                    new_path,
+                    exc,
+                )
+        return repaired
+
+    async def _transfer_moved_model_metadata(
+        self,
+        *,
+        old_item: Mapping[str, Any],
+        new_item: Dict[str, Any],
+        old_path: str,
+        new_path: str,
+    ) -> None:
+        old_payload = await MetadataManager.load_metadata_payload(old_path)
+        old_metadata_path = os.path.splitext(old_path)[0] + ".metadata.json"
+        if os.path.exists(old_metadata_path):
+            try:
+                with open(old_metadata_path, "r", encoding="utf-8") as handle:
+                    raw_payload = json.load(handle)
+                if isinstance(raw_payload, Mapping):
+                    old_payload = {**old_payload, **raw_payload}
+            except Exception as exc:
+                logger.debug(
+                    "Could not read raw metadata while repairing %s: %s",
+                    old_path,
+                    exc,
+                )
+        merged: Dict[str, Any] = dict(old_item)
+        if isinstance(old_payload, Mapping):
+            merged.update(old_payload)
+
+        new_stem = os.path.splitext(os.path.basename(new_path))[0]
+        identity = {
+            "file_path": new_path,
+            "file_name": new_stem,
+            "folder": new_item.get("folder", ""),
+            "size": new_item.get("size", 0),
+            "modified": new_item.get("modified", 0.0),
+            "sha256": new_item.get("sha256") or old_item.get("sha256", ""),
+            "hash_status": "completed",
+        }
+        merged.update(identity)
+
+        old_base = os.path.splitext(old_path)[0]
+        new_base = os.path.splitext(new_path)[0]
+        preview_path = ""
+        for suffix in PREVIEW_EXTENSIONS:
+            old_companion = old_base + suffix
+            new_companion = new_base + suffix
+            if os.path.exists(old_companion) and not os.path.exists(new_companion):
+                shutil.move(old_companion, new_companion)
+                preview_path = new_companion.replace(os.sep, "/")
+            elif os.path.exists(new_companion):
+                preview_path = new_companion.replace(os.sep, "/")
+
+        for suffix in (".metadata.json.bak", ".civitai.info", ".info", ".txt", ".yaml"):
+            old_companion = old_base + suffix
+            new_companion = new_base + suffix
+            if os.path.exists(old_companion) and not os.path.exists(new_companion):
+                shutil.move(old_companion, new_companion)
+
+        if preview_path:
+            merged["preview_url"] = preview_path
+
+        disk_payload = dict(merged)
+        disk_payload.pop("folder", None)
+        await MetadataManager.save_metadata(new_path, disk_payload)
+
+        old_metadata_path = old_base + ".metadata.json"
+        new_metadata_path = new_base + ".metadata.json"
+        if (
+            old_metadata_path != new_metadata_path
+            and os.path.exists(old_metadata_path)
+            and os.path.exists(new_metadata_path)
+        ):
+            os.remove(old_metadata_path)
+
+        new_item.clear()
+        new_item.update(merged)
     
     def is_initializing(self) -> bool:
         """Check if the scanner is currently initializing"""

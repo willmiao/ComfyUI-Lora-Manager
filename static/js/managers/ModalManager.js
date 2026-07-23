@@ -226,6 +226,18 @@ export class ModalManager {
             });
         }
 
+        const smartRenameModal = document.getElementById('smartRenameModal');
+        if (smartRenameModal) {
+            this.registerModal('smartRenameModal', {
+                element: smartRenameModal,
+                onClose: () => {
+                    smartRenameModal.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         // Add checkUpdatesConfirmModal registration
         const checkUpdatesConfirmModal = document.getElementById('checkUpdatesConfirmModal');
         if (checkUpdatesConfirmModal) {

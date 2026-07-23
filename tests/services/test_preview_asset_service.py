@@ -1,3 +1,4 @@
+import asyncio
 from pathlib import Path
 from typing import Any
 
@@ -19,6 +20,41 @@ class RecordingExifUtils:
     def optimize_image(self, **kwargs):
         self.called = True
         return kwargs["image_data"], {}
+
+
+@pytest.mark.asyncio
+async def test_ensure_preview_timeout_is_best_effort(tmp_path):
+    metadata_path = tmp_path / "model.metadata.json"
+    metadata_path.write_text("{}")
+    local_metadata: dict[str, Any] = {}
+
+    class HangingDownloader:
+        async def download_file(self, *_args, **_kwargs):
+            await asyncio.Event().wait()
+
+        async def download_to_memory(self, *_args, **_kwargs):
+            await asyncio.Event().wait()
+
+    async def downloader_factory():
+        return HangingDownloader()
+
+    service = PreviewAssetService(
+        metadata_manager=StubMetadataManager(),
+        downloader_factory=downloader_factory,
+        exif_utils=RecordingExifUtils(),
+        download_timeout_seconds=0.01,
+    )
+
+    await asyncio.wait_for(
+        service.ensure_preview_for_metadata(
+            str(metadata_path),
+            local_metadata,
+            [{"url": "https://image.civitai.com/hanging.mp4", "type": "video"}],
+        ),
+        timeout=1.5,
+    )
+
+    assert "preview_url" not in local_metadata
 
 
 @pytest.mark.asyncio

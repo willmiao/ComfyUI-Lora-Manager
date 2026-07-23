@@ -747,6 +747,14 @@
         "menuLabel": "הצגת אפשרויות עדכון",
         "check": "בדוק עדכונים",
         "checkTooltip": "בדיקת עדכונים עלולה לקחת זמן."
+      },
+      "retrySkipped": {
+        "action": "[TODO: Translate] Retry skipped",
+        "title": "[TODO: Translate] Retry models previously skipped as not found on Civitai"
+      },
+      "smartRename": {
+        "action": "[TODO: Translate] Smart rename",
+        "title": "[TODO: Translate] Preview safe filenames generated from Civitai metadata"
       }
     },
     "bulkOperations": {
@@ -1331,7 +1339,9 @@
       "browseFolders": "דפדף בתיקיות:",
       "createNewFolder": "צור תיקייה חדשה",
       "pathPlaceholder": "הקלד נתיב תיקייה או בחר מהעץ למטה...",
-      "root": "שורש"
+      "root": "שורש",
+      "movingProgress": "[TODO: Translate] Moving {current} / {total}",
+      "preparingMove": "[TODO: Translate] Preparing move..."
     },
     "linkHuggingFace": {
       "title": "קישור ל-HuggingFace",
@@ -1574,6 +1584,15 @@
       "downloadCsv": "הורד CSV",
       "columnModelName": "שם המודל",
       "columnError": "שגיאה"
+    },
+    "smartRename": {
+      "apply": "[TODO: Translate] Apply safe renames",
+      "newName": "[TODO: Translate] Proposed name",
+      "oldName": "[TODO: Translate] Current name",
+      "status": "[TODO: Translate] Status",
+      "title": "[TODO: Translate] Smart Rename Preview",
+      "undo": "[TODO: Translate] Undo this batch",
+      "warning": "[TODO: Translate] Existing workflows may still reference old filenames. No model file will be deleted when names collide."
     }
   },
   "modelTags": {
@@ -1969,7 +1988,10 @@
       "tagsAddFailed": "הוספת תגיות ל-{count} מודל(ים) נכשלה",
       "tagsReplaceFailed": "החלפת תגיות עבור {count} מודל(ים) נכשלה",
       "bulkTagsAddFailed": "הוספת תגיות למודלים נכשלה",
-      "bulkTagsReplaceFailed": "החלפת תגיות למודלים נכשלה"
+      "bulkTagsReplaceFailed": "החלפת תגיות למודלים נכשלה",
+      "smartRenameComplete": "[TODO: Translate] Smart rename complete: {count} model(s) renamed",
+      "smartRenameFailed": "[TODO: Translate] Smart rename failed: {message}",
+      "smartRenameUndoComplete": "[TODO: Translate] Restored {count} model filename(s)"
     },
     "search": {
       "atLeastOneOption": "יש לבחור לפחות אפשרות חיפוש אחת"
