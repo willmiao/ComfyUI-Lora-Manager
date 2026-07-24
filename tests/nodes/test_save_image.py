@@ -363,3 +363,102 @@ def test_save_image_as_recipe_writes_recipe_without_async_scanner_calls(
     assert recipe["gen_params"] == {"prompt": "prompt text", "seed": 123}
     assert scanner._json_path_map[recipe["id"]] == os.path.normpath(str(recipe_files[0]))
     assert scanner.fts_updates == [(recipe["id"], "add")]
+
+
+# ---------------------------------------------------------------------------
+# Tests for webp_method and jpeg_subsampling parameters
+# ---------------------------------------------------------------------------
+
+def _capture_save_kwargs(monkeypatch):
+    """Monkeypatch Image.Image.save to capture kwargs while still saving to disk."""
+    real_save = Image.Image.save
+    captured_kwargs = {}
+
+    def _fake_save(self, fp, *args, **kwargs):
+        captured_kwargs.update(kwargs)
+        return real_save(self, fp, *args, **kwargs)
+
+    monkeypatch.setattr(Image.Image, "save", _fake_save)
+    return captured_kwargs
+
+
+def test_webp_method_default_passed_to_pillow_save(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "test", "seed": 1})
+    captured = _capture_save_kwargs(monkeypatch)
+
+    node = SaveImageLM()
+    node.save_images([_make_image()], "ComfyUI", "webp", id="node-1")
+
+    assert "method" in captured
+    assert captured["method"] == 6
+
+
+def test_webp_method_custom_value_passed_to_pillow_save(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "test", "seed": 1})
+    captured = _capture_save_kwargs(monkeypatch)
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()], "ComfyUI", "webp", id="node-1", webp_method=3
+    )
+
+    assert captured["method"] == 3
+
+
+def test_jpeg_subsampling_default_passed_to_pillow_save(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "test", "seed": 1})
+    captured = _capture_save_kwargs(monkeypatch)
+
+    node = SaveImageLM()
+    node.save_images([_make_image()], "ComfyUI", "jpeg", id="node-1")
+
+    assert "subsampling" in captured
+    assert captured["subsampling"] == 0
+
+
+def test_jpeg_subsampling_custom_value_passed_to_pillow_save(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "test", "seed": 1})
+    captured = _capture_save_kwargs(monkeypatch)
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()], "ComfyUI", "jpeg", id="node-1", jpeg_subsampling=1
+    )
+
+    assert captured["subsampling"] == 1
+
+
+class TestParameterDefaultConsistency:
+    """Verify defaults match across INPUT_TYPES, save_images(), and process_image()."""
+
+    def test_webp_method_defaults_are_consistent(self):
+        input_types = SaveImageLM.INPUT_TYPES()
+        optional = input_types["optional"]
+
+        assert optional["webp_method"][1]["default"] == 6
+        assert SaveImageLM.save_images.__defaults__[4] == 6  # positional: webp_method=6 is at index 4
+        assert SaveImageLM.process_image.__defaults__[6] == 6
+
+    def test_jpeg_subsampling_defaults_are_consistent(self):
+        input_types = SaveImageLM.INPUT_TYPES()
+        optional = input_types["optional"]
+
+        assert optional["jpeg_subsampling"][1]["default"] == 0
+        assert SaveImageLM.save_images.__defaults__[5] == 0
+        assert SaveImageLM.process_image.__defaults__[7] == 0
+
+
+def test_png_does_not_pass_webp_method_or_jpeg_subsampling(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "test", "seed": 1})
+    captured = _capture_save_kwargs(monkeypatch)
+
+    node = SaveImageLM()
+    node.save_images([_make_image()], "ComfyUI", "png", id="node-1")
+
+    assert "method" not in captured
+    assert "subsampling" not in captured

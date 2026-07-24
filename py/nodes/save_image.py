@@ -220,6 +220,24 @@ class SaveImageLM:
                         "tooltip": "Compression quality for JPEG and lossy WebP formats (1-100). Higher values mean better quality but larger files.",
                     },
                 ),
+                "webp_method": (
+                    "INT",
+                    {
+                        "default": 6,
+                        "min": 0,
+                        "max": 6,
+                        "tooltip": "WebP compression method (0-6). 0=fastest/largest, 6=slowest/smallest. Only applies when file_format is 'webp'.",
+                    },
+                ),
+                "jpeg_subsampling": (
+                    "INT",
+                    {
+                        "default": 0,
+                        "min": 0,
+                        "max": 2,
+                        "tooltip": "JPEG chroma subsampling level. 0=4:4:4 (best quality), 1=4:2:2, 2=4:2:0 (smallest files). Only applies when file_format is 'jpeg'.",
+                    },
+                ),
                 "embed_workflow": (
                     "BOOLEAN",
                     {
@@ -756,6 +774,8 @@ class SaveImageLM:
         extra_pnginfo=None,
         lossless_webp=True,
         quality=100,
+        webp_method=6,
+        jpeg_subsampling=0,
         embed_workflow=False,
         save_with_metadata=True,
         add_counter_to_filename=True,
@@ -810,15 +830,14 @@ class SaveImageLM:
             elif file_format == "jpeg":
                 file = base_filename + ".jpg"
                 file_extension = ".jpg"
-                save_kwargs = {"quality": quality, "optimize": True}
+                save_kwargs = {"quality": quality, "optimize": True, "subsampling": jpeg_subsampling}
             elif file_format == "webp":
                 file = base_filename + ".webp"
                 file_extension = ".webp"
-                # Add optimization param to control performance
                 save_kwargs = {
                     "quality": quality,
                     "lossless": lossless_webp,
-                    "method": 0,
+                    "method": webp_method,
                 }
             else:
                 raise ValueError(f"Unsupported file format: {file_format}")
@@ -905,6 +924,8 @@ class SaveImageLM:
         extra_pnginfo=None,
         lossless_webp=True,
         quality=100,
+        webp_method=6,
+        jpeg_subsampling=0,
         embed_workflow=False,
         save_with_metadata=True,
         add_counter_to_filename=True,
@@ -934,6 +955,8 @@ class SaveImageLM:
             extra_pnginfo,
             lossless_webp,
             quality,
+            webp_method,
+            jpeg_subsampling,
             embed_workflow,
             save_with_metadata,
             add_counter_to_filename,

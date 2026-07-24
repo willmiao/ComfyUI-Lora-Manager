@@ -130,6 +130,35 @@ app.registerExtension({
       widget.serializeValue = () => {
         return applyTextReplacements(widget.value);
       };
+
+      // --- Conditional widget visibility for webp_method / jpeg_subsampling ---
+      const formatWidget = getWidgetByName(this, "file_format");
+      const webpMethodWidget = getWidgetByName(this, "webp_method");
+      const jpegSubWidget = getWidgetByName(this, "jpeg_subsampling");
+
+      function updateFormatConditional() {
+        const fmt = formatWidget?.value;
+        if (webpMethodWidget) {
+          webpMethodWidget.disabled = fmt !== "webp";
+          webpMethodWidget.hidden = fmt !== "webp";
+        }
+        if (jpegSubWidget) {
+          jpegSubWidget.disabled = fmt !== "jpeg";
+          jpegSubWidget.hidden = fmt !== "jpeg";
+        }
+      }
+
+      // Set initial state
+      updateFormatConditional();
+
+      // Watch for format changes
+      if (formatWidget) {
+        const origCallback = formatWidget.callback;
+        formatWidget.callback = function (value) {
+          origCallback?.call(this, value);
+          updateFormatConditional();
+        };
+      }
     });
   },
 });
