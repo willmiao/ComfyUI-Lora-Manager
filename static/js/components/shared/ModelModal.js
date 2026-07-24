@@ -885,7 +885,8 @@ function setupEventHandlers(filePath, modelType) {
             case 'view-creator':
                 const username = target.dataset.username;
                 if (username) {
-                    window.open(`https://civitai.com/user/${username}`, '_blank');
+                    const host = state.global.settings.civitai_host || 'civitai.com';
+                    window.open(`https://${host}/user/${username}`, '_blank');
                 }
                 break;
             case 'open-file-location':
