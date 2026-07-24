@@ -537,12 +537,39 @@ class ModelManagementHandler:
                     # Update model_data with new hash
                     model_data["sha256"] = sha256
                     model_data["hash_status"] = "completed"
+                    hash_status = "completed"
                 else:
                     return web.json_response(
                         {"success": False, "error": "No SHA256 hash found"}, status=400
                     )
 
             await MetadataManager.hydrate_model_data(model_data)
+
+            # hydrate_model_data replaces model_data with .metadata.json content,
+            # which may lack sha256. Restore from cache and persist the fix.
+            if not model_data.get("sha256"):
+                if sha256:
+                    model_data["sha256"] = sha256
+                    model_data["hash_status"] = model_data.get("hash_status", hash_status)
+                    data_to_save = model_data.copy()
+                    data_to_save.pop("folder", None)
+                    await MetadataManager.save_metadata(file_path, data_to_save)
+                else:
+                    sha256 = await calculate_sha256(file_path)
+                    if sha256:
+                        model_data["sha256"] = sha256.lower()
+                        model_data["hash_status"] = "completed"
+                        data_to_save = model_data.copy()
+                        data_to_save.pop("folder", None)
+                        await MetadataManager.save_metadata(file_path, data_to_save)
+                    else:
+                        return web.json_response(
+                            {
+                                "success": False,
+                                "error": "Failed to compute SHA256 hash for model",
+                            },
+                            status=500,
+                        )
 
             success, error = await self._metadata_sync.fetch_and_update_model(
                 sha256=model_data["sha256"],
@@ -566,7 +593,12 @@ class ModelManagementHandler:
                     {"success": False, "error": OFFLINE_FRIENDLY_MESSAGE},
                     status=503,
                 )
-            self._logger.error("Error fetching from CivitAI: %s", exc, exc_info=True)
+            self._logger.error(
+                "Error fetching from CivitAI for %s: %s",
+                locals().get("file_path", "unknown"),
+                exc,
+                exc_info=True,
+            )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def relink_civitai(self, request: web.Request) -> web.Response:

@@ -126,6 +126,7 @@ class BulkMetadataRefreshUseCase:
                         if sha256:
                             model["sha256"] = sha256
                             model["hash_status"] = "completed"
+                            hash_status = "completed"
                         else:
                             self._logger.error(f"Failed to calculate hash for {file_path}")
                             failures.append({"name": model.get("model_name", file_path or "Unknown"), "error": "Failed to calculate hash"})
@@ -148,6 +149,16 @@ class BulkMetadataRefreshUseCase:
                     continue
 
                 await MetadataManager.hydrate_model_data(model)
+
+                # hydrate_model_data replaces model with .metadata.json content,
+                # which may lack sha256. Restore from cache and persist the fix.
+                if not model.get("sha256"):
+                    model["sha256"] = sha256
+                    model["hash_status"] = model.get("hash_status", hash_status)
+                    data_to_save = model.copy()
+                    data_to_save.pop("folder", None)
+                    await MetadataManager.save_metadata(file_path, data_to_save)
+
                 result, error_msg = await self._metadata_sync.fetch_and_update_model(
                     sha256=model["sha256"],
                     file_path=model["file_path"],
