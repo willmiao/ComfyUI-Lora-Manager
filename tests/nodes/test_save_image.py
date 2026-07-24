@@ -59,7 +59,7 @@ def test_save_image_defaults_to_writing_png_metadata(monkeypatch, tmp_path):
 
     image_path = tmp_path / "sample_00001_.png"
     with Image.open(image_path) as img:
-        assert img.info["parameters"] == "prompt text\nSeed: 123"
+        assert img.info["parameters"] == "prompt text\nSeed: 123, Version: ComfyUI"
 
 
 def test_save_image_skips_png_parameters_when_metadata_disabled_and_keeps_workflow(
