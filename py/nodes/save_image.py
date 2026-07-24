@@ -242,7 +242,7 @@ class SaveImageLM:
                     "BOOLEAN",
                     {
                         "default": False,
-                        "tooltip": "Embeds the complete workflow data into the image metadata. Only works with PNG and WebP formats.",
+                        "tooltip": "When enabled, saved images store the complete workflow. Drag the image back into ComfyUI to restore the original node graph. PNG and WebP only.",
                     },
                 ),
                 "save_with_metadata": (
