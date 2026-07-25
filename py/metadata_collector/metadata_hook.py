@@ -135,10 +135,13 @@ class MetadataHook:
                 # Store the dynprompt reference for node lookups
                 if hasattr(prompt, 'original_prompt'):
                     registry.set_current_prompt(prompt)
-            
+
+                # Store extra_data for accessing full workflow node properties
+                registry.set_extra_data(extra_data)
+
             # Execute the original function
             return original_execute(*args, **kwargs)
-            
+
         # Replace the functions
         execution._map_node_over_list = map_node_over_list_with_metadata
         execution.execute = execute_with_prompt_tracking
@@ -201,6 +204,9 @@ class MetadataHook:
                 # Store the dynprompt reference for node lookups
                 if hasattr(prompt, 'original_prompt'):
                     registry.set_current_prompt(prompt)
+
+                # Store extra_data for accessing full workflow node properties
+                registry.set_extra_data(extra_data)
 
             # Execute the original function
             return await original_execute(*args, **kwargs)

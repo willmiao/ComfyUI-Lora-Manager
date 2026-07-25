@@ -1,4 +1,5 @@
 import json
+import logging
 import os
 from .constants import IMAGES
 
@@ -6,10 +7,62 @@ from .constants import IMAGES
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
 from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER
+from .node_extractors import NODE_EXTRACTORS
+
+logger = logging.getLogger(__name__)
+
+# Keys that identify metadata hint marks stored in node.properties.lm_marker_role
+_META_MARK_PREFIX = "meta_"
+_MARK_PRIMARY_MODEL = "primary_model"
+_MARK_PRIMARY_SAMPLER = "primary_sampler"
+_MARK_POSITIVE_PROMPT = "positive_prompt"
+_MARK_NEGATIVE_PROMPT = "negative_prompt"
 
 class MetadataProcessor:
     """Process and format collected metadata"""
-    
+
+    @staticmethod
+    def _get_user_marks(metadata):
+        """Scan workflow nodes (from extra_data.extra_pnginfo.workflow) for user-assigned
+        metadata hint marks stored in node.properties.lm_marker_role.
+
+        Returns a dict mapping mark type keys to node IDs.
+        Example: {'primary_model': '42', 'primary_sampler': '17'}
+        """
+        marks: dict[str, str] = {}
+
+        # Primary source: extra_data.extra_pnginfo.workflow.nodes (has full properties)
+        extra_data = metadata.get("extra_data")
+        if extra_data and isinstance(extra_data, dict):
+            extra_pnginfo = extra_data.get("extra_pnginfo", {})
+            if isinstance(extra_pnginfo, dict):
+                workflow = extra_pnginfo.get("workflow", {})
+                nodes = workflow.get("nodes", [])
+                for node in nodes:
+                    node_id = str(node.get("id", ""))
+                    role = node.get("properties", {}).get("lm_marker_role", "")
+                    if role.startswith(_META_MARK_PREFIX):
+                        mark_type = role[len(_META_MARK_PREFIX):]
+                        if mark_type in marks:
+                            logger.warning(
+                                "Duplicate meta hint '%s': node %s (previous: %s), "
+                                "last match wins",
+                                mark_type, node_id, marks[mark_type],
+                            )
+                        marks[mark_type] = node_id
+
+        # Fallback: try prompt.original_prompt (API-only submissions may not have workflow)
+        if not marks:
+            prompt = metadata.get("current_prompt")
+            if prompt and getattr(prompt, "original_prompt", None):
+                for node_id, node_data in prompt.original_prompt.items():
+                    role = node_data.get("properties", {}).get("lm_marker_role", "")
+                    if role.startswith(_META_MARK_PREFIX):
+                        mark_type = role[len(_META_MARK_PREFIX):]
+                        marks[mark_type] = node_id
+
+        return marks
+
     @staticmethod
     def find_primary_sampler(metadata, downstream_id=None):
         """
@@ -476,15 +529,51 @@ class MetadataProcessor:
         
         # Get the prompt object for node relationship tracing
         prompt = metadata.get("current_prompt")
-        
-        # Find the primary KSampler node
-        primary_sampler_id, primary_sampler = MetadataProcessor.find_primary_sampler(metadata, id)
-        
-        # Directly get checkpoint from metadata instead of tracing
-        # Pass primary_sampler_id to avoid redundant calculation
-        checkpoint = MetadataProcessor.find_primary_checkpoint(metadata, id, primary_sampler_id)
-        if checkpoint:
-            params["checkpoint"] = checkpoint
+
+        # ---- User marks: override heuristic inference with user-assigned hints ----
+        user_marks = MetadataProcessor._get_user_marks(metadata)
+
+        # Find the primary KSampler node (user mark takes priority)
+        primary_sampler_id = None
+        primary_sampler = None
+        if _MARK_PRIMARY_SAMPLER in user_marks:
+            marked_id = user_marks[_MARK_PRIMARY_SAMPLER]
+            sampler_data = metadata.get(SAMPLING, {}).get(marked_id)
+            if sampler_data and sampler_data.get(IS_SAMPLER):
+                primary_sampler_id = marked_id
+                primary_sampler = sampler_data
+            else:
+                logger.warning(
+                    "User-marked primary sampler %s has no runtime metadata, "
+                    "falling back to heuristic",
+                    marked_id,
+                )
+        if primary_sampler is None:
+            primary_sampler_id, primary_sampler = MetadataProcessor.find_primary_sampler(metadata, id)
+
+        # Resolve checkpoint / model (user mark takes priority)
+        if _MARK_PRIMARY_MODEL in user_marks:
+            marked_id = user_marks[_MARK_PRIMARY_MODEL]
+            if marked_id in metadata.get(MODELS, {}):
+                params["checkpoint"] = metadata[MODELS][marked_id].get("name")
+            else:
+                extra_data = metadata.get("extra_data")
+                extra_pnginfo = extra_data.get("extra_pnginfo", {}) if extra_data and isinstance(extra_data, dict) else {}
+                workflow = extra_pnginfo.get("workflow", {}) if isinstance(extra_pnginfo, dict) else {}
+                node_type = "unknown"
+                for n in workflow.get("nodes", []):
+                    if str(n.get("id", "")) == marked_id:
+                        node_type = n.get("type", "unknown")
+                        break
+                logger.warning(
+                    "User-marked primary model %s (type=%s, registered=%s) has no runtime metadata, "
+                    "falling back to heuristic",
+                    marked_id, node_type, node_type in NODE_EXTRACTORS,
+                )
+        if params["checkpoint"] is None:
+            checkpoint = MetadataProcessor.find_primary_checkpoint(metadata, id, primary_sampler_id)
+            if checkpoint:
+                params["checkpoint"] = checkpoint
         
         # Check if guidance parameter exists in any sampling node
         for node_id, sampler_info in metadata.get(SAMPLING, {}).items():
@@ -539,7 +628,22 @@ class MetadataProcessor:
                     
                     # For SamplerCustom, handle any additional parameters
                     MetadataProcessor.handle_custom_advanced_sampler(metadata, prompt, primary_sampler_id, params)
-                
+
+            # ---- User marks: override prompts with explicitly tagged nodes ----
+            prompts_data = metadata.get(PROMPTS, {})
+            if _MARK_POSITIVE_PROMPT in user_marks:
+                pos_id = user_marks[_MARK_POSITIVE_PROMPT]
+                if pos_id in prompts_data:
+                    prompt_text = prompts_data[pos_id].get("text") or prompts_data[pos_id].get("positive_text")
+                    if prompt_text:
+                        params["prompt"] = prompt_text
+            if _MARK_NEGATIVE_PROMPT in user_marks:
+                neg_id = user_marks[_MARK_NEGATIVE_PROMPT]
+                if neg_id in prompts_data:
+                    prompt_text = prompts_data[neg_id].get("text") or prompts_data[neg_id].get("negative_text")
+                    if prompt_text:
+                        params["negative_prompt"] = prompt_text
+
             # Size extraction is same for all sampler types
             # Check if the sampler itself has size information (from latent_image)
             if primary_sampler_id in metadata.get(SIZE, {}):

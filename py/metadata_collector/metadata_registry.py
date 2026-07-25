@@ -61,6 +61,7 @@ class MetadataRegistry:
             {
                 "execution_order": [],
                 "current_prompt": None,  # Will store the prompt object
+                "extra_data": None,  # Will store the API extra_data for workflow metadata
                 "timestamp": time.time(),
             }
         )
@@ -74,6 +75,11 @@ class MetadataRegistry:
         if self.current_prompt_id and self.current_prompt_id in self.prompt_metadata:
             # Store the prompt in the metadata for later relationship tracing
             self.prompt_metadata[self.current_prompt_id]["current_prompt"] = prompt
+
+    def set_extra_data(self, extra_data):
+        """Store the API extra_data (contains extra_pnginfo.workflow with node properties)"""
+        if self.current_prompt_id and self.current_prompt_id in self.prompt_metadata:
+            self.prompt_metadata[self.current_prompt_id]["extra_data"] = extra_data
 
     def get_metadata(self, prompt_id=None):
         """Get collected metadata for a prompt"""
