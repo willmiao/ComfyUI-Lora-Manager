@@ -77,7 +77,15 @@ def recipe_scanner(tmp_path: Path, monkeypatch):
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
     stub = StubLoraScanner()
     scanner = RecipeScanner(lora_scanner=stub)
-    asyncio.run(scanner.refresh_cache(force=True))
+
+    async def _init():
+        await scanner.refresh_cache(force=True)
+        # Wait for FTS index build to finish — asyncio.run()
+        # cancels background tasks on return, so we must await it here.
+        if scanner._fts_index_task:
+            await scanner._fts_index_task
+
+    asyncio.run(_init())
     yield scanner, stub
     RecipeScanner._instance = None
     settings_manager_module.reset_settings_manager()

@@ -21,7 +21,7 @@ from .checkpoint_scanner import CheckpointScanner
 from .settings_manager import get_settings_manager
 from .recipes.errors import RecipeNotFoundError
 from ..utils.civitai_utils import extract_civitai_image_id
-from ..utils.utils import calculate_recipe_fingerprint, fuzzy_match
+from ..utils.utils import calculate_recipe_fingerprint
 from natsort import natsorted
 import sys
 import re
@@ -1020,13 +1020,16 @@ class RecipeScanner:
 
         try:
             result = self._fts_index.search(search, fields)
-            # Return None if empty to trigger fuzzy fallback
-            # Empty FTS results may indicate query syntax issues or need for fuzzy matching
+            # Return empty set for empty FTS results — do NOT fall back to
+            # Python fuzzy matching, which freezes the server with 10k+ recipes.
+            # FTS5 prefix matching with unicode61 tokenizer correctly handles
+            # compound tokens (e.g. "illustrious" matches "path/illustrious/model").
+            # If FTS returns nothing, there are genuinely no matching recipes.
             if not result:
-                return None
+                return set()
             return result
         except Exception as exc:
-            logger.debug("FTS search failed, falling back to fuzzy search: %s", exc)
+            logger.debug("FTS search failed, falling back to title-only search: %s", exc)
             return None
 
     def _update_fts_index_for_recipe(
@@ -2079,49 +2082,14 @@ class RecipeScanner:
                         if str(item.get("id", "")) in fts_matching_ids
                     ]
                 else:
-                    # Fallback to fuzzy_match (slower but always available)
-                    # Build the search predicate based on search options
-                    def matches_search(item):
-                        # Search in title if enabled
-                        if search_options.get("title", True):
-                            if fuzzy_match(str(item.get("title", "")), search):
-                                return True
-
-                        # Search in tags if enabled
-                        if search_options.get("tags", True) and "tags" in item:
-                            for tag in item["tags"]:
-                                if fuzzy_match(tag, search):
-                                    return True
-
-                        # Search in lora file names if enabled
-                        if search_options.get("lora_name", True) and "loras" in item:
-                            for lora in item["loras"]:
-                                if fuzzy_match(str(lora.get("file_name", "")), search):
-                                    return True
-
-                        # Search in lora model names if enabled
-                        if search_options.get("lora_model", True) and "loras" in item:
-                            for lora in item["loras"]:
-                                if fuzzy_match(str(lora.get("modelName", "")), search):
-                                    return True
-
-                        # Search in prompt and negative_prompt if enabled
-                        if search_options.get("prompt", True) and "gen_params" in item:
-                            gen_params = item["gen_params"]
-                            if fuzzy_match(str(gen_params.get("prompt", "")), search):
-                                return True
-                            if fuzzy_match(
-                                str(gen_params.get("negative_prompt", "")), search
-                            ):
-                                return True
-
-                        # No match found
-                        return False
-
-                    # Filter the data using the search predicate
-                    filtered_data = [
-                        item for item in filtered_data if matches_search(item)
-                    ]
+                    # FTS index not yet built — return empty rather than
+                    # scanning 42k+ items in Python. The FTS background build
+                    # finishes in seconds; by the time a user navigates here
+                    # and types a search, it is already available.
+                    logger.debug(
+                        "FTS index not ready — search '%s' returning empty", search
+                    )
+                    filtered_data = []
 
             # Apply additional filters
             if filters:
