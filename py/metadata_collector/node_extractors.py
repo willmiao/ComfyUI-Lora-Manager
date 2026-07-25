@@ -31,11 +31,78 @@ class NodeMetadataExtractor:
         pass
         
 class GenericNodeExtractor(NodeMetadataExtractor):
-    """Default extractor for nodes without specific handling"""
+    """Fallback extractor with type-signature-based detection.
+
+    When a node is not in the NODE_EXTRACTORS registry, the hook layer
+    passes ``return_types`` from ``obj.RETURN_TYPES``:
+
+    * ``MODEL`` output: common input fields (ckpt_name, unet_name, etc.)
+      are checked for a model file name and stored as checkpoint metadata.
+    * ``CONDITIONING`` output: common text input fields are checked for
+      prompt text and stored as prompt metadata.
+    """
+
+    # Input field names that carry a model path in loader-style nodes.
+    _MODEL_NAME_FIELDS = (
+        "ckpt_name", "unet_name", "model_path", "model_name", "gguf_name",
+    )
+
+    # Extensions used by checkpoint_scanner.py — only record values that look
+    # like real model filenames to avoid capturing unrelated string fields.
+    _MODEL_EXTENSIONS = {
+        ".ckpt", ".pt", ".pt2", ".bin", ".pth", ".safetensors", ".pkl", ".sft", ".gguf",
+    }
+
+    # Input field names that may carry prompt text in encoder-style nodes.
+    _TEXT_FIELDS = ("text", "clip_l", "t5xxl", "prompt", "positive", "negative")
+
     @staticmethod
-    def extract(node_id, inputs, outputs, metadata):
-        pass
-        
+    def extract(node_id, inputs, outputs, metadata, return_types=None):
+        if return_types is None:
+            return
+
+        # — MODEL loader detection (checkpoint / UNET / GGUF) —
+        if "MODEL" in return_types or any("MODEL" in str(t) for t in return_types):
+            for field in GenericNodeExtractor._MODEL_NAME_FIELDS:
+                val = inputs.get(field)
+                if val and isinstance(val, str) and val.strip():
+                    name = val.strip()
+                    if not any(name.lower().endswith(ext) for ext in GenericNodeExtractor._MODEL_EXTENSIONS):
+                        continue
+                    _store_checkpoint_metadata(metadata, node_id, name)
+                    return
+
+        # — CONDITIONING encoder detection (CLIPTextEncode, Flux, custom) —
+        if "CONDITIONING" in return_types or any("CONDITIONING" in str(t) for t in return_types):
+            text = None
+            for field in GenericNodeExtractor._TEXT_FIELDS:
+                val = inputs.get(field)
+                if val and isinstance(val, str) and val.strip():
+                    text = val.strip()
+                    break
+            if text:
+                prompt_data = metadata.setdefault(PROMPTS, {})
+                prompt_data[node_id] = {
+                    "text": text,
+                    "node_id": node_id,
+                }
+
+    @staticmethod
+    def update(node_id, outputs, metadata, return_types=None):
+        if return_types is None:
+            return
+        if "CONDITIONING" not in return_types and not any(
+            "CONDITIONING" in str(t) for t in return_types
+        ):
+            return
+        if node_id not in metadata.get(PROMPTS, {}):
+            return
+        if outputs and isinstance(outputs, list) and len(outputs) > 0:
+            if isinstance(outputs[0], tuple) and len(outputs[0]) > 0:
+                cond = outputs[0][0]
+                if cond is not None:
+                    metadata[PROMPTS][node_id]["conditioning"] = cond
+
 class CheckpointLoaderExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):

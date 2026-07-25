@@ -83,7 +83,8 @@ class MetadataHook:
                         
                         # Record inputs before execution
                         if node_id is not None:
-                            registry.record_node_execution(node_id, class_type, input_data_all, None)
+                            return_types = getattr(obj.__class__, 'RETURN_TYPES', None)
+                            registry.record_node_execution(node_id, class_type, input_data_all, None, return_types=return_types)
                 except Exception as e:
                     logger.error(f"Error collecting metadata (pre-execution): {str(e)}")
             
@@ -114,7 +115,8 @@ class MetadataHook:
                         
                         # Record outputs after execution
                         if node_id is not None:
-                            registry.update_node_execution(node_id, class_type, results)
+                            return_types = getattr(obj.__class__, 'RETURN_TYPES', None)
+                            registry.update_node_execution(node_id, class_type, results, return_types=return_types)
                 except Exception as e:
                     logger.error(f"Error collecting metadata (post-execution): {str(e)}")
             
@@ -166,7 +168,8 @@ class MetadataHook:
                         class_type = obj.__class__.__name__
                         node_id = unique_id
                         if node_id is not None:
-                            registry.record_node_execution(node_id, class_type, input_data_all, None)
+                            return_types = getattr(obj.__class__, 'RETURN_TYPES', None)
+                            registry.record_node_execution(node_id, class_type, input_data_all, None, return_types=return_types)
                 except Exception as e:
                     logger.error(f"Error collecting metadata (pre-execution): {str(e)}")
 
@@ -183,7 +186,8 @@ class MetadataHook:
                         class_type = obj.__class__.__name__
                         node_id = unique_id
                         if node_id is not None:
-                            registry.update_node_execution(node_id, class_type, results)
+                            return_types = getattr(obj.__class__, 'RETURN_TYPES', None)
+                            registry.update_node_execution(node_id, class_type, results, return_types=return_types)
                 except Exception as e:
                     logger.error(f"Error collecting metadata (post-execution): {str(e)}")
 

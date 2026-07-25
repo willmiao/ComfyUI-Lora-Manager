@@ -30,10 +30,10 @@ def test_metadata_hook_installs_and_traces_execution(monkeypatch, metadata_regis
 
     calls = []
 
-    def record_stub(self, node_id, class_type, inputs, outputs):
+    def record_stub(self, node_id, class_type, inputs, outputs, return_types=None):
         calls.append(("record", node_id, class_type, inputs))
 
-    def update_stub(self, node_id, class_type, outputs):
+    def update_stub(self, node_id, class_type, outputs, return_types=None):
         calls.append(("update", node_id, class_type, outputs))
 
     monkeypatch.setattr(MetadataRegistry, "record_node_execution", record_stub)

@@ -128,7 +128,7 @@ class MetadataRegistry:
             cache_key = f"{node_id}:{class_type}"
 
             # Check if this node type is relevant for metadata collection
-            if class_type in NODE_EXTRACTORS:
+            if class_type in NODE_EXTRACTORS or cache_key in self.node_cache:
                 # Check if we have cached metadata for this node
                 if cache_key in self.node_cache:
                     cached_data = self.node_cache[cache_key]
@@ -141,7 +141,7 @@ class MetadataRegistry:
                                     node_id
                                 ]
 
-    def record_node_execution(self, node_id, class_type, inputs, outputs):
+    def record_node_execution(self, node_id, class_type, inputs, outputs, return_types=None):
         """Record information about a node's execution"""
         if not self.current_prompt_id:
             return
@@ -164,17 +164,18 @@ class MetadataRegistry:
 
         # Extract node-specific metadata
         extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
-        extractor.extract(
-            node_id,
-            processed_inputs,
-            outputs,
-            self.prompt_metadata[self.current_prompt_id],
-        )
+        if type(extractor) is GenericNodeExtractor:
+            extractor.extract(node_id, processed_inputs, outputs,
+                              self.prompt_metadata[self.current_prompt_id],
+                              return_types=return_types)
+        else:
+            extractor.extract(node_id, processed_inputs, outputs,
+                              self.prompt_metadata[self.current_prompt_id])
 
         # Cache this node's metadata
         self._cache_node_metadata(node_id, class_type)
 
-    def update_node_execution(self, node_id, class_type, outputs):
+    def update_node_execution(self, node_id, class_type, outputs, return_types=None):
         """Update node metadata with output information"""
         if not self.current_prompt_id:
             return
@@ -185,9 +186,17 @@ class MetadataRegistry:
         # Use the same extractor to update with outputs
         extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
         if hasattr(extractor, "update"):
-            extractor.update(
-                node_id, processed_outputs, self.prompt_metadata[self.current_prompt_id]
-            )
+            if type(extractor) is GenericNodeExtractor:
+                extractor.update(
+                    node_id, processed_outputs,
+                    self.prompt_metadata[self.current_prompt_id],
+                    return_types=return_types,
+                )
+            else:
+                extractor.update(
+                    node_id, processed_outputs,
+                    self.prompt_metadata[self.current_prompt_id],
+                )
 
         # Update the cached metadata for this node
         self._cache_node_metadata(node_id, class_type)
