@@ -172,7 +172,7 @@ class MetadataRegistry:
 
         # Extract node-specific metadata
         extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
-        if type(extractor) is GenericNodeExtractor:
+        if extractor is GenericNodeExtractor:
             extractor.extract(node_id, processed_inputs, outputs,
                               self.prompt_metadata[self.current_prompt_id],
                               return_types=return_types)
@@ -194,7 +194,7 @@ class MetadataRegistry:
         # Use the same extractor to update with outputs
         extractor = NODE_EXTRACTORS.get(class_type, GenericNodeExtractor)
         if hasattr(extractor, "update"):
-            if type(extractor) is GenericNodeExtractor:
+            if extractor is GenericNodeExtractor:
                 extractor.update(
                     node_id, processed_outputs,
                     self.prompt_metadata[self.current_prompt_id],
