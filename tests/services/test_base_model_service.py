@@ -1252,3 +1252,69 @@ async def test_get_model_civitai_url_falls_back_when_host_setting_is_not_a_strin
         "model_id": "123",
         "version_id": "456",
     }
+
+
+class TestHfGroupKey:
+    """Tests for _extract_hf_group_key and _extract_group_key."""
+
+    # --- _extract_hf_group_key ---
+
+    def test_hf_group_key_valid_url(self):
+        """Standard HF URL returns hf:user/repo."""
+        item = {"hf_url": "https://huggingface.co/unsloth/qwen-edit"}
+        assert BaseModelService._extract_hf_group_key(item) == "hf:unsloth/qwen-edit"
+
+    def test_hf_group_key_url_with_subpath(self):
+        """URL with subpath still extracts just owner/repo."""
+        item = {"hf_url": "https://huggingface.co/user/repo/resolve/main/file.safetensors"}
+        assert BaseModelService._extract_hf_group_key(item) == "hf:user/repo"
+
+    def test_hf_group_key_empty_url(self):
+        """Empty hf_url returns None."""
+        assert BaseModelService._extract_hf_group_key({"hf_url": ""}) is None
+
+    def test_hf_group_key_no_url(self):
+        """Missing hf_url key returns None."""
+        assert BaseModelService._extract_hf_group_key({}) is None
+
+    def test_hf_group_key_none_url(self):
+        """None hf_url returns None."""
+        assert BaseModelService._extract_hf_group_key({"hf_url": None}) is None
+
+    def test_hf_group_key_invalid_url(self):
+        """Malformed HF URL returns None."""
+        assert BaseModelService._extract_hf_group_key({"hf_url": "not-a-url"}) is None
+        assert BaseModelService._extract_hf_group_key({"hf_url": "https://example.com"}) is None
+
+    # --- _extract_group_key ---
+
+    def test_group_key_civitai_only(self):
+        """CivitAI modelId returned as int."""
+        item = {"civitai": {"modelId": 123}}
+        assert BaseModelService._extract_group_key(item) == 123
+
+    def test_group_key_hf_only(self):
+        """HF-only item returns hf:user/repo string."""
+        item = {"hf_url": "https://huggingface.co/user/repo"}
+        assert BaseModelService._extract_group_key(item) == "hf:user/repo"
+
+    def test_group_key_civitai_preferred(self):
+        """CivitAI modelId takes precedence over hf_url."""
+        item = {
+            "civitai": {"modelId": 456},
+            "hf_url": "https://huggingface.co/other/repo",
+        }
+        assert BaseModelService._extract_group_key(item) == 456
+
+    def test_group_key_neither(self):
+        """No CivitAI or HF returns None."""
+        assert BaseModelService._extract_group_key({}) is None
+        assert BaseModelService._extract_group_key({"some": "data"}) is None
+
+    def test_group_key_civitai_none_model_id(self):
+        """civitai.modelId=None falls through to HF."""
+        item = {
+            "civitai": {"modelId": None},
+            "hf_url": "https://huggingface.co/user/repo",
+        }
+        assert BaseModelService._extract_group_key(item) == "hf:user/repo"

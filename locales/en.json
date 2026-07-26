@@ -1548,6 +1548,7 @@
         "empty": "No version history available for this model yet.",
         "error": "Failed to load versions.",
         "missingModelId": "This model is missing a Civitai model id.",
+        "hfGroupInfo": "This is a HuggingFace model group. Open the library to see all versions in the grid.",
         "confirm": {
           "delete": "Delete this version from your library?"
         },

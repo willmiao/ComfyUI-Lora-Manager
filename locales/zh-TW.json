@@ -1548,6 +1548,7 @@
         "empty": "此模型尚無版本歷史。",
         "error": "載入版本失敗。",
         "missingModelId": "此模型缺少 Civitai 模型 ID。",
+        "hfGroupInfo": "這是一個 HuggingFace 模型組。打開庫頁面即可在網格中查看所有版本。",
         "confirm": {
           "delete": "要從庫中刪除此版本嗎？"
         },

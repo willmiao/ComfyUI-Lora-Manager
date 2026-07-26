@@ -489,6 +489,12 @@ export function createModelCard(model, modelType) {
     const modelId = civitaiData?.modelId ?? civitaiData?.model_id;
     if (modelId !== undefined && modelId !== null && modelId !== '') {
         card.dataset.modelId = modelId;
+    } else if (model.hf_url) {
+        // For HF-only models, derive a group key from hf_url for version grouping
+        const match = model.hf_url.match(/https?:\/\/huggingface\.co\/([^/]+\/[^/]+)/);
+        if (match) {
+            card.dataset.modelId = 'hf:' + match[1];
+        }
     }
 
     // LoRA specific data

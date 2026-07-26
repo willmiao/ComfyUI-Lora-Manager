@@ -1548,6 +1548,7 @@
         "empty": "Noch keine Versionshistorie für dieses Modell vorhanden.",
         "error": "Versionen konnten nicht geladen werden.",
         "missingModelId": "Für dieses Modell ist keine Civitai-Model-ID vorhanden.",
+        "hfGroupInfo": "Dies ist eine HuggingFace-Modellgruppe. Öffnen Sie die Bibliothek, um alle Versionen im Raster zu sehen.",
         "confirm": {
           "delete": "Diese Version aus Ihrer Bibliothek löschen?"
         },

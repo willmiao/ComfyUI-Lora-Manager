@@ -394,12 +394,14 @@ class ModelListingHandler:
         )
 
         # View-local-versions filter: show all local versions of a specific model
+        # Accepts either a CivitAI modelId (int) or a HF group key like "hf:user/repo"
         civitai_model_id = request.query.get("civitai_model_id")
         if civitai_model_id is not None:
             try:
                 civitai_model_id = int(civitai_model_id)
             except (TypeError, ValueError):
-                civitai_model_id = None
+                # Keep as string — could be an HF group key (e.g. "hf:user/repo")
+                pass
 
         return {
             "page": page,

@@ -1548,6 +1548,7 @@
         "empty": "이 모델에는 아직 버전 기록이 없습니다.",
         "error": "버전을 불러오지 못했습니다.",
         "missingModelId": "이 모델에는 Civitai 모델 ID가 없습니다.",
+        "hfGroupInfo": "HuggingFace 모델 그룹입니다. 라이브러리를 열어 그리드에서 모든 버전을 확인하세요.",
         "confirm": {
           "delete": "이 버전을 라이브러리에서 삭제하시겠습니까?"
         },

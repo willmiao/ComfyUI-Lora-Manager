@@ -473,7 +473,14 @@ export async function showModelModal(model, modelType) {
     const loadingExamplesText = translate('modals.model.loading.examples', {}, 'Loading examples...');
 
     const loadingVersionsText = translate('modals.model.loading.versions', {}, 'Loading versions...');
-    const civitaiModelId = modelWithFullData.civitai?.modelId || '';
+    // Use CivitAI modelId, or derive HF group key for HF-only models
+    let civitaiModelId = modelWithFullData.civitai?.modelId || '';
+    if (!civitaiModelId && modelWithFullData.hf_url) {
+        const match = modelWithFullData.hf_url.match(/https?:\/\/huggingface\.co\/([^/]+\/[^/]+)/);
+        if (match) {
+            civitaiModelId = 'hf:' + match[1];
+        }
+    }
     const civitaiVersionId = modelWithFullData.civitai?.id || '';
     const navAriaLabel = translate('modals.model.navigation.label', {}, 'Model navigation');
     const previousTitle = translate('modals.model.navigation.previousWithShortcut', {}, 'Previous model (←)');

@@ -1548,6 +1548,7 @@
         "empty": "Aucun historique de versions n'est disponible pour ce modèle pour le moment.",
         "error": "Échec du chargement des versions.",
         "missingModelId": "Ce modèle ne possède pas d'identifiant de modèle Civitai.",
+        "hfGroupInfo": "Ceci est un groupe de modèles HuggingFace. Ouvrez la bibliothèque pour voir toutes les versions dans la grille.",
         "confirm": {
           "delete": "Supprimer cette version de votre bibliothèque ?"
         },

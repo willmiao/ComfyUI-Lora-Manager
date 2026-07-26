@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 import re
-from typing import Any, Dict, List, Optional, Type, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, Type, Union, TYPE_CHECKING
 import logging
 import os
 import time
@@ -109,12 +109,15 @@ class BaseModelService(ABC):
         if civitai_model_id is not None:
             sorted_data = [
                 item for item in sorted_data
-                if self._extract_model_id(item) == civitai_model_id
+                if self._extract_group_key(item) == civitai_model_id
             ]
             # VLM mode: always sort by version ID descending (newest version first),
             # regardless of the current sort_by preference.
+            # Fall back to modified timestamp for non-CivitAI sources.
             sorted_data.sort(
-                key=lambda x: self._extract_version_id(x) or 0,
+                key=lambda x: self._extract_version_id(x)
+                or x.get("modified", 0)
+                or 0,
                 reverse=True,
             )
 
@@ -129,18 +132,21 @@ class BaseModelService(ABC):
             ufs = self.settings.get("version_grouping", "same_base")
             group_by_base = ufs == "same_base"
 
-            dedup_map = {}  # (modelId [,base_model]) -> (item, version_id)
+            dedup_map = {}  # (modelId [,base_model]) -> (item, version_or_modified)
             version_counter = {}  # same-key -> count
             standalone = []
             for item in sorted_data:
-                mid = self._extract_model_id(item)
+                mid = self._extract_group_key(item)
                 if mid is None:
                     standalone.append(item)
                     continue
                 key = (mid, item.get("base_model") or "") if group_by_base else mid
                 # Count all versions per key
                 version_counter[key] = version_counter.get(key, 0) + 1
-                vid = self._extract_version_id(item) or 0
+                # Prefer CivitAI version_id; fall back to modified timestamp
+                vid = self._extract_version_id(item)
+                if vid is None:
+                    vid = item.get("modified", 0) or 0
                 if key not in dedup_map or vid > dedup_map[key][1]:
                     dedup_map[key] = (item, vid)
             # Attach version_count to each surviving grouped item (shallow copy
@@ -174,16 +180,19 @@ class BaseModelService(ABC):
                 model_groups: Dict[Any, List[Dict]] = {}
                 ungrouped_standalone: List[Dict] = []
                 for item in sorted_data:
-                    mid = self._extract_model_id(item)
+                    mid = self._extract_group_key(item)
                     if mid is None:
                         ungrouped_standalone.append(item)
                         continue
                     key = (mid, item.get("base_model") or "") if group_by_base else mid
                     model_groups.setdefault(key, []).append(item)
-                # Sort versions within each group by version id descending
+                # Sort versions within each group by version id (descending);
+                # fall back to modified timestamp for non-CivitAI sources.
                 for items in model_groups.values():
                     items.sort(
-                        key=lambda x: self._extract_version_id(x) or 0,
+                        key=lambda x: self._extract_version_id(x)
+                        or x.get("modified", 0)
+                        or 0,
                         reverse=True,
                     )
                 # Sort groups by version count
@@ -696,6 +705,33 @@ class BaseModelService(ABC):
                 item["update_available"] = flag
 
         return annotated
+
+    @staticmethod
+    def _extract_hf_group_key(item: Dict) -> Optional[str]:
+        """Extract `hf:{owner}/{repo}` from item's ``hf_url``, or None."""
+        hf_url = item.get("hf_url") if isinstance(item, dict) else None
+        if not hf_url or not isinstance(hf_url, str):
+            return None
+        m = re.match(
+            r"https?://huggingface\.co/([^/]+/[^/]+)", hf_url.strip()
+        )
+        if not m:
+            return None
+        return f"hf:{m.group(1)}"
+
+    @staticmethod
+    def _extract_group_key(item: Dict) -> Union[int, str, None]:
+        """Return the group identity key: CivitAI modelId (int) or HF repo (str).
+
+        Preference order:
+        1. CivitAI ``modelId`` (int)
+        2. HF repo identity ``hf:{owner}/{repo}`` (str)
+        3. ``None`` (no known grouping source)
+        """
+        mid = BaseModelService._extract_model_id(item)
+        if mid is not None:
+            return mid
+        return BaseModelService._extract_hf_group_key(item)
 
     @staticmethod
     def _extract_model_id(item: Dict) -> Optional[int]:

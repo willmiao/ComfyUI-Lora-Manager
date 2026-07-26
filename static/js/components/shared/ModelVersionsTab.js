@@ -950,6 +950,26 @@ export function initVersionsTab({
             renderErrorState(container, translate('modals.model.versions.missingModelId', {}, 'This model is missing a Civitai model id.'));
             return;
         }
+        // HF group keys (e.g. "hf:user/repo") are not real CivitAI model IDs —
+        // skip the remote API call and show a helpful message instead.
+        const isHfGroupKey = typeof modelId === 'string' && modelId.startsWith('hf:');
+        if (isHfGroupKey) {
+            controller.isLoading = false;
+            controller.hasLoaded = true;
+            controller.record = null;
+            const hfMsg = translate(
+                'modals.model.versions.hfGroupInfo',
+                {},
+                'This is a HuggingFace model group. Open the library to see all versions in the grid.'
+            );
+            container.innerHTML = `
+                <div class="versions-empty-state">
+                    <i class="fas fa-info-circle"></i>
+                    <p>${escapeHtml(hfMsg)}</p>
+                </div>
+            `;
+            return;
+        }
         if (controller.hasLoaded && !forceRefresh) {
             return;
         }
