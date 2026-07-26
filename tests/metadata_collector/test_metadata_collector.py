@@ -820,3 +820,220 @@ def test_lora_manager_checkpoint_and_unet_loaders_extract_models(metadata_regist
         "type": "checkpoint",
         "node_id": "unet_node",
     }
+
+
+# ---------------------------------------------------------------------------
+# MetadataOverwriteExtractor & overwrite merge tests
+# ---------------------------------------------------------------------------
+
+from py.metadata_collector.constants import OVERWRITE, METADATA_OVERWRITE_FIELDS
+from py.metadata_collector.node_extractors import MetadataOverwriteExtractor
+
+
+def test_metadata_overwrite_extractor_stores_truthy_values(metadata_registry):
+    """Extractor should store truthy inputs under the OVERWRITE category."""
+    metadata_registry.start_collection("prompt-ow")
+    metadata = metadata_registry.prompt_metadata["prompt-ow"]
+
+    inputs = {
+        "prompt": "a beautiful landscape",
+        "negative_prompt": "",
+        "seed": 42,
+        "steps": 0,
+        "cfg_scale": 7.5,
+        "sampler": "",
+        "scheduler": "",
+        "checkpoint": "myModel.safetensors",
+        "loras": "<lora:detail:0.8>",
+        "size": "1024x768",
+        "clip_skip": 0,
+        "additional_data": '{"Copyright": "CC0"}',
+    }
+
+    MetadataOverwriteExtractor.extract("ow-1", inputs, None, metadata)
+
+    assert OVERWRITE in metadata
+    assert "ow-1" in metadata[OVERWRITE]
+    params = metadata[OVERWRITE]["ow-1"]["parameters"]
+
+    # Truthy values stored
+    assert params["prompt"] == "a beautiful landscape"
+    assert params["seed"] == 42
+    assert params["cfg_scale"] == 7.5
+    assert params["checkpoint"] == "myModel.safetensors"
+    assert params["loras"] == "<lora:detail:0.8>"
+    assert params["size"] == "1024x768"
+    assert params["additional_data"] == '{"Copyright": "CC0"}'
+
+    # Falsy values NOT stored
+    assert "negative_prompt" not in params
+    assert "steps" not in params
+    assert "sampler" not in params
+    assert "scheduler" not in params
+    assert "clip_skip" not in params
+
+    metadata_registry.clear_metadata()
+
+
+def test_metadata_overwrite_extractor_empty_inputs(metadata_registry):
+    """Extractor with all-falsy inputs should NOT create OVERWRITE category."""
+    metadata_registry.start_collection("prompt-ow2")
+    metadata = metadata_registry.prompt_metadata["prompt-ow2"]
+
+    inputs = {key: "" for key in METADATA_OVERWRITE_FIELDS}
+    inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": 0})
+
+    MetadataOverwriteExtractor.extract("ow-2", inputs, None, metadata)
+
+    # start_collection pre-creates empty dicts for all categories,
+    # but no node should have populated OVERWRITE with any data
+    assert not metadata[OVERWRITE]
+
+    metadata_registry.clear_metadata()
+
+
+def test_extract_generation_params_applies_overwrite(metadata_registry, populated_registry, monkeypatch):
+    """overwrite values should replace inferred params in extract_generation_params."""
+    import py.metadata_collector.metadata_processor as mp
+
+    monkeypatch.setattr(mp, "standalone_mode", False)
+
+    metadata = populated_registry["metadata"]
+    registry_obj = populated_registry["registry"]
+
+    # Simulate the MetadataOverwriteLM node having been executed with overwrite values
+    registry_obj.start_collection("promptA")
+    # Re-populate with the same data (start_collection resets)
+    registry_obj.set_current_prompt(populated_registry["prompt"])
+    metadata2 = registry_obj.prompt_metadata["promptA"]
+
+    # Inject overwrite data into metadata
+    metadata2[OVERWRITE] = {
+        "ow-1": {
+            "parameters": {
+                "seed": 777,
+                "additional_data": '{"AuthorURL": "https://civitai.com/user/foo"}',
+            },
+            "node_id": "ow-1",
+        }
+    }
+    # Copy other categories from original populated metadata
+    for cat in ("models", "prompts", "sampling", "loras", "size", "images"):
+        if cat in metadata:
+            metadata2[cat] = metadata[cat]
+    metadata2["execution_order"] = metadata["execution_order"]
+
+    params = MetadataProcessor.extract_generation_params(metadata2, id="vae")
+
+    # Overwritten values
+    assert params["seed"] == 777
+    assert params["additional_data"] == '{"AuthorURL": "https://civitai.com/user/foo"}'
+
+    # Inferred values still present (not overwritten)
+    assert params["prompt"] == "A castle on a hill"
+    assert params["cfg_scale"] == 7.5
+    assert params["checkpoint"] == "model.safetensors"
+
+    registry_obj.clear_metadata()
+
+
+def test_extract_generation_params_overwrite_falsy_skipped(metadata_registry, populated_registry, monkeypatch):
+    """Overwrite entries with falsy values should NOT replace inferred params."""
+    import py.metadata_collector.metadata_processor as mp
+
+    monkeypatch.setattr(mp, "standalone_mode", False)
+
+    metadata = populated_registry["metadata"]
+    registry_obj = populated_registry["registry"]
+
+    registry_obj.start_collection("promptA")
+    registry_obj.set_current_prompt(populated_registry["prompt"])
+    metadata2 = registry_obj.prompt_metadata["promptA"]
+
+    # Inject overwrite with falsy values
+    metadata2[OVERWRITE] = {
+        "ow-1": {
+            "parameters": {
+                "seed": 0,
+                "steps": 0,
+                "cfg_scale": 0.0,
+                "prompt": "",
+                "clip_skip": 0,
+            },
+            "node_id": "ow-1",
+        }
+    }
+    for cat in ("models", "prompts", "sampling", "loras", "size", "images"):
+        if cat in metadata:
+            metadata2[cat] = metadata[cat]
+    metadata2["execution_order"] = metadata["execution_order"]
+
+    params = MetadataProcessor.extract_generation_params(metadata2, id="vae")
+
+    # Falsy overwrites should NOT have replaced inferred values
+    assert params["prompt"] == "A castle on a hill"
+    assert params["cfg_scale"] == 7.5
+
+    registry_obj.clear_metadata()
+
+
+def test_fill_missing_metadata_skips_overwrite_for_bypassed_node(metadata_registry):
+    """Bypassed (mode=4) node should not have OVERWRITE filled from cache."""
+    metadata_registry.start_collection("prompt-bypass")
+
+    # Simulate a previous execution that cached overwrite data
+    metadata_registry.record_node_execution(
+        "ow-1",
+        "MetadataOverwriteLM",
+        {"seed": 99, "prompt": "test", "steps": 0, "cfg_scale": 0.0,
+         "negative_prompt": "", "sampler": "", "scheduler": "", "checkpoint": "",
+         "loras": "", "size": "", "clip_skip": 0, "additional_data": ""},
+        None,
+    )
+
+    # Now start a new prompt where the node is bypassed (mode=4)
+    metadata_registry.start_collection("prompt-bypass-2")
+    original_prompt = {
+        "ow-1": {"class_type": "MetadataOverwriteLM", "inputs": {}, "mode": 4},
+    }
+    metadata_registry.set_current_prompt(
+        SimpleNamespace(original_prompt=original_prompt)
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-bypass-2")
+
+    # The overwrite data should NOT be present (node was bypassed, not
+    # a cache hit — it should not inherit previous execution's overwrite)
+    assert "ow-1" not in metadata.get(OVERWRITE, {})
+
+    metadata_registry.clear_metadata()
+
+
+def test_fill_missing_metadata_fills_overwrite_for_muted_node(metadata_registry):
+    """Muted (mode=2) node should also not have OVERWRITE filled from cache."""
+    metadata_registry.start_collection("prompt-mute")
+
+    # Simulate a previous execution that cached overwrite data
+    metadata_registry.record_node_execution(
+        "ow-1",
+        "MetadataOverwriteLM",
+        {"seed": 88, "prompt": "test2", "steps": 0, "cfg_scale": 0.0,
+         "negative_prompt": "", "sampler": "", "scheduler": "", "checkpoint": "",
+         "loras": "", "size": "", "clip_skip": 0, "additional_data": ""},
+        None,
+    )
+
+    # Start a new prompt where the node is muted (mode=2)
+    metadata_registry.start_collection("prompt-mute-2")
+    original_prompt = {
+        "ow-1": {"class_type": "MetadataOverwriteLM", "inputs": {}, "mode": 2},
+    }
+    metadata_registry.set_current_prompt(
+        SimpleNamespace(original_prompt=original_prompt)
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-mute-2")
+
+    assert "ow-1" not in metadata.get(OVERWRITE, {})
+
+    metadata_registry.clear_metadata()

@@ -1,7 +1,7 @@
 import time
 from nodes import NODE_CLASS_MAPPINGS  # type: ignore
 from .node_extractors import NODE_EXTRACTORS, GenericNodeExtractor
-from .constants import METADATA_CATEGORIES, IMAGES
+from .constants import METADATA_CATEGORIES, IMAGES, OVERWRITE
 
 
 class MetadataRegistry:
@@ -133,8 +133,16 @@ class MetadataRegistry:
                 if cache_key in self.node_cache:
                     cached_data = self.node_cache[cache_key]
 
+                    # Detect bypass (mode=4) / mute (mode=2) — these nodes
+                    # were intentionally disabled and should not contribute
+                    # overwrite values from a previous execution's cache.
+                    node_mode = node_data.get("mode", 0)
+                    node_is_disabled = node_mode in (2, 4)
+
                     # Apply cached metadata to the current metadata
                     for category in self.metadata_categories:
+                        if category == OVERWRITE and node_is_disabled:
+                            continue
                         if category in cached_data and node_id in cached_data[category]:
                             if node_id not in metadata[category]:
                                 metadata[category][node_id] = cached_data[category][

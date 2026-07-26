@@ -471,6 +471,9 @@ class SaveImageLM:
                     params.append(f"Clip skip: {abs(cs)}")
             except (ValueError, TypeError):
                 pass
+        additional_data = metadata_dict.get("additional_data", "")
+        if additional_data:
+            params.append(additional_data)
         if ckpt_hash:
             params.append(f"Model hash: {ckpt_hash[:10].upper()}")
         if ckpt_display_name:

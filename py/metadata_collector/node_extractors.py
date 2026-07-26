@@ -2,7 +2,7 @@ import json
 import os
 import re
 
-from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IMAGES, IS_SAMPLER
+from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IMAGES, IS_SAMPLER, OVERWRITE, METADATA_OVERWRITE_FIELDS
 
 
 def _store_checkpoint_metadata(metadata, node_id, model_name):
@@ -1221,6 +1221,32 @@ class CR_ApplyControlNetStackExtractor(NodeMetadataExtractor):
                 metadata[PROMPTS][node_id]["positive_encoded"] = transformed_positive
                 metadata[PROMPTS][node_id]["negative_encoded"] = transformed_negative
 
+class MetadataOverwriteExtractor(NodeMetadataExtractor):
+    """Extract manually specified metadata from MetadataOverwriteLM node.
+
+    Stores truthy input values under the OVERWRITE category so that
+    extract_generation_params can merge them over the inferred params.
+    """
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        overwrite_params = {}
+        for key in METADATA_OVERWRITE_FIELDS:
+            value = inputs.get(key)
+            if value:  # truthy — only overwrite when user provided a real value
+                overwrite_params[key] = value
+
+        if overwrite_params:
+            metadata.setdefault(OVERWRITE, {})
+            metadata[OVERWRITE][node_id] = {
+                "parameters": overwrite_params,
+                "node_id": node_id,
+            }
+
+
 # Registry of node-specific extractors
 # Keys are node class names
 NODE_EXTRACTORS = {
@@ -1288,5 +1314,7 @@ NODE_EXTRACTORS = {
     "CFGGuider": CFGGuiderExtractor,            # Add CFGGuider
     # Image
     "VAEDecode": VAEDecodeExtractor,  # Added VAEDecode extractor
+    # Metadata overwrite
+    "MetadataOverwriteLM": MetadataOverwriteExtractor,
     # Add other nodes as needed
 }

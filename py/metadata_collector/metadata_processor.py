@@ -6,7 +6,7 @@ from .constants import IMAGES
 # Check if running in standalone mode
 standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1" or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
 
-from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER
+from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IS_SAMPLER, OVERWRITE
 from .node_extractors import NODE_EXTRACTORS
 
 logger = logging.getLogger(__name__)
@@ -524,7 +524,8 @@ class MetadataProcessor:
             "checkpoint": None,
             "loras": "",
             "size": None,
-            "clip_skip": None
+            "clip_skip": None,
+            "additional_data": "",
         }
         
         # Get the prompt object for node relationship tracing
@@ -672,7 +673,14 @@ class MetadataProcessor:
                 break
         if params["clip_skip"] is None:
             params["clip_skip"] = "1"
-        
+
+        # ---- Apply manual metadata overwrites ----
+        for overwrite_info in metadata.get(OVERWRITE, {}).values():
+            overwrite_params = overwrite_info.get("parameters", {})
+            for key, value in overwrite_params.items():
+                if value:  # truthy check — only overwrite when user provided a real value
+                    params[key] = value
+
         return params
     
     @staticmethod
