@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 _WILDCARD_PATTERN = re.compile(r"__([\w\s.\-+/*\\]+?)__")
 _OPTION_PATTERN = re.compile(r"{([^{}]*?)}")
 _TRIGGER_WORD_PATTERN = re.compile(r"^trigger_words\d+$")
-_WEIGHTED_OPTION_PATTERN = re.compile(r"^\s*([0-9.]+)::")
+_WEIGHTED_OPTION_PATTERN = re.compile(r"^\s*-?\d+(\.\d+)?::")
 _NUMERIC_PATTERN = re.compile(r"^-?\d+(\.\d+)?$")
 
 
@@ -390,7 +390,7 @@ class WildcardService:
     ) -> str | None:
         keyword = _normalize_wildcard_key(raw_key)
         if keyword in wildcard_dict:
-            return rng.choice(wildcard_dict[keyword])
+            return self._pick_weighted_or_plain(wildcard_dict[keyword], rng)
 
         if "*" in keyword:
             regex_pattern = keyword.replace("*", ".*").replace("+", r"\+")
@@ -400,7 +400,7 @@ class WildcardService:
                 if compiled.match(key):
                     aggregated.extend(values)
             if aggregated:
-                return rng.choice(aggregated)
+                return self._pick_weighted_or_plain(aggregated, rng)
 
         if "/" not in keyword:
             fallback_keyword = _normalize_wildcard_key(f"*/{keyword}")
@@ -408,6 +408,39 @@ class WildcardService:
                 return self._resolve_wildcard_match(fallback_keyword, rng, wildcard_dict)
 
         return None
+
+    def _pick_weighted_or_plain(
+        self, values: list[str], rng: random.Random
+    ) -> str:
+        """Pick a value from the list, respecting N::weight prefix if present.
+
+        When any value in the list uses the ``N::value`` weighted syntax with a
+        weight different from 1, the pick uses weighted random selection.  When
+        no such weighting is present, a plain ``rng.choice`` is used (preserving
+        backward compatibility for unweighted wildcard files).
+
+        In either case the ``N::`` prefix is always stripped from the returned
+        value, matching the behaviour of ``{...}`` option groups.
+        """
+        # Fast path: skip weighting logic entirely when no :: syntax exists
+        if not any("::" in v for v in values):
+            return rng.choice(values)
+
+        weighted_options: list[tuple[float, str]] = []
+        for value in values:
+            weight = 1.0
+            parts = value.split("::", 1)
+            if len(parts) == 2 and _is_numeric_string(parts[0].strip()):
+                weight = float(parts[0].strip())
+            weighted_options.append((weight, value))
+
+        any_weighted = any(w != 1.0 for w, _ in weighted_options)
+        if any_weighted:
+            picked = self._weighted_choice(weighted_options, rng)
+        else:
+            picked = rng.choice(values)
+
+        return self._strip_weight_prefix(picked)
 
 
 def is_trigger_words_input(name: str) -> bool:
