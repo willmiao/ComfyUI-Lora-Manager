@@ -681,6 +681,13 @@ class MetadataProcessor:
                 if value:  # truthy check — only overwrite when user provided a real value
                     params[key] = value
 
+        # Bridge: the overwrite node exposes the field as "model" (more accurate),
+        # but the internal pipeline key remains "checkpoint" for backward compatibility
+        # with A1111 metadata format and downstream consumers.
+        if params.get("model"):
+            params["checkpoint"] = params["model"]
+            del params["model"]
+
         return params
     
     @staticmethod

@@ -81,11 +81,14 @@ class MetadataOverwriteLM:
                         "tooltip": "Scheduler name. Only overwrites when non-empty.",
                     },
                 ),
-                "checkpoint": (
+                "model": (
                     "STRING",
                     {
                         "default": "",
-                        "tooltip": "Checkpoint / model name. Only overwrites when non-empty.",
+                        "tooltip": (
+                            "The checkpoint or diffusion model (UNet) used "
+                            "for generation. Only overwrites when non-empty."
+                        ),
                     },
                 ),
                 "loras": (

@@ -14,7 +14,7 @@ OVERWRITE = "overwrite"  # Manual metadata overwrite from MetadataOverwriteLM no
 # Field names that the MetadataOverwriteLM node and its extractor share
 METADATA_OVERWRITE_FIELDS = (
     "prompt", "negative_prompt", "seed", "steps", "cfg_scale",
-    "sampler", "scheduler", "checkpoint", "loras", "size",
+    "sampler", "scheduler", "model", "loras", "size",
     "clip_skip", "additional_data",
 )
 

@@ -843,7 +843,7 @@ def test_metadata_overwrite_extractor_stores_truthy_values(metadata_registry):
         "cfg_scale": 7.5,
         "sampler": "",
         "scheduler": "",
-        "checkpoint": "myModel.safetensors",
+        "model": "myModel.safetensors",
         "loras": "<lora:detail:0.8>",
         "size": "1024x768",
         "clip_skip": 0,
@@ -860,7 +860,7 @@ def test_metadata_overwrite_extractor_stores_truthy_values(metadata_registry):
     assert params["prompt"] == "a beautiful landscape"
     assert params["seed"] == 42
     assert params["cfg_scale"] == 7.5
-    assert params["checkpoint"] == "myModel.safetensors"
+    assert params["model"] == "myModel.safetensors"
     assert params["loras"] == "<lora:detail:0.8>"
     assert params["size"] == "1024x768"
     assert params["additional_data"] == '{"Copyright": "CC0"}'
@@ -986,7 +986,7 @@ def test_fill_missing_metadata_skips_overwrite_for_bypassed_node(metadata_regist
         "ow-1",
         "MetadataOverwriteLM",
         {"seed": 99, "prompt": "test", "steps": 0, "cfg_scale": 0.0,
-         "negative_prompt": "", "sampler": "", "scheduler": "", "checkpoint": "",
+         "negative_prompt": "", "sampler": "", "scheduler": "", "model": "",
          "loras": "", "size": "", "clip_skip": 0, "additional_data": ""},
         None,
     )
@@ -1018,7 +1018,7 @@ def test_fill_missing_metadata_fills_overwrite_for_muted_node(metadata_registry)
         "ow-1",
         "MetadataOverwriteLM",
         {"seed": 88, "prompt": "test2", "steps": 0, "cfg_scale": 0.0,
-         "negative_prompt": "", "sampler": "", "scheduler": "", "checkpoint": "",
+         "negative_prompt": "", "sampler": "", "scheduler": "", "model": "",
          "loras": "", "size": "", "clip_skip": 0, "additional_data": ""},
         None,
     )
