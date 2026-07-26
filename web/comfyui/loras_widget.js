@@ -718,8 +718,10 @@ export function addLorasWidget(node, name, opts, callback) {
       });
     },
     setValue: function(v) {
+      // Ensure v is an array; handle falsy, string, or object values safely
+      v = Array.isArray(v) ? v : [];
       // Remove duplicates by keeping the last occurrence of each lora name
-      const uniqueValue = (v || []).reduce((acc, lora) => {
+      const uniqueValue = v.reduce((acc, lora) => {
         // Remove any existing lora with the same name
         const filtered = acc.filter(l => l.name !== lora.name);
         // Add the current lora
