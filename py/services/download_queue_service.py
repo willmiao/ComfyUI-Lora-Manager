@@ -31,7 +31,7 @@ class DownloadQueueService:
     _instance: Optional[DownloadQueueService] = None
     _class_lock: asyncio.Lock = asyncio.Lock()
 
-    _SCHEMA = """
+    _SCHEMA_TABLES = """
         CREATE TABLE IF NOT EXISTS download_queue (
             download_id TEXT PRIMARY KEY,
             model_id INTEGER,
@@ -74,6 +74,9 @@ class DownloadQueueService:
         );
         CREATE INDEX IF NOT EXISTS idx_dh_completed ON download_history(completed_at DESC);
         CREATE INDEX IF NOT EXISTS idx_dh_status ON download_history(status);
+    """
+
+    _CREATE_UNIQUE_INDEX = """
         CREATE UNIQUE INDEX IF NOT EXISTS idx_dh_download_id
             ON download_history(download_id) WHERE download_id IS NOT NULL;
     """
@@ -115,9 +118,38 @@ class DownloadQueueService:
         if self._schema_initialized:
             return
         with self._connect() as conn:
-            conn.executescript(self._SCHEMA)
+            conn.executescript(self._SCHEMA_TABLES)
+
+            # Creating the unique index on download_history.download_id can
+            # fail if pre-existing rows have duplicate values (e.g. from a
+            # previous version that lacked the index).  Deduplicate first so
+            # that the migration does not crash on startup.
+            if not self._index_exists(conn, "idx_dh_download_id"):
+                self._remove_duplicate_download_ids(conn)
+                conn.executescript(self._CREATE_UNIQUE_INDEX)
+
             conn.commit()
         self._schema_initialized = True
+
+    @staticmethod
+    def _index_exists(conn: sqlite3.Connection, name: str) -> bool:
+        return conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='index' AND name=?",
+            (name,),
+        ).fetchone() is not None
+
+    @staticmethod
+    def _remove_duplicate_download_ids(conn: sqlite3.Connection) -> None:
+        conn.execute("""
+            DELETE FROM download_history
+            WHERE id NOT IN (
+                SELECT MIN(id)
+                FROM download_history
+                WHERE download_id IS NOT NULL
+                GROUP BY download_id
+            )
+            AND download_id IS NOT NULL
+        """)
 
     def get_database_path(self) -> str:
         """Return the resolved database file path."""
