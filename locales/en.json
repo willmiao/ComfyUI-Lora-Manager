@@ -1752,6 +1752,12 @@
     "checkingMessage": "Please wait while we check for the latest version.",
     "showNotifications": "Show update notifications",
     "latestBadge": "Latest",
+    "latestMain": "Latest main",
+    "channel": "Update Channel",
+    "channels": {
+      "release": "Release",
+      "nightly": "Nightly"
+    },
     "updateProgress": {
       "preparing": "Preparing update...",
       "installing": "Installing update...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "Warning: Nightly builds may contain experimental features and could be unstable.",
       "enable": "Enable Nightly Updates"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "Switch to Nightly Channel",
+      "nightlyMessage": "Switching to Nightly will initialize a Git repository and track the latest main branch commits. Updates will be more frequent but may be unstable. You can switch back to Release at any time.",
+      "releaseTitle": "Switch to Release Channel",
+      "releaseMessage": "Switching to Release will remove the Git repository and install the latest stable release. Future updates will use stable releases only.",
+      "switching": "Switching to {channel} channel...",
+      "completed": "Successfully switched to {channel} channel",
+      "failed": "Failed to switch channel"
     },
     "banners": {
       "recent": "Recent messages",

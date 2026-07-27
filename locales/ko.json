@@ -1752,6 +1752,12 @@
     "checkingMessage": "최신 버전을 확인하는 동안 잠시 기다려주세요.",
     "showNotifications": "업데이트 알림 표시",
     "latestBadge": "최신",
+    "latestMain": "Main 브랜치",
+    "channel": "업데이트 채널",
+    "channels": {
+      "release": "릴리스",
+      "nightly": "나이틀리"
+    },
     "updateProgress": {
       "preparing": "업데이트 준비 중...",
       "installing": "업데이트 설치 중...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "경고: 나이틀리 빌드는 실험적 기능을 포함할 수 있으며 불안정할 수 있습니다.",
       "enable": "나이틀리 업데이트 활성화"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "나이틀리 채널로 전환",
+      "nightlyMessage": "나이틀리로 전환하면 Git 저장소가 초기화되고 main 브랜치의 최신 커밋을 추적합니다. 업데이트 빈도는 높지만 불안정할 수 있습니다. 언제든지 릴리스로 돌아갈 수 있습니다.",
+      "releaseTitle": "릴리스 채널로 전환",
+      "releaseMessage": "릴리스로 전환하면 Git 저장소가 제거되고 최신 안정 버전이 설치됩니다. 이후 업데이트는 안정 버전만 사용됩니다.",
+      "switching": "{channel} 채널로 전환 중...",
+      "completed": "{channel} 채널로 전환 완료",
+      "failed": "채널 전환 실패"
     },
     "banners": {
       "recent": "최근 알림",

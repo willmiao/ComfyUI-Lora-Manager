@@ -1752,6 +1752,12 @@
     "checkingMessage": "最新バージョンを確認しています。お待ちください。",
     "showNotifications": "更新通知を表示",
     "latestBadge": "最新",
+    "latestMain": "Main ブランチ",
+    "channel": "更新チャンネル",
+    "channels": {
+      "release": "リリース",
+      "nightly": "ナイトリー"
+    },
     "updateProgress": {
       "preparing": "更新を準備中...",
       "installing": "更新をインストール中...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "警告：ナイトリービルドには実験的機能が含まれており、不安定な場合があります。",
       "enable": "ナイトリー更新を有効にする"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "ナイトリーチャンネルに切り替え",
+      "nightlyMessage": "ナイトリーに切り替えると、Gitリポジトリが初期化され、mainブランチの最新コミットを追跡します。更新頻度は高くなりますが、不安定な場合があります。いつでもリリース版に戻せます。",
+      "releaseTitle": "リリースチャンネルに切り替え",
+      "releaseMessage": "リリースに切り替えると、Gitリポジトリが削除され、最新の安定版がインストールされます。以降の更新は安定版のみが使用されます。",
+      "switching": "{channel} チャンネルに切り替え中...",
+      "completed": "{channel} チャンネルに切り替えました",
+      "failed": "チャンネルの切り替えに失敗しました"
     },
     "banners": {
       "recent": "最近の通知",

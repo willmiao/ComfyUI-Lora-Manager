@@ -47,6 +47,7 @@ class UpdateRoutes:
         app.router.add_get('/api/lm/check-updates', UpdateRoutes.check_updates)
         app.router.add_get('/api/lm/version-info', UpdateRoutes.get_version_info)
         app.router.add_post('/api/lm/perform-update', UpdateRoutes.perform_update)
+        app.router.add_post('/api/lm/switch-channel', UpdateRoutes.switch_channel)
     
     @staticmethod
     async def check_updates(request):
@@ -65,10 +66,17 @@ class UpdateRoutes:
 
             # Fetch remote version from GitHub
             if nightly:
-                remote_version, changelog = await UpdateRoutes._get_nightly_version()
-                releases = None
+                local_hash = git_info.get('short_hash', '')
+                nightly_version, releases_result = await asyncio.gather(
+                    UpdateRoutes._get_nightly_version(local_hash),
+                    UpdateRoutes._get_remote_version()
+                )
+                remote_version, _, behind_by, commit_date = nightly_version
+                _, changelog, releases = releases_result
             else:
                 remote_version, changelog, releases = await UpdateRoutes._get_remote_version()
+                behind_by = 0
+                commit_date = ''
             
             # Compare versions
             if nightly:
@@ -81,6 +89,10 @@ class UpdateRoutes:
                     remote_version.replace('v', '')
                 )
             
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            plugin_root = os.path.dirname(os.path.dirname(current_dir))
+            has_git = os.path.exists(os.path.join(plugin_root, '.git'))
+
             response_data = {
                 'success': True,
                 'current_version': local_version,
@@ -88,12 +100,12 @@ class UpdateRoutes:
                 'update_available': update_available,
                 'changelog': changelog,
                 'git_info': git_info,
-                'nightly': nightly
+                'nightly': nightly,
+                'has_git': has_git,
+                'releases': releases,
+                'behind_by': behind_by,
+                'commit_date': commit_date
             }
-            
-            # Include releases list for stable mode
-            if releases is not None:
-                response_data['releases'] = releases
             
             return web.json_response(response_data)
             
@@ -126,9 +138,14 @@ class UpdateRoutes:
             # Format: version-short_hash
             version_string = f"{local_version}-{short_hash}"
             
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            plugin_root = os.path.dirname(os.path.dirname(current_dir))
+            has_git = os.path.exists(os.path.join(plugin_root, '.git'))
+
             return web.json_response({
                 'success': True,
-                'version': version_string
+                'version': version_string,
+                'has_git': has_git
             })
             
         except Exception as e:
@@ -189,6 +206,162 @@ class UpdateRoutes:
                 'success': False,
                 'error': str(e)
             })
+
+    @staticmethod
+    async def switch_channel(request):
+        """
+        Switch between release and nightly update channels.
+        
+        Release → Nightly: Initialize a Git repository (from ZIP/CM stable mode)
+        Nightly → Release: Remove .git, download latest release ZIP, write .tracking
+        """
+        try:
+            body = await request.json() if request.has_body else {}
+            channel = body.get('channel', '')
+
+            if channel not in ('release', 'nightly'):
+                return web.json_response({
+                    'success': False,
+                    'error': f'Invalid channel: {channel}. Must be "release" or "nightly".'
+                })
+
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            plugin_root = os.path.dirname(os.path.dirname(current_dir))
+
+            settings_path = ensure_settings_file(logger)
+            settings_backup = None
+            if os.path.exists(settings_path):
+                with open(settings_path, 'r', encoding='utf-8') as f:
+                    settings_backup = f.read()
+                logger.info("Backed up settings.json before channel switch")
+
+            git_folder = os.path.join(plugin_root, '.git')
+
+            if channel == 'nightly':
+                git_backup = None
+                if os.path.exists(git_folder):
+                    git_backup = UpdateRoutes._backup_git(git_folder, 'nightly')
+
+                success = False
+                new_version = ''
+                try:
+                    if os.path.exists(git_folder):
+                        success, new_version = await UpdateRoutes._perform_git_update(
+                            plugin_root, nightly=True
+                        )
+                    else:
+                        success, new_version = UpdateRoutes._init_git_repo(plugin_root)
+                finally:
+                    UpdateRoutes._restore_git(git_backup, git_folder, success, 'nightly')
+            else:
+                git_backup = None
+                if os.path.exists(git_folder):
+                    git_backup = UpdateRoutes._backup_git(git_folder, 'release')
+
+                success = False
+                new_version = ''
+                try:
+                    if os.path.exists(git_folder):
+                        shutil.rmtree(git_folder)
+                    tracking_file = os.path.join(plugin_root, '.tracking')
+                    if os.path.exists(tracking_file):
+                        os.remove(tracking_file)
+                    success, new_version = await UpdateRoutes._download_and_replace_zip(plugin_root)
+                finally:
+                    UpdateRoutes._restore_git(git_backup, git_folder, success, 'release')
+
+            if settings_backup and success:
+                with open(settings_path, 'w', encoding='utf-8') as f:
+                    f.write(settings_backup)
+                logger.info("Restored settings.json after channel switch")
+
+            if success:
+                return web.json_response({
+                    'success': True,
+                    'channel': channel,
+                    'new_version': new_version,
+                    'message': f'Switched to {channel} channel'
+                })
+            else:
+                return web.json_response({
+                    'success': False,
+                    'error': f'Failed to switch to {channel} channel'
+                })
+
+        except Exception as e:
+            logger.error("Failed to switch channel: %s", e, exc_info=True)
+            return web.json_response({
+                'success': False,
+                'error': str(e)
+            })
+
+    @staticmethod
+    def _init_git_repo(plugin_root: str) -> tuple[bool, str]:
+        """
+        Initialize a Git repository in a ZIP-installed plugin folder.
+        Clones the remote history and checks out main branch.
+        """
+        try:
+            import git
+        except ImportError:
+            logger.error(
+                "GitPython is not available: cannot initialize git repo. "
+                "Install git or set $GIT_PYTHON_GIT_EXECUTABLE to the git binary path."
+            )
+            return False, ""
+
+        clean_excludes = _clean_excludes()
+
+        try:
+            repo = git.Repo.init(plugin_root)
+            origin = repo.create_remote(
+                'origin',
+                'https://github.com/willmiao/ComfyUI-Lora-Manager.git'
+            )
+            origin.fetch()
+
+            repo.create_head('main', origin.refs.main)
+            repo.git.checkout('main', '--force')
+            repo.git.reset('--hard')
+            repo.git.clean('-fd', *clean_excludes)
+
+            tracking_file = os.path.join(plugin_root, '.tracking')
+            if os.path.exists(tracking_file):
+                os.remove(tracking_file)
+                logger.info("Removed .tracking file (now in git mode)")
+
+            new_version = f"main-{repo.head.commit.hexsha[:7]}"
+            logger.info("Initialized git repo on main branch: %s", new_version)
+            return True, new_version
+
+        except Exception as e:
+            logger.error("Failed to initialize git repo: %s", e, exc_info=True)
+            return False, ""
+
+    @staticmethod
+    def _backup_git(git_folder, label):
+        try:
+            backup_dir = tempfile.mkdtemp()
+            backup = os.path.join(backup_dir, '.git')
+            shutil.copytree(git_folder, backup)
+            logger.info("Backed up .git before switching to %s", label)
+            return backup
+        except Exception as e:
+            logger.error("Failed to backup .git before %s switch: %s", label, e)
+            return None
+
+    @staticmethod
+    def _restore_git(git_backup, git_folder, success, label):
+        if git_backup and not success:
+            try:
+                if os.path.exists(git_folder):
+                    shutil.rmtree(git_folder)
+                shutil.copytree(git_backup, git_folder)
+                logger.info("Restored .git after failed %s switch", label)
+            except Exception as e:
+                logger.error("Failed to restore .git after %s switch: %s", label, e)
+        if git_backup:
+            shutil.rmtree(os.path.dirname(git_backup), ignore_errors=True)
 
     @staticmethod
     async def _download_and_replace_zip(plugin_root: str) -> tuple[bool, str]:
@@ -295,7 +468,8 @@ class UpdateRoutes:
         except Exception as e:
             logger.error(f"ZIP update failed: {e}", exc_info=True)
             return False, ""
-        
+
+    @staticmethod
     def _clean_plugin_folder(plugin_root, skip_files=None):
         skip_files = skip_files or []
         for item in os.listdir(plugin_root):
@@ -308,41 +482,51 @@ class UpdateRoutes:
                 os.remove(path)
     
     @staticmethod
-    async def _get_nightly_version() -> tuple[str, List[str]]:
-        """
-        Fetch latest commit from main branch
-        """
+    async def _get_nightly_version(local_hash: str = "") -> tuple[str, List[str], int, str]:
         repo_owner = "willmiao"
         repo_name = "ComfyUI-Lora-Manager"
-        
-        # Use GitHub API to fetch the latest commit from main branch
+
         github_url = f"https://api.github.com/repos/{repo_owner}/{repo_name}/commits/main"
-        
+
         try:
             downloader = await get_downloader()
-            success, data = await downloader.make_request('GET', github_url, custom_headers={'Accept': 'application/vnd.github+json'})
-            
+            success, data = await downloader.make_request(
+                'GET', github_url,
+                custom_headers={'Accept': 'application/vnd.github+json'}
+            )
+
             if not success:
-                logger.warning(f"Failed to fetch GitHub commit: {data}")
-                return "main", []
-            
-            commit_sha = data.get('sha', '')[:7]  # Short hash
+                logger.warning("Failed to fetch GitHub commit: %s", data)
+                return "main", [], 0, ""
+
+            commit_sha = data.get('sha', '')[:7]
             commit_message = data.get('commit', {}).get('message', '')
-            
-            # Format as "main-{short_hash}"
+            commit_date = data.get('commit', {}).get('committer', {}).get('date', '')[:10]
+
             version = f"main-{commit_sha}"
-            
-            # Use commit message as changelog
             changelog = [commit_message] if commit_message else []
-            
-            return version, changelog
-        
+
+            behind_by = 0
+            if local_hash and local_hash not in ('unknown', 'stable'):
+                compare_url = (
+                    f"https://api.github.com/repos/{repo_owner}/{repo_name}"
+                    f"/compare/{local_hash}...main"
+                )
+                c_ok, c_data = await downloader.make_request(
+                    'GET', compare_url,
+                    custom_headers={'Accept': 'application/vnd.github+json'}
+                )
+                if c_ok:
+                    behind_by = c_data.get('behind_by', 0)
+
+            return version, changelog, behind_by, commit_date
+
         except NETWORK_EXCEPTIONS as e:
             logger.warning("Unable to reach GitHub for nightly version: %s", e)
-            return "main", []
+            return "main", [], 0, ""
         except Exception as e:
-            logger.error(f"Error fetching nightly version: {e}", exc_info=True)
-            return "main", []
+            logger.error("Error fetching nightly version: %s", e, exc_info=True)
+            return "main", [], 0, ""
     
     @staticmethod
     def _compare_nightly_versions(local_git_info: Dict[str, str], remote_version: str) -> bool:

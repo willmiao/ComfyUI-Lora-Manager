@@ -19,6 +19,20 @@
         <div class="notification-panels">
             <div class="notification-panel active" id="updatesPanel" role="tabpanel" aria-labelledby="updatesTab" aria-hidden="false" tabindex="0" data-notification-panel="updates">
                 <div class="update-content">
+
+                    <!-- Channel Selector -->
+                    <div class="update-channels" id="updateChannels">
+                        <div class="channels-label">{{ t('update.channel') }}</div>
+                        <div class="channel-toggle">
+                            <button type="button" class="channel-btn" data-channel="release" id="channelRelease">
+                                <i class="fas fa-tag"></i> {{ t('update.channels.release') }}
+                            </button>
+                            <button type="button" class="channel-btn" data-channel="nightly" id="channelNightly">
+                                <i class="fas fa-moon"></i> {{ t('update.channels.nightly') }}
+                            </button>
+                        </div>
+                    </div>
+
                     <div class="update-info">
                         <div class="version-info">
                             <div class="current-version">

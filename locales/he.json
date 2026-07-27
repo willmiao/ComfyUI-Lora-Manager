@@ -1751,7 +1751,13 @@
     "checkingUpdates": "בודק עדכונים...",
     "checkingMessage": "אנא המתן בזמן שאנו בודקים את הגרסה האחרונה.",
     "showNotifications": "הצג התראות עדכון",
-    "latestBadge": "עדכן",
+    "latestBadge": "אחרון",
+    "latestMain": "ענף main",
+    "channel": "ערוץ עדכון",
+    "channels": {
+      "release": "Release",
+      "nightly": "Nightly"
+    },
     "updateProgress": {
       "preparing": "מכין עדכון...",
       "installing": "מתקין עדכון...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "אזהרה: גרסאות ליליות עשויות להכיל תכונות ניסיוניות ועלולות להיות לא יציבות.",
       "enable": "הפעל עדכונים ליליים"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "מעבר לערוץ Nightly",
+      "nightlyMessage": "מעבר ל-Nightly יאתחל מאגר Git ויעקוב אחר הקומיטים האחרונים בענף main. העדכונים תכופים יותר אך עשויים להיות לא יציבים. ניתן לחזור ל-Release בכל עת.",
+      "releaseTitle": "מעבר לערוץ Release",
+      "releaseMessage": "מעבר ל-Release יסיר את מאגר ה-Git ויתקין את הגרסה היציבה האחרונה. עדכונים עתידיים ישתמשו בגרסאות יציבות בלבד.",
+      "switching": "מעבר לערוץ {channel}...",
+      "completed": "המעבר לערוץ {channel} הושלם",
+      "failed": "החלפת ערוץ נכשלה"
     },
     "banners": {
       "recent": "הודעות אחרונות",

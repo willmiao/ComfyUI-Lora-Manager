@@ -1752,6 +1752,12 @@
     "checkingMessage": "请稍候，正在检查最新版本。",
     "showNotifications": "显示更新通知",
     "latestBadge": "最新",
+    "latestMain": "Main 分支",
+    "channel": "更新频道",
+    "channels": {
+      "release": "稳定版",
+      "nightly": "Nightly"
+    },
     "updateProgress": {
       "preparing": "正在准备更新...",
       "installing": "正在安装更新...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "警告：Nightly 版本可能包含实验性功能，可能不稳定。",
       "enable": "启用 Nightly 更新"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "切换到 Nightly",
+      "nightlyMessage": "切换到 Nightly 将初始化 Git 仓库并跟踪 main 分支的最新提交。更新更频繁但可能不稳定，可随时切回稳定版。",
+      "releaseTitle": "切换到稳定版",
+      "releaseMessage": "切换到稳定版将移除 Git 仓库并安装最新的稳定发布版本，后续仅使用稳定版更新。",
+      "switching": "正在切换到 {channel} 频道...",
+      "completed": "已切换到 {channel} 频道",
+      "failed": "切换频道失败"
     },
     "banners": {
       "recent": "最近的通知",

@@ -1752,6 +1752,12 @@
     "checkingMessage": "Bitte warten Sie, während wir nach der neuesten Version suchen.",
     "showNotifications": "Update-Benachrichtigungen anzeigen",
     "latestBadge": "Neueste",
+    "latestMain": "Main-Branch",
+    "channel": "Update-Kanal",
+    "channels": {
+      "release": "Release",
+      "nightly": "Nightly"
+    },
     "updateProgress": {
       "preparing": "Update wird vorbereitet...",
       "installing": "Update wird installiert...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "Warnung: Nightly Builds können experimentelle Funktionen enthalten und könnten instabil sein.",
       "enable": "Nightly Updates aktivieren"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "Zu Nightly-Kanal wechseln",
+      "nightlyMessage": "Der Wechsel zu Nightly initialisiert ein Git-Repository und verfolgt die neuesten Commits des main-Branches. Updates sind häufiger, können aber instabil sein. Sie können jederzeit zu Release zurückwechseln.",
+      "releaseTitle": "Zu Release-Kanal wechseln",
+      "releaseMessage": "Der Wechsel zu Release entfernt das Git-Repository und installiert die neueste stabile Version. Zukünftige Updates verwenden nur stabile Versionen.",
+      "switching": "Wechsle zu {channel}-Kanal...",
+      "completed": "Erfolgreich zu {channel}-Kanal gewechselt",
+      "failed": "Kanalwechsel fehlgeschlagen"
     },
     "banners": {
       "recent": "Neueste Mitteilungen",

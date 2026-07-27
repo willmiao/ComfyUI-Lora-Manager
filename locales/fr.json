@@ -1751,7 +1751,13 @@
     "checkingUpdates": "Vérification des mises à jour...",
     "checkingMessage": "Veuillez patienter pendant la vérification de la dernière version.",
     "showNotifications": "Afficher les notifications de mise à jour",
-    "latestBadge": "Dernier",
+    "latestBadge": "Dernière",
+    "latestMain": "Branche main",
+    "channel": "Canal de mise a jour",
+    "channels": {
+      "release": "Release",
+      "nightly": "Nightly"
+    },
     "updateProgress": {
       "preparing": "Préparation de la mise à jour...",
       "installing": "Installation de la mise à jour...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "Attention : Les versions nightly peuvent contenir des fonctionnalités expérimentales et être instables.",
       "enable": "Activer les mises à jour nightly"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "Passer au canal Nightly",
+      "nightlyMessage": "Passer a Nightly initialisera un depot Git et suivra les derniers commits de la branche main. Les mises a jour sont plus frequentes mais peuvent etre instables. Vous pouvez revenir a Release a tout moment.",
+      "releaseTitle": "Passer au canal Release",
+      "releaseMessage": "Passer a Release supprimera le depot Git et installera la derniere version stable. Les futures mises a jour utiliseront uniquement des versions stables.",
+      "switching": "Passage au canal {channel}...",
+      "completed": "Basculement vers le canal {channel} reussi",
+      "failed": "Echec du changement de canal"
     },
     "banners": {
       "recent": "Messages récents",

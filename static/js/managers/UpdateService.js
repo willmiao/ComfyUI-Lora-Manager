@@ -24,7 +24,9 @@ export class UpdateService {
         this.updateNotificationsEnabled = getStorageItem('show_update_notifications', true);
         this.lastCheckTime = parseInt(getStorageItem('last_update_check') || '0');
         this.isUpdating = false;
-        this.nightlyMode = getStorageItem('nightly_updates', false);
+        this.channelMode = null;
+        this.hasGit = false;
+        this.progressKeepVisible = false;
         this.currentVersionInfo = null;
         this.versionMismatch = false;
         this.activeNotificationTab = 'updates';
@@ -49,43 +51,161 @@ export class UpdateService {
             updateBtn.addEventListener('click', () => this.performUpdate());
         }
         
-        // Register event listener for nightly update toggle
-        const nightlyCheckbox = document.getElementById('nightlyUpdateToggle');
-        if (nightlyCheckbox) {
-            nightlyCheckbox.checked = this.nightlyMode;
-            nightlyCheckbox.addEventListener('change', (e) => {
-                this.nightlyMode = e.target.checked;
-                setStorageItem('nightly_updates', e.target.checked);
-                this.updateNightlyWarning();
-                this.updateModalContent();
-                // Re-check for updates when switching channels
-                this.manualCheckForUpdates();
-            });
-            this.updateNightlyWarning();
-        }
+        this.wireChannelButtons();
 
         this.setupNotificationCenter();
         window.addEventListener('lm:banner-history-updated', this.handleBannerHistoryUpdated);
         this.updateTabBadges();
         
         // Perform update check if needed
-        this.checkForUpdates().then(() => {
-            // Ensure badges are updated after checking
-            this.updateBadgeVisibility();
+        this.checkVersionInfo().then(() => {
+            if (this.channelMode === null) {
+                this.channelMode = this.hasGit ? 'nightly' : 'release';
+            }
+            this.checkForUpdates().then(() => {
+                this.updateBadgeVisibility();
+            });
         });
 
-        // Immediately update modal content with current values (even if from default)
         this.updateModalContent();
-        
-        // Check version info for mismatch after loading basic info
-        this.checkVersionInfo();
     }
     
-    updateNightlyWarning() {
-        const warning = document.getElementById('nightlyWarning');
-        if (warning) {
-            warning.style.display = this.nightlyMode ? 'flex' : 'none';
+    wireChannelButtons() {
+        const releaseBtn = document.getElementById('channelRelease');
+        const nightlyBtn = document.getElementById('channelNightly');
+        if (releaseBtn) {
+            releaseBtn.addEventListener('click', () => this.switchChannel('release'));
         }
+        if (nightlyBtn) {
+            nightlyBtn.addEventListener('click', () => this.switchChannel('nightly'));
+        }
+    }
+
+    async switchChannel(channel) {
+        if (channel === this.channelMode) {
+            return;
+        }
+        if (this.isUpdating) {
+            return;
+        }
+        if (!this.hasGit && channel === 'nightly') {
+            const confirmed = await this._confirmChannelSwitch(
+                'update.channelSwitch.nightlyTitle',
+                'update.channelSwitch.nightlyMessage'
+            );
+            if (!confirmed) return;
+        }
+        if (this.hasGit && channel === 'release') {
+            const confirmed = await this._confirmChannelSwitch(
+                'update.channelSwitch.releaseTitle',
+                'update.channelSwitch.releaseMessage'
+            );
+            if (!confirmed) return;
+        }
+
+        try {
+            this.isUpdating = true;
+            this.showUpdateProgress(true);
+            this.updateProgress(10, translate('update.channelSwitch.switching', { channel }));
+
+            const response = await fetch('/api/lm/switch-channel', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ channel })
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                this.channelMode = channel;
+                await this.checkForUpdates({ force: true });
+                this.updateModalContent();
+                this.updateChannelUI();
+                this._showSwitchCompleteMessage(data.new_version);
+                this.progressKeepVisible = true;
+            } else {
+                throw new Error(data.error || translate('update.channelSwitch.failed'));
+            }
+        } catch (error) {
+            console.error('Channel switch failed:', error);
+            this.updateProgress(0, translate('update.channelSwitch.failed'));
+        } finally {
+            if (this.progressKeepVisible) {
+                this.isUpdating = false;
+                this.progressKeepVisible = false;
+            } else {
+                setTimeout(() => {
+                    this.showUpdateProgress(false);
+                    this.isUpdating = false;
+                }, 2000);
+            }
+        }
+    }
+
+    updateChannelUI() {
+        const releaseBtn = document.getElementById('channelRelease');
+        const nightlyBtn = document.getElementById('channelNightly');
+
+        if (releaseBtn) {
+            releaseBtn.classList.toggle('active', this.channelMode === 'release');
+        }
+        if (nightlyBtn) {
+            nightlyBtn.classList.toggle('active', this.channelMode === 'nightly');
+        }
+    }
+
+    async _confirmChannelSwitch(titleKey, messageKey) {
+        return new Promise((resolve) => {
+            const title = translate(titleKey);
+            const message = translate(messageKey);
+            const cancelText = translate('common.cancel');
+            const confirmText = translate('common.confirm');
+
+            const overlay = document.createElement('div');
+            overlay.className = 'channel-switch-overlay';
+            overlay.innerHTML = `
+                <div class="channel-switch-dialog">
+                    <h3>${title}</h3>
+                    <p>${message}</p>
+                    <div class="channel-switch-actions">
+                        <button class="secondary-btn channel-switch-cancel">${cancelText}</button>
+                        <button class="primary-btn channel-switch-confirm">${confirmText}</button>
+                    </div>
+                </div>
+            `;
+
+            const dismiss = (result) => {
+                document.removeEventListener('keydown', onKeydown);
+                overlay.remove();
+                resolve(result);
+            };
+
+            const onKeydown = (e) => {
+                if (e.key === 'Escape') {
+                    e.stopPropagation();
+                    e.preventDefault();
+                    dismiss(false);
+                }
+            };
+
+            document.addEventListener('keydown', onKeydown, { capture: true });
+
+            overlay.addEventListener('click', (e) => {
+                if (e.target === overlay) {
+                    dismiss(false);
+                }
+            });
+
+            overlay.querySelector('.channel-switch-cancel').addEventListener('click', () => {
+                dismiss(false);
+            });
+
+            overlay.querySelector('.channel-switch-confirm').addEventListener('click', () => {
+                dismiss(true);
+            });
+
+            document.body.appendChild(overlay);
+        });
     }
 
     setupNotificationCenter() {
@@ -373,7 +493,8 @@ export class UpdateService {
 
         try {
             // Call backend API to check for updates with nightly flag
-            const response = await fetch(`/api/lm/check-updates?nightly=${this.nightlyMode}`);
+            const nightly = this.channelMode === 'nightly';
+            const response = await fetch(`/api/lm/check-updates?nightly=${nightly}`);
             const data = await response.json();
             
             if (data.success) {
@@ -381,17 +502,19 @@ export class UpdateService {
                 this.latestVersion = data.latest_version || "v0.0.0";
                 this.updateInfo = data;
                 this.gitInfo = data.git_info || this.gitInfo;
-                
-                // Explicitly set update availability based on version comparison
-                this.updateAvailable = this.isNewerVersion(this.latestVersion, this.currentVersion);
-                
-                // Update last check time
+                this.hasGit = data.has_git || false;
+                if (this.channelMode === null) {
+                    this.channelMode = this.hasGit ? 'nightly' : 'release';
+                }
+
+                this.updateAvailable = data.update_available;
+
                 this.lastCheckTime = now;
                 setStorageItem('last_update_check', now.toString());
-                
-                // Update UI
+
                 this.updateBadgeVisibility();
                 this.updateModalContent();
+                this.updateChannelUI();
 
                 console.log("Update check complete:", {
                     currentVersion: this.currentVersion,
@@ -482,8 +605,27 @@ export class UpdateService {
         
         if (currentVersionEl) currentVersionEl.textContent = this.currentVersion;
         
+        const newVersionLabel = modal.querySelector('.new-version .label');
+        if (newVersionLabel) {
+            newVersionLabel.textContent = (this.updateInfo?.nightly)
+                ? `${translate('update.latestMain')}:`
+                : `${translate('update.newVersion')}:`;
+        }
+
         if (newVersionEl) {
-            newVersionEl.textContent = this.latestVersion;
+            if (this.updateInfo?.nightly) {
+                const behind = this.updateInfo.behind_by || 0;
+                const hash = this.latestVersion.replace('main-', '');
+                const date = this.updateInfo.commit_date || '';
+                const datePart = date ? ` · ${date}` : '';
+                if (behind > 0) {
+                    newVersionEl.textContent = `${behind} commit${behind !== 1 ? 's' : ''} behind main (${hash}${datePart})`;
+                } else {
+                    newVersionEl.textContent = `Up to date (${hash}${datePart})`;
+                }
+            } else {
+                newVersionEl.textContent = this.latestVersion;
+            }
         }
         
         // Update update button state
@@ -599,8 +741,12 @@ export class UpdateService {
         // Update GitHub link to point to the specific release if available
         const githubLink = modal.querySelector('.update-link');
         if (githubLink && this.latestVersion) {
-            const versionTag = this.latestVersion.replace(/^v/, '');
-            githubLink.href = `https://github.com/willmiao/ComfyUI-Lora-Manager/releases/tag/v${versionTag}`;
+            if (this.updateInfo?.nightly) {
+                githubLink.href = 'https://github.com/willmiao/ComfyUI-Lora-Manager/commits/main';
+            } else {
+                const versionTag = this.latestVersion.replace(/^v/, '');
+                githubLink.href = `https://github.com/willmiao/ComfyUI-Lora-Manager/releases/tag/v${versionTag}`;
+            }
         }
     }
     
@@ -623,7 +769,7 @@ export class UpdateService {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    nightly: this.nightlyMode
+                    nightly: this.channelMode === 'nightly'
                 })
             });
             
@@ -698,7 +844,26 @@ export class UpdateService {
             progressText.textContent = text;
         }
     }
-    
+
+    _showSwitchCompleteMessage(version) {
+        this.showUpdateProgress(true);
+        this.updateProgress(100, '');
+        const progressText = document.getElementById('updateProgressText');
+        if (progressText) {
+            progressText.innerHTML = `
+                <div style="text-align: center; color: var(--lora-success);">
+                    <i class="fas fa-check-circle" style="margin-right: 8px;"></i>
+                    ${translate('update.completion.successMessage', { version })}
+                    <br><br>
+                    <div style="opacity: 0.95; color: var(--lora-error); font-size: 1em;">
+                        ${translate('update.completion.restartMessage')}<br>
+                        ${translate('update.completion.reloadMessage')}
+                    </div>
+                </div>
+            `;
+        }
+    }
+
     showUpdateCompleteMessage(newVersion) {
         const modal = document.getElementById('updateModal');
         if (!modal) return;
@@ -771,6 +936,7 @@ export class UpdateService {
 
         // Update the modal content immediately with current data
         this.updateModalContent();
+        this.updateChannelUI();
         this.renderRecentBanners();
 
         // Show the modal with current data
@@ -801,8 +967,8 @@ export class UpdateService {
             
             if (data.success) {
                 this.currentVersionInfo = data.version;
-                
-                // Check if version matches stored version
+                this.hasGit = data.has_git || false;
+
                 this.versionMismatch = !isVersionMatch(this.currentVersionInfo);
                 
                 if (this.versionMismatch) {

@@ -1751,7 +1751,13 @@
     "checkingUpdates": "Comprobando actualizaciones...",
     "checkingMessage": "Por favor espera mientras comprobamos la última versión.",
     "showNotifications": "Mostrar notificaciones de actualización",
-    "latestBadge": "Último",
+    "latestBadge": "Última",
+    "latestMain": "Rama main",
+    "channel": "Canal de actualizacion",
+    "channels": {
+      "release": "Release",
+      "nightly": "Nightly"
+    },
     "updateProgress": {
       "preparing": "Preparando actualización...",
       "installing": "Instalando actualización...",
@@ -1771,6 +1777,15 @@
     "nightly": {
       "warning": "Advertencia: Las compilaciones nocturnas pueden contener características experimentales y podrían ser inestables.",
       "enable": "Habilitar actualizaciones nocturnas"
+    },
+    "channelSwitch": {
+      "nightlyTitle": "Cambiar a canal Nightly",
+      "nightlyMessage": "Cambiar a Nightly inicializara un repositorio Git y seguira los ultimos commits de la rama main. Las actualizaciones son mas frecuentes pero pueden ser inestables. Puede volver a Release en cualquier momento.",
+      "releaseTitle": "Cambiar a canal Release",
+      "releaseMessage": "Cambiar a Release eliminara el repositorio Git e instalara la ultima version estable. Las futuras actualizaciones usaran solo versiones estables.",
+      "switching": "Cambiando a canal {channel}...",
+      "completed": "Cambio a canal {channel} exitoso",
+      "failed": "Error al cambiar de canal"
     },
     "banners": {
       "recent": "Notificaciones recientes",
