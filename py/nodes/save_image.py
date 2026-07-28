@@ -446,7 +446,16 @@ class SaveImageLM:
                 lora_resource["versionName"] = lora_civitai["name"]
             civitai_resources.append(lora_resource)
 
-        sampler_display = self._get_civitai_sampler_name(sampler, scheduler)
+        sampler_name = CIVITAI_SAMPLER_MAP.get(sampler, sampler) if sampler else None
+
+        scheduler_mapping = {
+            "normal": "Normal",
+            "karras": "Karras",
+            "exponential": "Exponential",
+            "sgm_uniform": "SGM Uniform",
+            "sgm_quadratic": "SGM Quadratic",
+        }
+        scheduler_name = scheduler_mapping.get(scheduler, scheduler) if scheduler else None
 
         # Build output lines
         lines = [prompt] if prompt else [""]
@@ -456,8 +465,11 @@ class SaveImageLM:
         params: list[str] = []
         if steps is not None:
             params.append(f"Steps: {steps}")
-        if sampler_display:
-            params.append(f"Sampler: {sampler_display}")
+        if sampler_name:
+            if scheduler_name:
+                params.append(f"Sampler: {sampler_name} {scheduler_name}")
+            else:
+                params.append(f"Sampler: {sampler_name}")
         if cfg is not None:
             params.append(f"CFG scale: {cfg}")
         if seed is not None:
