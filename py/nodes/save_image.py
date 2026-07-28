@@ -476,11 +476,9 @@ class SaveImageLM:
             params.append(f"Seed: {seed}")
         if size:
             params.append(f"Size: {size}")
-        if clip_skip:
+        if clip_skip is not None:
             try:
-                cs = int(clip_skip)
-                if cs != 0:
-                    params.append(f"Clip skip: {abs(cs)}")
+                params.append(f"Clip skip: {abs(int(clip_skip))}")
             except (ValueError, TypeError):
                 pass
         additional_data = metadata_dict.get("additional_data", "")

@@ -678,7 +678,12 @@ class MetadataProcessor:
         for overwrite_info in metadata.get(OVERWRITE, {}).values():
             overwrite_params = overwrite_info.get("parameters", {})
             for key, value in overwrite_params.items():
-                if value:  # truthy check — only overwrite when user provided a real value
+                if key == "clip_skip":
+                    # Accept any value from overwrite node (sentinel -25 already
+                    # filtered upstream).  Needed because falsy check treats 0
+                    # as "not set" even though 0 is a valid wired input here.
+                    params[key] = value
+                elif value:  # truthy check — only overwrite when user provided a real value
                     params[key] = value
 
         # Bridge: the overwrite node exposes the field as "model" (more accurate),

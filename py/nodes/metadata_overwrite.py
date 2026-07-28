@@ -1,13 +1,18 @@
 """Metadata Overwrite node — allows users to manually specify generation parameters
 that override the automatically collected/inferred metadata.
 
-All inputs have falsy defaults: only truthy (non-empty / non-zero) values
-will overwrite the corresponding field in the final metadata.
+Most inputs have falsy defaults (empty string / 0) which are skipped.
+clip_skip uses a sentinel default (-25) so that a wired value of 0 is
+preserved — both ComfyUI and A1111 conventions have no meaningful 0 value,
+but users may wire 0 to express "no clip skip / default".
 """
 
 from typing import Any
 
-from ..metadata_collector.constants import METADATA_OVERWRITE_FIELDS
+from ..metadata_collector.constants import (
+    CLIP_SKIP_SENTINEL as _CLIP_SKIP_SENTINEL,
+    METADATA_OVERWRITE_FIELDS,
+)
 
 
 class MetadataOverwriteLM:
@@ -116,10 +121,14 @@ class MetadataOverwriteLM:
                 "clip_skip": (
                     "INT",
                     {
-                        "default": 0,
-                        "min": -24,
+                        "default": _CLIP_SKIP_SENTINEL,
+                        "min": -25,
                         "max": 24,
-                        "tooltip": "Clip skip. Only overwrites when non-zero.",
+                        "tooltip": (
+                            "Clip skip (ComfyUI: -24..-1, A1111: 1+). "
+                            "Default -25 means not set — any other value "
+                            "overwrites."
+                        ),
                     },
                 ),
                 "additional_data": (
@@ -144,14 +153,18 @@ class MetadataOverwriteLM:
     OUTPUT_NODE = True
 
     def collect_metadata(self, **kwargs: Any) -> tuple[dict[str, Any]]:
-        """Collect non-falsy input values into a metadata dict.
+        """Collect non-default input values into a metadata dict.
 
-        Only values that are truthy (non-empty string, non-zero number)
-        are included — matching the overwrite logic in the metadata pipeline.
+        For most fields, a falsy value (empty string, 0) means "not set"
+        and is skipped.  clip_skip uses a dedicated sentinel (-25) so that
+        a wired value of 0 is preserved and reaches the metadata pipeline.
         """
         result: dict[str, Any] = {}
         for key in METADATA_OVERWRITE_FIELDS:
             value = kwargs.get(key)
-            if value:
+            if key == "clip_skip":
+                if value != _CLIP_SKIP_SENTINEL:
+                    result[key] = value
+            elif value:
                 result[key] = value
         return (result,)

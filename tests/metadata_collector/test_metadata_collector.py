@@ -870,7 +870,8 @@ def test_metadata_overwrite_extractor_stores_truthy_values(metadata_registry):
     assert "steps" not in params
     assert "sampler" not in params
     assert "scheduler" not in params
-    assert "clip_skip" not in params
+    # clip_skip=0 is now stored (0 != sentinel -25) — wired 0 is valid
+    assert params["clip_skip"] == 0
 
     metadata_registry.clear_metadata()
 
@@ -880,8 +881,10 @@ def test_metadata_overwrite_extractor_empty_inputs(metadata_registry):
     metadata_registry.start_collection("prompt-ow2")
     metadata = metadata_registry.prompt_metadata["prompt-ow2"]
 
+    from py.metadata_collector.constants import CLIP_SKIP_SENTINEL
+
     inputs = {key: "" for key in METADATA_OVERWRITE_FIELDS}
-    inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": 0})
+    inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": CLIP_SKIP_SENTINEL})
 
     MetadataOverwriteExtractor.extract("ow-2", inputs, None, metadata)
 
@@ -950,7 +953,8 @@ def test_extract_generation_params_overwrite_falsy_skipped(metadata_registry, po
     registry_obj.set_current_prompt(populated_registry["prompt"])
     metadata2 = registry_obj.prompt_metadata["promptA"]
 
-    # Inject overwrite with falsy values
+    # Inject overwrite with falsy values (except clip_skip=0 which is now
+    # treated as a valid wired input thanks to the -25 sentinel)
     metadata2[OVERWRITE] = {
         "ow-1": {
             "parameters": {
@@ -973,6 +977,9 @@ def test_extract_generation_params_overwrite_falsy_skipped(metadata_registry, po
     # Falsy overwrites should NOT have replaced inferred values
     assert params["prompt"] == "A castle on a hill"
     assert params["cfg_scale"] == 7.5
+
+    # clip_skip=0 is a valid wired value (not the -25 sentinel) — should be applied
+    assert params["clip_skip"] == 0
 
     registry_obj.clear_metadata()
 

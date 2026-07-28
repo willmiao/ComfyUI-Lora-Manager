@@ -2,7 +2,7 @@ import json
 import os
 import re
 
-from .constants import MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IMAGES, IS_SAMPLER, OVERWRITE, METADATA_OVERWRITE_FIELDS
+from .constants import CLIP_SKIP_SENTINEL, MODELS, PROMPTS, SAMPLING, LORAS, SIZE, IMAGES, IS_SAMPLER, OVERWRITE, METADATA_OVERWRITE_FIELDS
 
 
 def _store_checkpoint_metadata(metadata, node_id, model_name):
@@ -1236,7 +1236,10 @@ class MetadataOverwriteExtractor(NodeMetadataExtractor):
         overwrite_params = {}
         for key in METADATA_OVERWRITE_FIELDS:
             value = inputs.get(key)
-            if value:  # truthy — only overwrite when user provided a real value
+            if key == "clip_skip":
+                if value != CLIP_SKIP_SENTINEL:
+                    overwrite_params[key] = value
+            elif value:  # truthy — only overwrite when user provided a real value
                 overwrite_params[key] = value
 
         if overwrite_params:
