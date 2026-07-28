@@ -927,6 +927,25 @@ class ModelScanner:
                 # Update cache data
                 self._cache.raw_data = [item for item in self._cache.raw_data if item['file_path'] not in missing_files]
             
+            dedup_removed = 0
+            seen_paths: set = set()
+            deduped: list = []
+            for item in reversed(self._cache.raw_data):
+                path = item.get('file_path', '')
+                if path not in seen_paths:
+                    seen_paths.add(path)
+                    deduped.append(item)
+                else:
+                    for tag in item.get('tags', []):
+                        if tag in self._tags_count:
+                            self._tags_count[tag] = max(0, self._tags_count[tag] - 1)
+                            if self._tags_count[tag] == 0:
+                                del self._tags_count[tag]
+                    dedup_removed += 1
+            if dedup_removed > 0:
+                self._cache.raw_data = list(reversed(deduped))
+                total_removed += dedup_removed
+            
             # Resort cache if changes were made
             if total_added > 0 or total_removed > 0:
                 # Update folders list
@@ -1352,17 +1371,24 @@ class ModelScanner:
             # Update folder in metadata
             metadata_dict['folder'] = folder
             
-            # Add to cache
-            self._cache.raw_data.append(metadata_dict)
-            self._cache.add_to_version_index(metadata_dict)
+            file_path = metadata_dict.get('file_path', '')
+            if file_path:
+                old_entries = [item for item in self._cache.raw_data if item.get('file_path') == file_path]
+                for old_entry in old_entries:
+                    for tag in old_entry.get('tags', []):
+                        if tag in self._tags_count:
+                            self._tags_count[tag] = max(0, self._tags_count[tag] - 1)
+                            if self._tags_count[tag] == 0:
+                                del self._tags_count[tag]
+                self._hash_index.remove_by_path(file_path)
+                self._cache.raw_data = [item for item in self._cache.raw_data if item.get('file_path') != file_path]
 
-            # Resort cache data
+            for tag in metadata_dict.get('tags', []):
+                self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
+
+            self._cache.raw_data.append(metadata_dict)
+
             await self._cache.resort()
-            
-            # Update folders list
-            all_folders = set(self._cache.folders)
-            all_folders.add(folder)
-            self._cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
             
             # Update the hash index
             self._hash_index.add_entry(metadata_dict['sha256'], metadata_dict['file_path'])
