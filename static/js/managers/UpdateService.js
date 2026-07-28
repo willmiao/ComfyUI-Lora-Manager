@@ -615,13 +615,17 @@ export class UpdateService {
         if (newVersionEl) {
             if (this.updateInfo?.nightly) {
                 const behind = this.updateInfo.behind_by || 0;
-                const hash = this.latestVersion.replace('main-', '');
+                const remoteHash = this.latestVersion.replace('main-', '');
+                const localHash = this.gitInfo.short_hash || '';
                 const date = this.updateInfo.commit_date || '';
                 const datePart = date ? ` · ${date}` : '';
+
                 if (behind > 0) {
-                    newVersionEl.textContent = `${behind} commit${behind !== 1 ? 's' : ''} behind main (${hash}${datePart})`;
+                    newVersionEl.textContent = `${behind} commit${behind !== 1 ? 's' : ''} behind main (${remoteHash}${datePart})`;
+                } else if (localHash !== remoteHash) {
+                    newVersionEl.textContent = `Behind main (${remoteHash}${datePart})`;
                 } else {
-                    newVersionEl.textContent = `Up to date (${hash}${datePart})`;
+                    newVersionEl.textContent = `Up to date (${remoteHash}${datePart})`;
                 }
             } else {
                 newVersionEl.textContent = this.latestVersion;

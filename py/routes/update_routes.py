@@ -517,7 +517,10 @@ class UpdateRoutes:
                     custom_headers={'Accept': 'application/vnd.github+json'}
                 )
                 if c_ok:
-                    behind_by = c_data.get('behind_by', 0)
+                    if c_data.get('status') in ('ahead', 'diverged'):
+                        behind_by = c_data.get('ahead_by', 0)
+                    else:
+                        behind_by = c_data.get('behind_by', 0)
 
             return version, changelog, behind_by, commit_date
 

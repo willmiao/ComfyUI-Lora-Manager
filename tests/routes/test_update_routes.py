@@ -428,6 +428,71 @@ async def test_get_nightly_version_parses_behind_by(monkeypatch):
     assert changelog[0] == "test: add nightly feature"
 
 
+class _AheadCompareDownloader:
+    """Fake compare API response with status='ahead' (main is ahead of local)."""
+
+    commit_sha = "9999999"
+    commit_msg = "latest commit"
+    commit_date = "2026-07-28T00:00:00Z"
+    ahead_by = 3
+
+    async def make_request(self, method, url, **kwargs):
+        if "/compare/" in url:
+            return True, {"status": "ahead", "ahead_by": self.ahead_by, "behind_by": 0}
+        return True, {
+            "sha": self.commit_sha,
+            "commit": {
+                "message": self.commit_msg,
+                "committer": {"date": self.commit_date},
+            },
+        }
+
+
+@pytest.mark.asyncio
+async def test_get_nightly_version_reads_ahead_by_when_ahead(monkeypatch):
+    """compare/{local}...main returns status='ahead' → read ahead_by."""
+    monkeypatch.setattr(update_routes, "get_downloader", lambda: _stub_downloader(_AheadCompareDownloader()))
+
+    version, changelog, behind_by, commit_date = await update_routes.UpdateRoutes._get_nightly_version(
+        local_hash="oldhash"
+    )
+
+    assert version == "main-9999999"
+    assert behind_by == 3
+    assert commit_date == "2026-07-28"
+
+
+class _DivergedCompareDownloader:
+    """Fake compare API response with status='diverged' (both have unique commits)."""
+
+    commit_sha = "aaaaaaa"
+    commit_msg = "diverged test"
+    commit_date = "2026-07-29T00:00:00Z"
+
+    async def make_request(self, method, url, **kwargs):
+        if "/compare/" in url:
+            return True, {"status": "diverged", "ahead_by": 5, "behind_by": 2}
+        return True, {
+            "sha": self.commit_sha,
+            "commit": {
+                "message": self.commit_msg,
+                "committer": {"date": self.commit_date},
+            },
+        }
+
+
+@pytest.mark.asyncio
+async def test_get_nightly_version_reads_ahead_by_when_diverged(monkeypatch):
+    """compare/{local}...main returns status='diverged' → read ahead_by (remote ahead)."""
+    monkeypatch.setattr(update_routes, "get_downloader", lambda: _stub_downloader(_DivergedCompareDownloader()))
+
+    version, changelog, behind_by, commit_date = await update_routes.UpdateRoutes._get_nightly_version(
+        local_hash="divhash"
+    )
+
+    assert behind_by == 5
+
+
 class _CheckUpdatesDownloader:
     """Fake downloader returning both a release list and a nightly commit + compare."""
 
