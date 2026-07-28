@@ -158,6 +158,7 @@ export class DownloadManager {
         this.modelVersionId = null;
         this.source = null;
         this.selectedFile = null;
+        this._isDiffusionModel = false;
 
         this.selectedFolder = '';
         this.batchModels = [];
@@ -787,23 +788,39 @@ export class DownloadManager {
     async proceedToLocationContent() {
 
         try {
-            // Fetch model roots
-            const rootsData = await this.apiClient.fetchModelRoots();
+            const _isDiffusionModel = this.selectedFile
+                ? (this.selectedFile.type === 'UNet' || this.selectedFile.type === 'Diffusion Model')
+                : (this.currentVersion?.files || []).some(
+                    f => f.type === 'UNet' || f.type === 'Diffusion Model'
+                );
+            this._isDiffusionModel = _isDiffusionModel;
+
+            let rootsData;
+            if (this._isDiffusionModel && this.apiClient.modelType === 'checkpoints') {
+                rootsData = await this.apiClient.fetchModelRoots('diffusion_model');
+            } else {
+                rootsData = await this.apiClient.fetchModelRoots();
+            }
             const modelRoot = document.getElementById('modelRoot');
             modelRoot.innerHTML = rootsData.roots.map(root =>
                 `<option value="${root}">${root}</option>`
             ).join('');
 
-            // Set default root if available
-            const singularType = this.apiClient.modelType.replace(/s$/, '');
+            const singularType = this._isDiffusionModel
+                ? 'unet'
+                : this.apiClient.modelType.replace(/s$/, '');
             const defaultRootKey = `default_${singularType}_root`;
             const defaultRoot = state.global.settings[defaultRootKey];
-            console.log(`Default root for ${this.apiClient.modelType}:`, defaultRoot);
+            console.log(`Default root for ${singularType}:`, defaultRoot);
             console.log('Available roots:', rootsData.roots);
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
                 console.log(`Setting default root: ${defaultRoot}`);
                 modelRoot.value = defaultRoot;
             }
+
+            const subtypeDisplay = this._isDiffusionModel ? 'Diffusion Model' : this.apiClient.apiConfig.config.displayName;
+            document.getElementById('modelRootLabel').textContent =
+                translate('modals.download.selectTypeRoot', { type: subtypeDisplay });
 
             // Set autocomplete="off" on folderPath input
             const folderPathInput = document.getElementById('folderPath');
@@ -1776,13 +1793,15 @@ export class DownloadManager {
         const modelRoot = document.getElementById('modelRoot').value;
         const config = this.apiClient.apiConfig.config;
 
-        let fullPath = modelRoot || translate('modals.download.selectTypeRoot', { type: config.displayName });
+        const subtypeDisplay = this._isDiffusionModel ? 'Diffusion Model' : config.displayName;
+        let fullPath = modelRoot || translate('modals.download.selectTypeRoot', { type: subtypeDisplay });
 
         if (modelRoot) {
             if (this.useDefaultPath) {
-                // Show actual template path
                 try {
-                    const singularType = this.apiClient.modelType.replace(/s$/, '');
+                    const singularType = this._isDiffusionModel
+                        ? 'unet'
+                        : this.apiClient.modelType.replace(/s$/, '');
                     const templates = state.global.settings.download_path_templates;
                     const template = templates[singularType];
                     fullPath += `/${template}`;

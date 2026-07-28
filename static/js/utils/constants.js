@@ -333,6 +333,7 @@ export const PATH_TEMPLATE_PLACEHOLDERS = [
 export const DEFAULT_PATH_TEMPLATES = {
     lora: '{base_model}/{first_tag}',
     checkpoint: '{base_model}',
+    unet: '{base_model}',
     embedding: '{first_tag}'
 };
 
