@@ -38,6 +38,84 @@ def _clean_excludes() -> List[str]:
     return excludes
 
 
+def _stage_preserved_items(plugin_root: str) -> tuple[str, list[str]]:
+    """Move preserved user-data items to a temp directory outside *plugin_root*.
+
+    This ensures that ``git reset --hard``, ``git clean -fd``, and ZIP-based
+    replacement cannot touch these files even when ``-e`` exclusion patterns
+    are mishandled (e.g. on Windows where forward-slash patterns may not
+    match backslash-prefixed paths in some Git builds, or where file locks
+    prevent deletion/recreation).
+
+    Returns:
+        ``(backup_root, staged_names)``: the temp directory path and the
+        list of item names that were successfully moved.
+    """
+    backup_root = tempfile.mkdtemp(prefix='lora_manager_update_')
+    staged: list[str] = []
+    for name in _PRESERVE_DIRS:
+        src = os.path.join(plugin_root, name)
+        if not os.path.lexists(src):
+            continue
+        dst = os.path.join(backup_root, name)
+        try:
+            shutil.move(src, dst)
+            staged.append(name)
+            logger.debug("Staged '%s' for update safety", name)
+        except OSError:
+            # ``shutil.move`` may fail on Windows if a file handle inside
+            # the directory is still open (e.g. a SQLite WAL file). Fall
+            # back to copy-then-remove.
+            logger.debug("Move failed for '%s', falling back to copy", name)
+            try:
+                if os.path.isdir(src) and not os.path.islink(src):
+                    shutil.copytree(src, dst, symlinks=True)
+                    shutil.rmtree(src, ignore_errors=True)
+                else:
+                    shutil.copy2(src, dst)
+                    os.remove(src)
+                staged.append(name)
+                logger.info("Copied (then removed) '%s' for update safety", name)
+            except Exception as exc:
+                logger.warning(
+                    "Could not stage '%s': %s (will rely on git -e / skip lists)", name, exc
+                )
+    return backup_root, staged
+
+
+def _restore_preserved_items(plugin_root: str, backup_root: str, staged: list[str]) -> None:
+    """Move staged items back from *backup_root* into *plugin_root*.
+
+    Any leftover placeholder at the destination (created by git checkout or
+    ZIP extraction) is removed before the move.
+    """
+    for name in staged:
+        src = os.path.join(backup_root, name)
+        dst = os.path.join(plugin_root, name)
+        try:
+            if os.path.lexists(dst):
+                if os.path.isdir(dst) and not os.path.islink(dst):
+                    shutil.rmtree(dst, ignore_errors=True)
+                else:
+                    os.remove(dst)
+            shutil.move(src, dst)
+            logger.debug("Restored '%s' after update", name)
+        except OSError:
+            logger.debug("Move failed restoring '%s', falling back to copy", name)
+            try:
+                if os.path.isdir(src) and not os.path.islink(src):
+                    shutil.copytree(src, dst, symlinks=True, dirs_exist_ok=True)
+                    shutil.rmtree(src, ignore_errors=True)
+                else:
+                    shutil.copy2(src, dst)
+                    os.remove(src)
+                logger.info("Copied '%s' back after update", name)
+            except Exception as exc:
+                logger.error("Failed to restore '%s': %s", name, exc)
+    shutil.rmtree(backup_root, ignore_errors=True)
+
+
+
 class UpdateRoutes:
     """Routes for handling plugin update checks"""
     
@@ -173,20 +251,22 @@ class UpdateRoutes:
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:
                     settings_backup = f.read()
-                logger.info("Backed up settings.json")
+                logger.info("Backed up settings.json (%d bytes)", len(settings_backup))
 
-            git_folder = os.path.join(plugin_root, '.git')
-            if os.path.exists(git_folder):
-                # Git update
-                success, new_version = await UpdateRoutes._perform_git_update(plugin_root, nightly)
-            else:
-                # Fallback: Download ZIP and replace files
-                success, new_version = await UpdateRoutes._download_and_replace_zip(plugin_root)
+            staged_backup_dir, staged_items = _stage_preserved_items(plugin_root)
+            try:
+                git_folder = os.path.join(plugin_root, '.git')
+                if os.path.exists(git_folder):
+                    success, new_version = await UpdateRoutes._perform_git_update(plugin_root, nightly)
+                else:
+                    success, new_version = await UpdateRoutes._download_and_replace_zip(plugin_root)
+            finally:
+                _restore_preserved_items(plugin_root, staged_backup_dir, staged_items)
 
             if settings_backup and success:
                 with open(settings_path, 'w', encoding='utf-8') as f:
                     f.write(settings_backup)
-                logger.info("Restored settings.json")
+                logger.info("Restored settings.json content")
 
             if success:
                 return web.json_response({
@@ -417,8 +497,7 @@ class UpdateRoutes:
             except Exception:
                 logger.debug("Could not close downloaded-version history database", exc_info=True)
 
-            # Skip settings.json, civitai, model cache and runtime cache folders
-            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=['settings.json', 'civitai', 'model_cache', 'cache', 'wildcards', 'backups', 'stats'])
+            UpdateRoutes._clean_plugin_folder(plugin_root, skip_files=list(_PRESERVE_DIRS))
 
             # Extract ZIP to temp dir
             with tempfile.TemporaryDirectory() as tmp_dir:
@@ -428,7 +507,7 @@ class UpdateRoutes:
                     extracted_root = next(os.scandir(tmp_dir)).path
 
                     # Copy files, skipping user data that should be preserved
-                    skip_items = {'settings.json', 'civitai', 'wildcards', 'backups', 'stats'}
+                    skip_items = set(_PRESERVE_DIRS)
                     for item in os.listdir(extracted_root):
                         if item in skip_items:
                             continue
@@ -445,7 +524,7 @@ class UpdateRoutes:
                     # for ComfyUI Manager to work properly
                     tracking_info_file = os.path.join(plugin_root, '.tracking')
                     tracking_files = []
-                    skip_tracked = {'civitai', 'wildcards', 'backups', 'stats'}
+                    skip_tracked = set(_PRESERVE_DIRS) - {'settings.json'}
                     for root, dirs, files in os.walk(extracted_root):
                         # Skip user data directories and their contents
                         rel_root = os.path.relpath(root, extracted_root)
