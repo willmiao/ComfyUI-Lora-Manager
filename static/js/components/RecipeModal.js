@@ -1421,6 +1421,7 @@ class RecipeModal {
                         strength: lora.strength || 1.0,
 
                         // Model identifiers
+                        modelId: lora.modelId || lora.model_id || civitaiInfo.modelId,
                         hash: modelFile?.hashes?.SHA256?.toLowerCase() || lora.hash,
                         id: civitaiInfo.id || lora.modelVersionId,
 

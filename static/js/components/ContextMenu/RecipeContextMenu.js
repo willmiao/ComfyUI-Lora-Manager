@@ -260,8 +260,9 @@ export class RecipeContextMenu extends BaseContextMenu {
                         strength: lora.strength || 1.0,
 
                         // Model identifiers
+                        modelId: lora.modelId || lora.model_id || civitaiInfo.modelId,
                         hash: modelFile?.hashes?.SHA256?.toLowerCase() || lora.hash,
-                        modelVersionId: civitaiInfo.id || lora.modelVersionId,
+                        id: civitaiInfo.id || lora.modelVersionId,
 
                         // Metadata
                         thumbnailUrl: civitaiInfo.images?.[0]?.url || '',

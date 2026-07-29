@@ -3,6 +3,7 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getStorageItem } from '../../utils/storageHelpers.js';
+import { state } from '../../state/index.js';
 
 export class DownloadManager {
     constructor(importManager) {
@@ -125,11 +126,25 @@ export class DownloadManager {
                 showToast('toast.recipes.nameSaved', { name: this.importManager.recipeName }, 'success');
             }
 
-            // Close modal
             modalManager.closeModal('importModal');
 
-            // Refresh the recipe
-            window.recipeManager.loadRecipes(true);
+            if (isDownloadOnly && state.virtualScroller) {
+                const recipeId = this.importManager.recipeId;
+                try {
+                    const detailRes = await fetch(`/api/lm/recipe/${encodeURIComponent(recipeId)}`);
+                    if (detailRes.ok) {
+                        const updated = await detailRes.json();
+                        state.virtualScroller.updateSingleItem(updated.file_path, updated);
+                    } else {
+                        throw new Error(`API returned ${detailRes.status}`);
+                    }
+                } catch (e) {
+                    console.warn('Failed to update recipe card in-place, falling back to reload:', e);
+                    await window.recipeManager.loadRecipes({ resetPage: true, preserveScroll: true });
+                }
+            } else {
+                window.recipeManager.loadRecipes({ resetPage: true, preserveScroll: true });
+            }
 
         } catch (error) {
             console.error('Error:', error);
