@@ -291,9 +291,11 @@ class UpdateRoutes:
     async def switch_channel(request):
         """
         Switch between release and nightly update channels.
-        
-        Release → Nightly: Initialize a Git repository (from ZIP/CM stable mode)
-        Nightly → Release: Remove .git, download latest release ZIP, write .tracking
+
+        ZIP/CNR install → Nightly: git init + checkout main (one-way upgrade)
+        Git install → Release:   git checkout latest tag (.git preserved)
+        ZIP/CNR install → Release: ZIP download (no .git, stays in ZIP mode)
+        Git install → Nightly:   git checkout main + pull
         """
         try:
             body = await request.json() if request.has_body else {}
@@ -336,21 +338,17 @@ class UpdateRoutes:
                     finally:
                         UpdateRoutes._restore_git(git_backup, git_folder, success, 'nightly')
                 else:
-                    git_backup = None
-                    if os.path.exists(git_folder):
-                        git_backup = UpdateRoutes._backup_git(git_folder, 'release')
-
                     success = False
                     new_version = ''
-                    try:
-                        if os.path.exists(git_folder):
-                            shutil.rmtree(git_folder)
+                    if os.path.exists(git_folder):
+                        success, new_version = await UpdateRoutes._perform_git_update(
+                            plugin_root, nightly=False
+                        )
+                    else:
                         tracking_file = os.path.join(plugin_root, '.tracking')
                         if os.path.exists(tracking_file):
                             os.remove(tracking_file)
                         success, new_version = await UpdateRoutes._download_and_replace_zip(plugin_root)
-                    finally:
-                        UpdateRoutes._restore_git(git_backup, git_folder, success, 'release')
             finally:
                 _restore_preserved_items(plugin_root, staged_backup_dir, staged_items)
 

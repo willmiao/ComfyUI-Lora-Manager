@@ -1782,7 +1782,7 @@
       "nightlyTitle": "切换到 Nightly",
       "nightlyMessage": "切换到 Nightly 将初始化 Git 仓库并跟踪 main 分支的最新提交。更新更频繁但可能不稳定，可随时切回稳定版。",
       "releaseTitle": "切换到稳定版",
-      "releaseMessage": "切换到稳定版将移除 Git 仓库并安装最新的稳定发布版本，后续仅使用稳定版更新。",
+      "releaseMessage": "切換到穩定版將檢出最新的發布標籤。Git 倉庫和您的設定均會保留。可隨時切換回每日構建版。",
       "switching": "正在切換到 {channel} 頻道...",
       "completed": "已切換到 {channel} 頻道",
       "failed": "切換頻道失敗"
