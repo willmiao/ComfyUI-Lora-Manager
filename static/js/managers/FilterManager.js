@@ -729,10 +729,12 @@ export class FilterManager {
         const pageState = getCurrentPageState();
         const storageKey = `${this.currentPage}_filters`;
 
-        // Save filters to localStorage (exclude EMPTY_WILDCARD_MARKER)
+        // Save filters to localStorage (exclude EMPTY_WILDCARD_MARKER and transient search)
         const filtersSnapshot = this.cloneFilters();
         // Don't persist EMPTY_WILDCARD_MARKER - it's a runtime-only marker
         filtersSnapshot.baseModel = filtersSnapshot.baseModel.filter(m => m !== EMPTY_WILDCARD_MARKER);
+        // Don't persist search - it's transient and managed by SearchManager
+        delete filtersSnapshot.search;
         setStorageItem(storageKey, filtersSnapshot);
 
         // Update state with current filters
@@ -993,7 +995,7 @@ export class FilterManager {
             license: { ...(this.filters.license || {}) },
             modelTypes: [...(this.filters.modelTypes || [])],
             tagLogic: this.filters.tagLogic || 'any',
-            search: this.filters.search || pageState?.filters?.search || ''
+            search: pageState?.filters?.search ?? ''
         };
     }
 
