@@ -313,47 +313,51 @@ class UpdateRoutes:
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:
                     settings_backup = f.read()
-                logger.info("Backed up settings.json before channel switch")
+                logger.info("Backed up settings.json before channel switch (%d bytes)", len(settings_backup))
 
-            git_folder = os.path.join(plugin_root, '.git')
+            staged_backup_dir, staged_items = _stage_preserved_items(plugin_root)
+            try:
+                git_folder = os.path.join(plugin_root, '.git')
 
-            if channel == 'nightly':
-                git_backup = None
-                if os.path.exists(git_folder):
-                    git_backup = UpdateRoutes._backup_git(git_folder, 'nightly')
-
-                success = False
-                new_version = ''
-                try:
+                if channel == 'nightly':
+                    git_backup = None
                     if os.path.exists(git_folder):
-                        success, new_version = await UpdateRoutes._perform_git_update(
-                            plugin_root, nightly=True
-                        )
-                    else:
-                        success, new_version = UpdateRoutes._init_git_repo(plugin_root)
-                finally:
-                    UpdateRoutes._restore_git(git_backup, git_folder, success, 'nightly')
-            else:
-                git_backup = None
-                if os.path.exists(git_folder):
-                    git_backup = UpdateRoutes._backup_git(git_folder, 'release')
+                        git_backup = UpdateRoutes._backup_git(git_folder, 'nightly')
 
-                success = False
-                new_version = ''
-                try:
+                    success = False
+                    new_version = ''
+                    try:
+                        if os.path.exists(git_folder):
+                            success, new_version = await UpdateRoutes._perform_git_update(
+                                plugin_root, nightly=True
+                            )
+                        else:
+                            success, new_version = UpdateRoutes._init_git_repo(plugin_root)
+                    finally:
+                        UpdateRoutes._restore_git(git_backup, git_folder, success, 'nightly')
+                else:
+                    git_backup = None
                     if os.path.exists(git_folder):
-                        shutil.rmtree(git_folder)
-                    tracking_file = os.path.join(plugin_root, '.tracking')
-                    if os.path.exists(tracking_file):
-                        os.remove(tracking_file)
-                    success, new_version = await UpdateRoutes._download_and_replace_zip(plugin_root)
-                finally:
-                    UpdateRoutes._restore_git(git_backup, git_folder, success, 'release')
+                        git_backup = UpdateRoutes._backup_git(git_folder, 'release')
+
+                    success = False
+                    new_version = ''
+                    try:
+                        if os.path.exists(git_folder):
+                            shutil.rmtree(git_folder)
+                        tracking_file = os.path.join(plugin_root, '.tracking')
+                        if os.path.exists(tracking_file):
+                            os.remove(tracking_file)
+                        success, new_version = await UpdateRoutes._download_and_replace_zip(plugin_root)
+                    finally:
+                        UpdateRoutes._restore_git(git_backup, git_folder, success, 'release')
+            finally:
+                _restore_preserved_items(plugin_root, staged_backup_dir, staged_items)
 
             if settings_backup and success:
                 with open(settings_path, 'w', encoding='utf-8') as f:
                     f.write(settings_backup)
-                logger.info("Restored settings.json after channel switch")
+                logger.info("Restored settings.json content after channel switch")
 
             if success:
                 return web.json_response({
