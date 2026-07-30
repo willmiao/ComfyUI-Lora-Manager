@@ -475,12 +475,18 @@ class MetadataUpdater:
             return False
 
         model_folder = get_model_folder(model_hash)
-        if not model_folder:
+        if not model_folder or not os.path.isdir(model_folder):
             return False
 
         civitai = getattr(metadata, "civitai", None)
         if not isinstance(civitai, dict):
             return False
+
+        # Read the directory listing once so every image entry reuses it.
+        try:
+            dir_entries = os.listdir(model_folder)
+        except OSError:
+            dir_entries = []
 
         has_changes = False
 
@@ -493,24 +499,15 @@ class MetadataUpdater:
                 if not img_id:
                     continue
 
-                if not os.path.isdir(model_folder):
+                prefix = f"custom_{img_id}"
+                found = any(
+                    f.startswith(prefix) and os.path.isfile(
+                        os.path.join(model_folder, f)
+                    )
+                    for f in dir_entries
+                )
+                if not found:
                     stale.append(idx)
-                else:
-                    found = False
-                    try:
-                        prefix = f"custom_{img_id}"
-                        for fname in os.listdir(model_folder):
-                            if fname.startswith(prefix) and os.path.isfile(
-                                os.path.join(model_folder, fname)
-                            ):
-                                found = True
-                                break
-                    except OSError:
-                        stale.append(idx)
-                        continue
-
-                    if not found:
-                        stale.append(idx)
 
             if stale:
                 for idx in reversed(stale):
@@ -532,22 +529,9 @@ class MetadataUpdater:
                     # is gone.
                     continue
 
-                if not os.path.isdir(model_folder):
+                prefix = f"image_{idx}."
+                if not any(f.startswith(prefix) for f in dir_entries):
                     stale.append(idx)
-                else:
-                    found = False
-                    try:
-                        prefix = f"image_{idx}."
-                        for fname in os.listdir(model_folder):
-                            if fname.startswith(prefix):
-                                found = True
-                                break
-                    except OSError:
-                        stale.append(idx)
-                        continue
-
-                    if not found:
-                        stale.append(idx)
 
             if stale:
                 for idx in reversed(stale):

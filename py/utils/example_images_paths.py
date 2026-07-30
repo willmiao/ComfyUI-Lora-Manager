@@ -83,7 +83,12 @@ def ensure_library_root_exists(library_name: Optional[str] = None) -> str:
 
 
 def get_model_folder(model_hash: str, library_name: Optional[str] = None) -> str:
-    """Return the folder path for a model's example images."""
+    """Return the folder path for a model's example images.
+
+    Multi-library ↔ single-library consolidation is handled once at startup by
+    ``ExampleImagesMigration._consolidate_library_folders`` — this function is a
+    pure path computation on the hot path (no directory scans).
+    """
 
     if not model_hash:
         return ""
@@ -113,35 +118,6 @@ def get_model_folder(model_hash: str, library_name: Optional[str] = None) -> str
                     exc,
                 )
                 return legacy_folder
-    elif not os.path.exists(resolved_folder):
-        # Reverse migration: when consolidating from multi-library to
-        # single-library mode (e.g. after "default" was cleaned up), look
-        # for existing example images inside library-named subdirectories
-        # and bring them back to the root level.
-        root = get_example_images_root()
-        if root:
-            try:
-                for entry in os.listdir(root):
-                    entry_path = os.path.join(root, entry)
-                    if not os.path.isdir(entry_path):
-                        continue
-                    if is_hash_folder(entry) or entry == "_deleted":
-                        continue
-                    if not _library_folder_has_only_hash_dirs(entry_path):
-                        continue
-                    legacy = os.path.join(entry_path, normalized_hash)
-                    if os.path.exists(legacy):
-                        shutil.move(legacy, resolved_folder)
-                        logger.info(
-                            "Consolidated example images from '%s' to '%s'",
-                            legacy, resolved_folder,
-                        )
-                        break
-            except OSError as exc:
-                logger.error(
-                    "Failed to consolidate example images during "
-                    "library merge: %s", exc,
-                )
 
     return resolved_folder
 

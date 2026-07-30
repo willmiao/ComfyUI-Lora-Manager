@@ -3,9 +3,16 @@ import logging
 import os
 import re
 import json
+import shutil
 from ..services.settings_manager import get_settings_manager
 from ..services.service_registry import ServiceRegistry
-from ..utils.example_images_paths import iter_library_roots
+from ..utils.example_images_paths import (
+    get_example_images_root,
+    is_hash_folder,
+    iter_library_roots,
+    uses_library_scoped_folders,
+    _library_folder_has_only_hash_dirs,
+)
 from ..utils.metadata_manager import MetadataManager
 from ..utils.example_images_processor import ExampleImagesProcessor
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
@@ -37,12 +44,100 @@ class ExampleImagesMigration:
     """Handles migrations for example images naming conventions"""
     
     @staticmethod
+    def _consolidate_library_folders():
+        """Move hash folders from library-named subdirectories back to root.
+
+        When a user switches from multi-library mode back to single-library
+        mode, example images previously stored under e.g.
+        ``<root>/default/<hash>/`` need to be moved back to
+        ``<root>/<hash>/``.  Running this once at startup removes the need
+        for ``get_model_folder()`` to perform directory scans on every
+        request.
+        """
+        if uses_library_scoped_folders():
+            return
+
+        root = get_example_images_root()
+        if not root or not os.path.isdir(root):
+            return
+
+        moved: list[str] = []
+        cleaned: list[str] = []
+
+        try:
+            for entry in os.listdir(root):
+                # Fast regex checks first — no filesystem I/O.
+                if is_hash_folder(entry) or entry == "_deleted":
+                    continue
+
+                entry_path = os.path.join(root, entry)
+                if not os.path.isdir(entry_path):
+                    continue
+                if not _library_folder_has_only_hash_dirs(entry_path):
+                    continue
+
+                try:
+                    for hash_entry in os.listdir(entry_path):
+                        hash_path = os.path.join(entry_path, hash_entry)
+                        if not os.path.isdir(hash_path) or not is_hash_folder(hash_entry):
+                            continue
+                        target = os.path.join(root, hash_entry)
+                        if not os.path.exists(target):
+                            try:
+                                shutil.move(hash_path, target)
+                                moved.append(hash_entry)
+                            except (OSError, shutil.Error) as exc:
+                                logger.error(
+                                    "Failed to move '%s' → '%s': %s",
+                                    hash_path, target, exc,
+                                )
+                except OSError as exc:
+                    logger.error(
+                        "Failed to list library subdirectory '%s': %s",
+                        entry_path, exc,
+                    )
+
+                try:
+                    remaining = os.listdir(entry_path)
+                except OSError:
+                    remaining = []
+                if not remaining:
+                    try:
+                        os.rmdir(entry_path)
+                        cleaned.append(entry)
+                    except OSError as exc:
+                        logger.debug(
+                            "Could not remove empty library dir '%s': %s",
+                            entry_path, exc,
+                        )
+        except OSError as exc:
+            logger.error(
+                "Failed to list example images root during consolidation: %s",
+                exc,
+            )
+
+        if moved:
+            logger.info(
+                "Consolidated %d example image folder(s) to root",
+                len(moved),
+            )
+        if cleaned:
+            logger.info(
+                "Removed %d empty library directories",
+                len(cleaned),
+            )
+
+    @staticmethod
     async def check_and_run_migrations():
         """Check if migrations are needed and run them in background"""
         root = settings.get('example_images_path')
         if not root or not os.path.exists(root):
             logger.debug("No example images path configured or path doesn't exist, skipping migrations")
             return
+
+        # Run library-to-root consolidation once at startup so the hot
+        # path (get_model_folder) stays a pure-path computation.
+        ExampleImagesMigration._consolidate_library_folders()
 
         for library_name, library_path in iter_library_roots():
             if not library_path or not os.path.exists(library_path):
