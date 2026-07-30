@@ -1782,7 +1782,7 @@
       "nightlyTitle": "Zu Nightly-Kanal wechseln",
       "nightlyMessage": "Der Wechsel zu Nightly initialisiert ein Git-Repository und verfolgt die neuesten Commits des main-Branches. Updates sind häufiger, können aber instabil sein. Sie können jederzeit zu Release zurückwechseln.",
       "releaseTitle": "Zu Release-Kanal wechseln",
-      "releaseMessage": "Der Wechsel zu Release entfernt das Git-Repository und installiert die neueste stabile Version. Zukünftige Updates verwenden nur stabile Versionen.",
+      "releaseMessage": "Der Wechsel zu Release checkt den neuesten stabilen Versions-Tag aus. Sie können jederzeit zu Nightly zurückwechseln.",
       "switching": "Wechsle zu {channel}-Kanal...",
       "completed": "Erfolgreich zu {channel}-Kanal gewechselt",
       "failed": "Kanalwechsel fehlgeschlagen"

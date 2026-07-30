@@ -1782,7 +1782,7 @@
       "nightlyTitle": "Switch to Nightly Channel",
       "nightlyMessage": "Switching to Nightly will initialize a Git repository and track the latest main branch commits. Updates will be more frequent but may be unstable. You can switch back to Release at any time.",
       "releaseTitle": "Switch to Release Channel",
-      "releaseMessage": "Switching to Release will checkout the latest stable release tag. Your Git repository and settings are preserved. You can switch back to Nightly at any time.",
+      "releaseMessage": "Switching to Release will checkout the latest stable release tag. You can switch back to Nightly at any time.",
       "switching": "Switching to {channel} channel...",
       "completed": "Successfully switched to {channel} channel",
       "failed": "Failed to switch channel"

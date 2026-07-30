@@ -1782,7 +1782,7 @@
       "nightlyTitle": "Passer au canal Nightly",
       "nightlyMessage": "Passer a Nightly initialisera un depot Git et suivra les derniers commits de la branche main. Les mises a jour sont plus frequentes mais peuvent etre instables. Vous pouvez revenir a Release a tout moment.",
       "releaseTitle": "Passer au canal Release",
-      "releaseMessage": "Passer a Release supprimera le depot Git et installera la derniere version stable. Les futures mises a jour utiliseront uniquement des versions stables.",
+      "releaseMessage": "Passer a Release passera au dernier tag de version stable. Vous pouvez revenir a Nightly a tout moment.",
       "switching": "Passage au canal {channel}...",
       "completed": "Basculement vers le canal {channel} reussi",
       "failed": "Echec du changement de canal"
