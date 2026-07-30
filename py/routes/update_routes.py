@@ -251,7 +251,7 @@ class UpdateRoutes:
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:
                     settings_backup = f.read()
-                logger.info("Backed up settings.json (%d bytes)", len(settings_backup))
+                logger.debug("Backed up settings.json (%d bytes)", len(settings_backup))
 
             staged_backup_dir, staged_items = _stage_preserved_items(plugin_root)
             try:
@@ -266,7 +266,7 @@ class UpdateRoutes:
             if settings_backup and success:
                 with open(settings_path, 'w', encoding='utf-8') as f:
                     f.write(settings_backup)
-                logger.info("Restored settings.json content")
+                logger.debug("Restored settings.json content (%d bytes)", len(settings_backup))
 
             if success:
                 return web.json_response({
@@ -315,7 +315,7 @@ class UpdateRoutes:
             if os.path.exists(settings_path):
                 with open(settings_path, 'r', encoding='utf-8') as f:
                     settings_backup = f.read()
-                logger.info("Backed up settings.json before channel switch (%d bytes)", len(settings_backup))
+                logger.debug("Backed up settings.json before channel switch (%d bytes)", len(settings_backup))
 
             staged_backup_dir, staged_items = _stage_preserved_items(plugin_root)
             try:
@@ -355,7 +355,7 @@ class UpdateRoutes:
             if settings_backup and success:
                 with open(settings_path, 'w', encoding='utf-8') as f:
                     f.write(settings_backup)
-                logger.info("Restored settings.json content after channel switch")
+                logger.debug("Restored settings.json content after channel switch (%d bytes)", len(settings_backup))
 
             if success:
                 return web.json_response({
