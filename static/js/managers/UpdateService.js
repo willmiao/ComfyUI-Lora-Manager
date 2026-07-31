@@ -27,6 +27,8 @@ export class UpdateService {
         this.isUpdating = false;
         this.channelMode = null;
         this.hasGit = false;
+        this.nightlyNotifyDate = getStorageItem('nightly_notify_date', '');
+        this.nightlyBadgeShown = false;
         this.progressKeepVisible = false;
         this.currentVersionInfo = null;
         this.versionMismatch = false;
@@ -552,6 +554,11 @@ export class UpdateService {
 
                 this.updateAvailable = data.update_available;
 
+                // Nightly channel: surface the update badge at most once per calendar day.
+                if (this.updateAvailable && this.channelMode === 'nightly' && this.nightlyNotifyDate !== this._getTodayKey()) {
+                    this._markNightlyNotified();
+                }
+
                 this.lastCheckTime = now;
                 setStorageItem('last_update_check', now.toString());
 
@@ -601,6 +608,28 @@ export class UpdateService {
         
         return false;
     }
+
+    _getTodayKey() {
+        const now = new Date();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        return `${now.getFullYear()}-${month}-${day}`;
+    }
+
+    _isNightlyBadgeAllowed() {
+        if (this.channelMode !== 'nightly') {
+            return true;
+        }
+        // Keep the badge visible for the rest of the session once shown, but do
+        // not show it again on later sessions within the same calendar day.
+        return this.nightlyNotifyDate !== this._getTodayKey() || this.nightlyBadgeShown;
+    }
+
+    _markNightlyNotified() {
+        this.nightlyNotifyDate = this._getTodayKey();
+        this.nightlyBadgeShown = true;
+        setStorageItem('nightly_notify_date', this.nightlyNotifyDate);
+    }
     
     updateBadgeVisibility() {
         const updateToggle = document.querySelector('.update-toggle');
@@ -609,9 +638,12 @@ export class UpdateService {
             ? bannerService.getUnreadBannerCount()
             : 0;
 
+        // Force updating badges visibility based on current state
+        const shouldShowUpdate = this.updateNotificationsEnabled && this.updateAvailable && this._isNightlyBadgeAllowed();
+
         if (updateToggle) {
             let tooltipKey = 'header.actions.notifications';
-            if (this.updateNotificationsEnabled && this.updateAvailable) {
+            if (shouldShowUpdate) {
                 tooltipKey = 'update.updateAvailable';
             } else if (unreadBanners > 0) {
                 tooltipKey = 'update.tabs.messages';
@@ -619,8 +651,6 @@ export class UpdateService {
             updateToggle.title = translate(tooltipKey);
         }
 
-        // Force updating badges visibility based on current state
-        const shouldShowUpdate = this.updateNotificationsEnabled && this.updateAvailable;
         const shouldShow = shouldShowUpdate || unreadBanners > 0;
 
         if (updateBadge) {
