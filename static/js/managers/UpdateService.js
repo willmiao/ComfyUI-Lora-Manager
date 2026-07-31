@@ -1,11 +1,12 @@
 import { modalManager } from './ModalManager.js';
-import { 
-    getStorageItem, 
-    setStorageItem, 
-    getStoredVersionInfo, 
+import {
+    getStorageItem,
+    setStorageItem,
+    getStoredVersionInfo,
     setStoredVersionInfo,
     isVersionMatch
 } from '../utils/storageHelpers.js';
+import { state } from '../state/index.js';
 import { bannerService } from './BannerService.js';
 import { translate } from '../utils/i18nHelpers.js';
 
@@ -59,9 +60,6 @@ export class UpdateService {
         
         // Perform update check if needed
         this.checkVersionInfo().then(() => {
-            if (this.channelMode === null) {
-                this.channelMode = this.hasGit ? 'nightly' : 'release';
-            }
             this.checkForUpdates().then(() => {
                 this.updateBadgeVisibility();
             });
@@ -118,6 +116,14 @@ export class UpdateService {
 
             if (data.success) {
                 this.channelMode = channel;
+                // Persist channel preference to settings.json
+                fetch('/api/lm/settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ update_channel: channel })
+                }).then(r => {
+                    if (!r.ok) console.warn('Failed to persist update channel:', r.status);
+                }).catch(e => console.warn('Failed to persist update channel:', e));
                 await this.checkForUpdates({ force: true });
                 this.updateModalContent();
                 this.updateChannelUI();
@@ -152,6 +158,20 @@ export class UpdateService {
         if (nightlyBtn) {
             nightlyBtn.classList.toggle('active', this.channelMode === 'nightly');
         }
+    }
+
+    _resolveChannelFromSettings() {
+        const stored = state?.global?.settings?.update_channel;
+        if (stored === 'nightly' || stored === 'release') {
+            return stored;
+        }
+        if (!this.hasGit) {
+            return 'release';
+        }
+        if (this.gitInfo?.branch === 'detached') {
+            return 'release';
+        }
+        return 'nightly';
     }
 
     async _confirmChannelSwitch(titleKey, messageKey) {
@@ -475,6 +495,18 @@ export class UpdateService {
     }
     
     async checkForUpdates({ force = false } = {}) {
+        let needsMigration = false;
+        if (this.channelMode === null) {
+            const stored = state?.global?.settings?.update_channel;
+            if (stored === 'nightly' || stored === 'release') {
+                this.channelMode = stored;
+            } else if (!this.hasGit) {
+                this.channelMode = 'release';
+                needsMigration = true;
+            }
+            // hasGit=true with no stored value: wait for gitInfo.branch
+        }
+
         if (!force && !this.updateNotificationsEnabled) {
             return;
         }
@@ -493,7 +525,7 @@ export class UpdateService {
 
         try {
             // Call backend API to check for updates with nightly flag
-            const nightly = this.channelMode === 'nightly';
+            const nightly = (this.channelMode ?? (this.hasGit ? 'nightly' : 'release')) === 'nightly';
             const response = await fetch(`/api/lm/check-updates?nightly=${nightly}`);
             const data = await response.json();
             
@@ -503,8 +535,19 @@ export class UpdateService {
                 this.updateInfo = data;
                 this.gitInfo = data.git_info || this.gitInfo;
                 this.hasGit = data.has_git || false;
-                if (this.channelMode === null) {
-                    this.channelMode = this.hasGit ? 'nightly' : 'release';
+
+                if (needsMigration || this.channelMode === null) {
+                    this.channelMode = this._resolveChannelFromSettings();
+                    if (state?.global?.settings) {
+                        state.global.settings.update_channel = this.channelMode;
+                    }
+                    fetch('/api/lm/settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ update_channel: this.channelMode })
+                    }).then(r => {
+                        if (!r.ok) console.warn('Failed to persist update channel:', r.status);
+                    }).catch(e => console.warn('Failed to persist update channel:', e));
                 }
 
                 this.updateAvailable = data.update_available;

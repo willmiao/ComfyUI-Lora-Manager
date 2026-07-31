@@ -1562,6 +1562,11 @@ class SettingsHandler:
                             {"success": False, "error": validation_error}
                         )
 
+                if key == "update_channel" and value not in ("release", "nightly"):
+                    return web.json_response(
+                        {"success": False, "error": "update_channel must be 'release' or 'nightly'"}
+                    )
+
                 if value == "__DELETE__" and key in (
                     "proxy_username",
                     "proxy_password",
