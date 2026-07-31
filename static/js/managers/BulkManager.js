@@ -27,6 +27,8 @@ export class BulkManager {
 
         // Drag detection properties
         this.dragThreshold = 5; // Pixels to move before considering it a drag
+        this.dragDelayMs = 100; // Minimum hold time before a drag is treated as a marquee
+        this.minMarqueeSize = 10; // Minimum drag box (px) before a marquee counts as a selection
         this.mouseDownTime = 0;
         this.mouseDownPosition = { x: 0, y: 0 };
 
@@ -173,6 +175,19 @@ export class BulkManager {
         });
 
         eventManager.addHandler('mousemove', 'bulkManager-marquee-move', (e) => {
+            // Only track marquee/drag while the left button is physically held.
+            // mouseup can be missed (release outside the window, focus loss, driver quirks),
+            // so mousemove must verify the button state itself instead of relying on it.
+            if (!(e.buttons & 1)) {
+                if (this.isMarqueeActive) {
+                    this.endMarqueeSelection(e);
+                } else {
+                    this.mouseDownTime = 0;
+                    this.isDragging = false;
+                }
+                return false;
+            }
+
             if (this.isMarqueeActive) {
                 this.lastClientX = e.clientX;
                 this.lastClientY = e.clientY;
@@ -184,7 +199,10 @@ export class BulkManager {
                 const dy = e.clientY - this.mouseDownPosition.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                if (distance >= this.dragThreshold) {
+                // Require both enough movement AND enough hold time so quick
+                // click jitter from micro-movement input devices is not a marquee.
+                const heldTime = Date.now() - this.mouseDownTime;
+                if (heldTime >= this.dragDelayMs && distance >= this.dragThreshold) {
                     this.isDragging = true;
                     this.startMarqueeSelection(e, true);
                 }
@@ -1958,8 +1976,30 @@ export class BulkManager {
         // Remove visual feedback class
         document.body.classList.remove('marquee-selecting');
 
+        // Compute the actual drag box size in document coordinates, matching how
+        // updateMarqueeSelectionFromPosition tracks the rectangle. Client-space
+        // size would wrongly flag auto-scroll marquees (tiny pointer movement,
+        // large document-space box) as accidental clicks.
+        const container = document.querySelector('.page-content');
+        const scrollX = container?.scrollLeft || 0;
+        const scrollY = container?.scrollTop || 0;
+        const dragWidth = Math.abs((e.clientX + scrollX) - this.marqueeStartDoc.x);
+        const dragHeight = Math.abs((e.clientY + scrollY) - this.marqueeStartDoc.y);
+        const isTinyMarquee = dragWidth < this.minMarqueeSize && dragHeight < this.minMarqueeSize;
+
         // Get selection count
         const selectionCount = state.selectedModels.size;
+
+        // A tiny box (e.g. click jitter that happened to graze a card) is treated
+        // as an accidental click: undo any selection and leave bulk mode.
+        if (isTinyMarquee) {
+            this.clearSelection();
+            if (state.bulkMode) {
+                this.toggleBulkMode();
+            }
+            this.initialSelectedModels.clear();
+            return;
+        }
 
         // If no models were selected, exit bulk mode
         if (selectionCount === 0) {
