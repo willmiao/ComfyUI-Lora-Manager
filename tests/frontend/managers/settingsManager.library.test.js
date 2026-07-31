@@ -106,6 +106,118 @@ afterEach(() => {
     });
 });
 
+describe('SettingsManager root selects', () => {
+    const rootCases = [
+        {
+            method: 'loadLoraRoots',
+            selectId: 'defaultLoraRoot',
+            endpoint: '/api/lm/loras/roots',
+            errorKey: 'toast.settings.loraRootsFailed',
+        },
+        {
+            method: 'loadCheckpointRoots',
+            selectId: 'defaultCheckpointRoot',
+            endpoint: '/api/lm/checkpoints/checkpoints_roots',
+            errorKey: 'toast.settings.checkpointRootsFailed',
+        },
+        {
+            method: 'loadUnetRoots',
+            selectId: 'defaultUnetRoot',
+            endpoint: '/api/lm/checkpoints/unet_roots',
+            errorKey: 'toast.settings.unetRootsFailed',
+        },
+        {
+            method: 'loadEmbeddingRoots',
+            selectId: 'defaultEmbeddingRoot',
+            endpoint: '/api/lm/embeddings/roots',
+            errorKey: 'toast.settings.embeddingRootsFailed',
+        },
+    ];
+
+    const appendRootSelect = (id) => {
+        const select = document.createElement('select');
+        select.id = id;
+        document.body.appendChild(select);
+        return select;
+    };
+
+    it.each(rootCases)(
+        'populates the $method select with roots and keeps it enabled',
+        async ({ method, selectId, endpoint }) => {
+            const manager = createManager();
+            const select = appendRootSelect(selectId);
+            select.disabled = true;
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    success: true,
+                    roots: ['/models/root-a', '/models/root-b'],
+                }),
+            });
+
+            await manager[method]();
+
+            expect(global.fetch).toHaveBeenCalledWith(endpoint);
+            expect(Array.from(select.options).map(option => option.value)).toEqual([
+                '/models/root-a',
+                '/models/root-b',
+            ]);
+            expect(select.disabled).toBe(false);
+            expect(showToast).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(rootCases)(
+        'shows a placeholder and no error toast when $method has empty roots',
+        async ({ method, selectId, endpoint }) => {
+            const manager = createManager();
+            const select = appendRootSelect(selectId);
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    success: true,
+                    roots: [],
+                }),
+            });
+
+            await manager[method]();
+
+            expect(global.fetch).toHaveBeenCalledWith(endpoint);
+            expect(select.options).toHaveLength(1);
+            expect(select.options[0].value).toBe('');
+            expect(select.options[0].textContent).toBe('No Default');
+            expect(select.disabled).toBe(true);
+            expect(showToast).not.toHaveBeenCalled();
+        }
+    );
+
+    it.each(rootCases)(
+        'shows an error toast when the $method roots request fails',
+        async ({ method, selectId, errorKey }) => {
+            const manager = createManager();
+            const select = appendRootSelect(selectId);
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: false,
+                status: 500,
+            });
+
+            await manager[method]();
+
+            expect(select.options).toHaveLength(1);
+            expect(select.options[0].value).toBe('');
+            expect(select.disabled).toBe(true);
+            expect(showToast).toHaveBeenCalledWith(
+                errorKey,
+                expect.objectContaining({ message: expect.any(String) }),
+                'error',
+            );
+        }
+    );
+});
+
 describe('SettingsManager library controls', () => {
     it('loads libraries and populates the select', async () => {
         const manager = createManager();

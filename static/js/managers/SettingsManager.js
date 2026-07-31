@@ -1517,11 +1517,20 @@ export class SettingsManager {
         return data;
     }
 
-    async loadLoraRoots() {
-        try {
-            const defaultLoraRootSelect = document.getElementById('defaultLoraRoot');
-            if (!defaultLoraRootSelect) return;
+    showNoRootsPlaceholder(select) {
+        select.innerHTML = '';
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = translate('settings.folderSettings.noDefault', {}, 'No Default');
+        select.appendChild(option);
+        select.disabled = true;
+    }
 
+    async loadLoraRoots() {
+        const defaultLoraRootSelect = document.getElementById('defaultLoraRoot');
+        if (!defaultLoraRootSelect) return;
+
+        try {
             // Fetch lora roots
             const response = await fetch('/api/lm/loras/roots');
             if (!response.ok) {
@@ -1530,10 +1539,12 @@ export class SettingsManager {
 
             const data = await response.json();
             if (!data.roots || data.roots.length === 0) {
-                throw new Error('No LoRA roots found');
+                this.showNoRootsPlaceholder(defaultLoraRootSelect);
+                return;
             }
 
             defaultLoraRootSelect.innerHTML = '';
+            defaultLoraRootSelect.disabled = false;
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1548,15 +1559,16 @@ export class SettingsManager {
 
         } catch (error) {
             console.error('Error loading LoRA roots:', error);
+            this.showNoRootsPlaceholder(defaultLoraRootSelect);
             showToast('toast.settings.loraRootsFailed', { message: error.message }, 'error');
         }
     }
 
     async loadCheckpointRoots() {
-        try {
-            const defaultCheckpointRootSelect = document.getElementById('defaultCheckpointRoot');
-            if (!defaultCheckpointRootSelect) return;
+        const defaultCheckpointRootSelect = document.getElementById('defaultCheckpointRoot');
+        if (!defaultCheckpointRootSelect) return;
 
+        try {
             // Fetch checkpoint roots (checkpoint paths only, not unet)
             const response = await fetch('/api/lm/checkpoints/checkpoints_roots');
             if (!response.ok) {
@@ -1565,10 +1577,12 @@ export class SettingsManager {
 
             const data = await response.json();
             if (!data.roots || data.roots.length === 0) {
-                throw new Error('No checkpoint roots found');
+                this.showNoRootsPlaceholder(defaultCheckpointRootSelect);
+                return;
             }
 
             defaultCheckpointRootSelect.innerHTML = '';
+            defaultCheckpointRootSelect.disabled = false;
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1583,15 +1597,16 @@ export class SettingsManager {
 
         } catch (error) {
             console.error('Error loading checkpoint roots:', error);
+            this.showNoRootsPlaceholder(defaultCheckpointRootSelect);
             showToast('toast.settings.checkpointRootsFailed', { message: error.message }, 'error');
         }
     }
 
     async loadUnetRoots() {
-        try {
-            const defaultUnetRootSelect = document.getElementById('defaultUnetRoot');
-            if (!defaultUnetRootSelect) return;
+        const defaultUnetRootSelect = document.getElementById('defaultUnetRoot');
+        if (!defaultUnetRootSelect) return;
 
+        try {
             // Fetch unet roots (diffusion model paths only)
             const response = await fetch('/api/lm/checkpoints/unet_roots');
             if (!response.ok) {
@@ -1600,10 +1615,12 @@ export class SettingsManager {
 
             const data = await response.json();
             if (!data.roots || data.roots.length === 0) {
-                throw new Error('No diffusion model roots found');
+                this.showNoRootsPlaceholder(defaultUnetRootSelect);
+                return;
             }
 
             defaultUnetRootSelect.innerHTML = '';
+            defaultUnetRootSelect.disabled = false;
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1618,15 +1635,16 @@ export class SettingsManager {
 
         } catch (error) {
             console.error('Error loading diffusion model roots:', error);
+            this.showNoRootsPlaceholder(defaultUnetRootSelect);
             showToast('toast.settings.unetRootsFailed', { message: error.message }, 'error');
         }
     }
 
     async loadEmbeddingRoots() {
-        try {
-            const defaultEmbeddingRootSelect = document.getElementById('defaultEmbeddingRoot');
-            if (!defaultEmbeddingRootSelect) return;
+        const defaultEmbeddingRootSelect = document.getElementById('defaultEmbeddingRoot');
+        if (!defaultEmbeddingRootSelect) return;
 
+        try {
             // Fetch embedding roots
             const response = await fetch('/api/lm/embeddings/roots');
             if (!response.ok) {
@@ -1635,10 +1653,12 @@ export class SettingsManager {
 
             const data = await response.json();
             if (!data.roots || data.roots.length === 0) {
-                throw new Error('No embedding roots found');
+                this.showNoRootsPlaceholder(defaultEmbeddingRootSelect);
+                return;
             }
 
             defaultEmbeddingRootSelect.innerHTML = '';
+            defaultEmbeddingRootSelect.disabled = false;
 
             // Add options for each root
             data.roots.forEach(root => {
@@ -1653,6 +1673,7 @@ export class SettingsManager {
 
         } catch (error) {
             console.error('Error loading embedding roots:', error);
+            this.showNoRootsPlaceholder(defaultEmbeddingRootSelect);
             showToast('toast.settings.embeddingRootsFailed', { message: error.message }, 'error');
         }
     }
