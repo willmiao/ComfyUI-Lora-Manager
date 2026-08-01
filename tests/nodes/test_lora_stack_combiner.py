@@ -49,3 +49,22 @@ def test_combine_stacks_allows_duplicate_entries():
     (combined_stack,) = node.combine_stacks([duplicate_entry], [duplicate_entry])
 
     assert combined_stack == [duplicate_entry, duplicate_entry]
+
+
+def test_combine_stacks_returns_empty_when_both_unconnected():
+    node = LoraStackCombinerLM()
+
+    (combined_stack,) = node.combine_stacks()
+
+    assert combined_stack == []
+
+
+def test_combine_stacks_returns_other_when_one_unconnected():
+    node = LoraStackCombinerLM()
+    stack_a = [("folder/a.safetensors", 0.7, 0.6)]
+
+    (combined_stack_a,) = node.combine_stacks(lora_stack_a=stack_a)
+    (combined_stack_b,) = node.combine_stacks(lora_stack_b=stack_a)
+
+    assert combined_stack_a == stack_a
+    assert combined_stack_b == stack_a

@@ -5,7 +5,8 @@ class LoraStackCombinerLM:
     @classmethod
     def INPUT_TYPES(cls):
         return {
-            "required": {
+            "required": {},
+            "optional": {
                 "lora_stack_a": ("LORA_STACK",),
                 "lora_stack_b": ("LORA_STACK",),
             },
@@ -15,7 +16,7 @@ class LoraStackCombinerLM:
     RETURN_NAMES = ("LORA_STACK",)
     FUNCTION = "combine_stacks"
 
-    def combine_stacks(self, lora_stack_a, lora_stack_b):
+    def combine_stacks(self, lora_stack_a=None, lora_stack_b=None):
         combined_stack = []
 
         if lora_stack_a:
