@@ -2,6 +2,7 @@ import asyncio
 import copy
 import logging
 import os
+import time
 from collections import OrderedDict
 from typing import Any, Optional, Dict, Tuple, List, Sequence
 from .connectivity_guard import (
@@ -18,6 +19,12 @@ from .errors import RateLimitError, ResourceNotFoundError
 from ..utils.civitai_utils import resolve_license_payload
 
 logger = logging.getLogger(__name__)
+
+# Best-effort cache for creator model counts, keyed by lowercase username.
+# Values are (monotonic timestamp, count or None); None results are cached
+# too so repeated failures don't hammer the API.
+_CREATOR_COUNT_CACHE_TTL_SECONDS = 600
+_creator_model_count_cache: Dict[str, Tuple[float, Optional[int]]] = {}
 
 
 class CivitaiClient:
@@ -743,17 +750,34 @@ class CivitaiClient:
 
         return all_versions if all_versions else None
 
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
-        """Fetch all models for a specific Civitai user."""
+    async def get_user_models(
+        self, username: str, cursor: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch one page (up to 100 models) for a specific Civitai user.
+
+        Returns ``{"items": [...], "nextCursor": <str|None>}`` on success,
+        or None on failure. Pass ``cursor`` (from a previous response's
+        ``nextCursor``) to fetch subsequent pages.
+        """
         if not username:
             return None
+
+        params: Dict[str, Any] = {
+            "username": username,
+            "nsfw": "true",
+            "limit": 100,
+            "sort": "Newest",
+            "period": "AllTime",
+        }
+        if cursor:
+            params["cursor"] = cursor
 
         try:
             success, result = await self._make_request(
                 "GET",
                 f"{self.base_url}/models",
                 use_auth=True,
-                params={"username": username, "nsfw": "true"},
+                params=params,
             )
 
             if not success:
@@ -765,7 +789,7 @@ class CivitaiClient:
 
             items = result.get("items") if isinstance(result, dict) else None
             if not isinstance(items, list):
-                return []
+                items = []
 
             for model in items:
                 versions = model.get("modelVersions")
@@ -774,9 +798,68 @@ class CivitaiClient:
                 for version in versions:
                     self._remove_comfy_metadata(version)
 
-            return items
+            next_cursor: Optional[str] = None
+            metadata = result.get("metadata") if isinstance(result, dict) else None
+            if isinstance(metadata, dict):
+                raw_cursor = metadata.get("nextCursor")
+                if raw_cursor is not None:
+                    next_cursor = str(raw_cursor)
+
+            return {"items": items, "nextCursor": next_cursor}
         except RateLimitError:
             raise
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error fetching models for %s: %s", username, exc)
             return None
+
+    async def get_creator_model_count(self, username: str) -> Optional[int]:
+        """Best-effort lookup of a creator's published model count.
+
+        Uses the ``/creators`` endpoint (a contains-match query), picking the
+        entry whose username matches exactly (case-insensitive). Returns None
+        on any failure; never raises. Results (including None) are cached
+        for ``_CREATOR_COUNT_CACHE_TTL_SECONDS``.
+        """
+        if not username:
+            return None
+
+        cache_key = username.lower()
+        cached = _creator_model_count_cache.get(cache_key)
+        if cached is not None:
+            cached_at, cached_count = cached
+            if time.monotonic() - cached_at < _CREATOR_COUNT_CACHE_TTL_SECONDS:
+                return cached_count
+
+        count: Optional[int] = None
+        try:
+            success, result = await self._make_request(
+                "GET",
+                f"{self.base_url}/creators",
+                use_auth=True,
+                params={"query": username, "limit": 10},
+            )
+
+            if success and isinstance(result, dict):
+                creators = result.get("items")
+                if isinstance(creators, list):
+                    for creator in creators:
+                        if not isinstance(creator, dict):
+                            continue
+                        creator_name = creator.get("username")
+                        if not isinstance(creator_name, str):
+                            continue
+                        if creator_name.lower() != cache_key:
+                            continue
+                        model_count = creator.get("modelCount")
+                        if isinstance(model_count, (int, float)) and not isinstance(
+                            model_count, bool
+                        ):
+                            count = int(model_count)
+                        break
+        except Exception as exc:  # best-effort only, never propagate
+            logger.debug(
+                "Failed to fetch creator model count for %s: %s", username, exc
+            )
+
+        _creator_model_count_cache[cache_key] = (time.monotonic(), count)
+        return count

@@ -900,18 +900,28 @@ class FakeMetadataProvider:
     async def get_model_versions(self, _model_id):
         return {"modelVersions": [], "name": "", "type": "lora"}
 
-    async def get_user_models(self, _username):
-        return []
+    async def get_user_models(self, _username, cursor=None):
+        return {"items": [], "nextCursor": None}
+
+    async def get_creator_model_count(self, _username):
+        return None
 
 
 class FakeUserModelsProvider(FakeMetadataProvider):
-    def __init__(self, models):
+    def __init__(self, models, next_cursor=None, estimated_total=None):
         self.models = models
+        self.next_cursor = next_cursor
+        self.estimated_total = estimated_total
         self.received_usernames: list[str] = []
+        self.received_cursors: list = []
 
-    async def get_user_models(self, username):
+    async def get_user_models(self, username, cursor=None):
         self.received_usernames.append(username)
-        return self.models
+        self.received_cursors.append(cursor)
+        return {"items": self.models, "nextCursor": self.next_cursor}
+
+    async def get_creator_model_count(self, _username):
+        return self.estimated_total
 
 
 async def fake_metadata_provider_factory():
@@ -1284,6 +1294,88 @@ async def test_get_civitai_user_models_requires_username():
     assert response.status == 400
     assert payload["success"] is False
     assert "username" in payload["error"].lower()
+
+
+@pytest.mark.asyncio
+async def test_get_civitai_user_models_returns_pagination_fields():
+    models = [
+        {
+            "id": 1,
+            "name": "Model A",
+            "type": "LORA",
+            "tags": [],
+            "modelVersions": [
+                {"id": 100, "name": "v1", "images": [{"url": "http://example.com/a.jpg"}]},
+            ],
+        },
+        {
+            "id": 2,
+            "name": "Unsupported",
+            "type": "Other",
+            "modelVersions": [{"id": 200, "name": "v1"}],
+        },
+    ]
+
+    provider = FakeUserModelsProvider(models, next_cursor="cursor-token", estimated_total=2140)
+
+    async def provider_factory():
+        return provider
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=provider_factory,
+    )
+
+    response = await handler.get_civitai_user_models(
+        FakeRequest(query={"username": "pixel"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    # modelCount only counts models surviving the type filter
+    assert payload["modelCount"] == 1
+    assert payload["nextCursor"] == "cursor-token"
+    assert payload["hasMore"] is True
+    # first page includes the estimated total
+    assert payload["estimatedTotal"] == 2140
+    assert provider.received_cursors == [None]
+
+
+@pytest.mark.asyncio
+async def test_get_civitai_user_models_passes_cursor_and_omits_estimate():
+    provider = FakeUserModelsProvider([], next_cursor=None, estimated_total=999)
+
+    async def provider_factory():
+        return provider
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=provider_factory,
+    )
+
+    response = await handler.get_civitai_user_models(
+        FakeRequest(query={"username": "pixel", "cursor": "opaque-token"})
+    )
+    payload = json.loads(response.text)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["nextCursor"] is None
+    assert payload["hasMore"] is False
+    # cursor requests must not include the estimated total
+    assert payload["estimatedTotal"] is None
+    assert provider.received_cursors == ["opaque-token"]
 
 
 def test_ensure_handler_mapping_caches_result():

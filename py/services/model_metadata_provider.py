@@ -143,9 +143,17 @@ class ModelMetadataProvider(ABC):
         pass
 
     @abstractmethod
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
-        """Fetch models owned by the specified user"""
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+        """Fetch one page of models owned by the specified user.
+
+        Returns ``{"items": [...], "nextCursor": <str|None>}`` on success,
+        or None when unsupported/failed. ``cursor`` continues a previous page.
+        """
         pass
+
+    async def get_creator_model_count(self, username: str) -> Optional[int]:
+        """Published model count for the user; None when unsupported."""
+        return None
 
 class CivitaiModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses Civitai API for metadata"""
@@ -175,8 +183,11 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         return await self.client.get_model_version_info(version_id)
 
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
-        return await self.client.get_user_models(username)
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+        return await self.client.get_user_models(username, cursor)
+
+    async def get_creator_model_count(self, username: str) -> Optional[int]:
+        return await self.client.get_creator_model_count(username)
 
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses CivArchive API for metadata"""
@@ -196,7 +207,7 @@ class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
         return await self.client.get_model_version_info(version_id)
 
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
         """Not supported by CivArchive provider"""
         return None
 
@@ -347,7 +358,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             version_data = await self._get_version_with_model_data(db, model_id, version_id)
             return version_data, None
 
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
         """Listing models by username is not supported for archive database"""
         return None
     
@@ -602,13 +613,14 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None
 
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
         for provider, label in self._iter_providers():
             try:
                 result = await self._call_with_rate_limit(
                     label,
                     provider.get_user_models,
                     username,
+                    cursor=cursor,
                 )
                 if result is not None:
                     return result
@@ -621,6 +633,19 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
             except Exception as e:
                 logger.debug("Provider %s failed for get_user_models: %s", label, e)
+                continue
+        return None
+
+    async def get_creator_model_count(self, username: str) -> Optional[int]:
+        for provider, label in self._iter_providers():
+            try:
+                result = await provider.get_creator_model_count(username)
+                if result is not None:
+                    return result
+            except Exception as e:
+                logger.debug(
+                    "Provider %s failed for get_creator_model_count: %s", label, e
+                )
                 continue
         return None
 
@@ -704,12 +729,16 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
             version_id,
         )
 
-    async def get_user_models(self, username: str) -> Optional[List[Dict]]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_user_models,
             username,
+            cursor=cursor,
         )
+
+    async def get_creator_model_count(self, username: str) -> Optional[int]:
+        return await self._provider.get_creator_model_count(username)
 
 class ModelMetadataProviderManager:
     """Manager for selecting and using model metadata providers"""
@@ -776,10 +805,20 @@ class ModelMetadataProviderManager:
         except NotImplementedError:
             return None
 
-    async def get_user_models(self, username: str, provider_name: str = None) -> Optional[List[Dict]]:
-        """Fetch models owned by the specified user"""
+    async def get_user_models(
+        self,
+        username: str,
+        provider_name: str = None,
+        cursor: Optional[str] = None,
+    ) -> Optional[Dict]:
+        """Fetch one page of models owned by the specified user"""
         provider = self._get_provider(provider_name)
-        return await provider.get_user_models(username)
+        return await provider.get_user_models(username, cursor)
+
+    async def get_creator_model_count(self, username: str, provider_name: str = None) -> Optional[int]:
+        """Best-effort published model count for the specified user"""
+        provider = self._get_provider(provider_name)
+        return await provider.get_creator_model_count(username)
         
     def _get_provider(self, provider_name: str = None) -> ModelMetadataProvider:
         """Get provider by name or default provider"""

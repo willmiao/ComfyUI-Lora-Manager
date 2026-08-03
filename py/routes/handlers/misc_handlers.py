@@ -2590,6 +2590,8 @@ class ModelLibraryHandler:
                     status=400,
                 )
 
+            cursor = request.query.get("cursor")
+
             metadata_provider = await self._metadata_provider_factory()
             if not metadata_provider:
                 return web.json_response(
@@ -2598,7 +2600,7 @@ class ModelLibraryHandler:
                 )
 
             try:
-                models = await metadata_provider.get_user_models(username)
+                result = await metadata_provider.get_user_models(username, cursor)
             except NotImplementedError:
                 return web.json_response(
                     {
@@ -2608,14 +2610,35 @@ class ModelLibraryHandler:
                     status=501,
                 )
 
-            if models is None:
+            if result is None:
                 return web.json_response(
                     {"success": False, "error": "Failed to fetch user models"},
                     status=502,
                 )
 
+            if isinstance(result, dict):
+                models = result.get("items")
+                next_cursor = result.get("nextCursor")
+            else:
+                # Defensive: tolerate providers that still return a raw list
+                models = result
+                next_cursor = None
+
             if not isinstance(models, list):
                 models = []
+            if next_cursor is not None and not isinstance(next_cursor, str):
+                next_cursor = str(next_cursor)
+
+            estimated_total = None
+            if cursor is None:
+                get_count = getattr(metadata_provider, "get_creator_model_count", None)
+                if get_count is not None:
+                    try:
+                        estimated_total = await get_count(username)
+                    except Exception:  # best-effort only
+                        estimated_total = None
+                if not isinstance(estimated_total, int):
+                    estimated_total = None
 
             lora_scanner = await self._service_registry.get_lora_scanner()
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
@@ -2635,6 +2658,7 @@ class ModelLibraryHandler:
             versions: list[dict] = []
             history_service = await self._get_download_history_service()
             model_ids: list[int] = []
+            model_count = 0
             for model in models:
                 try:
                     model_ids.append(int(model.get("id")))
@@ -2667,6 +2691,8 @@ class ModelLibraryHandler:
                 model_type = str(model.get("type", "")).lower()
                 if model_type not in normalized_allowed_types:
                     continue
+
+                model_count += 1
 
                 scanner = type_scanner_map.get(model_type)
                 if scanner is None:
@@ -2733,7 +2759,15 @@ class ModelLibraryHandler:
                     )
 
             return web.json_response(
-                {"success": True, "username": username, "versions": versions}
+                {
+                    "success": True,
+                    "username": username,
+                    "versions": versions,
+                    "modelCount": model_count,
+                    "nextCursor": next_cursor,
+                    "hasMore": next_cursor is not None,
+                    "estimatedTotal": estimated_total,
+                }
             )
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Failed to get Civitai user models: %s", exc, exc_info=True)
