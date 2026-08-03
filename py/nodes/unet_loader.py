@@ -7,6 +7,21 @@ from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_c
 logger = logging.getLogger(__name__)
 
 
+def _reload_gguf_unet(
+    unet_path: str, weight_dtype: str, disable_dynamic: bool = False
+) -> object:
+    """Reload a GGUF diffusion model from disk (cached_patcher_init factory).
+
+    Mirrors the GGUF branch of UNETLoaderLM.load_unet so ModelPatcher
+    deepclone/dynamic machinery can rebuild GGUF models with the correct
+    GGMLOps. ``disable_dynamic`` is accepted for signature compatibility
+    with core ComfyUI loaders.
+    """
+    loader = UNETLoaderLM()
+    model, = loader._load_gguf_unet(unet_path, unet_path, weight_dtype)
+    return model
+
+
 class UNETLoaderLM:
     """UNET Loader with support for extra folder paths
 
@@ -195,6 +210,12 @@ class UNETLoaderLM:
 
             # Wrap with GGUFModelPatcher
             model = GGUFModelPatcher.clone(model)
+
+            # Register a reload factory so the MODEL carries its source path
+            # (cached_patcher_init) like core ComfyUI loaders do — required
+            # for model-name extraction downstream and for ModelPatcher
+            # deepclone/dynamic machinery.
+            model.cached_patcher_init = (_reload_gguf_unet, (unet_path, weight_dtype))
 
             return (model,)
 
