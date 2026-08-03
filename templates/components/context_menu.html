@@ -47,6 +47,9 @@
     <div class="context-menu-item" data-action="download-examples">
         <i class="fas fa-download"></i> <span>{{ t('loras.contextMenu.downloadExamples') }}</span>
     </div>
+    <div class="context-menu-item" data-action="download-examples-force">
+        <i class="fas fa-redo-alt"></i> <span>{{ t('loras.contextMenu.reprocessExamples') }}</span>
+    </div>
     <div class="context-menu-item" data-action="replace-preview">
         <i class="fas fa-image"></i> <span>{{ t('loras.contextMenu.replacePreview') }}</span>
     </div>
@@ -136,8 +139,11 @@
     </div>
     <div class="context-menu-section" data-section="download">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.download') }}</div>
+        <div class="context-menu-item" data-action="download-missing-example-images">
+            <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingExamples') }}</span>
+        </div>
         <div class="context-menu-item" data-action="download-example-images">
-            <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadExamples') }}</span>
+            <i class="fas fa-redo-alt"></i> <span>{{ t('loras.bulkOperations.reprocessExamples') }}</span>
         </div>
         <div class="context-menu-item" data-action="download-missing-loras">
             <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingLoras') }}</span>

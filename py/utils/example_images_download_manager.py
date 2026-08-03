@@ -172,6 +172,7 @@ class DownloadManager:
         model_types = data.get("model_types", ["lora", "checkpoint"])
         delay = float(data.get("delay", 0.2))
         force = data.get("force", False)
+        model_hashes = data.get("model_hashes", [])
 
         # Step 2: Validate configuration (fast lookup)
         settings_manager = get_settings_manager()
@@ -241,6 +242,7 @@ class DownloadManager:
                         delay,
                         active_library,
                         force,
+                        model_hashes,
                     )
                 )
 
@@ -577,8 +579,9 @@ class DownloadManager:
         delay,
         library_name,
         force: bool = False,
+        model_hashes: list[str] | None = None,
     ):
-        """Download example images for all models."""
+        """Download example images for all models (or only the given hashes)."""
 
         downloader = await get_downloader()
 
@@ -606,6 +609,18 @@ class DownloadManager:
                         if model.get("sha256"):
                             all_models.append((scanner_type, model, scanner))
 
+            # Restrict to the requested hashes when provided (empty = all models).
+            # Explicit targets are a directed user request, so previously failed
+            # models are retried instead of skipped.
+            explicit_targets = bool(model_hashes)
+            if model_hashes:
+                hash_set = {h.lower() for h in model_hashes}
+                all_models = [
+                    (scanner_type, model, scanner)
+                    for scanner_type, model, scanner in all_models
+                    if model.get("sha256", "").lower() in hash_set
+                ]
+
             # Update total count
             self._progress["total"] = len(all_models)
             logger.debug(f"Found {self._progress['total']} models to process")
@@ -629,6 +644,7 @@ class DownloadManager:
                     downloader,
                     library_name,
                     force,
+                    explicit_targets,
                 )
 
                 # Update progress
@@ -725,6 +741,7 @@ class DownloadManager:
         downloader,
         library_name,
         force: bool = False,
+        explicit_targets: bool = False,
     ):
         """Process a single model download."""
 
@@ -747,8 +764,9 @@ class DownloadManager:
             self._progress["current_model"] = f"{model_name} ({model_hash[:8]})"
             await self._broadcast_progress(status="running")
 
-            # Skip if already in failed models (unless force mode is enabled)
-            if not force and model_hash in self._progress["failed_models"]:
+            # Skip if already in failed models (unless force mode is enabled or
+            # the model was explicitly targeted by hash)
+            if not force and not explicit_targets and model_hash in self._progress["failed_models"]:
                 logger.debug(f"Skipping known failed model: {model_name}")
                 return False
 
@@ -757,29 +775,33 @@ class DownloadManager:
             )
             existing_files = _model_directory_has_files(model_dir)
 
-            # Skip if already processed AND directory exists with files
-            if model_hash in self._progress["processed_models"]:
-                if existing_files:
-                    logger.debug(f"Skipping already processed model: {model_name}")
+            # Model-level guard: a populated folder counts as done. Explicitly
+            # targeted models bypass it so the per-image existence pre-check can
+            # fill individual gaps without re-fetching existing files.
+            if not explicit_targets:
+                # Skip if already processed AND directory exists with files
+                if model_hash in self._progress["processed_models"]:
+                    if existing_files:
+                        logger.debug(f"Skipping already processed model: {model_name}")
+                        return False
+
+                    logger.debug(
+                        "Model %s (%s) marked as processed but folder empty or missing, reprocessing triggered",
+                        model_name,
+                        model_hash,
+                    )
+                    # Track that we are reprocessing this model for summary logging
+                    self._progress["reprocessed_models"].add(model_hash)
+                    # Remove from processed models since we need to reprocess
+                    self._progress["processed_models"].discard(model_hash)
+
+                if existing_files and model_hash not in self._progress["processed_models"]:
+                    logger.debug(
+                        "Model folder already populated for %s, marking as processed without download",
+                        model_name,
+                    )
+                    self._progress["processed_models"].add(model_hash)
                     return False
-
-                logger.debug(
-                    "Model %s (%s) marked as processed but folder empty or missing, reprocessing triggered",
-                    model_name,
-                    model_hash,
-                )
-                # Track that we are reprocessing this model for summary logging
-                self._progress["reprocessed_models"].add(model_hash)
-                # Remove from processed models since we need to reprocess
-                self._progress["processed_models"].discard(model_hash)
-
-            if existing_files and model_hash not in self._progress["processed_models"]:
-                logger.debug(
-                    "Model folder already populated for %s, marking as processed without download",
-                    model_name,
-                )
-                self._progress["processed_models"].add(model_hash)
-                return False
 
             if not model_dir:
                 logger.warning(
@@ -884,7 +906,7 @@ class DownloadManager:
                         model_name,
                     )
                     # Clear failed_models so non-force runs can retry
-                    if force and model_hash in self._progress["failed_models"]:
+                    if (force or explicit_targets) and model_hash in self._progress["failed_models"]:
                         self._progress["failed_models"].discard(model_hash)
                         logger.info(
                             f"Removed {model_name} from failed_models after force retry with rate-limited images"
@@ -904,7 +926,7 @@ class DownloadManager:
                     )
                 elif success:
                     self._progress["processed_models"].add(model_hash)
-                    if force and model_hash in self._progress["failed_models"]:
+                    if (force or explicit_targets) and model_hash in self._progress["failed_models"]:
                         self._progress["failed_models"].discard(model_hash)
                         logger.info(
                             f"Removed {model_name} from failed_models after successful force retry"

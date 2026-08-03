@@ -1641,7 +1641,7 @@ export class BaseModelApiClient {
         }
     }
 
-    async downloadExampleImages(modelHashes, modelTypes = null) {
+    async downloadExampleImages(modelHashes, modelTypes = null, { force = true } = {}) {
         let ws = null;
 
         await state.loadingManager.showWithProgress(async (loading) => {
@@ -1700,8 +1700,13 @@ export class BaseModelApiClient {
                 // Determine optimize setting
                 const optimize = state.global?.settings?.optimize_example_images ?? true;
 
+                // force=false routes to the regular endpoint, which skips already-processed models
+                const endpoint = force
+                    ? DOWNLOAD_ENDPOINTS.exampleImages
+                    : DOWNLOAD_ENDPOINTS.exampleImagesMissing;
+
                 // Make the API request to start the download process
-                const response = await fetch(DOWNLOAD_ENDPOINTS.exampleImages, {
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -1710,6 +1715,7 @@ export class BaseModelApiClient {
                         model_hashes: modelHashes,
                         output_dir: outputDir,
                         optimize: optimize,
+                        force: force,
                         model_types: modelTypes || [this.apiConfig.config.singularName]
                     })
                 });

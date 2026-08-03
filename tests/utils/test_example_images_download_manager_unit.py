@@ -63,7 +63,7 @@ async def test_start_download_bootstraps_progress_and_task(
     release = asyncio.Event()
 
     async def fake_download(
-        self, output_dir, optimize, model_types, delay, library_name, force=False
+        self, output_dir, optimize, model_types, delay, library_name, force=False, model_hashes=None
     ):
         started.set()
         await release.wait()
@@ -91,6 +91,44 @@ async def test_start_download_bootstraps_progress_and_task(
     await asyncio.wait_for(task, timeout=1)
     assert manager._is_downloading is False
     assert manager._progress["status"] == "completed"
+
+
+async def test_start_download_forwards_model_hashes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path)
+    settings_manager.settings["libraries"] = {"default": {}}
+    settings_manager.settings["active_library"] = "default"
+
+    manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+
+    received: Dict[str, Any] = {}
+
+    async def fake_download(
+        self, output_dir, optimize, model_types, delay, library_name, force=False, model_hashes=None
+    ):
+        received["model_hashes"] = model_hashes
+        async with self._state_lock:
+            self._is_downloading = False
+            self._download_task = None
+        self._progress["status"] = "completed"
+
+    monkeypatch.setattr(
+        download_module.DownloadManager,
+        "_download_all_example_images",
+        fake_download,
+    )
+
+    result = await manager.start_download(
+        {"model_types": ["lora"], "delay": 0, "model_hashes": ["abc123", "def456"]}
+    )
+    assert result["success"] is True
+
+    task = manager._download_task
+    assert task is not None
+    await asyncio.wait_for(task, timeout=1)
+    assert received["model_hashes"] == ["abc123", "def456"]
 
 
 async def test_pause_and_resume_flow(monkeypatch: pytest.MonkeyPatch, tmp_path) -> None:

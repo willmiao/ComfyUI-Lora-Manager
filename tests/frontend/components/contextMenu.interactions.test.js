@@ -2155,4 +2155,31 @@ describe('Interaction-level regression coverage', () => {
     excludedItem.dispatchEvent(new Event('click', { bubbles: true }));
     expect(window.pageControls.enterExcludedView).toHaveBeenCalledTimes(1);
   });
+
+  it('routes single-model example downloads to missing-only and force paths', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="download-examples"></div>
+        <div class="context-menu-item" data-action="download-examples-force"></div>
+      </div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    card.dataset.sha256 = 'abc123hash';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+
+    document.querySelector('[data-action="download-examples"]').dispatchEvent(new Event('click', { bubbles: true }));
+    expect(downloadExampleImagesApiMock).toHaveBeenCalledWith(['abc123hash'], null, { force: false });
+
+    contextMenu.showMenu(100, 100, card);
+    document.querySelector('[data-action="download-examples-force"]').dispatchEvent(new Event('click', { bubbles: true }));
+    expect(downloadExampleImagesApiMock).toHaveBeenCalledWith(['abc123hash'], null, { force: true });
+  });
 });

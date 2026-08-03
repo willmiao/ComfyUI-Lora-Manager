@@ -144,6 +144,12 @@ export class BulkContextMenu extends BaseContextMenu {
             downloadExampleImagesItem.style.display = modelPages.includes(currentModelType) ? 'flex' : 'none';
         }
 
+        const downloadMissingExampleImagesItem = this.menu.querySelector('[data-action="download-missing-example-images"]');
+        if (downloadMissingExampleImagesItem) {
+            // Show on model pages (loras, checkpoints, embeddings), hide on recipes
+            downloadMissingExampleImagesItem.style.display = ['loras', 'checkpoints', 'embeddings'].includes(currentModelType) ? 'flex' : 'none';
+        }
+
         const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');
         const resumeMetadataRefreshItem = this.menu.querySelector('[data-action="resume-metadata-refresh"]');
 
@@ -294,8 +300,11 @@ export class BulkContextMenu extends BaseContextMenu {
             case 'download-missing-loras':
                 this.handleDownloadMissingLoras();
                 break;
+            case 'download-missing-example-images':
+                this.handleDownloadExampleImages({ force: false });
+                break;
             case 'download-example-images':
-                this.handleDownloadExampleImages();
+                this.handleDownloadExampleImages({ force: true });
                 break;
             case 'clear':
                 bulkManager.clearSelection();
@@ -340,7 +349,7 @@ export class BulkContextMenu extends BaseContextMenu {
         await bulkMissingLoraDownloadManager.downloadMissingLoras(selectedRecipes);
     }
 
-    async handleDownloadExampleImages() {
+    async handleDownloadExampleImages({ force = true } = {}) {
         if (state.selectedModels.size === 0) {
             return;
         }
@@ -361,7 +370,7 @@ export class BulkContextMenu extends BaseContextMenu {
 
         try {
             const apiClient = getModelApiClient();
-            await apiClient.downloadExampleImages([...hashes]);
+            await apiClient.downloadExampleImages([...hashes], null, { force });
         } catch (error) {
             console.error('Bulk download example images failed:', error);
         }

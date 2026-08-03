@@ -100,6 +100,54 @@ def test_get_file_extension_media_type_hint_low_priority() -> None:
     assert ext == ".mp4"
 
 
+def test_example_image_file_exists_checks_plausible_extensions(tmp_path) -> None:
+    proc = processor_module.ExampleImagesProcessor
+    assert proc._example_image_file_exists(str(tmp_path), 0) is False
+    Path(tmp_path, "image_0.webp").write_bytes(b"x")
+    assert proc._example_image_file_exists(str(tmp_path), 0) is True
+    assert proc._example_image_file_exists(str(tmp_path), 1) is False
+
+
+def test_example_image_file_exists_video_hint_only_checks_video_extensions(tmp_path) -> None:
+    proc = processor_module.ExampleImagesProcessor
+    Path(tmp_path, "image_2.jpg").write_bytes(b"x")
+    # An existing image file must not satisfy a video-hinted lookup
+    assert proc._example_image_file_exists(str(tmp_path), 2, "video") is False
+    Path(tmp_path, "image_2.mp4").write_bytes(b"x")
+    assert proc._example_image_file_exists(str(tmp_path), 2, "video") is True
+
+
+async def test_download_model_images_with_tracking_skips_existing_files(tmp_path) -> None:
+    proc = processor_module.ExampleImagesProcessor
+    images = [
+        {"url": "https://image.civitai.com/a/b", "type": "image"},
+        {"url": "https://image.civitai.com/c/d", "type": "image"},
+    ]
+    Path(tmp_path, "image_0.jpg").write_bytes(b"existing")
+
+    class RecordingDownloader:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            self.calls.append(url)
+            return True, b"\xff\xd8\xff" + b"data", {}
+
+    downloader = RecordingDownloader()
+    success, is_stale, failed, rate_limited = await proc.download_model_images_with_tracking(
+        "hash", "model", images, str(tmp_path), False, downloader
+    )
+
+    assert success is True
+    assert is_stale is False
+    assert failed == []
+    assert rate_limited == []
+    # Only the missing image is requested; the existing one is skipped without a network call
+    assert len(downloader.calls) == 1
+    assert "c/d" in downloader.calls[0]
+    assert Path(tmp_path, "image_1.jpg").exists()
+
+
 class StubScanner:
     def __init__(self, models: list[Dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)

@@ -347,7 +347,10 @@ export const ModelContextMenuMixin = {
                 openExampleImagesFolder(this.currentCard.dataset.sha256);
                 return true;
             case 'download-examples':
-                this.downloadExampleImages();
+                this.downloadExampleImages(false);
+                return true;
+            case 'download-examples-force':
+                this.downloadExampleImages(true);
                 return true;
             case 'civitai':
                 if (this.currentCard.dataset.from_civitai === 'true') {
@@ -378,7 +381,7 @@ export const ModelContextMenuMixin = {
     },
 
     // Download example images method
-    async downloadExampleImages() {
+    async downloadExampleImages(force = false) {
         const modelHash = this.currentCard.dataset.sha256;
         if (!modelHash) {
             showToast('toast.contextMenu.missingHash', {}, 'error');
@@ -387,7 +390,7 @@ export const ModelContextMenuMixin = {
 
         try { 
             const apiClient = getModelApiClient();
-            await apiClient.downloadExampleImages([modelHash]);
+            await apiClient.downloadExampleImages([modelHash], null, { force });
         } catch (error) {
             console.error('Error downloading example images:', error);
         }
