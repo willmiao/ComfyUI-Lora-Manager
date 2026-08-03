@@ -183,7 +183,7 @@ class FakeCache:
     def __init__(self, items):
         self.items = list(items)
 
-    async def get_sorted_data(self, sort_key, order):
+    async def get_sorted_data(self, sort_key, order, seed=None):
         if sort_key == "name":
             data = sorted(self.items, key=lambda x: x["model_name"].lower())
             if order == "desc":

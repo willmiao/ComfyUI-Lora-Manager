@@ -1752,7 +1752,7 @@ class ModelScanner:
         # ---- Conditional resort (only when sort-key fields changed) ----
         need_resort = False
         _last = cache._last_sort
-        sort_key: Optional[str] = _last[0] if _last != (None, None) else None
+        sort_key: Optional[str] = _last[0] if _last[0] is not None else None
         if sort_key == "name":
             if (
                 old_model_name != desired_entry.get("model_name", "")

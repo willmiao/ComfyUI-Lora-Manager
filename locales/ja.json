@@ -714,7 +714,9 @@
         "versionsCount": "ローカルバージョン数",
         "versionsCountDesc": "バージョン数の多い順",
         "versionsCountAsc": "バージョン数の少ない順",
-        "versionIdDesc": "最新バージョン順"
+        "versionIdDesc": "最新バージョン順",
+        "random": "ランダム",
+        "randomAction": "シャッフル（ランダム）"
       },
       "refresh": {
         "title": "モデルリストを更新",

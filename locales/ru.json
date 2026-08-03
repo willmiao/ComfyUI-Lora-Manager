@@ -714,7 +714,9 @@
         "versionsCount": "Локальные версии",
         "versionsCountDesc": "Сначала больше версий",
         "versionsCountAsc": "Сначала меньше версий",
-        "versionIdDesc": "Сначала новые версии"
+        "versionIdDesc": "Сначала новые версии",
+        "random": "Случайно",
+        "randomAction": "Перемешать"
       },
       "refresh": {
         "title": "Обновить список моделей",

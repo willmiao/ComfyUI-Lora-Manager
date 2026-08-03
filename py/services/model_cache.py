@@ -1,6 +1,7 @@
 import asyncio
 import time
 import logging
+import random
 
 logger = logging.getLogger(__name__)
 from typing import Any, Dict, List, Optional, Tuple
@@ -38,8 +39,8 @@ class ModelCache:
 
     def __post_init__(self):
         self._lock = asyncio.Lock()
-        # Cache for last sort: (sort_key, order) -> sorted list
-        self._last_sort: Tuple[str, str] = (None, None)
+        # Cache for last sort: (sort_key, order, seed) -> sorted list
+        self._last_sort: Tuple[Optional[str], str, Optional[str]] = (None, "asc", None)
         self._last_sorted_data: List[Dict] = []
         self._normalize_raw_data()
         self.name_display_mode = self._normalize_display_mode(self.name_display_mode)
@@ -203,9 +204,9 @@ class ModelCache:
     async def resort(self):
         """Resort cached data according to last sort mode if set"""
         async with self._lock:
-            if self._last_sort != (None, None):
-                sort_key, order = self._last_sort
-                sorted_data = self._sort_data(self.raw_data, sort_key, order)
+            if self._last_sort[0] is not None:
+                sort_key, order, seed = self._last_sort
+                sorted_data = self._sort_data(self.raw_data, sort_key, order, seed)
                 self._last_sorted_data = sorted_data
                 # Update folder list
             # else: do nothing
@@ -218,7 +219,7 @@ class ModelCache:
             self.folders = sorted(list(all_folders), key=lambda x: x.lower())
             self.rebuild_version_index()
 
-    def _sort_data(self, data: List[Dict], sort_key: str, order: str) -> List[Dict]:
+    def _sort_data(self, data: List[Dict], sort_key: str, order: str, seed: Optional[str] = None) -> List[Dict]:
         """Sort data by sort_key and order"""
         start_time = time.perf_counter()
         reverse = (order == 'desc')
@@ -265,6 +266,13 @@ class ModelCache:
                 ),
                 reverse=reverse
             )
+        elif sort_key == 'random':
+            # Random shuffle seeded for stable pagination: the same seed
+            # always yields the same order, so successive page requests
+            # stay consistent while browsing.
+            rng = random.Random(seed or 'random')
+            result = list(data)
+            rng.shuffle(result)
         elif sort_key == 'versions_count':
             # Pre-dedup sort: fall back to name sort.
             # Actual re-sort by version_count happens in get_paginated_data after dedup.
@@ -285,15 +293,16 @@ class ModelCache:
             logger.debug("ModelCache._sort_data(%s, %s) for %d items took %.3fs", sort_key, order, len(data), duration)
         return result
 
-    async def get_sorted_data(self, sort_key: str = 'name', order: str = 'asc') -> List[Dict]:
+    async def get_sorted_data(self, sort_key: str = 'name', order: str = 'asc', seed: Optional[str] = None) -> List[Dict]:
         """Get sorted data by sort_key and order, using cache if possible"""
         async with self._lock:
-            if (sort_key, order) == self._last_sort:
+            cache_key = (sort_key, order, seed)
+            if cache_key == self._last_sort:
                 return self._last_sorted_data
             
             start_time = time.perf_counter()
-            sorted_data = self._sort_data(self.raw_data, sort_key, order)
-            self._last_sort = (sort_key, order)
+            sorted_data = self._sort_data(self.raw_data, sort_key, order, seed)
+            self._last_sort = cache_key
             self._last_sorted_data = sorted_data
             
             duration = time.perf_counter() - start_time
@@ -313,8 +322,8 @@ class ModelCache:
             self.name_display_mode = normalized
 
             if self._last_sort[0] == 'name':
-                sort_key, order = self._last_sort
-                self._last_sorted_data = self._sort_data(self.raw_data, sort_key, order)
+                sort_key, order, seed = self._last_sort
+                self._last_sorted_data = self._sort_data(self.raw_data, sort_key, order, seed)
 
     async def update_preview_url(self, file_path: str, preview_url: str, preview_nsfw_level: int) -> bool:
         """Update preview_url for a specific model in all cached data

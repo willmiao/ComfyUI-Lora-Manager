@@ -714,7 +714,9 @@
         "versionsCount": "Lokale Versionen",
         "versionsCountDesc": "Meiste Versionen zuerst",
         "versionsCountAsc": "Wenigste Versionen zuerst",
-        "versionIdDesc": "Neueste Version zuerst"
+        "versionIdDesc": "Neueste Version zuerst",
+        "random": "Zufällig",
+        "randomAction": "Zufällig mischen"
       },
       "refresh": {
         "title": "Modelliste aktualisieren",

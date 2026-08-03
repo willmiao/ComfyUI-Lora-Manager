@@ -714,7 +714,9 @@
         "versionsCount": "Local Versions",
         "versionsCountDesc": "Most versions first",
         "versionsCountAsc": "Fewest versions first",
-        "versionIdDesc": "Newest version first"
+        "versionIdDesc": "Newest version first",
+        "random": "Random",
+        "randomAction": "Randomize (shuffle)"
       },
       "refresh": {
         "title": "Refresh model list",

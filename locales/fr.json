@@ -714,7 +714,9 @@
         "versionsCount": "Versions locales",
         "versionsCountDesc": "Plus de versions d'abord",
         "versionsCountAsc": "Moins de versions d'abord",
-        "versionIdDesc": "Version la plus récente d'abord"
+        "versionIdDesc": "Version la plus récente d'abord",
+        "random": "Aléatoire",
+        "randomAction": "Aléatoire (mélanger)"
       },
       "refresh": {
         "title": "Actualiser la liste des modèles",

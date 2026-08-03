@@ -714,7 +714,9 @@
         "versionsCount": "גרסאות מקומיות",
         "versionsCountDesc": "הכי הרבה גרסאות ראשונות",
         "versionsCountAsc": "הכי מעט גרסאות ראשונות",
-        "versionIdDesc": "גרסה חדשה ביותר ראשונה"
+        "versionIdDesc": "גרסה חדשה ביותר ראשונה",
+        "random": "אקראי",
+        "randomAction": "ערבוב אקראי"
       },
       "refresh": {
         "title": "רענן רשימת מודלים",

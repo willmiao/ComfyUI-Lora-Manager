@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 import re
+import random
 from typing import Any, Dict, List, Optional, Type, Union, TYPE_CHECKING
 import logging
 import os
@@ -390,6 +391,12 @@ class BaseModelService(ABC):
                 (item.get("model_name") or item.get("file_name") or "").lower(),
                 item.get("file_path", "").lower(),
             )
+        elif key_name == "random":
+            # Seeded random shuffle: same seed -> same order (stable pagination)
+            rng = random.Random(sort_params.seed or "random")
+            result = list(data)
+            rng.shuffle(result)
+            return result
         elif key_name == "size":
             key_fn = lambda item: (
                 int(item.get("size", 0) or 0),

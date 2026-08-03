@@ -85,6 +85,7 @@ class SortParams:
 
     key: str
     order: str
+    seed: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -116,7 +117,7 @@ class ModelCacheRepository:
     async def fetch_sorted(self, params: SortParams) -> List[Dict[str, Any]]:
         """Fetch cached data pre-sorted according to ``params``."""
         cache = await self.get_cache()
-        return await cache.get_sorted_data(params.key, params.order)
+        return await cache.get_sorted_data(params.key, params.order, params.seed)
 
     @staticmethod
     def parse_sort(sort_by: str) -> SortParams:
@@ -132,10 +133,17 @@ class ModelCacheRepository:
             sort_key = sort_by.strip().lower() or "name"
             order = "asc"
 
-        if order not in ("asc", "desc"):
+        seed = None
+        if sort_key == "random":
+            # Random sort: the portion after ':' is the shuffle seed.
+            # A stable seed keeps paginated requests consistent; order is
+            # meaningless for a random shuffle.
+            seed = order if order and order not in ("asc", "desc") else None
+            order = "asc"
+        elif order not in ("asc", "desc"):
             order = "asc"
 
-        return SortParams(key=sort_key, order=order)
+        return SortParams(key=sort_key, order=order, seed=seed)
 
 
 class ModelFilterSet:

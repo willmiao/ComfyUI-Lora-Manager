@@ -884,7 +884,7 @@ async def test_sync_cache_conditional_resort_skipped(tmp_path: Path, monkeypatch
         raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
     )
     await scanner._cache.resort()
-    scanner._cache._last_sort = ("name", "asc")  # name sort is active
+    scanner._cache._last_sort = ("name", "asc", None)  # name sort is active
     scanner._tags_count = {"alpha": 1}
     scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
 
@@ -935,7 +935,7 @@ async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypat
         raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
     )
     await scanner._cache.resort()
-    scanner._cache._last_sort = ("name", "asc")
+    scanner._cache._last_sort = ("name", "asc", None)
     scanner._tags_count = {"alpha": 1}
     scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
 
