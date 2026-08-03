@@ -1,3 +1,4 @@
+import inspect
 import logging
 import os
 import re
@@ -26,6 +27,31 @@ _metadata_sync_service_settings: Optional["SettingsManager"] = None
 
 if TYPE_CHECKING:  # pragma: no cover - import for type checkers only
     from ..services.settings_manager import SettingsManager
+
+
+async def update_cache_from_metadata(
+    scanner: Any, file_path: str, metadata: Dict[str, Any]
+) -> bool:
+    """Update the scanner cache from a metadata dict using the in-place sync path.
+
+    ``sync_cache_from_metadata`` patches the existing cache entry incrementally
+    (tag/hash/version indexes, targeted single-row SQL update) and only resorts
+    when a sort-key field changed. This avoids the ``O(n)`` full-list resort and
+    full cache rewrite that ``update_single_model_cache`` performs on every call,
+    which is critical for libraries with 100k+ models.
+
+    Falls back to the legacy full update when the scanner does not expose an
+    async ``sync_cache_from_metadata`` method.
+
+    Returns:
+        ``True`` if the cache entry was updated, ``False`` otherwise.
+    """
+
+    sync_method = getattr(scanner, "sync_cache_from_metadata", None)
+    if inspect.iscoroutinefunction(sync_method):
+        return await sync_method(file_path, metadata)
+
+    return await scanner.update_single_model_cache(file_path, file_path, metadata)
 
 
 def _build_metadata_sync_service(settings_manager: "SettingsManager") -> MetadataSyncService:
@@ -103,8 +129,8 @@ class MetadataUpdater:
                 progress['refreshed_models'].add(model_hash)
             
             async def update_cache_func(old_path, new_path, metadata):
-                return await scanner.update_single_model_cache(old_path, new_path, metadata)
-            
+                return await update_cache_from_metadata(scanner, new_path, metadata)
+
             await MetadataManager.hydrate_model_data(model_data)
             success, error = await _get_metadata_sync_service().fetch_and_update_model(
                 sha256=model_hash,
@@ -234,6 +260,7 @@ class MetadataUpdater:
                 
                 # Save metadata to .metadata.json file
                 file_path = model.get('file_path')
+                model_copy: Optional[Dict[str, Any]] = None
                 try:
                     model_copy = model.copy()
                     model_copy.pop('folder', None)
@@ -241,14 +268,18 @@ class MetadataUpdater:
                     logger.info(f"Saved metadata for {model.get('model_name')}")
                 except Exception as e:
                     logger.error(f"Failed to save metadata for {model.get('model_name')}: {str(e)}")
-                
-                # Save updated metadata to scanner cache
-                success = await scanner.update_single_model_cache(file_path, file_path, model)
-                if success:
+
+                # Save updated metadata to scanner cache. sync_cache_from_metadata
+                # returns False both for "already in sync" and for actual failures,
+                # so the cache sync result is deliberately not treated as an error;
+                # the return value reflects whether the metadata was persisted.
+                if file_path and model_copy is not None:
+                    await update_cache_from_metadata(scanner, file_path, model_copy)
                     logger.info(f"Successfully updated metadata for {model.get('model_name')} with {len(images)} local examples")
                     return True
-                else:
-                    logger.warning(f"Failed to update metadata for {model.get('model_name')}")
+
+                logger.warning(f"Failed to update metadata for {model.get('model_name')}")
+                return False
             
             return False
         except Exception as e:
@@ -336,6 +367,7 @@ class MetadataUpdater:
             
             # Save metadata to .metadata.json file
             file_path = model_data.get('file_path')
+            model_copy: Optional[Dict[str, Any]] = None
             if file_path:
                 try:
                     model_copy = model_data.copy()
@@ -344,11 +376,11 @@ class MetadataUpdater:
                     logger.info(f"Saved metadata for {model_data.get('model_name')}")
                 except Exception as e:
                     logger.error(f"Failed to save metadata: {str(e)}")
-            
+
             # Save updated metadata to scanner cache
-            if file_path:
-                await scanner.update_single_model_cache(file_path, file_path, model_data)
-            
+            if file_path and model_copy is not None:
+                await update_cache_from_metadata(scanner, file_path, model_copy)
+
             # Get regular images array (might be None)
             regular_images = civitai_data.get('images', [])
             

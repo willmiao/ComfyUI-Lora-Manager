@@ -9,7 +9,7 @@ from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
 from ..utils.example_images_paths import get_model_folder, get_model_relative_path
-from .example_images_metadata import MetadataUpdater
+from .example_images_metadata import MetadataUpdater, update_cache_from_metadata
 from ..utils.metadata_manager import MetadataManager
 
 logger = logging.getLogger(__name__)
@@ -644,7 +644,7 @@ class ExampleImagesProcessor:
                     }, status=500)
             
                 # Update cache
-                await scanner.update_single_model_cache(file_path, file_path, model_data)
+                await update_cache_from_metadata(scanner, file_path, model_data)
             
             # Get regular images array (might be None)
             regular_images = civitai_data.get('images', [])
@@ -759,7 +759,7 @@ class ExampleImagesProcessor:
                 model_copy = model_data.copy()
                 model_copy.pop('folder', None)
                 await MetadataManager.save_metadata(file_path, model_copy)
-                await scanner.update_single_model_cache(file_path, file_path, model_data)
+                await update_cache_from_metadata(scanner, file_path, model_copy)
 
             return web.json_response({
                 'success': True,

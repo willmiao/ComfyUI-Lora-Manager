@@ -14,11 +14,16 @@ from ..services.service_registry import ServiceRegistry
 from ..utils.example_images_paths import (
     ExampleImagePathResolver,
     ensure_library_root_exists,
+    get_example_images_root,
+    is_hash_folder,
     uses_library_scoped_folders,
 )
 from ..utils.metadata_manager import MetadataManager
 from .example_images_processor import ExampleImagesProcessor
-from .example_images_metadata import MetadataUpdater
+from .example_images_metadata import (
+    MetadataUpdater,
+    update_cache_from_metadata,
+)
 from ..services.downloader import get_downloader
 from ..services.settings_manager import get_settings_manager
 
@@ -87,6 +92,13 @@ class _DownloadProgress(dict):
         return snapshot
 
 
+# When fewer candidates than this remain in check_pending_models, probe each
+# model folder directly (preserving legacy-folder migration semantics). Above
+# it, build a folder index with a single directory scan so libraries with
+# 100k+ models do not pay one syscall per candidate.
+_BULK_LOOKUP_THRESHOLD = 1000
+
+
 def _model_directory_has_files(path: str) -> bool:
     """Return True when the provided directory exists and contains entries."""
 
@@ -101,6 +113,36 @@ def _model_directory_has_files(path: str) -> bool:
         return False
 
     return False
+
+
+def _build_example_folder_index(output_dir: str) -> dict[str, bool]:
+    """Build a ``{hash: has_files}`` index for a library's example-image folders.
+
+    A single directory scan over the library root replaces ``O(candidates)``
+    per-folder ``os.scandir`` calls, which is required for libraries with
+    100k+ models. Each hash folder is classified by whether it contains any
+    entries, matching the semantics of ``_model_directory_has_files``.
+    """
+
+    index: dict[str, bool] = {}
+    if not output_dir or not os.path.isdir(output_dir):
+        return index
+
+    try:
+        with os.scandir(output_dir) as entries:
+            for entry in entries:
+                name = entry.name
+                if not entry.is_dir() or not is_hash_folder(name):
+                    continue
+                try:
+                    with os.scandir(entry.path) as subentries:
+                        index[name.lower()] = any(subentries)
+                except OSError:
+                    index[name.lower()] = False
+    except OSError:
+        pass
+
+    return index
 
 
 class DownloadManager:
@@ -410,13 +452,48 @@ class DownloadManager:
             # Calculate pending count: check which models actually need processing.
             # A model is pending if it has a hash, is not already processed or known-failed,
             # and its folder doesn't exist or is empty.
-            pending_hashes = set()
-            for model_hash, model_name in all_models_with_hash:
-                if model_hash not in processed_models and model_hash not in failed_models:
+            candidate_hashes = [
+                model_hash
+                for model_hash, _ in all_models_with_hash
+                if model_hash not in processed_models
+                and model_hash not in failed_models
+            ]
+
+            pending_hashes: set[str] = set()
+            # For small candidate counts the existing per-folder check is fine
+            # and handles legacy folder migration.
+            # For large libraries, scan the library root once and do set lookups.
+            if len(candidate_hashes) <= _BULK_LOOKUP_THRESHOLD or not output_dir:
+                for model_hash in candidate_hashes:
                     model_dir = ExampleImagePathResolver.get_model_folder(
                         model_hash, active_library
                     )
                     if not _model_directory_has_files(model_dir):
+                        pending_hashes.add(model_hash)
+            else:
+                folder_index = await asyncio.get_event_loop().run_in_executor(
+                    None, _build_example_folder_index, output_dir
+                )
+                # In multi-library mode, folders that have not been consolidated
+                # into the library root yet (startup migration skipped, failed
+                # move, or created at the legacy path afterwards) still live at
+                # the legacy root/<hash> location. Only scan that root when at
+                # least one candidate is missing from the library-root index, so
+                # the fully-consolidated case does not pay an extra directory
+                # pass on every call.
+                if uses_library_scoped_folders() and any(
+                    not folder_index.get(model_hash, False)
+                    for model_hash in candidate_hashes
+                ):
+                    legacy_root = get_example_images_root()
+                    if legacy_root and legacy_root != output_dir:
+                        legacy_index = await asyncio.get_event_loop().run_in_executor(
+                            None, _build_example_folder_index, legacy_root
+                        )
+                        for hash_key, has_files in legacy_index.items():
+                            folder_index.setdefault(hash_key, has_files)
+                for model_hash in candidate_hashes:
+                    if not folder_index.get(model_hash, False):
                         pending_hashes.add(model_hash)
 
             pending_count = len(pending_hashes)
@@ -1343,8 +1420,8 @@ class DownloadManager:
                 await MetadataManager.save_metadata(file_path, model_copy)
 
                 try:
-                    await scanner.update_single_model_cache(
-                        file_path, file_path, model_data
+                    await update_cache_from_metadata(
+                        scanner, file_path, model_copy
                     )
                 except AttributeError:
                     logger.debug(

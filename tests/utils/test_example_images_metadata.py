@@ -15,12 +15,17 @@ class StubScanner:
     def __init__(self, cache_items: List[Dict[str, Any]]) -> None:
         self.cache = SimpleNamespace(raw_data=cache_items)
         self.updates: List[Tuple[str, str, Dict[str, Any]]] = []
+        self.sync_updates: List[Tuple[str, Dict[str, Any]]] = []
 
     async def get_cached_data(self):
         return self.cache
 
     async def update_single_model_cache(self, old_path: str, new_path: str, metadata: Dict[str, Any]) -> bool:
         self.updates.append((old_path, new_path, metadata))
+        return True
+
+    async def sync_cache_from_metadata(self, file_path: str, metadata: Dict[str, Any]) -> bool:
+        self.sync_updates.append((file_path, metadata))
         return True
 
 
@@ -83,7 +88,7 @@ async def test_update_metadata_after_import_enriches_entries(monkeypatch: pytest
     assert custom[0]["type"] == "image"
 
     assert Path(patch_metadata_manager[0][0]) == model_file
-    assert scanner.updates
+    assert scanner.sync_updates
 
 
 @pytest.mark.asyncio
@@ -151,8 +156,8 @@ async def test_update_metadata_after_import_preserves_existing_metadata(
     assert saved_payload["civitai"]["trainedWords"] == ["foo"]
     assert {entry["id"] for entry in saved_payload["civitai"]["customImages"]} == {"existing-id", "new-id"}
 
-    assert scanner.updates
-    updated_metadata = scanner.updates[-1][2]
+    assert scanner.sync_updates
+    updated_metadata = scanner.sync_updates[-1][1]
     assert updated_metadata["civitai"]["images"] == existing_payload["civitai"]["images"]
     assert {entry["id"] for entry in updated_metadata["civitai"]["customImages"]} == {"existing-id", "new-id"}
 

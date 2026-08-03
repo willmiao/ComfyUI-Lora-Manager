@@ -26,12 +26,21 @@ class StubScanner:
 
     def __init__(self, models: list[dict]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
+        self.sync_calls: list[tuple[str, dict]] = []
 
     async def get_cached_data(self):
         return self._cache
 
     async def update_single_model_cache(self, _old_path, _new_path, metadata):
         # Replace the cached entry with the updated metadata for assertions.
+        for index, model in enumerate(self._cache.raw_data):
+            if model.get("file_path") == metadata.get("file_path"):
+                self._cache.raw_data[index] = metadata
+                break
+        return True
+
+    async def sync_cache_from_metadata(self, file_path: str, metadata: dict) -> bool:
+        self.sync_calls.append((file_path, metadata))
         for index, model in enumerate(self._cache.raw_data):
             if model.get("file_path") == metadata.get("file_path"):
                 self._cache.raw_data[index] = metadata
@@ -588,6 +597,9 @@ async def test_not_found_example_images_are_cleaned(
     assert missing_url in downloader.calls
     assert manager._progress["failed_models"] == {model_hash}
     assert model_hash in manager._progress["processed_models"]
+    assert scanner.sync_calls
+    assert len(scanner.sync_calls) == 1
+    assert scanner.sync_calls[0][0] == str(model_path)
 
     remaining_images = model_metadata["civitai"]["images"]
     assert remaining_images == [

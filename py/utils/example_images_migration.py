@@ -15,6 +15,7 @@ from ..utils.example_images_paths import (
 )
 from ..utils.metadata_manager import MetadataManager
 from ..utils.example_images_processor import ExampleImagesProcessor
+from ..utils.example_images_metadata import update_cache_from_metadata
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 
 logger = logging.getLogger(__name__)
@@ -421,7 +422,7 @@ class ExampleImagesMigration:
                         await MetadataManager.save_metadata(file_path, model_copy)
                         
                         # Update scanner cache
-                        await scanner.update_single_model_cache(file_path, file_path, model_metadata)
+                        await update_cache_from_metadata(scanner, file_path, model_copy)
                         
                         updated_models += 1
                     except Exception as e:
