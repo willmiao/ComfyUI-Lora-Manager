@@ -90,7 +90,7 @@ export class BulkManager {
                 moveAll: true,
                 autoOrganize: false,
                 deleteAll: true,
-                setContentRating: false,
+                setContentRating: true,
                 skipMetadataRefresh: false,
                 setFavorite: true,
                 unfavorite: true,
@@ -1528,14 +1528,18 @@ export class BulkManager {
         let failureCount = 0;
 
         try {
-            const apiClient = getModelApiClient();
+            const isRecipesPage = state.currentPageType === 'recipes';
             for (const filePath of targets) {
                 if (cancelled) {
                     showToast('toast.api.operationCancelled', {}, 'info');
                     break;
                 }
                 try {
-                    await apiClient.saveModelMetadata(filePath, { preview_nsfw_level: level });
+                    if (isRecipesPage) {
+                        await updateRecipeMetadata(filePath, { preview_nsfw_level: level });
+                    } else {
+                        await getModelApiClient().saveModelMetadata(filePath, { preview_nsfw_level: level });
+                    }
                     successCount++;
                 } catch (error) {
                     failureCount++;
