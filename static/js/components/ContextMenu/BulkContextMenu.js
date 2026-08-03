@@ -137,17 +137,10 @@ export class BulkContextMenu extends BaseContextMenu {
             downloadMissingLorasItem.style.display = currentModelType === 'recipes' ? 'flex' : 'none';
         }
 
-        const downloadExampleImagesItem = this.menu.querySelector('[data-action="download-example-images"]');
-        if (downloadExampleImagesItem) {
+        const downloadExampleImagesSubmenu = this.menu.querySelector('[data-has-submenu="download-example-images"]');
+        if (downloadExampleImagesSubmenu) {
             // Show on model pages (loras, checkpoints, embeddings), hide on recipes
-            const modelPages = ['loras', 'checkpoints', 'embeddings'];
-            downloadExampleImagesItem.style.display = modelPages.includes(currentModelType) ? 'flex' : 'none';
-        }
-
-        const downloadMissingExampleImagesItem = this.menu.querySelector('[data-action="download-missing-example-images"]');
-        if (downloadMissingExampleImagesItem) {
-            // Show on model pages (loras, checkpoints, embeddings), hide on recipes
-            downloadMissingExampleImagesItem.style.display = ['loras', 'checkpoints', 'embeddings'].includes(currentModelType) ? 'flex' : 'none';
+            downloadExampleImagesSubmenu.style.display = ['loras', 'checkpoints', 'embeddings'].includes(currentModelType) ? 'flex' : 'none';
         }
 
         const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');

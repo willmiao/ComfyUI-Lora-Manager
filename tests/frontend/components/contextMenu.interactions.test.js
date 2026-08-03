@@ -2159,8 +2159,12 @@ describe('Interaction-level regression coverage', () => {
   it('routes single-model example downloads to missing-only and force paths', async () => {
     document.body.innerHTML = `
       <div id="loraContextMenu" class="context-menu">
-        <div class="context-menu-item" data-action="download-examples"></div>
-        <div class="context-menu-item" data-action="download-examples-force"></div>
+        <div class="context-menu-item has-submenu" data-has-submenu="download-examples">
+          <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-examples"></div>
+            <div class="context-menu-item" data-action="download-examples-force"></div>
+          </div>
+        </div>
       </div>
     `;
 
