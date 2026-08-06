@@ -1473,10 +1473,12 @@ class SettingsManager:
 
         try:
             common_root = os.path.commonpath([source, target])
-        except ValueError as exc:
-            raise ValueError("Invalid recipes path change") from exc
+        except ValueError:
+            # Windows: paths on different drives share no common root.
+            # A cross-drive move is valid, so treat it as no common root.
+            common_root = None
 
-        if common_root == source:
+        if common_root is not None and common_root == source:
             raise ValueError("Recipes path cannot be moved into a nested directory")
 
         planned_recipe_updates: Dict[str, Dict[str, Any]] = {}

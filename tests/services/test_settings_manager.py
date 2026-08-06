@@ -860,6 +860,59 @@ def test_set_recipes_path_rewrites_symlinked_recipe_metadata(manager, tmp_path):
     assert not old_json_path.exists()
 
 
+def test_set_recipes_path_allows_cross_drive_migration(manager, tmp_path, monkeypatch):
+    # Windows regression: os.path.commonpath raises ValueError for paths on
+    # different drives (ntpath semantics). Cross-drive moves must succeed.
+    lora_root = tmp_path / "loras"
+    old_recipes_dir = lora_root / "recipes" / "nested"
+    old_recipes_dir.mkdir(parents=True)
+    manager.set("folder_paths", {"loras": [str(lora_root)]})
+
+    recipe_id = "recipe-cross-drive"
+    old_image_path = old_recipes_dir / f"{recipe_id}.webp"
+    old_json_path = old_recipes_dir / f"{recipe_id}.recipe.json"
+    old_image_path.write_bytes(b"image-bytes")
+    old_json_path.write_text(
+        json.dumps(
+            {
+                "id": recipe_id,
+                "file_path": str(old_image_path),
+                "title": "Recipe Cross Drive",
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    new_recipes_dir = tmp_path / "N_drive" / "AI" / "Library" / "Recipes"
+
+    # The effective current recipes dir (source of the migration) is
+    # lora_root/recipes — the nested subdirectory holds the recipe files.
+    source = str(lora_root / "recipes")
+    target = str(new_recipes_dir)
+    real_commonpath = os.path.commonpath
+
+    def fake_commonpath(paths):
+        # Simulate ntpath on Windows: a source/target pair on different
+        # drives shares no common root and raises ValueError.
+        if {source, target} <= set(paths):
+            raise ValueError("Paths don't have the same drive")
+        return real_commonpath(paths)
+
+    monkeypatch.setattr(os.path, "commonpath", fake_commonpath)
+
+    manager.set("recipes_path", str(new_recipes_dir))
+
+    migrated_image_path = new_recipes_dir / "nested" / f"{recipe_id}.webp"
+    migrated_json_path = new_recipes_dir / "nested" / f"{recipe_id}.recipe.json"
+
+    assert manager.get("recipes_path") == str(new_recipes_dir.resolve())
+    assert migrated_image_path.read_bytes() == b"image-bytes"
+    migrated_payload = json.loads(migrated_json_path.read_text(encoding="utf-8"))
+    assert migrated_payload["file_path"] == str(migrated_image_path)
+    assert not old_image_path.exists()
+    assert not old_json_path.exists()
+
+
 def test_set_recipes_path_rejects_file_target(manager, tmp_path):
     lora_root = tmp_path / "loras"
     lora_root.mkdir()
