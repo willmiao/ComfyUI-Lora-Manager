@@ -252,6 +252,13 @@ class SaveImageLM:
                         "tooltip": "When enabled, embeds generation parameters into the saved image metadata. Disable to skip writing generation metadata.",
                     },
                 ),
+                "add_loras_to_prompt": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": "When enabled, appends the LoRA syntax line (e.g. <lora:name:strength>) after the positive prompt in the saved metadata.",
+                    },
+                ),
                 "add_counter_to_filename": (
                     "BOOLEAN",
                     {
@@ -348,7 +355,7 @@ class SaveImageLM:
         type_lower = model_type.lower() if model_type else "other"
         return f"urn:air:{slug}:{type_lower}:civitai:{model_id}@{version_id}"
 
-    def format_metadata(self, metadata_dict: dict) -> str:
+    def format_metadata(self, metadata_dict: dict, add_loras_to_prompt: bool = False) -> str:
         """Format metadata as A1111-compatible parameters string with Hashes JSON and Civitai resources."""
         if not metadata_dict: return ""
 
@@ -458,7 +465,10 @@ class SaveImageLM:
         scheduler_name = scheduler_mapping.get(scheduler, scheduler) if scheduler else None
 
         # Build output lines
-        lines = [prompt] if prompt else [""]
+        prompt_line = prompt if prompt else ""
+        if add_loras_to_prompt and loras_text:
+            prompt_line = f"{prompt_line}\n{loras_text}" if prompt_line else loras_text
+        lines = [prompt_line] if prompt_line else [""]
         if negative_prompt:
             lines.append(f"Negative prompt: {negative_prompt}")
 
@@ -793,6 +803,7 @@ class SaveImageLM:
         save_with_metadata=True,
         add_counter_to_filename=True,
         save_as_recipe=False,
+        add_loras_to_prompt=False,
     ):
         """Save images with metadata"""
         results = []
@@ -801,7 +812,7 @@ class SaveImageLM:
         raw_metadata = get_metadata()
         metadata_dict = MetadataProcessor.to_dict(raw_metadata, id)
 
-        metadata = self.format_metadata(metadata_dict)
+        metadata = self.format_metadata(metadata_dict, add_loras_to_prompt)
 
         # Process filename_prefix with pattern substitution
         filename_prefix = self.format_filename(filename_prefix, metadata_dict)
@@ -943,6 +954,7 @@ class SaveImageLM:
         save_with_metadata=True,
         add_counter_to_filename=True,
         save_as_recipe=False,
+        add_loras_to_prompt=False,
     ):
         """Process and save image with metadata"""
         # Make sure the output directory exists
@@ -974,6 +986,7 @@ class SaveImageLM:
             save_with_metadata,
             add_counter_to_filename,
             save_as_recipe,
+            add_loras_to_prompt,
         )
 
         return {
