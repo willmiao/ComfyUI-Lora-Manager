@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, type Ref } from 'vue'
 // Dynamic import type for AutoComplete class
 type AutoCompleteClass = new (
   inputElement: HTMLTextAreaElement,
-  modelType: 'loras' | 'embeddings' | 'custom_words' | 'prompt',
+  modelType: 'loras' | 'prompt',
   options?: AutocompleteOptions
 ) => AutoCompleteInstance
 
@@ -29,7 +29,7 @@ export interface UseAutocompleteOptions {
 
 export function useAutocomplete(
   textareaRef: Ref<HTMLTextAreaElement | null>,
-  modelType: 'loras' | 'embeddings' | 'custom_words' | 'prompt' = 'loras',
+  modelType: 'loras' | 'prompt' = 'loras',
   options: UseAutocompleteOptions = {}
 ) {
   const autocompleteInstance = ref<AutoCompleteInstance | null>(null)

@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-3f3d7a1a] {
+.autocomplete-text-widget[data-v-55e3316e] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-3f3d7a1a] {
+.input-wrapper[data-v-55e3316e] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-3f3d7a1a] {
+.text-input[data-v-55e3316e] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2152,7 +2152,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-3f3d7a1a] {
+.text-input.vue-dom-mode[data-v-55e3316e] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2161,12 +2161,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-3f3d7a1a]:focus {
+.text-input[data-v-55e3316e]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-3f3d7a1a] {
+.clear-button[data-v-55e3316e] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2189,31 +2189,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-3f3d7a1a] {
+.input-wrapper:hover .clear-button[data-v-55e3316e] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-3f3d7a1a]:hover {
+.clear-button[data-v-55e3316e]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-3f3d7a1a] {
+.clear-button svg[data-v-55e3316e] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-3f3d7a1a] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-3f3d7a1a]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-3f3d7a1a] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-55e3316e] {
   width: 14px;
   height: 14px;
 }
@@ -15316,7 +15316,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-3f3d7a1a"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-55e3316e"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
@@ -16747,13 +16747,7 @@ app$1.registerExtension({
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};
         return createAutocompleteTextWidgetFactory(node, "text", "loras", options);
       },
-      // Autocomplete text widget for embeddings (used by Prompt node)
-      // @ts-ignore
-      AUTOCOMPLETE_TEXT_EMBEDDINGS(node) {
-        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};
-        return createAutocompleteTextWidgetFactory(node, "text", "embeddings", options);
-      },
-      // Autocomplete text widget for prompt (supports both embeddings and custom words)
+      // Autocomplete text widget for prompt (used by Prompt and Text nodes)
       // @ts-ignore
       AUTOCOMPLETE_TEXT_PROMPT(node) {
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};

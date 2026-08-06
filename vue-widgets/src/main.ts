@@ -718,7 +718,7 @@ function createLoraInfoWidget(node: any) {
 function createAutocompleteTextWidgetFactory(
   node: any,
   widgetName: string,
-  modelType: 'loras' | 'embeddings' | 'prompt',
+  modelType: 'loras' | 'prompt',
   inputOptions: { placeholder?: string } = {}
 ) {
   const metadataWidgetName = `__lm_autocomplete_meta_${widgetName}`
@@ -964,13 +964,7 @@ app.registerExtension({
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
         return createAutocompleteTextWidgetFactory(node, 'text', 'loras', options)
       },
-      // Autocomplete text widget for embeddings (used by Prompt node)
-      // @ts-ignore
-      AUTOCOMPLETE_TEXT_EMBEDDINGS(node) {
-        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
-        return createAutocompleteTextWidgetFactory(node, 'text', 'embeddings', options)
-      },
-      // Autocomplete text widget for prompt (supports both embeddings and custom words)
+      // Autocomplete text widget for prompt (used by Prompt and Text nodes)
       // @ts-ignore
       AUTOCOMPLETE_TEXT_PROMPT(node) {
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {}
