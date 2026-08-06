@@ -36,6 +36,9 @@ const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300
 const AUTOCOMPLETE_METADATA_VERSION = 1
 const LORA_MANAGER_WIDGET_IDS_PROPERTY = '__lm_widget_ids'
 
+// Access LiteGraph global for Vue DOM mode detection (matches AutocompleteTextWidget.vue)
+declare const LiteGraph: { vueNodesMode?: boolean } | undefined
+
 // @ts-ignore - ComfyUI external module
 import { app } from '../../../scripts/app.js'
 // @ts-ignore - ComfyUI external module
@@ -835,7 +838,7 @@ function createAutocompleteTextWidgetFactory(
     applyAutocompleteTextLayoutFix(
       widget,
       container,
-      typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode
+      typeof LiteGraph !== 'undefined' && LiteGraph.vueNodesMode === true
     )
   }
 

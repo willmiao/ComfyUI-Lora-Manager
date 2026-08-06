@@ -2224,7 +2224,7 @@ to { transform: rotate(360deg);
   resize: vertical !important;
 }
 
-.lora-info-widget[data-v-a99cc1ab] {
+.lora-info-widget[data-v-d7692b6f] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -2240,45 +2240,45 @@ to { transform: rotate(360deg);
    determined solely by CSS — not by descendant content. This breaks the
    feedback loop where content grows → ResizeObserver resizes → content
    reflows → repeat. Same technique used by tags_widget.js + lm_styles.css. */
-.lora-info-widget.lm-vue-node[data-v-a99cc1ab] {
+.lora-info-widget.lm-vue-node[data-v-d7692b6f] {
   contain: layout size;
 }
 
 /* ── Tab bar ── */
-.lora-info-tabs[data-v-a99cc1ab] {
+.lora-info-tabs[data-v-d7692b6f] {
   display: flex;
   gap: 0;
   margin-bottom: 10px;
   border-bottom: 1px solid var(--border-color, #444);
   flex-shrink: 0;
 }
-.lora-info-tab[data-v-a99cc1ab] {
+.lora-info-tab[data-v-d7692b6f] {
   flex: 1;
   text-align: center;
   cursor: pointer;
   padding: 6px 0;
   position: relative;
 }
-.lora-info-tab-input[data-v-a99cc1ab] {
+.lora-info-tab-input[data-v-d7692b6f] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.lora-info-tab-label[data-v-a99cc1ab] {
+.lora-info-tab-label[data-v-d7692b6f] {
   font-size: 12px;
   font-weight: 500;
   color: var(--fg-color, #fff);
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.lora-info-tab:hover .lora-info-tab-label[data-v-a99cc1ab] {
+.lora-info-tab:hover .lora-info-tab-label[data-v-d7692b6f] {
   opacity: 0.75;
 }
-.lora-info-tab.active .lora-info-tab-label[data-v-a99cc1ab] {
+.lora-info-tab.active .lora-info-tab-label[data-v-d7692b6f] {
   opacity: 1;
 }
-.lora-info-tab.active[data-v-a99cc1ab]::after {
+.lora-info-tab.active[data-v-d7692b6f]::after {
   content: '';
   position: absolute;
   bottom: -1px;
@@ -2290,16 +2290,16 @@ to { transform: rotate(360deg);
 }
 
 /* ── Tab content ── */
-.tab-content[data-v-a99cc1ab] {
+.tab-content[data-v-d7692b6f] {
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
-.notes-tab[data-v-a99cc1ab] {
+.notes-tab[data-v-d7692b6f] {
   display: flex;
   flex-direction: column;
 }
-.description-tab[data-v-a99cc1ab] {
+.description-tab[data-v-d7692b6f] {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -2307,12 +2307,12 @@ to { transform: rotate(360deg);
 }
 
 /* ── Info fields (shared) ── */
-.info-field[data-v-a99cc1ab] {
+.info-field[data-v-d7692b6f] {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.info-label[data-v-a99cc1ab] {
+.info-label[data-v-d7692b6f] {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -2320,7 +2320,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.lora-filename[data-v-a99cc1ab] {
+.lora-filename[data-v-d7692b6f] {
   font-size: 13px;
   font-weight: 500;
   color: var(--fg-color, #fff);
@@ -2331,11 +2331,11 @@ to { transform: rotate(360deg);
   user-select: text;
   -webkit-user-select: text;
 }
-.notes-field[data-v-a99cc1ab] {
+.notes-field[data-v-d7692b6f] {
   flex: 1;
   min-height: 0;
 }
-.lora-notes[data-v-a99cc1ab] {
+.lora-notes[data-v-d7692b6f] {
   width: 100%;
   flex: 1;
   min-height: 60px;
@@ -2350,14 +2350,14 @@ to { transform: rotate(360deg);
   font-family: inherit;
   outline: none;
 }
-.lora-notes[data-v-a99cc1ab]:focus {
+.lora-notes[data-v-d7692b6f]:focus {
   border-color: var(--comfy-input-border, #444);
 }
-.lora-notes[data-v-a99cc1ab]:disabled {
+.lora-notes[data-v-d7692b6f]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-.save-btn[data-v-a99cc1ab] {
+.save-btn[data-v-d7692b6f] {
   width: 100%;
   margin-top: 8px;
   padding: 6px 12px;
@@ -2371,11 +2371,11 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
   flex-shrink: 0;
 }
-.save-btn[data-v-a99cc1ab]:hover:not(:disabled) {
+.save-btn[data-v-d7692b6f]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.25);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.save-btn[data-v-a99cc1ab]:disabled {
+.save-btn[data-v-d7692b6f]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   background: rgba(66, 153, 225, 0.05);
@@ -2383,7 +2383,7 @@ to { transform: rotate(360deg);
 }
 
 /* ── Description states ── */
-.description-state[data-v-a99cc1ab] {
+.description-state[data-v-d7692b6f] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2395,22 +2395,22 @@ to { transform: rotate(360deg);
   min-height: 0;
   flex-shrink: 0;
 }
-.description-state.error[data-v-a99cc1ab] {
+.description-state.error[data-v-d7692b6f] {
   opacity: 0.7;
   color: #f87171;
 }
 
 /* ── Description content ── */
-.description-content[data-v-a99cc1ab] {
+.description-content[data-v-d7692b6f] {
   min-height: 0;
 }
-.description-section[data-v-a99cc1ab] {
+.description-section[data-v-d7692b6f] {
   margin-bottom: 14px;
 }
-.description-section[data-v-a99cc1ab]:last-child {
+.description-section[data-v-d7692b6f]:last-child {
   margin-bottom: 0;
 }
-.description-text[data-v-a99cc1ab] {
+.description-text[data-v-d7692b6f] {
   padding: 8px 0;
   font-size: 12px;
   line-height: 1.5;
@@ -2422,41 +2422,41 @@ to { transform: rotate(360deg);
   user-select: text;
   -webkit-user-select: text;
 }
-.description-text[data-v-a99cc1ab] p {
+.description-text[data-v-d7692b6f] p {
   margin: 0 0 8px 0;
 }
-.description-text[data-v-a99cc1ab] p:last-child {
+.description-text[data-v-d7692b6f] p:last-child {
   margin-bottom: 0;
 }
-.description-text[data-v-a99cc1ab] a {
+.description-text[data-v-d7692b6f] a {
   color: rgba(66, 153, 225, 0.9);
 }
-.description-text[data-v-a99cc1ab] ul,
-.description-text[data-v-a99cc1ab] ol {
+.description-text[data-v-d7692b6f] ul,
+.description-text[data-v-d7692b6f] ol {
   padding-left: 20px;
   margin: 4px 0;
 }
-.description-text[data-v-a99cc1ab] h1,
-.description-text[data-v-a99cc1ab] h2,
-.description-text[data-v-a99cc1ab] h3 {
+.description-text[data-v-d7692b6f] h1,
+.description-text[data-v-d7692b6f] h2,
+.description-text[data-v-d7692b6f] h3 {
   font-size: 13px;
   margin: 10px 0 4px 0;
   font-weight: 600;
   opacity: 0.95;
 }
-.description-text[data-v-a99cc1ab] code {
+.description-text[data-v-d7692b6f] code {
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 4px;
   border-radius: 3px;
   font-size: 11px;
 }
-.description-text[data-v-a99cc1ab] img {
+.description-text[data-v-d7692b6f] img {
   max-width: 100%;
   border-radius: 4px;
 }
 
 /* ── Placeholder (shared) ── */
-.placeholder[data-v-a99cc1ab] {
+.placeholder[data-v-d7692b6f] {
   font-style: italic;
   color: rgba(226, 232, 240, 0.5);
   text-align: center;
@@ -2465,10 +2465,10 @@ to { transform: rotate(360deg);
 }
 
 /* ── Spinner (Font Awesome) ── */
-.fa-spinner[data-v-a99cc1ab] {
-  animation: fa-spin-a99cc1ab 1s linear infinite;
+.fa-spinner[data-v-d7692b6f] {
+  animation: fa-spin-d7692b6f 1s linear infinite;
 }
-@keyframes fa-spin-a99cc1ab {
+@keyframes fa-spin-d7692b6f {
 0% { transform: rotate(0deg);
 }
 100% { transform: rotate(360deg);
@@ -15511,8 +15511,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           if (data.filePath !== void 0) filePath.value = data.filePath;
         }
       };
-      props.widget.options.getValue = buildValue;
-      props.widget.options.setValue = applyValue;
+      if (props.widget.options) {
+        props.widget.options.getValue = buildValue;
+        props.widget.options.setValue = applyValue;
+      } else {
+        console.warn("[LoraInfoWidget] widget.options missing, value persistence disabled");
+      }
       props.widget.serializeValue = async () => buildValue();
       props.widget.onSetValue = applyValue;
       const widgetIndex = (_b = (_a2 = props.widget.node) == null ? void 0 : _a2.widgets) == null ? void 0 : _b.findIndex(
@@ -15641,7 +15645,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraInfoWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-a99cc1ab"]]);
+const LoraInfoWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-d7692b6f"]]);
 function createVueWidgetCleanup(vueApp, onCleanup) {
   let didUnmount = false;
   return () => {
@@ -16637,7 +16641,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
     applyAutocompleteTextLayoutFix(
       widget,
       container,
-      typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode
+      typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode === true
     );
   }
   const vueCleanup = createVueWidgetCleanup(vueApp, () => {

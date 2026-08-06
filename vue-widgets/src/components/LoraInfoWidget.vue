@@ -98,7 +98,7 @@ interface LoraInfoWidget {
   onSetValue?: (v: unknown) => void
   callback?: unknown
   options?: {
-    getValue?: () => LoraInfoWidgetValue
+    getValue?: () => unknown
     setValue?: (v: unknown) => void
   }
   node?: { widgets?: Array<{ id?: string }>; widgets_values?: Array<unknown> }
@@ -299,8 +299,12 @@ onMounted(() => {
 
   // ComponentWidgetImpl.value getter/setter delegates to options.getValue/options.setValue.
   // These must be set for workflow JSON persistence (LGraphNode.serialize/configure) to work.
-  props.widget.options.getValue = buildValue
-  props.widget.options.setValue = applyValue
+  if (props.widget.options) {
+    props.widget.options.getValue = buildValue
+    props.widget.options.setValue = applyValue
+  } else {
+    console.warn('[LoraInfoWidget] widget.options missing, value persistence disabled')
+  }
 
   // Also set serializeValue for prompt/API serialization path (executionUtil.ts)
   props.widget.serializeValue = async () => buildValue()
