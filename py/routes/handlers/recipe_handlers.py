@@ -10,7 +10,7 @@ import asyncio
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
 
 from aiohttp import web
 
@@ -43,6 +43,22 @@ Logger = logging.Logger
 EnsureDependenciesCallable = Callable[[], Awaitable[None]]
 RecipeScannerGetter = Callable[[], Any]
 CivitaiClientGetter = Callable[[], Any]
+
+# Cap concurrent preview-dimension reads across requests. With a cold LRU
+# cache one page can touch up to page_size image files; 16 balances SSD and
+# HDD throughput without starving the event loop.
+_DIMS_READ_SEMAPHORE = asyncio.Semaphore(16)
+
+
+async def _read_preview_dims(path: str) -> Optional[Tuple[int, int]]:
+    """Read preview dimensions off the event loop under the concurrency cap.
+
+    PIL I/O runs in a worker thread so it never blocks the event loop, and the
+    semaphore bounds how many files are opened at once even when many list
+    requests land together.
+    """
+    async with _DIMS_READ_SEMAPHORE:
+        return await asyncio.to_thread(ExifUtils.get_image_dimensions, path)
 
 
 @dataclass(frozen=True)
@@ -246,23 +262,35 @@ class RecipeListingHandler:
                 recursive=recursive,
             )
 
-            for item in result.get("items", []):
+            items = result.get("items", [])
+            for item in items:
                 file_path = item.get("file_path")
                 if file_path:
                     item["file_url"] = self.format_recipe_file_url(file_path)
-                    # Offload synchronous PIL I/O: with a cold LRU cache this
-                    # reads up to page_size images and would block the event
-                    # loop otherwise. Fields are omitted (not null) when the
-                    # preview has no readable dimensions (video, missing file).
-                    dims = await asyncio.to_thread(
-                        ExifUtils.get_image_dimensions, file_path
-                    )
-                    if dims:
-                        item["width"], item["height"] = dims
                 else:
                     item.setdefault("file_url", "/loras_static/images/no-preview.png")
                 item.setdefault("loras", [])
                 item.setdefault("base_model", "")
+
+            # Batch preview dimension reads with asyncio.gather. The previous
+            # loop awaited asyncio.to_thread once per item, so a page_size=100
+            # request submitted 100 sequential thread calls (50-300ms cold-page
+            # latency). gather runs them concurrently while the semaphore caps
+            # disk opens; dimensions stay omitted (not null) when a preview has
+            # no readable size (video, missing file).
+            to_read = [
+                (i, item.get("file_path"))
+                for i, item in enumerate(items)
+                if item.get("file_path")
+            ]
+            if to_read:
+                dims_list = await asyncio.gather(
+                    *(_read_preview_dims(path) for _, path in to_read)
+                )
+                for (idx, _), dims in zip(to_read, dims_list):
+                    if dims:
+                        item = items[idx]
+                        item["width"], item["height"] = dims
 
             return web.json_response(result)
         except Exception as exc:

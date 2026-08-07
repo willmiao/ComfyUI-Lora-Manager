@@ -475,6 +475,58 @@ async def test_list_recipes_offloads_dimensions_to_thread(
         assert "height" not in payload["items"][1]
 
 
+async def test_list_recipes_batches_dimensions_for_mixed_items(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(d) Mixed file_path presence: dims align per-item with their own files."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        wide_path = harness.tmp_dir / "recipes" / "wide.png"
+        tall_path = harness.tmp_dir / "recipes" / "tall.png"
+        wide_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (120, 40), color="green").save(wide_path)
+        Image.new("RGB", (30, 90), color="blue").save(tall_path)
+
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-wide",
+                "file_path": str(wide_path),
+                "title": "Wide",
+                "loras": [],
+            },
+            {"id": "recipe-none", "title": "No Preview", "loras": []},
+            {
+                "id": "recipe-tall",
+                "file_path": str(tall_path),
+                "title": "Tall",
+                "loras": [],
+            },
+            {"id": "recipe-none-2", "title": "No Preview 2", "loras": []},
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        items = payload["items"]
+
+        # Items with a file_path carry integer dims read from their own file;
+        # the two images differ in both dimensions so a shifted pair would
+        # fail these assertions.
+        assert items[0]["width"] == 120
+        assert items[0]["height"] == 40
+        assert isinstance(items[0]["width"], int)
+        assert isinstance(items[0]["height"], int)
+        assert items[2]["width"] == 30
+        assert items[2]["height"] == 90
+
+        # Items without a file_path get the no-preview fallback and omit dims.
+        for item in (items[1], items[3]):
+            assert "width" not in item
+            assert "height" not in item
+            assert item["file_url"] == "/loras_static/images/no-preview.png"
+
+
 async def test_list_recipes_passes_checkpoint_hash_filter(
     monkeypatch, tmp_path: Path
 ) -> None:
