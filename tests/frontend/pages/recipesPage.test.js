@@ -69,6 +69,7 @@ vi.mock('../../../static/js/components/DuplicatesManager.js', () => ({
 
 vi.mock('../../../static/js/utils/infiniteScroll.js', () => ({
   refreshVirtualScroll: refreshVirtualScrollMock,
+  recreateVirtualScroll: vi.fn(),
 }));
 
 vi.mock('../../../static/js/api/recipeApi.js', () => ({

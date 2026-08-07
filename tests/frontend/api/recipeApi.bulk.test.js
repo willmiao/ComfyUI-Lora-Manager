@@ -38,6 +38,7 @@ vi.mock('../../../static/js/state/index.js', () => {
 vi.mock('../../../static/js/utils/infiniteScroll.js', () => ({
   captureScrollPosition: captureScrollPositionMock,
   restoreScrollPosition: restoreScrollPositionMock,
+  recreateVirtualScroll: vi.fn(),
 }));
 
 import {
