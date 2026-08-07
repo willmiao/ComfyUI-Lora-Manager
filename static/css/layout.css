@@ -576,6 +576,146 @@
     text-align: center;
 }
 
+/* "Find Similar" options popover */
+.similar-options-menu {
+    min-width: 240px;
+    padding: 10px 12px;
+}
+
+.similar-options-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.similar-option-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 0;
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.similar-option-row.similar-option-check {
+    justify-content: flex-start;
+}
+
+.similar-option-row.similar-option-indent {
+    padding-left: 22px;
+}
+
+.similar-option-row input[type="number"] {
+    width: 64px;
+    padding: 3px 6px;
+    font-size: 0.9em;
+    color: var(--text-color);
+    background-color: var(--input-bg, var(--bg-color));
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+}
+
+.similar-option-row input[type="checkbox"] {
+    margin-right: 8px;
+    cursor: pointer;
+}
+
+.similar-apply-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    width: 100%;
+    margin-top: 10px;
+    padding: 6px 12px;
+    color: #fff;
+    background-color: oklch(var(--lora-accent));
+    border: none;
+    border-radius: var(--border-radius-xs);
+    cursor: pointer;
+    transition: filter 0.2s ease;
+}
+
+.similar-apply-btn:hover {
+    filter: brightness(1.1);
+}
+
+/* "Find Similar" per-group diff table */
+.similar-diff {
+    margin: 4px 0 10px;
+}
+
+.similar-diff-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 8px;
+    font-size: 0.85em;
+    color: var(--text-color);
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    cursor: pointer;
+}
+
+.similar-diff-toggle:hover {
+    background-color: oklch(var(--lora-accent) / 0.1);
+}
+
+.similar-diff-panel {
+    margin-top: 6px;
+    overflow-x: auto;
+}
+
+.similar-diff-table {
+    border-collapse: collapse;
+    font-size: 0.82em;
+    color: var(--text-color);
+}
+
+.similar-diff-table th,
+.similar-diff-table td {
+    padding: 3px 10px;
+    text-align: center;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+}
+
+.similar-diff-table th {
+    background-color: oklch(var(--lora-accent) / 0.08);
+    font-weight: 600;
+}
+
+.similar-diff-table td.lora-name,
+.similar-diff-table td.meta-label {
+    text-align: left;
+    font-weight: 500;
+}
+
+.similar-diff-table td.diff {
+    background-color: oklch(0.75 0.15 40 / 0.28);
+    font-weight: 700;
+}
+
+.similar-diff-table td.low-weight {
+    opacity: 0.5;
+    font-style: italic;
+}
+
+.similar-diff-table td.missing {
+    opacity: 0.4;
+}
+
+.similar-diff-table .match-ok {
+    color: oklch(0.7 0.16 150);
+}
+
+.similar-diff-table .match-diff {
+    color: oklch(0.72 0.17 40);
+    text-align: left;
+}
+
 /* Intermediate breakpoint: wrap controls-right to prevent overflow */
 @media (max-width: 1500px) {
     .actions {
