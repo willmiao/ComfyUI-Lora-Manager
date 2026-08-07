@@ -201,6 +201,11 @@ PROVIDER_PRESETS: Dict[str, Dict[str, Any]] = {
         "api_base": "https://openrouter.ai/api/v1",
         "requires_key": True,
     },
+    "google": {
+        "name": "Gemini",
+        "api_base": "https://generativelanguage.googleapis.com/v1beta/openai",
+        "requires_key": True,
+    },
     "opencode-go": {
         "name": "OpenCode Go",
         "api_base": "https://opencode.ai/zen/go/v1",
