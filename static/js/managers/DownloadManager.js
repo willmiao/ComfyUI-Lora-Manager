@@ -235,6 +235,9 @@ export class DownloadManager {
 
                 if (this.modelVersionId) {
                     this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
+                } else {
+                    // No explicit version id in the URL → default to the latest version (Civitai returns newest first)
+                    this.currentVersion = this.versions[0];
                 }
 
                 this.showVersionStep();
@@ -428,6 +431,9 @@ export class DownloadManager {
             await this.retrieveVersionsForModel(this.modelId, this.source);
             if (this.modelVersionId) {
                 this.currentVersion = this.versions.find(v => v.id.toString() === this.modelVersionId);
+            } else {
+                // No explicit version id → default to the latest version (Civitai returns newest first)
+                this.currentVersion = this.versions[0];
             }
             this.showVersionStep();
         } catch (error) {
