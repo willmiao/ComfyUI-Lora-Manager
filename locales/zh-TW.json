@@ -693,7 +693,7 @@
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "API 金鑰",
             "apiKeyHelp": "LLM 提供者的 API 金鑰。儲存在本地，除您選擇的 LLM 提供者外不會傳送到任何伺服器。",
-            "apiKeyPlaceholder": "[TODO: Translate] sk-...",
+            "apiKeyPlaceholder": "sk-...",
             "apiKeyNotSet": "未設定",
             "apiKeyConfigured": "已設定",
             "apiKeySet": "設定",
