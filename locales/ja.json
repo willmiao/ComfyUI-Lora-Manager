@@ -1590,19 +1590,19 @@
             "columnError": "エラー"
         },
         "downloadBatchSummary": {
-            "title": "[TODO: Translate] Batch Download Summary",
-            "statSuccess": "[TODO: Translate] Success",
-            "statFailed": "[TODO: Translate] Failed",
-            "statTotal": "[TODO: Translate] Total",
-            "successMessage": "[TODO: Translate] All {count} models downloaded successfully",
-            "completedWithErrors": "[TODO: Translate] Completed with errors",
-            "failed": "[TODO: Translate] Download failed",
-            "failedItems": "[TODO: Translate] Failed Items ({count})",
-            "columnName": "[TODO: Translate] Model Name",
-            "columnError": "[TODO: Translate] Error",
-            "close": "[TODO: Translate] Close",
-            "copyReport": "[TODO: Translate] Copy Report",
-            "retryFailed": "[TODO: Translate] Retry Failed ({count})"
+            "title": "バッチダウンロードの概要",
+            "statSuccess": "成功",
+            "statFailed": "失敗",
+            "statTotal": "合計",
+            "successMessage": "{count} 個のモデルがすべて正常にダウンロードされました",
+            "completedWithErrors": "エラーありで完了",
+            "failed": "ダウンロードに失敗しました",
+            "failedItems": "失敗した項目（{count}）",
+            "columnName": "モデル名",
+            "columnError": "エラー",
+            "close": "閉じる",
+            "copyReport": "レポートをコピー",
+            "retryFailed": "失敗した項目を再試行（{count}）"
         }
     },
     "modelTags": {

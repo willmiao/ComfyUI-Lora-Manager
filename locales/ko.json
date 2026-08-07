@@ -1590,19 +1590,19 @@
             "columnError": "오류"
         },
         "downloadBatchSummary": {
-            "title": "[TODO: Translate] Batch Download Summary",
-            "statSuccess": "[TODO: Translate] Success",
-            "statFailed": "[TODO: Translate] Failed",
-            "statTotal": "[TODO: Translate] Total",
-            "successMessage": "[TODO: Translate] All {count} models downloaded successfully",
-            "completedWithErrors": "[TODO: Translate] Completed with errors",
-            "failed": "[TODO: Translate] Download failed",
-            "failedItems": "[TODO: Translate] Failed Items ({count})",
-            "columnName": "[TODO: Translate] Model Name",
-            "columnError": "[TODO: Translate] Error",
-            "close": "[TODO: Translate] Close",
-            "copyReport": "[TODO: Translate] Copy Report",
-            "retryFailed": "[TODO: Translate] Retry Failed ({count})"
+            "title": "일괄 다운로드 요약",
+            "statSuccess": "성공",
+            "statFailed": "실패",
+            "statTotal": "전체",
+            "successMessage": "{count}개 모델이 모두 성공적으로 다운로드되었습니다",
+            "completedWithErrors": "오류와 함께 완료됨",
+            "failed": "다운로드 실패",
+            "failedItems": "실패한 항목 ({count})",
+            "columnName": "모델 이름",
+            "columnError": "오류",
+            "close": "닫기",
+            "copyReport": "보고서 복사",
+            "retryFailed": "실패 항목 재시도 ({count})"
         }
     },
     "modelTags": {

@@ -1590,19 +1590,19 @@
             "columnError": "שגיאה"
         },
         "downloadBatchSummary": {
-            "title": "[TODO: Translate] Batch Download Summary",
-            "statSuccess": "[TODO: Translate] Success",
-            "statFailed": "[TODO: Translate] Failed",
-            "statTotal": "[TODO: Translate] Total",
-            "successMessage": "[TODO: Translate] All {count} models downloaded successfully",
-            "completedWithErrors": "[TODO: Translate] Completed with errors",
-            "failed": "[TODO: Translate] Download failed",
-            "failedItems": "[TODO: Translate] Failed Items ({count})",
-            "columnName": "[TODO: Translate] Model Name",
-            "columnError": "[TODO: Translate] Error",
-            "close": "[TODO: Translate] Close",
-            "copyReport": "[TODO: Translate] Copy Report",
-            "retryFailed": "[TODO: Translate] Retry Failed ({count})"
+            "title": "סיכום הורדה בכמות",
+            "statSuccess": "הצליחו",
+            "statFailed": "נכשלו",
+            "statTotal": "סה\"כ",
+            "successMessage": "כל {count} הדגמים הורדו בהצלחה",
+            "completedWithErrors": "הושלם עם שגיאות",
+            "failed": "ההורדה נכשלה",
+            "failedItems": "פריטים שנכשלו ({count})",
+            "columnName": "שם הדגם",
+            "columnError": "שגיאה",
+            "close": "סגור",
+            "copyReport": "העתק דוח",
+            "retryFailed": "נסה שוב ({count})"
         }
     },
     "modelTags": {

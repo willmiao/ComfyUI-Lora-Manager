@@ -1590,19 +1590,19 @@
             "columnError": "Error"
         },
         "downloadBatchSummary": {
-            "title": "[TODO: Translate] Batch Download Summary",
-            "statSuccess": "[TODO: Translate] Success",
-            "statFailed": "[TODO: Translate] Failed",
-            "statTotal": "[TODO: Translate] Total",
-            "successMessage": "[TODO: Translate] All {count} models downloaded successfully",
-            "completedWithErrors": "[TODO: Translate] Completed with errors",
-            "failed": "[TODO: Translate] Download failed",
-            "failedItems": "[TODO: Translate] Failed Items ({count})",
-            "columnName": "[TODO: Translate] Model Name",
-            "columnError": "[TODO: Translate] Error",
-            "close": "[TODO: Translate] Close",
-            "copyReport": "[TODO: Translate] Copy Report",
-            "retryFailed": "[TODO: Translate] Retry Failed ({count})"
+            "title": "Resumen de descarga por lotes",
+            "statSuccess": "Correctos",
+            "statFailed": "Fallidos",
+            "statTotal": "Total",
+            "successMessage": "Todos los {count} modelos se descargaron correctamente",
+            "completedWithErrors": "Completado con errores",
+            "failed": "Descarga fallida",
+            "failedItems": "Elementos fallidos ({count})",
+            "columnName": "Nombre del modelo",
+            "columnError": "Error",
+            "close": "Cerrar",
+            "copyReport": "Copiar informe",
+            "retryFailed": "Reintentar fallidos ({count})"
         }
     },
     "modelTags": {

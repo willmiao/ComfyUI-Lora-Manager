@@ -1590,19 +1590,19 @@
             "columnError": "错误"
         },
         "downloadBatchSummary": {
-            "title": "[TODO: Translate] Batch Download Summary",
-            "statSuccess": "[TODO: Translate] Success",
-            "statFailed": "[TODO: Translate] Failed",
-            "statTotal": "[TODO: Translate] Total",
-            "successMessage": "[TODO: Translate] All {count} models downloaded successfully",
-            "completedWithErrors": "[TODO: Translate] Completed with errors",
-            "failed": "[TODO: Translate] Download failed",
-            "failedItems": "[TODO: Translate] Failed Items ({count})",
-            "columnName": "[TODO: Translate] Model Name",
-            "columnError": "[TODO: Translate] Error",
-            "close": "[TODO: Translate] Close",
-            "copyReport": "[TODO: Translate] Copy Report",
-            "retryFailed": "[TODO: Translate] Retry Failed ({count})"
+            "title": "批量下载摘要",
+            "statSuccess": "成功",
+            "statFailed": "失败",
+            "statTotal": "总数",
+            "successMessage": "全部 {count} 个模型下载成功",
+            "completedWithErrors": "已完成，但有错误",
+            "failed": "下载失败",
+            "failedItems": "失败项（{count}）",
+            "columnName": "模型名称",
+            "columnError": "错误",
+            "close": "关闭",
+            "copyReport": "复制报告",
+            "retryFailed": "重试失败项（{count}）"
         }
     },
     "modelTags": {
