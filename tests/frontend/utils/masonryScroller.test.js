@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { MasonryScroller } from '../../../static/js/utils/MasonryScroller.js';
+import { VirtualScroller } from '../../../static/js/utils/VirtualScroller.js';
 import { getCurrentPageState, setCurrentPageType } from '../../../static/js/state/index.js';
 
 // jsdom does not always provide requestAnimationFrame; polyfill when missing
@@ -21,6 +22,9 @@ function createItemFn() {
   const el = document.createElement('div');
   const card = document.createElement('div');
   card.className = 'model-card';
+  const preview = document.createElement('div');
+  preview.className = 'card-preview';
+  card.appendChild(preview);
   el.appendChild(card);
   return el;
 }
@@ -302,5 +306,296 @@ describe('MasonryScroller', () => {
     expect(grid.classList.contains('virtual-scroll')).toBe(false);
     expect(grid.classList.contains('masonry-layout')).toBe(false);
     expect(grid.querySelector('.virtual-scroll-spacer')).toBeNull();
+  });
+
+  it('exposes every VirtualScroller prototype method (API parity)', () => {
+    const virtualMethods = Object.getOwnPropertyNames(VirtualScroller.prototype);
+    const masonryMethods = new Set(Object.getOwnPropertyNames(MasonryScroller.prototype));
+
+    const missing = virtualMethods.filter((name) => !masonryMethods.has(name));
+    expect(missing).toEqual([]);
+  });
+
+  it('exposes the VirtualScroller property surface after construction', () => {
+    const { scroller } = track(createScroller());
+
+    const expectedProperties = [
+      'items',
+      'renderedItems',
+      'totalItems',
+      'hasMore',
+      'isLoading',
+      'gridElement',
+      'containerElement',
+      'scrollContainer',
+      'columnsCount',
+      'itemWidth',
+      'disabled',
+      'spacerElement',
+      'pageSize',
+    ];
+
+    for (const prop of expectedProperties) {
+      expect(scroller[prop]).not.toBeUndefined();
+    }
+  });
+
+  it('updateSingleItem re-places items and shows the updated indicator on rendered cards', () => {
+    // Heights at ITEM_WIDTH=248: 496, 248, 124, 248, 248, 248
+    // Item 2 (height 124) sits in column 2 with items 3 and 5 stacked below it
+    const items = makeItems([
+      { width: 100, height: 200 },
+      { width: 100, height: 100 },
+      { width: 100, height: 50 },
+      { width: 100, height: 100 },
+      { width: 100, height: 100 },
+      { width: 100, height: 100 },
+    ]);
+    const { scroller, grid, wrapper } = track(createScroller({ items, viewportHeight: 3000 }));
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.overscan = 5;
+    scroller.renderItems();
+
+    const spacerBefore = scroller.spacerElement.style.height;
+    const colsBefore = scroller.positions.map((p) => p.col);
+
+    const result = scroller.updateSingleItem('/recipes/item-2.png', { width: 100, height: 150 });
+
+    expect(result).toBe(true);
+
+    // Item 2 height grew 124 -> 372, so the full synchronous re-placement
+    // re-flows every later item (item 3 moves from column 2 to column 1)
+    expect(scroller.positions[2].height).toBeCloseTo(ITEM_WIDTH * 1.5);
+    expect(scroller.positions.map((p) => p.col)).not.toEqual(colsBefore);
+    expect(scroller.spacerElement.style.height).not.toBe(spacerBefore);
+
+    // The re-placement equals a fresh full layout of the same items
+    const { scroller: reference } = track(createScroller({ items }));
+    reference.refreshWithData(scroller.items.slice(), items.length, false);
+    expect(scroller.positions.map((p) => p.col)).toEqual(reference.positions.map((p) => p.col));
+    for (let i = 0; i < items.length; i++) {
+      expect(scroller.positions[i].top).toBeCloseTo(reference.positions[i].top);
+    }
+
+    // The rendered card was recreated in place with the update indicator
+    const updatedCard = grid.querySelector('.virtual-scroll-item.updated');
+    expect(updatedCard).not.toBeNull();
+    const indicator = updatedCard.querySelector('.update-indicator');
+    expect(indicator).not.toBeNull();
+    expect(indicator.textContent).toBe('Updated');
+    expect(updatedCard.querySelector('.card-preview').contains(indicator)).toBe(true);
+    expect(updatedCard.style.height).toBe(`${scroller.positions[2].height}px`);
+    expect(updatedCard.style.top).toBe(`${scroller.positions[2].top}px`);
+  });
+
+  it('updateSingleItem returns false for an unknown file path without throwing', () => {
+    const items = makeItems([{ width: 100, height: 100 }]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, items.length, false);
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    let result;
+    expect(() => {
+      result = scroller.updateSingleItem('/recipes/does-not-exist.png', { title: 'x' });
+    }).not.toThrow();
+    expect(result).toBe(false);
+    expect(warnSpy).toHaveBeenCalled();
+    warnSpy.mockRestore();
+  });
+
+  it('removeItemByFilePath re-places the remaining items and decrements the total', () => {
+    // Heights at ITEM_WIDTH=248: 496, 248, 124, 248, 248, 248
+    const items = makeItems([
+      { width: 100, height: 200 },
+      { width: 100, height: 100 },
+      { width: 100, height: 50 },
+      { width: 100, height: 100 },
+      { width: 100, height: 100 },
+      { width: 100, height: 100 },
+    ]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, 60, false);
+
+    const result = scroller.removeItemByFilePath('/recipes/item-2.png');
+
+    expect(result).toBe(true);
+    expect(scroller.items.length).toBe(5);
+    expect(scroller.totalItems).toBe(59);
+    expect(scroller.positions.length).toBe(5);
+
+    // Remaining heights: 496, 248, 248, 248, 248 -> shortest-column placement
+    expect(scroller.positions.map((p) => p.col)).toEqual([0, 1, 2, 1, 2]);
+    expect(scroller.positions[3].top).toBeCloseTo(PAD_TOP + 248 + ROW_GAP); // 272
+    expect(scroller.positions[4].top).toBeCloseTo(PAD_TOP + 248 + ROW_GAP); // 272
+
+    // Spacer reflects the tallest remaining column
+    const maxColumnHeight = Math.max(...scroller.columnHeights);
+    const expected = maxColumnHeight - ROW_GAP + PAD_TOP + PAD_BOTTOM;
+    expect(scroller.spacerElement.style.height).toBe(`${expected}px`);
+  });
+
+  it('removeItemByFilePath returns false for an unknown file path', () => {
+    const items = makeItems([{ width: 100, height: 100 }]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, items.length, false);
+
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    expect(scroller.removeItemByFilePath('/recipes/missing.png')).toBe(false);
+    warnSpy.mockRestore();
+  });
+
+  it('removeMultipleItemsByFilePath re-places items with no layout gaps', () => {
+    const items = makeItems([
+      { width: 100, height: 200 },
+      { width: 100, height: 100 },
+      { width: 100, height: 50 },
+      { width: 100, height: 100 },
+      { width: 100, height: 100 },
+      { width: 100, height: 100 },
+    ]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, 60, false);
+
+    const result = scroller.removeMultipleItemsByFilePath([
+      '/recipes/item-1.png',
+      '/recipes/item-3.png',
+    ]);
+
+    expect(result).toBe(true);
+    expect(scroller.items.map((i) => i.file_path)).toEqual([
+      '/recipes/item-0.png',
+      '/recipes/item-2.png',
+      '/recipes/item-4.png',
+      '/recipes/item-5.png',
+    ]);
+    expect(scroller.totalItems).toBe(58);
+
+    // The remaining items are laid out exactly as a fresh full placement:
+    // compare against a second scroller fed the same remaining items
+    const remaining = scroller.items.slice();
+    const { scroller: reference } = track(createScroller({ items: remaining }));
+    reference.refreshWithData(remaining, remaining.length, false);
+
+    expect(scroller.positions.map((p) => p.col)).toEqual(reference.positions.map((p) => p.col));
+    for (let i = 0; i < remaining.length; i++) {
+      expect(scroller.positions[i].top).toBeCloseTo(reference.positions[i].top);
+      expect(scroller.positions[i].left).toBeCloseTo(reference.positions[i].left);
+    }
+  });
+
+  it('removeMultipleItemsByFilePath returns false when nothing matches', () => {
+    const items = makeItems([{ width: 100, height: 100 }]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, items.length, false);
+
+    expect(scroller.removeMultipleItemsByFilePath(['/recipes/missing.png'])).toBe(false);
+    expect(scroller.removeMultipleItemsByFilePath([])).toBe(false);
+  });
+
+  it('disable stops rendering and enable recreates the spacer after innerHTML is cleared', async () => {
+    const items = makeItems([
+      { width: 100, height: 200 },
+      { width: 100, height: 100 },
+      { width: 100, height: 50 },
+    ]);
+    const { scroller, grid, wrapper } = track(createScroller({ items, viewportHeight: 3000 }));
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.overscan = 5;
+    scroller.renderItems();
+    expect(grid.querySelectorAll('.virtual-scroll-item').length).toBe(3);
+
+    scroller.disable();
+
+    expect(scroller.disabled).toBe(true);
+    expect(grid.querySelectorAll('.virtual-scroll-item').length).toBe(0);
+    expect(scroller.spacerElement.style.display).toBe('none');
+
+    // Duplicates mode wipes the grid contents, destroying the spacer
+    grid.innerHTML = '';
+    expect(grid.contains(scroller.spacerElement)).toBe(false);
+
+    scroller.enable();
+
+    expect(scroller.disabled).toBe(false);
+    expect(grid.contains(scroller.spacerElement)).toBe(true);
+    expect(scroller.spacerElement.className).toBe('virtual-scroll-spacer');
+
+    // Full re-placement ran synchronously on re-enable
+    expect(scroller.positions.length).toBe(items.length);
+
+    // Rendering resumes after the scheduled rAF
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(grid.querySelectorAll('.virtual-scroll-item').length).toBe(3);
+  });
+
+  it('getAdjacentItemByFilePath loads more pages when the target is beyond loaded items', async () => {
+    const page1 = [0, 1, 2].map((i) => ({
+      file_path: `/recipes/page1-${i}.png`,
+      width: 100,
+      height: 100,
+    }));
+    const page2 = [0, 1].map((i) => ({
+      file_path: `/recipes/page2-${i}.png`,
+      width: 100,
+      height: 100,
+    }));
+    const fetchMock = vi.fn(async () => ({ items: page2, totalItems: 5, hasMore: false }));
+    const { scroller } = track(createScroller({ fetchItemsFn: fetchMock }));
+
+    scroller.refreshWithData(page1, 5, true);
+    const pageState = getCurrentPageState();
+    const expectedPage = pageState.currentPage;
+
+    const result = await scroller.getAdjacentItemByFilePath('/recipes/page1-2.png', 'next');
+
+    expect(fetchMock).toHaveBeenCalledWith(expectedPage, scroller.pageSize);
+    expect(result).not.toBeNull();
+    expect(result.index).toBe(3);
+    expect(result.item.file_path).toBe('/recipes/page2-0.png');
+  });
+
+  it('getAdjacentItemByFilePath returns null at boundaries and for unknown paths', async () => {
+    const items = makeItems([{ width: 100, height: 100 }, { width: 100, height: 100 }]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, items.length, false);
+
+    await expect(scroller.getAdjacentItemByFilePath('/recipes/item-0.png', 'prev')).resolves.toBeNull();
+    await expect(scroller.getAdjacentItemByFilePath('/recipes/item-1.png', 'next')).resolves.toBeNull();
+    await expect(scroller.getAdjacentItemByFilePath('/recipes/missing.png', 'next')).resolves.toBeNull();
+  });
+
+  it('getNavigationState reports index, prev/next availability and totals', () => {
+    const items = makeItems([{ width: 100, height: 100 }, { width: 100, height: 100 }]);
+    const { scroller } = track(createScroller({ items }));
+
+    scroller.refreshWithData(items, 10, true);
+
+    expect(scroller.getNavigationState('/recipes/item-0.png')).toEqual({
+      index: 0,
+      hasPrev: false,
+      hasNext: true,
+      loadedItems: 2,
+      totalItems: 10,
+    });
+
+    const last = scroller.getNavigationState('/recipes/item-1.png');
+    expect(last.index).toBe(1);
+    expect(last.hasPrev).toBe(true);
+    // hasMore keeps forward navigation available past the loaded window
+    expect(last.hasNext).toBe(true);
+
+    expect(scroller.getNavigationState('/recipes/missing.png').index).toBe(-1);
+    expect(scroller.findIndexByFilePath('/recipes/item-1.png')).toBe(1);
+    expect(scroller.findIndexByFilePath('')).toBe(-1);
   });
 });

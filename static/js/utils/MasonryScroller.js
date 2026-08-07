@@ -712,4 +712,388 @@ export class MasonryScroller {
             this.gridLoadingOverlay = null;
         }
     }
+
+    // Add disable method to stop rendering and events
+    disable() {
+        // Detach scroll event listener
+        this.scrollContainer.removeEventListener('scroll', this.scrollHandler);
+
+        // Clear all rendered items from the DOM
+        this.clearRenderedItems();
+
+        // Hide the spacer element
+        if (this.spacerElement) {
+            this.spacerElement.style.display = 'none';
+        }
+
+        // Flag as disabled
+        this.disabled = true;
+
+        console.log('Masonry scroller disabled');
+    }
+
+    // Add enable method to resume rendering and events
+    enable() {
+        if (!this.disabled) return;
+
+        // Reattach scroll event listener
+        this.scrollContainer.addEventListener('scroll', this.scrollHandler);
+
+        // Check if spacer element exists in the DOM, if not, recreate it
+        // (duplicates mode destroys it via gridElement.innerHTML = '')
+        if (!this.spacerElement || !this.gridElement.contains(this.spacerElement)) {
+            console.log('Spacer element not found in DOM, recreating it');
+
+            // Create a new spacer element
+            this.spacerElement = document.createElement('div');
+            this.spacerElement.className = 'virtual-scroll-spacer';
+            this.spacerElement.style.width = '100%';
+            this.spacerElement.style.height = '0px';
+            this.spacerElement.style.pointerEvents = 'none';
+
+            // Append it to the grid
+            this.gridElement.appendChild(this.spacerElement);
+        } else {
+            // Show the spacer element if it exists
+            this.spacerElement.style.display = 'block';
+        }
+
+        // Masonry needs a full synchronous re-placement on re-enable: column
+        // heights and the spacer height must be recomputed before rendering.
+        this._layoutItems();
+        this.updateSpacerHeight();
+
+        // Flag as enabled
+        this.disabled = false;
+
+        // Re-render items
+        this.scheduleRender();
+
+        console.log('Masonry scroller enabled');
+    }
+
+    // Helper function for deep merging objects - only updates existing keys in target
+    deepMerge(target, source) {
+        if (!source || !target) return target;
+
+        // Initialize result with a copy of target
+        const result = { ...target };
+
+        if (!source) return result;
+
+        // Iterate over all keys in the source object
+        Object.keys(source).forEach(key => {
+            const targetValue = target[key];
+            const sourceValue = source[key];
+
+            // If both values are non-null objects and not arrays, merge recursively
+            if (
+                targetValue !== null &&
+                typeof targetValue === 'object' &&
+                !Array.isArray(targetValue) &&
+                sourceValue !== null &&
+                typeof sourceValue === 'object' &&
+                !Array.isArray(sourceValue)
+            ) {
+                result[key] = this.deepMerge(targetValue || {}, sourceValue);
+            } else {
+                // Otherwise update with source value (includes primitives, arrays, and new keys)
+                result[key] = sourceValue;
+            }
+        });
+
+        return result;
+    }
+
+    updateSingleItem(filePath, updatedItem) {
+        if (!filePath || !updatedItem) {
+            console.error('Invalid parameters for updateSingleItem');
+            return false;
+        }
+
+        // Find the index of the item with the matching file_path
+        const index = this.items.findIndex(item => item.file_path === filePath);
+        if (index === -1) {
+            console.warn(`Item with file path ${filePath} not found in masonry scroller data`);
+            return false;
+        }
+
+        // Update the item data using deep merge
+        this.items[index] = this.deepMerge(this.items[index], updatedItem);
+
+        // Full synchronous re-placement: width/height changes (e.g. preview
+        // re-fetched) must re-flow the affected column and everything after it.
+        this._layoutItems();
+        this.updateSpacerHeight();
+
+        // If the item is currently rendered, update its DOM representation
+        if (this.renderedItems.has(index)) {
+            const element = this.renderedItems.get(index);
+
+            // Remove the old element
+            element.remove();
+            this.renderedItems.delete(index);
+
+            // Create and render the updated element
+            const updatedElement = this.createItemElement(this.items[index], index);
+
+            // Add update indicator visual effects
+            updatedElement.classList.add('updated');
+
+            // Add temporary update tag
+            const updateIndicator = document.createElement('div');
+            updateIndicator.className = 'update-indicator';
+            updateIndicator.textContent = 'Updated';
+            updatedElement.querySelector('.card-preview').appendChild(updateIndicator);
+
+            // Automatically remove the updated class after animation completes
+            setTimeout(() => {
+                updatedElement.classList.remove('updated');
+            }, 1500);
+
+            // Automatically remove the indicator after animation completes
+            setTimeout(() => {
+                if (updateIndicator && updateIndicator.parentNode) {
+                    updateIndicator.remove();
+                }
+            }, 2000);
+
+            this.renderedItems.set(index, updatedElement);
+            this.gridElement.appendChild(updatedElement);
+        }
+
+        return true;
+    }
+
+    // Remove an item by file path
+    removeItemByFilePath(filePath) {
+        if (!filePath || this.disabled || this.items.length === 0) return false;
+
+        // Find the index of the item with the matching file path
+        const index = this.items.findIndex(item => item.file_path === filePath);
+
+        if (index === -1) {
+            console.warn(`Item with file path ${filePath} not found in masonry scroller data`);
+            return false;
+        }
+
+        // Remove the item from the data array
+        this.items.splice(index, 1);
+
+        // Decrement total count
+        this.totalItems = Math.max(0, this.totalItems - 1);
+
+        // Full synchronous re-placement of all remaining items, then spacer
+        this._layoutItems();
+        this.updateSpacerHeight();
+
+        // Re-render to ensure proper layout
+        this.clearRenderedItems();
+        this.scheduleRender();
+
+        console.log(`Removed item with file path ${filePath} from masonry scroller data`);
+        return true;
+    }
+
+    /**
+     * Remove multiple items by their file paths.
+     * More efficient than calling removeItemByFilePath individually.
+     * @param {string[]} filePaths - Array of file paths to remove
+     * @returns {boolean} - True if any items were removed
+     */
+    removeMultipleItemsByFilePath(filePaths) {
+        if (!Array.isArray(filePaths) || filePaths.length === 0 || this.disabled || this.items.length === 0) return false;
+
+        // Build a set for fast lookup
+        const pathsToRemove = new Set(filePaths);
+        const originalLength = this.items.length;
+
+        // Filter out removed items; keep those not in the set
+        this.items = this.items.filter(item => !pathsToRemove.has(item.file_path));
+
+        const removedCount = originalLength - this.items.length;
+        if (removedCount === 0) return false;
+
+        this.totalItems = Math.max(0, this.totalItems - removedCount);
+
+        // Full synchronous re-placement of all remaining items, then spacer
+        this._layoutItems();
+        this.updateSpacerHeight();
+
+        // Re-render to fill gaps left by removed items
+        this.clearRenderedItems();
+        this.scheduleRender();
+
+        console.log(`Removed ${removedCount} items from masonry scroller data`);
+        return true;
+    }
+
+    // Add keyboard navigation methods
+    handlePageUpDown(direction) {
+        // Prevent duplicate animations by checking last trigger time
+        const now = Date.now();
+        if (this.lastPageNavTime && now - this.lastPageNavTime < 300) {
+            return; // Ignore rapid repeated triggers
+        }
+        this.lastPageNavTime = now;
+
+        const scrollContainer = this.scrollContainer;
+        const viewportHeight = scrollContainer.clientHeight;
+
+        // Calculate scroll distance (one viewport minus 10% overlap for context)
+        const scrollDistance = viewportHeight * 0.9;
+
+        // Determine the new scroll position
+        const newScrollTop = scrollContainer.scrollTop + (direction === 'down' ? scrollDistance : -scrollDistance);
+
+        // Remove any existing transition indicators
+        this.removeExistingTransitionIndicator();
+
+        // Scroll to the new position with smooth animation
+        scrollContainer.scrollTo({
+            top: newScrollTop,
+            behavior: 'smooth'
+        });
+
+        // Force render after scrolling
+        setTimeout(() => this.renderItems(), 100);
+        setTimeout(() => this.renderItems(), 300);
+    }
+
+    // Helper to remove existing indicators
+    removeExistingTransitionIndicator() {
+        const existingIndicator = document.querySelector('.page-transition-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+    }
+
+    scrollToTop() {
+        this.removeExistingTransitionIndicator();
+
+        this.scrollContainer.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+
+        // Force render after scrolling
+        setTimeout(() => this.renderItems(), 100);
+    }
+
+    scrollToBottom() {
+        this.removeExistingTransitionIndicator();
+
+        // Start loading all remaining pages to ensure content is available
+        this.loadRemainingPages().then(() => {
+            // After loading all content, scroll to the very bottom
+            const maxScroll = this.scrollContainer.scrollHeight - this.scrollContainer.clientHeight;
+            this.scrollContainer.scrollTo({
+                top: maxScroll,
+                behavior: 'smooth'
+            });
+        });
+    }
+
+    // Load all remaining pages (used by End key navigation)
+    async loadRemainingPages() {
+        // If we're already at the end or loading, don't proceed
+        if (!this.hasMore || this.isLoading) return;
+
+        console.log('Loading all remaining pages for End key navigation...');
+
+        // Keep loading pages until we reach the end
+        while (this.hasMore && !this.isLoading) {
+            await this.loadMoreItems();
+
+            // Force render after each page load
+            this.renderItems();
+
+            // Small delay to prevent overwhelming the browser
+            await new Promise(resolve => setTimeout(resolve, 50));
+        }
+
+        console.log('Finished loading all pages');
+
+        // Final render to ensure all content is displayed
+        this.renderItems();
+    }
+
+    /**
+     * Find the index of an item by its file path.
+     * @param {string} filePath
+     * @returns {number} index of the item or -1 when not found
+     */
+    findIndexByFilePath(filePath) {
+        if (!filePath) return -1;
+        return this.items.findIndex(item => item.file_path === filePath);
+    }
+
+    /**
+     * Return navigation state for the given item.
+     * @param {string} filePath
+     * @returns {{index: number, hasPrev: boolean, hasNext: boolean, loadedItems: number, totalItems: number}}
+     */
+    getNavigationState(filePath) {
+        const index = this.findIndexByFilePath(filePath);
+        const hasPrev = index > 0;
+        const hasNext = index !== -1 && (index < this.items.length - 1 || this.hasMore);
+
+        return {
+            index,
+            hasPrev,
+            hasNext,
+            loadedItems: this.items.length,
+            totalItems: this.totalItems
+        };
+    }
+
+    /**
+     * Get the adjacent item relative to the provided file path.
+     * When the target index falls outside the loaded items and more pages
+     * are available, this method will request additional pages until the
+     * target item is available or no more data exists.
+     * @param {string} filePath
+     * @param {'prev' | 'next'} direction
+     * @returns {Promise<{item: Object, index: number} | null>}
+     */
+    async getAdjacentItemByFilePath(filePath, direction = 'next') {
+        const currentIndex = this.findIndexByFilePath(filePath);
+        if (currentIndex === -1) return null;
+
+        const offset = direction === 'prev' ? -1 : 1;
+        let targetIndex = currentIndex + offset;
+
+        if (targetIndex < 0) {
+            return null;
+        }
+
+        // Attempt to load more items if needed to reach the target index
+        let safetyCounter = 0;
+        while (targetIndex >= this.items.length && this.hasMore && safetyCounter < 10) {
+            safetyCounter++;
+            const newItems = await this.loadMoreItems();
+            if (!newItems || newItems.length === 0) {
+                break;
+            }
+        }
+
+        if (targetIndex < 0 || targetIndex >= this.items.length) {
+            return null;
+        }
+
+        return {
+            item: this.items[targetIndex],
+            index: targetIndex
+        };
+    }
+
+    // Data windowing is accepted for API parity but never enabled here;
+    // these stubs keep the public method surface identical to VirtualScroller.
+    async fetchDataWindow(targetIndex) {
+        if (!this.enableDataWindowing) return;
+    }
+
+    async slideDataWindow() {
+        if (!this.enableDataWindowing) return;
+    }
 }
