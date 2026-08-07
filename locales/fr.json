@@ -449,6 +449,12 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Attention : Des densités plus élevées peuvent causer des problèmes de performance sur les systèmes avec des ressources limitées.",
+            "recipesLayout": "[TODO: Translate] Recipes Layout",
+            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayoutOptions": {
+                "grid": "[TODO: Translate] Grid",
+                "masonry": "[TODO: Translate] Masonry"
+            },
             "showFolderSidebar": "Afficher la barre latérale des dossiers",
             "showFolderSidebarHelp": "Activez ou désactivez la barre latérale de navigation des dossiers sur les pages de modèles. Lorsqu'elle est désactivée, la barre latérale et la zone de survol restent masquées.",
             "cardInfoDisplay": "Affichage des informations de carte",

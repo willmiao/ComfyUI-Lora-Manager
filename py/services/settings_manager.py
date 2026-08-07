@@ -92,6 +92,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "mature_blur_level": "R",
     "autoplay_on_hover": False,
     "display_density": "default",
+    "recipes_layout": "grid",
     "card_info_display": "always",
     "include_trigger_words": False,
     "compact_mode": False,

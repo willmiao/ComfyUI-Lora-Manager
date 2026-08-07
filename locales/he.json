@@ -449,6 +449,12 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "אזהרה: צפיפויות גבוהות יותר עלולות לגרום לבעיות ביצועים במערכות עם משאבים מוגבלים.",
+            "recipesLayout": "[TODO: Translate] Recipes Layout",
+            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayoutOptions": {
+                "grid": "[TODO: Translate] Grid",
+                "masonry": "[TODO: Translate] Masonry"
+            },
             "showFolderSidebar": "הצג סרגל צד תיקיות",
             "showFolderSidebarHelp": "הפעל או כבה את סרגל הצד לניווט תיקיות בדפי המודל. כאשר הוא כבוי, סרגל הצד ואזור הריחוף נשארים מוסתרים.",
             "cardInfoDisplay": "תצוגת מידע בכרטיס",

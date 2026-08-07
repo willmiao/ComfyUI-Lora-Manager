@@ -17,7 +17,8 @@ describe('state module', () => {
       civitai_host: 'civitai.com',
       language: 'en',
       blur_mature_content: true,
-      mature_blur_level: 'R'
+      mature_blur_level: 'R',
+      recipes_layout: 'grid'
     });
 
     expect(defaultSettings.download_path_templates).toEqual(DEFAULT_PATH_TEMPLATES);

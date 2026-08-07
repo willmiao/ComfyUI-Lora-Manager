@@ -38,6 +38,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     card_blur_amount: 8,
     autoplay_on_hover: false,
     display_density: 'default',
+    recipes_layout: 'grid',
     card_info_display: 'always',
     model_name_display: 'model_name',
     lora_syntax_format: 'legacy',

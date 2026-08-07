@@ -449,6 +449,12 @@
         "compact": "7 (1080p), 8 (2K), 10 (4K)"
       },
       "displayDensityWarning": "Warning: Higher densities may cause performance issues on systems with limited resources.",
+      "recipesLayout": "Recipes Layout",
+      "recipesLayoutHelp": "Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+      "recipesLayoutOptions": {
+        "grid": "Grid",
+        "masonry": "Masonry"
+      },
       "showFolderSidebar": "Show Folder Sidebar",
       "showFolderSidebarHelp": "Toggle the folder navigation sidebar on model pages. When disabled, the sidebar and hover area stay hidden.",
       "cardInfoDisplay": "Card Info Display",

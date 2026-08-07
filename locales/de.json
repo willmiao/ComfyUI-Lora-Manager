@@ -449,6 +449,12 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Warnung: Höhere Dichten können bei Systemen mit begrenzten Ressourcen zu Performance-Problemen führen.",
+            "recipesLayout": "[TODO: Translate] Recipes Layout",
+            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayoutOptions": {
+                "grid": "[TODO: Translate] Grid",
+                "masonry": "[TODO: Translate] Masonry"
+            },
             "showFolderSidebar": "Ordner-Seitenleiste anzeigen",
             "showFolderSidebarHelp": "Blenden Sie die Ordner-Navigationsleiste auf den Modellseiten ein oder aus. Wenn deaktiviert, bleiben Seitenleiste und Hoverbereich verborgen.",
             "cardInfoDisplay": "Karten-Info-Anzeige",

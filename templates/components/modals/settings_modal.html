@@ -625,7 +625,24 @@
                                     <span class="warning-text">{{ t('settings.layoutSettings.displayDensityWarning') }}</span>
                                 </div>
                             </div>
-                            
+
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="recipesLayout">
+                                        {{ t('settings.layoutSettings.recipesLayout') }}
+                                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.recipesLayoutHelp') }}"></i>
+                                    </label>
+                                    </div>
+                                    <div class="setting-control select-control">
+                                        <select id="recipesLayout" onchange="settingsManager.saveSelectSetting('recipesLayout', 'recipes_layout')">
+                                            <option value="grid">{{ t('settings.layoutSettings.recipesLayoutOptions.grid') }}</option>
+                                            <option value="masonry">{{ t('settings.layoutSettings.recipesLayoutOptions.masonry') }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
