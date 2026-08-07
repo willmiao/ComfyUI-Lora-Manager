@@ -1581,6 +1581,21 @@
       "downloadCsv": "Download CSV",
       "columnModelName": "Model Name",
       "columnError": "Error"
+    },
+    "downloadBatchSummary": {
+      "title": "Batch Download Summary",
+      "statSuccess": "Success",
+      "statFailed": "Failed",
+      "statTotal": "Total",
+      "successMessage": "All {count} models downloaded successfully",
+      "completedWithErrors": "Completed with errors",
+      "failed": "Download failed",
+      "failedItems": "Failed Items ({count})",
+      "columnName": "Model Name",
+      "columnError": "Error",
+      "close": "Close",
+      "copyReport": "Copy Report",
+      "retryFailed": "Retry Failed ({count})"
     }
   },
   "modelTags": {

@@ -8,6 +8,7 @@ import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { extractCivitaiModelUrlParts } from '../utils/civitaiUtils.js';
 import { formatFileSize } from '../utils/formatters.js';
+import { showDownloadBatchSummary } from '../components/DownloadBatchSummaryModal.js';
 
 export class DownloadManager {
     constructor() {
@@ -1548,6 +1549,10 @@ export class DownloadManager {
 
         modalManager.closeModal('downloadModal');
 
+        return this.executeBatchDownload(downloadItems, { modelRoot, targetFolder, useDefaultPaths });
+    }
+
+    async executeBatchDownload(downloadItems, { modelRoot, targetFolder, useDefaultPaths }) {
         const batchDownloadId = Date.now().toString();
         const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
         const ws = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${batchDownloadId}`);
@@ -1558,6 +1563,7 @@ export class DownloadManager {
         let completedDownloads = 0;
         let failedDownloads = 0;
         let cancelled = false;
+        const failedItems = [];
 
         loadingManager.showCancelButton(async () => {
             if (cancelled) return;
@@ -1658,6 +1664,7 @@ export class DownloadManager {
 
                 if (!response.success) {
                     failedDownloads++;
+                    failedItems.push({ item, error: response.error || 'Unknown error', name });
                 } else {
                     completedDownloads++;
                     updateProgress(100, completedDownloads, '');
@@ -1666,6 +1673,7 @@ export class DownloadManager {
                 if (!cancelled) {
                     console.error(`Failed to download ${name}:`, err);
                     failedDownloads++;
+                    failedItems.push({ item, error: err?.message || 'Unknown error', name });
                 }
             }
         }
@@ -1679,10 +1687,15 @@ export class DownloadManager {
         } else if (failedDownloads === 0) {
             showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
         } else {
-            showToast('toast.loras.downloadPartialSuccess', {
-                completed: completedDownloads,
+            showDownloadBatchSummary({
                 total: downloadItems.length,
-            }, 'warning');
+                completed: completedDownloads,
+                failedItems,
+                onRetry: (failed) => this.executeBatchDownload(
+                    failed.map((f) => f.item),
+                    { modelRoot, targetFolder, useDefaultPaths }
+                ),
+            });
         }
 
         await resetAndReload(true);

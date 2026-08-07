@@ -41,6 +41,7 @@
 @import 'components/sidebar.css'; /* Add sidebar component */
 @import 'components/media-viewer.css';
 @import 'components/metadata-refresh-result.css';
+@import 'components/download-batch-summary.css';
 
 .initialization-notice {
     display: flex;

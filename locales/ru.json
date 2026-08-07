@@ -1581,6 +1581,21 @@
             "downloadCsv": "Скачать CSV",
             "columnModelName": "Имя модели",
             "columnError": "Ошибка"
+        },
+        "downloadBatchSummary": {
+            "title": "[TODO: Translate] Batch Download Summary",
+            "statSuccess": "[TODO: Translate] Success",
+            "statFailed": "[TODO: Translate] Failed",
+            "statTotal": "[TODO: Translate] Total",
+            "successMessage": "[TODO: Translate] All {count} models downloaded successfully",
+            "completedWithErrors": "[TODO: Translate] Completed with errors",
+            "failed": "[TODO: Translate] Download failed",
+            "failedItems": "[TODO: Translate] Failed Items ({count})",
+            "columnName": "[TODO: Translate] Model Name",
+            "columnError": "[TODO: Translate] Error",
+            "close": "[TODO: Translate] Close",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "retryFailed": "[TODO: Translate] Retry Failed ({count})"
         }
     },
     "modelTags": {
