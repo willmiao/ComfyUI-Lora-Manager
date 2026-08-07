@@ -145,7 +145,7 @@
     position: fixed;
     right: 20px;
     top: 50px; /* Position below header */
-    width: 366px;
+    width: 420px;
     background-color: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-base);
@@ -564,7 +564,7 @@
     align-items: center;
     gap: 6px;
     white-space: nowrap;
-    max-width: 120px; /* Prevent long names from breaking layout */
+    max-width: 180px; /* Prevent long names from breaking layout */
     overflow: hidden;
     text-overflow: ellipsis;
 }
