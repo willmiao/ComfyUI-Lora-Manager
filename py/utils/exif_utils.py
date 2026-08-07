@@ -1,9 +1,10 @@
+import functools
 import json
 import logging
 import os
 import struct
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 import piexif
 from PIL import Image, PngImagePlugin
@@ -16,6 +17,22 @@ except ImportError:
     _BROTLI_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+
+@functools.lru_cache(maxsize=2048)
+def _get_image_dimensions_cached(path: str, _mtime_ns: int, _size: int) -> Optional[Tuple[int, int]]:
+    """Return ``(width, height)`` for ``path``, or ``None`` on any failure.
+
+    The ``_mtime_ns`` and ``_size`` arguments are part of the cache key only;
+    they invalidate the entry when the file is replaced with a new image, so a
+    stale preview never serves outdated dimensions.
+    """
+    try:
+        with Image.open(path) as img:
+            return img.size
+    except Exception:
+        return None
+
 
 class ExifUtils:
     """Utility functions for working with EXIF data in images"""
@@ -422,6 +439,25 @@ class ExifUtils:
             # Metadata is in the middle of the string
             return user_comment[:recipe_marker_index] + user_comment[next_line_index:]
             
+    @staticmethod
+    def get_image_dimensions(image_path: str) -> Optional[Tuple[int, int]]:
+        """Return ``(width, height)`` for an image, or ``None`` if unavailable.
+
+        Video containers (``.mp4``/``.webm``/``.avi``) and formats PIL cannot
+        read (``.avif``/``.jxl``) return ``None`` before PIL is invoked.
+        Missing or corrupt files return ``None``. Never raises.
+        """
+        try:
+            ext = os.path.splitext(image_path)[1].lower()
+            if ext in ('.mp4', '.webm', '.avi', '.avif', '.jxl'):
+                return None
+            stat = os.stat(image_path)
+            return _get_image_dimensions_cached(
+                image_path, stat.st_mtime_ns, stat.st_size
+            )
+        except Exception:
+            return None
+
     @staticmethod
     def optimize_image(image_data, target_width=250, format='webp', quality=85, preserve_metadata=False):
         """

@@ -288,3 +288,58 @@ class TestIsobmffBrotliExtraction:
         # Direct extraction should return None because decompressed size exceeds limit
         result = ExifUtils._extract_isobmff_brotli(str(path))
         assert result is None
+
+
+# --- get_image_dimensions tests ---
+
+
+def test_get_image_dimensions_returns_actual_size(tmp_path):
+    """(a) A valid image returns its real (width, height)."""
+    image_path = tmp_path / "preview.png"
+    Image.new("RGB", (64, 32), color="red").save(image_path)
+
+    assert ExifUtils.get_image_dimensions(str(image_path)) == (64, 32)
+
+
+def test_get_image_dimensions_missing_path_returns_none(tmp_path):
+    """(b) A nonexistent path returns None without raising."""
+    assert ExifUtils.get_image_dimensions(str(tmp_path / "missing.png")) is None
+
+
+def test_get_image_dimensions_skips_video_extension_without_pil(tmp_path, monkeypatch):
+    """(c) A .mp4 path returns None and never invokes PIL."""
+    video_path = tmp_path / "preview.mp4"
+    video_path.write_bytes(b"not really a video")
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("PIL Image.open must not be called for video paths")
+
+    monkeypatch.setattr("py.utils.exif_utils.Image.open", fail_if_called)
+
+    assert ExifUtils.get_image_dimensions(str(video_path)) is None
+
+
+def test_get_image_dimensions_corrupt_file_returns_none(tmp_path):
+    """(d) A corrupt file returns None without raising."""
+    image_path = tmp_path / "corrupt.png"
+    image_path.write_bytes(b"\x00\x01\x02\x03 not a real image")
+
+    assert ExifUtils.get_image_dimensions(str(image_path)) is None
+
+
+def test_get_image_dimensions_cache_key_includes_mtime(tmp_path):
+    """(e) Replacing a path with a different-size image returns the new size."""
+    image_path = tmp_path / "replaced.png"
+    Image.new("RGB", (64, 32), color="red").save(image_path)
+    assert ExifUtils.get_image_dimensions(str(image_path)) == (64, 32)
+
+    Image.new("RGB", (100, 50), color="blue").save(image_path)
+    assert ExifUtils.get_image_dimensions(str(image_path)) == (100, 50)
+
+
+def test_get_image_dimensions_skips_unreadable_formats(tmp_path):
+    """(f) .avif/.jxl paths return None without raising."""
+    for ext in (".avif", ".jxl"):
+        image_path = tmp_path / f"preview{ext}"
+        image_path.write_bytes(b"fake container data")
+        assert ExifUtils.get_image_dimensions(str(image_path)) is None
