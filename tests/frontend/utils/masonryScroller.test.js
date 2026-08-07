@@ -40,7 +40,7 @@ function makeItems(dimensions) {
  * Build a scroller attached to a stubbed container. clientWidth/clientHeight
  * are 0 in jsdom, so they are defined explicitly for deterministic layout.
  */
-function createScroller({ items = [], fetchItemsFn, overscan, viewportHeight = 600 } = {}) {
+function createScroller({ items = [], fetchItemsFn, overscan, viewportHeight = 600, createItemFn: customCreateItemFn } = {}) {
   const wrapper = document.createElement('div');
   Object.defineProperty(wrapper, 'clientWidth', { value: CONTAINER_WIDTH, configurable: true });
   Object.defineProperty(wrapper, 'clientHeight', { value: viewportHeight, configurable: true });
@@ -55,7 +55,7 @@ function createScroller({ items = [], fetchItemsFn, overscan, viewportHeight = 6
     gridElement: grid,
     containerElement: wrapper,
     scrollContainer: wrapper,
-    createItemFn,
+    createItemFn: customCreateItemFn || createItemFn,
     fetchItemsFn: fetchMock,
     overscan,
   });
@@ -206,7 +206,33 @@ describe('MasonryScroller', () => {
       expect(el.style.left).toBe(`${scroller.positions[i].left}px`);
       expect(el.style.top).toBe(`${scroller.positions[i].top}px`);
       expect(el.querySelector('.model-card').style.maxWidth).toBe('none');
+      expect(el.querySelector('.model-card').style.minWidth).toBe('0');
     });
+  });
+
+  it('clears model-card max-width/min-width when the item element is the card root', () => {
+    // Production shape for recipe cards: RecipeCard returns the .model-card
+    // element itself, so the scroller must clear constraints on the element
+    // rather than a descendant (querySelector would find nothing).
+    const items = makeItems([{ width: 100, height: 200 }]);
+    const cardRoot = document.createElement('div');
+    cardRoot.className = 'model-card';
+    const { scroller, grid, wrapper } = track(createScroller({
+      items,
+      viewportHeight: 3000,
+      createItemFn: () => cardRoot.cloneNode(true),
+    }));
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.overscan = 5;
+
+    scroller.renderItems();
+
+    const rendered = grid.querySelectorAll('.virtual-scroll-item');
+    expect(rendered.length).toBe(1);
+    expect(rendered[0].style.maxWidth).toBe('none');
+    expect(rendered[0].style.minWidth).toBe('0');
   });
 
   it('triggers loadMoreItems when scrolled to the bottom', async () => {

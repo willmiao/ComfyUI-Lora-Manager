@@ -533,10 +533,15 @@ export class MasonryScroller {
         element.style.width = `${pos.width}px`;
         element.style.height = `${pos.height}px`;
 
-        // Remove max-width constraint from model-card to allow dynamic sizing
-        const modelCard = element.querySelector('.model-card');
+        // Remove max-width/min-width constraints from the model-card to allow
+        // dynamic sizing. The card is either the item element itself (e.g.
+        // RecipeCard returns the .model-card root) or a descendant (ModelCard).
+        const modelCard = element.classList.contains('model-card')
+            ? element
+            : element.querySelector('.model-card');
         if (modelCard) {
             modelCard.style.maxWidth = 'none';
+            modelCard.style.minWidth = '0';
         }
 
         return element;
