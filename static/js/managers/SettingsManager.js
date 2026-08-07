@@ -1017,6 +1017,12 @@ export class SettingsManager {
             displayDensitySelect.value = state.global.settings.display_density || 'default';
         }
 
+        // Set recipes layout setting
+        const recipesLayoutSelect = document.getElementById('recipesLayout');
+        if (recipesLayoutSelect) {
+            recipesLayoutSelect.value = state.global.settings.recipes_layout || 'grid';
+        }
+
         // Set card info display setting
         const cardInfoDisplaySelect = document.getElementById('cardInfoDisplay');
         if (cardInfoDisplaySelect) {
@@ -2287,6 +2293,13 @@ export class SettingsManager {
 
             // Apply frontend settings immediately
             this.applyFrontendSettings();
+
+            // Dispatch layout change event; the scroller instance is about to be rebuilt,
+            // so calculateLayout() must NOT run on the old instance here
+            if (settingKey === 'recipes_layout') {
+                window.dispatchEvent(new CustomEvent('lm:recipes-layout-changed'));
+                return;
+            }
 
             // Recalculate layout when display density changes
             if (settingKey === 'display_density' && state.virtualScroller) {

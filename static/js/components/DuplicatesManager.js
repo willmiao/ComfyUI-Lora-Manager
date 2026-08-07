@@ -2,6 +2,7 @@
 import { showToast } from '../utils/uiHelpers.js';
 import { RecipeCard } from './RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
+import { recreateVirtualScroll } from '../utils/infiniteScroll.js';
 
 export class DuplicatesManager {
     constructor(recipeManager) {
@@ -96,6 +97,12 @@ export class DuplicatesManager {
         
         // Re-enable virtual scrolling
         state.virtualScroller.enable();
+
+        // Apply a layout switch that was deferred while duplicates mode was active
+        if (state.pendingLayoutRecreate) {
+            state.pendingLayoutRecreate = false;
+            recreateVirtualScroll('recipes');
+        }
     }
     
     renderDuplicateGroups() {

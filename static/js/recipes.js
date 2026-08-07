@@ -7,7 +7,7 @@ import { state, getCurrentPageState } from './state/index.js';
 import { getStorageItem, setStorageItem, getSessionItem, removeSessionItem } from './utils/storageHelpers.js';
 import { RecipeContextMenu } from './components/ContextMenu/index.js';
 import { DuplicatesManager } from './components/DuplicatesManager.js';
-import { refreshVirtualScroll } from './utils/infiniteScroll.js';
+import { refreshVirtualScroll, recreateVirtualScroll } from './utils/infiniteScroll.js';
 import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
 import { sidebarManager } from './components/SidebarManager.js';
 import { initSortDropdown } from './components/controls/SortDropdown.js';
@@ -271,6 +271,20 @@ class RecipeManager {
                 refreshVirtualScroll();
             });
         }
+
+        // Rebuild the scroller on layout switch; in duplicates mode defer until
+        // exitDuplicateMode re-enables the scroller (direct recreation would dispose
+        // the old instance while initializeVirtualScroll skips duplicates mode)
+        window.addEventListener('lm:recipes-layout-changed', () => {
+            const pageState = getCurrentPageState();
+            if (pageState.duplicatesMode) {
+                state.pendingLayoutRecreate = true;
+                return;
+            }
+            if (typeof recreateVirtualScroll === 'function') {
+                recreateVirtualScroll('recipes');
+            }
+        });
 
         // Initialize dropdown functionality for refresh button
         this.initDropdowns();

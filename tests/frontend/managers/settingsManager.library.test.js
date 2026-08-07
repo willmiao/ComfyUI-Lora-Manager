@@ -501,3 +501,33 @@ describe('SettingsManager library controls', () => {
         expect(document.getElementById('exampleImagesUriTemplateSetting').style.display).toBe('none');
     });
 });
+
+describe('SettingsManager recipes layout switch', () => {
+    it('dispatches lm:recipes-layout-changed without recalculating the old scroller', async () => {
+        const manager = createManager();
+        const select = document.createElement('select');
+        select.id = 'recipesLayout';
+        const option = document.createElement('option');
+        option.value = 'masonry';
+        select.appendChild(option);
+        select.value = 'masonry';
+        document.body.appendChild(select);
+
+        const calculateLayout = vi.fn();
+        state.virtualScroller = { calculateLayout };
+
+        const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+        await manager.saveSelectSetting('recipesLayout', 'recipes_layout');
+
+        const layoutEvent = dispatchSpy.mock.calls
+            .map(([event]) => event)
+            .find(event => event.type === 'lm:recipes-layout-changed');
+        expect(layoutEvent).toBeInstanceOf(CustomEvent);
+        expect(calculateLayout).not.toHaveBeenCalled();
+        expect(showToast).not.toHaveBeenCalled();
+
+        dispatchSpy.mockRestore();
+        delete state.virtualScroller;
+    });
+});
