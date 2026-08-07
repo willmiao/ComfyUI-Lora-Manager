@@ -2059,7 +2059,6 @@
       "presetNameTooLong": "Preset name must be {max} characters or less",
       "presetNameInvalidChars": "Preset name contains invalid characters",
       "presetNameExists": "A preset with this name already exists",
-      "maxPresetsReached": "Maximum {max} presets allowed. Delete one to add more.",
       "presetNotFound": "Preset not found",
       "invalidPreset": "Invalid preset data",
       "deletePresetFailed": "Failed to delete preset",

@@ -6,7 +6,6 @@ import { state } from '../state/index.js';
 // Constants for preset management
 const PRESETS_STORAGE_VERSION = 'v1';
 const MAX_PRESET_NAME_LENGTH = 30;
-const MAX_PRESETS_COUNT = 10;
 
 // Marker for when wildcard patterns resolve to no matches
 // This ensures we return empty results instead of all models
@@ -362,15 +361,6 @@ export class FilterPresetManager {
             }
         }
 
-        if (presets.length >= MAX_PRESETS_COUNT) {
-            showToast(
-                translate('toast.error.maxPresetsReached', { max: MAX_PRESETS_COUNT }, `Maximum ${MAX_PRESETS_COUNT} presets allowed. Delete one to add more.`),
-                {},
-                'error'
-            );
-            return false;
-        }
-
         const preset = {
             name: trimmedName,
             filters: this.filterManager.cloneFilters(),
@@ -610,17 +600,6 @@ export class FilterPresetManager {
         // Check if there are any active filters
         if (!this.filterManager?.hasActiveFilters()) {
             showToast(translate('toast.filters.noActiveFilters', {}, 'No active filters to save'), {}, 'info');
-            return;
-        }
-
-        // Check max presets limit before showing input
-        const presets = this.loadPresets();
-        if (presets.length >= MAX_PRESETS_COUNT) {
-            showToast(
-                translate('toast.error.maxPresetsReached', { max: MAX_PRESETS_COUNT }, `Maximum ${MAX_PRESETS_COUNT} presets allowed. Delete one to add more.`),
-                {},
-                'error'
-            );
             return;
         }
 

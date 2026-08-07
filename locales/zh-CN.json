@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "预设名称不能超过 {max} 个字符",
             "presetNameInvalidChars": "预设名称包含无效字符",
             "presetNameExists": "已存在同名预设",
-            "maxPresetsReached": "最多允许 {max} 个预设。删除一个以添加更多。",
             "presetNotFound": "预设未找到",
             "invalidPreset": "无效的预设数据",
             "deletePresetFailed": "删除预设失败",

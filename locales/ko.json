@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "프리셋 이름은 {max}자 이하여야 합니다",
             "presetNameInvalidChars": "프리셋 이름에 유효하지 않은 문자가 포함되어 있습니다",
             "presetNameExists": "동일한 이름의 프리셋이 이미 존재합니다",
-            "maxPresetsReached": "최대 {max}개의 프리셋만 허용됩니다. 더 추가하려면 기존 것을 삭제하세요.",
             "presetNotFound": "프리셋을 찾을 수 없습니다",
             "invalidPreset": "잘못된 프리셋 데이터입니다",
             "deletePresetFailed": "프리셋 삭제에 실패했습니다",

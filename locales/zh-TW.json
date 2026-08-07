@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "預設名稱不能超過 {max} 個字元",
             "presetNameInvalidChars": "預設名稱包含無效字元",
             "presetNameExists": "已存在同名預設",
-            "maxPresetsReached": "最多允許 {max} 個預設。刪除一個以新增更多。",
             "presetNotFound": "預設未找到",
             "invalidPreset": "無效的預設資料",
             "deletePresetFailed": "刪除預設失敗",

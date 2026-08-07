@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "שם קביעה מראש חייב להיות {max} תווים או פחות",
             "presetNameInvalidChars": "שם קביעה מראש מכיל תווים לא חוקיים",
             "presetNameExists": "קביעה מראש עם שם זה כבר קיימת",
-            "maxPresetsReached": "מותר מקסימום {max} קביעות מראש. מחק אחת כדי להוסיף עוד.",
             "presetNotFound": "קביעה מראש לא נמצאה",
             "invalidPreset": "נתוני קביעה מראש לא חוקיים",
             "deletePresetFailed": "מחיקת קביעה מראש נכשלה",

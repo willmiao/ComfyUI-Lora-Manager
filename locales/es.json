@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "El nombre del preajuste debe tener {max} caracteres o menos",
             "presetNameInvalidChars": "El nombre del preajuste contiene caracteres inválidos",
             "presetNameExists": "Ya existe un preajuste con este nombre",
-            "maxPresetsReached": "Máximo {max} preajustes permitidos. Elimine uno para agregar más.",
             "presetNotFound": "Preajuste no encontrado",
             "invalidPreset": "Datos de preajuste inválidos",
             "deletePresetFailed": "Error al eliminar el preajuste",

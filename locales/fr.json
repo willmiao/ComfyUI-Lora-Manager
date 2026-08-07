@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "Le nom du préréglage doit contenir au maximum {max} caractères",
             "presetNameInvalidChars": "Le nom du préréglage contient des caractères invalides",
             "presetNameExists": "Un préréglage avec ce nom existe déjà",
-            "maxPresetsReached": "Maximum {max} préréglages autorisés. Supprimez-en un pour en ajouter plus.",
             "presetNotFound": "Préréglage non trouvé",
             "invalidPreset": "Données de préréglage invalides",
             "deletePresetFailed": "Échec de la suppression du préréglage",

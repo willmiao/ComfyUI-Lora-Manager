@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "Voreinstellungsname darf maximal {max} Zeichen haben",
             "presetNameInvalidChars": "Voreinstellungsname enthält ungültige Zeichen",
             "presetNameExists": "Eine Voreinstellung mit diesem Namen existiert bereits",
-            "maxPresetsReached": "Maximal {max} Voreinstellungen erlaubt. Löschen Sie eine, um weitere hinzuzufügen.",
             "presetNotFound": "Voreinstellung nicht gefunden",
             "invalidPreset": "Ungültige Voreinstellungsdaten",
             "deletePresetFailed": "Fehler beim Löschen der Voreinstellung",

@@ -2059,7 +2059,6 @@
             "presetNameTooLong": "プリセット名は{max}文字以内にしてください",
             "presetNameInvalidChars": "プリセット名に使用できない文字が含まれています",
             "presetNameExists": "同じ名前のプリセットが既に存在します",
-            "maxPresetsReached": "プリセットは最大{max}個までです。追加するには既存のものを削除してください。",
             "presetNotFound": "プリセットが見つかりません",
             "invalidPreset": "無効なプリセットデータです",
             "deletePresetFailed": "プリセットの削除に失敗しました",
