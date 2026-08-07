@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -11,6 +12,7 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 
 from aiohttp import FormData, web
 from aiohttp.test_utils import TestClient, TestServer
+from PIL import Image
 
 from py.config import config
 from py.routes import base_recipe_routes
@@ -366,6 +368,111 @@ async def test_list_recipes_provides_file_urls(monkeypatch, tmp_path: Path) -> N
         assert response.status == 200
         assert payload["items"][0]["file_url"].endswith("demo.png")
         assert payload["items"][0]["loras"] == []
+
+
+async def test_list_recipes_exposes_preview_dimensions(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(a) Image recipe items carry integer width/height from the on-disk file."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_path = harness.tmp_dir / "recipes" / "real.png"
+        recipe_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (64, 32), color="red").save(recipe_path)
+
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-1",
+                "file_path": str(recipe_path),
+                "title": "Image Recipe",
+                "loras": [],
+            }
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        item = payload["items"][0]
+        assert item["width"] == 64
+        assert item["height"] == 32
+        assert isinstance(item["width"], int)
+        assert isinstance(item["height"], int)
+
+
+async def test_list_recipes_omits_dimensions_for_video_and_missing(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(b) Video/missing-image recipes omit width/height yet still return 200."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-video",
+                "file_path": str(harness.tmp_dir / "recipes" / "preview.mp4"),
+                "title": "Video Recipe",
+                "loras": [],
+            },
+            {
+                "id": "recipe-missing",
+                "file_path": str(harness.tmp_dir / "recipes" / "gone.png"),
+                "title": "Missing Recipe",
+                "loras": [],
+            },
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        for item in payload["items"]:
+            assert "width" not in item
+            assert "height" not in item
+
+
+async def test_list_recipes_offloads_dimensions_to_thread(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(c) Dimension reads run through asyncio.to_thread for every item."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_path = harness.tmp_dir / "recipes" / "real.png"
+        recipe_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (16, 48), color="blue").save(recipe_path)
+
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-1",
+                "file_path": str(recipe_path),
+                "title": "Image Recipe",
+                "loras": [],
+            },
+            {
+                "id": "recipe-2",
+                "file_path": str(harness.tmp_dir / "recipes" / "gone.png"),
+                "title": "Missing Recipe",
+                "loras": [],
+            },
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        real_to_thread = asyncio.to_thread
+        to_thread_calls: list[tuple] = []
+
+        async def counting_to_thread(fn, *args, **kwargs):
+            to_thread_calls.append((fn, args, kwargs))
+            return await real_to_thread(fn, *args, **kwargs)
+
+        monkeypatch.setattr(asyncio, "to_thread", counting_to_thread)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert len(to_thread_calls) >= len(harness.scanner.listing_items)
+        assert payload["items"][0]["width"] == 16
+        assert payload["items"][0]["height"] == 48
+        assert "width" not in payload["items"][1]
+        assert "height" not in payload["items"][1]
 
 
 async def test_list_recipes_passes_checkpoint_hash_filter(
@@ -909,8 +1016,6 @@ async def test_batch_import_start_missing_source(monkeypatch, tmp_path: Path) ->
 
 
 async def test_batch_import_start_already_running(monkeypatch, tmp_path: Path) -> None:
-    import asyncio
-
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         original_analyze = harness.analysis.analyze_remote_image
 

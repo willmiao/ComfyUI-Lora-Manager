@@ -250,6 +250,15 @@ class RecipeListingHandler:
                 file_path = item.get("file_path")
                 if file_path:
                     item["file_url"] = self.format_recipe_file_url(file_path)
+                    # Offload synchronous PIL I/O: with a cold LRU cache this
+                    # reads up to page_size images and would block the event
+                    # loop otherwise. Fields are omitted (not null) when the
+                    # preview has no readable dimensions (video, missing file).
+                    dims = await asyncio.to_thread(
+                        ExifUtils.get_image_dimensions, file_path
+                    )
+                    if dims:
+                        item["width"], item["height"] = dims
                 else:
                     item.setdefault("file_url", "/loras_static/images/no-preview.png")
                 item.setdefault("loras", [])
