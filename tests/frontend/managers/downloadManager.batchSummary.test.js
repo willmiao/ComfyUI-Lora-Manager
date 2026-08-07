@@ -28,6 +28,7 @@ const {
     downloadModel: vi.fn(),
     downloadHfModel: vi.fn(),
     cancelDownload: vi.fn(),
+    getPageState: vi.fn(() => ({})),
   };
 
   // Shared loading manager served both via state.loadingManager and the
@@ -313,5 +314,121 @@ describe('DownloadManager batch download summary flow', () => {
       expect.stringContaining('Download cancelled')
     );
     expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('shows the batch summary for a single CivitAI download resolved as a failure', async () => {
+    mockApiClient.downloadModel.mockResolvedValue({ success: false, error: 'rate limited' });
+
+    await manager.executeDownloadWithProgress({
+      modelId: '111',
+      versionId: 'v1',
+      versionName: 'V1',
+      modelRoot: '/m',
+      useDefaultPaths: true,
+    });
+
+    expect(showDownloadBatchSummaryMock).toHaveBeenCalledTimes(1);
+    const summary = showDownloadBatchSummaryMock.mock.calls[0][0];
+    expect(summary.total).toBe(1);
+    expect(summary.completed).toBe(0);
+    expect(summary.failedItems).toHaveLength(1);
+    expect(summary.failedItems[0].item.modelId).toBe('111');
+    expect(summary.failedItems[0].item.versionId).toBe('v1');
+    expect(summary.failedItems[0].item.url).toEqual(expect.stringContaining('civitai.com/models/111'));
+    expect(summary.failedItems[0].error).toBe('rate limited');
+    expect(summary.failedItems[0].name).toBe('V1');
+    expect(summary.onRetry).toEqual(expect.any(Function));
+    expect(showToastMock).not.toHaveBeenCalledWith('toast.loras.downloadCompleted', expect.anything(), 'success');
+  });
+
+  it('shows the batch summary when a single download throws', async () => {
+    mockApiClient.downloadModel.mockRejectedValue(new Error('network down'));
+
+    await manager.executeDownloadWithProgress({
+      modelId: '111',
+      versionId: 'v1',
+      versionName: 'V1',
+      modelRoot: '/m',
+      useDefaultPaths: true,
+    });
+
+    expect(showDownloadBatchSummaryMock).toHaveBeenCalledTimes(1);
+    const summary = showDownloadBatchSummaryMock.mock.calls[0][0];
+    expect(summary.total).toBe(1);
+    expect(summary.completed).toBe(0);
+    expect(summary.failedItems).toHaveLength(1);
+    expect(summary.failedItems[0].error).toBe('network down');
+    expect(summary.failedItems[0].item.url).toEqual(expect.stringContaining('civitai.com/models/111'));
+    expect(showToastMock).not.toHaveBeenCalledWith('toast.loras.downloadCompleted', expect.anything(), 'success');
+  });
+
+  it('keeps the success toast and skips the summary for a successful single download', async () => {
+    mockApiClient.downloadModel.mockResolvedValue({ success: true });
+
+    const result = await manager.executeDownloadWithProgress({
+      modelId: '111',
+      versionId: 'v1',
+      versionName: 'V1',
+      modelRoot: '/m',
+      useDefaultPaths: true,
+    });
+
+    expect(result).toBe(true);
+    expect(showDownloadBatchSummaryMock).not.toHaveBeenCalled();
+    expect(showToastMock).toHaveBeenCalledWith('toast.loras.downloadCompleted', {}, 'success');
+    expect(resetAndReloadMock).toHaveBeenCalledWith(true);
+  });
+
+  it('retries a failed single download through onRetry with the same params', async () => {
+    mockApiClient.downloadModel
+      .mockResolvedValueOnce({ success: false, error: 'rate limited' })
+      .mockResolvedValueOnce({ success: true });
+
+    await manager.executeDownloadWithProgress({
+      modelId: '111',
+      versionId: 'v1',
+      versionName: 'V1',
+      modelRoot: '/m',
+      useDefaultPaths: true,
+    });
+
+    expect(showDownloadBatchSummaryMock).toHaveBeenCalledTimes(1);
+    const summary = showDownloadBatchSummaryMock.mock.calls[0][0];
+    expect(summary.failedItems).toHaveLength(1);
+
+    await summary.onRetry();
+
+    expect(mockApiClient.downloadModel).toHaveBeenCalledTimes(2);
+    const retryCall = mockApiClient.downloadModel.mock.calls[1];
+    expect(retryCall[0]).toBe('111');
+    expect(retryCall[1]).toBe('v1');
+    expect(showDownloadBatchSummaryMock).toHaveBeenCalledTimes(1);
+    expect(showToastMock).toHaveBeenCalledWith('toast.loras.downloadCompleted', {}, 'success');
+  });
+
+  it('shows a summary for HF partial failure and retries only the failed files', async () => {
+    manager.hfRepoId = 'user/repo';
+    manager.hfSelectedFiles = ['a.safetensors', 'b.safetensors'];
+    mockApiClient.downloadHfModel
+      .mockResolvedValueOnce({ success: true })
+      .mockResolvedValueOnce({ success: false, error: 'denied' });
+
+    const result = await manager._downloadHfSingle({ modelRoot: '/m', useDefaultPaths: true });
+
+    expect(result).toBe(false);
+    expect(showDownloadBatchSummaryMock).toHaveBeenCalledTimes(1);
+    const summary = showDownloadBatchSummaryMock.mock.calls[0][0];
+    expect(summary.total).toBe(2);
+    expect(summary.completed).toBe(1);
+    expect(summary.failedItems).toHaveLength(1);
+    expect(summary.failedItems[0].name).toBe('b.safetensors');
+    expect(summary.failedItems[0].item.url).toEqual(
+      expect.stringContaining('huggingface.co/user/repo/blob/main/b.safetensors')
+    );
+
+    await summary.onRetry();
+
+    expect(mockApiClient.downloadHfModel).toHaveBeenCalledTimes(3);
+    expect(mockApiClient.downloadHfModel.mock.calls[2][0].filename).toBe('b.safetensors');
   });
 });

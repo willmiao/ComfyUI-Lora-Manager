@@ -6,7 +6,7 @@ import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
 import { translate } from '../utils/i18nHelpers.js';
-import { extractCivitaiModelUrlParts } from '../utils/civitaiUtils.js';
+import { buildCivitaiUrl, extractCivitaiModelUrlParts, normalizeCivitaiPageHost } from '../utils/civitaiUtils.js';
 import { formatFileSize } from '../utils/formatters.js';
 import { showDownloadBatchSummary } from '../components/DownloadBatchSummaryModal.js';
 
@@ -879,6 +879,26 @@ export class DownloadManager {
         this.updateTargetPath();
     }
 
+    /**
+     * Synthesize a clickable URL for a single-download failure entry.
+     * Single downloads have no pasted URL, so the modal link is derived from
+     * the model/version ids (CivitAI) or the HF repo/file (HuggingFace).
+     */
+    _buildSingleItemUrl({ modelId, versionId, source, repo = null, filename = null }) {
+        if (source === 'huggingface' && repo) {
+            const base = `https://huggingface.co/${encodeURI(repo)}`;
+            return filename ? `${base}/blob/${encodeURI('main')}/${encodeURI(filename)}` : base;
+        }
+        if (modelId) {
+            return buildCivitaiUrl({
+                modelId,
+                versionId,
+                host: normalizeCivitaiPageHost(state?.global?.settings?.civitai_host),
+            });
+        }
+        return null;
+    }
+
     async executeDownloadWithProgress({
         modelId,
         versionId,
@@ -897,6 +917,7 @@ export class DownloadManager {
         }
 
         const displayName = versionName || `#${versionId}`;
+        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, source, fileParams, closeModal: false };
         let ws = null;
         let updateProgress = () => { };
         let cancelled = false;
@@ -985,6 +1006,26 @@ export class DownloadManager {
                 return true;
             }
 
+            if (!response?.success) {
+                this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
+                showDownloadBatchSummary({
+                    total: 1,
+                    completed: 0,
+                    failedItems: [{
+                        item: {
+                            modelId,
+                            versionId,
+                            source,
+                            url: this._buildSingleItemUrl({ modelId, versionId, source }),
+                        },
+                        error: response?.error || 'Unknown error',
+                        name: displayName,
+                    }],
+                    onRetry: () => this.executeDownloadWithProgress(retryParams),
+                });
+                return false;
+            }
+
             showToast('toast.loras.downloadCompleted', {}, 'success');
 
             if (closeModal) {
@@ -1019,7 +1060,21 @@ export class DownloadManager {
                 console.log('Download cancelled by user:', downloadId);
             } else {
                 console.error('Failed to download model version:', error);
-                showToast('toast.downloads.downloadError', { message: error?.message }, 'error');
+                showDownloadBatchSummary({
+                    total: 1,
+                    completed: 0,
+                    failedItems: [{
+                        item: {
+                            modelId,
+                            versionId,
+                            source,
+                            url: this._buildSingleItemUrl({ modelId, versionId, source }),
+                        },
+                        error: error?.message || 'Unknown error',
+                        name: displayName,
+                    }],
+                    onRetry: () => this.executeDownloadWithProgress(retryParams),
+                });
             }
             return false;
         } finally {
@@ -1034,14 +1089,16 @@ export class DownloadManager {
         }
     }
 
-    async _downloadHfSingle({ modelRoot, targetFolder, useDefaultPaths }) {
+    async _downloadHfSingle({ modelRoot, targetFolder, useDefaultPaths, files = null }) {
         modalManager.closeModal('downloadModal');
         this.loadingManager.restoreProgressBar();
-        const totalFiles = this.hfSelectedFiles.length;
+        const filesToDownload = files || this.hfSelectedFiles;
+        const totalFiles = filesToDownload.length;
         const updateProgress = this.loadingManager.showDownloadProgress(totalFiles);
 
         let cancelled = false;
         let currentDownloadId = null;
+        const failedFiles = [];
 
         this.loadingManager.showCancelButton(async () => {
             if (cancelled) return;
@@ -1060,7 +1117,7 @@ export class DownloadManager {
             for (let i = 0; i < totalFiles; i++) {
                 if (cancelled) break;
 
-                const filename = this.hfSelectedFiles[i];
+                const filename = filesToDownload[i];
                 updateProgress(0, completedDownloads, filename);
                 this.loadingManager.setStatus(`Downloading ${filename}...`);
 
@@ -1106,6 +1163,31 @@ export class DownloadManager {
                     if (response?.success) {
                         completedDownloads++;
                         updateProgress(100, completedDownloads, filename);
+                    } else {
+                        failedFiles.push({
+                            item: {
+                                source: 'huggingface',
+                                repo: this.hfRepoId,
+                                filename,
+                                url: this._buildSingleItemUrl({ source: 'huggingface', repo: this.hfRepoId, filename }),
+                            },
+                            error: response?.error || 'Unknown error',
+                            name: filename,
+                        });
+                    }
+                } catch (err) {
+                    if (!cancelled) {
+                        console.error(`Failed to download HF file ${filename}:`, err);
+                        failedFiles.push({
+                            item: {
+                                source: 'huggingface',
+                                repo: this.hfRepoId,
+                                filename,
+                                url: this._buildSingleItemUrl({ source: 'huggingface', repo: this.hfRepoId, filename }),
+                            },
+                            error: err?.message || 'Unknown error',
+                            name: filename,
+                        });
                     }
                 } finally {
                     ws.close();
@@ -1115,11 +1197,27 @@ export class DownloadManager {
             if (cancelled) {
                 showToast('toast.downloads.downloadStopped', {}, 'info',
                     `Download cancelled. ${completedDownloads} item(s) completed.`);
-            } else {
-                showToast('toast.loras.downloadCompleted', {}, 'success');
+                await resetAndReload(true);
+                return true;
             }
+            if (failedFiles.length === 0) {
+                showToast('toast.loras.downloadCompleted', {}, 'success');
+                await resetAndReload(true);
+                return true;
+            }
+            showDownloadBatchSummary({
+                total: totalFiles,
+                completed: completedDownloads,
+                failedItems: failedFiles,
+                onRetry: () => this._downloadHfSingle({
+                    modelRoot,
+                    targetFolder,
+                    useDefaultPaths,
+                    files: failedFiles.map((f) => f.item.filename),
+                }),
+            });
             await resetAndReload(true);
-            return true;
+            return false;
         } catch (error) {
             if (!cancelled) {
                 console.error('Failed to download HF model:', error);
