@@ -72,7 +72,7 @@ export class DuplicatesManager {
         this.updateSelectedCount();
     }
     
-    exitDuplicateMode() {
+    async exitDuplicateMode() {
         this.inDuplicateMode = false;
         this.selectedForDeletion.clear();
         
@@ -95,13 +95,15 @@ export class DuplicatesManager {
             recipeGrid.innerHTML = '';
         }
         
-        // Re-enable virtual scrolling
-        state.virtualScroller.enable();
-
-        // Apply a layout switch that was deferred while duplicates mode was active
+        // Re-enable virtual scrolling, or apply a layout switch deferred
+        // while duplicates mode was active (enabling the old scroller first
+        // would let its pending rAF render repopulate the grid after the
+        // new scroller is created, leaving orphaned/overlapping cards).
         if (state.pendingLayoutRecreate) {
             state.pendingLayoutRecreate = false;
-            recreateVirtualScroll('recipes');
+            await recreateVirtualScroll('recipes');
+        } else if (state.virtualScroller) {
+            state.virtualScroller.enable();
         }
     }
     
