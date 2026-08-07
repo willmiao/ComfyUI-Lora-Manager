@@ -152,6 +152,7 @@
     box-shadow: var(--shadow-md);
     z-index: var(--z-overlay);
     padding: 16px;
+    box-sizing: border-box; /* Include padding in max-height calculation */
     transition: transform 0.3s ease, opacity 0.3s ease;
     transform-origin: top right;
     max-height: calc(100vh - 70px); /* Adjusted for header height */

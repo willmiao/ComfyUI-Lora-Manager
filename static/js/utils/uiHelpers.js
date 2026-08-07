@@ -356,6 +356,8 @@ export function updatePanelPositions() {
 
   if (filterPanel) {
     filterPanel.style.top = `${topPosition}px`;
+    // Clamp panel height to the viewport below the header
+    filterPanel.style.maxHeight = `calc(100vh - ${topPosition + 10}px)`;
   }
 
   // Adjust panel horizontal position based on the search container
