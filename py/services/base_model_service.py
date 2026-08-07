@@ -1259,11 +1259,79 @@ class BaseModelService(ABC):
         )
 
     async def search_relative_paths(
-        self, search_term: str, limit: int = 15, offset: int = 0
+        self,
+        search_term: str,
+        limit: int = 15,
+        offset: int = 0,
+        *,
+        folder: Optional[str] = None,
+        folder_include: Optional[list] = None,
+        folder_exclude: Optional[list] = None,
+        base_models: Optional[list] = None,
+        model_types: Optional[list] = None,
+        tags: Optional[dict] = None,
+        auto_tags: Optional[dict] = None,
+        tag_logic: str = "any",
+        credit_required: Optional[bool] = None,
+        allow_selling_generated_content: Optional[bool] = None,
+        recursive: bool = True,
+        apply_filters: bool = False,
     ) -> List[str]:
-        """Search model relative file paths for autocomplete functionality"""
+        """Search model relative file paths for autocomplete functionality.
+
+        Optional filter kwargs mirror the filters used by the list endpoint
+        (/api/lm/{prefix}/list). When no filter kwargs are provided the
+        behavior is identical to plain token-based path matching.
+        """
         cache = await self.scanner.get_cached_data()
         include_terms, exclude_terms = self._parse_search_tokens(search_term)
+
+        data = cache.raw_data
+        has_filters = any(
+            [
+                apply_filters,
+                folder is not None,
+                folder_include,
+                folder_exclude,
+                base_models,
+                model_types,
+                tags,
+                auto_tags,
+                credit_required is not None,
+                allow_selling_generated_content is not None,
+            ]
+        )
+        if has_filters:
+            # Auto-tags are not stored in the scanner cache — they are computed
+            # on the fly. Pre-compute them only when an auto-tag filter is
+            # active to avoid mutating cache entries unnecessarily.
+            if auto_tags:
+                from .auto_tag_service import extract_auto_tags
+
+                for item in data:
+                    if not item.get("auto_tags"):
+                        item["auto_tags"] = extract_auto_tags(item)
+
+            criteria = FilterCriteria(
+                folder=folder,
+                folder_include=folder_include,
+                folder_exclude=folder_exclude,
+                base_models=base_models,
+                model_types=model_types,
+                tags=tags,
+                auto_tags=auto_tags,
+                search_options={"recursive": recursive},
+                tag_logic=tag_logic,
+            )
+            data = self.filter_set.apply(data, criteria)
+            if credit_required is not None:
+                data = await self._apply_credit_required_filter(
+                    data, credit_required
+                )
+            if allow_selling_generated_content is not None:
+                data = await self._apply_allow_selling_filter(
+                    data, allow_selling_generated_content
+                )
 
         matching_paths = []
 
@@ -1271,7 +1339,7 @@ class BaseModelService(ABC):
         model_roots = self.scanner.get_model_roots()
 
         # Collect all matching paths first (needed for proper sorting and offset)
-        for model in cache.raw_data:
+        for model in data:
             file_path = model.get("file_path", "")
             if not file_path:
                 continue

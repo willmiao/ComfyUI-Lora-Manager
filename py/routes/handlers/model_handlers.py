@@ -1488,8 +1488,73 @@ class ModelQueryHandler:
             search = request.query.get("search", "").strip()
             limit = min(int(request.query.get("limit", "15")), 100)
             offset = max(0, int(request.query.get("offset", "0")))
+
+            folder = request.query.get("folder")
+            recursive = request.query.get("recursive", "true").lower() == "true"
+            base_models = list(request.query.getall("base_model", []))
+            model_types = list(request.query.getall("model_type", []))
+
+            tag_filters: Dict[str, str] = {}
+            for tag in request.query.getall("tag_include", []):
+                if tag:
+                    tag_filters[tag] = "include"
+            for tag in request.query.getall("tag_exclude", []):
+                if tag:
+                    tag_filters[tag] = "exclude"
+
+            auto_tag_filters: Dict[str, str] = {}
+            for tag in request.query.getall("auto_tag_include", []):
+                if tag:
+                    auto_tag_filters[tag] = "include"
+            for tag in request.query.getall("auto_tag_exclude", []):
+                if tag:
+                    auto_tag_filters[tag] = "exclude"
+
+            tag_logic = request.query.get("tag_logic", "any").lower()
+            if tag_logic not in ("any", "all"):
+                tag_logic = "any"
+
+            credit_required = request.query.get("credit_required")
+            if credit_required is not None:
+                credit_required = credit_required.lower() not in ("false", "0", "")
+
+            allow_selling_generated_content = request.query.get(
+                "allow_selling_generated_content"
+            )
+            if allow_selling_generated_content is not None:
+                allow_selling_generated_content = (
+                    allow_selling_generated_content.lower() not in ("false", "0", "")
+                )
+
+            # The presence of the recursive param (always sent by the loras
+            # widget when filter mode is on) signals that the filter pipeline
+            # must run even when no concrete filter is set, so global settings
+            # like show_only_sfw stay consistent with the list endpoint.
+            apply_filters = (
+                "recursive" in request.query
+                or folder is not None
+                or bool(base_models)
+                or bool(model_types)
+                or bool(tag_filters)
+                or bool(auto_tag_filters)
+                or credit_required is not None
+                or allow_selling_generated_content is not None
+            )
+
             matching_paths = await self._service.search_relative_paths(
-                search, limit, offset
+                search,
+                limit,
+                offset,
+                folder=folder,
+                recursive=recursive,
+                base_models=base_models,
+                model_types=model_types,
+                tags=tag_filters,
+                auto_tags=auto_tag_filters,
+                tag_logic=tag_logic,
+                credit_required=credit_required,
+                allow_selling_generated_content=allow_selling_generated_content,
+                apply_filters=apply_filters,
             )
             return web.json_response(
                 {"success": True, "relative_paths": matching_paths}
