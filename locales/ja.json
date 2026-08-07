@@ -449,11 +449,11 @@
                 "compact": "7（1080p）、8（2K）、10（4K）"
             },
             "displayDensityWarning": "警告：高密度設定は、リソースが限られたシステムでパフォーマンスの問題を引き起こす可能性があります。",
-            "recipesLayout": "[TODO: Translate] Recipes Layout",
-            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayout": "レシピのレイアウト",
+            "recipesLayoutHelp": "レシピカードの配置方法を選択：均一なグリッド、または各画像のアスペクト比を保持するメイソンリー（Pinterest スタイル）レイアウト。",
             "recipesLayoutOptions": {
-                "grid": "[TODO: Translate] Grid",
-                "masonry": "[TODO: Translate] Masonry"
+                "grid": "グリッド",
+                "masonry": "メイソンリー"
             },
             "showFolderSidebar": "フォルダサイドバーを表示",
             "showFolderSidebarHelp": "モデルページのフォルダナビゲーションサイドバーを表示/非表示にします。無効にするとサイドバーとホバーエリアは表示されません。",

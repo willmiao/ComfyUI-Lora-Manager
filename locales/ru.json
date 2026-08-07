@@ -449,11 +449,11 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Предупреждение: Высокая плотность может вызвать проблемы с производительностью на системах с ограниченными ресурсами.",
-            "recipesLayout": "[TODO: Translate] Recipes Layout",
-            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayout": "Макет рецептов",
+            "recipesLayoutHelp": "Выберите, как располагаются карточки рецептов: единая сетка или masonry-макет (в стиле Pinterest), сохраняющий пропорции каждого изображения.",
             "recipesLayoutOptions": {
-                "grid": "[TODO: Translate] Grid",
-                "masonry": "[TODO: Translate] Masonry"
+                "grid": "Сетка",
+                "masonry": "Masonry"
             },
             "showFolderSidebar": "Показывать боковую панель папок",
             "showFolderSidebarHelp": "Включает или выключает боковую панель навигации по папкам на страницах моделей. При отключении панель и область наведения скрыты.",

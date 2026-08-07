@@ -449,11 +449,11 @@
                 "compact": "7（1080p）、8（2K）、10（4K）"
             },
             "displayDensityWarning": "警告：較高密度可能導致資源有限的系統效能下降。",
-            "recipesLayout": "[TODO: Translate] Recipes Layout",
-            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayout": "配方版面",
+            "recipesLayoutHelp": "選擇配方卡片的排列方式：統一網格，或保留每張圖片原始寬高比的瀑布流（Pinterest 風格）版面。",
             "recipesLayoutOptions": {
-                "grid": "[TODO: Translate] Grid",
-                "masonry": "[TODO: Translate] Masonry"
+                "grid": "網格",
+                "masonry": "瀑布流"
             },
             "showFolderSidebar": "顯示資料夾側邊欄",
             "showFolderSidebarHelp": "在模型頁面啟用或停用資料夾導覽側邊欄。停用後，側邊欄與滑鼠懸停區域將保持隱藏。",

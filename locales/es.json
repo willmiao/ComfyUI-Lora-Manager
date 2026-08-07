@@ -449,11 +449,11 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Advertencia: Densidades más altas pueden causar problemas de rendimiento en sistemas con recursos limitados.",
-            "recipesLayout": "[TODO: Translate] Recipes Layout",
-            "recipesLayoutHelp": "[TODO: Translate] Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+            "recipesLayout": "Diseño de recetas",
+            "recipesLayoutHelp": "Elige cómo se organizan las tarjetas de recetas: una cuadrícula uniforme o un diseño masonry (estilo Pinterest) que conserva la proporción de aspecto de cada imagen.",
             "recipesLayoutOptions": {
-                "grid": "[TODO: Translate] Grid",
-                "masonry": "[TODO: Translate] Masonry"
+                "grid": "Cuadrícula",
+                "masonry": "Masonry"
             },
             "showFolderSidebar": "Mostrar barra lateral de carpetas",
             "showFolderSidebarHelp": "Activa o desactiva la barra lateral de navegación de carpetas en las páginas de modelos. Cuando está desactivada, la barra lateral y el área de desplazamiento permanecen ocultas.",
