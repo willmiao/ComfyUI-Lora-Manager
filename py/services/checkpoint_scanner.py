@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 import asyncio
 import json
 import logging
@@ -427,7 +431,7 @@ class CheckpointScanner(ModelScanner):
         roots.extend(config.extra_checkpoints_roots or [])
         roots.extend(config.extra_unet_roots or [])
         # Remove duplicates while preserving order
-        seen: set = set()
+        seen: set[str] = set()
         unique_roots: List[str] = []
         for root in roots:
             if root not in seen:

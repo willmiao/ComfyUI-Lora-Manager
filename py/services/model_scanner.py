@@ -5,7 +5,7 @@ import asyncio
 import time
 import shutil
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Set, Type, Union
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Type, Union, cast
 
 from ..utils.models import BaseModelMetadata, autov3_from_civitai_files
 from ..config import config
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class CacheBuildResult:
     """Represents the outcome of scanning model files for cache building."""
 
-    raw_data: List[Dict]
+    raw_data: List[Dict[str, Any]]
     hash_index: ModelHashIndex
     tags_count: Dict[str, int]
     excluded_models: List[str]
@@ -59,7 +59,7 @@ class ModelScanner:
         lock = cls._get_lock()
         async with lock:
             if cls not in cls._instances:
-                cls._instances[cls] = cls()
+                cls._instances[cls] = cls()  # pyright: ignore[reportCallIssue]
             return cls._instances[cls]
     
     def __init__(self, model_type: str, model_class: Type[BaseModelMetadata], file_extensions: Set[str], hash_index: Optional[ModelHashIndex] = None):
@@ -78,7 +78,7 @@ class ModelScanner:
         self.model_type = model_type
         self.model_class = model_class
         self.file_extensions = file_extensions
-        self._cache = None
+        self._cache: Any = None
         self._hash_index = hash_index or ModelHashIndex()
         self._tags_count = {}  # Dictionary to store tag counts
         self._is_initializing = False  # Flag to track initialization state
@@ -183,7 +183,7 @@ class ModelScanner:
         is_mapping = isinstance(source, Mapping)
 
         def get_value(key: str, default: Any = None) -> Any:
-            if is_mapping:
+            if isinstance(source, Mapping):
                 return source.get(key, default)
 
             sentinel = object()
@@ -772,7 +772,7 @@ class ModelScanner:
             else:
                 await self._reconcile_cache()
         
-        return self._cache
+        return cast(ModelCache, self._cache)
 
     async def _initialize_cache(self) -> None:
         """Initialize or refresh the cache"""
@@ -932,6 +932,8 @@ class ModelScanner:
                                         )
                                         continue
                                     model_data = validation_result.entry
+                                    if model_data is None:
+                                        continue
 
                                     self._ensure_license_flags(model_data)
                                     # Add to cache
@@ -992,8 +994,8 @@ class ModelScanner:
                 self._cache.raw_data = [item for item in self._cache.raw_data if item['file_path'] not in missing_files]
             
             dedup_removed = 0
-            seen_paths: set = set()
-            deduped: list = []
+            seen_paths: set[str] = set()
+            deduped: list[Dict[str, Any]] = []
             for item in reversed(self._cache.raw_data):
                 path = item.get('file_path', '')
                 if path not in seen_paths:
@@ -1108,7 +1110,7 @@ class ModelScanner:
         *,
         hash_index: Optional[ModelHashIndex] = None,
         excluded_models: Optional[List[str]] = None
-    ) -> Dict:
+    ) -> Optional[Dict[str, Any]]:
         """Process a single model file and return its metadata"""
         hash_index = hash_index or self._hash_index
         excluded_models = excluded_models if excluded_models is not None else self._excluded_models
@@ -1132,7 +1134,7 @@ class ModelScanner:
                         file_name = os.path.splitext(os.path.basename(file_path))[0]
                         file_info['name'] = file_name
                     
-                        metadata = self.model_class.from_civitai_info(version_info, file_info, file_path)
+                        metadata = cast(Any, self.model_class).from_civitai_info(version_info, file_info, file_path)
                         metadata.preview_url = find_preview_file(file_name, os.path.dirname(file_path))
                         await MetadataManager.save_metadata(file_path, metadata)
                         logger.info(f"Created metadata from .civitai.info for {file_path} (Reason: .civitai.info was found but .metadata.json was missing)")
@@ -1169,6 +1171,8 @@ class ModelScanner:
         if metadata is None:
             metadata = await self._create_default_metadata(file_path)
         
+        assert metadata is not None
+
         # Hook: allow subclasses to adjust metadata
         metadata = self.adjust_metadata(metadata, file_path, root_path)
         
@@ -1296,7 +1300,7 @@ class ModelScanner:
 
     async def _sync_download_history(
         self,
-        raw_data: List[Mapping[str, Any]],
+        raw_data: Sequence[Mapping[str, Any]],
         *,
         source: str,
     ) -> None:
@@ -1345,7 +1349,7 @@ class ModelScanner:
     ) -> CacheBuildResult:
         """Collect metadata for all model files."""
 
-        raw_data: List[Dict] = []
+        raw_data: List[Dict[str, Any]] = []
         hash_index = ModelHashIndex()
         tags_count: Dict[str, int] = {}
         excluded_models: List[str] = []
@@ -1409,6 +1413,8 @@ class ModelScanner:
                                     )
                                     continue
                                 result = validation_result.entry
+                                if result is None:
+                                    continue
 
                                 self._ensure_license_flags(result)
                                 raw_data.append(result)
@@ -1448,7 +1454,7 @@ class ModelScanner:
             excluded_models=excluded_models
         )
 
-    async def add_model_to_cache(self, metadata_dict: Dict, folder: str = '') -> bool:
+    async def add_model_to_cache(self, metadata_dict: Dict[str, Any], folder: str = '') -> bool:
         """Add a model to the cache
 
         Args:
@@ -1461,7 +1467,8 @@ class ModelScanner:
         try:
             if self._cache is None:
                 await self.get_cached_data()
-                
+            assert self._cache is not None
+
             # Update folder in metadata
             metadata_dict['folder'] = folder
             
@@ -1496,7 +1503,7 @@ class ModelScanner:
             logger.error(f"Error adding model to cache: {e}")
             return False
     
-    async def move_model(self, source_path: str, target_path: str) -> Optional[str]:
+    async def move_model(self, source_path: str, target_path: str) -> Optional[Dict[str, Any]]:
         """Move a model and its associated files to a new location
         
         Args:
@@ -1530,7 +1537,7 @@ class ModelScanner:
             # Check for filename conflicts and auto-rename if necessary
             from ..utils.models import BaseModelMetadata
             final_filename = BaseModelMetadata.generate_unique_filename(
-                target_path, base_name, file_ext, get_source_hash
+                target_path, base_name, file_ext, lambda: get_source_hash() or ""
             )
             
             target_file = os.path.join(target_path, final_filename).replace(os.sep, '/')
@@ -1578,7 +1585,7 @@ class ModelScanner:
                     logger.error(f"Error moving associated file {source_file}: {e}")
             
             # Handle metadata file specially to update paths
-            if source_metadata and os.path.exists(source_metadata):
+            if source_metadata and moved_metadata_path and os.path.exists(source_metadata):
                 try:
                     shutil.move(source_metadata, moved_metadata_path)
                     metadata = await self._update_metadata_paths(moved_metadata_path, target_file)
@@ -1596,7 +1603,7 @@ class ModelScanner:
             logger.error(f"Error moving model: {e}", exc_info=True)
             return None
     
-    async def _update_metadata_paths(self, metadata_path: str, model_path: str) -> Dict:
+    async def _update_metadata_paths(self, metadata_path: str, model_path: str) -> Optional[Dict[str, Any]]:
         """Update file paths in metadata file"""
         try:
             with open(metadata_path, 'r', encoding='utf-8') as f:
@@ -1622,7 +1629,7 @@ class ModelScanner:
             logger.error(f"Error updating metadata paths: {e}", exc_info=True)
             return None
 
-    async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Dict, recalculate_type: bool = False) -> Union[bool, Dict]:
+    async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Optional[Dict[str, Any]], recalculate_type: bool = False) -> Union[bool, Dict[str, Any]]:
         """Update cache after a model has been moved or modified"""
         cache = await self.get_cached_data()
 
@@ -1645,6 +1652,7 @@ class ModelScanner:
         ]
 
         cache_modified = bool(existing_item) or bool(metadata)
+        cache_entry: Optional[Dict[str, Any]] = None
 
         if metadata:
             normalized_new_path = new_path.replace(os.sep, '/')
@@ -1695,7 +1703,9 @@ class ModelScanner:
         if cache_modified:
             await self._persist_current_cache()
 
-        return cache_entry if metadata else True
+        if metadata and cache_entry is not None:
+            return cache_entry
+        return True
         
     async def sync_cache_from_metadata(
         self, file_path: str, metadata_dict: Dict[str, Any]
@@ -1820,8 +1830,8 @@ class ModelScanner:
         existing_entry.update(desired_entry)
 
         # ---- Incremental tag count update ----
-        new_tags: set = set(desired_entry.get("tags") or [])
-        old_tag_set: set = set(old_tags)
+        new_tags: set[str] = set(desired_entry.get("tags") or [])
+        old_tag_set: set[str] = set(old_tags)
         for tag in old_tag_set - new_tags:
             current = self._tags_count.get(tag, 0)
             if current <= 1:
@@ -2020,7 +2030,7 @@ class ModelScanner:
 
         return None
         
-    async def get_top_tags(self, limit: int = 20) -> List[Dict[str, any]]:
+    async def get_top_tags(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Get top tags sorted by count. If limit is 0, return all tags."""
         await self.get_cached_data()
         
@@ -2036,7 +2046,7 @@ class ModelScanner:
 
     async def search_tags(
         self, query: str, limit: int = 50
-    ) -> List[Dict[str, any]]:
+    ) -> List[Dict[str, Any]]:
         """Search tags by case-insensitive substring match, sorted by count.
 
         If query is empty, behaves like get_top_tags (returns top ``limit``
@@ -2059,7 +2069,7 @@ class ModelScanner:
             return matched
         return matched[:limit]
 
-    async def get_base_models(self, limit: int = 20) -> List[Dict[str, any]]:
+    async def get_base_models(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Get base models sorted by count. If limit is 0, return all."""
         cache = await self.get_cached_data()
         
@@ -2140,7 +2150,7 @@ class ModelScanner:
             await self._persist_current_cache()
         return updated
 
-    async def bulk_delete_models(self, file_paths: List[str]) -> Dict:
+    async def bulk_delete_models(self, file_paths: List[str]) -> Dict[str, Any]:
         """Delete multiple models and update cache in a batch operation
         
         Args:
@@ -2338,7 +2348,7 @@ class ModelScanner:
             logger.error(f"Error checking model version existence: {e}")
             return False
 
-    async def get_model_versions_by_id(self, model_id: int) -> List[Dict]:
+    async def get_model_versions_by_id(self, model_id: int) -> List[Dict[str, Any]]:
         """Get all versions of a model by its ID
         
         Args:

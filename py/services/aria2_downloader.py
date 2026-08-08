@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 from __future__ import annotations
 
 import asyncio
@@ -23,7 +27,7 @@ logger = logging.getLogger(__name__)
 def _try_certifi_ca_path() -> str | None:
     """Return the certifi CA bundle path if available, else None."""
     try:
-        import certifi  # type: ignore[import-untyped]
+        import certifi  # pyright: ignore[reportMissingTypeStubs]
 
         path = certifi.where()
         if os.path.isfile(path):
@@ -84,7 +88,7 @@ class Aria2Downloader:
         self._transfers: Dict[str, Aria2Transfer] = {}
         self._poll_interval = 0.5
         self._state_store = Aria2TransferStateStore()
-        self._stderr_reader_task: Optional[asyncio.Task] = None
+        self._stderr_reader_task: Optional[asyncio.Task[Any]] = None
 
     @property
     def is_running(self) -> bool:
@@ -190,7 +194,7 @@ class Aria2Downloader:
                     download_id,
                 )
 
-        options: Dict[str, str] = {
+        options: Dict[str, Any] = {
             "dir": save_dir,
             "out": out_name,
             "continue": "true",

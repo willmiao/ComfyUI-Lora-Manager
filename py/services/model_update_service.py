@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 """Service for tracking remote model version updates."""
 from __future__ import annotations
 
@@ -336,9 +340,9 @@ class ModelUpdateService:
             return
 
         try:
-            from .persistent_model_cache import get_persistent_cache
+            from .persistent_model_cache import PersistentModelCache
 
-            legacy_path = get_persistent_cache(self._library_name).get_database_path()
+            legacy_path = PersistentModelCache.get_default(self._library_name).get_database_path()
         except Exception:
             return
 
@@ -735,7 +739,7 @@ class ModelUpdateService:
             )
 
         results: Dict[int, ModelUpdateRecord] = {}
-        prefetched: Dict[int, Mapping] = {}
+        prefetched: Dict[int, Mapping[Any, Any]] = {}
 
         fetch_targets: List[int] = []
         if metadata_provider and local_versions:
@@ -834,7 +838,7 @@ class ModelUpdateService:
         model_id: int,
         version_ids: Sequence[int],
         *,
-        version_info: Optional[Mapping] = None,
+        version_info: Optional[Mapping[str, Any]] = None,
     ) -> ModelUpdateRecord:
         """Persist a new set of in-library version identifiers."""
 
@@ -954,7 +958,11 @@ class ModelUpdateService:
             records = self._get_records_bulk(model_type, normalized_ids)
 
         return {
-            model_id: records.get(model_id).has_update(hide_early_access=hide_early_access) if records.get(model_id) else False
+            model_id: (
+                records[model_id].has_update(hide_early_access=hide_early_access)
+                if model_id in records
+                else False
+            )
             for model_id in normalized_ids
         }
 
@@ -980,7 +988,7 @@ class ModelUpdateService:
         metadata_provider,
         *,
         force_refresh: bool = False,
-        prefetched_response: Optional[Mapping] = None,
+        prefetched_response: Optional[Mapping[str, Any]] = None,
         all_local_version_ids: Optional[Sequence[int]] = None,
     ) -> Optional[ModelUpdateRecord]:
         normalized_local = self._normalize_sequence(local_versions)
@@ -1010,7 +1018,7 @@ class ModelUpdateService:
         fallback_attempted = False
         fallback_error_message: Optional[str] = None
         mark_model_as_ignored = False
-        response: Optional[Mapping] = None
+        response: Optional[Mapping[str, Any]] = None
         if metadata_provider and should_fetch:
             response = prefetched_response
             if response is None:
@@ -1122,7 +1130,7 @@ class ModelUpdateService:
     async def _enrich_version_entries(
         self,
         metadata_provider,
-        responses_by_model_id: Dict[int, Mapping],
+        responses_by_model_id: Dict[int, Mapping[Any, Any]],
     ) -> None:
         """Enrich version entries with ``usageControl`` via batch hash endpoint.
 
@@ -1151,7 +1159,7 @@ class ModelUpdateService:
         all_hashes = list(version_ids_by_hash.keys())
         BATCH_SIZE = 100
 
-        enrichment: Dict[int, Dict] = {}
+        enrichment: Dict[int, Dict[str, Any]] = {}
         try:
             for start in range(0, len(all_hashes), BATCH_SIZE):
                 batch = all_hashes[start : start + BATCH_SIZE]
@@ -1208,7 +1216,7 @@ class ModelUpdateService:
                     version["earlyAccessEndsAt"] = extra["earlyAccessEndsAt"]
 
     @staticmethod
-    def _collect_hashes_from_response(response: Mapping) -> Dict[int, str]:
+    def _collect_hashes_from_response(response: Mapping[str, Any]) -> Dict[int, str]:
         """Extract ``{version_id: sha256}`` from a model-level API response.
 
         Returns an empty dict if the response structure is unexpected.
@@ -1229,7 +1237,7 @@ class ModelUpdateService:
         return result
 
     @staticmethod
-    def _extract_sha256_from_version_entry(entry: Mapping) -> Optional[str]:
+    def _extract_sha256_from_version_entry(entry: Mapping[str, Any]) -> Optional[str]:
         """Return the SHA256 hash from the primary model file of a version entry."""
         files = entry.get("files")
         if not isinstance(files, list):
@@ -1253,22 +1261,19 @@ class ModelUpdateService:
         self,
         metadata_provider,
         model_ids: Sequence[int],
-    ) -> Dict[int, Mapping]:
+    ) -> Dict[int, Mapping[Any, Any]]:
         """Fetch model metadata in batches of up to 100 ids."""
 
         BATCH_SIZE = 100
         normalized = self._normalize_sequence(model_ids)
-        if not normalized:
+        provider = metadata_provider
+        if not normalized or provider is None:
             return {}
 
-        aggregated: Dict[int, Mapping] = {}
+        aggregated: Dict[int, Mapping[Any, Any]] = {}
         total_ids = len(normalized)
         total_batches = (total_ids + BATCH_SIZE - 1) // BATCH_SIZE
-        provider_name = (
-            metadata_provider.__class__.__name__
-            if metadata_provider is not None
-            else "unknown"
-        )
+        provider_name = provider.__class__.__name__
         for batch_index, start in enumerate(range(0, total_ids, BATCH_SIZE), start=1):
             chunk = normalized[start : start + BATCH_SIZE]
             logger.info(
@@ -1279,7 +1284,7 @@ class ModelUpdateService:
                 provider_name,
             )
             try:
-                response = await metadata_provider.get_model_versions_bulk(chunk)
+                response = await provider.get_model_versions_bulk(chunk)
             except RateLimitError:
                 raise
             if response is None:
@@ -1356,7 +1361,7 @@ class ModelUpdateService:
         model_type: Optional[str] = None,
         model_id: Optional[int] = None,
         last_checked_at: Optional[float] = None,
-        version_info: Optional[Mapping] = None,
+        version_info: Optional[Mapping[str, Any]] = None,
     ) -> ModelUpdateRecord:
         local_set = set(normalized_local)
         # When folder-filtering, also consider versions in other folders
@@ -1578,7 +1583,7 @@ class ModelUpdateService:
         if not isinstance(files, Iterable):
             return None
 
-        def parse_size(entry: Mapping) -> Optional[int]:
+        def parse_size(entry: Mapping[str, Any]) -> Optional[int]:
             size_kb = entry.get("sizeKB")
             if size_kb is None:
                 return None
@@ -1664,8 +1669,8 @@ class ModelUpdateService:
             return {}
 
         ids = list(model_ids)
-        status_rows: list = []
-        version_rows: list = []
+        status_rows: list[sqlite3.Row] = []
+        version_rows: list[sqlite3.Row] = []
 
         with self._connect() as conn:
             for start in range(0, len(ids), self._SQLITE_MAX_VARIABLES):

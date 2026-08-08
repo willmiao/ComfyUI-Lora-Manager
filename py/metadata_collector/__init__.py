@@ -22,7 +22,7 @@ if not standalone_mode:
 
         logger.info("ComfyUI Metadata Collector initialized")
 
-    def get_metadata(prompt_id=None):  # type: ignore[no-redef]
+    def get_metadata(prompt_id=None):  # pyright: ignore[reportRedeclaration]
         """Helper function to get metadata from the registry"""
         registry = MetadataRegistry()
         return registry.get_metadata(prompt_id)
@@ -31,6 +31,6 @@ else:
     def init():
         logger.info("ComfyUI Metadata Collector disabled in standalone mode")
 
-    def get_metadata(prompt_id=None):  # type: ignore[no-redef]
+    def get_metadata(prompt_id=None):  # pyright: ignore[reportRedeclaration]
         """Dummy implementation for standalone mode"""
         return {}

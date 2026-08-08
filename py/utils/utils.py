@@ -261,7 +261,7 @@ def get_checkpoint_info_absolute(checkpoint_name):
         return asyncio.run(_get_checkpoint_info_absolute_async())
 
 
-def _format_model_name_for_comfyui(file_path: str, model_roots: list) -> str:
+def _format_model_name_for_comfyui(file_path: str, model_roots: list[str]) -> str:
     """Format file path to ComfyUI-style model name (relative path with extension)
 
     Example: /path/to/checkpoints/Illustrious/model.safetensors -> Illustrious/model.safetensors
@@ -470,7 +470,7 @@ def calculate_recipe_fingerprint(loras):
 
 
 def calculate_relative_path_for_model(
-    model_data: Dict, model_type: str = "lora"
+    model_data: Dict[str, Any], model_type: str = "lora"
 ) -> str:
     """Calculate relative path for existing model using template from settings
 

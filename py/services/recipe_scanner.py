@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 from __future__ import annotations
 
 import asyncio
@@ -5,28 +9,20 @@ import json
 import logging
 import os
 import time
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union, cast
 from ..config import config
 from .recipe_cache import RecipeCache
-from .recipe_fts_index import RecipeFTSIndex
-from .persistent_recipe_cache import (
-    PersistentRecipeCache,
-    get_persistent_recipe_cache,
-    PersistedRecipeData,
-)
-from .service_registry import ServiceRegistry
-from .lora_scanner import LoraScanner
-from .metadata_service import get_default_metadata_provider
-from .checkpoint_scanner import CheckpointScanner
-from .settings_manager import get_settings_manager
 from .recipes.errors import RecipeNotFoundError
-from ..utils.civitai_utils import extract_civitai_image_id
-from ..utils.utils import calculate_recipe_fingerprint
 from natsort import natsorted
 import sys
 import re
-from ..recipes.merger import GenParamsMerger
-from ..recipes.enrichment import RecipeEnricher
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .lora_scanner import LoraScanner
+    from .checkpoint_scanner import CheckpointScanner
+    from .recipe_fts_index import RecipeFTSIndex
+    from .persistent_recipe_cache import PersistentRecipeCache, PersistedRecipeData
 
 logger = logging.getLogger(__name__)
 
@@ -48,8 +44,12 @@ class RecipeScanner:
             if cls._instance is None:
                 if not lora_scanner:
                     # Get lora scanner from service registry if not provided
+                    from .service_registry import ServiceRegistry
+
                     lora_scanner = await ServiceRegistry.get_lora_scanner()
                 if not checkpoint_scanner:
+                    from .service_registry import ServiceRegistry
+
                     checkpoint_scanner = await ServiceRegistry.get_checkpoint_scanner()
                 cls._instance = cls(lora_scanner, checkpoint_scanner)
             return cls._instance
@@ -77,17 +77,18 @@ class RecipeScanner:
         if not hasattr(self, "_initialized"):
             self._cache: Optional[RecipeCache] = None
             self._initialization_lock = asyncio.Lock()
-            self._initialization_task: Optional[asyncio.Task] = None
+            self._initialization_task: Optional[asyncio.Task[Any]] = None
             self._is_initializing = False
             self._mutation_lock = asyncio.Lock()
-            self._post_scan_task: Optional[asyncio.Task] = None
-            self._resort_tasks: Set[asyncio.Task] = set()
+            self._post_scan_task: Optional[asyncio.Task[Any]] = None
+            self._resort_tasks: Set[asyncio.Task[Any]] = set()
             self._cancel_requested = False
             # FTS index for fast search
             self._fts_index: Optional[RecipeFTSIndex] = None
-            self._fts_index_task: Optional[asyncio.Task] = None
+            self._fts_index_task: Optional[asyncio.Task[Any]] = None
             # Persistent cache for fast startup
             self._persistent_cache: Optional[PersistentRecipeCache] = None
+            self._civitai_client: Any = None  # Lazily initialized from registry
             self._json_path_map: Dict[str, str] = {}  # recipe_id -> json_path
             if lora_scanner:
                 self._lora_scanner = lora_scanner
@@ -123,6 +124,8 @@ class RecipeScanner:
         # Reset persistent cache instance for new library
         self._persistent_cache = None
         self._json_path_map = {}
+        from .persistent_recipe_cache import PersistentRecipeCache
+
         PersistentRecipeCache.clear_instances()
 
         self._cache = None
@@ -140,6 +143,8 @@ class RecipeScanner:
     async def _get_civitai_client(self):
         """Lazily initialize CivitaiClient from registry"""
         if self._civitai_client is None:
+            from .service_registry import ServiceRegistry
+
             self._civitai_client = await ServiceRegistry.get_civitai_client()
         return self._civitai_client
 
@@ -157,7 +162,7 @@ class RecipeScanner:
         return self._cancel_requested
 
     async def repair_all_recipes(
-        self, progress_callback: Optional[Callable[[Dict], Any]] = None
+        self, progress_callback: Optional[Callable[[Dict[str, Any]], Any]] = None
     ) -> Dict[str, Any]:
         """Repair all recipes by enrichment with Civitai and embedded metadata.
 
@@ -339,6 +344,8 @@ class RecipeScanner:
 
         # 3. Use Enricher to repair/enrich
         try:
+            from ..recipes.enrichment import RecipeEnricher
+
             updated = await RecipeEnricher.enrich_recipe(recipe, civitai_client)
         except Exception as e:
             logger.error(f"Error enriching recipe {recipe.get('id')}: {e}")
@@ -490,6 +497,7 @@ class RecipeScanner:
         3. Fall back to full directory scan if cache miss or reconciliation fails
         4. Persist results for next startup
         """
+        loop = None
         try:
             # Ensure cache exists to avoid None reference errors
             if self._cache is None:
@@ -507,6 +515,8 @@ class RecipeScanner:
 
             # Initialize persistent cache
             if self._persistent_cache is None:
+                from .persistent_recipe_cache import get_persistent_recipe_cache
+
                 self._persistent_cache = get_persistent_recipe_cache()
 
             recipes_dir = self.recipes_dir
@@ -592,13 +602,14 @@ class RecipeScanner:
             return self._cache if hasattr(self, "_cache") else None
         finally:
             # Clean up the event loop
-            loop.close()
+            if loop is not None:
+                loop.close()
 
     def _reconcile_recipe_cache(
         self,
         persisted: PersistedRecipeData,
         recipes_dir: str,
-    ) -> Tuple[List[Dict], bool, Dict[str, str]]:
+    ) -> Tuple[List[Dict[str, Any]], bool, Dict[str, str]]:
         """Reconcile persisted cache with current filesystem state.
 
         Args:
@@ -608,7 +619,7 @@ class RecipeScanner:
         Returns:
             Tuple of (recipes list, changed flag, json_paths dict).
         """
-        recipes: List[Dict] = []
+        recipes: List[Dict[str, Any]] = []
         json_paths: Dict[str, str] = {}
         changed = False
 
@@ -625,12 +636,12 @@ class RecipeScanner:
                         continue
 
         # Build recipe_id -> recipe lookup (O(n) instead of O(n²))
-        recipe_by_id: Dict[str, Dict] = {
+        recipe_by_id: Dict[str, Dict[str, Any]] = {
             str(r.get("id", "")): r for r in persisted.raw_data if r.get("id")
         }
 
         # Build json_path -> recipe lookup from file_stats (O(m))
-        persisted_by_path: Dict[str, Dict] = {}
+        persisted_by_path: Dict[str, Dict[str, Any]] = {}
         for json_path in persisted.file_stats.keys():
             basename = os.path.basename(json_path)
             if basename.lower().endswith(".recipe.json"):
@@ -696,7 +707,7 @@ class RecipeScanner:
 
     def _backfill_source_path_if_needed(
         self,
-        recipes: List[Dict],
+        recipes: List[Dict[str, Any]],
         json_paths: Dict[str, str],
     ) -> bool:
         """Backfill source_path from recipe JSON files if missing from cache.
@@ -724,7 +735,7 @@ class RecipeScanner:
 
     def _full_directory_scan_sync(
         self, recipes_dir: str
-    ) -> Tuple[List[Dict], Dict[str, str]]:
+    ) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
         """Perform a full synchronous directory scan for recipes.
 
         Args:
@@ -733,7 +744,7 @@ class RecipeScanner:
         Returns:
             Tuple of (recipes list, json_paths dict).
         """
-        recipes: List[Dict] = []
+        recipes: List[Dict[str, Any]] = []
         json_paths: Dict[str, str] = {}
 
         # Get all recipe JSON files
@@ -756,7 +767,7 @@ class RecipeScanner:
 
         return recipes, json_paths
 
-    def _load_recipe_file_sync(self, recipe_path: str) -> Optional[Dict]:
+    def _load_recipe_file_sync(self, recipe_path: str) -> Optional[Dict[str, Any]]:
         """Load a single recipe file synchronously.
 
         Args:
@@ -835,6 +846,8 @@ class RecipeScanner:
 
     def _sort_cache_sync(self) -> None:
         """Sort cache data synchronously."""
+        if self._cache is None:
+            return
         try:
             # Sort by name
             self._cache.sorted_by_name = natsorted(
@@ -868,6 +881,8 @@ class RecipeScanner:
             source = recipe.get("source_path")
             if not source:
                 continue
+            from ..utils.civitai_utils import extract_civitai_image_id
+
             image_id = extract_civitai_image_id(source)
             if image_id and image_id not in mapping:
                 recipe_id = recipe.get("id")
@@ -950,6 +965,8 @@ class RecipeScanner:
                 return
 
             try:
+                from .recipe_fts_index import RecipeFTSIndex
+
                 self._fts_index = RecipeFTSIndex()
 
                 # Check if existing index is valid
@@ -987,7 +1004,7 @@ class RecipeScanner:
             _build_fts(), name="recipe_fts_index_build"
         )
 
-    def _search_with_fts(self, search: str, search_options: Dict) -> Optional[Set[str]]:
+    def _search_with_fts(self, search: str, search_options: Dict[str, Any]) -> Optional[Set[str]]:
         """Search recipes using FTS index if available.
 
         Args:
@@ -1002,7 +1019,7 @@ class RecipeScanner:
             return None
 
         # Build the set of fields to search based on search_options
-        fields: Set[str] = set()
+        fields: Optional[Set[str]] = set()
         if search_options.get("title", True):
             fields.add("title")
         if search_options.get("tags", True):
@@ -1033,12 +1050,12 @@ class RecipeScanner:
             return None
 
     def _update_fts_index_for_recipe(
-        self, recipe: Dict[str, Any], operation: str = "add"
+        self, recipe: Union[Dict[str, Any], str], operation: str = "add"
     ) -> None:
         """Update FTS index for a single recipe (add, update, or remove).
 
         Args:
-            recipe: The recipe dictionary.
+            recipe: The recipe dictionary, or a recipe ID string for removal.
             operation: One of 'add', 'update', or 'remove'.
         """
         if not self._fts_index or not self._fts_index.is_ready():
@@ -1053,7 +1070,7 @@ class RecipeScanner:
                 )
                 self._fts_index.remove_recipe(recipe_id)
             elif operation in ("add", "update"):
-                self._fts_index.update_recipe(recipe)
+                self._fts_index.update_recipe(cast(Dict[str, Any], recipe))
         except Exception as exc:
             logger.debug("Failed to update FTS index for recipe: %s", exc)
 
@@ -1070,6 +1087,8 @@ class RecipeScanner:
         for key, value in gen_params.items():
             if value in (None, ""):
                 continue
+
+            from ..recipes.merger import GenParamsMerger
 
             normalized_key = GenParamsMerger.NORMALIZATION_MAPPING.get(key, key)
             if normalized_key not in GenParamsMerger.ALLOWED_KEYS:
@@ -1130,7 +1149,8 @@ class RecipeScanner:
     def _schedule_resort(self, *, name_only: bool = False) -> None:
         """Schedule a background resort of the recipe cache."""
 
-        if not self._cache:
+        cache = self._cache
+        if not cache:
             return
 
         # Keep folder metadata up to date alongside sort order
@@ -1138,7 +1158,7 @@ class RecipeScanner:
 
         async def _resort_wrapper() -> None:
             try:
-                await self._cache.resort(name_only=name_only)
+                await cache.resort(name_only=name_only)
             except Exception as exc:  # pragma: no cover - defensive logging
                 logger.error(
                     "Recipe Scanner: error resorting cache: %s", exc, exc_info=True
@@ -1164,10 +1184,10 @@ class RecipeScanner:
         except Exception:
             return ""
 
-    def _build_folder_tree(self, folders: list[str]) -> dict:
+    def _build_folder_tree(self, folders: list[str]) -> Dict[str, Any]:
         """Build a nested folder tree structure from relative folder paths."""
 
-        tree: dict[str, dict] = {}
+        tree: dict[str, Dict[str, Any]] = {}
         for folder in folders:
             if not folder:
                 continue
@@ -1208,18 +1228,20 @@ class RecipeScanner:
 
         cache = await self.get_cached_data()
         self._update_folder_metadata(cache)
-        return cache.folders
+        return cache.folders or []
 
-    async def get_folder_tree(self) -> dict:
+    async def get_folder_tree(self) -> Dict[str, Any]:
         """Return a hierarchical tree of recipe folders for sidebar navigation."""
 
         cache = await self.get_cached_data()
         self._update_folder_metadata(cache)
-        return cache.folder_tree
+        return cache.folder_tree or {}
 
     @property
     def recipes_dir(self) -> str:
         """Get path to recipes directory"""
+        from .settings_manager import get_settings_manager
+
         custom_recipes_dir = get_settings_manager().get("recipes_path", "")
         if isinstance(custom_recipes_dir, str) and custom_recipes_dir.strip():
             recipes_dir = os.path.abspath(
@@ -1242,7 +1264,7 @@ class RecipeScanner:
         # If cache is already initialized and no refresh is needed, return it immediately
         if self._cache is not None and not force_refresh:
             self._update_folder_metadata()
-            return self._cache
+            return cast(RecipeCache, self._cache)
 
         # If another initialization is already in progress, wait for it to complete
         if self._is_initializing and not force_refresh:
@@ -1293,7 +1315,7 @@ class RecipeScanner:
                         self._schedule_post_scan_enrichment()
                         self._schedule_fts_index_build()
 
-                        return self._cache
+                        return cast(RecipeCache, self._cache)
 
                     except Exception as e:
                         logger.error(
@@ -1344,6 +1366,8 @@ class RecipeScanner:
 
         source = recipe_data.get("source_path")
         if source:
+            from ..utils.civitai_utils import extract_civitai_image_id
+
             image_id = extract_civitai_image_id(source)
             if image_id:
                 recipe_id_value = recipe_data.get("id")
@@ -1410,7 +1434,7 @@ class RecipeScanner:
                 self._persistent_cache.save_image_id_map(cache.image_id_map)
         return len(removed)
 
-    async def scan_all_recipes(self) -> List[Dict]:
+    async def scan_all_recipes(self) -> List[Dict[str, Any]]:
         """Scan all recipe JSON files and return metadata"""
         recipes = []
         recipes_dir = self.recipes_dir
@@ -1436,7 +1460,7 @@ class RecipeScanner:
 
         return recipes
 
-    async def _load_recipe_file(self, recipe_path: str) -> Optional[Dict]:
+    async def _load_recipe_file(self, recipe_path: str) -> Optional[Dict[str, Any]]:
         """Load recipe data from a JSON file"""
         try:
             with open(recipe_path, "r", encoding="utf-8") as f:
@@ -1517,6 +1541,8 @@ class RecipeScanner:
 
             # Calculate and update fingerprint if missing
             if "loras" in recipe_data and "fingerprint" not in recipe_data:
+                from ..utils.utils import calculate_recipe_fingerprint
+
                 fingerprint = calculate_recipe_fingerprint(recipe_data["loras"])
                 recipe_data["fingerprint"] = fingerprint
 
@@ -1548,7 +1574,7 @@ class RecipeScanner:
         with open(recipe_path, "w", encoding="utf-8") as file_obj:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
-    async def _update_lora_information(self, recipe_data: Dict) -> bool:
+    async def _update_lora_information(self, recipe_data: Dict[str, Any]) -> bool:
         """Update LoRA information with hash and file_name
 
         Returns:
@@ -1575,14 +1601,14 @@ class RecipeScanner:
                 if isinstance(model_version_id, int) and model_version_id > 0:
                     # Try to find in lora cache first
                     hash_from_cache = await self._find_hash_in_lora_cache(
-                        model_version_id
+                        str(model_version_id)
                     )
                     if hash_from_cache:
                         lora["hash"] = hash_from_cache
                         metadata_updated = True
                     else:
                         # If not in cache, fetch from Civitai
-                        result = await self._get_hash_from_civitai(model_version_id)
+                        result = await self._get_hash_from_civitai(str(model_version_id))
                         if isinstance(result, tuple):
                             hash_from_civitai, is_deleted = result
                             if hash_from_civitai:
@@ -1645,14 +1671,16 @@ class RecipeScanner:
             logger.error(f"Error finding hash in lora cache: {e}")
             return None
 
-    async def _get_hash_from_civitai(self, model_version_id: str) -> Optional[str]:
+    async def _get_hash_from_civitai(self, model_version_id: str) -> Tuple[Optional[str], bool]:
         """Get hash from Civitai API"""
         try:
             # Get metadata provider instead of civitai client directly
+            from .metadata_service import get_default_metadata_provider
+
             metadata_provider = await get_default_metadata_provider()
             if not metadata_provider:
                 logger.error("Failed to get metadata provider")
-                return None
+                return None, False
 
             version_info, error_msg = await metadata_provider.get_model_version_info(
                 model_version_id
@@ -1733,7 +1761,7 @@ class RecipeScanner:
 
         return version_index.get(normalized_id)
 
-    async def _determine_base_model(self, loras: List[Dict]) -> Optional[str]:
+    async def _determine_base_model(self, loras: List[Dict[str, Any]]) -> Optional[str]:
         """Determine the most common base model among LoRAs"""
         base_models = {}
 
@@ -1956,11 +1984,11 @@ class RecipeScanner:
         page: int,
         page_size: int,
         sort_by: str = "date",
-        search: str = None,
-        filters: dict = None,
-        search_options: dict = None,
-        lora_hash: str = None,
-        checkpoint_hash: str = None,
+        search: Optional[str] = None,
+        filters: Optional[Dict[str, Any]] = None,
+        search_options: Optional[Dict[str, Any]] = None,
+        lora_hash: Optional[str] = None,
+        checkpoint_hash: Optional[str] = None,
         bypass_filters: bool = True,
         folder: str | None = None,
         recursive: bool = True,
@@ -2220,7 +2248,7 @@ class RecipeScanner:
 
         return result
 
-    async def get_recipe_by_id(self, recipe_id: str) -> dict:
+    async def get_recipe_by_id(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         """Get a single recipe by ID with all metadata and formatted URLs
 
         Args:
@@ -2312,7 +2340,7 @@ class RecipeScanner:
 
         return self._normalize_recipe_gen_params(recipe_data)
 
-    def _format_file_url(self, file_path: str) -> str:
+    def _format_file_url(self, file_path: Optional[str]) -> str:
         """Format file path as URL for serving in web UI"""
         if not file_path:
             return "/loras_static/images/no-preview.png"
@@ -2360,7 +2388,7 @@ class RecipeScanner:
 
         return None
 
-    async def update_recipe_metadata(self, recipe_id: str, metadata: dict) -> bool:
+    async def update_recipe_metadata(self, recipe_id: str, metadata: Dict[str, Any]) -> bool:
         """Update recipe metadata (like title and tags) in both file system and cache
 
         Args:
@@ -2464,6 +2492,8 @@ class RecipeScanner:
                     )
                     lora_entry["modelVersionName"] = civitai_info.get("name", "")
                     lora_entry["modelVersionId"] = civitai_info.get("id")
+
+            from ..utils.utils import calculate_recipe_fingerprint
 
             recipe_data["fingerprint"] = calculate_recipe_fingerprint(
                 recipe_data.get("loras", [])
@@ -2696,7 +2726,7 @@ class RecipeScanner:
 
         return file_updated_count, cache_updated_count
 
-    async def find_recipes_by_fingerprint(self, fingerprint: str) -> list:
+    async def find_recipes_by_fingerprint(self, fingerprint: str) -> List[Dict[str, Any]]:
         """Find recipes with a matching fingerprint
 
         Args:
@@ -2727,7 +2757,7 @@ class RecipeScanner:
 
         return matching_recipes
 
-    async def find_all_duplicate_recipes(self) -> dict:
+    async def find_all_duplicate_recipes(self) -> Dict[str, List[Any]]:
         """Find all recipe duplicates based on fingerprints
 
         Returns:
@@ -2753,7 +2783,7 @@ class RecipeScanner:
 
         return duplicate_groups
 
-    async def find_duplicate_recipes_by_source(self) -> dict:
+    async def find_duplicate_recipes_by_source(self) -> Dict[str, List[Any]]:
         """Find all recipe duplicates based on source_path (Civitai image URLs)
 
         Returns:

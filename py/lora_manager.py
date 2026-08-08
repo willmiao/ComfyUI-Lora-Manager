@@ -14,7 +14,7 @@ standalone_mode = (
 if not standalone_mode:
     setup_logging()
 
-from server import PromptServer  # type: ignore
+from server import PromptServer  # pyright: ignore[reportMissingImports]
 
 from .config import config
 from .services.model_service_factory import (

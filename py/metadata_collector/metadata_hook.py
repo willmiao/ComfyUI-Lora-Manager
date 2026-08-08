@@ -16,7 +16,7 @@ class MetadataHook:
             execution = None
             try:
                 # Try direct import first
-                import execution # type: ignore
+                import execution # pyright: ignore[reportMissingImports]
             except ImportError:
                 # Try to locate from system modules
                 for module_name in sys.modules:

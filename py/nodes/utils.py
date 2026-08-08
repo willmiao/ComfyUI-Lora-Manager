@@ -1,3 +1,6 @@
+from typing import Any
+
+
 class AnyType(str):
     """A special class that is always equal in not equal comparisons. Credit to pythongosssss"""
 
@@ -6,7 +9,7 @@ class AnyType(str):
 
 
 # Credit to Regis Gaughan, III (rgthree)
-class FlexibleOptionalInputType(dict):
+class FlexibleOptionalInputType(dict[str, Any]):
     """A special class to make flexible nodes that pass data to our python handlers.
 
     Enables both flexible/dynamic input types (like for Any Switch) or a dynamic number of inputs
@@ -23,6 +26,7 @@ class FlexibleOptionalInputType(dict):
     """
 
     def __init__(self, type):
+        super().__init__()
         self.type = type
 
     def __getitem__(self, key):
@@ -40,7 +44,7 @@ import re
 import logging
 import copy
 import sys
-import folder_paths  # type: ignore
+import folder_paths  # pyright: ignore[reportMissingImports]
 
 logger = logging.getLogger(__name__)
 
@@ -70,7 +74,7 @@ def extract_lora_name(lora_path):
     return apply_lora_syntax_format(name_no_ext)
 
 
-def parse_lora_syntax(text: str) -> list[dict]:
+def parse_lora_syntax(text: str) -> list[dict[str, Any]]:
     """Parse <lora:name:strength> syntax from text input into a list of dicts.
 
     Each entry contains: name, model_strength, clip_strength.

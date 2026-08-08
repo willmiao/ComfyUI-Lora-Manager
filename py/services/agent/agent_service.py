@@ -117,7 +117,7 @@ def _render_prompt(template: str, variables: Dict[str, Any]) -> str:
     Uses simple regex substitution — no Jinja2 dependency needed.
     """
 
-    def replace(match: re.Match) -> str:
+    def replace(match: re.Match[str]) -> str:
         key = match.group(1).strip()
         value = variables.get(key, "")
         if isinstance(value, (dict, list)):

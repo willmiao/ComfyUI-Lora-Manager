@@ -18,7 +18,7 @@ class DownloadCoordinator:
         self,
         *,
         ws_manager,
-        download_manager_factory: Callable[[], Awaitable],
+        download_manager_factory: Callable[[], Awaitable[Any]],
     ) -> None:
         self._ws_manager = ws_manager
         self._download_manager_factory = download_manager_factory

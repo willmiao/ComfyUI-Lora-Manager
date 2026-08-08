@@ -1,8 +1,8 @@
 import importlib
 import logging
 
-import comfy.sd  # type: ignore
-import comfy.utils  # type: ignore
+import comfy.sd  # pyright: ignore[reportMissingImports]
+import comfy.utils  # pyright: ignore[reportMissingImports]
 
 from ..utils.utils import get_lora_info_absolute
 from .utils import (

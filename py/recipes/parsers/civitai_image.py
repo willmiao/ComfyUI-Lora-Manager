@@ -14,15 +14,16 @@ logger = logging.getLogger(__name__)
 class CivitaiApiMetadataParser(RecipeMetadataParser):
     """Parser for Civitai image metadata format"""
 
-    def is_metadata_matching(self, metadata) -> bool:
+    def is_metadata_matching(self, user_comment) -> bool:
         """Check if the metadata matches the Civitai image metadata format
 
         Args:
-            metadata: The metadata from the image (dict)
+            user_comment: The metadata from the image (dict)
 
         Returns:
             bool: True if this parser can handle the metadata
         """
+        metadata = user_comment
         if not metadata or not isinstance(metadata, dict):
             return False
 
@@ -73,7 +74,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
 
         return False
 
-    async def parse_metadata(  # type: ignore[override]
+    async def parse_metadata(  # pyright: ignore[reportIncompatibleMethodOverride]
         self, user_comment, recipe_scanner=None, civitai_client=None,
         local_cache: dict[str, Any] | None = None,
     ) -> Dict[str, Any]:
@@ -89,8 +90,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
         Returns:
             Dict containing parsed recipe data
         """
-        metadata: Dict[str, Any] = user_comment  # type: ignore[assignment]
-        metadata = user_comment
+        metadata: Dict[str, Any] = user_comment
         try:
             # Get metadata provider instead of using civitai_client directly
             metadata_provider = await get_default_metadata_provider()
@@ -116,7 +116,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     metadata = inner_meta
 
             # Initialize result structure
-            result = {
+            result: Dict[str, Any] = {
                 "base_model": None,
                 "loras": [],
                 "model": None,
@@ -125,10 +125,10 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
             }
 
             # Track already added LoRAs to prevent duplicates
-            added_loras = {}  # key: model_version_id or hash, value: index in result["loras"]
+            added_loras: Dict[str, Any] = {}  # key: model_version_id or hash, value: index in result["loras"]
 
             # Extract hash information from hashes field for LoRA matching
-            lora_hashes = {}
+            lora_hashes: Dict[str, Any] = {}
             if "hashes" in metadata and isinstance(metadata["hashes"], dict):
                 for key, hash_value in metadata["hashes"].items():
                     key_str = str(key)
@@ -184,7 +184,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                             if model_info:
                                 result["base_model"] = model_info.get("baseModel", "")
 
-            base_model_counts = {}
+            base_model_counts: Dict[str, int] = {}
 
             # Process standard resources array
             if "resources" in metadata and isinstance(metadata["resources"], list):
@@ -196,7 +196,7 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                     # identification because it has an explicit type field and hash,
                     # unlike modelVersionIds which is a flat list with no type info.
                     if resource_type == "model":
-                        checkpoint_entry = {
+                        checkpoint_entry: Dict[str, Any] = {
                             "id": 0,
                             "modelId": 0,
                             "name": resource.get("name", "Unknown Model"),

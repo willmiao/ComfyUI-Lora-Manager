@@ -371,7 +371,7 @@ class ExampleImagesMigration:
                                 found = True
                                 break
                                 
-                        if not found:
+                        if not found or old_path is None:
                             logger.warning(f"Could not find file for index {index} in {model_hash}, skipping")
                             continue
                         

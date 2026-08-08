@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 """Backfill the AutoV3 checked state for models loaded from a persisted snapshot.
 
 The SQLite persistent cache predates the AutoV3 feature, so entries hydrated
@@ -66,7 +70,7 @@ class Autov3BackfillService:
         # initialize concurrently (lora_manager.py), so a global guard would
         # silently skip every type but the first to start. Each model type
         # runs its own backfill; a duplicate trigger for the same type no-ops.
-        self._running_types: set = set()
+        self._running_types: set[str] = set()
 
     @classmethod
     def get_instance(cls) -> "Autov3BackfillService":

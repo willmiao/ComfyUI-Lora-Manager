@@ -12,6 +12,7 @@ from typing import (
     Tuple,
     Protocol,
     Callable,
+    cast,
 )
 
 from ..utils.constants import NSFW_LEVELS
@@ -309,7 +310,7 @@ class ModelFilterSet:
                     else:
                         include_tags.add(normalized)
             else:
-                include_tags = {tag.strip().lower() for tag in tag_filters if tag}
+                include_tags = {tag.strip().lower() for tag in cast(Iterable[Any], tag_filters) if tag}
 
             if include_tags:
                 tag_logic = criteria.tag_logic.lower() if criteria.tag_logic else "any"

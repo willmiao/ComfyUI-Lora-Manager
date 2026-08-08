@@ -1,5 +1,6 @@
 import time
-from nodes import NODE_CLASS_MAPPINGS  # type: ignore
+from typing import Any
+from nodes import NODE_CLASS_MAPPINGS  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
 from .node_extractors import NODE_EXTRACTORS, GenericNodeExtractor
 from .constants import METADATA_CATEGORIES, IMAGES, OVERWRITE
 
@@ -8,6 +9,15 @@ class MetadataRegistry:
     """A singleton registry to store and retrieve workflow metadata"""
 
     _instance = None
+
+    current_prompt_id: Any = None
+    current_prompt: Any = None
+    metadata: dict[str, Any] = {}
+    prompt_metadata: dict[str, Any] = {}
+    executed_nodes: set[str] = set()
+    node_cache: dict[str, Any] = {}
+    max_prompt_history: int = 3
+    metadata_categories: list[str] = METADATA_CATEGORIES
 
     def __new__(cls):
         if cls._instance is None:

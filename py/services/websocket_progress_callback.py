@@ -24,6 +24,6 @@ class WebSocketProgressCallback(ProgressCallback):
 class WebSocketBroadcastCallback:
     """Generic WebSocket progress callback broadcasting to all clients."""
 
-    async def on_progress(self, progress_data: Dict[str, Any]) -> None:
+    async def on_progress(self, payload: Dict[str, Any]) -> None:
         """Send the provided payload to all connected clients."""
-        await ws_manager.broadcast(progress_data)
+        await ws_manager.broadcast(payload)

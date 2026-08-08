@@ -101,6 +101,7 @@ class RecipeAnalysisService:
 
         temp_path = None
         metadata: Optional[dict[str, Any]] = None
+        image_info: Optional[dict[str, Any]] = None
         is_video = False
         extension = ".jpg"  # Default
 
@@ -413,7 +414,7 @@ class RecipeAnalysisService:
                 error_msg = "This image does not contain any generation metadata (prompt, models, or parameters)"
             else:
                 error_msg = "No parser found for this image"
-            payload = {"error": error_msg, "loras": []}
+            payload: dict[str, Any] = {"error": error_msg, "loras": []}
             if include_image_base64 and image_path:
                 payload["image_base64"] = self._encode_file(image_path)
             payload["is_video"] = is_video
@@ -494,7 +495,7 @@ class RecipeAnalysisService:
                     getattr(tensor_image, "dtype", None),
                 )
 
-            import torch  # type: ignore[import-not-found]
+            import torch  # pyright: ignore[reportMissingImports]
 
             if isinstance(tensor_image, torch.Tensor):
                 image_np = tensor_image.cpu().numpy()

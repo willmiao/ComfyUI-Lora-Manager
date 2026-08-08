@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Mapping
+from typing import Any, Callable, Mapping
 
 from aiohttp import web
 
@@ -105,7 +105,7 @@ class RecipeRouteRegistrar:
             handler = handler_lookup[definition.handler_name]
             self._bind_route(definition.method, definition.path, handler)
 
-    def _bind_route(self, method: str, path: str, handler: Callable) -> None:
+    def _bind_route(self, method: str, path: str, handler: Callable[..., Any]) -> None:
         add_method_name = self._METHOD_MAP[method.upper()]
         add_method = getattr(self._app.router, add_method_name)
         add_method(path, handler)

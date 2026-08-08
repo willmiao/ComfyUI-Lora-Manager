@@ -41,7 +41,7 @@ class AutoOrganizeResult:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
-        result = {
+        result: Dict[str, Any] = {
             'success': self.status != 'error',
             'status': self.status,
             'message': f'Auto-organize {self.operation_type} completed: {self.success_count} moved, {self.skipped_count} skipped, {self.failure_count} failed out of {self.total} total',
@@ -418,6 +418,8 @@ class ModelFileService:
         """Calculate the target directory for a model"""
         if is_flat_structure:
             file_path = model.get('file_path')
+            if not isinstance(file_path, str):
+                return None
             current_dir = os.path.dirname(file_path)
             
             # Check if already in root directory

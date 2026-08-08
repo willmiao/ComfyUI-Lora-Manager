@@ -3,9 +3,9 @@ import os
 import json
 import logging
 import time
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union, cast
 
-from .models import BaseModelMetadata, LoraMetadata
+from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, LoraMetadata
 from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
 
@@ -56,13 +56,13 @@ class MetadataManager:
             return None, True  # should_skip = True
 
     @staticmethod
-    async def load_metadata_payload(file_path: str) -> Dict:
+    async def load_metadata_payload(file_path: str) -> Dict[str, Any]:
         """
         Load metadata and return it as a dictionary, including any unknown fields.
         Falls back to reading the raw JSON file if parsing into a model class fails.
         """
 
-        payload: Dict = {}
+        payload: Dict[str, Any] = {}
         metadata_obj, should_skip = await MetadataManager.load_metadata(file_path)
 
         if metadata_obj:
@@ -120,7 +120,7 @@ class MetadataManager:
         return model_data
     
     @staticmethod
-    async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict]) -> bool:
+    async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict[str, Any]]) -> bool:
         """
         Save metadata with atomic write operations.
         
@@ -217,7 +217,7 @@ class MetadataManager:
             
             # Create instance based on model type
             if model_class.__name__ == "CheckpointMetadata":
-                metadata = model_class(
+                metadata = cast(Type[CheckpointMetadata], model_class)(
                     file_name=base_name,
                     model_name=base_name,
                     file_path=normalize_path(file_path),
@@ -232,7 +232,7 @@ class MetadataManager:
                     from_civitai=True
                 )
             elif model_class.__name__ == "EmbeddingMetadata":
-                metadata = model_class(
+                metadata = cast(Type[EmbeddingMetadata], model_class)(
                     file_name=base_name,
                     model_name=base_name,
                     file_path=normalize_path(file_path),
@@ -247,7 +247,7 @@ class MetadataManager:
                     from_civitai=True
                 )
             else:  # Default to LoraMetadata
-                metadata = model_class(
+                metadata = cast(Type[LoraMetadata], model_class)(
                     file_name=base_name,
                     model_name=base_name,
                     file_path=normalize_path(file_path),

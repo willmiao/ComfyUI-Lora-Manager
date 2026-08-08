@@ -148,7 +148,7 @@ class RecipeFormatParser(RecipeMetadataParser):
             checkpoint_data = recipe_metadata.get('checkpoint') or {}
             if isinstance(checkpoint_data, dict) and checkpoint_data:
                 version_id = checkpoint_data.get('modelVersionId') or checkpoint_data.get('id')
-                checkpoint_entry = {
+                checkpoint_entry: Dict[str, Any] = {
                     'id': version_id or 0,
                     'modelId': checkpoint_data.get('modelId', 0),
                     'name': checkpoint_data.get('name', 'Unknown Checkpoint'),

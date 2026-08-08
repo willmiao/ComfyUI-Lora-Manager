@@ -71,7 +71,7 @@ class ModelPageView:
         self._server_i18n = server_i18n
         self._logger = logger
 
-    def _load_supporters(self) -> dict:
+    def _load_supporters(self) -> dict[str, Any]:
         """Load supporters data from JSON file."""
         try:
             current_file = os.path.abspath(__file__)
@@ -152,7 +152,7 @@ class ModelPageView:
                 self._template_env.filters["t"] = (
                     self._server_i18n.create_template_filter()
                 )
-                self._template_env._i18n_filter_added = True  # type: ignore[attr-defined]
+                self._template_env._i18n_filter_added = True  # pyright: ignore[reportAttributeAccessIssue]
 
             from ...services.llm_service import PROVIDER_PRESETS
 
@@ -199,7 +199,7 @@ class ModelListingHandler:
         self,
         *,
         service,
-        parse_specific_params: Callable[[web.Request], Dict],
+        parse_specific_params: Callable[[web.Request], Dict[str, Any]],
         logger: logging.Logger,
     ) -> None:
         self._service = service
@@ -287,7 +287,7 @@ class ModelListingHandler:
             )
             return web.json_response({"error": str(exc)}, status=500)
 
-    def _parse_common_params(self, request: web.Request) -> Dict:
+    def _parse_common_params(self, request: web.Request) -> Dict[str, Any]:
         page = int(request.query.get("page", "1"))
         page_size = min(int(request.query.get("page_size", "20")), 100)
         sort_by = request.query.get("sort_by", "name")
@@ -658,7 +658,7 @@ class ModelManagementHandler:
         try:
             reader = await request.multipart()
 
-            field = await reader.next()
+            field: Any = await reader.next()
             if field is None or field.name != "preview_file":
                 raise ValueError("Expected 'preview_file' field")
             content_type = field.headers.get("Content-Type", "image/png")
@@ -700,7 +700,7 @@ class ModelManagementHandler:
                 {
                     "success": True,
                     "preview_url": config.get_preview_static_url(
-                        result["preview_path"]
+                        str(result["preview_path"])
                     ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
@@ -781,7 +781,7 @@ class ModelManagementHandler:
 
             result = await self._preview_service.replace_preview(
                 model_path=model_path,
-                preview_data=preview_data,
+                preview_data=preview_bytes,
                 content_type=content_type,
                 original_filename=original_filename,
                 nsfw_level=nsfw_level,
@@ -793,7 +793,7 @@ class ModelManagementHandler:
                 {
                     "success": True,
                     "preview_url": config.get_preview_static_url(
-                        result["preview_path"]
+                        str(result["preview_path"])
                     ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
@@ -2060,7 +2060,7 @@ class ModelCivitaiHandler:
         settings_service: SettingsManager,
         ws_manager: WebSocketManager,
         logger: logging.Logger,
-        metadata_provider_factory: Callable[[], Awaitable],
+        metadata_provider_factory: Callable[[], Awaitable[Any]],
         validate_model_type: Callable[[str], bool],
         expected_model_types: Callable[[], str],
         find_model_file: Callable[
@@ -2125,7 +2125,7 @@ class ModelCivitaiHandler:
                 downloaded_version_ids = set(
                     await history_service.get_downloaded_version_ids(
                         self._service.model_type,
-                        model_id,
+                        int(model_id),
                     )
                 )
             except Exception as exc:  # pragma: no cover - defensive logging
@@ -2402,8 +2402,8 @@ class ModelUpdateHandler:
             self._logger.error("Failed to fetch license info: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
-        updated: List[Dict[str, str]] = []
-        errors: List[Dict[str, str]] = []
+        updated: List[Dict[str, Any]] = []
+        errors: List[Dict[str, Any]] = []
         for model_id in model_ids:
             license_payload = license_map.get(model_id)
             if not license_payload:
@@ -2416,6 +2416,7 @@ class ModelUpdateHandler:
                 model_section = civitai_section.get("model")
                 if not isinstance(model_section, Mapping):
                     model_section = {}
+                model_section = dict(model_section)
                 model_section.update(resolved_payload)
                 civitai_section["model"] = model_section
                 metadata_payload["civitai"] = civitai_section
@@ -2431,7 +2432,7 @@ class ModelUpdateHandler:
                     )
                     errors.append({"filePath": metadata_path, "error": str(exc)})
 
-        response_payload = {"success": True, "updated": updated}
+        response_payload: Dict[str, Any] = {"success": True, "updated": updated}
         missing_model_ids = [mid for mid in model_ids if mid not in license_map]
         if missing_model_ids:
             response_payload["missingModelIds"] = missing_model_ids
@@ -2780,6 +2781,7 @@ class ModelUpdateHandler:
             civitai_payload = metadata_payload.get("civitai")
             if not isinstance(civitai_payload, Mapping):
                 civitai_payload = {}
+            civitai_payload = dict(civitai_payload)
 
             model_payload = civitai_payload.get("model")
             if not isinstance(model_payload, Mapping):
@@ -2824,7 +2826,7 @@ class ModelUpdateHandler:
 
         return aggregated
 
-    def _extract_target_model_ids(self, payload: Dict) -> Optional[List[int]]:
+    def _extract_target_model_ids(self, payload: Dict[str, Any]) -> Optional[List[int]]:
         if not isinstance(payload, Mapping):
             return None
 
@@ -2852,7 +2854,7 @@ class ModelUpdateHandler:
             return {}
 
         to_dict = getattr(metadata, "to_dict", None)
-        if callable(to_dict):
+        if to_dict:
             try:
                 return to_dict()
             except Exception:
@@ -2863,7 +2865,7 @@ class ModelUpdateHandler:
 
         return {}
 
-    async def _read_json(self, request: web.Request) -> Dict:
+    async def _read_json(self, request: web.Request) -> Dict[str, Any]:
         if not request.can_read_body:
             return {}
         try:
@@ -2895,7 +2897,7 @@ class ModelUpdateHandler:
         record,
         *,
         version_context: Optional[Dict[int, Dict[str, Any]]] = None,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         context = version_context or {}
         # Check user setting for hiding early access versions
         hide_early_access = False
@@ -2924,7 +2926,7 @@ class ModelUpdateHandler:
     @staticmethod
     def _serialize_version(
         version, context: Optional[Dict[str, Any]]
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         context = context or {}
         preview_override = context.get("preview_override")
         preview_url = (

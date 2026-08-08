@@ -35,6 +35,7 @@ class ModelHashIndex:
         
         # Track duplicates by filename - FIXED LOGIC
         is_re_registration = False
+        existing_hash: Optional[str] = None
         if filename in self._filename_to_hash:
             existing_hash = self._filename_to_hash[filename]
             existing_path = self._hash_to_path.get(existing_hash)
@@ -101,7 +102,7 @@ class ModelHashIndex:
         """Extract filename without extension from path"""
         return os.path.splitext(os.path.basename(file_path))[0]
     
-    def remove_by_path(self, file_path: str, hash_val: str = None) -> None:
+    def remove_by_path(self, file_path: str, hash_val: Optional[str] = None) -> None:
         """Remove entry by file path"""
         filename = self._get_filename_from_path(file_path)
         

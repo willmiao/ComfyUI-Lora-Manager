@@ -295,7 +295,7 @@ class PostProcessor:
         normalises every tag to lowercase for case-insensitive dedup.
         """
         merged: List[str] = []
-        seen: set = set()
+        seen: set[str] = set()
         for tag in list(existing) + list(new):
             t = tag.strip().lower()
             if t and t not in seen:

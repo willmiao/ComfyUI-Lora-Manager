@@ -73,7 +73,7 @@ class LoraStackCombinerLM:
 
         stack = inspect.stack()
         if len(stack) > 2 and stack[2].function == "get_input_info":
-            optional_inputs = _LoraStackOptionalInputs(optional_inputs)  # type: ignore[assignment]
+            optional_inputs = _LoraStackOptionalInputs(optional_inputs)  # pyright: ignore[reportAssignmentType]
 
         return {
             "required": {},

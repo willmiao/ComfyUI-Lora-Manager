@@ -1,7 +1,7 @@
 import logging
 import os
-from typing import List, Tuple
-import comfy.sd # type: ignore
+from typing import Any, List, Tuple
+import comfy.sd  # pyright: ignore[reportMissingImports]
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
 
 logger = logging.getLogger(__name__)
@@ -34,9 +34,9 @@ class UNETLoaderLM:
     CATEGORY = "Lora Manager/loaders"
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         # Get list of unet names from scanner (includes extra folder paths)
-        unet_names = s._get_unet_names()
+        unet_names = cls._get_unet_names()
         return {
             "required": {
                 "unet_name": (
@@ -105,7 +105,7 @@ class UNETLoaderLM:
             logger.error(f"Error getting unet names: {e}")
             return []
 
-    def load_unet(self, unet_name: str, weight_dtype: str) -> Tuple:
+    def load_unet(self, unet_name: str, weight_dtype: str) -> Tuple[Any, ...]:
         """Load a diffusion model by name, supporting extra folder paths
 
         Args:
@@ -148,7 +148,7 @@ class UNETLoaderLM:
 
     def _load_gguf_unet(
         self, unet_path: str, unet_name: str, weight_dtype: str
-    ) -> Tuple:
+    ) -> Tuple[Any, ...]:
         """Load a GGUF format diffusion model
 
         Args:

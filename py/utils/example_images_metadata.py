@@ -93,7 +93,7 @@ class MetadataUpdater:
     """Handles updating model metadata related to example images"""
     
     @staticmethod
-    async def refresh_model_metadata(model_hash, model_name, scanner_type, scanner, progress: dict | None = None):
+    async def refresh_model_metadata(model_hash, model_name, scanner_type, scanner, progress: dict[str, Any] | None = None):
         """Refresh model metadata from CivitAI
         
         Args:
@@ -263,8 +263,9 @@ class MetadataUpdater:
                 model_copy: Optional[Dict[str, Any]] = None
                 try:
                     model_copy = model.copy()
-                    model_copy.pop('folder', None)
-                    await MetadataManager.save_metadata(file_path, model_copy)
+                    if model_copy is not None:
+                        model_copy.pop('folder', None)
+                        await MetadataManager.save_metadata(file_path, model_copy)
                     logger.info(f"Saved metadata for {model.get('model_name')}")
                 except Exception as e:
                     logger.error(f"Failed to save metadata for {model.get('model_name')}: {str(e)}")
@@ -371,8 +372,9 @@ class MetadataUpdater:
             if file_path:
                 try:
                     model_copy = model_data.copy()
-                    model_copy.pop('folder', None)
-                    await MetadataManager.save_metadata(file_path, model_copy)
+                    if model_copy is not None:
+                        model_copy.pop('folder', None)
+                        await MetadataManager.save_metadata(file_path, model_copy)
                     logger.info(f"Saved metadata for {model_data.get('model_name')}")
                 except Exception as e:
                     logger.error(f"Failed to save metadata: {str(e)}")
@@ -553,7 +555,7 @@ class MetadataUpdater:
 
         images = civitai.get("images")
         if isinstance(images, list) and images:
-            stale: list[int] = []
+            stale_images: list[int] = []
 
             for idx, img in enumerate(images):
                 if img.get("url", ""):
@@ -563,15 +565,15 @@ class MetadataUpdater:
 
                 prefix = f"image_{idx}."
                 if not any(f.startswith(prefix) for f in dir_entries):
-                    stale.append(idx)
+                    stale_images.append(idx)
 
-            if stale:
-                for idx in reversed(stale):
+            if stale_images:
+                for idx in reversed(stale_images):
                     images.pop(idx)
                 has_changes = True
                 logger.info(
                     "Pruned %d stale image entry(ies) for %s",
-                    len(stale),
+                    len(stale_images),
                     getattr(metadata, "model_name", model_hash),
                 )
 

@@ -5,7 +5,7 @@ import time
 import uuid
 from typing import Any, Dict, Optional
 import numpy as np
-import folder_paths  # type: ignore
+import folder_paths  # pyright: ignore[reportMissingImports]
 from ..services.service_registry import ServiceRegistry
 from ..metadata_collector.metadata_processor import MetadataProcessor
 from ..metadata_collector import get_metadata
@@ -13,7 +13,7 @@ from ..utils.constants import CARD_PREVIEW_WIDTH
 from ..utils.exif_utils import ExifUtils
 from ..utils.utils import calculate_recipe_fingerprint, sanitize_folder_name
 from PIL import Image, PngImagePlugin
-import piexif
+import piexif  # pyright: ignore[reportMissingTypeStubs]
 import logging
 
 # Civitai-compatible sampler name mapping: ComfyUI internal → A1111 display name
@@ -355,7 +355,7 @@ class SaveImageLM:
         type_lower = model_type.lower() if model_type else "other"
         return f"urn:air:{slug}:{type_lower}:civitai:{model_id}@{version_id}"
 
-    def format_metadata(self, metadata_dict: dict, add_loras_to_prompt: bool = False) -> str:
+    def format_metadata(self, metadata_dict: dict[str, Any], add_loras_to_prompt: bool = False) -> str:
         """Format metadata as A1111-compatible parameters string with Hashes JSON and Civitai resources."""
         if not metadata_dict: return ""
 
@@ -396,7 +396,7 @@ class SaveImageLM:
             ckpt_display_name = os.path.splitext(os.path.basename(checkpoint))[0]
 
         # Resolve LoRA hash and Civitai data from local cache
-        loras_data: list[dict] = []
+        loras_data: list[dict[str, Any]] = []
         for lora_name, strength in lora_entries:
             lora_hash, lora_civitai, lora_base_model = self._resolve_model_cache_entry(
                 "lora_scanner", lora_name
@@ -418,9 +418,9 @@ class SaveImageLM:
                 hashes[f"LORA:{lora['name']}"] = lora["hash"][:10].upper()
 
         # Build Civitai resources JSON array
-        civitai_resources: list[dict] = []
+        civitai_resources: list[dict[str, Any]] = []
         if ckpt_civitai.get("id", 0) > 0:
-            ckpt_resource: dict = {}
+            ckpt_resource: dict[str, Any] = {}
             ckpt_type = (ckpt_civitai.get("model") or {}).get("type", "Checkpoint")
             model_id = ckpt_civitai.get("modelId", 0)
             version_id = ckpt_civitai.get("id", 0)
@@ -439,7 +439,7 @@ class SaveImageLM:
             lora_civitai = lora["civitai"]
             if not lora_civitai or lora_civitai.get("id", 0) <= 0:
                 continue
-            lora_resource: dict = {"weight": lora["strength"]}
+            lora_resource: dict[str, Any] = {"weight": lora["strength"]}
             lora_type = (lora_civitai.get("model") or {}).get("type", "LORA")
             model_id = lora_civitai.get("modelId", 0)
             version_id = lora_civitai.get("id", 0)

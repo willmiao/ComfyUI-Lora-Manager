@@ -9,7 +9,7 @@ import shutil
 import time
 import uuid
 from dataclasses import dataclass
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Awaitable, Dict, Iterable, Optional, cast
 
 from ...config import config
 from ...recipes.constants import GEN_PARAM_KEYS
@@ -71,6 +71,8 @@ class RecipePersistenceService:
             raise RecipeValidationError(
                 f"Missing required fields: {', '.join(missing_fields)}"
             )
+
+        assert metadata is not None
 
         resolved_image_bytes = self._resolve_image_bytes(image_bytes, image_base64)
         recipes_dir = target_dir or recipe_scanner.recipes_dir
@@ -650,7 +652,9 @@ class RecipePersistenceService:
 
         for candidate in candidates:
             try:
-                checkpoint_info = await lookup(candidate)
+                checkpoint_info = await cast(
+                    Awaitable[Any], lookup(candidate)
+                )
             except Exception as exc:
                 self._logger.debug(
                     "Failed to lookup checkpoint %s while saving widget recipe: %s",

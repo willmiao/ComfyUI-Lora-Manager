@@ -7,7 +7,7 @@ import os
 from typing import Awaitable, Callable, Mapping
 
 from aiohttp import web
-from server import PromptServer  # type: ignore
+from server import PromptServer  # pyright: ignore[reportMissingImports]
 
 from ..services.metadata_service import (
     get_metadata_archive_manager,

@@ -4,7 +4,7 @@ import os
 import sqlite3
 import threading
 from dataclasses import dataclass, field
-from typing import Dict, List, Mapping, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class PersistedCacheData:
     """Lightweight structure returned by the persistent cache."""
 
-    raw_data: List[Dict]
+    raw_data: List[Dict[str, Any]]
     hash_rows: List[Tuple[str, str]]
     excluded_models: List[str]
     autov3_hash_rows: List[Tuple[str, str]] = field(default_factory=list)
@@ -70,8 +70,8 @@ class PersistentModelCache:
         self._db_path = db_path or self._resolve_default_path(self._library_name)
         self._db_lock = threading.Lock()
         self._schema_initialized = False
+        directory = os.path.dirname(self._db_path)
         try:
-            directory = os.path.dirname(self._db_path)
             if directory:
                 os.makedirs(directory, exist_ok=True)
         except Exception as exc:  # pragma: no cover - defensive guard
@@ -134,7 +134,7 @@ class PersistentModelCache:
             logger.warning("Failed to load persisted cache for %s: %s", model_type, exc)
             return None
 
-        raw_data: List[Dict] = []
+        raw_data: List[Dict[str, Any]] = []
         for row in rows:
             file_path: str = row["file_path"]
             trained_words = []
@@ -145,7 +145,7 @@ class PersistentModelCache:
                     trained_words = []
 
             creator_username = row["civitai_creator_username"]
-            civitai: Optional[Dict] = None
+            civitai: Optional[Dict[str, Any]] = None
             civitai_has_data = any(
                 row[col] is not None
                 for col in ("civitai_id", "civitai_model_id", "civitai_model_type", "civitai_name")
@@ -223,7 +223,7 @@ class PersistentModelCache:
             autov3_hash_rows=autov3_pairs,
         )
 
-    def save_cache(self, model_type: str, raw_data: Sequence[Dict], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None) -> None:
+    def save_cache(self, model_type: str, raw_data: Sequence[Dict[str, Any]], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None) -> None:
         if not self.is_enabled():
             return
         if not self._schema_initialized:
@@ -238,7 +238,7 @@ class PersistentModelCache:
                     conn.execute("BEGIN")
 
                     model_rows = [self._prepare_model_row(model_type, item) for item in raw_data]
-                    model_map: Dict[str, Tuple] = {
+                    model_map: Dict[str, Tuple[Any, ...]] = {
                         row[1]: row for row in model_rows if row[1]  # row[1] is file_path
                     }
 
@@ -279,8 +279,8 @@ class PersistentModelCache:
                             to_remove_models,
                         )
 
-                    insert_rows: List[Tuple] = []
-                    update_rows: List[Tuple] = []
+                    insert_rows: List[Tuple[Any, ...]] = []
+                    update_rows: List[Tuple[Any, ...]] = []
 
                     for file_path, row in model_map.items():
                         existing = existing_model_map.get(file_path)
@@ -312,11 +312,11 @@ class PersistentModelCache:
                         "SELECT file_path, tag FROM model_tags WHERE model_type = ?",
                         (model_type,),
                     ).fetchall()
-                    existing_tags: Dict[str, set] = {}
+                    existing_tags: Dict[str, set[str]] = {}
                     for row in existing_tags_rows:
                         existing_tags.setdefault(row["file_path"], set()).add(row["tag"])
 
-                    new_tags: Dict[str, set] = {}
+                    new_tags: Dict[str, set[str]] = {}
                     for item in raw_data:
                         file_path = item.get("file_path")
                         if not file_path:
@@ -355,14 +355,14 @@ class PersistentModelCache:
                         "SELECT sha256, file_path FROM hash_index WHERE model_type = ?",
                         (model_type,),
                     ).fetchall()
-                    existing_hash_map: Dict[str, set] = {}
+                    existing_hash_map: Dict[str, set[str]] = {}
                     for row in existing_hash_rows:
                         sha_value = (row["sha256"] or "").lower()
                         if not sha_value:
                             continue
                         existing_hash_map.setdefault(sha_value, set()).add(row["file_path"])
 
-                    new_hash_map: Dict[str, set] = {}
+                    new_hash_map: Dict[str, set[str]] = {}
                     for sha_value, paths in hash_index.items():
                         normalized_sha = (sha_value or "").lower()
                         if not normalized_sha:
@@ -401,14 +401,14 @@ class PersistentModelCache:
                             "SELECT autov3, file_path FROM autov3_index WHERE model_type = ?",
                             (model_type,),
                         ).fetchall()
-                        existing_autov3_map: Dict[str, set] = {}
+                        existing_autov3_map: Dict[str, set[str]] = {}
                         for row in existing_autov3_rows:
                             autov3_value = (row["autov3"] or "").lower()
                             if not autov3_value:
                                 continue
                             existing_autov3_map.setdefault(autov3_value, set()).add(row["file_path"])
 
-                        new_autov3_map: Dict[str, set] = {}
+                        new_autov3_map: Dict[str, set[str]] = {}
                         for autov3_value, paths in autov3_hash_index.items():
                             normalized_autov3 = (autov3_value or "").lower()
                             if not normalized_autov3:
@@ -600,7 +600,7 @@ class PersistentModelCache:
         conn.row_factory = sqlite3.Row
         return conn
 
-    def _prepare_model_row(self, model_type: str, item: Dict) -> Tuple:
+    def _prepare_model_row(self, model_type: str, item: Dict[str, Any]) -> Tuple[Any, ...]:
         civitai = item.get("civitai") or {}
         trained_words = civitai.get("trainedWords")
         if isinstance(trained_words, str):
@@ -675,8 +675,8 @@ class PersistentModelCache:
     def update_single_model(
         self,
         model_type: str,
-        new_item: Dict,
-        old_item: Optional[Dict] = None,
+        new_item: Dict[str, Any],
+        old_item: Optional[Dict[str, Any]] = None,
     ) -> None:
         """Update a single model row in the persistent cache.
 
@@ -715,8 +715,8 @@ class PersistentModelCache:
                     conn.execute(self._insert_model_sql(), row)
 
                     # --- tags ---
-                    new_tags: set = set(new_item.get("tags") or [])
-                    old_tags: set = set(old_item.get("tags") or []) if old_item else set()
+                    new_tags: set[str] = set(new_item.get("tags") or [])
+                    old_tags: set[str] = set(old_item.get("tags") or []) if old_item else set()
                     tags_to_delete = old_tags - new_tags
                     tags_to_insert = new_tags - old_tags
 

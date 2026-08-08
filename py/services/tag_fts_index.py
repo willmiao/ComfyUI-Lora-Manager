@@ -18,7 +18,7 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 
@@ -87,10 +87,11 @@ class TagFTSIndex:
         self._indexing_in_progress = False
         self._schema_initialized = False
         self._warned_not_ready = False
+        self._needs_rebuild = False
 
         # Ensure directory exists
+        directory = os.path.dirname(self._db_path)
         try:
-            directory = os.path.dirname(self._db_path)
             if directory:
                 os.makedirs(directory, exist_ok=True)
         except Exception as exc:
@@ -358,7 +359,7 @@ class TagFTSIndex:
         finally:
             self._indexing_in_progress = False
 
-    def _insert_batch(self, conn: sqlite3.Connection, rows: List[tuple]) -> None:
+    def _insert_batch(self, conn: sqlite3.Connection, rows: List[tuple[str, int, int, str]]) -> None:
         """Insert a batch of rows into the database.
 
         Each row is a tuple of (tag_name, category, post_count, aliases).
@@ -443,7 +444,7 @@ class TagFTSIndex:
         categories: Optional[List[int]] = None,
         limit: int = 20,
         offset: int = 0,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """Search tags using FTS5 with prefix matching.
 
         Supports alias search: if the query matches an alias rather than
@@ -530,7 +531,7 @@ class TagFTSIndex:
         categories: Optional[List[int]],
         limit: int,
         offset: int,
-    ) -> tuple[str, list[object]]:
+    ) -> tuple[str, list[int | str]]:
         """Build the SQL statement and params for a tag search."""
         # Escape special LIKE characters and add wildcard
         query_escaped = (

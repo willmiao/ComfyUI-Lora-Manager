@@ -57,8 +57,8 @@ class CreateHookLoraLM:
         del text  # used by the frontend widget only
 
         # Lazy imports: comfy is not available in CI/test environment at module level
-        import comfy.hooks  # type: ignore  # noqa: C0415
-        import comfy.utils  # type: ignore  # noqa: C0415
+        import comfy.hooks  # pyright: ignore[reportMissingImports]  # noqa: C0415
+        import comfy.utils  # pyright: ignore[reportMissingImports]  # noqa: C0415
 
         prev_hooks: comfy.hooks.HookGroup | None = kwargs.get("prev_hooks")
 

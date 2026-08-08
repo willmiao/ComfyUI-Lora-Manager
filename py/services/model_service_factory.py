@@ -6,13 +6,13 @@ logger = logging.getLogger(__name__)
 class ModelServiceFactory:
     """Factory for managing model services and routes"""
     
-    _services: Dict[str, Type] = {}
-    _routes: Dict[str, Type] = {}
+    _services: Dict[str, Type[Any]] = {}
+    _routes: Dict[str, Type[Any]] = {}
     _initialized_services: Dict[str, Any] = {}
     _initialized_routes: Dict[str, Any] = {}
     
     @classmethod
-    def register_model_type(cls, model_type: str, service_class: Type, route_class: Type):
+    def register_model_type(cls, model_type: str, service_class: Type[Any], route_class: Type[Any]):
         """Register a new model type with its service and route classes
         
         Args:
@@ -24,7 +24,7 @@ class ModelServiceFactory:
         cls._routes[model_type] = route_class
     
     @classmethod
-    def get_service_class(cls, model_type: str) -> Type:
+    def get_service_class(cls, model_type: str) -> Type[Any]:
         """Get service class for a model type
         
         Args:
@@ -41,7 +41,7 @@ class ModelServiceFactory:
         return cls._services[model_type]
     
     @classmethod
-    def get_route_class(cls, model_type: str) -> Type:
+    def get_route_class(cls, model_type: str) -> Type[Any]:
         """Get route class for a model type
         
         Args:
@@ -87,7 +87,7 @@ class ModelServiceFactory:
                 logger.error(f"Failed to setup routes for {model_type}: {e}", exc_info=True)
     
     @classmethod
-    def get_registered_types(cls) -> list:
+    def get_registered_types(cls) -> list[str]:
         """Get list of all registered model types
         
         Returns:

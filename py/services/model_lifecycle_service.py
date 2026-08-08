@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, TYPE_CHECKING
+from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, TYPE_CHECKING, cast
 
 from ..services.service_registry import ServiceRegistry
 from ..utils.constants import PREVIEW_EXTENSIONS
@@ -87,8 +87,8 @@ class ModelLifecycleService:
         scanner,
         metadata_manager,
         metadata_loader: Callable[[str], Awaitable[Dict[str, object]]],
-        recipe_scanner_factory: Callable[[], Awaitable] | None = None,
-        update_service: "ModelUpdateService" | None = None,
+        recipe_scanner_factory: Callable[[], Awaitable[Any]] | None = None,
+        update_service: Optional["ModelUpdateService"] = None,
     ) -> None:
         self._scanner = scanner
         self._metadata_manager = metadata_manager
@@ -146,7 +146,7 @@ class ModelLifecycleService:
 
         persist_current_cache = getattr(self._scanner, "_persist_current_cache", None)
         if callable(persist_current_cache):
-            await persist_current_cache()
+            await cast(Awaitable[Any], persist_current_cache())
 
         return {"success": True, "deleted_files": deleted_files}
 
@@ -252,7 +252,7 @@ class ModelLifecycleService:
 
         persist_current_cache = getattr(self._scanner, "_persist_current_cache", None)
         if callable(persist_current_cache):
-            await persist_current_cache()
+            await cast(Awaitable[Any], persist_current_cache())
 
         message = f"Model {os.path.basename(file_path)} excluded"
         return {"success": True, "message": message}
@@ -357,7 +357,8 @@ class ModelLifecycleService:
 
         if os.path.exists(metadata_path):
             metadata = await self._metadata_loader(metadata_path)
-            hash_value = metadata.get("sha256") if isinstance(metadata, dict) else None
+            raw_hash = metadata.get("sha256") if isinstance(metadata, dict) else None
+            hash_value = raw_hash if isinstance(raw_hash, str) else None
 
         renamed_files: List[str] = []
         new_metadata_path: Optional[str] = None

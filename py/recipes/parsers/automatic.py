@@ -52,7 +52,7 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                     negative_and_params = ""
             
             # Initialize metadata
-            metadata = {
+            metadata: Dict[str, Any] = {
                 "prompt": prompt,
                 "loras": []
             }

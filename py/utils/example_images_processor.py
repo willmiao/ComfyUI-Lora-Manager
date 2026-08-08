@@ -4,6 +4,7 @@ import os
 import re
 import random
 import string
+from typing import Any
 from aiohttp import web
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..services.service_registry import ServiceRegistry
@@ -259,7 +260,7 @@ class ExampleImagesProcessor:
                 logger.debug("File already exists, skipping download for %s", image_url)
                 continue
 
-            async def _attempt_download() -> tuple:
+            async def _attempt_download() -> tuple[bool, Any, Any]:
                 logger.debug("Downloading media file %s for %s", i, model_name)
                 return await downloader.download_to_memory(
                     image_url,

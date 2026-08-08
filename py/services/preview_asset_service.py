@@ -22,7 +22,7 @@ class PreviewAssetService:
         self,
         *,
         metadata_manager,
-        downloader_factory: Callable[[], Awaitable],
+        downloader_factory: Callable[[], Awaitable[Any]],
         exif_utils,
     ) -> None:
         self._metadata_manager = metadata_manager
@@ -68,6 +68,8 @@ class PreviewAssetService:
 
         if not preview_url:
             return
+
+        preview_url = str(preview_url)
 
         def extension_from_url(url: str, fallback: str) -> str:
             try:

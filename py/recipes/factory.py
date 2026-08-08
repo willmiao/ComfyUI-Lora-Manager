@@ -1,6 +1,7 @@
 """Factory for creating recipe metadata parsers."""
 
 import logging
+from typing import Any
 from .parsers import (
     RecipeFormatParser,
     ComfyMetadataParser,
@@ -31,7 +32,8 @@ class RecipeParserFactory:
         # First, try CivitaiApiMetadataParser for dict input
         if isinstance(metadata, dict):
             try:
-                if CivitaiApiMetadataParser().is_metadata_matching(metadata):
+                user_comment: Any = metadata
+                if CivitaiApiMetadataParser().is_metadata_matching(user_comment):
                     return CivitaiApiMetadataParser()
             except Exception as e:
                 logger.debug(f"CivitaiApiMetadataParser check failed: {e}")

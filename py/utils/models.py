@@ -1,5 +1,5 @@
 from dataclasses import dataclass, asdict, field
-from typing import Dict, Optional, List, Any
+from typing import Callable, Dict, Optional, List, Any
 from datetime import datetime
 import os
 from .constants import INVALID_AUTOV3_EMPTY_HASH
@@ -23,7 +23,7 @@ def normalize_autov3(value: Any) -> Optional[str]:
     return None
 
 
-def autov3_from_civitai_files(civitai_data: Optional[Dict], sha256: str) -> Optional[str]:
+def autov3_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: str) -> Optional[str]:
     """Extract the AutoV3 hash from Civitai metadata for the matching file.
 
     Civitai versions can ship multiple files; the AutoV3 hash is only valid
@@ -64,7 +64,7 @@ class BaseModelMetadata:
     civitai: Dict[str, Any] = field(
         default_factory=dict
     )  # Civitai API data if available
-    tags: List[str] = None  # Model tags
+    tags: List[str] = field(default_factory=list)  # Model tags
     modelDescription: str = ""  # Full model description
     civitai_deleted: bool = False  # Whether deleted from Civitai
     favorite: bool = False  # Whether the model is a favorite
@@ -96,7 +96,7 @@ class BaseModelMetadata:
             self.trainedWords = []
 
     @classmethod
-    def from_dict(cls, data: Dict) -> "BaseModelMetadata":
+    def from_dict(cls, data: Dict[str, Any]) -> "BaseModelMetadata":
         """Create instance from dictionary"""
         data_copy = data.copy()
 
@@ -136,7 +136,7 @@ class BaseModelMetadata:
 
         return instance
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization"""
         result = asdict(self)
 
@@ -158,7 +158,7 @@ class BaseModelMetadata:
 
         return result
 
-    def update_civitai_info(self, civitai_data: Dict) -> None:
+    def update_civitai_info(self, civitai_data: Dict[str, Any]) -> None:
         """Update Civitai information.
 
         Civitai's AutoV3 is the authoritative hash for recipe matching, so
@@ -192,7 +192,7 @@ class BaseModelMetadata:
 
     @staticmethod
     def generate_unique_filename(
-        target_dir: str, base_name: str, extension: str, hash_provider: callable = None
+        target_dir: str, base_name: str, extension: str, hash_provider: Optional[Callable[[], str]] = None
     ) -> str:
         """Generate a unique filename to avoid conflicts
 
@@ -243,7 +243,7 @@ class LoraMetadata(BaseModelMetadata):
 
     @classmethod
     def from_civitai_info(
-        cls, version_info: Dict, file_info: Dict, save_path: str
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
     ) -> "LoraMetadata":
         """Create LoraMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
@@ -287,7 +287,7 @@ class CheckpointMetadata(BaseModelMetadata):
 
     @classmethod
     def from_civitai_info(
-        cls, version_info: Dict, file_info: Dict, save_path: str
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
     ) -> "CheckpointMetadata":
         """Create CheckpointMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
@@ -332,7 +332,7 @@ class EmbeddingMetadata(BaseModelMetadata):
 
     @classmethod
     def from_civitai_info(
-        cls, version_info: Dict, file_info: Dict, save_path: str
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
     ) -> "EmbeddingMetadata":
         """Create EmbeddingMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")

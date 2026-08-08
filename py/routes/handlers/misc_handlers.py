@@ -276,7 +276,7 @@ def _collect_comfyui_session_logs(
 ) -> dict[str, Any]:
     if log_entries is None:
         try:
-            import app.logger as comfy_logger
+            import app.logger as comfy_logger  # pyright: ignore[reportMissingImports]
 
             log_entries = list(comfy_logger.get_logs() or [])
         except Exception as exc:  # pragma: no cover - environment dependent
@@ -422,10 +422,10 @@ class PromptServerProtocol(Protocol):
     """Subset of PromptServer used by the handlers."""
 
     instance: "PromptServerProtocol"
-    sockets: dict  # maps clientId (sid) → WebSocketResponse
+    sockets: dict[str, Any]  # maps clientId (sid) → WebSocketResponse
 
     def send_sync(
-        self, event: str, payload: dict | None = None, sid: str | None = None
+        self, event: str, payload: dict[str, Any] | None = None, sid: str | None = None
     ) -> None:  # pragma: no cover - protocol
         ...
 
@@ -443,7 +443,12 @@ class UsageStatsFactory(Protocol):
 class MetadataProviderProtocol(Protocol):
     async def get_model_versions(
         self, model_id: int
-    ) -> dict | None:  # pragma: no cover - protocol
+    ) -> dict[str, Any] | None:  # pragma: no cover - protocol
+        ...
+
+    async def get_user_models(
+        self, username: str, cursor: str | None = None
+    ) -> Any:  # pragma: no cover - protocol
         ...
 
 
@@ -466,16 +471,16 @@ class MetadataArchiveManagerProtocol(Protocol):
 class BackupServiceProtocol(Protocol):
     async def create_snapshot(
         self, *, snapshot_type: str = "manual", persist: bool = False
-    ) -> dict:  # pragma: no cover - protocol
+    ) -> dict[str, Any]:  # pragma: no cover - protocol
         ...
 
-    async def restore_snapshot(self, archive_path: str) -> dict:  # pragma: no cover - protocol
+    async def restore_snapshot(self, archive_path: str) -> dict[str, Any]:  # pragma: no cover - protocol
         ...
 
-    def get_status(self) -> dict:  # pragma: no cover - protocol
+    def get_status(self) -> dict[str, Any]:  # pragma: no cover - protocol
         ...
 
-    def get_available_snapshots(self) -> list[dict]:  # pragma: no cover - protocol
+    def get_available_snapshots(self) -> list[dict[str, Any]]:  # pragma: no cover - protocol
         ...
 
 
@@ -491,7 +496,7 @@ class NodeRegistry:
     def __init__(self) -> None:
         self._lock = asyncio.Lock()
         # sid → {unique_id → node_info}
-        self._tab_nodes: Dict[str, Dict[str, dict]] = {}
+        self._tab_nodes: Dict[str, Dict[str, dict[str, Any]]] = {}
         self._ready = asyncio.Event()
         self._waiting_clients: set[str] = set()
 
@@ -504,7 +509,7 @@ class NodeRegistry:
     # Helpers to build one node dict (extracted so it's reused for each tab)
     # ------------------------------------------------------------------
     @staticmethod
-    def _build_node_dict(node: dict) -> dict:
+    def _build_node_dict(node: dict[str, Any]) -> dict[str, Any]:
         node_id = node["node_id"]
         graph_id = str(node["graph_id"])
         unique_id = f"{graph_id}:{node_id}"
@@ -513,11 +518,11 @@ class NodeRegistry:
         bgcolor = node.get("bgcolor") or DEFAULT_NODE_COLOR
 
         raw_capabilities = node.get("capabilities")
-        capabilities: dict = {}
+        capabilities: dict[str, Any] = {}
         if isinstance(raw_capabilities, dict):
             capabilities = dict(raw_capabilities)
 
-        raw_widget_names: list | None = node.get("widget_names")
+        raw_widget_names: list[Any] | None = node.get("widget_names")
         if not isinstance(raw_widget_names, list):
             capability_widget_names = capabilities.get("widget_names")
             raw_widget_names = (
@@ -565,9 +570,9 @@ class NodeRegistry:
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
-    async def register_nodes(self, sid: str, nodes: list[dict]) -> None:
+    async def register_nodes(self, sid: str, nodes: list[dict[str, Any]]) -> None:
         """Register/replace the node list for a single ComfyUI tab (identified by *sid*)."""
-        tab_nodes: dict[str, dict] = {}
+        tab_nodes: dict[str, dict[str, Any]] = {}
         for node in nodes:
             nd = self._build_node_dict(node)
             tab_nodes[nd["unique_id"]] = nd
@@ -602,7 +607,7 @@ class NodeRegistry:
         except asyncio.TimeoutError:
             return False
 
-    async def get_merged_registry(self, active_sids: set[str] | None = None) -> dict:
+    async def get_merged_registry(self, active_sids: set[str] | None = None) -> dict[str, Any]:
         """Return the union of all known tab nodes, pruning any tab that is no
         longer connected."""
         async with self._lock:
@@ -619,8 +624,8 @@ class NodeRegistry:
                     len(stale_sids), stale_sids,
                 )
 
-            merged: dict[str, dict] = {}
-            tab_info: dict[str, dict] = {}
+            merged: dict[str, dict[str, Any]] = {}
+            tab_info: dict[str, dict[str, Any]] = {}
             for sid, nodes in self._tab_nodes.items():
                 tab_info[sid] = {
                     "node_count": len(nodes),
@@ -653,7 +658,7 @@ class SupportersHandler:
     def __init__(self, logger: logging.Logger | None = None) -> None:
         self._logger = logger or logging.getLogger(__name__)
 
-    def _load_supporters(self) -> dict:
+    def _load_supporters(self) -> dict[str, Any]:
         """Load supporters data from JSON file."""
         try:
             current_file = os.path.abspath(__file__)
@@ -1229,10 +1234,8 @@ class DoctorHandler:
         settings_snapshot = _sanitize_sensitive_data(
             getattr(self._settings, "settings", {}) or {}
         )
-        startup_messages_getter = getattr(self._settings, "get_startup_messages", None)
-        startup_messages = (
-            list(startup_messages_getter()) if callable(startup_messages_getter) else []
-        )
+        startup_messages_getter: Any = getattr(self._settings, "get_startup_messages", None)
+        startup_messages = list(startup_messages_getter()) if startup_messages_getter else []
 
         environment = {
             "app_version": app_version,
@@ -1439,7 +1442,7 @@ class SettingsHandler:
         *,
         settings_service=None,
         metadata_provider_updater: Callable[
-            [], Awaitable[None]
+            [], Awaitable[Any]
         ] = update_metadata_providers,
         downloader_factory: Callable[
             [], Awaitable[DownloaderProtocol]
@@ -1484,8 +1487,8 @@ class SettingsHandler:
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file
-            messages_getter = getattr(self._settings, "get_startup_messages", None)
-            messages = list(messages_getter()) if callable(messages_getter) else []
+            messages_getter: Any = getattr(self._settings, "get_startup_messages", None)
+            messages = list(messages_getter()) if messages_getter else []
             return web.json_response(
                 {
                     "success": True,
@@ -2005,11 +2008,11 @@ async def _noop_backup_service() -> None:
 
 @dataclass
 class ServiceRegistryAdapter:
-    get_lora_scanner: Callable[[], Awaitable]
-    get_checkpoint_scanner: Callable[[], Awaitable]
-    get_embedding_scanner: Callable[[], Awaitable]
-    get_downloaded_version_history_service: Callable[[], Awaitable]
-    get_backup_service: Callable[[], Awaitable] = _noop_backup_service
+    get_lora_scanner: Callable[[], Awaitable[Any]]
+    get_checkpoint_scanner: Callable[[], Awaitable[Any]]
+    get_embedding_scanner: Callable[[], Awaitable[Any]]
+    get_downloaded_version_history_service: Callable[[], Awaitable[Any]]
+    get_backup_service: Callable[[], Awaitable[Any]] = _noop_backup_service
 
 
 class ModelLibraryHandler:
@@ -2050,8 +2053,8 @@ class ModelLibraryHandler:
         return await self._service_registry.get_downloaded_version_history_service()
 
     @staticmethod
-    def _with_downloaded_flag(versions: list[dict]) -> list[dict]:
-        enriched: list[dict] = []
+    def _with_downloaded_flag(versions: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        enriched: list[dict[str, Any]] = []
         for version in versions:
             entry = dict(version)
             entry.setdefault("hasBeenDownloaded", True)
@@ -2244,7 +2247,7 @@ class ModelLibraryHandler:
             checkpoint_scanner = await self._service_registry.get_checkpoint_scanner()
             embedding_scanner = await self._service_registry.get_embedding_scanner()
 
-            results: list[dict] = []
+            results: list[dict[str, Any]] = []
             for model_id in model_ids:
                 lora_versions = await lora_scanner.get_model_versions_by_id(model_id)
                 if lora_versions:
@@ -2353,7 +2356,7 @@ class ModelLibraryHandler:
                 )
 
             try:
-                model_version_id = int(data.get("modelVersionId"))
+                model_version_id = int(data.get("modelVersionId"))  # pyright: ignore[reportArgumentType]
             except (TypeError, ValueError):
                 return web.json_response(
                     {"success": False, "error": "Parameter modelVersionId must be an integer"},
@@ -2465,10 +2468,10 @@ class ModelLibraryHandler:
                 "checkpoint": checkpoint_scanner,
                 "embedding": embedding_scanner,
             }
-            scanner = scanner_map.get(found_type)
+            scanner = scanner_map.get(found_type or "")
             if scanner:
-                persist = getattr(scanner, "_persist_current_cache", None)
-                if callable(persist):
+                persist: Any = getattr(scanner, "_persist_current_cache", None)
+                if persist:
                     await persist()
 
             history_service = await self._get_download_history_service()
@@ -2649,13 +2652,13 @@ class ModelLibraryHandler:
             }
             lora_type_aliases = {model_type.lower() for model_type in VALID_LORA_TYPES}
 
-            type_scanner_map: Dict[str, object | None] = {
+            type_scanner_map: Dict[str, Any] = {
                 **{alias: lora_scanner for alias in lora_type_aliases},
                 "checkpoint": checkpoint_scanner,
                 "textualinversion": embedding_scanner,
             }
 
-            versions: list[dict] = []
+            versions: list[dict[str, Any]] = []
             history_service = await self._get_download_history_service()
             model_ids: list[int] = []
             model_count = 0
@@ -2707,6 +2710,8 @@ class ModelLibraryHandler:
                 tags_value = model.get("tags")
                 tags = tags_value if isinstance(tags_value, list) else []
                 model_id = model.get("id")
+                if model_id is None:
+                    continue
                 try:
                     model_id_int = int(model_id)
                 except (TypeError, ValueError):
@@ -2722,6 +2727,8 @@ class ModelLibraryHandler:
                         continue
 
                     version_id = version.get("id")
+                    if version_id is None:
+                        continue
                     try:
                         version_id_int = int(version_id)
                     except (TypeError, ValueError):
@@ -2783,7 +2790,7 @@ class MetadataArchiveHandler:
         ] = get_metadata_archive_manager,
         settings_service=None,
         metadata_provider_updater: Callable[
-            [], Awaitable[None]
+            [], Awaitable[Any]
         ] = update_metadata_providers,
     ) -> None:
         self._metadata_archive_manager_factory = metadata_archive_manager_factory
@@ -2930,7 +2937,7 @@ class BackupHandler:
 
             if request.content_type.startswith("multipart/"):
                 reader = await request.multipart()
-                field = await reader.next()
+                field: Any = await reader.next()
                 uploaded = False
                 while field is not None:
                     if getattr(field, "filename", None):
@@ -3549,7 +3556,7 @@ class NodeRegistryHandler:
                 except (TypeError, ValueError):
                     parsed_node_id = node_identifier
 
-                payload: dict = {
+                payload: dict[str, Any] = {
                     "id": parsed_node_id,
                     "value": value,
                     "mode": mode,
@@ -3673,7 +3680,7 @@ class NodeRegistryHandler:
                 except (TypeError, ValueError):
                     parsed_node_id = node_identifier
 
-                payload: dict = {
+                payload: dict[str, Any] = {
                     "id": parsed_node_id,
                     "value": value,
                     "mode": mode,
@@ -3740,8 +3747,8 @@ class MiscHandlerSet:
         doctor: DoctorHandler,
         example_workflows: ExampleWorkflowsHandler,
         base_model: BaseModelHandlerSet,
-        hf_handler: HfHandler | None = None,
-        agent_handler: AgentHandler | None = None,
+        hf_handler: Any = None,
+        agent_handler: Any = None,
     ) -> None:
         self.health = health
         self.settings = settings

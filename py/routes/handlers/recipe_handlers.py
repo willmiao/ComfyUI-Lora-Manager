@@ -1082,10 +1082,10 @@ class RecipeManagementHandler:
         *,
         image_url: str,
         name: str,
-        lora_entries: list,
-        checkpoint_entry: dict,
-        gen_params_request: dict,
-        tags: list,
+        lora_entries: list[Any],
+        checkpoint_entry: Dict[str, Any] | None,
+        gen_params_request: Dict[str, Any] | None,
+        tags: list[Any],
         base_model: str,
         source_path: str,
     ) -> web.Response:
@@ -1678,7 +1678,7 @@ class RecipeManagementHandler:
             if not provider:
                 return ""
 
-            version_info = await provider.get_model_version_info(version_id)
+            version_info = await provider.get_model_version_info(str(version_id))
             if isinstance(version_info, tuple):
                 version_info = version_info[0]
 
@@ -2391,7 +2391,7 @@ class RecipeAnalysisHandler:
             content_type = request.headers.get("Content-Type", "")
             if "multipart/form-data" in content_type:
                 reader = await request.multipart()
-                field = await reader.next()
+                field: Any = await reader.next()
                 if field is None or field.name != "image":
                     raise RecipeValidationError("No image field found")
                 image_chunks = bytearray()

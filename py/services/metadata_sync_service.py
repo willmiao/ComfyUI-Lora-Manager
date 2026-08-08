@@ -6,7 +6,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
+from typing import Any, Awaitable, Callable, Dict, Iterable, Optional, Protocol
 
 from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
@@ -18,14 +18,14 @@ from .errors import RateLimitError
 logger = logging.getLogger(__name__)
 
 
-class MetadataProviderProtocol:
+class MetadataProviderProtocol(Protocol):
     """Subset of metadata provider interface consumed by the sync service."""
 
-    async def get_model_by_hash(self, sha256: str) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> tuple[Optional[Dict[str, Any]], Optional[str]]:
         ...
 
     async def get_model_version(
-        self, model_id: int, model_version_id: Optional[int]
+        self, model_id: Any = None, version_id: Any = None
     ) -> Optional[Dict[str, Any]]:
         ...
 
@@ -39,8 +39,8 @@ class MetadataSyncService:
         metadata_manager,
         preview_service,
         settings: SettingsManager,
-        default_metadata_provider_factory: Callable[[], Awaitable[MetadataProviderProtocol]],
-        metadata_provider_selector: Callable[[str], Awaitable[MetadataProviderProtocol]],
+        default_metadata_provider_factory: Callable[..., Awaitable[MetadataProviderProtocol]],
+        metadata_provider_selector: Callable[..., Awaitable[MetadataProviderProtocol]],
     ) -> None:
         self._metadata_manager = metadata_manager
         self._preview_service = preview_service
@@ -492,7 +492,7 @@ class MetadataSyncService:
         if not file_paths:
             raise ValueError("No file paths provided for verification")
 
-        results = {
+        results: Dict[str, Any] = {
             "verified_as_duplicates": True,
             "mismatched_files": [],
             "new_hash_map": {},

@@ -10,7 +10,7 @@ from .errors import RateLimitError, ResourceNotFoundError
 try:
     from bs4 import BeautifulSoup
 except ImportError as exc:
-    BeautifulSoup = None  # type: ignore[assignment]
+    BeautifulSoup = None  # pyright: ignore[reportAssignmentType]
     _BS4_IMPORT_ERROR = exc
 else:
     _BS4_IMPORT_ERROR = None
@@ -18,7 +18,7 @@ else:
 try:
     import aiosqlite
 except ImportError as exc:
-    aiosqlite = None  # type: ignore[assignment]
+    aiosqlite = None  # pyright: ignore[reportAssignmentType]
     _AIOSQLITE_IMPORT_ERROR = exc
 else:
     _AIOSQLITE_IMPORT_ERROR = None
@@ -105,24 +105,24 @@ class ModelMetadataProvider(ABC):
     """Base abstract class for all model metadata providers"""
     
     @abstractmethod
-    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Find model by hash value"""
         pass
         
     @abstractmethod
-    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         """Get all versions of a model with their details"""
         pass
 
     async def get_model_versions_bulk(
         self, model_ids: Sequence[int]
-    ) -> Optional[Dict[int, Dict]]:
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
         """Fetch model versions for multiple model ids when supported."""
         raise NotImplementedError
 
     async def get_model_versions_by_hashes(
         self, hashes: List[str]
-    ) -> Optional[List[Dict]]:
+    ) -> Optional[List[Dict[str, Any]]]:
         """Fetch full version details for multiple SHA256 hashes.
 
         Used specifically to retrieve ``usageControl`` which is only
@@ -133,17 +133,17 @@ class ModelMetadataProvider(ABC):
         raise NotImplementedError
         
     @abstractmethod
-    async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """Get specific model version with additional metadata"""
         pass
         
     @abstractmethod
-    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Fetch model version metadata"""
         pass
 
     @abstractmethod
-    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Fetch one page of models owned by the specified user.
 
         Returns ``{"items": [...], "nextCursor": <str|None>}`` on success,
@@ -161,29 +161,29 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
     def __init__(self, civitai_client):
         self.client = civitai_client
         
-    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self.client.get_model_by_hash(model_hash)
         
-    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         return await self.client.get_model_versions(model_id)
 
     async def get_model_versions_bulk(
         self, model_ids: Sequence[int]
-    ) -> Optional[Dict[int, Dict]]:
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
         return await self.client.get_model_versions_bulk(model_ids)
 
     async def get_model_versions_by_hashes(
         self, hashes: List[str]
-    ) -> Optional[List[Dict]]:
+    ) -> Optional[List[Dict[str, Any]]]:
         return await self.client.get_model_versions_by_hashes(hashes)
         
-    async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         return await self.client.get_model_version(model_id, version_id)
         
-    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self.client.get_model_version_info(version_id)
 
-    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         return await self.client.get_user_models(username, cursor)
 
     async def get_creator_model_count(self, username: str) -> Optional[int]:
@@ -195,19 +195,19 @@ class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     def __init__(self, civarchive_client):
         self.client = civarchive_client
         
-    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self.client.get_model_by_hash(model_hash)
         
-    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         return await self.client.get_model_versions(model_id)
         
-    async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         return await self.client.get_model_version(model_id, version_id)
         
-    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self.client.get_model_version_info(version_id)
 
-    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Not supported by CivArchive provider"""
         return None
 
@@ -218,7 +218,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
         self.db_path = db_path
         self._aiosqlite = _require_aiosqlite()
         
-    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Find model by hash value from SQLite database"""
         async with self._aiosqlite.connect(self.db_path) as db:
             # Look up in model_files table to get model_id and version_id
@@ -243,7 +243,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             result = await self._get_version_with_model_data(db, model_id, version_id)
             return result, None if result else "Error retrieving model data"
             
-    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         """Get all versions of a model from SQLite database"""
         async with self._aiosqlite.connect(self.db_path) as db:
             db.row_factory = self._aiosqlite.Row
@@ -299,7 +299,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
                 'name': model_name
             }
     
-    async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         """Get specific model version with additional metadata from SQLite database"""
         if not model_id and not version_id:
             return None
@@ -339,7 +339,7 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             # Now we have both model_id and version_id, get the full data
             return await self._get_version_with_model_data(db, model_id, version_id)
     
-    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Fetch model version metadata from SQLite database"""
         async with self._aiosqlite.connect(self.db_path) as db:
             db.row_factory = self._aiosqlite.Row
@@ -358,11 +358,11 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             version_data = await self._get_version_with_model_data(db, model_id, version_id)
             return version_data, None
 
-    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Listing models by username is not supported for archive database"""
         return None
     
-    async def _get_version_with_model_data(self, db, model_id, version_id) -> Optional[Dict]:
+    async def _get_version_with_model_data(self, db, model_id, version_id) -> Optional[Dict[str, Any]]:
         """Helper to build version data with model information"""
         # Get version details
         version_query = "SELECT name, base_model, data FROM model_versions WHERE id = ? AND model_id = ?"
@@ -485,7 +485,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             jitter_ratio=self._rate_limit_jitter_ratio,
         )
 
-    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         for provider, label in self._iter_providers():
             try:
                 result, error = await self._call_with_rate_limit(
@@ -507,7 +507,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None, "Model not found"
 
-    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         not_found_confirmed = False
         for provider, label in self._iter_providers():
             try:
@@ -538,7 +538,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None
 
-    async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         for provider, label in self._iter_providers():
             try:
                 result = await self._call_with_rate_limit(
@@ -561,7 +561,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None
 
-    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         for provider, label in self._iter_providers():
             try:
                 result, error = await self._call_with_rate_limit(
@@ -585,7 +585,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
 
     async def get_model_versions_by_hashes(
         self, hashes: List[str]
-    ) -> Optional[List[Dict]]:
+    ) -> Optional[List[Dict[str, Any]]]:
         for provider, label in self._iter_providers():
             try:
                 result = await self._call_with_rate_limit(
@@ -613,7 +613,7 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None
 
-    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         for provider, label in self._iter_providers():
             try:
                 result = await self._call_with_rate_limit(
@@ -681,14 +681,14 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
     def __getattr__(self, item):
         return getattr(self._provider, item)
 
-    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_model_by_hash,
             model_hash,
         )
 
-    async def get_model_versions(self, model_id: str) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_model_versions,
@@ -698,7 +698,7 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
     async def get_model_versions_bulk(
         self,
         model_ids: Sequence[int],
-    ) -> Optional[Dict[int, Dict]]:
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_model_versions_bulk,
@@ -707,14 +707,14 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
 
     async def get_model_versions_by_hashes(
         self, hashes: List[str]
-    ) -> Optional[List[Dict]]:
+    ) -> Optional[List[Dict[str, Any]]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_model_versions_by_hashes,
             hashes,
         )
 
-    async def get_model_version(self, model_id: int = None, version_id: int = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_model_version,
@@ -722,14 +722,14 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
             version_id,
         )
 
-    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_model_version_info,
             version_id,
         )
 
-    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict]:
+    async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
         return await self._rate_limit_helper.run(
             self._label,
             self._provider.get_user_models,
@@ -762,12 +762,12 @@ class ModelMetadataProviderManager:
         if is_default or self.default_provider is None:
             self.default_provider = name
             
-    async def get_model_by_hash(self, model_hash: str, provider_name: str = None) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_by_hash(self, model_hash: str, provider_name: Optional[str] = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Find model by hash using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_by_hash(model_hash)
         
-    async def get_model_versions(self, model_id: str, provider_name: str = None) -> Optional[Dict]:
+    async def get_model_versions(self, model_id: str, provider_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get model versions using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_versions(model_id)
@@ -775,8 +775,8 @@ class ModelMetadataProviderManager:
     async def get_model_versions_bulk(
         self,
         model_ids: Sequence[int],
-        provider_name: str = None,
-    ) -> Optional[Dict[int, Dict]]:
+        provider_name: Optional[str] = None,
+    ) -> Optional[Dict[int, Dict[str, Any]]]:
         """Fetch model versions for multiple model ids when supported by provider."""
         provider = self._get_provider(provider_name)
         try:
@@ -784,12 +784,12 @@ class ModelMetadataProviderManager:
         except NotImplementedError:
             return None
 
-    async def get_model_version(self, model_id: int = None, version_id: int = None, provider_name: str = None) -> Optional[Dict]:
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None, provider_name: Optional[str] = None) -> Optional[Dict[str, Any]]:
         """Get specific model version using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_version(model_id, version_id)
         
-    async def get_model_version_info(self, version_id: str, provider_name: str = None) -> Tuple[Optional[Dict], Optional[str]]:
+    async def get_model_version_info(self, version_id: str, provider_name: Optional[str] = None) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         """Fetch model version info using specified or default provider"""
         provider = self._get_provider(provider_name)
         return await provider.get_model_version_info(version_id)
@@ -797,8 +797,8 @@ class ModelMetadataProviderManager:
     async def get_model_versions_by_hashes(
         self,
         hashes: List[str],
-        provider_name: str = None,
-    ) -> Optional[List[Dict]]:
+        provider_name: Optional[str] = None,
+    ) -> Optional[List[Dict[str, Any]]]:
         provider = self._get_provider(provider_name)
         try:
             return await provider.get_model_versions_by_hashes(hashes)
@@ -808,19 +808,19 @@ class ModelMetadataProviderManager:
     async def get_user_models(
         self,
         username: str,
-        provider_name: str = None,
+        provider_name: Optional[str] = None,
         cursor: Optional[str] = None,
-    ) -> Optional[Dict]:
+    ) -> Optional[Dict[str, Any]]:
         """Fetch one page of models owned by the specified user"""
         provider = self._get_provider(provider_name)
         return await provider.get_user_models(username, cursor)
 
-    async def get_creator_model_count(self, username: str, provider_name: str = None) -> Optional[int]:
+    async def get_creator_model_count(self, username: str, provider_name: Optional[str] = None) -> Optional[int]:
         """Best-effort published model count for the specified user"""
         provider = self._get_provider(provider_name)
         return await provider.get_creator_model_count(username)
         
-    def _get_provider(self, provider_name: str = None) -> ModelMetadataProvider:
+    def _get_provider(self, provider_name: Optional[str] = None) -> ModelMetadataProvider:
         """Get provider by name or default provider"""
         if provider_name:
             if provider_name not in self.providers:

@@ -35,7 +35,7 @@ class ExampleImagesDownloadError(RuntimeError):
 class DownloadInProgressError(ExampleImagesDownloadError):
     """Raised when a download is already running."""
 
-    def __init__(self, progress_snapshot: dict) -> None:
+    def __init__(self, progress_snapshot: Dict[str, Any]) -> None:
         super().__init__("Download already in progress")
         self.progress_snapshot = progress_snapshot
 
@@ -54,7 +54,7 @@ class DownloadConfigurationError(ExampleImagesDownloadError):
 logger = logging.getLogger(__name__)
 
 
-class _DownloadProgress(dict):
+class _DownloadProgress(dict[str, Any]):
     """Mutable mapping maintaining download progress with set-aware serialisation."""
 
     def __init__(self) -> None:
@@ -80,7 +80,7 @@ class _DownloadProgress(dict):
             rate_limited_models=set(),
         )
 
-    def snapshot(self) -> dict:
+    def snapshot(self) -> Dict[str, Any]:
         """Return a JSON-serialisable snapshot of the current progress."""
 
         snapshot = dict(self)
@@ -149,7 +149,7 @@ class DownloadManager:
     """Manages downloading example images for models."""
 
     def __init__(self, *, ws_manager, state_lock: asyncio.Lock | None = None) -> None:
-        self._download_task: asyncio.Task | None = None
+        self._download_task: asyncio.Task[Any] | None = None
         self._is_downloading = False
         self._progress = _DownloadProgress()
         self._ws_manager = ws_manager
@@ -162,7 +162,7 @@ class DownloadManager:
             return ""
         return ensure_library_root_exists(library_name)
 
-    async def start_download(self, options: dict):
+    async def start_download(self, options: Dict[str, Any]):
         """Start downloading example images for models."""
 
         # Step 1: Parse options (fast, non-blocking)
@@ -269,7 +269,7 @@ class DownloadManager:
 
         return {"success": True, "message": "Download started", "status": snapshot}
 
-    def _handle_download_task_done(self, task: asyncio.Task, output_dir: str) -> None:
+    def _handle_download_task_done(self, task: asyncio.Task[Any], output_dir: str) -> None:
         """Handle download task completion, including saving progress on error."""
         try:
             # This will re-raise any exception from the task
@@ -282,7 +282,7 @@ class DownloadManager:
             except Exception as save_error:
                 logger.error(f"Failed to save progress after task failure: {save_error}")
 
-    async def get_status(self, request) -> dict:
+    async def get_status(self, request) -> Dict[str, Any]:
         """Get the current status of example images download."""
 
         return {
@@ -291,7 +291,7 @@ class DownloadManager:
             "status": self._progress.snapshot(),
         }
 
-    async def _load_progress_file(self, output_dir: str) -> tuple[str, set, set, set]:
+    async def _load_progress_file(self, output_dir: str) -> tuple[str, set[str], set[str], set[str]]:
         """Load progress file from disk. Returns (progress_file_path, processed_models, failed_models, rate_limited_models).
 
         This is a separate async method to allow running in executor to avoid blocking event loop.
@@ -301,7 +301,7 @@ class DownloadManager:
             None, self._load_progress_file_sync, output_dir
         )
 
-    def _load_progress_file_sync(self, output_dir: str) -> tuple[str, set, set, set]:
+    def _load_progress_file_sync(self, output_dir: str) -> tuple[str, set[str], set[str], set[str]]:
         """Synchronous implementation of progress file loading.
 
         Returns:
@@ -356,7 +356,7 @@ class DownloadManager:
 
         return progress_file, processed_models, failed_models, rate_limited_models
 
-    def _load_progress_sets_sync(self, progress_file: str) -> tuple[set, set]:
+    def _load_progress_sets_sync(self, progress_file: str) -> tuple[set[str], set[str]]:
         """Load only the processed and failed model sets from progress file.
 
         This is a lighter version for quick checks without legacy migration.
@@ -377,7 +377,7 @@ class DownloadManager:
 
         return processed_models, failed_models
 
-    async def check_pending_models(self, model_types: list[str]) -> dict:
+    async def check_pending_models(self, model_types: list[str]) -> Dict[str, Any]:
         """Quickly check how many models need example images downloaded.
         
         This is a lightweight check that avoids the overhead of starting
@@ -1000,7 +1000,7 @@ class DownloadManager:
         except Exception as e:
             logger.error(f"Failed to save progress file: {e}")
 
-    async def start_force_download(self, options: dict):
+    async def start_force_download(self, options: Dict[str, Any]):
         """Force download example images for specific models."""
 
         async with self._state_lock:

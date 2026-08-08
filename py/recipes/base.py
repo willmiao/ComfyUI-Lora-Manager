@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 """Base classes for recipe parsers."""
 
 import json
@@ -38,7 +42,7 @@ class RecipeMetadataParser(ABC):
         pass
     
     @staticmethod
-    async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any], Optional[str]], 
+    async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any] | None, str | None] | Dict[str, Any],
                                          recipe_scanner=None, base_model_counts=None, hash_value=None) -> Optional[Dict[str, Any]]:
         """
         Populate a lora entry with information from Civitai API response
@@ -194,7 +198,7 @@ class RecipeMetadataParser(ABC):
         return lora_entry
     
     @staticmethod
-    async def populate_checkpoint_from_civitai(checkpoint: Dict[str, Any], civitai_info: Dict[str, Any]) -> Dict[str, Any]:
+    async def populate_checkpoint_from_civitai(checkpoint: Dict[str, Any], civitai_info: Dict[str, Any] | Tuple[Dict[str, Any] | None, str | None] | None) -> Dict[str, Any]:
         """
         Populate checkpoint information from Civitai API response
         

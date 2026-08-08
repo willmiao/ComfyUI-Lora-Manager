@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, Callable, Dict, Mapping
+from typing import TYPE_CHECKING, Awaitable, Callable, Dict, Mapping
 
 import jinja2
 from aiohttp import web
@@ -84,7 +84,7 @@ class BaseModelRoutes(ABC):
         self.metadata_progress_callback = WebSocketBroadcastCallback()
 
         self._handler_set: ModelHandlerSet | None = None
-        self._handler_mapping: Dict[str, Callable[[web.Request], web.StreamResponse]] | None = None
+        self._handler_mapping: Dict[str, Callable[[web.Request], Awaitable[web.Response]]] | None = None
 
         self._preview_service = PreviewAssetService(
             metadata_manager=MetadataManager,
@@ -131,7 +131,7 @@ class BaseModelRoutes(ABC):
         self._handler_set = None
         self._handler_mapping = None
 
-    def _ensure_handler_mapping(self) -> Mapping[str, Callable[[web.Request], web.StreamResponse]]:
+    def _ensure_handler_mapping(self) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         if self._handler_mapping is None:
             handler_set = self._create_handler_set()
             self._handler_set = handler_set
@@ -220,7 +220,7 @@ class BaseModelRoutes(ABC):
         )
 
     @property
-    def route_handlers(self) -> Mapping[str, Callable[[web.Request], web.StreamResponse]]:
+    def route_handlers(self) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         return self._ensure_handler_mapping()
 
     def setup_routes(self, app: web.Application, prefix: str) -> None:
@@ -237,7 +237,7 @@ class BaseModelRoutes(ABC):
         """Setup model-specific routes."""
         raise NotImplementedError
 
-    def _parse_specific_params(self, request: web.Request) -> Dict:
+    def _parse_specific_params(self, request: web.Request) -> Dict[str, Any]:
         """Parse model-specific parameters - to be overridden by subclasses."""
         return {}
 
@@ -253,7 +253,7 @@ class BaseModelRoutes(ABC):
         """Find the appropriate model file from the files list - can be overridden by subclasses."""
         return next((file for file in files if file.get("type") in ("Model", "Diffusion Model") and file.get("primary") is True), None)
 
-    def get_handler(self, name: str) -> Callable[[web.Request], web.StreamResponse]:
+    def get_handler(self, name: str) -> Callable[[web.Request], Awaitable[web.StreamResponse]]:
         """Expose handlers for subclasses or tests."""
         return self._ensure_handler_mapping()[name]
 
@@ -285,7 +285,7 @@ class BaseModelRoutes(ABC):
             )
         return self.model_lifecycle_service
 
-    def _make_handler_proxy(self, name: str) -> Callable[[web.Request], web.StreamResponse]:
+    def _make_handler_proxy(self, name: str) -> Callable[[web.Request], Awaitable[web.StreamResponse]]:
         async def proxy(request: web.Request) -> web.StreamResponse:
             try:
                 handler = self.get_handler(name)

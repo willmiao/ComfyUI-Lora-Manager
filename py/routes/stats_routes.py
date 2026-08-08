@@ -40,10 +40,11 @@ class StatsRoutes:
     """Route handlers for Statistics page and API endpoints"""
     
     def __init__(self):
-        self.lora_scanner = None
-        self.checkpoint_scanner = None
-        self.embedding_scanner = None
-        self.usage_stats = None
+        self.lora_scanner: Any = None
+        self.checkpoint_scanner: Any = None
+        self.embedding_scanner: Any = None
+        self.usage_stats: Any = None
+        self._i18n_filter_added = False
         self.template_env = jinja2.Environment(
             loader=jinja2.FileSystemLoader(config.templates_path),
             autoescape=True
@@ -95,9 +96,9 @@ class StatsRoutes:
             server_i18n.set_locale(user_language)
             
             # 为模板环境添加i18n过滤器
-            if not hasattr(self.template_env, '_i18n_filter_added'):
+            if not self._i18n_filter_added:
                 self.template_env.filters['t'] = server_i18n.create_template_filter()
-                self.template_env._i18n_filter_added = True
+                self._i18n_filter_added = True
 
             template = self.template_env.get_template('statistics.html')
             rendered = template.render(
@@ -549,7 +550,7 @@ class StatsRoutes:
                 'error': str(e)
             }, status=500)
 
-    def _count_unused_models(self, models: List[Dict], usage_data: Dict) -> int:
+    def _count_unused_models(self, models: List[Dict[str, Any]], usage_data: Dict[str, Any]) -> int:
         """Count models that have never been used"""
         used_hashes = set(usage_data.keys())
         unused_count = 0
@@ -560,7 +561,7 @@ class StatsRoutes:
                 
         return unused_count
 
-    def _get_top_used_models(self, usage_data: Dict, model_map: Dict, limit: int) -> List[Dict]:
+    def _get_top_used_models(self, usage_data: Dict[str, Any], model_map: Dict[str, Any], limit: int) -> List[Dict[str, Any]]:
         """Get top used models with their metadata"""
         sorted_usage = sorted(usage_data.items(), key=lambda x: x[1].get('total', 0), reverse=True)
         
@@ -578,7 +579,7 @@ class StatsRoutes:
         
         return top_models
 
-    def _get_usage_timeline(self, usage_data: Dict, days: int) -> List[Dict]:
+    def _get_usage_timeline(self, usage_data: Dict[str, Any], days: int) -> List[Dict[str, Any]]:
         """Get usage timeline for the past N days"""
         timeline = []
         today = datetime.now()
@@ -614,7 +615,7 @@ class StatsRoutes:
         
         return list(reversed(timeline))  # Oldest to newest
 
-    def _format_size(self, size_bytes: int) -> str:
+    def _format_size(self, size_bytes: float) -> str:
         """Format file size in human readable format"""
         for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
             if size_bytes < 1024.0:
