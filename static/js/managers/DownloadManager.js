@@ -754,7 +754,7 @@ export class DownloadManager {
             this.selectedFile?.id, this.selectedFile?.name, this.selectedFile?.type, this.selectedFile?.metadata);
 
         document.getElementById('fileSelectionStep').style.display = 'none';
-        document.getElementById('locationStep').style.display = 'block';
+        document.getElementById('downloadLocationStep').style.display = 'block';
         this.proceedToLocationContent();
     }
 
@@ -788,7 +788,7 @@ export class DownloadManager {
         }
 
         document.querySelectorAll('.download-step').forEach(step => step.style.display = 'none');
-        document.getElementById('locationStep').style.display = 'block';
+        document.getElementById('downloadLocationStep').style.display = 'block';
         await this.proceedToLocationContent();
     }
 
@@ -1563,7 +1563,7 @@ export class DownloadManager {
     }
 
     backToVersions() {
-        document.getElementById('locationStep').style.display = 'none';
+        document.getElementById('downloadLocationStep').style.display = 'none';
         if (this.isBatchMode) {
             document.getElementById('batchPreviewStep').style.display = 'block';
         } else {

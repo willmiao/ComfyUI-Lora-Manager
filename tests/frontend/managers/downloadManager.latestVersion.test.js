@@ -118,7 +118,7 @@ function setupDownloadDom() {
       <div class="download-step" id="urlStep"></div>
       <div class="download-step" id="versionStep"></div>
       <div class="download-step" id="fileSelectionStep"></div>
-      <div class="download-step" id="locationStep"></div>
+      <div class="download-step" id="downloadLocationStep"></div>
       <div id="batchPreviewStep"></div>
       <textarea id="modelUrl"></textarea>
       <div id="urlError"></div>

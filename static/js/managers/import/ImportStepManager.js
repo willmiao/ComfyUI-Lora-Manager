@@ -47,11 +47,8 @@ export class ImportStepManager {
                 targetStep.offsetHeight;
             }
             
-            // Reset scroll via class: 'locationStep' has a duplicate ID in downloadModal's
-            // template, so getElementById may not return the import modal's step.
-            document.querySelectorAll('.import-step').forEach(step => {
-                step.scrollTop = 0;
-            });
+            // Scroll the active step back to top (steps scroll independently of the modal shell)
+            targetStep.scrollTop = 0;
         }
     }
 }
