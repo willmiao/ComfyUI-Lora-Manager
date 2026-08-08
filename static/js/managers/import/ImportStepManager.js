@@ -47,11 +47,11 @@ export class ImportStepManager {
                 targetStep.offsetHeight;
             }
             
-            // Scroll modal content to top
-            const modalContent = document.querySelector('#importModal .modal-content');
-            if (modalContent) {
-                modalContent.scrollTop = 0;
-            }
+            // Reset scroll via class: 'locationStep' has a duplicate ID in downloadModal's
+            // template, so getElementById may not return the import modal's step.
+            document.querySelectorAll('.import-step').forEach(step => {
+                step.scrollTop = 0;
+            });
         }
     }
 }

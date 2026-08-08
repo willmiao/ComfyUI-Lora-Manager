@@ -1,4 +1,35 @@
 /* Import Modal Styles */
+
+/* Sticky footer layout: fixed header, scrollable step content, pinned action buttons.
+   Ensures Back/Import buttons stay visible on short viewports (e.g. 1080p or 150% zoom). */
+#importModal .modal-content {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden; /* The active step scrolls instead of the whole modal */
+}
+
+#importModal .modal-header {
+    flex-shrink: 0;
+}
+
+#importModal .import-step {
+    flex: 1 1 auto;
+    min-height: 0; /* Allow the step to shrink and scroll within the flex container */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+#importModal .import-step .modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--lora-surface);
+    border-top: 1px solid var(--lora-border);
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-1);
+}
+
 .import-step {
     margin: var(--space-2) 0;
     transition: none !important;
