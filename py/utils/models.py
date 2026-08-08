@@ -6,15 +6,29 @@ from .constants import INVALID_AUTOV3_EMPTY_HASH
 from .model_utils import determine_base_model
 
 
+def normalize_autov3(value: Any) -> Optional[str]:
+    """Normalize a raw Civitai AutoV3 value to the canonical 12-char form.
+
+    Returns the first 12 characters, lowercased, when ``value`` is a string
+    of at least 12 characters. The empty-string SHA256 placeholder
+    (``e3b0c44298fc``) is rejected — it is a repackaging-tool artifact, not a
+    real hash.
+
+    Returns ``None`` when the value is unusable.
+    """
+    if isinstance(value, str) and len(value) >= 12:
+        candidate = value[:12].lower()
+        if candidate != INVALID_AUTOV3_EMPTY_HASH:
+            return candidate
+    return None
+
+
 def autov3_from_civitai_files(civitai_data: Optional[Dict], sha256: str) -> Optional[str]:
     """Extract the AutoV3 hash from Civitai metadata for the matching file.
 
     Civitai versions can ship multiple files; the AutoV3 hash is only valid
     for the file whose ``hashes.SHA256`` equals the local model's sha256.
-    Matching is case-insensitive. The value is the first 12 characters of
-    Civitai's AutoV3 hash, lowercased. The empty-string SHA256 placeholder
-    (``e3b0c44298fc``) is rejected — it is a repackaging-tool artifact, not a
-    real hash.
+    Matching is case-insensitive.
 
     Returns ``None`` when no Civitai data, no matching file, or no usable
     AutoV3 hash is available.
@@ -28,11 +42,7 @@ def autov3_from_civitai_files(civitai_data: Optional[Dict], sha256: str) -> Opti
         hashes = file_info.get("hashes") or {}
         file_sha = (hashes.get("SHA256") or "").lower()
         if file_sha and file_sha == target_sha:
-            auto_v3 = hashes.get("AutoV3")
-            if isinstance(auto_v3, str) and len(auto_v3) >= 12:
-                candidate = auto_v3[:12].lower()
-                if candidate != INVALID_AUTOV3_EMPTY_HASH:
-                    return candidate
+            return normalize_autov3(hashes.get("AutoV3"))
     return None
 
 
@@ -264,7 +274,8 @@ class LoraMetadata(BaseModelMetadata):
             civitai=version_info,
             tags=tags,
             modelDescription=description,
-            autov3=autov3_from_civitai_files(version_info, sha256_value),
+            # Direct read: the downloaded file IS file_info, no SHA256 matching.
+            autov3=normalize_autov3((file_info.get("hashes") or {}).get("AutoV3")),
         )
 
 
@@ -308,7 +319,8 @@ class CheckpointMetadata(BaseModelMetadata):
             sub_type=sub_type,
             tags=tags,
             modelDescription=description,
-            autov3=autov3_from_civitai_files(version_info, sha256_value),
+            # Direct read: the downloaded file IS file_info, no SHA256 matching.
+            autov3=normalize_autov3((file_info.get("hashes") or {}).get("AutoV3")),
         )
 
 
@@ -352,5 +364,6 @@ class EmbeddingMetadata(BaseModelMetadata):
             sub_type=sub_type,
             tags=tags,
             modelDescription=description,
-            autov3=autov3_from_civitai_files(version_info, sha256_value),
+            # Direct read: the downloaded file IS file_info, no SHA256 matching.
+            autov3=normalize_autov3((file_info.get("hashes") or {}).get("AutoV3")),
         )

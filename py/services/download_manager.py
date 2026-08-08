@@ -18,7 +18,7 @@ from ..utils.constants import (
     VALID_LORA_TYPES,
 )
 from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
-from ..utils.file_utils import calculate_sha256
+from ..utils.file_utils import calculate_sha256, calculate_autov3
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
@@ -2160,6 +2160,10 @@ class DownloadManager:
                         "error": f"Zip archive does not contain any supported model files ({supported_text})",
                     }
                 actual_file_paths = extracted_paths
+                # The archive entry's AutoV3 (if any) describes the zip itself,
+                # not the extracted models; clear it so per-file header
+                # resolution applies to every extracted model.
+                metadata.autov3 = None
                 try:
                     os.remove(save_path)
                 except OSError as exc:
@@ -2374,6 +2378,16 @@ class DownloadManager:
                 sha256 = await calculate_sha256(file_path)
                 if sha256:
                     entry.sha256 = sha256.lower()
+            # AutoV3: the Civitai-reported value for the downloaded file (set
+            # by from_civitai_info) takes precedence. Only the un-checked
+            # state (None) triggers a header read; '' (checked-unavailable)
+            # is never re-read, honoring the three-state contract so rows
+            # marked at download time stay untouched by later passes.
+            if entry.autov3 is None:
+                autov3 = await asyncio.get_running_loop().run_in_executor(
+                    None, calculate_autov3, file_path
+                )
+                entry.autov3 = (autov3 or "").lower()
             entries.append(entry)
 
         return entries

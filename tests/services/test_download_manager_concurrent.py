@@ -100,6 +100,7 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
+            self.autov3 = None
             self.preview_nsfw_level = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
@@ -204,6 +205,7 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
+            self.autov3 = None
             self.preview_nsfw_level = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
@@ -325,6 +327,7 @@ async def test_execute_download_uses_auth_for_red_civitai_downloads(monkeypatch,
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
+            self.autov3 = None
             self.preview_nsfw_level = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
