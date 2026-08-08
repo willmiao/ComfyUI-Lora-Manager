@@ -91,7 +91,15 @@ class RecipeFormatParser(RecipeMetadataParser):
                         exists_locally = lora_scanner.has_hash(lora['hash'])
                         if exists_locally:
                             lora_cache = await lora_scanner.get_cached_data()
-                            lora_item = next((item for item in lora_cache.raw_data if item['sha256'].lower() == lora['hash'].lower()), None)
+                            # Cascade match: full sha256, stored autov3, or autov2 (sha256[:10]).
+                            h = (lora.get('hash') or '').lower()
+                            lora_item = next(
+                                (item for item in lora_cache.raw_data
+                                 if (item.get("sha256") or "").lower() == h
+                                 or (item.get("autov3") or "").lower() == h
+                                 or (item.get("sha256") or "")[:10].lower() == h),
+                                None
+                            )
                             if lora_item:
                                 lora_entry['existsLocally'] = True
                                 lora_entry['inLibrary'] = True
