@@ -80,6 +80,17 @@ CIVITAI_USER_MODEL_TYPES = [
 # Default chunk size in megabytes used for hashing large files.
 DEFAULT_HASH_CHUNK_SIZE_MB = 4
 
+# Upper bound for a safetensors header block (bytes). Real headers are at most
+# a few MB (tensor name/shape lists); the cap prevents a crafted file with an
+# absurd 64-bit header length from forcing a multi-GB allocation during scan.
+MAX_SAFETENSORS_HEADER_BYTES = 64 * 1024 * 1024
+
+# First 12 chars of the SHA256 of an empty byte string. Some (re-packaging)
+# training tools write this placeholder into safetensors metadata instead of a
+# real hash; it must never be treated as a valid AutoV3 — several broken
+# models sharing it would collide in the hash index and falsely match recipes.
+INVALID_AUTOV3_EMPTY_HASH = "e3b0c44298fc"
+
 # Auto-organize settings
 AUTO_ORGANIZE_BATCH_SIZE = (
     50  # Process models in batches to avoid overwhelming the system

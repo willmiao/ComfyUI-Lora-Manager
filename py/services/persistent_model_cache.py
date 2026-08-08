@@ -3,7 +3,7 @@ import logging
 import os
 import sqlite3
 import threading
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Dict, List, Mapping, Optional, Sequence, Tuple
 
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
@@ -18,6 +18,7 @@ class PersistedCacheData:
     raw_data: List[Dict]
     hash_rows: List[Tuple[str, str]]
     excluded_models: List[str]
+    autov3_hash_rows: List[Tuple[str, str]] = field(default_factory=list)
 
 
 DEFAULT_LICENSE_FLAGS = 127  # 127 (0b1111111) encodes default CivitAI permissions with all commercial modes enabled.
@@ -36,6 +37,7 @@ class PersistentModelCache:
         "size",
         "modified",
         "sha256",
+        "autov3",
         "base_model",
         "preview_url",
         "preview_nsfw_level",
@@ -118,6 +120,10 @@ class PersistentModelCache:
                         "SELECT sha256, file_path FROM hash_index WHERE model_type = ?",
                         (model_type,),
                     ).fetchall()
+                    autov3_rows = conn.execute(
+                        "SELECT autov3, file_path FROM autov3_index WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
                     excluded = conn.execute(
                         "SELECT file_path FROM excluded_models WHERE model_type = ?",
                         (model_type,),
@@ -191,6 +197,8 @@ class PersistentModelCache:
                 "hash_status": row["hash_status"] or "completed",
                 "hf_url": row["hf_url"] or "",
             }
+            if row["autov3"] is not None:
+                item["autov3"] = (row["autov3"] or "").lower()
             raw_data.append(item)
 
         hash_pairs = [(entry["sha256"].lower(), entry["file_path"]) for entry in hash_rows if entry["sha256"]]
@@ -201,10 +209,21 @@ class PersistentModelCache:
                 if sha_value:
                     hash_pairs.append((sha_value.lower(), item["file_path"]))
 
-        excluded_paths = [row["file_path"] for row in excluded]
-        return PersistedCacheData(raw_data=raw_data, hash_rows=hash_pairs, excluded_models=excluded_paths)
+        autov3_pairs = [
+            (entry["autov3"].lower(), entry["file_path"])
+            for entry in autov3_rows
+            if entry["autov3"]
+        ]
 
-    def save_cache(self, model_type: str, raw_data: Sequence[Dict], hash_index: Dict[str, List[str]], excluded_models: Sequence[str]) -> None:
+        excluded_paths = [row["file_path"] for row in excluded]
+        return PersistedCacheData(
+            raw_data=raw_data,
+            hash_rows=hash_pairs,
+            excluded_models=excluded_paths,
+            autov3_hash_rows=autov3_pairs,
+        )
+
+    def save_cache(self, model_type: str, raw_data: Sequence[Dict], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None) -> None:
         if not self.is_enabled():
             return
         if not self._schema_initialized:
@@ -249,6 +268,10 @@ class PersistentModelCache:
                         )
                         conn.executemany(
                             "DELETE FROM hash_index WHERE model_type = ? AND file_path = ?",
+                            to_remove_models,
+                        )
+                        conn.executemany(
+                            "DELETE FROM autov3_index WHERE model_type = ? AND file_path = ?",
                             to_remove_models,
                         )
                         conn.executemany(
@@ -373,6 +396,52 @@ class PersistentModelCache:
                             hash_inserts,
                         )
 
+                    if autov3_hash_index is not None:
+                        existing_autov3_rows = conn.execute(
+                            "SELECT autov3, file_path FROM autov3_index WHERE model_type = ?",
+                            (model_type,),
+                        ).fetchall()
+                        existing_autov3_map: Dict[str, set] = {}
+                        for row in existing_autov3_rows:
+                            autov3_value = (row["autov3"] or "").lower()
+                            if not autov3_value:
+                                continue
+                            existing_autov3_map.setdefault(autov3_value, set()).add(row["file_path"])
+
+                        new_autov3_map: Dict[str, set] = {}
+                        for autov3_value, paths in autov3_hash_index.items():
+                            normalized_autov3 = (autov3_value or "").lower()
+                            if not normalized_autov3:
+                                continue
+                            bucket = new_autov3_map.setdefault(normalized_autov3, set())
+                            for path in paths:
+                                if path:
+                                    bucket.add(path)
+
+                        autov3_inserts: List[Tuple[str, str, str]] = []
+                        autov3_deletes: List[Tuple[str, str, str]] = []
+
+                        all_autov3 = set(existing_autov3_map.keys()) | set(new_autov3_map.keys())
+                        for autov3_value in all_autov3:
+                            existing_paths = existing_autov3_map.get(autov3_value, set())
+                            new_paths = new_autov3_map.get(autov3_value, set())
+
+                            for path in existing_paths - new_paths:
+                                autov3_deletes.append((model_type, autov3_value, path))
+                            for path in new_paths - existing_paths:
+                                autov3_inserts.append((model_type, autov3_value, path))
+
+                        if autov3_deletes:
+                            conn.executemany(
+                                "DELETE FROM autov3_index WHERE model_type = ? AND autov3 = ? AND file_path = ?",
+                                autov3_deletes,
+                            )
+                        if autov3_inserts:
+                            conn.executemany(
+                                "INSERT OR IGNORE INTO autov3_index (model_type, autov3, file_path) VALUES (?, ?, ?)",
+                                autov3_inserts,
+                            )
+
                     existing_excluded_rows = conn.execute(
                         "SELECT file_path FROM excluded_models WHERE model_type = ?",
                         (model_type,),
@@ -435,6 +504,7 @@ class PersistentModelCache:
                             size INTEGER,
                             modified REAL,
                             sha256 TEXT,
+                            autov3 TEXT,
                             base_model TEXT,
                             preview_url TEXT,
                             preview_nsfw_level INTEGER,
@@ -472,6 +542,13 @@ class PersistentModelCache:
                             PRIMARY KEY (model_type, sha256, file_path)
                         );
 
+                        CREATE TABLE IF NOT EXISTS autov3_index (
+                            model_type TEXT NOT NULL,
+                            autov3 TEXT NOT NULL,
+                            file_path TEXT NOT NULL,
+                            PRIMARY KEY (model_type, autov3, file_path)
+                        );
+
                         CREATE TABLE IF NOT EXISTS excluded_models (
                             model_type TEXT NOT NULL,
                             file_path TEXT NOT NULL,
@@ -504,6 +581,7 @@ class PersistentModelCache:
             "license_flags": f"INTEGER DEFAULT {DEFAULT_LICENSE_FLAGS}",
             "hash_status": "TEXT DEFAULT 'completed'",
             "hf_url": "TEXT DEFAULT ''",
+            "autov3": "TEXT",
         }
 
         for column, definition in required_columns.items():
@@ -549,6 +627,12 @@ class PersistentModelCache:
         if license_flags is None:
             license_flags = DEFAULT_LICENSE_FLAGS
 
+        autov3_value = item.get("autov3")
+        if autov3_value is None:
+            autov3_column = None
+        else:
+            autov3_column = (autov3_value or "").lower()
+
         return (
             model_type,
             item.get("file_path"),
@@ -558,6 +642,7 @@ class PersistentModelCache:
             int(item.get("size") or 0),
             float(item.get("modified") or 0.0),
             (item.get("sha256") or "").lower() or None,
+            autov3_column,
             item.get("base_model") or "",
             item.get("preview_url") or "",
             int(item.get("preview_nsfw_level") or 0),
@@ -663,6 +748,25 @@ class PersistentModelCache:
                                 (model_type, new_sha, file_path),
                             )
 
+                    # --- autov3_index ---
+                    new_autov3: Optional[str] = new_item.get("autov3")
+                    if new_autov3 is not None:
+                        new_autov3 = (new_autov3 or "").lower()
+                    old_autov3: Optional[str] = (old_item.get("autov3") if old_item else None)
+                    if old_autov3 is not None:
+                        old_autov3 = (old_autov3 or "").lower()
+                    if new_autov3 != old_autov3:
+                        if old_autov3:
+                            conn.execute(
+                                "DELETE FROM autov3_index WHERE model_type = ? AND autov3 = ? AND file_path = ?",
+                                (model_type, old_autov3, file_path),
+                            )
+                        if new_autov3:
+                            conn.execute(
+                                "INSERT OR IGNORE INTO autov3_index (model_type, autov3, file_path) VALUES (?, ?, ?)",
+                                (model_type, new_autov3, file_path),
+                            )
+
                     conn.execute("COMMIT")
                 except Exception:
                     conn.execute("ROLLBACK")
@@ -675,6 +779,40 @@ class PersistentModelCache:
                 file_path,
                 exc,
             )
+
+    def get_models_missing_autov3(self, model_type: str) -> List[str]:
+        """Return file paths whose models lack an AutoV3 checked state.
+
+        Only rows with a completed sha256 and a NULL autov3 column qualify —
+        rows with '' (checked-unavailable) or a value are never returned, so
+        the backfill query self-terminates.
+        """
+        if not self.is_enabled():
+            return []
+        if not self._schema_initialized:
+            self._initialize_schema()
+        if not self._schema_initialized:
+            return []
+        try:
+            with self._db_lock:
+                conn = self._connect(readonly=True)
+                try:
+                    rows = conn.execute(
+                        "SELECT file_path FROM models "
+                        "WHERE model_type = ? AND autov3 IS NULL "
+                        "AND sha256 IS NOT NULL AND sha256 != ''",
+                        (model_type,),
+                    ).fetchall()
+                finally:
+                    conn.close()
+            return [row["file_path"] for row in rows]
+        except Exception as exc:
+            logger.warning(
+                "Failed to query models missing autov3 for %s: %s",
+                model_type,
+                exc,
+            )
+            return []
 
     def _load_tags(self, conn: sqlite3.Connection, model_type: str) -> Dict[str, List[str]]:
         tag_rows = conn.execute(

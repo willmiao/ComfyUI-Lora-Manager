@@ -321,3 +321,91 @@ class TestCacheEntryValidator:
 
         assert result.is_valid is True
         assert result.repaired is False
+
+
+class TestAutov3Validation:
+    """AutoV3 optional-field validation semantics."""
+
+    def _entry(self, **overrides):
+        # Fully-populated entry so that autov3 is the only candidate repair.
+        entry = {
+            'file_path': '/models/test.safetensors',
+            'sha256': 'abc123',
+            'file_name': 'test.safetensors',
+            'model_name': 'Test Model',
+            'folder': 'test_folder',
+            'size': 1024,
+            'modified': 1234567890.0,
+            'tags': ['tag1'],
+            'preview_url': 'http://example.com/preview.jpg',
+            'base_model': 'SD1.5',
+            'from_civitai': True,
+            'favorite': True,
+            'exclude': False,
+            'db_checked': True,
+            'preview_nsfw_level': 1,
+            'notes': 'Test notes',
+            'usage_tips': 'Test tips',
+            'hash_status': 'completed',
+        }
+        entry.update(overrides)
+        return entry
+
+    def test_validate_valid_autov3_normalized_to_lowercase(self):
+        """Uppercase 12-hex autov3 is normalized to lowercase under auto_repair."""
+        result = CacheEntryValidator.validate(
+            self._entry(autov3='ABCDEF123456'), auto_repair=True
+        )
+
+        assert result.is_valid is True
+        assert result.entry['autov3'] == 'abcdef123456'
+        assert result.repaired is True
+
+    def test_validate_autov3_empty_string_is_valid(self):
+        """Empty autov3 means checked-but-unavailable and is valid."""
+        result = CacheEntryValidator.validate(
+            self._entry(autov3=''), auto_repair=False
+        )
+
+        assert result.is_valid is True
+        assert result.repaired is False
+
+    def test_validate_autov3_none_is_valid_and_not_counted_as_repair(self):
+        """autov3 None (not checked) is valid and is NOT counted as a repair."""
+        result = CacheEntryValidator.validate(
+            self._entry(autov3=None), auto_repair=True
+        )
+
+        assert result.is_valid is True
+        assert result.repaired is False
+        assert result.entry['autov3'] is None
+
+    def test_validate_absent_autov3_is_valid_and_not_counted_as_repair(self):
+        """A missing autov3 field is valid and is NOT counted as a repair."""
+        result = CacheEntryValidator.validate(self._entry(), auto_repair=True)
+
+        assert result.is_valid is True
+        assert result.repaired is False
+        assert 'autov3' not in result.entry
+
+    def test_validate_short_autov3_still_valid_and_repaired_to_none(self):
+        """A malformed autov3 does not invalidate the entry (optional field);
+        with auto_repair the value is repaired to None."""
+        result = CacheEntryValidator.validate(
+            self._entry(autov3='abc'), auto_repair=True
+        )
+
+        assert result.is_valid is True
+        assert result.entry['autov3'] is None
+        assert result.repaired is True
+
+    def test_validate_non_string_autov3_still_valid_and_repaired_to_none(self):
+        """A non-string autov3 does not invalidate the entry (optional field);
+        with auto_repair the value is repaired to None."""
+        result = CacheEntryValidator.validate(
+            self._entry(autov3=123), auto_repair=True
+        )
+
+        assert result.is_valid is True
+        assert result.entry['autov3'] is None
+        assert result.repaired is True

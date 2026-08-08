@@ -6,7 +6,7 @@ import time
 from typing import Any, Dict, Optional, Type, Union
 
 from .models import BaseModelMetadata, LoraMetadata
-from .file_utils import normalize_path, find_preview_file, calculate_sha256
+from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
 
 logger = logging.getLogger(__name__)
@@ -210,6 +210,11 @@ class MetadataManager:
             hash_duration = time.perf_counter() - start_hash_time
             logger.info(f"SHA256 hash calculated for {real_path} in {hash_duration:.3f}s")
             
+            # AutoV3 reads only the safetensors header, so it is cheap even for
+            # large files. At creation time we always know the checked state:
+            # store "" when no recognized hash is embedded (checked-unavailable).
+            autov3 = calculate_autov3(real_path)
+            
             # Create instance based on model type
             if model_class.__name__ == "CheckpointMetadata":
                 metadata = model_class(
@@ -257,6 +262,9 @@ class MetadataManager:
                     usage_tips="{}"
                 )
             
+            # Record the AutoV3 state explicitly ("" = checked, no value).
+            metadata.autov3 = autov3 or ""
+
             # Try to extract model-specific metadata
             # await MetadataManager._enrich_metadata(metadata, real_path)
             

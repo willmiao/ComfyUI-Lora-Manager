@@ -11,6 +11,7 @@ from typing import Any, Awaitable, Callable, Dict, Iterable, Optional
 from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
+from ..utils.models import autov3_from_civitai_files
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import RateLimitError
 
@@ -151,6 +152,18 @@ class MetadataSyncService:
         local_metadata["base_model"] = determine_base_model(
             civitai_metadata.get("baseModel")
         )
+
+        # Civitai-first AutoV3 propagation: the freshly fetched version
+        # metadata may report an AutoV3 for the file whose SHA256 matches the
+        # local model. Persist it now so recipe matching sees it immediately —
+        # no full rescan or restart required (the header is never re-read to
+        # upgrade the checked-unavailable '' state).
+        sha256_value = (local_metadata.get("sha256") or "").lower()
+        civitai_autov3 = autov3_from_civitai_files(
+            local_metadata.get("civitai"), sha256_value
+        )
+        if civitai_autov3:
+            local_metadata["autov3"] = civitai_autov3
 
         await self._preview_service.ensure_preview_for_metadata(
             metadata_path, local_metadata, civitai_metadata.get("images", [])

@@ -2119,20 +2119,25 @@ class RecipeManagementHandler:
                     for item in getattr(parent_cache_data, "raw_data", []):
                         if item.get("sha256", "").lower() == model_hash.lower():
                             local_cache[model_hash.lower()] = item
-                            # Compute AutoV3 so the parser can also match on
-                            # that hash type (CivitAI metadata resources use
-                            # AutoV3).
-                            file_path = item.get("file_path")
-                            if file_path and os.path.exists(file_path):
-                                try:
-                                    from ...utils.file_utils import (
-                                        calculate_autov3,
-                                    )
-                                    autov3 = calculate_autov3(file_path)
-                                    if autov3:
-                                        local_cache[autov3.lower()] = item
-                                except Exception:
-                                    pass
+                            # Register the AutoV3 hash so the parser can also
+                            # match on that hash type (CivitAI metadata
+                            # resources use AutoV3). Prefer the stored cache
+                            # field; only compute it when the entry has none.
+                            autov3 = (item.get("autov3") or "").lower()
+                            if not autov3:
+                                file_path = item.get("file_path")
+                                if file_path and os.path.exists(file_path):
+                                    try:
+                                        from ...utils.file_utils import (
+                                            calculate_autov3,
+                                        )
+                                        autov3 = (
+                                            calculate_autov3(file_path) or ""
+                                        ).lower()
+                                    except Exception:
+                                        pass
+                            if autov3:
+                                local_cache[autov3] = item
                             break
                 except Exception:
                     pass

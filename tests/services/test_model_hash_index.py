@@ -111,3 +111,145 @@ class TestModelHashIndexGetDuplicateFilenames:
         index.add_entry("abc123", "/a/lora.safetensors")
         assert len(index) == 1
         assert index.get_duplicate_filenames() == {}
+
+
+class TestModelHashIndexAutov3:
+    """AutoV3 hash index behavior."""
+
+    def test_add_entry_with_autov3_supports_lookup_by_autov3(self):
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/lora.safetensors", autov3="AbCdEf123456")
+
+        assert index.has_hash("abcdef123456") is True
+        assert index.get_path("abcdef123456") == "/models/lora.safetensors"
+        assert index.get_all_autov3() == {"abcdef123456": "/models/lora.safetensors"}
+
+    def test_add_entry_without_autov3_creates_no_autov3_lookup(self):
+        index = ModelHashIndex()
+        index.add_entry("b" * 64, "/models/lora.safetensors")
+
+        assert index.has_hash("abcdef123456") is False
+        assert index.get_path("abcdef123456") is None
+        assert index.get_all_autov3() == {}
+
+    def test_add_autov3_standalone_supports_lookup(self):
+        index = ModelHashIndex()
+        index.add_autov3("cdef123456ab", "/models/only_autov3.safetensors")
+
+        assert index.has_hash("cdef123456ab") is True
+        assert index.get_path("cdef123456ab") == "/models/only_autov3.safetensors"
+        assert index.get_all_autov3() == {"cdef123456ab": "/models/only_autov3.safetensors"}
+
+    def test_remove_by_path_removes_autov3_mapping(self):
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/lora.safetensors", autov3="abcdef123456")
+
+        index.remove_by_path("/models/lora.safetensors")
+
+        assert index.has_hash("abcdef123456") is False
+        assert index.get_all_autov3() == {}
+
+    def test_remove_by_hash_removes_autov3_mapping(self):
+        index = ModelHashIndex()
+        sha256 = "a" * 64
+        index.add_entry(sha256, "/models/lora.safetensors", autov3="abcdef123456")
+
+        index.remove_by_hash(sha256)
+
+        assert index.has_hash("abcdef123456") is False
+        assert index.get_all_autov3() == {}
+
+    def test_clear_empties_autov3_index(self):
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/a.safetensors", autov3="aaaaabbbbbcc")
+        index.add_entry("b" * 64, "/models/b.safetensors", autov3="dddddeeeeeff")
+
+        index.clear()
+
+        assert index.get_all_autov3() == {}
+        assert index.has_hash("aaaaabbbbbcc") is False
+
+    def test_same_autov3_last_write_wins(self):
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/first.safetensors", autov3="abcdef123456")
+        index.add_entry("b" * 64, "/models/second.safetensors", autov3="abcdef123456")
+
+        assert index.get_path("abcdef123456") == "/models/second.safetensors"
+        assert index.get_all_autov3() == {"abcdef123456": "/models/second.safetensors"}
+
+    def test_dispatch_len_10_hits_autov2(self):
+        index = ModelHashIndex()
+        sha256 = "a" * 64
+        index.add_entry(sha256, "/models/lora.safetensors")
+
+        assert index.get_path(sha256[:10]) == "/models/lora.safetensors"
+        assert index.has_hash(sha256[:10]) is True
+
+    def test_dispatch_len_64_hits_sha256(self):
+        index = ModelHashIndex()
+        sha256 = "b" * 64
+        index.add_entry(sha256, "/models/lora.safetensors")
+
+        assert index.get_path(sha256) == "/models/lora.safetensors"
+        assert index.has_hash(sha256) is True
+
+    def test_dispatch_len_12_hits_autov3(self):
+        index = ModelHashIndex()
+        index.add_entry("c" * 64, "/models/lora.safetensors", autov3="cdef123456ab")
+
+        assert index.get_path("cdef123456ab") == "/models/lora.safetensors"
+        assert index.has_hash("cdef123456ab") is True
+
+    def test_add_entry_drops_stale_autov3_for_replaced_path(self):
+        # A file replaced in place (new content → new sha256 and new autov3)
+        # must not keep the old autov3 mapping — it would survive into the
+        # persisted snapshot and make lookups resolve the wrong file.
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/lora.safetensors", autov3="abcdef123456")
+        index.add_entry("b" * 64, "/models/lora.safetensors", autov3="fedcba654321")
+
+        assert index.get_path("abcdef123456") is None
+        assert index.has_hash("abcdef123456") is False
+        assert index.get_path("fedcba654321") == "/models/lora.safetensors"
+        assert index.get_all_autov3() == {"fedcba654321": "/models/lora.safetensors"}
+
+    def test_add_entry_without_autov3_drops_stale_mapping_for_replaced_path(self):
+        # Replaced file whose new content has no embedded hash: the stale
+        # autov3 mapping must be dropped, not left pointing at the path.
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/lora.safetensors", autov3="abcdef123456")
+        index.add_entry("b" * 64, "/models/lora.safetensors")
+
+        assert index.get_path("abcdef123456") is None
+        assert index.get_all_autov3() == {}
+
+    def test_add_entry_re_registration_with_same_autov3_is_idempotent(self):
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/lora.safetensors", autov3="abcdef123456")
+        index.add_entry("a" * 64, "/models/lora.safetensors", autov3="abcdef123456")
+
+        assert index.get_path("abcdef123456") == "/models/lora.safetensors"
+        assert index.get_all_autov3() == {"abcdef123456": "/models/lora.safetensors"}
+
+    def test_add_entry_same_sha_without_autov3_preserves_existing_mapping(self):
+        # A lazy-hash completion (checkpoint_scanner) re-registers the SAME
+        # file with the same sha256 but omits autov3. That must never clear
+        # the previously registered autov3 mapping.
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/ckpt.safetensors", autov3="abcdef123456")
+        index.add_entry("a" * 64, "/models/ckpt.safetensors")
+
+        assert index.get_path("abcdef123456") == "/models/ckpt.safetensors"
+        assert index.get_all_autov3() == {"abcdef123456": "/models/ckpt.safetensors"}
+
+    def test_add_entry_same_sha_with_new_autov3_drops_old_mapping(self):
+        # Re-registration with an explicit, different autov3 (metadata
+        # correction) must drop the stale mapping for that path.
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/ckpt.safetensors", autov3="abcdef123456")
+        index.add_entry("a" * 64, "/models/ckpt.safetensors", autov3="fedcba654321")
+
+        assert index.get_path("abcdef123456") is None
+        assert index.has_hash("abcdef123456") is False
+        assert index.get_path("fedcba654321") == "/models/ckpt.safetensors"
+        assert index.get_all_autov3() == {"fedcba654321": "/models/ckpt.safetensors"}

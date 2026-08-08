@@ -341,3 +341,112 @@ def test_update_single_model_update_hash(tmp_path: Path, monkeypatch):
     new_hash_pairs = [p for p in persisted.hash_rows if p[0] == 'new-hash']
     assert len(new_hash_pairs) == 1
     assert new_hash_pairs[0][1] == file_path
+
+
+# ── get_models_missing_autov3 ─────────────────────────────────────────
+
+
+def _autov3_entry(file_path: str, sha256: str, autov3=None) -> dict:
+    """Minimal model entry for the models table (autov3 tri-state preserved)."""
+    return {
+        'file_path': file_path,
+        'file_name': Path(file_path).stem,
+        'model_name': Path(file_path).stem,
+        'folder': '',
+        'size': 1,
+        'modified': 1.0,
+        'sha256': sha256,
+        'autov3': autov3,
+        'base_model': '',
+        'preview_url': '',
+        'preview_nsfw_level': 0,
+        'from_civitai': True,
+        'favorite': False,
+        'notes': '',
+        'usage_tips': '',
+        'metadata_source': None,
+        'exclude': False,
+        'db_checked': False,
+        'last_checked_at': 0.0,
+        'tags': [],
+        'civitai': None,
+        'civitai_deleted': False,
+        'skip_metadata_refresh': False,
+        'license_flags': DEFAULT_LICENSE_FLAGS,
+        'hash_status': 'completed',
+        'hf_url': '',
+    }
+
+
+def test_get_models_missing_autov3_filters_rows(tmp_path: Path, monkeypatch) -> None:
+    """Only NULL-autov3 rows with a completed sha256 qualify."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    null_path = (tmp_path / 'null.txt').as_posix()
+    checked_path = (tmp_path / 'checked.txt').as_posix()
+    valued_path = (tmp_path / 'valued.txt').as_posix()
+    empty_sha_path = (tmp_path / 'empty_sha.txt').as_posix()
+
+    store.save_cache(
+        'dummy',
+        [
+            _autov3_entry(null_path, 'hash-null'),
+            _autov3_entry(checked_path, 'hash-checked', autov3=''),
+            _autov3_entry(valued_path, 'hash-valued', autov3='a1b2c3d4e5f6'),
+            _autov3_entry(empty_sha_path, ''),
+        ],
+        {},
+        [],
+    )
+
+    assert store.get_models_missing_autov3('dummy') == [null_path]
+
+
+def test_get_models_missing_autov3_filters_by_model_type(tmp_path: Path, monkeypatch) -> None:
+    """Only rows of the requested model_type are returned."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    lora_path = (tmp_path / 'lora.txt').as_posix()
+    checkpoint_path = (tmp_path / 'checkpoint.txt').as_posix()
+
+    store.save_cache('lora', [_autov3_entry(lora_path, 'hash-lora')], {}, [])
+    store.save_cache('checkpoint', [_autov3_entry(checkpoint_path, 'hash-checkpoint')], {}, [])
+
+    assert store.get_models_missing_autov3('lora') == [lora_path]
+    assert store.get_models_missing_autov3('checkpoint') == [checkpoint_path]
+
+
+def test_get_models_missing_autov3_empty_on_clean_db(tmp_path: Path, monkeypatch) -> None:
+    """A freshly created database has no rows to backfill."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    store = PersistentModelCache(db_path=str(tmp_path / 'cache.sqlite'))
+    assert store.get_models_missing_autov3('dummy') == []
+
+
+def test_get_models_missing_autov3_disabled_cache_returns_empty(tmp_path: Path, monkeypatch) -> None:
+    """When the persistent cache is disabled the query is a no-op."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '1')
+    store = PersistentModelCache(db_path=str(tmp_path / 'cache.sqlite'))
+    assert store.get_models_missing_autov3('dummy') == []
+
+
+def test_get_models_missing_autov3_self_terminates_after_marking(tmp_path: Path, monkeypatch) -> None:
+    """Once a row receives a checked state it drops out of the query."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    file_path = (tmp_path / 'm.txt').as_posix()
+    store.save_cache('dummy', [_autov3_entry(file_path, 'hash-m')], {}, [])
+    assert store.get_models_missing_autov3('dummy') == [file_path]
+
+    # Mark the row '' (checked-unavailable) and re-query.
+    old_item = {'file_path': file_path, 'tags': [], 'sha256': 'hash-m'}
+    new_item = _autov3_entry(file_path, 'hash-m', autov3='')
+    store.update_single_model('dummy', new_item, old_item=old_item)
+
+    assert store.get_models_missing_autov3('dummy') == []

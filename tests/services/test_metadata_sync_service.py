@@ -113,6 +113,68 @@ async def test_update_model_metadata_merges_and_persists():
 
 
 @pytest.mark.asyncio
+async def test_update_model_metadata_propagates_civitai_autov3():
+    helpers = build_service()
+
+    local = {
+        "sha256": "111aabbf94dd9e59c05d842fccf57bec915b2a3c237f6b54f8d614e40858d717",
+        "autov3": "",
+        "model_name": "Local",
+    }
+    remote = {
+        "source": "api",
+        "model": {"name": "Remote Model", "description": "", "tags": []},
+        "images": [],
+        "files": [
+            {
+                "name": "other.safetensors",
+                "hashes": {"SHA256": "ZZZ999"},
+            },
+            {
+                "name": "model.safetensors",
+                "hashes": {
+                    "SHA256": "111aabbf94dd9e59c05d842fccf57bec915b2a3c237f6b54f8d614e40858d717",
+                    "AutoV3": "8A582E901D7F",
+                },
+            },
+        ],
+    }
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        local,
+        remote,
+        helpers.default_provider,
+    )
+
+    # Civitai-first: the '' (checked-unavailable) state is upgraded in-session
+    # by the freshly fetched metadata, without any header re-read.
+    assert result["autov3"] == "8a582e901d7f"
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_keeps_autov3_without_matching_file():
+    helpers = build_service()
+
+    local = {"sha256": "abc123", "autov3": "", "model_name": "Local"}
+    remote = {
+        "source": "api",
+        "model": {"name": "Remote Model", "description": "", "tags": []},
+        "images": [],
+        "files": [{"name": "other.safetensors", "hashes": {"SHA256": "ZZZ999", "AutoV3": "ABCDEF123456"}}],
+    }
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        local,
+        remote,
+        helpers.default_provider,
+    )
+
+    assert result["autov3"] == ""
+
+
+@pytest.mark.asyncio
 async def test_fetch_and_update_model_success_updates_cache(tmp_path):
     helpers = build_service()
 

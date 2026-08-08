@@ -8,11 +8,12 @@ class ModelHashIndex:
         self._hash_to_path: Dict[str, str] = {}
         self._filename_to_hash: Dict[str, str] = {}
         self._autov2_to_path: Dict[str, str] = {}
+        self._autov3_to_path: Dict[str, str] = {}
         # New data structures for tracking duplicates
         self._duplicate_hashes: Dict[str, List[str]] = {}  # sha256 -> list of paths
         self._duplicate_filenames: Dict[str, List[str]] = {}  # filename -> list of paths
     
-    def add_entry(self, sha256: str, file_path: str) -> None:
+    def add_entry(self, sha256: str, file_path: str, autov3: Optional[str] = None) -> None:
         """Add or update hash index entry"""
         if not sha256 or not file_path:
             return
@@ -33,9 +34,13 @@ class ModelHashIndex:
                     self._duplicate_hashes.setdefault(sha256, []).append(file_path)
         
         # Track duplicates by filename - FIXED LOGIC
+        is_re_registration = False
         if filename in self._filename_to_hash:
             existing_hash = self._filename_to_hash[filename]
             existing_path = self._hash_to_path.get(existing_hash)
+            # Same path registered again (e.g. a file replaced in place with
+            # new content) — used below to drop its stale autov3 mapping.
+            is_re_registration = existing_path == file_path
             
             # If this is a different file with the same filename
             if existing_path and existing_path != file_path:
@@ -67,6 +72,30 @@ class ModelHashIndex:
         # AutoV2 = first 10 chars of SHA256
         if len(sha256) >= 10:
             self._autov2_to_path[sha256[:10]] = file_path
+        # AutoV3 is an independent hash (not derived from SHA256), stored as-is.
+        # Drop stale mappings for a path when it is re-registered with a NEW
+        # sha256 (file replaced in place) or with an explicit new autov3 value
+        # (correction). Re-registering the SAME file with the same sha256 and
+        # no autov3 (e.g. lazy-hash completion) must never clear its existing
+        # mapping. First-time registrations stay O(1).
+        if autov3:
+            autov3 = autov3.lower()
+        if is_re_registration and (existing_hash != sha256 or autov3):
+            stale_autov3_keys = [
+                key for key, mapped_path in self._autov3_to_path.items()
+                if mapped_path == file_path and key != autov3
+            ]
+            for key in stale_autov3_keys:
+                del self._autov3_to_path[key]
+        if autov3:
+            self._autov3_to_path[autov3] = file_path
+
+    def add_autov3(self, autov3: str, file_path: str) -> None:
+        """Add or update an AutoV3-only index entry (used when only AutoV3 is known)"""
+        if not autov3:
+            return
+        autov3 = autov3.lower()
+        self._autov3_to_path[autov3] = file_path
     
     def _get_filename_from_path(self, file_path: str) -> str:
         """Extract filename without extension from path"""
@@ -167,6 +196,11 @@ class ModelHashIndex:
         for k in autov2_keys_to_remove:
             del self._autov2_to_path[k]
 
+        # Remove from AutoV3 index
+        autov3_keys_to_remove = [k for k, v in self._autov3_to_path.items() if v == file_path]
+        for k in autov3_keys_to_remove:
+            del self._autov3_to_path[k]
+
     def remove_by_hash(self, sha256: str) -> None:
         """Remove entry by hash"""
         sha256 = sha256.lower()
@@ -189,6 +223,11 @@ class ModelHashIndex:
         autov2_key = sha256[:10]
         if autov2_key in self._autov2_to_path:
             del self._autov2_to_path[autov2_key]
+
+        # Remove AutoV3 entries pointing to any removed path
+        autov3_keys_to_remove = [k for k, v in self._autov3_to_path.items() if v in paths_to_remove]
+        for k in autov3_keys_to_remove:
+            del self._autov3_to_path[k]
         
         # Update filename-to-hash and duplicate filenames for all paths
         for path_to_remove in paths_to_remove:
@@ -209,22 +248,26 @@ class ModelHashIndex:
                     del self._duplicate_filenames[fname]
     
     def has_hash(self, hash_value: str) -> bool:
-        """Check if hash exists in index (SHA256 or AutoV2)"""
+        """Check if hash exists in index (SHA256, AutoV2, or AutoV3)"""
         normalized = hash_value.lower()
         if normalized in self._hash_to_path:
             return True
         if len(normalized) == 10:
             return normalized in self._autov2_to_path
+        if len(normalized) == 12:
+            return normalized in self._autov3_to_path
         return False
 
     def get_path(self, hash_value: str) -> Optional[str]:
-        """Get file path for a hash (SHA256 or AutoV2)"""
+        """Get file path for a hash (SHA256, AutoV2, or AutoV3)"""
         normalized = hash_value.lower()
         path = self._hash_to_path.get(normalized)
         if path is not None:
             return path
         if len(normalized) == 10:
             return self._autov2_to_path.get(normalized)
+        if len(normalized) == 12:
+            return self._autov3_to_path.get(normalized)
         return None
     
     def get_hash(self, file_path: str) -> Optional[str]:
@@ -243,6 +286,7 @@ class ModelHashIndex:
         self._hash_to_path.clear()
         self._filename_to_hash.clear()
         self._autov2_to_path.clear()
+        self._autov3_to_path.clear()
         self._duplicate_hashes.clear()
         self._duplicate_filenames.clear()
     
@@ -253,6 +297,10 @@ class ModelHashIndex:
     def get_all_filenames(self) -> Set[str]:
         """Get all filenames in the index"""
         return set(self._filename_to_hash.keys())
+
+    def get_all_autov3(self) -> Dict[str, str]:
+        """Get a snapshot of all AutoV3 hashes mapped to their file paths"""
+        return dict(self._autov3_to_path)
     
     def get_duplicate_hashes(self) -> Dict[str, List[str]]:
         """Get dictionary of duplicate hashes and their paths"""    

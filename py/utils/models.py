@@ -2,7 +2,38 @@ from dataclasses import dataclass, asdict, field
 from typing import Dict, Optional, List, Any
 from datetime import datetime
 import os
+from .constants import INVALID_AUTOV3_EMPTY_HASH
 from .model_utils import determine_base_model
+
+
+def autov3_from_civitai_files(civitai_data: Optional[Dict], sha256: str) -> Optional[str]:
+    """Extract the AutoV3 hash from Civitai metadata for the matching file.
+
+    Civitai versions can ship multiple files; the AutoV3 hash is only valid
+    for the file whose ``hashes.SHA256`` equals the local model's sha256.
+    Matching is case-insensitive. The value is the first 12 characters of
+    Civitai's AutoV3 hash, lowercased. The empty-string SHA256 placeholder
+    (``e3b0c44298fc``) is rejected — it is a repackaging-tool artifact, not a
+    real hash.
+
+    Returns ``None`` when no Civitai data, no matching file, or no usable
+    AutoV3 hash is available.
+    """
+    if not civitai_data or not sha256:
+        return None
+    target_sha = sha256.lower()
+    for file_info in civitai_data.get("files") or []:
+        if not isinstance(file_info, dict):
+            continue
+        hashes = file_info.get("hashes") or {}
+        file_sha = (hashes.get("SHA256") or "").lower()
+        if file_sha and file_sha == target_sha:
+            auto_v3 = hashes.get("AutoV3")
+            if isinstance(auto_v3, str) and len(auto_v3) >= 12:
+                candidate = auto_v3[:12].lower()
+                if candidate != INVALID_AUTOV3_EMPTY_HASH:
+                    return candidate
+    return None
 
 
 @dataclass
@@ -35,6 +66,7 @@ class BaseModelMetadata:
     metadata_source: Optional[str] = None  # Last provider that supplied metadata
     last_checked_at: float = 0  # Last checked timestamp
     hash_status: str = "completed"  # Hash calculation status: pending | calculating | completed | failed
+    autov3: Optional[str] = None  # CivitAI AutoV3 hash (12-char lowercase hex); "" = checked but unavailable, None = not checked
     trainedWords: List[str] = field(
         default_factory=list
     )  # Trigger words / activation prompts (source-agnostic)
@@ -57,6 +89,14 @@ class BaseModelMetadata:
     def from_dict(cls, data: Dict) -> "BaseModelMetadata":
         """Create instance from dictionary"""
         data_copy = data.copy()
+
+        # autov3 three-state semantics: an explicit key means the value is known.
+        # JSON null in the sidecar ("checked but unavailable") is normalized to ""
+        # in memory; an absent key stays None ("not checked yet"). autov3 is a known
+        # field, so it flows through fields_to_use below and never leaks into
+        # _unknown_fields.
+        if "autov3" in data_copy:
+            data_copy["autov3"] = data_copy["autov3"] or ""
 
         # Use cached fields if available, otherwise compute them
         if not hasattr(cls, "_known_fields_cache"):
@@ -97,11 +137,29 @@ class BaseModelMetadata:
         if hasattr(self, "_unknown_fields"):
             result.update(self._unknown_fields)
 
+        # autov3 three-state semantics: emit the key only when the value is known.
+        # "" is serialized as JSON null ("checked but unavailable"); an absent key
+        # means "not checked yet". Done after unknown fields so a stale unknown
+        # copy can never override the typed field.
+        if self.autov3 is not None:
+            result["autov3"] = self.autov3 or None
+        else:
+            result.pop("autov3", None)
+
         return result
 
     def update_civitai_info(self, civitai_data: Dict) -> None:
-        """Update Civitai information"""
+        """Update Civitai information.
+
+        Civitai's AutoV3 is the authoritative hash for recipe matching, so
+        whenever the version metadata reports an AutoV3 for the file whose
+        SHA256 matches this model, it takes precedence over the locally
+        extracted header hash.
+        """
         self.civitai = civitai_data
+        autov3 = autov3_from_civitai_files(civitai_data, self.sha256)
+        if autov3:
+            self.autov3 = autov3
 
     def update_file_info(self, file_path: str, update_timestamps: bool = False) -> None:
         """
@@ -190,13 +248,15 @@ class LoraMetadata(BaseModelMetadata):
         if "description" in model_data:
             description = model_data["description"]
 
+        sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
+
         return cls(
             file_name=os.path.splitext(file_name)[0],
             model_name=model_data.get("name", os.path.splitext(file_name)[0]),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
-            sha256=(file_info.get("hashes") or {}).get("SHA256", "").lower(),
+            sha256=sha256_value,
             base_model=base_model,
             preview_url="",  # Will be updated after preview download
             preview_nsfw_level=0,  # Will be updated after preview download
@@ -204,6 +264,7 @@ class LoraMetadata(BaseModelMetadata):
             civitai=version_info,
             tags=tags,
             modelDescription=description,
+            autov3=autov3_from_civitai_files(version_info, sha256_value),
         )
 
 
@@ -220,6 +281,7 @@ class CheckpointMetadata(BaseModelMetadata):
         """Create CheckpointMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
         base_model = determine_base_model(version_info.get("baseModel", ""))
+        sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "checkpoint")
 
         # Extract tags and description if available
@@ -237,7 +299,7 @@ class CheckpointMetadata(BaseModelMetadata):
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
-            sha256=(file_info.get("hashes") or {}).get("SHA256", "").lower(),
+            sha256=sha256_value,
             base_model=base_model,
             preview_url="",  # Will be updated after preview download
             preview_nsfw_level=0,
@@ -246,6 +308,7 @@ class CheckpointMetadata(BaseModelMetadata):
             sub_type=sub_type,
             tags=tags,
             modelDescription=description,
+            autov3=autov3_from_civitai_files(version_info, sha256_value),
         )
 
 
@@ -262,6 +325,7 @@ class EmbeddingMetadata(BaseModelMetadata):
         """Create EmbeddingMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
         base_model = determine_base_model(version_info.get("baseModel", ""))
+        sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "embedding")
 
         # Extract tags and description if available
@@ -279,7 +343,7 @@ class EmbeddingMetadata(BaseModelMetadata):
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
-            sha256=(file_info.get("hashes") or {}).get("SHA256", "").lower(),
+            sha256=sha256_value,
             base_model=base_model,
             preview_url="",  # Will be updated after preview download
             preview_nsfw_level=0,
@@ -288,4 +352,5 @@ class EmbeddingMetadata(BaseModelMetadata):
             sub_type=sub_type,
             tags=tags,
             modelDescription=description,
+            autov3=autov3_from_civitai_files(version_info, sha256_value),
         )

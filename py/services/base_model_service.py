@@ -446,20 +446,31 @@ class BaseModelService(ABC):
     async def _apply_hash_filters(
         self, data: List[Dict], hash_filters: Dict
     ) -> List[Dict]:
-        """Apply hash-based filtering"""
+        """Apply hash-based filtering (SHA256 and AutoV3)."""
+
+        def matches_hash_set(item: Dict, hash_set: set) -> bool:
+            """Check whether an item matches any hash in the set.
+
+            Compares the item's ``sha256`` field and its non-empty ``autov3``
+            field, both case-insensitively.
+            """
+            if item.get("sha256", "").lower() in hash_set:
+                return True
+            autov3 = item.get("autov3", "")
+            return bool(autov3) and autov3.lower() in hash_set
+
         single_hash = hash_filters.get("single_hash")
         multiple_hashes = hash_filters.get("multiple_hashes")
 
         if single_hash:
-            # Filter by single hash
-            single_hash = single_hash.lower()
+            # Filter by single hash (SHA256 or AutoV3)
             return [
-                item for item in data if item.get("sha256", "").lower() == single_hash
+                item for item in data if matches_hash_set(item, {single_hash.lower()})
             ]
         elif multiple_hashes:
-            # Filter by multiple hashes
-            hash_set = set(hash.lower() for hash in multiple_hashes)
-            return [item for item in data if item.get("sha256", "").lower() in hash_set]
+            # Filter by multiple hashes (SHA256 or AutoV3)
+            hash_set = {hash.lower() for hash in multiple_hashes}
+            return [item for item in data if matches_hash_set(item, hash_set)]
 
         return data
 

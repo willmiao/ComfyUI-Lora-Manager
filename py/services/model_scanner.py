@@ -7,9 +7,9 @@ import shutil
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Set, Type, Union
 
-from ..utils.models import BaseModelMetadata
+from ..utils.models import BaseModelMetadata, autov3_from_civitai_files
 from ..config import config
-from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256
+from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
 from ..utils.metadata_manager import MetadataManager
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
@@ -86,6 +86,7 @@ class ModelScanner:
         self._persistent_cache = get_persistent_cache()
         self._name_display_mode = self._resolve_name_display_mode()
         self._cancel_requested = False  # Flag for cancellation
+        self._autov3_backfill_scheduled = False  # One-time AutoV3 backfill trigger per process
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -225,6 +226,19 @@ class ModelScanner:
         if not isinstance(notes, str):
             notes = str(notes)
 
+        # AutoV3 three-state contract: absent key / None = "not checked yet",
+        # "" = "checked but unavailable" (never re-read the header), else the
+        # 12-char lowercase hex value. A metadata object already follows the
+        # contract and is passed through unchanged; a payload dict only carries
+        # an explicit checked state when the key is present.
+        if is_mapping:
+            if 'autov3' in source:
+                entry_autov3 = source['autov3'] or ''
+            else:
+                entry_autov3 = None
+        else:
+            entry_autov3 = get_value('autov3', None)
+
         entry: Dict[str, Any] = {
             'file_path': normalized_path,
             # file_name is always stored WITHOUT extension (e.g. "OWSMianne_ANIMA_V1",
@@ -238,6 +252,7 @@ class ModelScanner:
             'size': int(get_value('size', 0) or 0),
             'modified': float(get_value('modified', 0.0) or 0.0),
             'sha256': (get_value('sha256', '') or '').lower(),
+            'autov3': entry_autov3,
             'base_model': get_value('base_model', '') or '',
             'preview_url': preview_url,
             'preview_nsfw_level': int(get_value('preview_nsfw_level', 0) or 0),
@@ -473,6 +488,13 @@ class ModelScanner:
             if sha_value and path:
                 hash_index.add_entry(sha_value.lower(), path)
 
+        # Rebuild the AutoV3 index from the persisted autov3_index rows. These
+        # cover every known autov3 -> path mapping regardless of whether a
+        # sha256 row also exists for the same file.
+        for autov3_value, path in persisted.autov3_hash_rows:
+            if autov3_value and path:
+                hash_index.add_autov3(autov3_value.lower(), path)
+
         tags_count: Dict[str, int] = {}
         adjusted_raw_data: List[Dict[str, Any]] = []
         for item in persisted.raw_data:
@@ -541,7 +563,29 @@ class ModelScanner:
             'scanner_type': self.model_type,
             'pageType': page_type
         })
+
+        # Schedule the one-time AutoV3 backfill task (at most once per process)
+        # so entries loaded from a persisted snapshot that predates autov3 get
+        # their checked state computed in the background. The task never blocks
+        # or crashes the load path.
+        if not self._autov3_backfill_scheduled:
+            self._autov3_backfill_scheduled = True
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = None
+            if loop is not None:
+                loop.create_task(self._run_autov3_backfill())
+
         return True
+
+    async def _run_autov3_backfill(self) -> None:
+        """Backfill autov3 for entries loaded from the persisted cache that lack it."""
+        try:
+            from ..services.autov3_backfill_service import Autov3BackfillService  # lazy import (module created by another unit)
+            await Autov3BackfillService.get_instance().backfill(self)
+        except Exception as exc:
+            logger.warning("AutoV3 backfill failed: %s", exc)
 
     async def _save_persistent_cache(self, scan_result: CacheBuildResult) -> None:
         if not scan_result or not getattr(self, '_persistent_cache', None):
@@ -555,6 +599,7 @@ class ModelScanner:
             return
 
         hash_snapshot = self._build_hash_index_snapshot(scan_result.hash_index)
+        autov3_snapshot = self._build_autov3_index_snapshot(scan_result.hash_index)
         loop = asyncio.get_event_loop()
         try:
             await loop.run_in_executor(
@@ -563,7 +608,8 @@ class ModelScanner:
                 self.model_type,
                 list(scan_result.raw_data),
                 hash_snapshot,
-                list(scan_result.excluded_models)
+                list(scan_result.excluded_models),
+                autov3_snapshot,
             )
         except Exception as exc:
             logger.warning("%s Scanner: Failed to persist cache: %s", self.model_type.capitalize(), exc)
@@ -587,6 +633,20 @@ class ModelScanner:
             for path in paths:
                 if path and path not in bucket:
                     bucket.append(path)
+        return snapshot
+
+    def _build_autov3_index_snapshot(self, hash_index: Optional[ModelHashIndex]) -> Dict[str, List[str]]:
+        """Build the autov3 -> [paths] snapshot for the persisted cache."""
+        snapshot: Dict[str, List[str]] = {}
+        if not hash_index:
+            return snapshot
+
+        for autov3_value, path in hash_index.get_all_autov3().items():
+            if not autov3_value or not path:
+                continue
+            bucket = snapshot.setdefault(autov3_value.lower(), [])
+            if path not in bucket:
+                bucket.append(path)
         return snapshot
 
     async def _persist_current_cache(self) -> None:
@@ -880,7 +940,11 @@ class ModelScanner:
 
                                     # Update hash index if available
                                     if 'sha256' in model_data and 'file_path' in model_data:
-                                        self._hash_index.add_entry(model_data['sha256'].lower(), model_data['file_path'])
+                                        self._hash_index.add_entry(
+                                            model_data['sha256'].lower(),
+                                            model_data['file_path'],
+                                            model_data.get('autov3') or None
+                                        )
                                     
                                     # Update tags count
                                     if 'tags' in model_data and model_data['tags']:
@@ -1130,6 +1194,36 @@ class ModelScanner:
             except Exception as e:
                 logger.error(f"Failed to compute SHA256 for {file_path}: {e}")
 
+        # AutoV3 resolution: prefer the Civitai AutoV3 reported for the file
+        # whose SHA256 matches (authoritative for recipe matching), falling
+        # back to the embedded safetensors header hash only for models never
+        # checked before (autov3 is None). A checked-unavailable state ('')
+        # is only upgraded by Civitai data — the header is never re-read.
+        current_autov3 = model_data.get('autov3')
+        if current_autov3 in (None, ''):
+            try:
+                civitai_data = None
+                if isinstance(metadata, BaseModelMetadata):
+                    civitai_data = metadata.civitai
+                elif isinstance(metadata, dict):
+                    civitai_data = metadata.get("civitai")
+                autov3 = autov3_from_civitai_files(
+                    civitai_data, model_data.get("sha256") or ""
+                ) or ""
+                if not autov3 and current_autov3 is None:
+                    autov3 = (calculate_autov3(os.path.realpath(file_path)) or '').lower()
+                if autov3 != current_autov3:
+                    model_data['autov3'] = autov3
+                    if isinstance(metadata, BaseModelMetadata):
+                        metadata.autov3 = autov3
+                        await MetadataManager.save_metadata(file_path, metadata)
+                    elif isinstance(metadata, dict):
+                        # Dict payload: JSON null encodes the checked-unavailable state.
+                        metadata['autov3'] = autov3 or None
+                        await MetadataManager.save_metadata(file_path, metadata)
+            except Exception as e:
+                logger.error(f"Failed to resolve AutoV3 for {file_path}: {e}")
+
         # Skip excluded models
         if model_data.get('exclude', False):
             excluded_models.append(model_data['file_path'])
@@ -1322,7 +1416,7 @@ class ModelScanner:
                                 sha_value = result.get('sha256')
                                 model_path = result.get('file_path')
                                 if sha_value and model_path:
-                                    hash_index.add_entry(sha_value.lower(), model_path)
+                                    hash_index.add_entry(sha_value.lower(), model_path, result.get('autov3') or None)
 
                                 for tag in result.get('tags') or []:
                                     tags_count[tag] = tags_count.get(tag, 0) + 1
@@ -1391,7 +1485,11 @@ class ModelScanner:
             await self._cache.resort()
             
             # Update the hash index
-            self._hash_index.add_entry(metadata_dict['sha256'], metadata_dict['file_path'])
+            self._hash_index.add_entry(
+                metadata_dict['sha256'],
+                metadata_dict['file_path'],
+                metadata_dict.get('autov3') or None,
+            )
             await self._persist_current_cache()
             return True
         except Exception as e:
@@ -1578,7 +1676,11 @@ class ModelScanner:
 
             sha_value = cache_entry.get('sha256')
             if sha_value:
-                self._hash_index.add_entry(sha_value.lower(), normalized_new_path)
+                self._hash_index.add_entry(
+                    sha_value.lower(),
+                    normalized_new_path,
+                    cache_entry.get('autov3') or None,
+                )
 
             all_folders = set(item['folder'] for item in cache.raw_data)
             cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
@@ -1736,7 +1838,11 @@ class ModelScanner:
             if old_sha:
                 self._hash_index.remove_by_path(file_path)
             if new_sha:
-                self._hash_index.add_entry(new_sha, file_path)
+                self._hash_index.add_entry(
+                    new_sha,
+                    file_path,
+                    desired_entry.get('autov3') or None,
+                )
 
         # ---- Incremental version index update ----
         new_civitai = desired_entry.get("civitai")
@@ -1786,6 +1892,74 @@ class ModelScanner:
             )
 
         return True
+
+    async def update_autov3_for_model(self, model_type: str, file_path: str, autov3: str) -> bool:
+        """Persist an AutoV3 hash for a single model (single write path used by the backfill service).
+
+        Locates the in-memory cache entry by ``file_path`` and updates only its
+        ``autov3`` field: the in-memory hash index, the SQLite snapshot via
+        :meth:`PersistentModelCache.update_single_model`, and the
+        ``.metadata.json`` sidecar. sha256, tags, and every other field are
+        left untouched, so the persistent delta only ever differs in autov3.
+
+        Returns:
+            ``True`` when the entry was found and updated, ``False`` otherwise.
+            Never raises — failures are logged and swallowed.
+        """
+        try:
+            if self._cache is None:
+                return False
+
+            entry = next(
+                (item for item in self._cache.raw_data if item.get('file_path') == file_path),
+                None,
+            )
+            if entry is None:
+                return False
+
+            # Normalize once so the memory entry, sidecar, and SQLite row agree.
+            autov3 = (autov3 or "").lower()
+
+            # Capture the pre-mutation state so update_single_model only sees
+            # an autov3 delta between old and new.
+            old_item = dict(entry)
+
+            entry['autov3'] = autov3 or ''
+
+            # Prefer add_entry when a sha256 is known so the sha256 and autov3
+            # maps stay in sync; fall back to an autov3-only registration.
+            sha_value = entry.get('sha256')
+            checked_autov3 = entry.get('autov3') or None
+            if sha_value:
+                self._hash_index.add_entry(sha_value.lower(), file_path, checked_autov3)
+            elif checked_autov3:
+                self._hash_index.add_autov3(checked_autov3, file_path)
+
+            persistent = getattr(self, '_persistent_cache', None)
+            if persistent is not None:
+                await asyncio.get_event_loop().run_in_executor(
+                    None,
+                    persistent.update_single_model,
+                    model_type,
+                    entry,
+                    old_item,
+                )
+
+            # Sidecar write-back: JSON null encodes the checked-unavailable
+            # state. Skip silently when the sidecar does not exist.
+            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+            if os.path.exists(metadata_path):
+                with open(metadata_path, 'r', encoding='utf-8') as handle:
+                    payload = json.load(handle)
+                if not isinstance(payload, dict):
+                    payload = {}
+                payload['autov3'] = entry['autov3'] or None
+                await MetadataManager.save_metadata(metadata_path, payload)
+
+            return True
+        except Exception as exc:
+            logger.warning("Failed to update AutoV3 for %s: %s", file_path, exc)
+            return False
 
     @staticmethod
     def _cache_entries_differ(a: Dict[str, Any], b: Dict[str, Any]) -> bool:

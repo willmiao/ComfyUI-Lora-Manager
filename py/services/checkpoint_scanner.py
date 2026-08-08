@@ -6,7 +6,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional
 
 from ..utils.models import CheckpointMetadata
-from ..utils.file_utils import find_preview_file, normalize_path
+from ..utils.file_utils import find_preview_file, normalize_path, calculate_autov3
 from ..utils.metadata_manager import MetadataManager
 from ..config import config
 from .model_scanner import ModelScanner
@@ -62,6 +62,11 @@ class CheckpointScanner(ModelScanner):
             # Find preview image
             preview_url = find_preview_file(base_name, dir_path)
 
+            # AutoV3 reads only the safetensors header, so it is cheap even for
+            # large checkpoints; record the checked state at creation time ("" =
+            # checked but unavailable).
+            autov3 = calculate_autov3(real_path)
+
             # Create metadata WITHOUT calculating hash
             metadata = CheckpointMetadata(
                 file_name=base_name,
@@ -77,6 +82,7 @@ class CheckpointScanner(ModelScanner):
                 sub_type="checkpoint",
                 from_civitai=False,  # Mark as local model since no hash yet
                 hash_status="pending",  # Mark hash as pending
+                autov3=autov3 or "",
             )
 
             # Save the created metadata
@@ -120,7 +126,11 @@ class CheckpointScanner(ModelScanner):
                 # that queries get_hash_by_filename first) will miss on every
                 # lookup and keep calling back into this method, creating a
                 # tight loop that never populates the index.
-                self._hash_index.add_entry(metadata.sha256.lower(), file_path)
+                self._hash_index.add_entry(
+                    metadata.sha256.lower(),
+                    file_path,
+                    getattr(metadata, "autov3", None) or None,
+                )
                 return metadata.sha256
 
             async with self._hash_calculation_lock:
@@ -132,7 +142,11 @@ class CheckpointScanner(ModelScanner):
                     and metadata.hash_status == "completed"
                     and metadata.sha256
                 ):
-                    self._hash_index.add_entry(metadata.sha256.lower(), file_path)
+                    self._hash_index.add_entry(
+                        metadata.sha256.lower(),
+                        file_path,
+                        getattr(metadata, "autov3", None) or None,
+                    )
                     return metadata.sha256
 
                 task = self._hash_calculation_tasks.get(real_path)
@@ -185,7 +199,11 @@ class CheckpointScanner(ModelScanner):
             if metadata.hash_status == "completed" and metadata.sha256:
                 # Populate the in-memory hash index even for pre-computed
                 # hashes, mirroring the fix in calculate_hash_for_model.
-                self._hash_index.add_entry(metadata.sha256.lower(), file_path)
+                self._hash_index.add_entry(
+                    metadata.sha256.lower(),
+                    file_path,
+                    getattr(metadata, "autov3", None) or None,
+                )
                 return metadata.sha256
 
             # Update status to calculating
@@ -202,7 +220,11 @@ class CheckpointScanner(ModelScanner):
             await MetadataManager.save_metadata(file_path, metadata)
 
             # Update hash index
-            self._hash_index.add_entry(sha256.lower(), file_path)
+            self._hash_index.add_entry(
+                sha256.lower(),
+                file_path,
+                getattr(metadata, "autov3", None) or None,
+            )
 
             # Update the in-memory cache entry so that subsequent
             # _persist_current_cache / _save_persistent_cache calls

@@ -1318,3 +1318,70 @@ class TestHfGroupKey:
             "hf_url": "https://huggingface.co/user/repo",
         }
         assert BaseModelService._extract_group_key(item) == "hf:user/repo"
+
+
+class TestApplyHashFilters:
+    """_apply_hash_filters matches items by SHA256 or non-empty AutoV3."""
+
+    def _make_service(self):
+        return DummyService(model_type="stub", scanner=object(), metadata_class=BaseModelMetadata)
+
+    @pytest.mark.asyncio
+    async def test_matches_item_by_autov3(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": "abcdef123456"},
+            {"file_path": "/m/two.safetensors", "sha256": "b" * 64, "autov3": ""},
+        ]
+
+        result = await service._apply_hash_filters(data, {"single_hash": "ABCDEF123456"})
+
+        assert [item["file_path"] for item in result] == ["/m/one.safetensors"]
+
+    @pytest.mark.asyncio
+    async def test_matches_item_by_sha256(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": ""},
+        ]
+
+        result = await service._apply_hash_filters(data, {"single_hash": "A" * 64})
+
+        assert [item["file_path"] for item in result] == ["/m/one.safetensors"]
+
+    @pytest.mark.asyncio
+    async def test_empty_or_absent_autov3_never_matches(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": ""},
+            {"file_path": "/m/two.safetensors", "sha256": "b" * 64},
+        ]
+
+        result = await service._apply_hash_filters(data, {"single_hash": "cdef123456ab"})
+
+        assert result == []
+
+    @pytest.mark.asyncio
+    async def test_multiple_hashes_match_autov3_and_sha256(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": "abcdef123456"},
+            {"file_path": "/m/two.safetensors", "sha256": "b" * 64, "autov3": ""},
+        ]
+
+        result = await service._apply_hash_filters(
+            data, {"multiple_hashes": ["abcdef123456", "c" * 64]}
+        )
+
+        assert [item["file_path"] for item in result] == ["/m/one.safetensors"]
+
+    @pytest.mark.asyncio
+    async def test_no_hash_filters_returns_data_unchanged(self):
+        service = self._make_service()
+        data = [
+            {"file_path": "/m/one.safetensors", "sha256": "a" * 64, "autov3": "abcdef123456"},
+        ]
+
+        result = await service._apply_hash_filters(data, {})
+
+        assert result == data
