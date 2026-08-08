@@ -75,6 +75,7 @@ class TestRecipeFlowIntegration:
 
         # Verify update
         loaded = cache.load_cache()
+        assert loaded is not None
         loaded_recipe = loaded.raw_data[0]
 
         assert loaded_recipe["title"] == "Updated Recipe Title"
@@ -243,7 +244,7 @@ steps: 20
 cfg: 7.0"""
 
         # Basic parsing logic for testing
-        def parse_simple_metadata(text: str) -> dict:
+        def parse_simple_metadata(text: str) -> Dict[str, str]:
             result = {}
             for line in text.strip().split('\n'):
                 if ':' in line:

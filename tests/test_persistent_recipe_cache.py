@@ -3,7 +3,7 @@
 import json
 import os
 import tempfile
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pytest
 
@@ -27,7 +27,7 @@ def temp_db_path():
 
 
 @pytest.fixture
-def sample_recipes() -> List[Dict]:
+def sample_recipes() -> List[Dict[str, Any]]:
     """Create sample recipe data."""
     return [
         {
@@ -133,6 +133,7 @@ class TestPersistentRecipeCache:
 
         # Load and verify
         loaded = cache.load_cache()
+        assert loaded is not None
         r1 = next(r for r in loaded.raw_data if r["id"] == "recipe-001")
         assert r1["title"] == "Updated Title"
         assert r1["favorite"] is False
@@ -147,6 +148,7 @@ class TestPersistentRecipeCache:
 
         # Load and verify
         loaded = cache.load_cache()
+        assert loaded is not None
         assert len(loaded.raw_data) == 1
         assert loaded.raw_data[0]["id"] == "recipe-002"
 
@@ -203,6 +205,7 @@ class TestPersistentRecipeCache:
         cache.save_cache(recipes)
 
         loaded = cache.load_cache()
+        assert loaded is not None
         assert len(loaded.raw_data) == 1
         assert loaded.raw_data[0]["id"] == "valid-001"
 
@@ -251,6 +254,7 @@ class TestPersistentRecipeCache:
         cache.save_cache(recipes)
 
         loaded = cache.load_cache()
+        assert loaded is not None
         loras = loaded.raw_data[0]["loras"]
         assert len(loras) == 2
         assert loras[0]["modelVersionId"] == 12345
@@ -509,6 +513,7 @@ class TestPersistentRecipeCache:
         cache.save_cache(sample_recipes)
 
         loaded = cache.load_cache()
+        assert loaded is not None
         assert loaded.image_id_map == {}
 
     def test_image_id_map_survives_recipe_update(self, temp_db_path, sample_recipes):
@@ -522,6 +527,7 @@ class TestPersistentRecipeCache:
         cache.update_recipe(updated)
 
         loaded = cache.load_cache()
+        assert loaded is not None
         assert loaded.image_id_map == {"123": "recipe-alpha"}
 
     def test_save_image_id_map_persists_without_full_save(self, temp_db_path, sample_recipes):
@@ -532,6 +538,7 @@ class TestPersistentRecipeCache:
         cache.save_image_id_map({"555": "new-recipe", "666": "another-recipe"})
 
         loaded = cache.load_cache()
+        assert loaded is not None
         assert loaded.image_id_map == {"555": "new-recipe", "666": "another-recipe"}
 
     def test_save_image_id_map_overwrites_previous(self, temp_db_path, sample_recipes):
@@ -542,4 +549,5 @@ class TestPersistentRecipeCache:
         cache.save_image_id_map({"222": "new-only"})
 
         loaded = cache.load_cache()
+        assert loaded is not None
         assert loaded.image_id_map == {"222": "new-only"}

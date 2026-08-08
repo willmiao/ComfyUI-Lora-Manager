@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterator, List, Optional
 
 import pytest
 
@@ -16,7 +16,7 @@ from py.services.persistent_model_cache import DEFAULT_LICENSE_FLAGS, Persistent
 
 
 @pytest.fixture(autouse=True)
-def reset_backfill_singleton() -> None:
+def reset_backfill_singleton() -> Iterator[None]:
     """Reset the service singleton so every test starts from a fresh instance."""
     Autov3BackfillService._instance = None
     yield
@@ -66,7 +66,7 @@ class RecordingScanner:
         self.model_type = model_type
         self._persistent_cache = persistent_cache
         self.entries: Dict[str, Dict[str, Any]] = {entry['file_path']: entry for entry in entries}
-        self.update_calls: List[tuple] = []
+        self.update_calls: List[tuple[str, str, str]] = []
 
     async def update_autov3_for_model(self, model_type: str, file_path: str, autov3: str) -> bool:
         self.update_calls.append((model_type, file_path, autov3))
@@ -114,7 +114,7 @@ async def test_backfill_updates_models_and_self_terminates(tmp_path: Path, monke
     )
 
     scanner = RecordingScanner('dummy', store, entries)
-    updated = await Autov3BackfillService.get_instance().backfill(scanner)
+    updated = await Autov3BackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     # Non-safetensors files yield no embedded hash, so both are marked ''.
     assert updated == 2
@@ -124,6 +124,7 @@ async def test_backfill_updates_models_and_self_terminates(tmp_path: Path, monke
     assert store.get_models_missing_autov3('dummy') == []
 
     persisted = store.load_cache('dummy')
+    assert persisted is not None
     items = {item['file_path']: item for item in persisted.raw_data}
     assert items[path_a]['autov3'] == ''
     assert items[path_b]['autov3'] == ''
@@ -147,7 +148,7 @@ async def test_backfill_skips_missing_files_without_marking(tmp_path: Path, monk
     )
 
     scanner = RecordingScanner('dummy', store, entries)
-    updated = await Autov3BackfillService.get_instance().backfill(scanner)
+    updated = await Autov3BackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
     assert scanner.update_calls == [('dummy', existing, '')]
@@ -162,7 +163,7 @@ async def test_backfill_returns_zero_when_same_type_already_running(tmp_path: Pa
     service = Autov3BackfillService.get_instance()
     service._running_types = {'dummy'}
     try:
-        assert await service.backfill(scanner) == 0
+        assert await service.backfill(scanner) == 0  # pyright: ignore[reportArgumentType]
     finally:
         service._running_types = set()
     assert scanner.update_calls == []
@@ -195,7 +196,7 @@ async def test_backfill_runs_concurrently_for_different_model_types(tmp_path: Pa
 
     try:
         # The lora backfill must still run while checkpoint is in progress.
-        assert await service.backfill(lora_scanner) == 1
+        assert await service.backfill(lora_scanner) == 1  # pyright: ignore[reportArgumentType]
         assert lora_scanner.update_calls == [('lora', lora_file, '')]
     finally:
         service._running_types = set()
@@ -213,7 +214,7 @@ async def test_backfill_never_raises_on_failure(tmp_path: Path, monkeypatch) -> 
     store.save_cache('dummy', entries, {'hash-boom': [existing]}, [])
 
     scanner = RaisingScanner('dummy', store, entries)
-    updated = await Autov3BackfillService.get_instance().backfill(scanner)
+    updated = await Autov3BackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
     assert updated == 0
 
 
@@ -238,7 +239,7 @@ async def test_backfill_uses_default_cache_when_scanner_has_none(tmp_path: Path,
             store.update_single_model(model_type, new_item, old_item)
             return True
 
-    updated = await Autov3BackfillService.get_instance().backfill(BareScanner())
+    updated = await Autov3BackfillService.get_instance().backfill(BareScanner())  # pyright: ignore[reportArgumentType]
     assert updated == 1
     assert store.get_models_missing_autov3('dummy') == []
 
@@ -253,9 +254,9 @@ async def test_backfill_idempotent_second_run_is_noop(tmp_path: Path, monkeypatc
     scanner = RecordingScanner('dummy', store, entries)
     service = Autov3BackfillService.get_instance()
 
-    assert await service.backfill(scanner) == 1
+    assert await service.backfill(scanner) == 1  # pyright: ignore[reportArgumentType]
     # A re-run has nothing left to do.
-    assert await service.backfill(scanner) == 0
+    assert await service.backfill(scanner) == 0  # pyright: ignore[reportArgumentType]
     assert len(scanner.update_calls) == 1
 
 
@@ -275,7 +276,7 @@ async def test_backfill_end_to_end_through_scanner_lazy_import(tmp_path: Path, m
     )
 
     class RealScanner(ModelScanner):
-        def __init__(self) -> None:
+        def __init__(self) -> None:  # pyright: ignore[reportMissingSuperCall]
             self.model_type = 'dummy'
             self._persistent_cache = store
             self._cache = ModelCache(raw_data=[dict(e) for e in entries], folders=[])
@@ -285,6 +286,7 @@ async def test_backfill_end_to_end_through_scanner_lazy_import(tmp_path: Path, m
 
     assert store.get_models_missing_autov3('dummy') == []
     persisted = store.load_cache('dummy')
+    assert persisted is not None
     items = {item['file_path']: item for item in persisted.raw_data}
     assert items[path_a]['autov3'] == ''
     assert items[path_b]['autov3'] == ''
@@ -314,12 +316,13 @@ async def test_backfill_prefers_civitai_autov3_from_sidecar(tmp_path: Path, monk
     store.save_cache('dummy', [_entry(path, 'hash-ckpt')], {'hash-ckpt': [path]}, [])
 
     scanner = RecordingScanner('dummy', store, [_entry(path, 'hash-ckpt')])
-    updated = await Autov3BackfillService.get_instance().backfill(scanner)
+    updated = await Autov3BackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
     assert scanner.update_calls == [('dummy', path, 'abcdef123456')]
 
     persisted = store.load_cache('dummy')
+    assert persisted is not None
     items = {item['file_path']: item for item in persisted.raw_data}
     assert items[path]['autov3'] == 'abcdef123456'
     # Self-terminating: the row is marked and the driving query empties.
@@ -344,7 +347,7 @@ async def test_backfill_falls_back_to_header_when_sidecar_has_no_match(tmp_path:
     store.save_cache('dummy', [_entry(path, 'hash-plain')], {'hash-plain': [path]}, [])
 
     scanner = RecordingScanner('dummy', store, [_entry(path, 'hash-plain')])
-    updated = await Autov3BackfillService.get_instance().backfill(scanner)
+    updated = await Autov3BackfillService.get_instance().backfill(scanner)  # pyright: ignore[reportArgumentType]
 
     assert updated == 1
     assert scanner.update_calls == [('dummy', path, '')]

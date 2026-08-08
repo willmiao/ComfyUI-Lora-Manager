@@ -6,7 +6,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from py.services.aria2_downloader import Aria2Downloader, Aria2Error
+from py.services.aria2_downloader import Aria2Downloader, Aria2Error, Aria2Transfer
 from py.services.aria2_transfer_state import Aria2TransferStateStore
 from py.services import aria2_transfer_state
 
@@ -165,9 +165,9 @@ async def test_download_file_keeps_auth_headers_when_civitai_does_not_redirect(
 @pytest.mark.asyncio
 async def test_pause_resume_cancel_forward_to_rpc(monkeypatch):
     downloader = Aria2Downloader()
-    downloader._transfers["download-1"] = type(
-        "Transfer", (), {"gid": "gid-1", "save_path": "/tmp/model.safetensors"}
-    )()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path="/tmp/model.safetensors"
+    )
 
     calls = []
 
@@ -200,9 +200,9 @@ async def test_download_file_reuses_existing_transfer_without_add_uri(
     downloader._rpc_secret = "secret"
 
     save_path = tmp_path / "downloads" / "model.safetensors"
-    downloader._transfers["download-1"] = type(
-        "Transfer", (), {"gid": "gid-1", "save_path": str(save_path)}
-    )()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path=str(save_path)
+    )
 
     rpc_calls = []
     statuses = iter(

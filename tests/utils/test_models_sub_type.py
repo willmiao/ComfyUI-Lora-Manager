@@ -1,5 +1,7 @@
 """Tests for model sub_type field refactoring."""
 
+from typing import Any, Dict
+
 import pytest
 from py.utils.models import (
     BaseModelMetadata,
@@ -44,7 +46,7 @@ class TestCheckpointMetadataSubType:
 
     def test_checkpoint_from_civitai_info_uses_sub_type(self):
         """from_civitai_info should use sub_type from version_info."""
-        version_info = {
+        version_info: Dict[str, Any] = {
             "baseModel": "SDXL",
             "model": {"name": "Test", "description": "", "tags": []},
             "files": [{"name": "model.safetensors", "sizeKB": 1000, "hashes": {"SHA256": "abc123"}, "primary": True}],
@@ -79,7 +81,7 @@ class TestEmbeddingMetadataSubType:
 
     def test_embedding_from_civitai_info_uses_sub_type(self):
         """from_civitai_info should use sub_type from version_info."""
-        version_info = {
+        version_info: Dict[str, Any] = {
             "baseModel": "SD1.5",
             "model": {"name": "Test", "description": "", "tags": []},
             "files": [{"name": "model.pt", "sizeKB": 1000, "hashes": {"SHA256": "abc123"}, "primary": True}],
@@ -113,7 +115,7 @@ class TestLoraMetadataConsistency:
 
     def test_lora_from_civitai_info_extracts_type(self):
         """from_civitai_info should extract type from civitai data."""
-        version_info = {
+        version_info: Dict[str, Any] = {
             "baseModel": "SDXL",
             "model": {"name": "Test", "description": "", "tags": [], "type": "Lora"},
             "files": [{"name": "model.safetensors", "sizeKB": 1000, "hashes": {"SHA256": "abc123"}, "primary": True}],

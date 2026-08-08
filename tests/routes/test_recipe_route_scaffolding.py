@@ -124,7 +124,7 @@ def test_to_route_mapping_uses_handler_set():
             super().__init__()
             self.created = 0
 
-        def _create_handler_set(self):  # noqa: D401 - simple override for test
+        def _create_handler_set(self):  # noqa: D401 - simple override for test  # pyright: ignore[reportIncompatibleMethodOverride]
             self.created += 1
             return DummyHandlerSet()
 
@@ -162,10 +162,12 @@ def test_recipe_route_registrar_binds_every_route():
             self.router = FakeRouter()
 
     app = FakeApp()
-    registrar = recipe_route_registrar.RecipeRouteRegistrar(app)
+    registrar = recipe_route_registrar.RecipeRouteRegistrar(
+        app  # pyright: ignore[reportArgumentType]
+    )
 
     handler_mapping = {
-        definition.handler_name: object()
+        definition.handler_name: lambda _request: None
         for definition in recipe_route_registrar.ROUTE_DEFINITIONS
     }
 

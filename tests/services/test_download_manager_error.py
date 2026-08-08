@@ -75,7 +75,7 @@ async def test_execute_download_retries_urls(monkeypatch, tmp_path):
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -165,7 +165,7 @@ async def test_execute_download_uses_aria2_backend_for_model_files(monkeypatch, 
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -272,7 +272,7 @@ async def test_execute_download_allows_anonymous_civitai_with_aria2(
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -350,7 +350,7 @@ async def test_execute_download_adjusts_checkpoint_sub_type(monkeypatch, tmp_pat
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
             self.preview_nsfw_level = 0
             self.sub_type = "checkpoint"
 
@@ -450,7 +450,7 @@ async def test_execute_download_extracts_zip_single_model(monkeypatch, tmp_path)
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -531,7 +531,7 @@ async def test_execute_download_extracts_zip_multiple_models(monkeypatch, tmp_pa
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -614,7 +614,7 @@ async def test_execute_download_extracts_zip_pt_embedding(monkeypatch, tmp_path)
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -1168,7 +1168,7 @@ async def test_execute_download_waits_for_paused_pre_transfer_gate(monkeypatch, 
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return os.path.basename(self.file_path)
@@ -1278,7 +1278,7 @@ async def test_execute_download_reuses_existing_aria2_partial_path(monkeypatch, 
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             return "renamed.safetensors"
@@ -1356,7 +1356,7 @@ async def test_execute_download_rejects_conflicting_aria2_partial_path(tmp_path)
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             raise AssertionError("should not rename")
@@ -1408,7 +1408,7 @@ async def test_execute_download_reassigns_same_aria2_partial_to_new_download_id(
             self.sha256 = "sha256"
             self.file_name = path.stem
             self.preview_url = None
-            self.autov3 = None
+            self.autov3: Optional[str] = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
             raise AssertionError("should not rename")
@@ -1460,9 +1460,9 @@ async def test_execute_download_reassigns_same_aria2_partial_to_new_download_id(
     assert manager._active_downloads["new-download"]["file_path"] == str(target_path)
     assert dummy_aria2.calls == [("reassign_transfer", "old-download", "new-download")]
     assert await manager._aria2_state_store.get("old-download") is None
-    assert (await manager._aria2_state_store.get("new-download"))["save_path"] == str(
-        target_path
-    )
+    persisted = await manager._aria2_state_store.get("new-download")
+    assert persisted is not None
+    assert persisted["save_path"] == str(target_path)
 
 
 def test_is_same_aria2_download_request_requires_version_id_match():

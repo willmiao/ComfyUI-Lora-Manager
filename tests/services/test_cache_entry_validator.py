@@ -84,6 +84,7 @@ class TestCacheEntryValidator:
         result = CacheEntryValidator.validate(entry, auto_repair=False)
 
         assert result.is_valid is True
+        assert result.entry is not None
         assert result.entry['sha256'] == ''
         assert result.entry['hash_status'] == 'pending'
 
@@ -141,7 +142,7 @@ class TestCacheEntryValidator:
 
     def test_validate_none_entry(self):
         """Test validation handles None entry"""
-        result = CacheEntryValidator.validate(None, auto_repair=False)
+        result = CacheEntryValidator.validate(None, auto_repair=False)  # pyright: ignore[reportArgumentType]
 
         assert result.is_valid is False
         assert result.repaired is False
@@ -150,7 +151,7 @@ class TestCacheEntryValidator:
 
     def test_validate_non_dict_entry(self):
         """Test validation handles non-dict entry"""
-        result = CacheEntryValidator.validate("not a dict", auto_repair=False)
+        result = CacheEntryValidator.validate("not a dict", auto_repair=False)  # pyright: ignore[reportArgumentType]
 
         assert result.is_valid is False
         assert result.repaired is False
@@ -169,6 +170,7 @@ class TestCacheEntryValidator:
 
         assert result.is_valid is True
         assert result.repaired is True
+        assert result.entry is not None
         assert result.entry['file_name'] == ''
         assert result.entry['model_name'] == ''
         assert result.entry['tags'] == []
@@ -186,6 +188,7 @@ class TestCacheEntryValidator:
 
         assert result.is_valid is True
         assert result.repaired is True
+        assert result.entry is not None
         assert result.entry['size'] == 0  # Default value
         assert result.entry['tags'] == []  # Default value
 
@@ -199,6 +202,7 @@ class TestCacheEntryValidator:
         result = CacheEntryValidator.validate(entry, auto_repair=True)
 
         assert result.is_valid is True
+        assert result.entry is not None
         assert result.entry['sha256'] == 'abc123def456'
 
     def test_validate_batch_all_valid(self):
@@ -262,8 +266,8 @@ class TestCacheEntryValidator:
 
     def test_get_file_path_safe_not_dict(self):
         """Test safe file_path extraction from non-dict"""
-        assert CacheEntryValidator.get_file_path_safe(None) == ''
-        assert CacheEntryValidator.get_file_path_safe('string') == ''
+        assert CacheEntryValidator.get_file_path_safe(None) == ''  # pyright: ignore[reportArgumentType]
+        assert CacheEntryValidator.get_file_path_safe('string') == ''  # pyright: ignore[reportArgumentType]
 
     def test_get_sha256_safe(self):
         """Test safe sha256 extraction"""
@@ -277,8 +281,8 @@ class TestCacheEntryValidator:
 
     def test_get_sha256_safe_not_dict(self):
         """Test safe sha256 extraction from non-dict"""
-        assert CacheEntryValidator.get_sha256_safe(None) == ''
-        assert CacheEntryValidator.get_sha256_safe('string') == ''
+        assert CacheEntryValidator.get_sha256_safe(None) == ''  # pyright: ignore[reportArgumentType]
+        assert CacheEntryValidator.get_sha256_safe('string') == ''  # pyright: ignore[reportArgumentType]
 
     def test_validate_with_all_optional_fields(self):
         """Test validation with all optional fields present"""
@@ -358,6 +362,7 @@ class TestAutov3Validation:
         )
 
         assert result.is_valid is True
+        assert result.entry is not None
         assert result.entry['autov3'] == 'abcdef123456'
         assert result.repaired is True
 
@@ -378,6 +383,7 @@ class TestAutov3Validation:
 
         assert result.is_valid is True
         assert result.repaired is False
+        assert result.entry is not None
         assert result.entry['autov3'] is None
 
     def test_validate_absent_autov3_is_valid_and_not_counted_as_repair(self):
@@ -386,6 +392,7 @@ class TestAutov3Validation:
 
         assert result.is_valid is True
         assert result.repaired is False
+        assert result.entry is not None
         assert 'autov3' not in result.entry
 
     def test_validate_short_autov3_still_valid_and_repaired_to_none(self):
@@ -396,6 +403,7 @@ class TestAutov3Validation:
         )
 
         assert result.is_valid is True
+        assert result.entry is not None
         assert result.entry['autov3'] is None
         assert result.repaired is True
 
@@ -407,5 +415,6 @@ class TestAutov3Validation:
         )
 
         assert result.is_valid is True
+        assert result.entry is not None
         assert result.entry['autov3'] is None
         assert result.repaired is True

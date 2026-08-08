@@ -19,6 +19,8 @@ _MODULE_PATH = Path(__file__).parents[2] / "py" / "services" / "agent" / "skills
 def R():
     """Load the ``readme_processor`` module once per session."""
     spec = importlib.util.spec_from_file_location("readme_processor", str(_MODULE_PATH))
+    assert spec is not None
+    assert spec.loader is not None
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

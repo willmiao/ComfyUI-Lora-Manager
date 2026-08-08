@@ -57,6 +57,9 @@ class MockSession:
     def __init__(self, response):
         self._response = response
         self.closed = False
+        self.last_url = None
+        self.last_json = None
+        self.last_headers = None
 
     def post(self, url, json=None, headers=None):
         self.last_url = url

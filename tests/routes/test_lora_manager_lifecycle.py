@@ -4,6 +4,7 @@ import asyncio
 import logging
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from aiohttp import web
@@ -160,7 +161,7 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
     )
 
     original_create_task = asyncio.create_task
-    scheduled_tasks: list[asyncio.Task] = []
+    scheduled_tasks: list[asyncio.Task[Any]] = []
 
     def track_create_task(coro, *, name=None):
         task = original_create_task(coro, name=name)

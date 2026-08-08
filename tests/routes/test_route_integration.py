@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
-from typing import AsyncIterator, Dict, Iterable, List, Sequence
+from typing import Any, AsyncIterator, Dict, Iterable, List, Sequence
 
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
@@ -34,7 +34,7 @@ class IntegrationCache:
 class IntegrationScanner:
     """Scanner double that registers with ServiceRegistry expectations."""
 
-    def __init__(self, items: Iterable[Dict[str, object]]) -> None:
+    def __init__(self, items: Iterable[Dict[str, Any]]) -> None:
         self.model_type = "lora"
         self._cache = IntegrationCache(list(items))
         self._hash_index = SimpleNamespace(
@@ -68,7 +68,7 @@ class IntegrationScanner:
 
 
 @asynccontextmanager
-async def aiohttp_client(app: web.Application) -> AsyncIterator[TestClient]:
+async def aiohttp_client(app: web.Application) -> AsyncIterator[TestClient[Any, Any]]:
     """Spin up a TestClient with lifecycle management."""
 
     server = TestServer(app)

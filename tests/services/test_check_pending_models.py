@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -13,7 +14,7 @@ from py.utils import example_images_download_manager as download_module
 class StubScanner:
     """Scanner double returning predetermined cache contents."""
 
-    def __init__(self, models: list[dict]) -> None:
+    def __init__(self, models: list[dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
 
     async def get_cached_data(self):
@@ -58,9 +59,9 @@ class RecordingWebSocketManager:
     """Collects broadcast payloads for assertions."""
 
     def __init__(self) -> None:
-        self.payloads: list[dict] = []
+        self.payloads: list[dict[str, Any]] = []
 
-    async def broadcast(self, payload: dict) -> None:
+    async def broadcast(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 

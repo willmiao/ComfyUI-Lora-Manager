@@ -10,7 +10,7 @@ from py.services.metadata_sync_service import MetadataSyncService
 
 
 class DummySettings:
-    def __init__(self, values: dict | None = None) -> None:
+    def __init__(self, values: dict[str, Any] | None = None) -> None:
         self._values = values or {}
 
     def get(self, key: str, default=None):
@@ -19,7 +19,7 @@ class DummySettings:
 
 def build_service(
     *,
-    settings_values: dict | None = None,
+    settings_values: dict[str, Any] | None = None,
     default_provider: SimpleNamespace | None = None,
     provider_selector: AsyncMock | None = None,
 ):
@@ -43,7 +43,7 @@ def build_service(
     service = MetadataSyncService(
         metadata_manager=metadata_manager,
         preview_service=preview_service,
-        settings=settings,
+        settings=settings,  # pyright: ignore[reportArgumentType]
         default_metadata_provider_factory=default_provider_factory,
         metadata_provider_selector=provider_selector,
     )
@@ -194,7 +194,7 @@ async def test_fetch_and_update_model_success_updates_cache(tmp_path):
 
     helpers.metadata_manager.hydrate_model_data.side_effect = hydrate
 
-    model_data = {
+    model_data: Dict[str, Any] = {
         "model_name": "Local",
         "folder": "root",
         "file_path": str(model_path),
@@ -288,9 +288,9 @@ async def test_fetch_and_update_model_handles_missing_remote_metadata(tmp_path):
 
     helpers.metadata_manager.hydrate_model_data.side_effect = hydrate
 
-    model_data = {
+    model_data: Dict[str, Any] = {
         "model_name": "Local",
-        "folder": "sub",
+        "folder": "root",
         "file_path": str(model_path),
     }
 
@@ -659,7 +659,7 @@ async def test_fetch_and_update_model_does_not_overwrite_api_metadata_with_archi
     helpers.default_provider.get_model_by_hash.return_value = (civarchive_payload, None)
 
     model_path = tmp_path / "model.safetensors"
-    model_data = {
+    model_data: Dict[str, Any] = {
         "model_name": "High Quality",
         "metadata_source": "civitai_api",
         "civitai": existing_civitai,

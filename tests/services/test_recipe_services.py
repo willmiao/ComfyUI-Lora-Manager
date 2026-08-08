@@ -4,8 +4,9 @@ import os
 from io import BytesIO
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Dict
 
-import piexif
+import piexif  # pyright: ignore[reportMissingTypeStubs]
 import pytest
 from PIL import Image, PngImagePlugin
 
@@ -463,12 +464,17 @@ async def test_save_recipe_preserves_workflow_when_png_is_converted_to_webp(tmp_
 
     image_path = Path(result.payload["image_path"])
     exif_dict = piexif.load(str(image_path))
+    assert exif_dict is not None
+    exif_0th = exif_dict["0th"]
+    assert exif_0th is not None
     assert (
-        exif_dict["0th"][piexif.ImageIFD.ImageDescription].decode("utf-8")
+        exif_0th[piexif.ImageIFD.ImageDescription].decode("utf-8")
         == 'Workflow:{"nodes":[{"id":1}]}'
     )
 
-    user_comment = exif_dict["Exif"][piexif.ExifIFD.UserComment]
+    exif_section = exif_dict["Exif"]
+    assert exif_section is not None
+    user_comment = exif_section[piexif.ExifIFD.UserComment]
     decoded_comment = user_comment[8:].decode("utf-16be")
     assert "prompt text" in decoded_comment
     assert "Recipe metadata:" in decoded_comment
@@ -705,7 +711,7 @@ async def test_move_recipe_updates_paths(tmp_path):
             matches = list(Path(self.recipes_dir).rglob(f"{target_id}.recipe.json"))
             return str(matches[0]) if matches else None
 
-        async def update_recipe_metadata(self, target_id: str, metadata: dict):
+        async def update_recipe_metadata(self, target_id: str, metadata: Dict[str, Any]):
             if target_id != recipe_id:
                 return False
             self.recipe.update(metadata)

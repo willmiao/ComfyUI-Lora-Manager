@@ -26,7 +26,7 @@ from py.services.service_registry import ServiceRegistry
 class RecipeRouteHarness:
     """Container exposing the aiohttp client and stubbed collaborators."""
 
-    client: TestClient
+    client: TestClient[Any, Any]
     scanner: "StubRecipeScanner"
     analysis: "StubAnalysisService"
     persistence: "StubPersistenceService"
@@ -92,6 +92,9 @@ class StubRecipeScanner:
         candidate = Path(self.recipes_dir) / f"{recipe_id}.recipe.json"
         return str(candidate) if candidate.exists() else None
 
+    async def get_recipe_syntax_tokens(self, recipe_id: str) -> List[str]:
+        return self.recipes.get(recipe_id, {}).get("syntax", [])  # pragma: no cover - overridden per test
+
     async def remove_recipe(self, recipe_id: str) -> None:
         self.removed.append(recipe_id)
         self.recipes.pop(recipe_id, None)
@@ -110,7 +113,7 @@ class StubAnalysisService:
         self.remote_calls: List[Optional[str]] = []
         self.local_calls: List[Optional[str]] = []
         self.result = SimpleNamespace(payload={"loras": []}, status=200)
-        self._recipe_parser_factory = None
+        self._recipe_parser_factory: Any = None
         StubAnalysisService.instances.append(self)
 
     async def analyze_uploaded_image(
@@ -456,7 +459,7 @@ async def test_list_recipes_offloads_dimensions_to_thread(
         harness.scanner.cached_raw = list(harness.scanner.listing_items)
 
         real_to_thread = asyncio.to_thread
-        to_thread_calls: list[tuple] = []
+        to_thread_calls: list[tuple[Any, ...]] = []
 
         async def counting_to_thread(fn, *args, **kwargs):
             to_thread_calls.append((fn, args, kwargs))
@@ -536,6 +539,7 @@ async def test_list_recipes_passes_checkpoint_hash_filter(
 
         assert response.status == 200
         assert payload["items"] == []
+        assert harness.scanner.last_paginated_params is not None
         assert harness.scanner.last_paginated_params["checkpoint_hash"] == "ckpt123"
 
 
@@ -1010,7 +1014,9 @@ async def test_get_recipe_syntax(monkeypatch, tmp_path: Path) -> None:
                 return ["<lora:lora1:0.5>"]
             raise RecipeNotFoundError(f"Recipe {rid} not found")
 
-        harness.scanner.get_recipe_syntax_tokens = fake_get_recipe_syntax_tokens
+        harness.scanner.get_recipe_syntax_tokens = (  # pyright: ignore[reportAttributeAccessIssue]
+            fake_get_recipe_syntax_tokens
+        )
 
         response = await harness.client.get(f"/api/lm/recipe/{recipe_id}/syntax")
         payload = await response.json()

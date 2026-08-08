@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Dict, Iterable, Set
+from typing import Any, Dict, Iterable, Set
 
 import pytest
 
@@ -105,9 +105,9 @@ HTML_TRANSLATION_PATTERN = (
 
 
 @pytest.fixture(scope="module")
-def loaded_locales() -> Dict[str, dict]:
+def loaded_locales() -> Dict[str, Any]:
     """Load locale JSON once per test module."""
-    locales: Dict[str, dict] = {}
+    locales: Dict[str, Any] = {}
 
     for locale in EXPECTED_LOCALES:
         path = LOCALES_DIR / f"{locale}.json"
@@ -131,7 +131,7 @@ def loaded_locales() -> Dict[str, dict]:
 
 
 @pytest.fixture(scope="module")
-def english_translation_keys(loaded_locales: Dict[str, dict]) -> Set[str]:
+def english_translation_keys(loaded_locales: Dict[str, Any]) -> Set[str]:
     return collect_translation_keys(loaded_locales["en"])
 
 
@@ -140,7 +140,7 @@ def static_code_translation_keys() -> Set[str]:
     return gather_static_translation_keys()
 
 
-def collect_translation_keys(data: dict, prefix: str = "") -> Set[str]:
+def collect_translation_keys(data: Dict[str, Any], prefix: str = "") -> Set[str]:
     """Recursively collect translation keys from a locale dictionary."""
     keys: Set[str] = set()
 
@@ -212,7 +212,7 @@ def extract_i18n_keys_from_html(file_path: Path) -> Set[str]:
 
 
 @pytest.mark.parametrize("locale", EXPECTED_LOCALES)
-def test_locale_files_have_expected_structure(locale: str, loaded_locales: Dict[str, dict]) -> None:
+def test_locale_files_have_expected_structure(locale: str, loaded_locales: Dict[str, Any]) -> None:
     """Every locale must contain the required sections."""
     data = loaded_locales[locale]
     missing_sections = sorted(REQUIRED_SECTIONS - data.keys())
@@ -221,7 +221,7 @@ def test_locale_files_have_expected_structure(locale: str, loaded_locales: Dict[
 
 @pytest.mark.parametrize("locale", EXPECTED_LOCALES[1:])
 def test_locale_keys_match_english(
-    locale: str, loaded_locales: Dict[str, dict], english_translation_keys: Set[str]
+    locale: str, loaded_locales: Dict[str, Any], english_translation_keys: Set[str]
 ) -> None:
     """Locales must expose the same translation keys as English."""
     locale_keys = collect_translation_keys(loaded_locales[locale])

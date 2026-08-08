@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Generator, Tuple
 
 import pytest
 
@@ -15,7 +15,7 @@ from py.utils.example_images_paths import get_model_folder
 
 
 @pytest.fixture(autouse=True)
-def restore_settings() -> None:
+def restore_settings() -> Generator[None, None, None]:
     manager = get_settings_manager()
     original = manager.settings.copy()
     try:
@@ -206,7 +206,7 @@ async def test_import_images_creates_hash_directory(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(processor_module.MetadataUpdater, "update_metadata_after_import", staticmethod(fake_update_metadata))
 
-    result = await processor_module.ExampleImagesProcessor.import_images("a" * 64, [str(source_file)])
+    result: Dict[str, Any] = await processor_module.ExampleImagesProcessor.import_images("a" * 64, [str(source_file)])
 
     assert result["success"] is True
     assert result["files"][0]["name"].startswith("custom_short")
@@ -255,7 +255,7 @@ async def test_delete_custom_image_preserves_existing_metadata(monkeypatch: pyte
     model_file.write_text("content", encoding="utf-8")
     metadata_path = tmp_path / "keep.metadata.json"
 
-    existing_metadata = {
+    existing_metadata: Dict[str, Any] = {
         "model_name": "Keep",
         "file_path": str(model_file),
         "civitai": {
@@ -313,6 +313,7 @@ async def test_delete_custom_image_preserves_existing_metadata(monkeypatch: pyte
     )
 
     assert response.status == 200
+    assert response.text is not None
     body = json.loads(response.text)
     assert body["success"] is True
     assert body["custom_images"] == []

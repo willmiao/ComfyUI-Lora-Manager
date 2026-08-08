@@ -97,6 +97,7 @@ async def test_get_model_by_hash_enriches_metadata(monkeypatch, downloader):
     result, error = await client.get_model_by_hash("hash")
 
     assert error is None
+    assert result is not None
     assert result["model"]["description"] == "desc"
     assert result["model"]["tags"] == ["tag"]
     assert result["creator"] == {"username": "user"}
@@ -254,7 +255,7 @@ async def test_get_model_versions_bulk_success(monkeypatch, downloader):
 
     client = await CivitaiClient.get_instance()
 
-    result = await client.get_model_versions_bulk([1, "2", 2])
+    result = await client.get_model_versions_bulk([1, "2", 2])  # pyright: ignore[reportArgumentType]
 
     assert result == {
         1: {
@@ -310,6 +311,7 @@ async def test_get_model_version_by_version_id(monkeypatch, downloader):
 
     result = await client.get_model_version(version_id=7)
 
+    assert result is not None
     assert result["model"]["description"] == "desc"
     assert result["model"]["tags"] == ["tag"]
     assert result["creator"] == {"username": "user"}
@@ -364,6 +366,7 @@ async def test_get_model_version_with_model_id_prefers_version_endpoint(monkeypa
 
     result = await client.get_model_version(model_id=99, version_id=7)
 
+    assert result is not None
     assert result["id"] == 7
     assert result["model"]["description"] == "desc"
     assert result["model"]["tags"] == ["tag"]
@@ -420,6 +423,7 @@ async def test_get_model_version_with_model_id_fallbacks_to_hash(monkeypatch, do
 
     result = await client.get_model_version(model_id=99, version_id=7)
 
+    assert result is not None
     assert result["id"] == 7
     assert result["model"]["description"] == "desc"
     assert result["model"]["tags"] == ["tag"]
@@ -461,6 +465,7 @@ async def test_get_model_version_with_model_id_builds_from_model_data(monkeypatc
 
     result = await client.get_model_version(model_id=99, version_id=7)
 
+    assert result is not None
     assert result["modelId"] == 99
     assert result["model"]["name"] == "Model"
     assert result["model"]["type"] == "LORA"
@@ -503,6 +508,7 @@ async def test_get_model_version_info_success(monkeypatch, downloader):
 
     assert result == expected
     assert error is None
+    assert result is not None
     assert "comfy" not in result["images"][0]["meta"]
     assert result["images"][0]["meta"]["other"] == "keep"
 

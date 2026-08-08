@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, AsyncGenerator, Dict
 
-from aiohttp import web
+from aiohttp import ClientResponse, web
 from aiohttp.test_utils import TestClient, TestServer
 
 from py.routes.example_images_route_registrar import ExampleImagesRouteRegistrar
@@ -140,14 +140,14 @@ class StubFileManager:
 
 @dataclass
 class RegistrarHarness:
-    client: TestClient
+    client: TestClient[Any, Any]
     download_use_case: StubDownloadUseCase
     download_manager: StubDownloadManager
     import_use_case: StubImportUseCase
 
 
 @asynccontextmanager
-async def registrar_app() -> RegistrarHarness:
+async def registrar_app() -> AsyncGenerator[RegistrarHarness, None]:
     app = web.Application()
 
     download_use_case = StubDownloadUseCase()
@@ -158,8 +158,15 @@ async def registrar_app() -> RegistrarHarness:
     file_manager = StubFileManager()
 
     handler_set = ExampleImagesHandlerSet(
-        download=ExampleImagesDownloadHandler(download_use_case, download_manager),
-        management=ExampleImagesManagementHandler(import_use_case, processor, cleanup_service),
+        download=ExampleImagesDownloadHandler(
+            download_use_case,  # pyright: ignore[reportArgumentType]
+            download_manager,
+        ),
+        management=ExampleImagesManagementHandler(
+            import_use_case,  # pyright: ignore[reportArgumentType]
+            processor,
+            cleanup_service,
+        ),
         files=ExampleImagesFileHandler(file_manager),
     )
 
@@ -181,7 +188,7 @@ async def registrar_app() -> RegistrarHarness:
         await client.close()
 
 
-async def _json(response: web.StreamResponse) -> Dict[str, Any]:
+async def _json(response: ClientResponse) -> Dict[str, Any]:
     text = await response.text()
     return json.loads(text) if text else {}
 
@@ -358,7 +365,7 @@ async def test_check_example_images_needed_returns_error_on_exception():
         # Actually, we need to make the method raise an exception
         original_method = harness.download_manager.check_pending_models
 
-        async def failing_check(_model_types):
+        async def failing_check(model_types):
             raise RuntimeError("Database connection failed")
 
         harness.download_manager.check_pending_models = failing_check

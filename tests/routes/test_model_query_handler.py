@@ -21,8 +21,12 @@ async def test_model_query_handler_accepts_limit_zero_for_base_models():
     service = DummyService()
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
 
-    response = await handler.get_base_models(SimpleNamespace(query={"limit": "0"}))
-    payload = json.loads(response.text)
+    response = await handler.get_base_models(
+        SimpleNamespace(query={"limit": "0"})  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert payload["success"] is True
     assert service.received_limit == 0
@@ -33,7 +37,9 @@ async def test_model_query_handler_rejects_negative_limit_for_base_models():
     service = DummyService()
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
 
-    await handler.get_base_models(SimpleNamespace(query={"limit": "-1"}))
+    await handler.get_base_models(
+        SimpleNamespace(query={"limit": "-1"})  # pyright: ignore[reportArgumentType]
+    )
 
     assert service.received_limit == 20
 
@@ -58,9 +64,11 @@ async def test_model_query_handler_search_tags_passes_query_and_limit():
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
 
     response = await handler.search_tags(
-        SimpleNamespace(query={"q": "ani", "limit": "50"})
+        SimpleNamespace(query={"q": "ani", "limit": "50"})  # pyright: ignore[reportArgumentType]
     )
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert payload["success"] is True
     assert payload["tags"] == [{"tag": "anime", "count": 3}]
@@ -73,7 +81,8 @@ async def test_model_query_handler_search_tags_defaults_limit_to_20():
     service = DummySearchTagsService()
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
 
-    await handler.search_tags(SimpleNamespace(query={}))
+    await handler.search_tags(SimpleNamespace(query={})  # pyright: ignore[reportArgumentType]
+    )
 
     assert service.received_limit == 20
 
@@ -83,6 +92,8 @@ async def test_model_query_handler_search_tags_clamps_negative_limit():
     service = DummySearchTagsService()
     handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
 
-    await handler.search_tags(SimpleNamespace(query={"limit": "-5"}))
+    await handler.search_tags(
+        SimpleNamespace(query={"limit": "-5"})  # pyright: ignore[reportArgumentType]
+    )
 
     assert service.received_limit == 20

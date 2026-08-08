@@ -1,6 +1,7 @@
 import importlib
 import json
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -21,12 +22,12 @@ def reset_settings(tmp_path, monkeypatch):
     reset_settings_manager()
 
 
-def read_settings_file(path: Path) -> dict:
+def read_settings_file(path: Path) -> dict[str, Any]:
     with path.open('r', encoding='utf-8') as handle:
         return json.load(handle)
 
 
-def read_example_settings() -> dict:
+def read_example_settings() -> dict[str, Any]:
     example_path = Path(__file__).resolve().parents[1] / "settings.json.example"
     with example_path.open('r', encoding='utf-8') as handle:
         return json.load(handle)

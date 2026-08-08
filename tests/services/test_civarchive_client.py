@@ -1,4 +1,5 @@
 import copy
+from typing import Any, Dict
 from unittest.mock import AsyncMock
 
 import pytest
@@ -34,7 +35,7 @@ def downloader(monkeypatch):
     return instance
 
 
-def _base_civarchive_payload(version_id=1976567, *, trigger="mxpln", nsfw_level=31):
+def _base_civarchive_payload(version_id=1976567, *, trigger="mxpln", nsfw_level=31) -> Dict[str, Any]:
     version_name = "v2.0" if version_id != 1976567 else "v1.0"
     file_sha = "e2b7a280d6539556f23f380b3f71e4e22bc4524445c4c96526e117c6005c6ad3"
     return {
@@ -110,6 +111,7 @@ async def test_get_model_by_hash_transforms_payload(downloader):
     result, error = await client.get_model_by_hash("abc")
 
     assert error is None
+    assert result is not None
     assert result["id"] == 1976567
     assert result["nsfwLevel"] == 31
     assert result["trainedWords"] == ["mxpln"]
@@ -131,7 +133,7 @@ async def test_get_model_versions_fetches_each_version(downloader):
     base_payload = _base_civarchive_payload(version_id=2042594, trigger="mxpln-new", nsfw_level=5)
     other_payload = _base_civarchive_payload()
 
-    responses = {
+    responses: Dict[Any, Dict[str, Any]] = {
         (base_url, None): base_payload,
         (base_url, (("modelVersionId", "2042594"),)): base_payload,
         (base_url, (("modelVersionId", "1976567"),)): other_payload,
@@ -151,6 +153,7 @@ async def test_get_model_versions_fetches_each_version(downloader):
 
     result = await client.get_model_versions("1746460")
 
+    assert result is not None
     assert result["name"] == "Mixplin Style [Illustrious]"
     assert result["type"] == "LORA"
     versions = result["modelVersions"]
@@ -221,6 +224,7 @@ async def test_get_model_by_hash_uses_file_fallback(downloader, monkeypatch):
     result, error = await client.get_model_by_hash("fallback")
 
     assert error is None
+    assert result is not None
     assert result["id"] == 1976567
     assert result["model"]["name"] == "Mixplin Style [Illustrious]"
     assert any("/models/1746460" in call["url"] for call in downloader.calls)

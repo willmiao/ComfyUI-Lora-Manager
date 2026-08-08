@@ -2,7 +2,7 @@ import asyncio
 import os
 import sqlite3
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List, Optional
 from types import MethodType
 
 import pytest
@@ -18,9 +18,9 @@ from py.utils.models import BaseModelMetadata
 
 class RecordingWebSocketManager:
     def __init__(self) -> None:
-        self.payloads: List[dict] = []
+        self.payloads: List[Dict[str, Any]] = []
 
-    async def broadcast_init_progress(self, payload: dict) -> None:
+    async def broadcast_init_progress(self, payload: Dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 
@@ -48,7 +48,7 @@ class DummyScanner(ModelScanner):
         *,
         hash_index: ModelHashIndex | None = None,
         excluded_models: List[str] | None = None,
-    ) -> dict:
+    ) -> Optional[Dict[str, Any]]:
         hash_index = hash_index or self._hash_index
         excluded_models = excluded_models if excluded_models is not None else self._excluded_models
 
@@ -483,7 +483,7 @@ async def test_version_index_tracks_version_ids(tmp_path: Path):
     assert cache.version_index[202]['file_path'] == second_path
 
     assert await scanner.check_model_version_exists(101) is True
-    assert await scanner.check_model_version_exists('202') is True
+    assert await scanner.check_model_version_exists('202') is True  # pyright: ignore[reportArgumentType]
     assert await scanner.check_model_version_exists(999) is False
 
     removed = await scanner._batch_update_cache_for_deleted_models([first_path])
@@ -530,7 +530,7 @@ async def test_reconcile_cache_applies_adjust_cached_entry(tmp_path: Path):
 
     applied: List[str] = []
 
-    def _adjust(self, entry: dict) -> dict:
+    def _adjust(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         applied.append(entry["file_path"])
         entry["custom_field"] = "adjusted"
         return entry
@@ -607,7 +607,7 @@ async def test_reconcile_cache_removes_duplicate_alias_when_same_real_file_seen_
     scanner = MultiRootDummyScanner([loras_root, extra_root])
     await scanner._initialize_cache()
 
-    duplicate_entry = {
+    duplicate_entry: Dict[str, Any] = {
         "file_path": _normalize_path(extra_root / "one.txt"),
         "folder": "",
         "sha256": "hash-one",
@@ -712,7 +712,7 @@ def test_cache_entries_differ_extra_key():
 # ── sync_cache_from_metadata ─────────────────────────────────────────
 
 
-def _make_cache_entry(**overrides) -> dict:
+def _make_cache_entry(**overrides) -> Dict[str, Any]:
     entry = {
         "file_path": "/m/a.safetensors",
         "model_name": "TestModel",

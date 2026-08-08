@@ -209,8 +209,8 @@ async def test_model_update_service_migrates_legacy_snapshot_db(tmp_path, monkey
             return str(legacy_db)
 
     monkeypatch.setattr(
-        "py.services.persistent_model_cache.get_persistent_cache",
-        lambda *_args, **_kwargs: LegacyCache(),
+        "py.services.persistent_model_cache.PersistentModelCache.get_default",
+        lambda *args, **kwargs: LegacyCache(),
     )
 
     service = ModelUpdateService(settings_manager=DummySettingsManager())

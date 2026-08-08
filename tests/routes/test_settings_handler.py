@@ -1,4 +1,5 @@
 import json
+from typing import Any, Optional
 
 import pytest
 
@@ -17,12 +18,19 @@ class FakeRequest:
 class DummySettings:
     def __init__(self):
         self.activated = None
-        self.should_raise = None
+        self.should_raise: Optional[Exception] = None
 
     def activate_library(self, name):
         if self.should_raise:
             raise self.should_raise
         self.activated = name
+
+
+def json_payload(response) -> Any:
+    """Decode the JSON body of a web.Response, asserting it is not null."""
+    text = response.text
+    assert text is not None
+    return json.loads(text)
 
 
 class DummyDownloader:
@@ -53,7 +61,7 @@ async def test_get_libraries_returns_registry(monkeypatch, handler):
     monkeypatch.setattr(config, "get_library_registry_snapshot", lambda: registry)
 
     response = await handler.get_libraries(FakeRequest())
-    payload = json.loads(response.text)
+    payload = json_payload(response)
 
     assert response.status == 200
     assert payload == {
@@ -71,7 +79,7 @@ async def test_get_libraries_handles_errors(monkeypatch, handler):
     monkeypatch.setattr(config, "get_library_registry_snapshot", boom)
 
     response = await handler.get_libraries(FakeRequest())
-    payload = json.loads(response.text)
+    payload = json_payload(response)
 
     assert response.status == 500
     assert payload["success"] is False
@@ -90,8 +98,10 @@ async def test_activate_library_success(monkeypatch):
     registry = {"libraries": {"alpha": {"name": "Alpha"}}, "active_library": "alpha"}
     monkeypatch.setattr(config, "get_library_registry_snapshot", lambda: registry)
 
-    response = await handler.activate_library(FakeRequest(json_data={"library": "alpha"}))
-    payload = json.loads(response.text)
+    response = await handler.activate_library(
+    FakeRequest(json_data={"library": "alpha"})  # pyright: ignore[reportArgumentType]
+)
+    payload = json_payload(response)
 
     assert response.status == 200
     assert payload == {
@@ -105,7 +115,7 @@ async def test_activate_library_success(monkeypatch):
 @pytest.mark.asyncio
 async def test_activate_library_requires_name(handler):
     response = await handler.activate_library(FakeRequest(json_data={}))
-    payload = json.loads(response.text)
+    payload = json_payload(response)
 
     assert response.status == 400
     assert payload["success"] is False
@@ -122,8 +132,10 @@ async def test_activate_library_unknown_returns_404(monkeypatch):
         downloader_factory=dummy_downloader_factory,
     )
 
-    response = await handler.activate_library(FakeRequest(json_data={"library": "ghost"}))
-    payload = json.loads(response.text)
+    response = await handler.activate_library(
+    FakeRequest(json_data={"library": "ghost"})  # pyright: ignore[reportArgumentType]
+)
+    payload = json_payload(response)
 
     assert response.status == 404
     assert payload["success"] is False
@@ -140,8 +152,10 @@ async def test_activate_library_unexpected_error_returns_500(monkeypatch):
         downloader_factory=dummy_downloader_factory,
     )
 
-    response = await handler.activate_library(FakeRequest(json_data={"library": "broken"}))
-    payload = json.loads(response.text)
+    response = await handler.activate_library(
+    FakeRequest(json_data={"library": "broken"})  # pyright: ignore[reportArgumentType]
+)
+    payload = json_payload(response)
 
     assert response.status == 500
     assert payload["success"] is False

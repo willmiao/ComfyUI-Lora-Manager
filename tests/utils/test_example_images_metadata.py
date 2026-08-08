@@ -102,7 +102,7 @@ async def test_update_metadata_after_import_preserves_existing_metadata(
     model_file.write_text("content", encoding="utf-8")
     metadata_path = tmp_path / "preserve.metadata.json"
 
-    existing_payload = {
+    existing_payload: Dict[str, Any] = {
         "model_name": "Example",
         "file_path": str(model_file),
         "civitai": {
@@ -200,7 +200,7 @@ async def test_update_metadata_from_local_examples_generates_entries(monkeypatch
     model_dir = tmp_path / model_hash
     model_dir.mkdir()
     (model_dir / "image.png").write_text("data", encoding="utf-8")
-    model_data = {"model_name": "Local", "civitai": {}, "file_path": str(tmp_path / "model.safetensors")}
+    model_data: Dict[str, Any] = {"model_name": "Local", "civitai": {}, "file_path": str(tmp_path / "model.safetensors")}
 
     async def fake_save(path, metadata):
         return True

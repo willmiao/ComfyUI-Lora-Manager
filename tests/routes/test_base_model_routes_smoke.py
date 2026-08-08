@@ -6,10 +6,10 @@ from pathlib import Path
 
 import types
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 folder_paths_stub = types.SimpleNamespace(get_folder_paths=lambda *_: [])
-sys.modules.setdefault("folder_paths", folder_paths_stub)
+sys.modules.setdefault("folder_paths", folder_paths_stub)  # pyright: ignore[reportArgumentType]
 
 import pytest
 from aiohttp import FormData, web
@@ -38,7 +38,9 @@ class DummyRoutes(BaseModelRoutes):
 
     def __init__(self, service=None):
         super().__init__(service)
-        self.set_model_update_service(NullModelUpdateService())
+        self.set_model_update_service(
+            NullModelUpdateService()  # pyright: ignore[reportArgumentType]
+        )
 
 
 @dataclass
@@ -110,7 +112,7 @@ class NullModelUpdateService:
         return None
 
 
-async def create_test_client(service) -> TestClient:
+async def create_test_client(service) -> TestClient[Any, Any]:
     routes = DummyRoutes(service)
     app = web.Application()
     routes.setup_routes(app, "test-models")
@@ -457,18 +459,18 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
     mock_scanner._cache.raw_data = [minimal_cache_entry]
 
     class FakeMetadata:
-        def __init__(self, payload: dict) -> None:
+        def __init__(self, payload: dict[str, Any]) -> None:
             self._payload = payload
             self._unknown_fields = {"legacy_field": "legacy"}
 
-        def to_dict(self) -> dict:
+        def to_dict(self) -> dict[str, Any]:
             return self._payload.copy()
 
     async def fake_load_metadata(path: str, *_args, **_kwargs):
         assert path == str(model_path)
         return FakeMetadata(existing_metadata), False
 
-    async def fake_save_metadata(path: str, metadata: dict) -> bool:
+    async def fake_save_metadata(path: str, metadata: dict[str, Any]) -> bool:
         save_calls.append((path, json.loads(json.dumps(metadata))))
         return True
 
@@ -477,7 +479,7 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
         *,
         sha256: str,
         file_path: str,
-        model_data: dict,
+        model_data: dict[str, Any],
         update_cache_func,
     ):
         captured["model_data"] = json.loads(json.dumps(model_data))
@@ -490,8 +492,8 @@ def test_fetch_civitai_hydrates_metadata_before_sync(
         await update_cache_func(file_path, file_path, model_data)
         return True, None
 
-    save_calls: list[tuple[str, dict]] = []
-    captured: dict[str, dict] = {}
+    save_calls: list[tuple[str, dict[str, Any]]] = []
+    captured: dict[str, dict[str, Any]] = {}
 
     monkeypatch.setattr(
         MetadataManager, "load_metadata", staticmethod(fake_load_metadata)

@@ -1,5 +1,6 @@
 import pytest
 import asyncio
+from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
 from py.services.recipe_scanner import RecipeScanner
 from types import SimpleNamespace
@@ -259,7 +260,7 @@ async def test_repair_all_recipes_strips_runtime_fields(setup_scanner):
     recipe_scanner, mock_civitai_client, mock_metadata_provider = setup_scanner
     
     # Recipe with runtime fields
-    recipe = {
+    recipe: Dict[str, Any] = {
         "id": "r1",
         "title": "Cleanup Test",
         "checkpoint": {

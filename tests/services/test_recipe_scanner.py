@@ -3,6 +3,7 @@ import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any, Dict
 
 import pytest
 
@@ -24,7 +25,7 @@ class StubLoraScanner:
     def __init__(self) -> None:
         self._hash_index = StubHashIndex()
         self._hash_meta: dict[str, dict[str, str]] = {}
-        self._models_by_name: dict[str, dict] = {}
+        self._models_by_name: dict[str, Dict[str, Any]] = {}
         self._cache = SimpleNamespace(raw_data=[], version_index={})
 
     async def get_cached_data(self):
@@ -44,7 +45,7 @@ class StubLoraScanner:
     async def get_model_info_by_name(self, name: str):
         return self._models_by_name.get(name)
 
-    def register_model(self, name: str, info: dict) -> None:
+    def register_model(self, name: str, info: Dict[str, Any]) -> None:
         self._models_by_name[name] = info
         hash_value = (info.get("sha256") or "").lower()
         version_id = info.get("civitai", {}).get("id")
@@ -76,7 +77,7 @@ def recipe_scanner(tmp_path: Path, monkeypatch):
     settings_manager_module.reset_settings_manager()
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
     stub = StubLoraScanner()
-    scanner = RecipeScanner(lora_scanner=stub)
+    scanner = RecipeScanner(lora_scanner=stub)  # pyright: ignore[reportArgumentType]
 
     async def _init():
         await scanner.refresh_cache(force=True)
@@ -107,7 +108,7 @@ def test_recipes_dir_uses_custom_settings_path(tmp_path: Path, monkeypatch):
     manager = settings_manager_module.get_settings_manager()
     manager.set("recipes_path", str(custom_recipes))
 
-    scanner = RecipeScanner(lora_scanner=StubLoraScanner())
+    scanner = RecipeScanner(lora_scanner=StubLoraScanner())  # pyright: ignore[reportArgumentType]
     resolved = scanner.recipes_dir
 
     assert resolved == str((tmp_path / "custom_recipes").resolve())
@@ -123,7 +124,7 @@ def test_recipes_dir_falls_back_to_first_lora_root(tmp_path: Path, monkeypatch):
 
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path / "alpha")])
 
-    scanner = RecipeScanner(lora_scanner=StubLoraScanner())
+    scanner = RecipeScanner(lora_scanner=StubLoraScanner())  # pyright: ignore[reportArgumentType]
     resolved = scanner.recipes_dir
 
     assert resolved == str(tmp_path / "alpha" / "recipes")
@@ -719,7 +720,7 @@ async def test_initialize_waits_for_lora_scanner(monkeypatch):
             ready_flag.set()
 
     lora_scanner = StubLoraScanner()
-    scanner = RecipeScanner(lora_scanner=lora_scanner)
+    scanner = RecipeScanner(lora_scanner=lora_scanner)  # pyright: ignore[reportArgumentType]
 
     await scanner.initialize_in_background()
 
@@ -736,7 +737,7 @@ async def test_invalid_model_version_marked_deleted_and_not_retried(
     recipes_dir = Path(config.loras_roots[0]) / "recipes"
     recipes_dir.mkdir(parents=True, exist_ok=True)
 
-    recipe = {
+    recipe: Dict[str, Any] = {
         "id": "invalid-version",
         "file_path": str(recipes_dir / "invalid-version.webp"),
         "title": "Invalid",

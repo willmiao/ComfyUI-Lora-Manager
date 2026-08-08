@@ -51,10 +51,10 @@ class DummyProvider:
     def __init__(self, payload: Dict[str, Any]) -> None:
         self.payload = payload
 
-    async def get_model_by_hash(self, sha256: str):
+    async def get_model_by_hash(self, model_hash: str):
         return self.payload, None
 
-    async def get_model_version(self, model_id: int, model_version_id: int | None):
+    async def get_model_version(self, model_id: Any = None, version_id: Any = None):
         return self.payload
 
 
@@ -77,7 +77,7 @@ def test_metadata_sync_merges_remote_fields(tmp_path: Path) -> None:
     service = MetadataSyncService(
         metadata_manager=manager,
         preview_service=preview,
-        settings=DummySettings(),
+        settings=DummySettings(),  # pyright: ignore[reportArgumentType]
         default_metadata_provider_factory=lambda: asyncio.sleep(0, result=provider),
         metadata_provider_selector=lambda _name=None: asyncio.sleep(0, result=provider),
     )
@@ -112,7 +112,7 @@ def test_metadata_sync_fetch_and_update_updates_cache(tmp_path: Path) -> None:
     service = MetadataSyncService(
         metadata_manager=manager,
         preview_service=preview,
-        settings=DummySettings(),
+        settings=DummySettings(),  # pyright: ignore[reportArgumentType]
         default_metadata_provider_factory=lambda: asyncio.sleep(0, result=provider),
         metadata_provider_selector=lambda _name=None: asyncio.sleep(0, result=provider),
     )

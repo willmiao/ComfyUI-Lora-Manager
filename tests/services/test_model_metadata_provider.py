@@ -6,11 +6,12 @@ from py.services import model_metadata_provider as provider_module
 from py.services.errors import RateLimitError
 from py.services.model_metadata_provider import (
     FallbackMetadataProvider,
+    ModelMetadataProvider,
     RateLimitRetryingProvider,
 )
 
 
-class RateLimitThenSuccessProvider:
+class RateLimitThenSuccessProvider(ModelMetadataProvider):
     def __init__(self) -> None:
         self.calls = 0
 
@@ -20,8 +21,20 @@ class RateLimitThenSuccessProvider:
             raise RateLimitError("limited", retry_after=1.0)
         return {"id": "ok"}, None
 
+    async def get_model_versions(self, model_id: str):
+        return None
 
-class AlwaysRateLimitedProvider:
+    async def get_model_version(self, model_id=None, version_id=None):
+        return None
+
+    async def get_model_version_info(self, version_id: str):
+        return None, None
+
+    async def get_user_models(self, username: str, cursor=None):
+        return None
+
+
+class AlwaysRateLimitedProvider(ModelMetadataProvider):
     def __init__(self) -> None:
         self.calls = 0
 
@@ -29,14 +42,38 @@ class AlwaysRateLimitedProvider:
         self.calls += 1
         raise RateLimitError("limited")
 
+    async def get_model_versions(self, model_id: str):
+        return None
 
-class TrackingProvider:
+    async def get_model_version(self, model_id=None, version_id=None):
+        return None
+
+    async def get_model_version_info(self, version_id: str):
+        return None, None
+
+    async def get_user_models(self, username: str, cursor=None):
+        return None
+
+
+class TrackingProvider(ModelMetadataProvider):
     def __init__(self) -> None:
         self.calls = 0
 
     async def get_model_by_hash(self, model_hash: str):
         self.calls += 1
         return {"id": "secondary"}, None
+
+    async def get_model_versions(self, model_id: str):
+        return None
+
+    async def get_model_version(self, model_id=None, version_id=None):
+        return None
+
+    async def get_model_version_info(self, version_id: str):
+        return None, None
+
+    async def get_user_models(self, username: str, cursor=None):
+        return None
 
 
 @pytest.mark.asyncio

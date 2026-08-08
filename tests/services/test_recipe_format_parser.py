@@ -1,4 +1,6 @@
 import json
+from typing import Any, Dict
+
 import pytest
 
 from py.recipes.parsers.recipe_format import RecipeFormatParser
@@ -83,7 +85,7 @@ async def test_recipe_format_parser_marks_lora_in_library_by_version(monkeypatch
         fake_metadata_provider,
     )
 
-    cached_entry = {
+    cached_entry: Dict[str, Any] = {
         "file_path": "/loras/moriimee.safetensors",
         "file_name": "MoriiMee Gothic Niji | LoRA Style",
         "size": 4096,

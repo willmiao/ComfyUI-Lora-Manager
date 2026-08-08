@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any, Dict
 
 import pytest
 
@@ -346,7 +347,7 @@ def test_update_single_model_update_hash(tmp_path: Path, monkeypatch):
 # ── get_models_missing_autov3 ─────────────────────────────────────────
 
 
-def _autov3_entry(file_path: str, sha256: str, autov3=None) -> dict:
+def _autov3_entry(file_path: str, sha256: str, autov3=None) -> Dict[str, Any]:
     """Minimal model entry for the models table (autov3 tri-state preserved)."""
     return {
         'file_path': file_path,

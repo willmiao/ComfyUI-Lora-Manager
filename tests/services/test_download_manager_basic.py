@@ -758,6 +758,7 @@ async def test_get_active_downloads_restores_orphaned_aria2_partial_as_paused(
 
     downloads = await manager.get_active_downloads()
     persisted = await manager._aria2_state_store.get("download-1")
+    assert persisted is not None
 
     assert downloads["downloads"] == [
         {
@@ -922,6 +923,7 @@ async def test_get_active_downloads_restores_persisted_aria2_without_initial_sav
 
     downloads = await manager.get_active_downloads()
     persisted = await manager._aria2_state_store.get("download-1")
+    assert persisted is not None
 
     assert downloads["downloads"] == [
         {

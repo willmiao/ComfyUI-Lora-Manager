@@ -5,7 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
-from typing import List, Tuple
+from typing import Any, Generator, List, Tuple
 
 import pytest
 from aiohttp import web
@@ -13,11 +13,11 @@ from aiohttp import web
 from py.utils.settings_paths import ensure_settings_file
 
 
-ROUTE_CALLS_KEY: web.AppKey[List[Tuple[str, dict]]] = web.AppKey("route_calls")
+ROUTE_CALLS_KEY: web.AppKey[List[Tuple[str, dict[str, Any]]]] = web.AppKey("route_calls")
 
 
 @pytest.fixture
-def standalone_module(monkeypatch) -> ModuleType:
+def standalone_module(monkeypatch) -> Generator[ModuleType, None, None]:
     """Load the ``standalone`` module with a lightweight ``LoraManager`` stub."""
 
     import importlib
@@ -41,7 +41,7 @@ def standalone_module(monkeypatch) -> ModuleType:
         async def _cleanup(cls, app):  # pragma: no cover - compatibility shim
             return None
 
-    stub_module.LoraManager = _StubLoraManager
+    stub_module.LoraManager = _StubLoraManager  # pyright: ignore[reportAttributeAccessIssue]
     sys.modules["py.lora_manager"] = stub_module
 
     module = importlib.import_module("standalone")
@@ -54,7 +54,7 @@ def standalone_module(monkeypatch) -> ModuleType:
         sys.modules.pop("py.lora_manager", None)
 
 
-def _write_settings(contents: dict) -> Path:
+def _write_settings(contents: dict[str, Any]) -> Path:
     """Persist *contents* into the isolated settings.json."""
 
     settings_path = Path(ensure_settings_file())
@@ -118,7 +118,7 @@ def test_standalone_lora_manager_registers_routes(monkeypatch, tmp_path, standal
     """``StandaloneLoraManager.add_routes`` registers static and websocket routes."""
 
     app = web.Application()
-    route_calls: List[Tuple[str, dict]] = []
+    route_calls: List[Tuple[str, dict[str, Any]]] = []
     app[ROUTE_CALLS_KEY] = route_calls
 
     locales_dir = tmp_path / "locales"
@@ -213,7 +213,7 @@ def test_standalone_lora_manager_registers_routes(monkeypatch, tmp_path, standal
     assert "/locales" in canonical_routes
     assert "/loras_static" in canonical_routes
 
-    websocket_paths = {route.resource.canonical for route in app.router.routes() if "ws" in route.resource.canonical}
+    websocket_paths = {route.resource.canonical for route in app.router.routes() if "ws" in route.resource.canonical}  # pyright: ignore[reportOptionalMemberAccess]
     assert {
         "/ws/fetch-progress",
         "/ws/download-progress",

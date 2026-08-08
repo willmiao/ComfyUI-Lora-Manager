@@ -24,7 +24,7 @@ class StubEmbeddingService:
 @pytest.fixture
 def routes():
     handler = EmbeddingRoutes()
-    handler.service = StubEmbeddingService()
+    handler.service = StubEmbeddingService()  # pyright: ignore[reportAttributeAccessIssue]
     return handler
 
 

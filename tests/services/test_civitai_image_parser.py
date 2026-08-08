@@ -91,7 +91,7 @@ async def test_parse_metadata_handles_nested_meta_and_lowercase_hashes(monkeypat
         },
     }
 
-    assert parser.is_metadata_matching(metadata)
+    assert parser.is_metadata_matching(metadata)  # pyright: ignore[reportArgumentType]
 
     result = await parser.parse_metadata(metadata)
 
@@ -272,7 +272,7 @@ async def test_parse_metadata_handles_modelVersionIds(monkeypatch):
         "modelVersionIds": [2398829, 2398838],
     }
 
-    assert parser.is_metadata_matching(metadata)
+    assert parser.is_metadata_matching(metadata)  # pyright: ignore[reportArgumentType]
 
     result = await parser.parse_metadata(metadata)
 

@@ -1,6 +1,7 @@
 import json
+from typing import Any, Dict
 
-import piexif
+import piexif  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image, PngImagePlugin
 
 from py.utils.exif_utils import ExifUtils
@@ -84,10 +85,12 @@ def test_optimize_image_preserves_workflow_when_converting_png_to_webp(tmp_path)
     optimized_path.write_bytes(optimized_data)
 
     exif_dict = piexif.load(str(optimized_path))
+    assert exif_dict["0th"] is not None
     assert (
         exif_dict["0th"][piexif.ImageIFD.ImageDescription].decode("utf-8")
         == 'Workflow:{"nodes": [{"id": 1}]}'
     )
+    assert exif_dict["Exif"] is not None
     user_comment = exif_dict["Exif"][piexif.ExifIFD.UserComment]
     assert user_comment.startswith(b"UNICODE\0")
     assert user_comment[8:].decode("utf-16be") == "prompt text\nSteps: 20"
@@ -113,10 +116,12 @@ def test_update_image_metadata_preserves_webp_workflow(tmp_path):
     )
 
     updated_exif = piexif.load(str(image_path))
+    assert updated_exif["0th"] is not None
     assert (
         updated_exif["0th"][piexif.ImageIFD.ImageDescription].decode("utf-8")
         == 'Workflow:{"nodes":[{"id":1}]}'
     )
+    assert updated_exif["Exif"] is not None
     updated_comment = updated_exif["Exif"][piexif.ExifIFD.UserComment]
     assert (
         updated_comment[8:].decode("utf-16be")
@@ -147,10 +152,10 @@ def test_update_image_metadata_preserves_png_workflow(tmp_path):
 
 import struct
 
-import brotli
+import brotli  # pyright: ignore[reportMissingTypeStubs]
 
 
-def _build_jxl_with_brob(payload_json: dict) -> bytes:
+def _build_jxl_with_brob(payload_json: Dict[str, Any]) -> bytes:
     """Build a minimal JXL container with a brob box containing brotli-compressed JSON."""
     # ISOBMFF box 1: JXL signature box (size=12, type='JXL ', signature)
     box1 = struct.pack(">I", 12) + b"JXL " + bytes([0x0d, 0x0a, 0x87, 0x0a])
@@ -163,7 +168,7 @@ def _build_jxl_with_brob(payload_json: dict) -> bytes:
     return box1 + box2 + box3
 
 
-def _build_avif_with_brob(payload_json: dict) -> bytes:
+def _build_avif_with_brob(payload_json: Dict[str, Any]) -> bytes:
     """Build a minimal AVIF container with a brob box containing brotli-compressed JSON."""
     compressed = brotli.compress(json.dumps(payload_json).encode("utf-8"))
     brob_payload = b"comf" + compressed
@@ -262,6 +267,7 @@ class TestIsobmffBrotliExtraction:
         path.write_bytes(data)
 
         result = ExifUtils._load_structured_metadata(str(path))
+        assert result["prompt"] is not None
         assert json.loads(result["prompt"]) == {"text": "hello", "negative": "bad"}
 
     def test_extract_workflow_as_list(self, tmp_path):
@@ -272,6 +278,7 @@ class TestIsobmffBrotliExtraction:
         path.write_bytes(data)
 
         result = ExifUtils._load_structured_metadata(str(path))
+        assert result["workflow"] is not None
         assert json.loads(result["workflow"]) == [{"id": 1}, {"id": 2}]
 
     def test_over_decompressed_size_limit(self, tmp_path, monkeypatch):

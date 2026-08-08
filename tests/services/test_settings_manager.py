@@ -482,7 +482,7 @@ def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
     manager = _create_manager_with_settings(tmp_path, monkeypatch, initial)
 
     loop = asyncio.new_event_loop()
-    loop._thread_id = 1
+    setattr(loop, "_thread_id", 1)
 
     class DummyScanner:
         def __init__(self):
@@ -530,7 +530,7 @@ def test_model_name_display_setting_notifies_scanners(tmp_path, monkeypatch):
         assert dummy_scanner.calls == ["file_name"]
         assert dispatched_loops == [dummy_scanner.loop]
     finally:
-        loop._thread_id = None
+        setattr(loop, "_thread_id", None)
         loop.close()
 
 

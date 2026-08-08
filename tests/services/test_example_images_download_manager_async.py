@@ -4,6 +4,7 @@ import asyncio
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -15,18 +16,18 @@ class RecordingWebSocketManager:
     """Collects broadcast payloads for assertions."""
 
     def __init__(self) -> None:
-        self.payloads: list[dict] = []
+        self.payloads: list[dict[str, Any]] = []
 
-    async def broadcast(self, payload: dict) -> None:
+    async def broadcast(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 
 class StubScanner:
     """Scanner double returning predetermined cache contents."""
 
-    def __init__(self, models: list[dict]) -> None:
+    def __init__(self, models: list[dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
-        self.sync_calls: list[tuple[str, dict]] = []
+        self.sync_calls: list[tuple[str, dict[str, Any]]] = []
 
     async def get_cached_data(self):
         return self._cache
@@ -39,7 +40,7 @@ class StubScanner:
                 break
         return True
 
-    async def sync_cache_from_metadata(self, file_path: str, metadata: dict) -> bool:
+    async def sync_cache_from_metadata(self, file_path: str, metadata: dict[str, Any]) -> bool:
         self.sync_calls.append((file_path, metadata))
         for index, model in enumerate(self._cache.raw_data):
             if model.get("file_path") == metadata.get("file_path"):
@@ -511,7 +512,7 @@ async def test_not_found_example_images_are_cleaned(
     missing_url = "https://example.com/missing.png"
     valid_url = "https://example.com/valid.png"
 
-    model_metadata = {
+    model_metadata: dict[str, Any] = {
         "sha256": model_hash,
         "model_name": "Missing Example",
         "file_path": str(model_path),

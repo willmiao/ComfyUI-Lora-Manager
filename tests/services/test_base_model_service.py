@@ -28,13 +28,14 @@ class DummyService(BaseModelService):
         return model_data
 
 
-class StubRepository:
+class StubRepository(ModelCacheRepository):
     def __init__(self, data):
+        super().__init__(scanner=object())
         self._data = list(data)
         self.parse_sort_calls = []
         self.fetch_sorted_calls = []
 
-    def parse_sort(self, sort_by):
+    def parse_sort(self, sort_by):  # pyright: ignore[reportIncompatibleMethodOverride]
         params = ModelCacheRepository.parse_sort(sort_by)
         self.parse_sort_calls.append(sort_by)
         return params
@@ -44,8 +45,9 @@ class StubRepository:
         return list(self._data)
 
 
-class StubFilterSet:
+class StubFilterSet(ModelFilterSet):
     def __init__(self, result):
+        super().__init__(settings=StubSettings({}))
         self.result = list(result)
         self.calls = []
 
@@ -54,8 +56,9 @@ class StubFilterSet:
         return list(self.result)
 
 
-class StubSearchStrategy:
+class StubSearchStrategy(SearchStrategy):
     def __init__(self, search_result):
+        super().__init__()
         self.search_result = list(search_result)
         self.normalize_calls = []
         self.apply_calls = []
@@ -67,7 +70,7 @@ class StubSearchStrategy:
             normalized.update(options)
         return normalized
 
-    def apply(self, data, search_term, options, fuzzy):
+    def apply(self, data, search_term, options, fuzzy=False):
         self.apply_calls.append((list(data), search_term, options, fuzzy))
         return list(self.search_result)
 
@@ -269,8 +272,9 @@ async def test_get_paginated_data_filters_and_searches_combination():
     assert response["total_pages"] == 1
 
 
-class PassThroughFilterSet:
+class PassThroughFilterSet(ModelFilterSet):
     def __init__(self):
+        super().__init__(settings=StubSettings({}))
         self.calls = []
 
     def apply(self, data, criteria):
@@ -278,8 +282,9 @@ class PassThroughFilterSet:
         return list(data)
 
 
-class NoSearchStrategy:
+class NoSearchStrategy(SearchStrategy):
     def __init__(self):
+        super().__init__()
         self.normalize_calls = []
         self.apply_called = False
 
@@ -355,7 +360,7 @@ async def test_get_paginated_data_filters_by_update_status():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -428,7 +433,7 @@ async def test_get_paginated_data_skips_items_when_update_check_fails():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -465,7 +470,7 @@ async def test_get_paginated_data_annotates_update_flags_with_bulk_dedup():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -561,7 +566,7 @@ async def test_version_grouping_same_base_prefers_matching_base():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -658,7 +663,7 @@ async def test_version_grouping_same_base_honors_latest_local_version():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -694,7 +699,7 @@ async def test_get_paginated_data_filters_update_available_only():
         filter_set=filter_set,
         search_strategy=search_strategy,
         settings_provider=settings,
-        update_service=update_service,
+        update_service=update_service,  # pyright: ignore[reportArgumentType]
     )
 
     response = await service.get_paginated_data(
@@ -1028,7 +1033,7 @@ def test_model_filter_set_supports_legacy_tag_arrays():
         {"model_name": "AnimeOnly", "tags": ["anime"]},
     ]
 
-    criteria = FilterCriteria(tags=["style"])
+    criteria = FilterCriteria(tags=["style"])  # pyright: ignore[reportArgumentType]
     result = filter_set.apply(data, criteria)
 
     assert [item["model_name"] for item in result] == ["StyleOnly", "StyleAnime"]

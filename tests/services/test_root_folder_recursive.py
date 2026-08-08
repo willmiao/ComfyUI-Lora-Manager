@@ -2,6 +2,7 @@ import pytest
 from py.services.model_query import ModelFilterSet, FilterCriteria
 from py.services.recipe_scanner import RecipeScanner
 from types import SimpleNamespace
+from typing import Any, cast
 
 
 # Mock settings
@@ -193,9 +194,9 @@ async def test_recipe_scanner_root_recursive_true():
         async def get_cached_data(self):
             return SimpleNamespace(raw_data=[])
 
-    scanner = RecipeScanner(lora_scanner=StubLoraScanner())
+    scanner = RecipeScanner(lora_scanner=StubLoraScanner())  # pyright: ignore[reportArgumentType]
     # Manually populate cache for testing get_paginated_data logic
-    scanner._cache = SimpleNamespace(
+    scanner._cache = cast(Any, SimpleNamespace(
         raw_data=[
             {
                 "id": "r1",
@@ -234,13 +235,15 @@ async def test_recipe_scanner_root_recursive_true():
         ],
         sorted_by_name=[],
         version_index={},
-    )
+    ))
 
     result = await scanner.get_paginated_data(
         page=1, page_size=10, folder="", recursive=True
     )
 
-    assert len(result["items"]) == 2
+    items = result["items"]
+    assert isinstance(items, list)
+    assert len(items) == 2
 
 
 @pytest.mark.asyncio
@@ -250,8 +253,8 @@ async def test_recipe_scanner_root_recursive_false():
         async def get_cached_data(self):
             return SimpleNamespace(raw_data=[])
 
-    scanner = RecipeScanner(lora_scanner=StubLoraScanner())
-    scanner._cache = SimpleNamespace(
+    scanner = RecipeScanner(lora_scanner=StubLoraScanner())  # pyright: ignore[reportArgumentType]
+    scanner._cache = cast(Any, SimpleNamespace(
         raw_data=[
             {
                 "id": "r1",
@@ -290,11 +293,13 @@ async def test_recipe_scanner_root_recursive_false():
         ],
         sorted_by_name=[],
         version_index={},
-    )
+    ))
 
     result = await scanner.get_paginated_data(
         page=1, page_size=10, folder="", recursive=False
     )
 
-    assert len(result["items"]) == 1
-    assert result["items"][0]["id"] == "r1"
+    items = result["items"]
+    assert isinstance(items, list)
+    assert len(items) == 1
+    assert items[0]["id"] == "r1"

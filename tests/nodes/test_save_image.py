@@ -1,8 +1,9 @@
 import json
 import os
+from typing import Any, cast
 
 import numpy as np
-import piexif
+import piexif  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image
 
 from py.services.service_registry import ServiceRegistry
@@ -136,7 +137,8 @@ def test_save_image_skips_jpeg_metadata_when_disabled(monkeypatch, tmp_path):
 
     image_path = tmp_path / "sample_00001_.jpg"
     exif_dict = piexif.load(str(image_path))
-    assert piexif.ExifIFD.UserComment not in exif_dict.get("Exif", {})
+    exif_ifd = exif_dict.get("Exif", {}) or {}
+    assert piexif.ExifIFD.UserComment not in exif_ifd
 
 
 def test_save_image_skips_webp_metadata_when_disabled(monkeypatch, tmp_path):
@@ -154,7 +156,8 @@ def test_save_image_skips_webp_metadata_when_disabled(monkeypatch, tmp_path):
 
     image_path = tmp_path / "sample_00001_.webp"
     exif_dict = piexif.load(str(image_path))
-    assert piexif.ExifIFD.UserComment not in exif_dict.get("Exif", {})
+    exif_ifd = exif_dict.get("Exif", {}) or {}
+    assert piexif.ExifIFD.UserComment not in exif_ifd
 
 
 def test_process_image_returns_passthrough_result_and_ui_images(monkeypatch, tmp_path):
@@ -474,25 +477,34 @@ class TestParameterDefaultConsistency:
         input_types = SaveImageLM.INPUT_TYPES()
         optional = input_types["optional"]
 
-        assert optional["webp_method"][1]["default"] == 6
-        assert SaveImageLM.save_images.__defaults__[4] == 6  # positional: webp_method=6 is at index 4
-        assert SaveImageLM.process_image.__defaults__[6] == 6
+        widget_spec = cast(Any, optional["webp_method"])
+        assert widget_spec[1]["default"] == 6
+        save_defaults = cast(tuple[Any, ...], SaveImageLM.save_images.__defaults__ or ())
+        process_defaults = cast(tuple[Any, ...], SaveImageLM.process_image.__defaults__ or ())
+        assert save_defaults[4] == 6  # positional: webp_method=6 is at index 4
+        assert process_defaults[6] == 6
 
     def test_jpeg_subsampling_defaults_are_consistent(self):
         input_types = SaveImageLM.INPUT_TYPES()
         optional = input_types["optional"]
 
-        assert optional["jpeg_subsampling"][1]["default"] == 0
-        assert SaveImageLM.save_images.__defaults__[5] == 0
-        assert SaveImageLM.process_image.__defaults__[7] == 0
+        widget_spec = cast(Any, optional["jpeg_subsampling"])
+        assert widget_spec[1]["default"] == 0
+        save_defaults = cast(tuple[Any, ...], SaveImageLM.save_images.__defaults__ or ())
+        process_defaults = cast(tuple[Any, ...], SaveImageLM.process_image.__defaults__ or ())
+        assert save_defaults[5] == 0
+        assert process_defaults[7] == 0
 
     def test_add_loras_to_prompt_defaults_are_consistent(self):
         input_types = SaveImageLM.INPUT_TYPES()
         optional = input_types["optional"]
 
-        assert optional["add_loras_to_prompt"][1]["default"] is False
-        assert SaveImageLM.save_images.__defaults__[-1] is False
-        assert SaveImageLM.process_image.__defaults__[-1] is False
+        widget_spec = cast(Any, optional["add_loras_to_prompt"])
+        assert widget_spec[1]["default"] is False
+        save_defaults = cast(tuple[Any, ...], SaveImageLM.save_images.__defaults__ or ())
+        process_defaults = cast(tuple[Any, ...], SaveImageLM.process_image.__defaults__ or ())
+        assert save_defaults[-1] is False
+        assert process_defaults[-1] is False
 
 
 def test_png_does_not_pass_webp_method_or_jpeg_subsampling(monkeypatch, tmp_path):

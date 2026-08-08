@@ -1,11 +1,14 @@
 import asyncio
 import logging
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any, Dict, List, Optional
 
 import pytest
 
-from py.services.model_file_service import AutoOrganizeResult
+from py.services.download_coordinator import DownloadCoordinator
+from py.services.metadata_sync_service import MetadataSyncService
+from py.services.model_file_service import AutoOrganizeResult, ModelFileService
 from py.services.use_cases import (
     AutoOrganizeInProgressError,
     AutoOrganizeUseCase,
@@ -26,6 +29,7 @@ from py.utils.example_images_download_manager import (
 )
 from py.utils.example_images_processor import (
     ExampleImagesImportError,
+    ExampleImagesProcessor,
     ExampleImagesValidationError,
 )
 from py.utils.metadata_manager import MetadataManager
@@ -44,13 +48,13 @@ class StubLockProvider:
         return self._lock
 
 
-class StubFileService:
+class StubFileService(ModelFileService):
     def __init__(self) -> None:
+        super().__init__(scanner=None, model_type="lora")
         self.calls: List[Dict[str, Any]] = []
 
     async def auto_organize_models(
         self,
-        *,
         file_paths: Optional[List[str]] = None,
         progress_callback=None,
         exclusion_patterns=None,
@@ -65,8 +69,15 @@ class StubFileService:
         return result
 
 
-class StubMetadataSync:
+class StubMetadataSync(MetadataSyncService):
     def __init__(self) -> None:
+        super().__init__(
+            metadata_manager=object(),
+            preview_service=object(),
+            settings=StubSettings(),  # pyright: ignore[reportArgumentType]
+            default_metadata_provider_factory=lambda: asyncio.sleep(0, result=None),  # pyright: ignore[reportArgumentType]
+            metadata_provider_selector=lambda _name=None: asyncio.sleep(0, result=None),  # pyright: ignore[reportArgumentType]
+        )
         self.calls: List[Dict[str, Any]] = []
 
     async def fetch_and_update_model(self, **kwargs: Any):
@@ -94,8 +105,12 @@ class ProgressCollector:
         self.events.append(payload)
 
 
-class StubDownloadCoordinator:
+class StubDownloadCoordinator(DownloadCoordinator):
     def __init__(self, *, error: Optional[str] = None) -> None:
+        super().__init__(
+            ws_manager=SimpleNamespace(generate_download_id=lambda: "abc123"),
+            download_manager_factory=lambda: asyncio.sleep(0, result=None),
+        )
         self.error = error
         self.payloads: List[Dict[str, Any]] = []
 
@@ -125,13 +140,13 @@ class StubExampleImagesDownloadManager:
         return {"success": True, "message": "ok"}
 
 
-class StubExampleImagesProcessor:
+class StubExampleImagesProcessor(ExampleImagesProcessor):
     def __init__(self) -> None:
         self.calls: List[Dict[str, Any]] = []
         self.error: Optional[str] = None
         self.response: Dict[str, Any] = {"success": True}
 
-    async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:
+    async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:  # pyright: ignore[reportIncompatibleMethodOverride]
         self.calls.append({"model_hash": model_hash, "files": files})
         if self.error == "validation":
             raise ExampleImagesValidationError("missing")
@@ -464,7 +479,7 @@ async def test_import_example_images_use_case_delegates() -> None:
     use_case = ImportExampleImagesUseCase(processor=processor)
 
     request = DummyJsonRequest({"model_hash": "abc", "file_paths": ["/tmp/file"]})
-    result = await use_case.execute(request)
+    result = await use_case.execute(request)  # pyright: ignore[reportArgumentType]
 
     assert processor.calls == [{"model_hash": "abc", "files": ["/tmp/file"]}]
     assert result == {"success": True}
@@ -477,7 +492,7 @@ async def test_import_example_images_use_case_maps_validation_error() -> None:
     request = DummyJsonRequest({"model_hash": None, "file_paths": []})
 
     with pytest.raises(ImportExampleImagesValidationError):
-        await use_case.execute(request)
+        await use_case.execute(request)  # pyright: ignore[reportArgumentType]
 
 
 async def test_import_example_images_use_case_propagates_generic_error() -> None:
@@ -487,4 +502,4 @@ async def test_import_example_images_use_case_propagates_generic_error() -> None
     request = DummyJsonRequest({"model_hash": "abc", "file_paths": ["/tmp/file"]})
 
     with pytest.raises(ExampleImagesImportError):
-        await use_case.execute(request)
+        await use_case.execute(request)  # pyright: ignore[reportArgumentType]
