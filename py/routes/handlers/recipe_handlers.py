@@ -2156,38 +2156,44 @@ class RecipeManagementHandler:
             parsed_input = {**image_data, **inner_meta}
             parsed_input.pop("meta", None)
 
-            # Build a local cache of {hash → cache_item} so the parser can
-            # skip CivitAI API calls for models that exist on disk.
-            local_cache: Dict[str, Dict[str, Any]] = {}
-            lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
-            if lora_scanner and model_hash:
-                try:
-                    parent_cache_data = await lora_scanner.get_cached_data()
-                    for item in getattr(parent_cache_data, "raw_data", []):
-                        if item.get("sha256", "").lower() == model_hash.lower():
-                            local_cache[model_hash.lower()] = item
-                            # Register the AutoV3 hash so the parser can also
-                            # match on that hash type (CivitAI metadata
-                            # resources use AutoV3). Prefer the stored cache
-                            # field; only compute it when the entry has none.
-                            autov3 = (item.get("autov3") or "").lower()
-                            if not autov3:
-                                file_path = item.get("file_path")
-                                if file_path and os.path.exists(file_path):
-                                    try:
-                                        from ...utils.file_utils import (
-                                            calculate_autov3,
-                                        )
-                                        autov3 = (
-                                            calculate_autov3(file_path) or ""
-                                        ).lower()
-                                    except Exception:
-                                        pass
-                            if autov3:
-                                local_cache[autov3] = item
-                            break
-                except Exception:
-                    pass
+            # Build the shared local hash cache so the parser can skip CivitAI
+            # API calls for models that exist on disk.
+            local_cache: Dict[str, Dict[str, Any]] = (
+                await recipe_scanner.build_local_hash_cache()
+            )
+
+            # Bounded supplement for un-backfilled parents. The shared builder
+            # never computes autov3; when the parent model exists on disk but
+            # its cached entry has no stored AutoV3, compute it for that single
+            # file and register the AutoV3 key so the parser can also match on
+            # that hash type (CivitAI metadata resources use AutoV3). This runs
+            # whenever the parent is found with an empty autov3, independent of
+            # whether the sha256 key is already present in the shared cache.
+            if model_hash:
+                lora_scanner = getattr(recipe_scanner, "_lora_scanner", None)
+                if lora_scanner:
+                    try:
+                        parent_cache_data = await lora_scanner.get_cached_data()
+                        for item in getattr(parent_cache_data, "raw_data", []):
+                            if item.get("sha256", "").lower() == model_hash.lower():
+                                autov3 = (item.get("autov3") or "").lower()
+                                if not autov3:
+                                    file_path = item.get("file_path")
+                                    if file_path and os.path.exists(file_path):
+                                        try:
+                                            from ...utils.file_utils import (
+                                                calculate_autov3,
+                                            )
+                                            autov3 = (
+                                                calculate_autov3(file_path) or ""
+                                            ).lower()
+                                        except Exception:
+                                            pass
+                                if autov3:
+                                    local_cache[autov3] = item
+                                break
+                    except Exception:
+                        pass
 
             parser = self._analysis_service._recipe_parser_factory.create_parser(
                 parsed_input
@@ -2219,10 +2225,10 @@ class RecipeManagementHandler:
             parent_model_id: int | None = None
             parent_version_name: str | None = None
             parent_model_name: str | None = None
-            # Prefer sha256 key; fall back to any cached entry.
+            # Resolve the parent strictly by its sha256 key. There is no
+            # arbitrary fallback: with a full-library cache, picking any entry
+            # would corrupt the isDeleted reconciliation below.
             parent_item = local_cache.get(model_hash.lower()) if model_hash else None
-            if parent_item is None and local_cache:
-                parent_item = next(iter(local_cache.values()))
             if parent_item:
                 civ = parent_item.get("civitai") or {}
                 if isinstance(civ, dict):

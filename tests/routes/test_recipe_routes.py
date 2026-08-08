@@ -55,7 +55,7 @@ class StubRecipeScanner:
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
             return None
 
-        self._lora_scanner = SimpleNamespace(  # mimic BaseRecipeRoutes expectations
+        self._lora_scanner: Any = SimpleNamespace(  # mimic BaseRecipeRoutes expectations
             get_cached_data=_noop_get_cached_data,
             _hash_index=SimpleNamespace(_hash_to_path={}),
         )
@@ -1456,3 +1456,268 @@ async def test_import_from_url_passes_local_cache_on_all_three_parse_calls(
         assert len(parse_calls) == 3
         assert all(call["local_cache"] is cache_marker for call in parse_calls)
         assert parse_calls[0]["local_cache"] is parse_calls[2]["local_cache"]
+
+
+class _RawDataLoraScanner:
+    """Lora-scanner double whose get_cached_data returns a fixed raw_data list."""
+
+    def __init__(self, raw_data: List[Dict[str, Any]]) -> None:
+        self._raw_data = raw_data
+
+    async def get_cached_data(self) -> SimpleNamespace:
+        return SimpleNamespace(raw_data=self._raw_data)
+
+
+class _SpyCivitaiParser(CivitaiApiMetadataParser):
+    """Records the local_cache passed to parse_metadata and returns a canned result."""
+
+    def __init__(self, parse_result: Dict[str, Any]) -> None:
+        self.received_cache: Optional[Dict[str, Dict[str, Any]]] = None
+        self._parse_result = parse_result
+
+    async def parse_metadata(
+        self, user_comment, recipe_scanner=None, civitai_client=None, local_cache=None,
+    ) -> Dict[str, Any]:
+        self.received_cache = local_cache
+        return self._parse_result
+
+
+class _SpyFactory:
+    def __init__(self, parser: _SpyCivitaiParser) -> None:
+        self._parser = parser
+
+    def create_parser(self, raw):  # noqa: ARG001 - mirrors real factory signature
+        return self._parser
+
+
+async def _post_create_from_example(
+    harness: RecipeRouteHarness, model_hash: str, *, model_name: str = "parent.safetensors"
+) -> Any:
+    return await harness.client.post(
+        "/api/lm/recipes/create-from-example",
+        json={
+            "image_data": {
+                "url": "https://image.civitai.com/x/y/original=true/sample.jpeg",
+                "meta": {"prompt": "sample prompt"},
+            },
+            "model_hash": model_hash,
+            "model_name": model_name,
+            "model_type": "loras",
+        },
+    )
+
+
+async def test_create_from_example_resolves_parent_item_by_sha256_key(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A parent present in the shared cache under its sha256 key drives isDeleted reconciliation."""
+    model_hash = "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef"
+    model_name = "parent.safetensors"
+    parent_item: Dict[str, Any] = {
+        "civitai": {"id": 77, "modelId": 88, "name": "v1.0"},
+        "model_name": "Parent Model",
+    }
+    parser = _SpyCivitaiParser(
+        {
+            "loras": [{"isDeleted": True, "file_name": model_name, "name": "Stale"}],
+            "gen_params": {"prompt": "test prompt"},
+        }
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        harness.scanner.local_hash_cache = {model_hash.lower(): parent_item}
+
+        response = await _post_create_from_example(harness, model_hash, model_name=model_name)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        # The shared builder result is the exact object handed to the parser.
+        assert parser.received_cache is harness.scanner.local_hash_cache
+        lora = harness.persistence.save_calls[0]["metadata"]["loras"][0]
+        assert lora["isDeleted"] is False
+        assert lora["existsLocally"] is True
+        assert lora["hash"] == model_hash
+        assert lora["id"] == 77
+        assert lora["modelId"] == 88
+        assert lora["version"] == "v1.0"
+        assert lora["name"] == "Parent Model"
+
+
+async def test_create_from_example_computes_autov3_for_unbackfilled_parent(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A parent with no stored autov3 gets a single-file compute registered in the cache."""
+    model_hash = "b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0"
+    model_file = tmp_path / "parent.safetensors"
+    model_file.write_bytes(b"\x00" * 16)
+    parent_item: Dict[str, Any] = {
+        "sha256": model_hash,
+        "autov3": "",
+        "file_path": str(model_file),
+        "model_name": "Parent Model",
+    }
+    autov3_calls: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str | None:
+        autov3_calls.append(file_path)
+        return "abc123def456"
+
+    monkeypatch.setattr("py.utils.file_utils.calculate_autov3", fake_calculate_autov3)
+    parser = _SpyCivitaiParser({"loras": [], "gen_params": {"prompt": "test prompt"}})
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        # The sha256 key is already present (as the real builder registers it);
+        # the supplement must still run because the stored autov3 is empty.
+        harness.scanner.local_hash_cache = {model_hash.lower(): parent_item}
+        harness.scanner._lora_scanner = _RawDataLoraScanner([parent_item])
+
+        response = await _post_create_from_example(harness, model_hash)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        # Bounded: exactly one header read for the single parent file.
+        assert autov3_calls == [str(model_file)]
+        assert parser.received_cache is harness.scanner.local_hash_cache
+        assert parser.received_cache is not None
+        # The computed autov3 key was registered, pointing at the parent item.
+        assert parser.received_cache["abc123def456"] is parent_item
+
+
+async def test_create_from_example_parent_not_in_library_has_no_arbitrary_item(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A missing parent must NOT fall back to an arbitrary cache entry during auto-populate."""
+    model_hash = "c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01"
+    model_name = "parent.safetensors"
+    decoy: Dict[str, Any] = {
+        "civitai": {"id": 999, "modelId": 998, "name": "v9"},
+        "model_name": "Wrong Model",
+    }
+    parser = _SpyCivitaiParser({"loras": [], "gen_params": {"prompt": "test prompt"}})
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        harness.scanner.local_hash_cache = {"someotherhash": decoy}
+
+        response = await _post_create_from_example(harness, model_hash, model_name=model_name)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        lora = harness.persistence.save_calls[0]["metadata"]["loras"][0]
+        assert lora["hash"] == model_hash
+        assert lora["file_name"] == model_name
+        assert lora["existsLocally"] is True
+        # parent_item is None: the entry keeps its default name, and no
+        # enrichment fields may come from any cache entry.
+        assert lora["name"] == model_name
+        assert "id" not in lora
+        assert "modelId" not in lora
+        assert "version" not in lora
+
+
+async def test_create_from_example_parent_not_in_library_isDeleted_reconciliation_has_no_arbitrary_item(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """isDeleted reconciliation must not enrich from an arbitrary entry when the parent is missing."""
+    model_hash = "d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef012"
+    model_name = "parent.safetensors"
+    decoy: Dict[str, Any] = {
+        "civitai": {"id": 777, "modelId": 776, "name": "v7"},
+        "model_name": "Decoy Model",
+    }
+    parser = _SpyCivitaiParser(
+        {
+            "loras": [{"isDeleted": True, "file_name": model_name}],
+            "gen_params": {"prompt": "test prompt"},
+        }
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        harness.scanner.local_hash_cache = {"someotherhash": decoy}
+
+        response = await _post_create_from_example(harness, model_hash, model_name=model_name)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        lora = harness.persistence.save_calls[0]["metadata"]["loras"][0]
+        # Reconciliation still runs (parent matched by file_name), but enriches
+        # nothing because parent_item is None.
+        assert lora["isDeleted"] is False
+        assert lora["existsLocally"] is True
+        assert lora["hash"] == model_hash
+        assert "id" not in lora
+        assert "name" not in lora
+
+
+async def test_create_from_example_does_not_pass_local_cache_to_other_parsers(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Non-Civitai parsers must never receive local_cache (their signature lacks it)."""
+    parse_calls: list[Dict[str, Any]] = []
+
+    class PlainParser:
+        async def parse_metadata(self, raw, recipe_scanner=None, **kwargs):
+            assert "local_cache" not in kwargs, (
+                "local_cache leaked to a non-Civitai parser"
+            )
+            parse_calls.append({"raw": raw})
+            return {"loras": [], "gen_params": {"prompt": "plain"}}
+
+    class PlainFactory:
+        def create_parser(self, raw):  # noqa: ARG001 - mirrors real factory signature
+            return PlainParser()
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = PlainFactory()
+        harness.scanner.local_hash_cache = {"deadbeef": {"model_name": "local"}}
+
+        response = await _post_create_from_example(harness, "f1234", model_name="plain.safetensors")
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        assert len(parse_calls) == 1
+
+
+async def test_create_from_example_does_not_recompute_stored_autov3(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A parent whose autov3 is already stored must not trigger the supplement."""
+    model_hash = "e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0123"
+    model_file = tmp_path / "parent.safetensors"
+    model_file.write_bytes(b"\x00" * 16)
+    parent_item: Dict[str, Any] = {
+        "sha256": model_hash,
+        "autov3": "existing123456",
+        "file_path": str(model_file),
+        "model_name": "Parent Model",
+    }
+    autov3_calls: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str | None:  # noqa: ARG001 - must not run
+        autov3_calls.append(file_path)
+        return "should-not-run"
+
+    monkeypatch.setattr("py.utils.file_utils.calculate_autov3", fake_calculate_autov3)
+    parser = _SpyCivitaiParser({"loras": [], "gen_params": {"prompt": "test prompt"}})
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        # The shared builder registers both the sha256 and the stored autov3 keys.
+        harness.scanner.local_hash_cache = {
+            model_hash.lower(): parent_item,
+            "existing123456": parent_item,
+        }
+        harness.scanner._lora_scanner = _RawDataLoraScanner([parent_item])
+
+        response = await _post_create_from_example(harness, model_hash)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        # Stale-state guard: no recompute when autov3 is already stored.
+        assert autov3_calls == []
+        assert parser.received_cache is harness.scanner.local_hash_cache
+        assert parser.received_cache is not None
+        assert parser.received_cache["existing123456"] is parent_item
