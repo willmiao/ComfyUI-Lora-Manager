@@ -18,6 +18,7 @@ from py.config import config
 from py.routes import base_recipe_routes
 from py.routes.handlers import recipe_handlers
 from py.routes.recipe_routes import RecipeRoutes
+from py.recipes.parsers.civitai_image import CivitaiApiMetadataParser
 from py.services.recipes import RecipeValidationError, RecipeNotFoundError
 from py.services.service_registry import ServiceRegistry
 
@@ -49,6 +50,7 @@ class StubRecipeScanner:
         self.lora_lookup: Dict[str, List[Dict[str, Any]]] = {}
         self.checkpoint_lookup: Dict[str, List[Dict[str, Any]]] = {}
         self.image_id_map_override: Dict[str, str] = {}
+        self.local_hash_cache: Dict[str, Dict[str, Any]] | None = None
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
             return None
@@ -63,6 +65,11 @@ class StubRecipeScanner:
             raw_data=list(self.cached_raw),
             image_id_map=dict(getattr(self, "image_id_map_override", {})),
         )
+
+    async def build_local_hash_cache(self) -> Dict[str, Dict[str, Any]]:
+        """Return the stub's local hash map; empty unless a test overrides it."""
+        cache = getattr(self, "local_hash_cache", None)
+        return cache if cache is not None else {}
 
     async def get_paginated_data(self, **params: Any) -> Dict[str, Any]:
         self.last_paginated_params = params
@@ -170,6 +177,8 @@ class StubPersistenceService:
         tags,
         metadata,
         extension=None,
+        recipe_id=None,
+        target_dir=None,
     ) -> SimpleNamespace:  # noqa: D401
         self.save_calls.append(
             {
@@ -180,6 +189,8 @@ class StubPersistenceService:
                 "tags": list(tags),
                 "metadata": metadata,
                 "extension": extension,
+                "recipe_id": recipe_id,
+                "target_dir": target_dir,
             }
         )
         return self.save_result
@@ -1258,3 +1269,190 @@ async def test_import_from_url_proceeds_when_image_id_not_in_map(
         # but it must NOT return already_exists
         payload = await response.json()
         assert payload.get("already_exists") is not True
+
+
+async def test_import_remote_recipe_passes_local_cache_to_civitai_parser(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """import_remote must hand the same local hash cache to both Civitai parse passes."""
+    parse_calls: list[Dict[str, Any]] = []
+
+    class SpyCivitaiParser(CivitaiApiMetadataParser):
+        async def parse_metadata(
+            self, user_comment, recipe_scanner=None, civitai_client=None,
+            local_cache=None,
+        ) -> Dict[str, Any]:
+            parse_calls.append({"local_cache": local_cache})
+            return {"gen_params": {"prompt": "spy"}}
+
+    class SpyFactory:
+        def create_parser(self, raw):
+            return SpyCivitaiParser()
+
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            return "Recipe metadata: " + json.dumps({"gen_params": {"seed": 7}})
+
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda _id: ({}, None))
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = SpyFactory()
+        cache_marker = {"abcdef123456": {"model_name": "local-lora"}}
+        harness.scanner.local_hash_cache = cache_marker
+        harness.civitai.image_info["1"] = {
+            "id": 1,
+            "url": "https://example.com/images/1.jpg",
+            "meta": {"prompt": "from civitai", "seed": 99},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/1",
+                "name": "Civitai Cache",
+                "resources": json.dumps([]),
+                "gen_params": json.dumps({"prompt": "from request", "steps": 25}),
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        # Both parse passes (EXIF + CivitAI API) ran and received the SAME
+        # local_cache object, built once at handler level.
+        assert len(parse_calls) == 2
+        assert all(call["local_cache"] is cache_marker for call in parse_calls)
+        assert parse_calls[0]["local_cache"] is parse_calls[1]["local_cache"]
+
+
+async def test_import_remote_recipe_does_not_pass_local_cache_to_other_parsers(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Non-Civitai parsers must never receive local_cache (their signature lacks it)."""
+    parse_calls: list[Dict[str, Any]] = []
+
+    class PlainParser:
+        async def parse_metadata(self, raw, recipe_scanner=None, **kwargs):
+            assert "local_cache" not in kwargs, (
+                "local_cache leaked to a non-Civitai parser"
+            )
+            parse_calls.append({"raw": raw})
+            return {"gen_params": {"prompt": "plain"}}
+
+    class PlainFactory:
+        def create_parser(self, raw):
+            return PlainParser()
+
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            return "Recipe metadata: " + json.dumps({"gen_params": {"seed": 7}})
+
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda _id: ({}, None))
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = PlainFactory()
+        harness.scanner.local_hash_cache = {"deadbeef": {"model_name": "local"}}
+        harness.civitai.image_info["1"] = {
+            "id": 1,
+            "url": "https://example.com/images/1.jpg",
+            "meta": {"prompt": "from civitai", "seed": 99},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/1",
+                "name": "Plain Cache",
+                "resources": json.dumps([]),
+                "gen_params": json.dumps({"prompt": "from request", "steps": 25}),
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert len(parse_calls) == 2
+
+
+async def test_import_from_url_passes_local_cache_on_all_three_parse_calls(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """import_from_url must pass local_cache to all three Civitai parse passes."""
+    parse_calls: list[Dict[str, Any]] = []
+    str_call_count = 0
+
+    class SpyCivitaiParser(CivitaiApiMetadataParser):
+        async def parse_metadata(
+            self, user_comment, recipe_scanner=None, civitai_client=None,
+            local_cache=None,
+        ) -> Dict[str, Any]:
+            nonlocal str_call_count
+            parse_calls.append({"local_cache": local_cache})
+            if isinstance(user_comment, str):
+                str_call_count += 1
+                if str_call_count == 1:
+                    # First (optimized EXIF) pass yields an empty dict so the
+                    # handler falls back to the original image, exercising
+                    # pass #2 (an empty dict is falsy for `not parsed_embedded`).
+                    return {}
+                return {"gen_params": {"prompt": "fallback"}}
+            return {"gen_params": {"prompt": "civitai"}}
+
+    class SpyFactory:
+        def create_parser(self, raw):
+            return SpyCivitaiParser()
+
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            if path.endswith(".png"):
+                return "original metadata: " + json.dumps({"gen_params": {"seed": 2}})
+            return "optimized metadata: " + json.dumps({"gen_params": {"seed": 1}})
+
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda _id: ({}, None))
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = SpyFactory()
+        cache_marker = {"deadbeef": {"model_name": "local-lora"}}
+        harness.scanner.local_hash_cache = cache_marker
+        harness.civitai.image_info["42"] = {
+            "id": 42,
+            "url": "https://image.civitai.com/x/y/original=true/sample.jpeg",
+            "type": "image",
+            "meta": {"prompt": "test", "seed": 3},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-from-url",
+            params={"image_url": "https://civitai.com/images/42"},
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert len(parse_calls) == 3
+        assert all(call["local_cache"] is cache_marker for call in parse_calls)
+        assert parse_calls[0]["local_cache"] is parse_calls[2]["local_cache"]

@@ -1118,6 +1118,12 @@ class RecipeManagementHandler:
             _original_image_url,
         ) = await self._download_remote_media(image_url)
 
+        # Build a version-cached map of local model hashes to cache items so
+        # CivitaiApiMetadataParser can skip CivitAI API calls for models that
+        # exist on disk. Built once and shared by every parse pass below.
+        local_cache = await recipe_scanner.build_local_hash_cache()
+        from ...recipes.parsers.civitai_image import CivitaiApiMetadataParser
+
         # Extract embedded EXIF metadata (offloaded to thread pool in this call)
         embedded_gen_params = {}
         parsed_embedded = None
@@ -1139,9 +1145,16 @@ class RecipeManagementHandler:
                         )
                     )
                     if parser:
-                        parsed_embedded = await parser.parse_metadata(
-                            raw_embedded, recipe_scanner=recipe_scanner
-                        )
+                        if isinstance(parser, CivitaiApiMetadataParser):
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_embedded,
+                                recipe_scanner=recipe_scanner,
+                                local_cache=local_cache,
+                            )
+                        else:
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_embedded, recipe_scanner=recipe_scanner
+                            )
                         if parsed_embedded and "gen_params" in parsed_embedded:
                             embedded_gen_params = parsed_embedded["gen_params"]
                     else:
@@ -1172,9 +1185,16 @@ class RecipeManagementHandler:
                     civitai_inner_meta
                 )
                 if parser:
-                    civitai_parsed = await parser.parse_metadata(
-                        civitai_inner_meta, recipe_scanner=recipe_scanner
-                    )
+                    if isinstance(parser, CivitaiApiMetadataParser):
+                        civitai_parsed = await parser.parse_metadata(
+                            civitai_inner_meta,
+                            recipe_scanner=recipe_scanner,
+                            local_cache=local_cache,
+                        )
+                    else:
+                        civitai_parsed = await parser.parse_metadata(
+                            civitai_inner_meta, recipe_scanner=recipe_scanner
+                        )
                     if civitai_parsed and "gen_params" in civitai_parsed:
                         # Merge: API gen_params override EXIF at field level,
                         # EXIF fills in fields the API doesn't have.
@@ -1798,6 +1818,12 @@ class RecipeManagementHandler:
             await self._download_remote_media(image_url)
         )
 
+        # Build a version-cached map of local model hashes to cache items so
+        # CivitaiApiMetadataParser can skip CivitAI API calls for models that
+        # exist on disk. Built once and shared by every parse pass below.
+        local_cache = await recipe_scanner.build_local_hash_cache()
+        from ...recipes.parsers.civitai_image import CivitaiApiMetadataParser
+
         # Extract embedded EXIF metadata
         embedded_gen_params = {}
         parsed_embedded = None
@@ -1819,9 +1845,16 @@ class RecipeManagementHandler:
                         )
                     )
                     if parser:
-                        parsed_embedded = await parser.parse_metadata(
-                            raw_embedded, recipe_scanner=recipe_scanner
-                        )
+                        if isinstance(parser, CivitaiApiMetadataParser):
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_embedded,
+                                recipe_scanner=recipe_scanner,
+                                local_cache=local_cache,
+                            )
+                        else:
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_embedded, recipe_scanner=recipe_scanner
+                            )
                         if parsed_embedded and "gen_params" in parsed_embedded:
                             embedded_gen_params = parsed_embedded["gen_params"]
             finally:
@@ -1859,9 +1892,16 @@ class RecipeManagementHandler:
                                 )
                             )
                             if parser:
-                                parsed_embedded = await parser.parse_metadata(
-                                    raw_orig, recipe_scanner=recipe_scanner
-                                )
+                                if isinstance(parser, CivitaiApiMetadataParser):
+                                    parsed_embedded = await parser.parse_metadata(
+                                        raw_orig,
+                                        recipe_scanner=recipe_scanner,
+                                        local_cache=local_cache,
+                                    )
+                                else:
+                                    parsed_embedded = await parser.parse_metadata(
+                                        raw_orig, recipe_scanner=recipe_scanner
+                                    )
                                 if (
                                     parsed_embedded
                                     and "gen_params" in parsed_embedded
@@ -1895,9 +1935,16 @@ class RecipeManagementHandler:
                     civitai_inner_meta
                 )
                 if parser:
-                    civitai_parsed = await parser.parse_metadata(
-                        civitai_inner_meta, recipe_scanner=recipe_scanner
-                    )
+                    if isinstance(parser, CivitaiApiMetadataParser):
+                        civitai_parsed = await parser.parse_metadata(
+                            civitai_inner_meta,
+                            recipe_scanner=recipe_scanner,
+                            local_cache=local_cache,
+                        )
+                    else:
+                        civitai_parsed = await parser.parse_metadata(
+                            civitai_inner_meta, recipe_scanner=recipe_scanner
+                        )
                     if civitai_parsed and "gen_params" in civitai_parsed:
                         # Merge: API gen_params override EXIF at field level,
                         # EXIF fills in fields the API doesn't have.
