@@ -79,6 +79,7 @@ class ModelScanner:
         self.model_class = model_class
         self.file_extensions = file_extensions
         self._cache: Any = None
+        self._cache_version: int = 0
         self._hash_index = hash_index or ModelHashIndex()
         self._tags_count = {}  # Dictionary to store tag counts
         self._is_initializing = False  # Flag to track initialization state
@@ -98,6 +99,25 @@ class ModelScanner:
         # Register this service
         asyncio.create_task(self._register_service())
 
+    @property
+    def cache_version(self) -> int:
+        """Monotonic version counter for the in-memory cache.
+
+        Every write path that mutates scanner cache state calls
+        :meth:`bump_cache_version`, so consumers (e.g. RecipeScanner) can
+        detect when a cached derivation of the raw data is stale. Reads never
+        bump.
+        """
+        return self._cache_version
+
+    def bump_cache_version(self) -> None:
+        """Invalidate derived caches by incrementing the cache version.
+
+        Public because external services (model lifecycle, route handlers)
+        rewrite scanner raw_data directly and must be able to invalidate it.
+        """
+        self._cache_version += 1
+
     def on_library_changed(self) -> None:
         """Reset caches when the active library changes."""
         self._persistent_cache = get_persistent_cache()
@@ -107,6 +127,7 @@ class ModelScanner:
         self._excluded_models = []
         self._is_initializing = False
         self._name_display_mode = self._resolve_name_display_mode()
+        self.bump_cache_version()
 
         try:
             loop = asyncio.get_running_loop()
@@ -1030,6 +1051,7 @@ class ModelScanner:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error reconciling cache: {e}", exc_info=True)
         finally:
             self._is_initializing = False # Unset flag
+            self.bump_cache_version()
     
     def is_initializing(self) -> bool:
         """Check if the scanner is currently initializing"""
@@ -1267,6 +1289,8 @@ class ModelScanner:
 
         self._log_duplicate_filename_summary()
 
+        self.bump_cache_version()
+
     def _log_duplicate_filename_summary(self) -> None:
         """Log a batched summary of duplicate filename conflicts once per scan."""
         # Duplicate filename detection is only relevant for LoRAs, which use
@@ -1498,6 +1522,7 @@ class ModelScanner:
                 metadata_dict.get('autov3') or None,
             )
             await self._persist_current_cache()
+            self.bump_cache_version()
             return True
         except Exception as e:
             logger.error(f"Error adding model to cache: {e}")
@@ -1702,6 +1727,7 @@ class ModelScanner:
 
         if cache_modified:
             await self._persist_current_cache()
+            self.bump_cache_version()
 
         if metadata and cache_entry is not None:
             return cache_entry
@@ -1828,6 +1854,7 @@ class ModelScanner:
         # ---- In-place update of the cache entry ----
         existing_entry.clear()
         existing_entry.update(desired_entry)
+        self.bump_cache_version()
 
         # ---- Incremental tag count update ----
         new_tags: set[str] = set(desired_entry.get("tags") or [])
@@ -1966,6 +1993,7 @@ class ModelScanner:
                 payload['autov3'] = entry['autov3'] or None
                 await MetadataManager.save_metadata(metadata_path, payload)
 
+            self.bump_cache_version()
             return True
         except Exception as exc:
             logger.warning("Failed to update AutoV3 for %s: %s", file_path, exc)
@@ -2297,6 +2325,8 @@ class ModelScanner:
             await self._cache.resort()
 
             await self._persist_current_cache()
+
+            self.bump_cache_version()
 
             return True
             

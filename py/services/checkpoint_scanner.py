@@ -242,6 +242,7 @@ class CheckpointScanner(ModelScanner):
                     if entry.get("file_path") == file_path:
                         entry["sha256"] = sha256.lower()
                         entry["hash_status"] = "completed"
+                        self.bump_cache_version()
                         break
 
             logger.info(f"Hash calculated for checkpoint: {file_path}")

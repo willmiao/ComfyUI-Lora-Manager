@@ -138,6 +138,9 @@ class ModelLifecycleService:
                 item for item in cache.raw_data if item.get("file_path") != file_path
             ]
             await cache.resort()
+            bump_cache_version = getattr(self._scanner, "bump_cache_version", None)
+            if callable(bump_cache_version):
+                bump_cache_version()
 
         if hasattr(self._scanner, "_hash_index") and self._scanner._hash_index:
             self._scanner._hash_index.remove_by_path(file_path)
@@ -244,6 +247,9 @@ class ModelLifecycleService:
                 item for item in cache.raw_data if item["file_path"] != file_path
             ]
             await cache.resort()
+            bump_cache_version = getattr(self._scanner, "bump_cache_version", None)
+            if callable(bump_cache_version):
+                bump_cache_version()
 
         excluded = getattr(self._scanner, "_excluded_models", None)
         if isinstance(excluded, list):

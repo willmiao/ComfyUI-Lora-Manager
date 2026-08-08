@@ -2470,6 +2470,7 @@ class ModelLibraryHandler:
             }
             scanner = scanner_map.get(found_type or "")
             if scanner:
+                scanner.bump_cache_version()
                 persist: Any = getattr(scanner, "_persist_current_cache", None)
                 if persist:
                     await persist()
