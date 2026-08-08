@@ -1490,3 +1490,207 @@ async def test_misc_delete_model_version_bumps_cache_version(tmp_path: Path):
     assert checkpoint_scanner.cache_version == 0
     assert embedding_scanner.cache_version == 0
     assert deleted == [("lora", 42)]
+
+
+# ---------------------------------------------------------------------------
+# build_local_hash_cache — version-cached local hash map (plan todo 2)
+# ---------------------------------------------------------------------------
+
+
+def _lora_item(sha256: str = "", autov3: str = "", **extra: Any) -> Dict[str, Any]:
+    item: Dict[str, Any] = {
+        "sha256": sha256,
+        "autov3": autov3,
+        "file_path": f"/models/{sha256 or 'x'}.safetensors",
+        "file_name": "m",
+        "model_name": "m",
+    }
+    item.update(extra)
+    return item
+
+
+def _make_recipe_scanner(
+    lora: DummyScanner, checkpoint: DummyScannerB
+) -> RecipeScanner:
+    RecipeScanner._instance = None
+    return RecipeScanner(
+        lora_scanner=lora, checkpoint_scanner=checkpoint  # pyright: ignore[reportArgumentType]
+    )
+
+
+async def test_build_local_hash_cache_has_sha256_autov2_autov3_keys(tmp_path: Path):
+    sha256 = "A" * 64
+    autov3 = "AAA12BBB34CD"
+    lora = _make_scanner([_lora_item(sha256=sha256, autov3=autov3)], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    result = await scanner.build_local_hash_cache()
+
+    assert set(result) == {sha256.lower(), sha256.lower()[:10], autov3.lower()}
+    assert result[sha256.lower()] is lora._cache.raw_data[0]
+
+
+async def test_build_local_hash_cache_skips_items_without_sha256(tmp_path: Path):
+    lora = _make_scanner(
+        [
+            _lora_item(sha256=""),
+            {"file_path": "/models/none.safetensors", "file_name": "n", "model_name": "n"},
+            _lora_item(sha256="B" * 64),
+        ],
+        str(tmp_path),
+    )
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    result = await scanner.build_local_hash_cache()
+
+    assert set(result) == {("B" * 64).lower(), ("B" * 64).lower()[:10]}
+
+
+async def test_build_local_hash_cache_skips_empty_autov3_keys(tmp_path: Path):
+    sha256 = "C" * 64
+    lora = _make_scanner([_lora_item(sha256=sha256, autov3="")], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    result = await scanner.build_local_hash_cache()
+
+    assert "" not in result
+    assert set(result) == {sha256.lower(), sha256.lower()[:10]}
+
+
+async def test_build_local_hash_cache_never_calls_calculate_autov3(
+    tmp_path: Path, monkeypatch
+):
+    from py.utils import file_utils
+
+    called: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str:
+        called.append(file_path)
+        return "AAABBBCCCDDD"
+
+    monkeypatch.setattr(file_utils, "calculate_autov3", fake_calculate_autov3)
+
+    autov3 = "E" * 12
+    lora = _make_scanner([_lora_item(sha256="D" * 64, autov3=autov3)], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    result = await scanner.build_local_hash_cache()
+
+    assert called == []
+    assert autov3.lower() in result
+
+
+async def test_build_local_hash_cache_reuses_same_object_while_versions_unchanged(
+    tmp_path: Path,
+):
+    lora = _make_scanner([_lora_item(sha256="F" * 64)], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    first = await scanner.build_local_hash_cache()
+    second = await scanner.build_local_hash_cache()
+
+    assert first is second
+    assert scanner._local_hash_cache_versions == (
+        lora.cache_version,
+        checkpoint.cache_version,
+    )
+
+
+async def test_build_local_hash_cache_rebuilds_after_lora_version_change(
+    tmp_path: Path,
+):
+    lora = _make_scanner([_lora_item(sha256="G" * 64)], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    first = await scanner.build_local_hash_cache()
+    lora.bump_cache_version()
+    second = await scanner.build_local_hash_cache()
+
+    assert first is not second
+    assert first["g" * 64] is second["g" * 64]
+
+
+async def test_build_local_hash_cache_rebuilds_after_checkpoint_version_change(
+    tmp_path: Path,
+):
+    lora = _make_scanner([], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(
+        raw_data=[_lora_item(sha256="H" * 64)], folders=[]
+    )
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    first = await scanner.build_local_hash_cache()
+    checkpoint.bump_cache_version()
+    second = await scanner.build_local_hash_cache()
+
+    assert first is not second
+
+
+async def test_build_local_hash_cache_includes_lora_and_checkpoint_items(
+    tmp_path: Path,
+):
+    lora = _make_scanner([_lora_item(sha256="I" * 64, autov3="I1" * 6)], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(
+        raw_data=[_lora_item(sha256="J" * 64, autov3="J1" * 6)], folders=[]
+    )
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    result = await scanner.build_local_hash_cache()
+
+    assert ("I" * 64).lower() in result
+    assert ("J" * 64).lower() in result
+    assert result[("J" * 64).lower()] is checkpoint._cache.raw_data[0]
+
+
+async def test_build_local_hash_cache_returns_empty_dict_when_no_data(tmp_path: Path):
+    lora = _make_scanner([], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(raw_data=[], folders=[])
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    result = await scanner.build_local_hash_cache()
+
+    assert result == {}
+
+
+async def test_build_local_hash_cache_single_flight_concurrent_calls(tmp_path: Path):
+    lora = _make_scanner([_lora_item(sha256="K" * 64, autov3="K1" * 6)], str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(
+        raw_data=[_lora_item(sha256="L" * 64)], folders=[]
+    )
+    scanner = _make_recipe_scanner(lora, checkpoint)
+
+    first, second = await asyncio.gather(
+        scanner.build_local_hash_cache(),
+        scanner.build_local_hash_cache(),
+    )
+
+    assert first is second
+    assert ("K" * 64).lower() in first
+    assert ("L" * 64).lower() in first
+
+
+async def test_build_local_hash_cache_handles_missing_scanner(tmp_path: Path):
+    lora = _make_scanner([_lora_item(sha256="M" * 64)], str(tmp_path))
+    RecipeScanner._instance = None
+    scanner = RecipeScanner(lora_scanner=lora)  # pyright: ignore[reportArgumentType]
+
+    result = await scanner.build_local_hash_cache()
+
+    assert ("M" * 64).lower() in result
+    assert len(result) == 2

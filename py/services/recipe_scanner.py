@@ -94,7 +94,56 @@ class RecipeScanner:
                 self._lora_scanner = lora_scanner
             if checkpoint_scanner:
                 self._checkpoint_scanner = checkpoint_scanner
+            # Local hash cache (sha256 / autov2 / stored autov3 -> cache item),
+            # rebuilt only when either model scanner's cache_version changes.
+            self._local_hash_cache: dict[str, dict[str, Any]] | None = None
+            self._local_hash_cache_versions: tuple[int, int] | None = None
+            self._local_hash_cache_lock = asyncio.Lock()
             self._initialized = True
+
+    async def build_local_hash_cache(self) -> dict[str, dict[str, Any]]:
+        """Build a version-cached map of local model hashes to cache items.
+
+        Keys are the lowercase full sha256, the first 10 chars of the sha256
+        (autov2), and the stored lowercase autov3 value when present. An empty
+        autov3 is the "checked but unavailable" state and never produces a key.
+        Items without a sha256 are skipped. The dict is reused while both
+        scanners' cache_version values are unchanged; concurrent callers share
+        a single build via the lock.
+        """
+        async with self._local_hash_cache_lock:
+            lora_scanner = self._lora_scanner
+            checkpoint_scanner = self._checkpoint_scanner
+            versions = (
+                lora_scanner.cache_version if lora_scanner is not None else 0,
+                checkpoint_scanner.cache_version
+                if checkpoint_scanner is not None
+                else 0,
+            )
+            if (
+                self._local_hash_cache is not None
+                and self._local_hash_cache_versions == versions
+            ):
+                return self._local_hash_cache
+
+            cache: dict[str, dict[str, Any]] = {}
+            for scanner in (lora_scanner, checkpoint_scanner):
+                if scanner is None:
+                    continue
+                data = await scanner.get_cached_data()
+                for item in data.raw_data:
+                    sha256 = (item.get("sha256") or "").lower()
+                    if not sha256:
+                        continue
+                    cache[sha256] = item
+                    cache[sha256[:10]] = item
+                    autov3 = (item.get("autov3") or "").lower()
+                    if autov3:
+                        cache[autov3] = item
+
+            self._local_hash_cache = cache
+            self._local_hash_cache_versions = versions
+            return cache
 
     def on_library_changed(self) -> None:
         """Reset cached state when the active library changes."""
