@@ -591,6 +591,91 @@ class SaveImageLM:
         return filename
 
     @staticmethod
+    def _sanitize_filename_value(value) -> str:
+        # '%' is stripped too: a resolved value must not introduce new pattern
+        # segments for the format_filename pass that runs after resolution.
+        text = str(value)
+        return re.sub(r'[/?<>\\:*|"%\x00-\x1F\x7F]', "_", text)
+
+    def _lookup_node_widget_value(self, prompt, node_title, widget_name):
+        """Resolve a widget value from the workflow prompt graph.
+
+        Matches a node by `_meta` title first; if no titled node supplies the
+        widget, falls back to a class_type match. Returns None when nothing
+        usable is found.
+        """
+        if not isinstance(prompt, dict):
+            return None
+
+        fallback = None
+        for node_data in prompt.values():
+            if not isinstance(node_data, dict):
+                continue
+            meta = node_data.get("_meta")
+            title_match = isinstance(meta, dict) and meta.get("title") == node_title
+            class_match = node_data.get("class_type") == node_title
+            if not title_match and not class_match:
+                continue
+
+            inputs = node_data.get("inputs")
+            if not isinstance(inputs, dict):
+                continue
+            value = inputs.get(widget_name)
+            if value is None:
+                continue
+            # Linked inputs arrive as [origin_node, origin_slot]; cannot resolve statically.
+            if isinstance(value, (list, tuple)) and len(value) == 2:
+                continue
+
+            if title_match:
+                return self._sanitize_filename_value(value)
+            if fallback is None:
+                fallback = self._sanitize_filename_value(value)
+
+        return fallback
+
+    def _resolve_cross_node_placeholders(self, filename_prefix, prompt):
+        """Resolve %NodeTitle.WidgetName% placeholders from the prompt graph.
+
+        ComfyUI's graphToPrompt serializes every widget via serializeValue, then
+        overwrites each widget-backed input with the raw widget value on a second
+        pass (confirmed in frontend 1.47.12). The frontend hook that used to live
+        in save_image_extra_output.js therefore never reaches the backend, so
+        resolution happens here against the `prompt` data instead.
+
+        Unresolvable tokens are left untouched so they stay visible in the saved
+        filename rather than silently collapsing to an empty string.
+        """
+        if not filename_prefix or "%" not in filename_prefix:
+            return filename_prefix
+
+        try:
+            for segment in re.findall(self.pattern_format, filename_prefix):
+                parts = segment.replace("%", "").split(".")
+                if len(parts) != 2:
+                    continue
+                node_title, widget_name = parts
+                value = self._lookup_node_widget_value(prompt, node_title, widget_name)
+                if value is None:
+                    logger.warning(
+                        "SaveImageLM: could not resolve filename placeholder %s "
+                        "(no node titled/typed '%s' with widget '%s' in the prompt)",
+                        segment,
+                        node_title,
+                        widget_name,
+                    )
+                    continue
+                filename_prefix = filename_prefix.replace(segment, value)
+        except Exception as e:
+            # A malformed prompt graph must never block saving the image.
+            logger.error(
+                f"SaveImageLM: failed to resolve cross-node filename placeholders: {e}",
+                exc_info=True,
+            )
+
+        return filename_prefix
+
+    @staticmethod
     def _get_cached_model_by_name(scanner, name):
         cache = getattr(scanner, "_cache", None)
         if cache is None or not name:
@@ -814,7 +899,10 @@ class SaveImageLM:
 
         metadata = self.format_metadata(metadata_dict, add_loras_to_prompt)
 
-        # Process filename_prefix with pattern substitution
+        # Process filename_prefix with pattern substitution.
+        # Cross-node tokens (%NodeTitle.WidgetName%) are resolved from the prompt
+        # graph first, then generation-metadata patterns are applied.
+        filename_prefix = self._resolve_cross_node_placeholders(filename_prefix, prompt)
         filename_prefix = self.format_filename(filename_prefix, metadata_dict)
 
         # Get initial save path info once for the batch
