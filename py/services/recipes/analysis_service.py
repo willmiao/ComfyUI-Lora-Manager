@@ -421,7 +421,20 @@ class RecipeAnalysisService:
             payload["extension"] = extension
             return AnalysisResult(payload)
 
-        result = await parser.parse_metadata(metadata, recipe_scanner=recipe_scanner)
+        # Only the Civitai image parser accepts a local_cache parameter;
+        # passing it to other parsers would raise TypeError. Lazy import
+        # mirrors the repo style used in recipe_handlers.
+        from ...recipes.parsers.civitai_image import CivitaiApiMetadataParser
+
+        if isinstance(parser, CivitaiApiMetadataParser):
+            local_cache = await recipe_scanner.build_local_hash_cache()
+            result = await parser.parse_metadata(
+                metadata, recipe_scanner=recipe_scanner, local_cache=local_cache
+            )
+        else:
+            result = await parser.parse_metadata(
+                metadata, recipe_scanner=recipe_scanner
+            )
 
         if include_image_base64 and image_path:
             result["image_base64"] = self._encode_file(image_path)

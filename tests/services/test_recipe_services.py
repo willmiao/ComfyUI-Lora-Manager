@@ -17,6 +17,7 @@ from py.services.recipes.errors import (
     RecipeValidationError,
 )
 from py.services.recipes.persistence_service import RecipePersistenceService
+from py.recipes.parsers.civitai_image import CivitaiApiMetadataParser
 from py.utils.exif_utils import ExifUtils
 
 
@@ -899,3 +900,259 @@ async def test_analyze_remote_image_supports_civitai_red():
 
     assert client.calls == [("123", "https://civitai.red/images/123")]
     assert result.payload["loras"] == []
+
+
+def _exif_utils_returning(metadata):
+    class MetadataExifUtils(DummyExifUtils):
+        def extract_image_metadata(self, path):
+            return metadata
+
+    return MetadataExifUtils()
+
+
+def _make_analysis_service(parser_factory, exif_utils):
+    async def downloader_factory():
+        return SimpleNamespace()
+
+    return RecipeAnalysisService(
+        exif_utils=exif_utils,
+        recipe_parser_factory=parser_factory,
+        downloader_factory=downloader_factory,
+        metadata_collector=None,
+        metadata_processor_cls=None,
+        metadata_registry_cls=None,
+        standalone_mode=False,
+        logger=logging.getLogger("test"),
+    )
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_civitai_parser_receives_local_cache(tmp_path):
+    metadata = {
+        "resources": [{"type": "lora", "name": "SomeLora", "hash": "abc123456789"}],
+        "prompt": "test",
+    }
+    local_cache = {
+        "abc123456789": {
+            "sha256": "0" * 64,
+            "file_path": "/models/loras/some.safetensors",
+        }
+    }
+
+    class SpyParser(CivitaiApiMetadataParser):
+        def __init__(self):
+            super().__init__()
+            self.local_cache_received = None
+
+        async def parse_metadata(self, user_comment, recipe_scanner=None, civitai_client=None, local_cache=None):
+            self.local_cache_received = local_cache
+            return {
+                "loras": [
+                    {
+                        "name": "SomeLora",
+                        "hash": "abc123456789",
+                        "weight": 1.0,
+                        "existsLocally": False,
+                    }
+                ],
+                "base_model": "Illustrious",
+            }
+
+    class DummyFactory:
+        def __init__(self):
+            self.parser = None
+
+        def create_parser(self, metadata):
+            self.parser = SpyParser()
+            return self.parser
+
+    class CacheScanner:
+        def __init__(self):
+            self.cache_builds = 0
+
+        async def build_local_hash_cache(self):
+            self.cache_builds += 1
+            return local_cache
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    image_path = tmp_path / "img.png"
+    image_path.write_bytes(b"fake-image")
+
+    scanner = CacheScanner()
+    factory = DummyFactory()
+    service = _make_analysis_service(factory, _exif_utils_returning(metadata))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path), recipe_scanner=scanner
+    )
+
+    assert factory.parser is not None
+    assert factory.parser.local_cache_received is local_cache
+    assert scanner.cache_builds == 1
+    assert result.payload["fingerprint"] == "abc123456789:1.0"
+    assert result.payload["matching_recipes"] == []
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_non_civitai_parser_without_local_cache(tmp_path):
+    metadata = {"prompt": "test", "negative_prompt": ""}
+
+    class NonCivitaiParser:
+        def __init__(self):
+            self.called_with = None
+
+        # Signature mirrors RecipeFormatParser: no local_cache parameter.
+        async def parse_metadata(self, user_comment, recipe_scanner=None):
+            self.called_with = {"recipe_scanner": recipe_scanner}
+            return {"loras": [], "base_model": "Illustrious"}
+
+    class DummyFactory:
+        def __init__(self):
+            self.parser = None
+
+        def create_parser(self, metadata):
+            self.parser = NonCivitaiParser()
+            return self.parser
+
+    class CacheScanner:
+        def __init__(self):
+            self.cache_builds = 0
+
+        async def build_local_hash_cache(self):
+            self.cache_builds += 1
+            return {}
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    image_path = tmp_path / "img.png"
+    image_path.write_bytes(b"fake-image")
+
+    scanner = CacheScanner()
+    factory = DummyFactory()
+    service = _make_analysis_service(factory, _exif_utils_returning(metadata))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path), recipe_scanner=scanner
+    )
+
+    assert scanner.cache_builds == 0, "non-Civitai parser must not build the cache"
+    assert factory.parser is not None
+    assert factory.parser.called_with is not None
+    assert "local_cache" not in factory.parser.called_with
+    assert result.payload["loras"] == []
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_fingerprint_and_matching_recipes_unaffected(tmp_path):
+    metadata = {"prompt": "test", "resources": []}
+
+    class SpyParser(CivitaiApiMetadataParser):
+        def __init__(self):
+            super().__init__()
+            self.local_cache_received = None
+
+        async def parse_metadata(self, user_comment, recipe_scanner=None, civitai_client=None, local_cache=None):
+            self.local_cache_received = local_cache
+            return {
+                "loras": [
+                    {"name": "B", "hash": "bbb222", "weight": 0.5},
+                    {"name": "A", "hash": "aaa111", "weight": 0.5},
+                ],
+                "base_model": "Illustrious",
+            }
+
+    class DummyFactory:
+        def __init__(self):
+            self.parser = None
+
+        def create_parser(self, metadata):
+            self.parser = SpyParser()
+            return self.parser
+
+    class CacheScanner:
+        def __init__(self):
+            self.last_fingerprint = None
+
+        async def build_local_hash_cache(self):
+            return {"abc123456789": {"sha256": "0" * 64}}
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            self.last_fingerprint = fingerprint
+            return ["recipe-1"]
+
+    image_path = tmp_path / "img.png"
+    image_path.write_bytes(b"fake-image")
+
+    scanner = CacheScanner()
+    factory = DummyFactory()
+    service = _make_analysis_service(factory, _exif_utils_returning(metadata))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path), recipe_scanner=scanner
+    )
+
+    assert factory.parser is not None
+    assert factory.parser.local_cache_received is not None
+    assert result.payload["fingerprint"] == "aaa111:0.5|bbb222:0.5"
+    assert scanner.last_fingerprint == "aaa111:0.5|bbb222:0.5"
+    assert result.payload["matching_recipes"] == ["recipe-1"]
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_fingerprint_uses_sha256_normalized_hash(tmp_path, monkeypatch):
+    # Regression pin: a lora matched via local_cache gets its entry hash
+    # rewritten to the sha256 by _populate_entry_from_cache, so the
+    # fingerprint is computed from the normalized sha256, not the raw hash.
+    sha256 = "a1b2c3d4e5f60718293a4b5c6d7e8f901a2b3c4d5e6f708192a3b4c5d6e7f809"
+    local_cache = {
+        "abc123456789": {
+            "sha256": sha256,
+            "file_path": "/models/loras/some.safetensors",
+            "model_name": "SomeLora",
+            "base_model": "Illustrious",
+            "civitai": {"id": 123, "modelId": 456, "name": "v1.0"},
+        }
+    }
+    metadata = {
+        "resources": [{"type": "lora", "name": "SomeLora", "hash": "abc123456789"}],
+        "prompt": "test",
+        "baseModel": "Illustrious",
+    }
+
+    class DummyFactory:
+        def create_parser(self, metadata):
+            return CivitaiApiMetadataParser()
+
+    class CacheScanner:
+        async def build_local_hash_cache(self):
+            return local_cache
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    async def fake_metadata_provider():
+        class StubProvider:
+            async def get_model_by_hash(self, model_hash):
+                raise AssertionError("local cache hit must skip the API call")
+
+        return StubProvider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.civitai_image.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    image_path = tmp_path / "img.png"
+    image_path.write_bytes(b"fake-image")
+
+    service = _make_analysis_service(DummyFactory(), _exif_utils_returning(metadata))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path), recipe_scanner=CacheScanner()
+    )
+
+    assert result.payload["loras"][0]["hash"] == sha256
+    assert result.payload["fingerprint"] == f"{sha256}:1.0"
