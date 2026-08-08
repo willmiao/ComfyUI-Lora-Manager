@@ -1,5 +1,7 @@
 import pytest
 
+from py.config import config
+from py.recipes.base import RecipeMetadataParser
 from py.recipes.parsers.civitai_image import CivitaiApiMetadataParser
 
 
@@ -408,3 +410,163 @@ async def test_parse_metadata_resources_model_type_does_not_duplicate_checkpoint
     # Checkpoint must be in result["model"]
     assert result["model"] is not None
     assert result["model"]["name"] == "My Checkpoint"
+
+
+def _make_lora_civitai_info(hash_value):
+    """Build a minimal Civitai response for populate_lora_from_civitai.
+
+    The files entry carries no SHA256 so the entry hash comes from the
+    hash_value fallback, letting each test control the hash form (autov3,
+    autov2 prefix, or full sha256) directly.
+    """
+    return {
+        "id": 300,
+        "modelId": 400,
+        "model": {"name": "Style LoRA", "type": "LORA"},
+        "name": "v1",
+        "images": [{"url": "https://image.civitai.com/lora/original=true"}],
+        "baseModel": "SDXL",
+        "downloadUrl": "https://civitai.com/api/download/300",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "sizeKB": 512,
+                "name": "style.safetensors",
+                "hashes": {},
+            }
+        ],
+    }
+
+
+class _FakeCache:
+    def __init__(self, entries):
+        self.raw_data = entries
+
+
+class _FakeLoraScanner:
+    def __init__(self, cache, local_path):
+        self._cache = cache
+        self._local_path = local_path
+
+    def has_hash(self, sha256):
+        return True
+
+    def get_path_by_hash(self, sha256):
+        return self._local_path
+
+    async def get_cached_data(self):
+        return self._cache
+
+
+class _FakeRecipeScanner:
+    def __init__(self, lora_scanner):
+        self._lora_scanner = lora_scanner
+
+
+async def _run_backfill(cached_items, hash_value, local_path="/loras/style.safetensors"):
+    """Drive populate_lora_from_civitai through the local-exists backfill block."""
+    lora_scanner = _FakeLoraScanner(_FakeCache(cached_items), local_path)
+    lora_entry = {"file_name": "style"}
+    return await RecipeMetadataParser.populate_lora_from_civitai(
+        lora_entry,
+        _make_lora_civitai_info(hash_value),
+        recipe_scanner=_FakeRecipeScanner(lora_scanner),
+        hash_value=hash_value,
+    )
+
+
+@pytest.mark.asyncio
+async def test_backfill_lora_item_by_file_path():
+    # The primary resolution: the cache item's file_path equals the local
+    # path resolved by get_path_by_hash, so it is found without hashing.
+    autov3_hash = "a1b2c3d4e5f6"
+    cached_item = {
+        "file_path": "/loras/style.safetensors",
+        "file_name": "Style LoRA",
+        "preview_url": "/previews/style.png",
+    }
+    result = await _run_backfill([cached_item], autov3_hash)
+    assert result is not None
+    assert result["existsLocally"] is True
+    assert result["localPath"] == "/loras/style.safetensors"
+    assert result["thumbnailUrl"] == config.get_preview_static_url(
+        cached_item["preview_url"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_backfill_lora_item_by_autov3_hash():
+    # 12-char autov3 hash that does NOT match the cache item's sha256,
+    # but matches its stored autov3 — would fail with the sha256-only lookup.
+    autov3_hash = "a1b2c3d4e5f6"
+    cached_item = {
+        "file_path": "/loras/style_stored.safetensors",
+        "file_name": "Style LoRA",
+        "sha256": "deadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+        "autov3": autov3_hash,
+        "preview_url": "/previews/style.png",
+    }
+    result = await _run_backfill([cached_item], autov3_hash)
+    assert result is not None
+    assert result["existsLocally"] is True
+    assert result["localPath"] == "/loras/style.safetensors"
+    assert result["thumbnailUrl"] == config.get_preview_static_url(
+        cached_item["preview_url"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_backfill_lora_item_by_autov2_prefix():
+    # 10-char autov2 hash matches the cache item's sha256 prefix.
+    autov2_hash = "0123456789"
+    cached_item = {
+        "file_path": "/loras/style_stored.safetensors",
+        "file_name": "Style LoRA",
+        "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+        "autov3": "",
+        "preview_url": "/previews/style.png",
+    }
+    result = await _run_backfill([cached_item], autov2_hash)
+    assert result is not None
+    assert result["existsLocally"] is True
+    assert result["thumbnailUrl"] == config.get_preview_static_url(
+        cached_item["preview_url"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_backfill_lora_item_by_full_sha256():
+    # Full sha256 hash matches the cache item as before the change.
+    sha256_hash = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+    cached_item = {
+        "file_path": "/loras/style_stored.safetensors",
+        "file_name": "Style LoRA",
+        "sha256": sha256_hash,
+        "preview_url": "/previews/style.png",
+    }
+    result = await _run_backfill([cached_item], sha256_hash)
+    assert result is not None
+    assert result["existsLocally"] is True
+    assert result["thumbnailUrl"] == config.get_preview_static_url(
+        cached_item["preview_url"]
+    )
+
+
+@pytest.mark.asyncio
+async def test_backfill_lora_cache_item_without_sha256_does_not_crash():
+    # Cache item missing the sha256 field: no KeyError, no match, no crash.
+    autov3_hash = "a1b2c3d4e5f6"
+    cached_item = {
+        "file_path": "/loras/unrelated.safetensors",
+        "file_name": "Unrelated",
+    }
+    result = await _run_backfill([cached_item], autov3_hash)
+    assert result is not None
+    assert result["existsLocally"] is True
+    # No match, so thumbnailUrl stays the CivitAI image URL.
+    assert result["thumbnailUrl"] != config.get_preview_static_url(
+        cached_item.get("preview_url", "/previews/unrelated.png")
+    )
+    assert result["thumbnailUrl"].startswith("https://image.civitai.com/")
+
