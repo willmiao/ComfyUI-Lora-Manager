@@ -61,6 +61,11 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/recipe/{recipe_id}/repair", "repair_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/repair-bulk", "repair_recipes_bulk"),
     RouteDefinition("GET", "/api/lm/recipes/repair-progress", "get_repair_progress"),
+    RouteDefinition("POST", "/api/lm/recipes/rematch", "rematch_recipes"),
+    RouteDefinition("POST", "/api/lm/recipes/rematch-bulk", "rematch_recipes_bulk"),
+    RouteDefinition("POST", "/api/lm/recipe/{recipe_id}/rematch", "rematch_recipe"),
+    RouteDefinition("POST", "/api/lm/recipes/cancel-rematch", "cancel_rematch"),
+    RouteDefinition("GET", "/api/lm/recipes/rematch-progress", "get_rematch_progress"),
     RouteDefinition("POST", "/api/lm/recipes/batch-import/start", "start_batch_import"),
     RouteDefinition(
         "GET", "/api/lm/recipes/batch-import/progress", "get_batch_import_progress"

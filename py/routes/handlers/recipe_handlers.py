@@ -112,6 +112,11 @@ class RecipeHandlerSet:
             "repair_recipe": self.management.repair_recipe,
             "repair_recipes_bulk": self.management.repair_recipes_bulk,
             "get_repair_progress": self.management.get_repair_progress,
+            "rematch_recipes": self.management.rematch_recipes,
+            "cancel_rematch": self.management.cancel_rematch,
+            "rematch_recipe": self.management.rematch_recipe,
+            "rematch_recipes_bulk": self.management.rematch_recipes_bulk,
+            "get_rematch_progress": self.management.get_rematch_progress,
             "start_batch_import": self.batch_import.start_batch_import,
             "get_batch_import_progress": self.batch_import.get_batch_import_progress,
             "cancel_batch_import": self.batch_import.cancel_batch_import,
@@ -885,6 +890,159 @@ class RecipeManagementHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=404)
         except Exception as exc:
             self._logger.error("Error repairing single recipe: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def rematch_recipes(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
+
+            # Mutual exclusion: a global rematch cannot start while a rematch
+            # OR a repair is already running — both mutate recipes under the
+            # same mutation lock.
+            if (
+                self._ws_manager.is_recipe_rematch_running()
+                or self._ws_manager.is_recipe_repair_running()
+            ):
+                return web.json_response(
+                    {"success": False, "error": "Recipe rematch already in progress"},
+                    status=409,
+                )
+
+            recipe_scanner.reset_cancellation()
+
+            async def progress_callback(data):
+                await self._ws_manager.broadcast_recipe_rematch_progress(data)
+
+            # Run in background to avoid timeout
+            async def run_rematch():
+                try:
+                    await recipe_scanner.rematch_all_recipes(
+                        progress_callback=progress_callback
+                    )
+                except Exception as e:
+                    self._logger.error(
+                        f"Error in recipe rematch task: {e}", exc_info=True
+                    )
+                    await self._ws_manager.broadcast_recipe_rematch_progress(
+                        {"status": "error", "error": str(e)}
+                    )
+                finally:
+                    # Keep the final status for a while so the UI can see it
+                    await asyncio.sleep(5)
+                    self._ws_manager.cleanup_recipe_rematch_progress()
+
+            asyncio.create_task(run_rematch())
+
+            return web.json_response(
+                {"success": True, "message": "Recipe rematch started"}
+            )
+        except Exception as exc:
+            self._logger.error("Error starting recipe rematch: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def cancel_rematch(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
+
+            recipe_scanner.cancel_task()
+            return web.json_response(
+                {"success": True, "message": "Cancellation requested"}
+            )
+        except Exception as exc:
+            self._logger.error("Error cancelling recipe rematch: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def rematch_recipes_bulk(self, request: web.Request) -> web.Response:
+        """Rematch deleted resources for multiple recipes by their IDs.
+
+        Accepts a JSON body with a "recipe_ids" array. The per-recipe loop is
+        delegated to the scanner's rematch_recipes_bulk; this handler only
+        parses the request and returns the scanner's summary.
+        """
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
+
+            # A bulk rematch must not queue behind a running global rematch's
+            # mutation lock.
+            if self._ws_manager.is_recipe_rematch_running():
+                return web.json_response(
+                    {"success": False, "error": "Recipe rematch already in progress"},
+                    status=409,
+                )
+
+            data = await request.json()
+            recipe_ids = data.get("recipe_ids", [])
+            if not recipe_ids:
+                return web.json_response(
+                    {"success": False, "error": "recipe_ids are required"},
+                    status=400,
+                )
+
+            result = await recipe_scanner.rematch_recipes_bulk(recipe_ids)
+            return web.json_response(result)
+        except Exception as exc:
+            self._logger.error(
+                "Error performing bulk rematch: %s", exc, exc_info=True
+            )
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
+
+    async def rematch_recipe(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                return web.json_response(
+                    {"success": False, "error": "Recipe scanner unavailable"},
+                    status=503,
+                )
+
+            # Reject per-recipe rematches while a global run is in progress so
+            # they do not queue behind the mutation lock.
+            if self._ws_manager.is_recipe_rematch_running():
+                return web.json_response(
+                    {"success": False, "error": "Recipe rematch already in progress"},
+                    status=409,
+                )
+
+            recipe_id = request.match_info["recipe_id"]
+            result = await recipe_scanner.rematch_recipe_by_id(recipe_id)
+            return web.json_response(result)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error("Error rematching single recipe: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_rematch_progress(self, request: web.Request) -> web.Response:
+        try:
+            progress = self._ws_manager.get_recipe_rematch_progress()
+            if progress:
+                return web.json_response({"success": True, "progress": progress})
+            return web.json_response(
+                {"success": False, "message": "No rematch in progress"}, status=404
+            )
+        except Exception as exc:
+            self._logger.error("Error getting rematch progress: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def reimport_recipe(self, request: web.Request) -> web.Response:

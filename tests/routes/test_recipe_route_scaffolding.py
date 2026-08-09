@@ -214,3 +214,78 @@ def test_recipe_routes_setup_routes_uses_registrar(monkeypatch: pytest.MonkeyPat
     }
     assert {type(cb.__self__) for cb in recipe_callbacks} == {recipe_routes.RecipeRoutes}
     assert {cb.__name__ for cb in recipe_callbacks} == {"attach_dependencies"}
+
+
+# --- Rematch route scaffolding ----------------------------------------------
+
+_REMATCH_ROUTE_DEFS = {
+    ("POST", "/api/lm/recipes/rematch", "rematch_recipes"),
+    ("POST", "/api/lm/recipes/rematch-bulk", "rematch_recipes_bulk"),
+    ("POST", "/api/lm/recipe/{recipe_id}/rematch", "rematch_recipe"),
+    ("POST", "/api/lm/recipes/cancel-rematch", "cancel_rematch"),
+    ("GET", "/api/lm/recipes/rematch-progress", "get_rematch_progress"),
+}
+
+_REPAIR_ROUTE_DEFS = {
+    ("POST", "/api/lm/recipes/repair", "repair_recipes"),
+    ("POST", "/api/lm/recipes/cancel-repair", "cancel_repair"),
+    ("POST", "/api/lm/recipe/{recipe_id}/repair", "repair_recipe"),
+    ("POST", "/api/lm/recipes/repair-bulk", "repair_recipes_bulk"),
+    ("GET", "/api/lm/recipes/repair-progress", "get_repair_progress"),
+}
+
+
+def test_rematch_route_definitions_registered():
+    registered = {
+        (d.method, d.path, d.handler_name)
+        for d in recipe_route_registrar.ROUTE_DEFINITIONS
+    }
+    assert _REMATCH_ROUTE_DEFS <= registered
+
+
+def test_repair_route_definitions_still_registered():
+    registered = {
+        (d.method, d.path, d.handler_name)
+        for d in recipe_route_registrar.ROUTE_DEFINITIONS
+    }
+    assert _REPAIR_ROUTE_DEFS <= registered
+
+
+def test_rematch_handler_names_resolve_in_to_route_mapping(monkeypatch: pytest.MonkeyPatch):
+    """Oracle R1-F4: register_routes KeyErrors at startup if to_route_mapping
+    lacks any name present in ROUTE_DEFINITIONS, so the real handler set must
+    resolve every rematch name.
+    """
+    registry = service_registry.ServiceRegistry
+    scanner = _make_stub_scanner()
+    civitai_client = object()
+
+    async def fake_get_recipe_scanner():
+        return scanner
+
+    async def fake_get_civitai_client():
+        return civitai_client
+
+    async def fake_get_downloader():
+        return object()
+
+    class _DummyService:
+        def __init__(self, **_: Any) -> None:
+            pass
+
+    monkeypatch.setattr(registry, "get_recipe_scanner", fake_get_recipe_scanner)
+    monkeypatch.setattr(registry, "get_civitai_client", fake_get_civitai_client)
+    monkeypatch.setattr(base_recipe_routes, "RecipeAnalysisService", _DummyService)
+    monkeypatch.setattr(base_recipe_routes, "RecipePersistenceService", _DummyService)
+    monkeypatch.setattr(base_recipe_routes, "RecipeSharingService", _DummyService)
+    monkeypatch.setattr(base_recipe_routes, "get_downloader", fake_get_downloader)
+
+    async def scenario():
+        routes = base_recipe_routes.BaseRecipeRoutes()
+        await routes.attach_dependencies()
+        mapping = routes.to_route_mapping()
+        for _, _, name in _REMATCH_ROUTE_DEFS:
+            assert name in mapping
+            assert asyncio.iscoroutinefunction(mapping[name])
+
+    asyncio.run(scenario())

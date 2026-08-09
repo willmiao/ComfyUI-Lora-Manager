@@ -14,6 +14,8 @@ from aiohttp import FormData, web
 from aiohttp.test_utils import TestClient, TestServer
 from PIL import Image
 
+import pytest
+
 from py.config import config
 from py.routes import base_recipe_routes
 from py.routes.handlers import recipe_handlers
@@ -21,6 +23,7 @@ from py.routes.recipe_routes import RecipeRoutes
 from py.recipes.parsers.civitai_image import CivitaiApiMetadataParser
 from py.services.recipes import RecipeValidationError, RecipeNotFoundError
 from py.services.service_registry import ServiceRegistry
+from py.services.websocket_manager import ws_manager
 
 
 @dataclass
@@ -51,6 +54,13 @@ class StubRecipeScanner:
         self.checkpoint_lookup: Dict[str, List[Dict[str, Any]]] = {}
         self.image_id_map_override: Dict[str, str] = {}
         self.local_hash_cache: Dict[str, Dict[str, Any]] | None = None
+        # Rematch double bookkeeping
+        self.cancel_calls = 0
+        self.reset_calls = 0
+        self.rematch_all_calls: List[Any] = []
+        self.rematch_by_id_calls: List[str] = []
+        self.rematch_bulk_calls: List[List[str]] = []
+        self.rematch_results: Dict[str, Dict[str, Any]] = {}
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
             return None
@@ -105,6 +115,65 @@ class StubRecipeScanner:
     async def remove_recipe(self, recipe_id: str) -> None:
         self.removed.append(recipe_id)
         self.recipes.pop(recipe_id, None)
+
+    def cancel_task(self) -> None:
+        self.cancel_calls += 1
+
+    def reset_cancellation(self) -> None:
+        self.reset_calls += 1
+
+    async def rematch_all_recipes(self, progress_callback=None):
+        """Run a canned rematch-all run, mirroring the real progress events."""
+        if progress_callback:
+            await progress_callback({"status": "started"})
+            await progress_callback(
+                {"status": "processing", "current": 1, "total": 1, "recipe_name": "demo"}
+            )
+            await progress_callback(
+                {"status": "completed", "rematched": 1, "skipped": 0, "errors": 0, "total": 1}
+            )
+        self.rematch_all_calls.append(progress_callback)
+        return {
+            "success": True,
+            "status": "completed",
+            "rematched": 1,
+            "skipped": 0,
+            "errors": 0,
+            "total": 1,
+        }
+
+    async def rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+        self.rematch_by_id_calls.append(recipe_id)
+        if recipe_id not in self.rematch_results:
+            raise RecipeNotFoundError(f"Recipe not found: {recipe_id}")
+        return self.rematch_results[recipe_id]
+
+    async def rematch_recipes_bulk(self, recipe_ids: List[str]) -> Dict[str, Any]:
+        self.rematch_bulk_calls.append(list(recipe_ids))
+        total = len(recipe_ids)
+        rematched = 0
+        skipped = 0
+        errors = 0
+        recipes: List[Dict[str, Any]] = []
+        for recipe_id in recipe_ids:
+            result = self.rematch_results.get(recipe_id)
+            if result is None:
+                skipped += 1
+            elif result.get("success"):
+                rematched += result.get("rematched", 0)
+                skipped += result.get("skipped", 0)
+                if result.get("recipe"):
+                    recipes.append(result["recipe"])
+            else:
+                errors += 1
+        return {
+            "success": True,
+            "total": total,
+            "rematched": rematched,
+            "skipped": skipped,
+            "errors": errors,
+            "recipes": recipes,
+        }
 
 
 class StubAnalysisService:
@@ -1721,3 +1790,164 @@ async def test_create_from_example_does_not_recompute_stored_autov3(
         assert parser.received_cache is harness.scanner.local_hash_cache
         assert parser.received_cache is not None
         assert parser.received_cache["existing123456"] is parent_item
+
+
+# --- Rematch endpoints ------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _clean_recipe_run_progress_state():
+    """Keep the shared WS manager run-state isolated between tests."""
+    ws_manager._recipe_rematch_progress = None
+    ws_manager._recipe_repair_progress = None
+    yield
+    ws_manager._recipe_rematch_progress = None
+    ws_manager._recipe_repair_progress = None
+
+
+def _set_rematch_running(status: str = "processing") -> None:
+    ws_manager._recipe_rematch_progress = {"status": status}
+
+
+def _set_repair_running(status: str = "processing") -> None:
+    ws_manager._recipe_repair_progress = {"status": status}
+
+
+async def test_rematch_recipes_starts_background_run(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert payload["success"] is True
+        assert payload["message"] == "Recipe rematch started"
+        assert harness.scanner.reset_calls == 1
+        # Allow the spawned background task to reach its progress broadcasts.
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_calls == [harness.scanner.rematch_all_calls[0]]
+
+
+async def test_rematch_recipes_409_when_rematch_running(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running()
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert "already in progress" in payload["error"].lower()
+
+
+async def test_rematch_recipes_409_when_repair_running(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_repair_running()
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert "already in progress" in payload["error"].lower()
+
+
+async def test_rematch_recipe_409_when_rematch_running(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running()
+        response = await harness.client.post("/api/lm/recipe/abc123/rematch")
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert harness.scanner.rematch_by_id_calls == []
+
+
+async def test_rematch_recipes_bulk_409_when_rematch_running(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running()
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk", json={"recipe_ids": ["abc123"]}
+        )
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert harness.scanner.rematch_bulk_calls == []
+
+
+async def test_cancel_rematch_calls_scanner_cancel_task(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/cancel-rematch")
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["message"] == "Cancellation requested"
+        assert harness.scanner.cancel_calls == 1
+
+
+async def test_rematch_recipes_bulk_parses_ids_and_returns_summary(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.rematch_results = {
+            "r1": {
+                "success": True,
+                "rematched": 2,
+                "skipped": 0,
+                "errors": 0,
+                "recipe": {"id": "r1", "title": "Found"},
+            },
+        }
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk",
+            json={"recipe_ids": ["r1", "missing-id"]},
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        # The loop is delegated to the scanner, not re-implemented in the handler.
+        assert harness.scanner.rematch_bulk_calls == [["r1", "missing-id"]]
+        assert harness.scanner.rematch_by_id_calls == []
+        assert payload["success"] is True
+        assert payload["total"] == 2
+        assert payload["rematched"] == 2
+        assert payload["skipped"] == 1  # missing-id counted as skipped
+        assert payload["errors"] == 0
+        assert payload["recipes"] == [{"id": "r1", "title": "Found"}]
+
+
+async def test_rematch_recipes_bulk_missing_recipe_ids_400(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk", json={"recipe_ids": []}
+        )
+        payload = await response.json()
+        assert response.status == 400
+        assert payload["success"] is False
+        assert "recipe_ids" in payload["error"].lower()
+
+
+async def test_rematch_recipe_maps_not_found_to_404(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipe/ghost/rematch")
+        payload = await response.json()
+        assert response.status == 404
+        assert payload["success"] is False
+        assert harness.scanner.rematch_by_id_calls == ["ghost"]
+
+
+async def test_get_rematch_progress_404_when_no_progress(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes/rematch-progress")
+        payload = await response.json()
+        assert response.status == 404
+        assert payload["success"] is False
+
+
+async def test_get_rematch_progress_returns_stored_progress(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running("processing")
+        response = await harness.client.get("/api/lm/recipes/rematch-progress")
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["progress"]["status"] == "processing"
