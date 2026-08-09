@@ -935,8 +935,16 @@
     },
     "duplicates": {
       "found": "Found {count} duplicate groups",
+      "noGroups": "No duplicate groups found with the current matching basis",
       "keepLatest": "Keep Latest Versions",
-      "deleteSelected": "Delete Selected"
+      "deleteSelected": "Delete Selected",
+      "includePromptLabel": "Include prompt in matching",
+      "basis": {
+        "loraCombo": "Matched by: LoRA combination",
+        "loraComboAndPrompt": "Matched by: LoRA combination + prompt",
+        "hintLoraCombo": "Recipes with the same LoRAs at identical strengths are grouped.",
+        "hintPromptIncluded": "Recipes are grouped only when they use the same LoRAs at identical strengths AND have the same prompt."
+      }
     },
     "contextMenu": {
       "copyRecipe": {

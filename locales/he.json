@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "נמצאו {count} קבוצות כפולות",
+            "noGroups": "לא נמצאו קבוצות כפולות לפי קריטריון ההתאמה הנוכחי",
             "keepLatest": "שמור גרסאות אחרונות",
-            "deleteSelected": "מחק נבחרים"
+            "deleteSelected": "מחק נבחרים",
+            "includePromptLabel": "כלול הנחיה בהתאמה",
+            "basis": {
+                "loraCombo": "התאמה לפי: שילוב LoRA",
+                "loraComboAndPrompt": "התאמה לפי: שילוב LoRA + הנחיה",
+                "hintLoraCombo": "מתכונים עם אותם LoRAs בעוצמות זהות מקובצים יחד.",
+                "hintPromptIncluded": "מתכונים מקובצים רק כאשר הם משתמשים באותם LoRAs בעוצמות זהות ויש להם אותה הנחיה."
+            }
         },
         "contextMenu": {
             "copyRecipe": {

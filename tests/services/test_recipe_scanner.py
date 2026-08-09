@@ -3209,3 +3209,71 @@ async def test_rematch_all_autov3_cache_reuse_across_calls(
     # are read once across both calls (Oracle R2-F4).
     assert len(called) == 1
 
+
+
+async def test_find_all_duplicate_recipes_groups_by_fingerprint(recipe_scanner, monkeypatch):
+    scanner, _ = recipe_scanner
+    cache = SimpleNamespace(
+        raw_data=[
+            {"id": "r1", "fingerprint": "abc:0.8", "gen_params": {"prompt": "A Girl, blue hair"}},
+            {"id": "r2", "fingerprint": "abc:0.8", "gen_params": {"prompt": "a boy"}},
+            {"id": "r3", "fingerprint": "abc:0.8", "gen_params": {"prompt": "a boy"}},
+            {"id": "r4", "fingerprint": "def:1.0", "gen_params": {"prompt": "A Girl, blue hair"}},
+            {"id": "r5", "fingerprint": "", "gen_params": {"prompt": "landscape"}},
+            {"id": "r6", "fingerprint": "", "gen_params": {}},
+        ]
+    )
+    async def fake_get_cached_data():
+        return cache
+    monkeypatch.setattr(scanner, "get_cached_data", fake_get_cached_data)
+
+    groups = await scanner.find_all_duplicate_recipes()
+    assert groups == {"abc:0.8": ["r1", "r2", "r3"]}
+
+
+async def test_find_all_duplicate_recipes_include_prompt_composite_key(recipe_scanner, monkeypatch):
+    scanner, _ = recipe_scanner
+    cache = SimpleNamespace(
+        raw_data=[
+            {"id": "r1", "fingerprint": "abc:0.8", "gen_params": {"prompt": "A Girl,   blue hair"}},
+            {"id": "r2", "fingerprint": "abc:0.8", "gen_params": {"prompt": "a girl, blue hair"}},
+            {"id": "r3", "fingerprint": "abc:0.8", "gen_params": {"prompt": "a boy"}},
+            {"id": "r4", "fingerprint": "", "gen_params": {"prompt": "  landscape "}},
+            {"id": "r5", "fingerprint": "", "gen_params": {"prompt": "landscape"}},
+            {"id": "r6", "fingerprint": "", "gen_params": {}},
+            {"id": "r7", "fingerprint": "def:1.0", "gen_params": {"prompt": "a girl, blue hair"}},
+        ]
+    )
+    async def fake_get_cached_data():
+        return cache
+    monkeypatch.setattr(scanner, "get_cached_data", fake_get_cached_data)
+
+    groups = await scanner.find_all_duplicate_recipes(include_prompt=True)
+    assert groups == {
+        "abc:0.8\x1fa girl, blue hair": ["r1", "r2"],
+        "\x1flandscape": ["r4", "r5"],
+    }
+    # Same-lora recipes with different prompts are no longer duplicates
+    assert "abc:0.8\x1fa boy" not in groups
+    # Different-lora recipes with the same prompt are not grouped either
+    assert "def:1.0\x1fa girl, blue hair" not in groups
+    # Recipes with neither fingerprint nor prompt are skipped
+    assert "r6" not in [rid for ids in groups.values() for rid in ids]
+
+
+async def test_find_all_duplicate_recipes_include_prompt_missing_gen_params(recipe_scanner, monkeypatch):
+    scanner, _ = recipe_scanner
+    cache = SimpleNamespace(
+        raw_data=[
+            {"id": "r1", "fingerprint": "abc:0.8"},
+            {"id": "r2", "fingerprint": "abc:0.8"},
+            {"id": "r3", "fingerprint": "abc:0.8", "gen_params": {"prompt": "a boy"}},
+        ]
+    )
+    async def fake_get_cached_data():
+        return cache
+    monkeypatch.setattr(scanner, "get_cached_data", fake_get_cached_data)
+
+    groups = await scanner.find_all_duplicate_recipes(include_prompt=True)
+    # Recipes without gen_params/prompt normalize to empty prompt and match
+    assert groups == {"abc:0.8\x1f": ["r1", "r2"]}

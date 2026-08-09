@@ -3540,31 +3540,69 @@ class RecipeScanner:
 
         return matching_recipes
 
-    async def find_all_duplicate_recipes(self) -> Dict[str, List[Any]]:
+    async def find_all_duplicate_recipes(
+        self, include_prompt: bool = False
+    ) -> Dict[str, List[Any]]:
         """Find all recipe duplicates based on fingerprints
 
+        When ``include_prompt`` is True, the grouping key additionally
+        includes the normalized positive prompt, so recipes are only grouped
+        when they share both the same LoRA combination (with identical
+        strengths) and the same prompt. Recipes with neither a fingerprint
+        nor a prompt are skipped.
+
+        Args:
+            include_prompt: Whether to require an identical prompt as well
+
         Returns:
-            Dictionary where keys are fingerprints and values are lists of recipe IDs
+            Dictionary where keys are grouping keys and values are lists of recipe IDs
         """
         # Get all recipes from cache
         cache = await self.get_cached_data()
 
-        # Group recipes by fingerprint
+        # Group recipes by fingerprint (optionally combined with the prompt)
         fingerprint_groups = {}
         for recipe in cache.raw_data:
-            fingerprint = recipe.get("fingerprint")
-            if not fingerprint:
+            grouping_key = self._build_duplicate_grouping_key(
+                recipe, include_prompt
+            )
+            if not grouping_key:
                 continue
 
-            if fingerprint not in fingerprint_groups:
-                fingerprint_groups[fingerprint] = []
+            if grouping_key not in fingerprint_groups:
+                fingerprint_groups[grouping_key] = []
 
-            fingerprint_groups[fingerprint].append(recipe.get("id"))
+            fingerprint_groups[grouping_key].append(recipe.get("id"))
 
         # Filter to only include groups with more than one recipe
         duplicate_groups = {k: v for k, v in fingerprint_groups.items() if len(v) > 1}
 
         return duplicate_groups
+
+    def _build_duplicate_grouping_key(
+        self, recipe: Dict[str, Any], include_prompt: bool
+    ) -> str:
+        """Build the grouping key used for duplicate detection.
+
+        Without ``include_prompt`` this is the stored fingerprint (same LoRA
+        combination at identical strengths). With it, the normalized positive
+        prompt is appended (separated by ``\\x1f``), so recipes must share
+        both factors to be grouped. Recipes with no loras still participate
+        when they carry a prompt, matching other no-lora recipes with the
+        same prompt.
+        """
+        fingerprint = recipe.get("fingerprint") or ""
+        if not include_prompt:
+            return fingerprint
+
+        from ..utils.utils import normalize_prompt_for_dedup
+
+        prompt = normalize_prompt_for_dedup(
+            (recipe.get("gen_params") or {}).get("prompt")
+        )
+        if not fingerprint and not prompt:
+            return ""
+        return f"{fingerprint}\x1f{prompt}"
 
     async def find_duplicate_recipes_by_source(self) -> Dict[str, List[Any]]:
         """Find all recipe duplicates based on source_path (Civitai image URLs)

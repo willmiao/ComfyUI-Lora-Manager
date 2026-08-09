@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "{count}개의 중복 그룹 발견",
+            "noGroups": "현재 일치 기준으로 중복 그룹을 찾을 수 없습니다",
             "keepLatest": "최신 버전 유지",
-            "deleteSelected": "선택된 항목 삭제"
+            "deleteSelected": "선택된 항목 삭제",
+            "includePromptLabel": "일치 항목에 프롬프트 포함",
+            "basis": {
+                "loraCombo": "일치 기준: LoRA 조합",
+                "loraComboAndPrompt": "일치 기준: LoRA 조합 + 프롬프트",
+                "hintLoraCombo": "동일한 LoRA를 동일한 강도로 사용하는 레시피가 그룹화됩니다.",
+                "hintPromptIncluded": "동일한 LoRA를 동일한 강도로 사용하고 프롬프트도 동일한 경우에만 레시피가 그룹화됩니다."
+            }
         },
         "contextMenu": {
             "copyRecipe": {

@@ -97,6 +97,15 @@ class StubRecipeScanner:
     async def get_recipe_by_id(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         return self.recipes.get(recipe_id)
 
+    async def find_all_duplicate_recipes(
+        self, include_prompt: bool = False
+    ) -> Dict[str, List[Any]]:
+        self.last_duplicate_include_prompt = include_prompt
+        return dict(getattr(self, "duplicate_groups_override", {}))
+
+    async def find_duplicate_recipes_by_source(self) -> Dict[str, List[Any]]:
+        return dict(getattr(self, "duplicate_source_groups_override", {}))
+
     async def get_recipes_for_lora(self, lora_hash: str) -> List[Dict[str, Any]]:
         return list(self.lora_lookup.get(lora_hash.lower(), []))
 
@@ -1951,3 +1960,56 @@ async def test_get_rematch_progress_returns_stored_progress(
         assert response.status == 200
         assert payload["success"] is True
         assert payload["progress"]["status"] == "processing"
+
+
+async def test_find_duplicates_defaults_to_fingerprint_only(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.recipes = {
+            "r1": {"id": "r1", "title": "One", "modified": 100},
+            "r2": {"id": "r2", "title": "Two", "modified": 200},
+        }
+        harness.scanner.duplicate_groups_override = {"abc:0.8": ["r1", "r2"]}
+        harness.scanner.duplicate_source_groups_override = {}
+
+        response = await harness.client.get("/api/lm/recipes/find-duplicates")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert harness.scanner.last_duplicate_include_prompt is False
+        assert len(payload["duplicate_groups"]) == 1
+        group = payload["duplicate_groups"][0]
+        assert group["type"] == "fingerprint"
+        assert group["key"] == "g-1"
+        assert group["fingerprint"] == "abc:0.8"
+        assert group["count"] == 2
+
+
+async def test_find_duplicates_forwards_include_prompt_and_assigns_unique_keys(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.recipes = {
+            "r1": {"id": "r1", "title": "One", "modified": 100},
+            "r2": {"id": "r2", "title": "Two", "modified": 200},
+            "r3": {"id": "r3", "title": "Three", "modified": 300},
+            "r4": {"id": "r4", "title": "Four", "modified": 400},
+        }
+        harness.scanner.duplicate_groups_override = {"abc:0.8\x1fa girl": ["r1", "r2"]}
+        harness.scanner.duplicate_source_groups_override = {
+            "civitai.com/images/9": ["r3", "r4"]
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/find-duplicates?include_prompt=1"
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert harness.scanner.last_duplicate_include_prompt is True
+        groups = payload["duplicate_groups"]
+        assert len(groups) == 2
+        assert {g["type"] for g in groups} == {"fingerprint", "source_path"}
+        assert len({g["key"] for g in groups}) == 2

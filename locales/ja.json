@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "{count} 個の重複グループが見つかりました",
+            "noGroups": "現在の一致基準では重複グループが見つかりませんでした",
             "keepLatest": "最新バージョンを保持",
-            "deleteSelected": "選択したものを削除"
+            "deleteSelected": "選択したものを削除",
+            "includePromptLabel": "一致判定にプロンプトを含める",
+            "basis": {
+                "loraCombo": "一致基準: LoRA の組み合わせ",
+                "loraComboAndPrompt": "一致基準: LoRA の組み合わせ + プロンプト",
+                "hintLoraCombo": "同じ LoRA を同じ強度で使用するレシピがグループ化されます。",
+                "hintPromptIncluded": "レシピは、同じ LoRA を同じ強度で使用し、かつプロンプトが同じ場合にのみグループ化されます。"
+            }
         },
         "contextMenu": {
             "copyRecipe": {

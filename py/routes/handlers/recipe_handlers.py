@@ -580,7 +580,12 @@ class RecipeQueryHandler:
             if recipe_scanner is None:
                 raise RuntimeError("Recipe scanner unavailable")
 
-            fingerprint_groups = await recipe_scanner.find_all_duplicate_recipes()
+            include_prompt = (
+                request.query.get("include_prompt", "false").lower() in ("1", "true")
+            )
+            fingerprint_groups = await recipe_scanner.find_all_duplicate_recipes(
+                include_prompt=include_prompt
+            )
             url_groups = await recipe_scanner.find_duplicate_recipes_by_source()
             response_data = []
 
@@ -613,6 +618,7 @@ class RecipeQueryHandler:
                     response_data.append(
                         {
                             "type": "fingerprint",
+                            "key": f"g-{len(response_data) + 1}",
                             "fingerprint": fingerprint,
                             "count": len(recipes),
                             "recipes": recipes,
@@ -648,6 +654,7 @@ class RecipeQueryHandler:
                     response_data.append(
                         {
                             "type": "source_path",
+                            "key": f"g-{len(response_data) + 1}",
                             "fingerprint": url,
                             "count": len(recipes),
                             "recipes": recipes,

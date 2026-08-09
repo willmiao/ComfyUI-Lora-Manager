@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "Trouvé {count} groupes de doublons",
+            "noGroups": "Aucun groupe de doublons trouvé avec le critère de correspondance actuel",
             "keepLatest": "Garder les dernières versions",
-            "deleteSelected": "Supprimer la sélection"
+            "deleteSelected": "Supprimer la sélection",
+            "includePromptLabel": "Inclure le prompt dans la correspondance",
+            "basis": {
+                "loraCombo": "Correspondance : combinaison de LoRA",
+                "loraComboAndPrompt": "Correspondance : combinaison de LoRA + prompt",
+                "hintLoraCombo": "Les recettes avec les mêmes LoRAs et des forces identiques sont regroupées.",
+                "hintPromptIncluded": "Les recettes ne sont regroupées que si elles utilisent les mêmes LoRAs avec des forces identiques ET ont le même prompt."
+            }
         },
         "contextMenu": {
             "copyRecipe": {

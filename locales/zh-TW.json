@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "發現 {count} 組重複項",
+            "noGroups": "按目前判重依據未找到重複組",
             "keepLatest": "保留最新版本",
-            "deleteSelected": "刪除所選"
+            "deleteSelected": "刪除所選",
+            "includePromptLabel": "將提示詞納入判重",
+            "basis": {
+                "loraCombo": "判重依據：LoRA 組合",
+                "loraComboAndPrompt": "判重依據：LoRA 組合 + 提示詞",
+                "hintLoraCombo": "使用相同 LoRA（強度一致）的配方會被分組。",
+                "hintPromptIncluded": "僅當配方使用相同的 LoRA（強度一致）且提示詞相同時才會被分組。"
+            }
         },
         "contextMenu": {
             "copyRecipe": {

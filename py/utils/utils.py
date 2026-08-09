@@ -469,6 +469,24 @@ def calculate_recipe_fingerprint(loras):
     return fingerprint
 
 
+def normalize_prompt_for_dedup(prompt) -> str:
+    """Normalize a positive prompt for duplicate recipe matching.
+
+    Applies casefolding, collapses whitespace runs into single spaces, and
+    trims leading/trailing whitespace. Missing or non-string prompts
+    normalize to an empty string.
+
+    Args:
+        prompt: The positive prompt text (or None)
+
+    Returns:
+        str: The normalized prompt
+    """
+    if not prompt or not isinstance(prompt, str):
+        return ""
+    return re.sub(r"\s+", " ", prompt).strip().casefold()
+
+
 def calculate_relative_path_for_model(
     model_data: Dict[str, Any], model_type: str = "lora"
 ) -> str:

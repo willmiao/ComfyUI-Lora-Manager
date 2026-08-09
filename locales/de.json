@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "{count} Duplikat-Gruppen gefunden",
+            "noGroups": "Keine Duplikat-Gruppen mit dem aktuellen Abgleichskriterium gefunden",
             "keepLatest": "Neueste Versionen behalten",
-            "deleteSelected": "Ausgewählte löschen"
+            "deleteSelected": "Ausgewählte löschen",
+            "includePromptLabel": "Prompt beim Abgleich berücksichtigen",
+            "basis": {
+                "loraCombo": "Abgeglichen nach: LoRA-Kombination",
+                "loraComboAndPrompt": "Abgeglichen nach: LoRA-Kombination + Prompt",
+                "hintLoraCombo": "Rezepte mit denselben LoRAs bei identischen Stärken werden gruppiert.",
+                "hintPromptIncluded": "Rezepte werden nur gruppiert, wenn sie dieselben LoRAs bei identischen Stärken UND denselben Prompt verwenden."
+            }
         },
         "contextMenu": {
             "copyRecipe": {

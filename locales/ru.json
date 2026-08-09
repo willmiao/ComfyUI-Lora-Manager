@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "Найдено {count} групп дубликатов",
+            "noGroups": "Дубликатов с текущим критерием не найдено",
             "keepLatest": "Оставить последние версии",
-            "deleteSelected": "Удалить выбранные"
+            "deleteSelected": "Удалить выбранные",
+            "includePromptLabel": "Учитывать запрос при поиске дубликатов",
+            "basis": {
+                "loraCombo": "Критерий: комбинация LoRA",
+                "loraComboAndPrompt": "Критерий: комбинация LoRA + запрос",
+                "hintLoraCombo": "Рецепты с одинаковыми LoRA и одинаковой силой группируются вместе.",
+                "hintPromptIncluded": "Рецепты группируются только при одинаковых LoRA с одинаковой силой И одинаковом запросе."
+            }
         },
         "contextMenu": {
             "copyRecipe": {

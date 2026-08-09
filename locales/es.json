@@ -935,8 +935,16 @@
         },
         "duplicates": {
             "found": "Se encontraron {count} grupos de duplicados",
+            "noGroups": "No se encontraron grupos de duplicados con el criterio de coincidencia actual",
             "keepLatest": "Mantener versiones más recientes",
-            "deleteSelected": "Eliminar seleccionados"
+            "deleteSelected": "Eliminar seleccionados",
+            "includePromptLabel": "Incluir prompt en la coincidencia",
+            "basis": {
+                "loraCombo": "Coincidencia por: combinación de LoRA",
+                "loraComboAndPrompt": "Coincidencia por: combinación de LoRA + prompt",
+                "hintLoraCombo": "Se agrupan las recetas con los mismos LoRAs y las mismas intensidades.",
+                "hintPromptIncluded": "Las recetas solo se agrupan cuando usan los mismos LoRAs con intensidades idénticas Y tienen el mismo prompt."
+            }
         },
         "contextMenu": {
             "copyRecipe": {
