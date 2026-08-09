@@ -1694,3 +1694,1498 @@ async def test_build_local_hash_cache_handles_missing_scanner(tmp_path: Path):
 
     assert ("M" * 64).lower() in result
     assert len(result) == 2
+
+
+# ---------------------------------------------------------------------------
+# rematch matching helpers (plan todo 1)
+# ---------------------------------------------------------------------------
+
+
+def _rematch_item(
+    sha256: str = "",
+    autov3: str | None = "",
+    *,
+    sub_type: Any = None,
+    civitai_type: Any = None,
+    civitai_version_id: Any = None,
+    file_name: str = "model.safetensors",
+    **extra: Any,
+) -> Dict[str, Any]:
+    item = _lora_item(sha256=sha256, file_name=file_name, **extra)
+    item["autov3"] = autov3
+    if sub_type is not None:
+        item["sub_type"] = sub_type
+    civitai: Dict[str, Any] = {}
+    if civitai_version_id is not None:
+        civitai["id"] = civitai_version_id
+    if civitai_type is not None:
+        civitai.setdefault("model", {})["type"] = civitai_type
+    if civitai:
+        item["civitai"] = civitai
+    return item
+
+
+def _make_rematch_scanner(
+    lora_items: list[Dict[str, Any]],
+    checkpoint_items: list[Dict[str, Any]],
+    tmp_path: Path,
+) -> tuple[RecipeScanner, DummyScanner, DummyScannerB]:
+    lora = _make_scanner(lora_items, str(tmp_path))
+    checkpoint = DummyScannerB(str(tmp_path))
+    checkpoint._cache = ModelCache(
+        raw_data=[dict(item) for item in checkpoint_items], folders=[]
+    )
+    return _make_recipe_scanner(lora, checkpoint), lora, checkpoint
+
+
+# _is_rematch_candidate — candidate filter
+
+
+async def test_is_rematch_candidate_is_deleted_only_passes(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert scanner._is_rematch_candidate(
+        {"isDeleted": True, "hash": "abc", "file_name": "m.safetensors"}
+    )
+
+
+async def test_is_rematch_candidate_hash_empty_passes(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert scanner._is_rematch_candidate(
+        {"hash": "", "modelVersionId": 1, "file_name": "m.safetensors"}
+    )
+
+
+async def test_is_rematch_candidate_file_name_empty_passes(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert scanner._is_rematch_candidate(
+        {"hash": "abc", "modelVersionId": 1, "file_name": ""}
+    )
+
+
+async def test_is_rematch_candidate_rejects_healthy_entry(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert not scanner._is_rematch_candidate({"hash": "abc", "file_name": "m.safetensors"})
+
+
+async def test_is_rematch_candidate_rejects_no_identifier(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert not scanner._is_rematch_candidate({"isDeleted": True, "file_name": "m.safetensors"})
+    assert not scanner._is_rematch_candidate({"isDeleted": True})
+
+
+async def test_is_rematch_candidate_parser_convention_id_only_passes(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert scanner._is_rematch_candidate({"isDeleted": True, "id": 42})
+
+
+async def test_is_rematch_candidate_rejects_non_dict(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    malformed: Any = "garbage"
+    assert not scanner._is_rematch_candidate(malformed)
+
+
+# _match_rematch_entry — L1 hash-cache lookup
+
+
+async def test_match_rematch_entry_l1_sha256_key(tmp_path: Path):
+    sha256 = ("A" * 64).lower()
+    scanner, lora, _ = _make_rematch_scanner(
+        [_rematch_item(sha256=sha256, sub_type="lora")], [], tmp_path
+    )
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": sha256.upper(), "modelVersionId": 999},
+        local_cache,
+        {},
+        is_checkpoint=False,
+    )
+
+    assert matched is lora._cache.raw_data[0]
+
+
+async def test_match_rematch_entry_l1_sha256_autov2_prefix_key(tmp_path: Path):
+    sha256 = ("B" * 64).lower()
+    scanner, lora, _ = _make_rematch_scanner(
+        [_rematch_item(sha256=sha256, sub_type="lora")], [], tmp_path
+    )
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": sha256[:10]}, local_cache, {}, is_checkpoint=False
+    )
+
+    assert matched is lora._cache.raw_data[0]
+
+
+async def test_match_rematch_entry_l1_stored_autov3_key(tmp_path: Path):
+    sha256 = ("C" * 64).lower()
+    autov3 = "CCCDDDEEEFFF"
+    scanner, lora, _ = _make_rematch_scanner(
+        [_rematch_item(sha256=sha256, autov3=autov3, sub_type="lora")], [], tmp_path
+    )
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": autov3}, local_cache, {}, is_checkpoint=False
+    )
+
+    assert matched is lora._cache.raw_data[0]
+
+
+# _match_rematch_entry — L2 version_index lookup
+
+
+async def test_match_rematch_entry_l2_lora_via_model_version_id(tmp_path: Path):
+    sha256 = ("D" * 64).lower()
+    scanner, lora, _ = _make_rematch_scanner(
+        [_rematch_item(sha256=sha256, sub_type="lora", civitai_version_id=123)],
+        [],
+        tmp_path,
+    )
+
+    matched = await scanner._match_rematch_entry(
+        {"modelVersionId": 123, "file_name": "m.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+    )
+
+    assert matched is lora._cache.raw_data[0]
+
+
+async def test_match_rematch_entry_l2_lora_via_id_key(tmp_path: Path):
+    sha256 = ("E" * 64).lower()
+    scanner, lora, _ = _make_rematch_scanner(
+        [_rematch_item(sha256=sha256, sub_type="lora", civitai_version_id=456)],
+        [],
+        tmp_path,
+    )
+
+    matched = await scanner._match_rematch_entry(
+        {"id": 456, "file_name": "m.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+    )
+
+    assert matched is lora._cache.raw_data[0]
+
+
+async def test_match_rematch_entry_l2_checkpoint_via_version_index(tmp_path: Path):
+    sha256 = ("F" * 64).lower()
+    scanner, _, checkpoint = _make_rematch_scanner(
+        [],
+        [_rematch_item(sha256=sha256, sub_type="checkpoint", civitai_version_id=789)],
+        tmp_path,
+    )
+
+    matched = await scanner._match_rematch_entry(
+        {"modelVersionId": 789, "file_name": "m.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=True,
+    )
+
+    assert matched is checkpoint._cache.raw_data[0]
+
+
+# _match_rematch_entry — L3 computed autov3 lookup
+
+
+async def test_match_rematch_entry_l3_computed_autov3_renamed_file(
+    tmp_path: Path, monkeypatch
+):
+    from py.services import recipe_scanner as recipe_scanner_module
+
+    entry_hash = "AABBCCDDEEFF"
+    monkeypatch.setattr(
+        recipe_scanner_module, "calculate_autov3", lambda path: entry_hash.lower()
+    )
+
+    item = _rematch_item(
+        sha256=("G" * 64).lower(), file_name="renamed.safetensors", sub_type="lora"
+    )
+    del item["autov3"]  # unchecked state
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    autov3_cache = await scanner._build_rematch_autov3_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": entry_hash, "file_name": "original-name.safetensors", "isDeleted": True},
+        {},
+        autov3_cache,
+        is_checkpoint=False,
+    )
+
+    assert matched is not None
+    assert matched["file_name"] == "renamed.safetensors"
+
+
+async def test_match_rematch_entry_l3_skips_empty_autov3_terminal(
+    tmp_path: Path, monkeypatch
+):
+    from py.services import recipe_scanner as recipe_scanner_module
+
+    entry_hash = "H1H2H3H4H5H6"
+    called: list[str] = []
+    monkeypatch.setattr(
+        recipe_scanner_module,
+        "calculate_autov3",
+        lambda path: (called.append(path), entry_hash.lower())[1],
+    )
+
+    item = _rematch_item(
+        sha256=("H" * 64).lower(), autov3="", file_name="m.safetensors", sub_type="lora"
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    autov3_cache = await scanner._build_rematch_autov3_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": entry_hash}, {}, autov3_cache, is_checkpoint=False
+    )
+
+    assert matched is None
+    assert called == []  # '' is terminal — must never be recomputed
+
+
+async def test_match_rematch_entry_l3_skipped_for_non_12_char_hash(
+    tmp_path: Path, monkeypatch
+):
+    from py.services import recipe_scanner as recipe_scanner_module
+
+    entry_hash = "AA"
+    monkeypatch.setattr(
+        recipe_scanner_module, "calculate_autov3", lambda path: entry_hash.lower()
+    )
+
+    item = _rematch_item(sha256=("I" * 64).lower(), file_name="m.safetensors", sub_type="lora")
+    del item["autov3"]
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    autov3_cache = await scanner._build_rematch_autov3_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": entry_hash}, {}, autov3_cache, is_checkpoint=False
+    )
+
+    assert matched is None
+
+
+# _match_rematch_entry — precedence
+
+
+async def test_match_rematch_entry_precedence_l1_wins_over_l2(tmp_path: Path):
+    sha256 = ("J" * 64).lower()
+    scanner, lora, _ = _make_rematch_scanner(
+        [
+            _rematch_item(
+                sha256=sha256, sub_type="lora", civitai_version_id=500, file_name="l1-item.safetensors"
+            ),
+            _rematch_item(
+                sha256=("K" * 64).lower(),
+                sub_type="lora",
+                civitai_version_id=999,
+                file_name="l2-item.safetensors",
+            ),
+        ],
+        [],
+        tmp_path,
+    )
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": sha256, "modelVersionId": 999, "file_name": "m.safetensors", "isDeleted": True},
+        local_cache,
+        {},
+        is_checkpoint=False,
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert lora._cache.raw_data[0]["file_name"] == "l1-item.safetensors"
+
+
+# _match_rematch_entry — type gate
+
+
+async def test_match_rematch_type_gate_checkpoint_accepts_sub_type(tmp_path: Path):
+    for sub_type in ("checkpoint", "diffusion_model"):
+        item = _rematch_item(sha256=("M" * 64).lower(), sub_type=sub_type)
+        scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+        local_cache = await scanner.build_local_hash_cache()
+
+        matched = await scanner._match_rematch_entry(
+            {"hash": ("M" * 64).lower()}, local_cache, {}, is_checkpoint=True
+        )
+
+        assert matched is not None
+
+
+async def test_match_rematch_type_gate_checkpoint_accepts_diffusion_model_civitai_alias(
+    tmp_path: Path,
+):
+    item = _rematch_item(sha256=("N" * 64).lower(), civitai_type="DiffusionModel")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": ("N" * 64).lower()}, local_cache, {}, is_checkpoint=True
+    )
+
+    assert matched is not None
+
+
+async def test_match_rematch_type_gate_checkpoint_rejects_lora_typed_item(tmp_path: Path):
+    cases = [("LORA", None), ("lora", None), (None, "LORA"), (None, "lora")]
+    for sub_type, civitai_type in cases:
+        item = _rematch_item(
+            sha256=("O" * 64).lower(), sub_type=sub_type, civitai_type=civitai_type
+        )
+        scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+        local_cache = await scanner.build_local_hash_cache()
+
+        matched = await scanner._match_rematch_entry(
+            {"hash": ("O" * 64).lower()}, local_cache, {}, is_checkpoint=True
+        )
+
+        assert matched is None
+
+
+async def test_match_rematch_type_gate_lora_rejects_checkpoint_sub_type_no_civitai(
+    tmp_path: Path,
+):
+    item = _rematch_item(sha256=("P" * 64).lower(), sub_type="checkpoint")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": ("P" * 64).lower()}, local_cache, {}, is_checkpoint=False
+    )
+
+    assert matched is None
+
+
+async def test_match_rematch_type_gate_lora_rejects_checkpoint_civitai_type(tmp_path: Path):
+    item = _rematch_item(sha256=("Q" * 64).lower(), civitai_type="checkpoint")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    local_cache = await scanner.build_local_hash_cache()
+
+    matched = await scanner._match_rematch_entry(
+        {"hash": ("Q" * 64).lower()}, local_cache, {}, is_checkpoint=False
+    )
+
+    assert matched is None
+
+
+async def test_match_rematch_type_gate_type_less_item_accepted_for_both(tmp_path: Path):
+    for is_checkpoint in (False, True):
+        item = _rematch_item(sha256=("R" * 64).lower())
+        scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+        local_cache = await scanner.build_local_hash_cache()
+
+        matched = await scanner._match_rematch_entry(
+            {"hash": ("R" * 64).lower()}, local_cache, {}, is_checkpoint=is_checkpoint
+        )
+
+        assert matched is not None
+
+
+async def test_match_rematch_type_gate_lora_accepts_lora_typed_item(tmp_path: Path):
+    cases = [("lora", None), ("locon", None), ("dora", None), (None, "LORA"), (None, "lora")]
+    for sub_type, civitai_type in cases:
+        item = _rematch_item(
+            sha256=("S" * 64).lower(), sub_type=sub_type, civitai_type=civitai_type
+        )
+        scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+        local_cache = await scanner.build_local_hash_cache()
+
+        matched = await scanner._match_rematch_entry(
+            {"hash": ("S" * 64).lower()}, local_cache, {}, is_checkpoint=False
+        )
+
+        assert matched is not None
+
+
+# _build_rematch_autov3_cache
+
+
+async def test_build_rematch_autov3_cache_computes_only_absent_none_items(
+    tmp_path: Path, monkeypatch
+):
+    from py.services import recipe_scanner as recipe_scanner_module
+
+    called: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str:
+        called.append(file_path)
+        return ("AAA" + str(len(called)).zfill(9))[:12]
+
+    monkeypatch.setattr(recipe_scanner_module, "calculate_autov3", fake_calculate_autov3)
+
+    lora_items = [
+        _rematch_item(sha256=("T" * 64).lower(), autov3=""),  # terminal '' — skip
+        _rematch_item(sha256=("U" * 64).lower(), autov3=None),  # None — compute
+        _rematch_item(sha256=("V" * 64).lower(), autov3="V1V2V3V4V5V6"),  # stored — skip
+        _rematch_item(sha256=("W" * 64).lower()),  # absent key — compute
+    ]
+    del lora_items[3]["autov3"]
+    checkpoint_items = [
+        _rematch_item(sha256=("X" * 64).lower(), autov3=None),  # checkpoint too — compute
+    ]
+    scanner, _, _ = _make_rematch_scanner(lora_items, checkpoint_items, tmp_path)
+
+    result = await scanner._build_rematch_autov3_cache()
+
+    assert set(called) == {
+        lora_items[1]["file_path"],
+        lora_items[3]["file_path"],
+        checkpoint_items[0]["file_path"],
+    }
+    assert set(result) == {"aaa000000001", "aaa000000002", "aaa000000003"}
+    assert result["aaa000000001"] is scanner._lora_scanner._cache.raw_data[1]
+    # Items must not be mutated while building the cache
+    assert "autov3" not in scanner._lora_scanner._cache.raw_data[3]
+
+
+async def test_build_rematch_autov3_cache_does_not_persist(tmp_path: Path, monkeypatch):
+    from py.services import recipe_scanner as recipe_scanner_module
+
+    monkeypatch.setattr(
+        recipe_scanner_module, "calculate_autov3", lambda path: "AAABBBCCCDDD"
+    )
+    item = _rematch_item(sha256=("Z" * 64).lower())
+    del item["autov3"]
+    scanner, lora, checkpoint = _make_rematch_scanner([item], [], tmp_path)
+    persist_calls: list[Any] = []
+    monkeypatch.setattr(
+        lora,
+        "update_autov3_for_model",
+        lambda *args, **kwargs: persist_calls.append((args, kwargs)),
+    )
+    monkeypatch.setattr(
+        checkpoint,
+        "update_autov3_for_model",
+        lambda *args, **kwargs: persist_calls.append((args, kwargs)),
+    )
+
+    result = await scanner._build_rematch_autov3_cache()
+
+    assert persist_calls == []
+    assert result == {"aaabbbcccddd": scanner._lora_scanner._cache.raw_data[0]}
+
+
+# ---------------------------------------------------------------------------
+# rematch_recipe_by_id — single-recipe rematch core (plan todo 2)
+# ---------------------------------------------------------------------------
+
+
+def _set_recipe_cache(scanner: RecipeScanner, recipes: list[Dict[str, Any]]) -> None:
+    """Place recipes directly into the scanner's recipe cache (no copy)."""
+    from py.services.recipe_cache import RecipeCache
+
+    scanner._cache = RecipeCache(
+        raw_data=recipes, sorted_by_name=[], sorted_by_date=[]
+    )
+
+
+async def _spy_rematch_persistence(
+    scanner: RecipeScanner, monkeypatch, *, save_result: bool = True
+) -> tuple[list[Dict[str, Any]], Dict[str, Any]]:
+    """Stub the persist path so rematch tests avoid the filesystem.
+
+    Returns (saved_calls, enriched_dict) — the enriched dict is what the
+    mocked get_recipe_by_id returns for the changed+success path.
+    """
+    saved: list[Dict[str, Any]] = []
+
+    async def fake_save(rcp: Dict[str, Any]) -> bool:
+        saved.append(rcp)
+        return save_result
+
+    monkeypatch.setattr(scanner, "_save_recipe_persistently", fake_save)
+
+    enriched: Dict[str, Any] = {
+        "id": "enriched",
+        "file_url": "/loras_static/preview/enriched.png",
+    }
+
+    async def fake_get(rid: str) -> Dict[str, Any]:
+        return enriched
+
+    monkeypatch.setattr(scanner, "get_recipe_by_id", fake_get)
+    return saved, enriched
+
+
+async def _spy_fts(scanner: RecipeScanner, monkeypatch) -> list[tuple[Any, str]]:
+    calls: list[tuple[Any, str]] = []
+
+    def fake_fts(recipe: Any, operation: str) -> None:
+        calls.append((recipe, operation))
+
+    monkeypatch.setattr(scanner, "_update_fts_index_for_recipe", fake_fts)
+    return calls
+
+
+async def _spy_resort(scanner: RecipeScanner, monkeypatch) -> list[bool]:
+    calls: list[bool] = []
+
+    def fake_resort() -> None:
+        calls.append(True)
+
+    monkeypatch.setattr(scanner, "_schedule_resort", fake_resort)
+    return calls
+
+
+def _civitai_lora_item(
+    *,
+    sha256: str = "",
+    version_id: Any = None,
+    name: str = "",
+    model_name: str = "m",
+    file_name: str = "m.safetensors",
+    **extra: Any,
+) -> Dict[str, Any]:
+    item = _rematch_item(
+        sha256=sha256,
+        sub_type="lora",
+        civitai_version_id=version_id,
+        file_name=file_name,
+        model_name=model_name,
+        **extra,
+    )
+    if name:
+        item["civitai"].setdefault("name", name)
+    return item
+
+
+def _civitai_checkpoint_item(
+    *,
+    sha256: str = "",
+    version_id: Any = None,
+    name: str = "",
+    model_name: str = "m",
+    file_name: str = "cp.safetensors",
+    base_model: str = "",
+) -> Dict[str, Any]:
+    item = _rematch_item(
+        sha256=sha256,
+        sub_type="checkpoint",
+        civitai_version_id=version_id,
+        file_name=file_name,
+        model_name=model_name,
+    )
+    if base_model:
+        item["base_model"] = base_model
+    if name:
+        item["civitai"].setdefault("name", name)
+    return item
+
+
+# Acceptance criterion (1): lora entry rematched via L1
+
+
+async def test_rematch_recipe_by_id_lora_l1_write_back(tmp_path: Path, monkeypatch):
+    sha256 = ("A" * 64).lower()
+    item = _civitai_lora_item(
+        sha256=sha256,
+        version_id=111,
+        name="v1.0",
+        model_name="Lora Model",
+        file_name="m.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "modified": 123.0,
+        "fingerprint": "stale",
+        "loras": [
+            {
+                "isDeleted": True,
+                "hash": sha256.upper(),
+                "file_name": "old.safetensors",
+                "modelVersionId": 0,
+            }
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+
+    saved, enriched = await _spy_rematch_persistence(scanner, monkeypatch)
+    fts_calls = await _spy_fts(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["rematched"] == 1
+    assert result["skipped"] == 0
+    assert result["recipe"] is enriched
+    assert result["recipe"]["file_url"] == "/loras_static/preview/enriched.png"
+
+    entry = recipe["loras"][0]
+    assert entry["isDeleted"] is False
+    assert entry["hash"] == sha256
+    assert entry["file_name"] == "m.safetensors"
+    assert entry["modelName"] == "Lora Model"
+    assert entry["modelVersionName"] == "v1.0"
+    assert entry["modelVersionId"] == 111
+
+    assert saved == [recipe]
+    assert recipe["modified"] == 123.0  # Metis F8 — never bumped
+    assert recipe["fingerprint"] == calculate_recipe_fingerprint([entry])
+    assert fts_calls == [(recipe, "update")]
+    assert resort_calls == []  # Metis F1 — hoisted to public entry points
+
+
+# Acceptance criterion (2): checkpoint entry rematched via L2 — parser style
+
+
+async def test_rematch_recipe_by_id_checkpoint_l2_parser_style_backfill(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("C" * 64).lower()
+    cp_item = _civitai_checkpoint_item(
+        sha256=sha256,
+        version_id=222,
+        name="v2.0",
+        model_name="Checkpoint Model",
+        file_name="cp.safetensors",
+        base_model="SD 1.5",
+    )
+    scanner, _, _ = _make_rematch_scanner([], [cp_item], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "checkpoint": {
+            "isDeleted": True,
+            "modelVersionId": 222,
+            "type": "checkpoint",
+            "name": "old-name",
+            "version": "old-v",
+            "baseModel": "SD 1.5",
+            "file_name": "old.safetensors",
+            "hash": "",
+        },
+        "loras": [],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    saved, _ = await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["rematched"] == 1
+
+    cp = recipe["checkpoint"]
+    assert cp["isDeleted"] is False
+    assert cp["hash"] == sha256
+    assert cp["file_name"] == "cp.safetensors"
+    assert cp["name"] == "Checkpoint Model"
+    assert cp["version"] == "v2.0"
+    assert cp["baseModel"] == "SD 1.5"
+    assert cp["modelVersionId"] == 222  # identifier key convention preserved
+    assert "modelName" not in cp  # Oracle R2-F5 — never added to parser-style
+    assert "modelVersionName" not in cp
+    assert saved == [recipe]
+
+
+# Acceptance criterion (2): checkpoint widget-style names updated (Oracle R3-F2)
+
+
+async def test_rematch_recipe_by_id_checkpoint_widget_style_names_updated(
+    tmp_path: Path, monkeypatch
+):
+    cp_item = _civitai_checkpoint_item(
+        sha256=("D" * 64).lower(),
+        version_id=333,
+        name="v3.0",
+        model_name="Widget Model",
+    )
+    scanner, _, _ = _make_rematch_scanner([], [cp_item], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "checkpoint": {
+            "isDeleted": True,
+            "modelVersionId": 333,
+            "modelName": "stale-name",
+            "modelVersionName": "stale-v",
+            "file_name": "old.safetensors",
+            "hash": "",
+        },
+        "loras": [],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    cp = recipe["checkpoint"]
+    assert cp["modelName"] == "Widget Model"
+    assert cp["modelVersionName"] == "v3.0"
+
+
+# Acceptance criterion (3): PENDING-HASH GUARD (Oracle R2-F3)
+
+
+async def test_rematch_recipe_by_id_pending_hash_guard_preserves_existing_hash(
+    tmp_path: Path, monkeypatch
+):
+    # Item matched via L2 carries sha256 == "" (hash_status pending).
+    item = _civitai_lora_item(
+        sha256="", version_id=444, name="v4", model_name="Pending", file_name="p.safetensors"
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    stored_hash = "aabbccddeeff"
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {
+                "isDeleted": True,
+                "hash": stored_hash,
+                "modelVersionId": 444,
+                "file_name": "old.safetensors",
+            }
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["rematched"] == 1
+    entry = recipe["loras"][0]
+    assert entry["hash"] == stored_hash  # preserved, NOT wiped to ""
+    assert entry["isDeleted"] is False
+    assert entry["file_name"] == "p.safetensors"
+
+
+# Acceptance criterion (4)+(5): exclude preserved (Metis F4), modified untouched (Metis F8)
+
+
+async def test_rematch_recipe_by_id_preserves_exclude_and_modified(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("E" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=555, name="v5")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "modified": 999.0,
+        "loras": [
+            {
+                "isDeleted": True,
+                "hash": sha256,
+                "file_name": "old.safetensors",
+                "exclude": True,
+            }
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    entry = recipe["loras"][0]
+    assert entry["exclude"] is True
+    assert recipe["modified"] == 999.0
+
+
+# Acceptance criterion (6): no-change recipe → no persistence, rematched=0
+
+
+async def test_rematch_recipe_by_id_no_change_skips_persistence(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("F" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=666, name="v6")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "fingerprint": "original",
+        "loras": [
+            # Healthy entry — not a rematch candidate, nothing to change.
+            {"isDeleted": False, "hash": sha256, "file_name": "m.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+
+    saved, enriched = await _spy_rematch_persistence(scanner, monkeypatch)
+    fts_calls = await _spy_fts(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["rematched"] == 0
+    assert result["skipped"] == 1
+    assert result["recipe"] is recipe  # raw cache dict, not enriched
+    assert saved == []
+    assert fts_calls == []
+    assert resort_calls == []
+    assert recipe["fingerprint"] == "original"  # no fingerprint churn
+
+
+# Acceptance criterion (7): fingerprint recomputed on hash change
+
+
+async def test_rematch_recipe_by_id_fingerprint_recomputed_on_hash_change(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("G" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=777, name="v7")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {
+                "isDeleted": True,
+                "hash": "oldhash123",
+                "modelVersionId": 777,
+                "file_name": "old.safetensors",
+            }
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    original_fingerprint = calculate_recipe_fingerprint([dict(recipe["loras"][0])])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    entry = recipe["loras"][0]
+    assert entry["hash"] == sha256
+    assert recipe["fingerprint"] == calculate_recipe_fingerprint([entry])
+    assert recipe["fingerprint"] != original_fingerprint
+
+
+# Acceptance criterion (7): fingerprint UNCHANGED when only isDeleted flips (Metis F16a)
+
+
+async def test_rematch_recipe_by_id_fingerprint_unchanged_when_only_deleted_flips(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("H" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=888, name="v8")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    original_fingerprint = calculate_recipe_fingerprint([dict(recipe["loras"][0])])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["rematched"] == 1
+    assert recipe["loras"][0]["isDeleted"] is False
+    assert recipe["fingerprint"] == original_fingerprint  # hash-only fingerprint
+
+
+# Acceptance criterion (8): hash-empty entry via L2 → fingerprint form changes (Metis F16b)
+
+
+async def test_rematch_recipe_by_id_fingerprint_changes_from_version_fallback_to_hash(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("I" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=999, name="v9")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": "", "modelVersionId": 999, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    original_fingerprint = calculate_recipe_fingerprint([dict(recipe["loras"][0])])
+    assert original_fingerprint == "999:1.0"  # modelVersionId fallback form
+
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    entry = recipe["loras"][0]
+    assert entry["hash"] == sha256
+    assert recipe["fingerprint"] == calculate_recipe_fingerprint([entry])
+    assert recipe["fingerprint"] != original_fingerprint
+
+
+# Acceptance criterion (9): FTS called only when persistence returned True
+# (False branch covered by the persist-failure test below)
+
+
+async def test_rematch_recipe_by_id_fts_skipped_when_persistence_false_stub(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("J" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=1000, name="v10")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+
+    saved, _ = await _spy_rematch_persistence(scanner, monkeypatch, save_result=False)
+    fts_calls = await _spy_fts(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is False
+    assert result["errors"] == 1
+    assert result["rematched"] == 0
+    assert result["skipped"] == 0
+    assert result["recipe"] is recipe
+    assert "error" in result
+    assert saved == [recipe]
+    assert fts_calls == []
+    assert resort_calls == []
+
+
+# Acceptance criterion (10): PERSIST-FAILURE via EXIF raise (Oracle R1-F2/R2-F2/R4-F2)
+
+
+async def test_rematch_recipe_by_id_exif_raise_counts_error_and_skips_fts(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("K" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=1001, name="v11")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+
+    # Real persist path: JSON file + existing image so EXIF is reached.
+    recipes_dir = tmp_path / "recipes"
+    recipes_dir.mkdir(exist_ok=True)
+    json_path = recipes_dir / "r1.recipe.json"
+    json_path.write_text(json.dumps(recipe))
+    image = tmp_path / "r1.png"
+    image.write_bytes(b"fake-png")
+    recipe["file_path"] = str(image)
+
+    async def fake_get_json_path(rid: str) -> str:
+        return str(json_path)
+
+    monkeypatch.setattr(scanner, "get_recipe_json_path", fake_get_json_path)
+
+    def _boom_exif(image_path, recipe_data):
+        raise RuntimeError("exif boom")
+
+    monkeypatch.setattr(
+        "py.utils.exif_utils.ExifUtils.append_recipe_metadata", _boom_exif
+    )
+    fts_calls = await _spy_fts(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is False
+    assert result["errors"] == 1
+    assert result["rematched"] == 0
+    assert result["skipped"] == 0
+    assert result["recipe"] is recipe
+    assert "error" in result
+    assert fts_calls == []
+    assert resort_calls == []
+
+
+# Acceptance criterion (11): LEGACY STRING CHECKPOINT (Oracle R1-F3)
+
+
+async def test_rematch_recipe_by_id_legacy_string_checkpoint_skipped(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("L" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=1002, name="v12")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "checkpoint": "name.safetensors",  # bare string — must not crash
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    saved, _ = await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["rematched"] == 1  # loras still processed
+    assert recipe["checkpoint"] == "name.safetensors"  # skipped silently
+    assert recipe["loras"][0]["isDeleted"] is False
+    assert saved == [recipe]
+
+
+# Acceptance criterion (12): recipe not found → RecipeNotFoundError (handler → 404)
+
+
+async def test_rematch_recipe_by_id_not_found_raises(tmp_path: Path):
+    from py.services.recipes.errors import RecipeNotFoundError
+
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    _set_recipe_cache(scanner, [])
+
+    with pytest.raises(RecipeNotFoundError):
+        await scanner.rematch_recipe_by_id("missing")
+
+
+# Acceptance criterion (13): EXIF written once per changed recipe
+
+
+async def test_rematch_recipe_by_id_exif_written_once(tmp_path: Path, monkeypatch):
+    sha256 = ("M" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=1003, name="v13")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+
+    recipes_dir = tmp_path / "recipes"
+    recipes_dir.mkdir(exist_ok=True)
+    json_path = recipes_dir / "r1.recipe.json"
+    json_path.write_text(json.dumps(recipe))
+    image = tmp_path / "r1.png"
+    image.write_bytes(b"fake-png")
+    recipe["file_path"] = str(image)
+
+    async def fake_get_json_path(rid: str) -> str:
+        return str(json_path)
+
+    monkeypatch.setattr(scanner, "get_recipe_json_path", fake_get_json_path)
+
+    exif_calls: list[tuple[Any, Any]] = []
+
+    def _spy_exif(image_path, recipe_data):
+        exif_calls.append((image_path, recipe_data))
+
+    monkeypatch.setattr(
+        "py.utils.exif_utils.ExifUtils.append_recipe_metadata", _spy_exif
+    )
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert len(exif_calls) == 1
+    assert exif_calls[0][0] == str(image)
+    assert exif_calls[0][1] is recipe
+
+
+# Acceptance criterion (14): response recipe is the enriched dict (Metis F14)
+
+
+async def test_rematch_recipe_by_id_response_recipe_enriched(tmp_path: Path, monkeypatch):
+    sha256 = ("N" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=1004, name="v14")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+
+    saved, enriched = await _spy_rematch_persistence(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipe_by_id("r1")
+
+    assert result["success"] is True
+    assert result["recipe"] is enriched
+    assert result["recipe"]["file_url"]
+    assert saved == [recipe]
+
+
+# ---------------------------------------------------------------------------
+# rematch_all_recipes / rematch_recipes_bulk — bulk + progress (plan todo 3)
+# ---------------------------------------------------------------------------
+
+
+async def test_rematch_all_recipes_progress_sequence(tmp_path: Path, monkeypatch):
+    sha256 = ("A" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=111, name="v1")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipes: list[Dict[str, Any]] = [
+        {
+            "id": "r1",
+            "loras": [
+                {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+            ],
+        },
+        {
+            "id": "r2",
+            "loras": [
+                {"isDeleted": True, "hash": "zzz", "file_name": "gone.safetensors"}
+            ],
+        },
+    ]
+    _set_recipe_cache(scanner, recipes)
+    await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    events: list[Dict[str, Any]] = []
+
+    async def cb(ev: Dict[str, Any]) -> None:
+        events.append(ev)
+
+    result = await scanner.rematch_all_recipes(progress_callback=cb)
+
+    assert [e["status"] for e in events] == [
+        "started",
+        "processing",
+        "processing",
+        "completed",
+    ]
+    assert events[1]["current"] == 1 and events[1]["total"] == 2
+    assert events[2]["current"] == 2 and events[2]["total"] == 2
+    assert events[3]["status"] == "completed"
+    assert events[3]["rematched"] == 1
+    assert events[3]["skipped"] == 1
+    assert events[3]["errors"] == 0
+    assert events[3]["total"] == 2
+
+    assert result["success"] is True
+    assert result["rematched"] == 1
+    assert result["skipped"] == 1
+    assert result["errors"] == 0
+    assert result["total"] == 2
+    assert "status" not in result
+    assert resort_calls == [True]  # Metis F1 — exactly once per run
+
+
+async def test_rematch_all_recipes_cancellation_stops_mid_loop(
+    tmp_path: Path, monkeypatch
+):
+    sha256 = ("B" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=222, name="v2")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+
+    recipes: list[Dict[str, Any]] = [
+        {
+            "id": f"r{i}",
+            "loras": [
+                {
+                    "isDeleted": True,
+                    "hash": sha256,
+                    "file_name": f"old{i}.safetensors",
+                }
+            ],
+        }
+        for i in range(3)
+    ]
+    _set_recipe_cache(scanner, recipes)
+    saved, _ = await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    events: list[Dict[str, Any]] = []
+    cancelled = False
+
+    async def cb(ev: Dict[str, Any]) -> None:
+        nonlocal cancelled
+        events.append(ev)
+        if ev.get("status") == "processing" and ev.get("current") == 1:
+            if not cancelled:
+                cancelled = True
+                scanner.cancel_task()
+
+    result = await scanner.rematch_all_recipes(progress_callback=cb)
+
+    assert result["status"] == "cancelled"
+    assert result["success"] is False
+    assert result["rematched"] == 1
+    assert result["skipped"] == 0
+    assert result["errors"] == 0
+    assert result["total"] == 3
+
+    # Only the first recipe was processed — the later ones are untouched.
+    assert recipes[0]["loras"][0]["isDeleted"] is False
+    assert recipes[1]["loras"][0]["isDeleted"] is True
+    assert recipes[2]["loras"][0]["isDeleted"] is True
+    assert len(saved) == 1
+    assert [e["status"] for e in events][-1] == "cancelled"
+    assert events[-1]["current"] == 1
+    assert resort_calls == []  # cancelled run — no resort scheduled
+
+
+async def test_rematch_all_recipes_per_recipe_error_continues_loop(
+    tmp_path: Path, monkeypatch
+):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    _set_recipe_cache(
+        scanner,
+        [{"id": "boom", "name": "Broken"}, {"id": "fine", "loras": []}],
+    )
+    await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    async def fake_single(
+        recipe: Dict[str, Any],
+        local_cache: dict[str, Any],
+        autov3_cache: dict[str, Any],
+    ) -> tuple[int, int]:
+        if recipe.get("id") == "boom":
+            raise RuntimeError("kaboom")
+        return (0, 0)
+
+    monkeypatch.setattr(scanner, "_rematch_single_recipe", fake_single)
+
+    events: list[Dict[str, Any]] = []
+
+    async def cb(ev: Dict[str, Any]) -> None:
+        events.append(ev)
+
+    result = await scanner.rematch_all_recipes(progress_callback=cb)
+
+    assert result["success"] is True
+    assert result["errors"] == 1
+    assert result["rematched"] == 0
+    assert result["skipped"] == 1
+    assert result["total"] == 2
+    # The loop continued past the failing recipe.
+    assert [e["status"] for e in events] == [
+        "started",
+        "processing",
+        "processing",
+        "completed",
+    ]
+    assert resort_calls == [True]
+
+
+async def test_rematch_all_recipes_schedule_resort_exactly_once(
+    tmp_path: Path, monkeypatch
+):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    _set_recipe_cache(scanner, [{"id": "a", "loras": []}, {"id": "b", "loras": []}])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    await scanner.rematch_all_recipes()
+
+    assert resort_calls == [True]
+
+
+async def test_rematch_all_recipes_holds_mutation_lock(tmp_path: Path, monkeypatch):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    recipes = [{"id": f"r{i}", "loras": []} for i in range(5)]
+    _set_recipe_cache(scanner, recipes)
+    await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    entered = False
+    release = asyncio.Event()
+    original = scanner._rematch_single_recipe
+
+    async def blocking_single(
+        recipe: Dict[str, Any],
+        local_cache: dict[str, Any],
+        autov3_cache: dict[str, Any],
+    ) -> tuple[int, int]:
+        nonlocal entered
+        if recipe.get("id") == "r0":
+            entered = True
+            await release.wait()
+        return await original(recipe, local_cache, autov3_cache)
+
+    monkeypatch.setattr(scanner, "_rematch_single_recipe", blocking_single)
+
+    run_task = asyncio.create_task(scanner.rematch_all_recipes())
+    for _ in range(100):
+        if entered:
+            break
+        await asyncio.sleep(0.01)
+    assert entered  # the run is now inside the lock
+
+    acquired = asyncio.Event()
+
+    async def probe() -> None:
+        async with scanner._mutation_lock:
+            acquired.set()
+
+    probe_task = asyncio.create_task(probe())
+    done, _ = await asyncio.wait([probe_task], timeout=0.1)
+    assert not done  # mutation_lock is held by the run
+    assert not acquired.is_set()
+
+    release.set()
+    await run_task
+    await probe_task
+
+    assert resort_calls == [True]
+
+
+async def test_rematch_bulk_not_found_ids_skipped(tmp_path: Path, monkeypatch):
+    sha256 = ("C" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=333, name="v3")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    recipes: list[Dict[str, Any]] = [
+        {
+            "id": f"r{i}",
+            "loras": [
+                {
+                    "isDeleted": True,
+                    "hash": sha256,
+                    "file_name": f"old{i}.safetensors",
+                }
+            ],
+        }
+        for i in range(2)
+    ]
+    _set_recipe_cache(scanner, recipes)
+    saved, enriched = await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipes_bulk(["r0", "missing", "r1"])
+
+    assert result["success"] is True
+    assert result["total"] == 3
+    assert result["rematched"] == 2  # r0 and r1 both matched
+    assert result["skipped"] == 1  # missing id → RecipeNotFoundError → skipped
+    assert result["errors"] == 0
+    assert result["recipes"] == [enriched, enriched]
+    assert saved == [recipes[0], recipes[1]]
+    assert resort_calls == [True]
+
+
+async def test_rematch_bulk_persist_failure_counted_once(tmp_path: Path, monkeypatch):
+    sha256 = ("D" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=444, name="v4")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": sha256, "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    saved, _ = await _spy_rematch_persistence(scanner, monkeypatch, save_result=False)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    result = await scanner.rematch_recipes_bulk(["r1"])
+
+    # Persist failure surfaces via the by_id summary's errors field and is NOT
+    # additionally counted by the bulk loop (Oracle R2-F2 — no double count).
+    assert result["errors"] == 1
+    assert result["rematched"] == 0
+    assert result["skipped"] == 0
+    assert result["total"] == 1
+    assert saved == [recipe]
+    assert resort_calls == [True]
+
+
+async def test_rematch_bulk_generic_exception_continues(tmp_path: Path, monkeypatch):
+    sha256 = ("E" * 64).lower()
+    item = _civitai_lora_item(sha256=sha256, version_id=555, name="v5")
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    recipes: list[Dict[str, Any]] = [
+        {
+            "id": f"r{i}",
+            "loras": [
+                {
+                    "isDeleted": True,
+                    "hash": sha256,
+                    "file_name": f"old{i}.safetensors",
+                }
+            ],
+        }
+        for i in range(2)
+    ]
+    _set_recipe_cache(scanner, recipes)
+    await _spy_rematch_persistence(scanner, monkeypatch)
+    resort_calls = await _spy_resort(scanner, monkeypatch)
+
+    # A generic exception inside matching escapes by_id (only
+    # RecipePersistenceError is converted there) and is caught by the bulk
+    # loop, which continues with the remaining ids (Oracle R4-F3).
+    calls = 0
+
+    async def fake_match(
+        entry: Dict[str, Any],
+        local_cache: dict[str, Any],
+        autov3_cache: dict[str, Any],
+        *,
+        is_checkpoint: bool,
+    ) -> Any:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("match boom")
+        return None
+
+    monkeypatch.setattr(scanner, "_match_rematch_entry", fake_match)
+
+    result = await scanner.rematch_recipes_bulk(["r0", "r1"])
+
+    assert result["success"] is True
+    assert result["errors"] == 1
+    assert result["rematched"] == 0
+    assert result["skipped"] == 1  # r1 still processed after r0 blew up
+    assert result["total"] == 2
+    assert resort_calls == [True]
+
+
+async def test_rematch_all_autov3_cache_reuse_across_calls(
+    tmp_path: Path, monkeypatch
+):
+    from py.services import recipe_scanner as recipe_scanner_module
+
+    called: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str:
+        called.append(file_path)
+        return "AAAABBBBCCCD"
+
+    monkeypatch.setattr(recipe_scanner_module, "calculate_autov3", fake_calculate_autov3)
+
+    item = _rematch_item(
+        sha256=("F" * 64).lower(), autov3=None, sub_type="lora"
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "loras": [
+            {"isDeleted": True, "hash": "AAAABBBBCCCD", "file_name": "old.safetensors"}
+        ],
+    }
+    _set_recipe_cache(scanner, [recipe])
+    await _spy_rematch_persistence(scanner, monkeypatch)
+
+    first = await scanner.rematch_recipe_by_id("r1")
+    second = await scanner.rematch_recipe_by_id("r1")
+
+    assert first["success"] is True
+    assert second["success"] is True
+    # The version-cached autov3 snapshot is reused — the safetensors headers
+    # are read once across both calls (Oracle R2-F4).
+    assert len(called) == 1
+
