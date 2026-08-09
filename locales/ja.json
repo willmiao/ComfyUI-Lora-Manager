@@ -186,6 +186,13 @@
             "cancelled": "修復がキャンセルされました。{count}個のレシピが修復されました。",
             "error": "レシピの修復に失敗しました: {message}"
         },
+        "rematchRecipes": {
+            "label": "[TODO: Translate] Rematch recipes to local models",
+            "loading": "[TODO: Translate] Rematching recipes to local models...",
+            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
+            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
+            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+        },
         "manageExcludedModels": {
             "label": "除外モデルを管理"
         },
@@ -768,6 +775,7 @@
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
             "repairMetadata": "選択したレシピのメタデータを修復",
+            "rematchMetadata": "[TODO: Translate] Rematch Selected to Local Models",
             "reimportMetadata": "ソースから再インポート",
             "checkUpdates": "選択項目の更新を確認",
             "moveAll": "すべてをフォルダに移動",
@@ -823,6 +831,7 @@
             "setContentRating": "コンテンツレーティングを設定",
             "moveToFolder": "フォルダに移動",
             "repairMetadata": "メタデータを修復",
+            "rematchMetadata": "[TODO: Translate] Rematch to local models",
             "reimportMetadata": "ソースから再インポート",
             "excludeModel": "モデルを除外",
             "restoreModel": "モデルを復元",
@@ -1951,6 +1960,9 @@
             "repairBulkComplete": "修復完了：{repaired} 件修復、{skipped} 件スキップ（合計 {total} 件）",
             "repairBulkSkipped": "選択した {total} 件のレシピは修復不要です",
             "repairBulkFailed": "選択したレシピの修復に失敗しました：{message}",
+            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
+            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
+            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
             "reimporting": "ソースからレシピを再インポート中...",
             "reimportSuccess": "レシピの再インポートが完了しました",
             "reimportBulkComplete": "再インポート完了：{completed} 件成功、{failed} 件失敗（合計 {total} 件）",

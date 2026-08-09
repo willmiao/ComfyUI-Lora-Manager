@@ -97,6 +97,10 @@ export class RecipeContextMenu extends BaseContextMenu {
                 // Repair recipe metadata
                 this.repairRecipe(recipeId);
                 break;
+            case 'rematch':
+                // Rematch recipe resources to local models
+                this.rematchRecipe(recipeId);
+                break;
             case 'reimport':
                 this.reimportRecipe(recipeId);
                 break;
@@ -327,6 +331,50 @@ export class RecipeContextMenu extends BaseContextMenu {
         } catch (error) {
             console.error('Error repairing recipe:', error);
             showToast('recipes.contextMenu.repair.failed', { message: error.message }, 'error');
+        }
+    }
+
+    async rematchRecipe(recipeId) {
+        if (!recipeId) {
+            showToast('toast.recipes.rematchFailed', { message: 'Missing recipe ID' }, 'error');
+            return;
+        }
+
+        // Capture before any await: the menu's click handler nulls currentCard
+        const filePath = this.currentCard?.dataset?.filepath;
+
+        try {
+            showToast('Rematching recipe to local models...', {}, 'info');
+
+            const response = await fetch(`/api/lm/recipe/${recipeId}/rematch`, {
+                method: 'POST'
+            });
+            const result = await response.json();
+
+            if (result.success) {
+                // The rematch backend reports `rematched` (not `repaired`)
+                if (result.rematched > 0) {
+                    showToast(
+                        'toast.recipes.rematchComplete',
+                        { rematched: result.rematched, skipped: result.skipped || 0, total: 1 },
+                        'success'
+                    );
+                    const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
+                    if (detailResponse.ok) {
+                        const updatedRecipe = await detailResponse.json();
+                        if (filePath && state.virtualScroller) {
+                            state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
+                        }
+                    }
+                } else {
+                    showToast('toast.recipes.rematchSkipped', { total: 1 }, 'info');
+                }
+            } else {
+                throw new Error(result.error || 'Rematch failed');
+            }
+        } catch (error) {
+            console.error('Error rematching recipe:', error);
+            showToast('toast.recipes.rematchFailed', { message: error.message }, 'error');
         }
     }
 

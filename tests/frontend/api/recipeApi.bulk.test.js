@@ -216,4 +216,66 @@ describe('RecipeSidebarApiClient bulk operations', () => {
     expect(restoreScrollPositionMock).not.toHaveBeenCalled();
     expect(loadingManagerMock.restoreProgressBar).toHaveBeenCalledTimes(1);
   });
+
+  it('posts exactly recipe_ids when rematching in bulk', async () => {
+    const api = new RecipeSidebarApiClient();
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        total: 2,
+        rematched: 2,
+        skipped: 0,
+        errors: 0,
+        recipes: [],
+      }),
+    });
+
+    const result = await api.rematchBulkModels(['/recipes/a.webp', '/recipes/b.webp']);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      '/api/lm/recipes/rematch-bulk',
+      expect.objectContaining({
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+    );
+
+    // Exact-body assertion: no extra fields beyond recipe_ids
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+      recipe_ids: ['a', 'b'],
+    });
+    expect(result).toMatchObject({ success: true, rematched: 2 });
+  });
+
+  it('derives recipe IDs via extractRecipeId and skips empty paths', async () => {
+    const api = new RecipeSidebarApiClient();
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, total: 1, rematched: 0, skipped: 1, errors: 0 }),
+    });
+
+    await api.rematchBulkModels(['', '/recipes/sub folder/recipe-1.webp']);
+
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+      recipe_ids: ['recipe-1'],
+    });
+  });
+
+  it('rejects bulk rematch without file paths', async () => {
+    const api = new RecipeSidebarApiClient();
+
+    await expect(api.rematchBulkModels([])).rejects.toThrow('No file paths provided');
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it('throws the backend error when bulk rematch fails', async () => {
+    const api = new RecipeSidebarApiClient();
+    global.fetch.mockResolvedValue({
+      ok: false,
+      json: async () => ({ success: false, error: 'Rematch already running' }),
+    });
+
+    await expect(api.rematchBulkModels(['/recipes/a.webp'])).rejects.toThrow('Rematch already running');
+  });
 });

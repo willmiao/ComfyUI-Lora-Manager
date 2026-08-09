@@ -16,6 +16,8 @@ const RECIPE_ENDPOINTS = {
     moveBulk: '/api/lm/recipes/move-bulk',
     bulkDelete: '/api/lm/recipes/bulk-delete',
     repairBulk: '/api/lm/recipes/repair-bulk',
+    rematchBulk: '/api/lm/recipes/rematch-bulk',
+    rematchSingle: '/api/lm/recipe/{recipe_id}/rematch',
 };
 
 const RECIPE_SIDEBAR_CONFIG = {
@@ -581,6 +583,38 @@ export class RecipeSidebarApiClient {
 
         if (!response.ok || !result.success) {
             throw new Error(result.error || 'Failed to repair recipes');
+        }
+
+        return result;
+    }
+
+    async rematchBulkModels(filePaths) {
+        if (!filePaths || filePaths.length === 0) {
+            throw new Error('No file paths provided');
+        }
+
+        const recipeIds = filePaths
+            .map((path) => extractRecipeId(path))
+            .filter((id) => !!id);
+
+        if (recipeIds.length === 0) {
+            throw new Error('No recipe IDs could be derived from file paths');
+        }
+
+        const response = await fetch(this.apiConfig.endpoints.rematchBulk, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                recipe_ids: recipeIds,
+            }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.error || 'Failed to rematch recipes');
         }
 
         return result;

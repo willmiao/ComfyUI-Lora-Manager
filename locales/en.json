@@ -186,6 +186,13 @@
       "cancelled": "Repair cancelled. {count} recipes were repaired.",
       "error": "Recipe repair failed: {message}"
     },
+    "rematchRecipes": {
+      "label": "Rematch recipes to local models",
+      "loading": "Rematching recipes to local models...",
+      "success": "Successfully rematched {count} recipes.",
+      "cancelled": "Rematch cancelled. {count} recipes were rematched.",
+      "error": "Recipe rematch failed: {message}"
+    },
     "manageExcludedModels": {
       "label": "Manage Excluded Models"
     },
@@ -768,6 +775,7 @@
       "copyAll": "Copy Selected Syntax",
       "refreshAll": "Refresh Selected Metadata",
       "repairMetadata": "Repair Metadata for Selected",
+      "rematchMetadata": "Rematch Selected to Local Models",
       "reimportMetadata": "Re-import from Source",
       "checkUpdates": "Check Updates for Selected",
       "moveAll": "Move Selected to Folder",
@@ -823,6 +831,7 @@
       "setContentRating": "Set Content Rating",
       "moveToFolder": "Move to Folder",
       "repairMetadata": "Repair metadata",
+      "rematchMetadata": "Rematch to local models",
       "reimportMetadata": "Re-import from Source",
       "excludeModel": "Exclude Model",
       "restoreModel": "Restore Model",
@@ -1951,6 +1960,9 @@
       "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
       "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
       "repairBulkFailed": "Failed to repair selected recipes: {message}",
+      "rematchComplete": "Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
+      "rematchSkipped": "No rematch needed for any of the {total} selected recipes",
+      "rematchFailed": "Failed to rematch selected recipes: {message}",
       "reimporting": "Re-importing recipe from source...",
       "reimportSuccess": "Recipe re-imported successfully",
       "reimportBulkComplete": "Re-import complete: {completed} re-imported, {failed} failed (of {total})",

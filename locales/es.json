@@ -186,6 +186,13 @@
             "cancelled": "Reparación cancelada. {count} recetas fueron reparadas.",
             "error": "Error al reparar recetas: {message}"
         },
+        "rematchRecipes": {
+            "label": "[TODO: Translate] Rematch recipes to local models",
+            "loading": "[TODO: Translate] Rematching recipes to local models...",
+            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
+            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
+            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+        },
         "manageExcludedModels": {
             "label": "Gestionar modelos excluidos"
         },
@@ -768,6 +775,7 @@
             "copyAll": "Copiar toda la sintaxis",
             "refreshAll": "Actualizar todos los metadatos",
             "repairMetadata": "Reparar metadatos de la selección",
+            "rematchMetadata": "[TODO: Translate] Rematch Selected to Local Models",
             "reimportMetadata": "Reimportar desde origen",
             "checkUpdates": "Comprobar actualizaciones para la selección",
             "moveAll": "Mover todos a carpeta",
@@ -823,6 +831,7 @@
             "setContentRating": "Establecer clasificación de contenido",
             "moveToFolder": "Mover a carpeta",
             "repairMetadata": "Reparar metadatos",
+            "rematchMetadata": "[TODO: Translate] Rematch to local models",
             "reimportMetadata": "Reimportar desde origen",
             "excludeModel": "Excluir modelo",
             "restoreModel": "Restaurar modelo",
@@ -1951,6 +1960,9 @@
             "repairBulkComplete": "Reparación completa: {repaired} reparadas, {skipped} omitidas (de {total})",
             "repairBulkSkipped": "No se necesita reparación para ninguna de las {total} recetas seleccionadas",
             "repairBulkFailed": "Error al reparar las recetas seleccionadas: {message}",
+            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
+            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
+            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
             "reimporting": "Reimportando receta desde origen...",
             "reimportSuccess": "Receta reimportada exitosamente",
             "reimportBulkComplete": "Reimportación completa: {completed} reimportadas, {failed} fallidas (de {total})",

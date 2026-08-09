@@ -2186,4 +2186,127 @@ describe('Interaction-level regression coverage', () => {
     document.querySelector('[data-action="download-examples-force"]').dispatchEvent(new Event('click', { bubbles: true }));
     expect(downloadExampleImagesApiMock).toHaveBeenCalledWith(['abc123hash'], null, { force: true });
   });
+
+  it('runs global recipe rematch with polling and toasts the rematched count', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+    window.recipesPage = { refresh: vi.fn() };
+
+    // Menu item is recipes-page only
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+    expect(rematchItem.classList.contains('hidden')).toBe(false);
+    stateStub.currentPageType = 'loras';
+    menu.showMenu(100, 200);
+    expect(rematchItem.classList.contains('hidden')).toBe(true);
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'completed', rematched: 2, skipped: 1, total: 3 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(rematchItem.classList.contains('disabled')).toBe(true);
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+
+    expect(global.fetch).toHaveBeenNthCalledWith(1, '/api/lm/recipes/rematch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/lm/recipes/rematch-progress');
+    expect(global.fetch).toHaveBeenCalledTimes(2);
+
+    expect(progressUI.showCancelButton).toHaveBeenCalledTimes(1);
+    expect(progressUI.complete).toHaveBeenCalledWith('Rematched 2 recipes.');
+    // Oracle R4-F1 pin: count comes from `rematched`, a blind `repaired` mirror renders undefined
+    expect(showToastMock).toHaveBeenCalledWith(
+      'globalContextMenu.rematchRecipes.success',
+      { count: 2 },
+      'success'
+    );
+    expect(window.recipesPage.refresh).toHaveBeenCalledTimes(1);
+    expect(rematchItem.classList.contains('disabled')).toBe(false);
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete window.recipesPage;
+    delete stateStub.currentPageType;
+  });
+
+  it('toasts the rematched count when a global rematch is cancelled', async () => {
+    document.body.innerHTML = `
+      <div id="globalContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rematch-recipes"></div>
+      </div>
+    `;
+
+    const { GlobalContextMenu } = await import('../../../static/js/components/ContextMenu/GlobalContextMenu.js');
+    const menu = new GlobalContextMenu();
+    const rematchItem = document.querySelector('[data-action="rematch-recipes"]');
+
+    const progressUI = {
+      updateProgress: vi.fn(),
+      showCancelButton: vi.fn(),
+      complete: vi.fn().mockResolvedValue(undefined),
+    };
+    loadingManagerStub.showEnhancedProgress = vi.fn(() => progressUI);
+
+    stateStub.currentPageType = 'recipes';
+    menu.showMenu(100, 200);
+
+    global.fetch = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          success: true,
+          progress: { status: 'cancelled', rematched: 1, skipped: 0, total: 3 },
+        }),
+      });
+
+    rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+
+    for (let i = 0; i < 5; i++) {
+      await flushAsyncTasks();
+    }
+
+    expect(progressUI.complete).toHaveBeenCalledWith('Rematch cancelled. 1 recipes were rematched.');
+    expect(showToastMock).toHaveBeenCalledWith(
+      'globalContextMenu.rematchRecipes.cancelled',
+      { count: 1 },
+      'info'
+    );
+    expect(menu._rematchInProgress).toBe(false);
+
+    delete stateStub.currentPageType;
+  });
 });

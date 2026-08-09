@@ -43,12 +43,16 @@ export class BulkContextMenu extends BaseContextMenu {
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
         const repairMetadataItem = this.menu.querySelector('[data-action="repair-metadata"]');
         const reimportMetadataItem = this.menu.querySelector('[data-action="reimport-metadata"]');
+        const rematchMetadataItem = this.menu.querySelector('[data-action="rematch-metadata"]');
 
         if (repairMetadataItem) {
             repairMetadataItem.style.display = config.repairMetadata ? 'flex' : 'none';
         }
         if (reimportMetadataItem) {
             reimportMetadataItem.style.display = config.reimportMetadata ? 'flex' : 'none';
+        }
+        if (rematchMetadataItem) {
+            rematchMetadataItem.style.display = config.rematchMetadata ? 'flex' : 'none';
         }
 
         const isEmbeddings = currentModelType === 'embeddings';
@@ -281,6 +285,9 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'repair-metadata':
                 bulkManager.repairSelectedRecipes();
+                break;
+            case 'rematch-metadata':
+                bulkManager.rematchSelectedRecipes();
                 break;
             case 'reimport-metadata':
                 bulkManager.reimportSelectedRecipes();

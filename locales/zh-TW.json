@@ -186,6 +186,13 @@
             "cancelled": "修復已取消。已修復 {count} 個配方。",
             "error": "配方修復失敗：{message}"
         },
+        "rematchRecipes": {
+            "label": "[TODO: Translate] Rematch recipes to local models",
+            "loading": "[TODO: Translate] Rematching recipes to local models...",
+            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
+            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
+            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+        },
         "manageExcludedModels": {
             "label": "管理已排除的模型"
         },
@@ -768,6 +775,7 @@
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
             "repairMetadata": "修復所選中元數據",
+            "rematchMetadata": "[TODO: Translate] Rematch Selected to Local Models",
             "reimportMetadata": "從來源重新匯入",
             "checkUpdates": "檢查所選更新",
             "moveAll": "全部移動到資料夾",
@@ -823,6 +831,7 @@
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
             "repairMetadata": "修復元數據",
+            "rematchMetadata": "[TODO: Translate] Rematch to local models",
             "reimportMetadata": "從來源重新匯入",
             "excludeModel": "排除模型",
             "restoreModel": "還原模型",
@@ -1951,6 +1960,9 @@
             "repairBulkComplete": "修復完成：{repaired} 個已修復，{skipped} 個已跳過（共 {total} 個）",
             "repairBulkSkipped": "所選 {total} 個配方無需修復",
             "repairBulkFailed": "修復所選配方失敗：{message}",
+            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
+            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
+            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
             "reimporting": "正在從來源重新匯入配方...",
             "reimportSuccess": "配方已從來源重新匯入成功",
             "reimportBulkComplete": "重新匯入完成：{completed} 個已匯入，{failed} 個失敗（共 {total} 個）",
