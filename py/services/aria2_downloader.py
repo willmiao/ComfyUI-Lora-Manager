@@ -24,6 +24,10 @@ from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
+# Maximum times the download poll loop will re-schedule a transfer after it
+# is lost (daemon restart / RPC outage) before failing the download.
+MAX_TRANSFER_RECOVERY_ATTEMPTS = 2
+
 def _try_certifi_ca_path() -> str | None:
     """Return the certifi CA bundle path if available, else None."""
     try:
@@ -85,6 +89,7 @@ class Aria2Downloader:
         self._rpc_session: Optional[aiohttp.ClientSession] = None
         self._rpc_session_lock = asyncio.Lock()
         self._process_lock = asyncio.Lock()
+        self._register_lock = asyncio.Lock()
         self._transfers: Dict[str, Aria2Transfer] = {}
         self._poll_interval = 0.5
         self._state_store = Aria2TransferStateStore()
@@ -103,26 +108,58 @@ class Aria2Downloader:
         progress_callback=None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Tuple[bool, str]:
-        """Download a file using aria2 RPC and wait for completion."""
+        """Download a file using aria2 RPC and wait for completion.
+
+        The poll loop is self-healing: when the in-memory transfer entry
+        disappears (e.g. another download restarted the daemon and
+        ``close()`` cleared ``_transfers``) or the RPC becomes unreachable,
+        the transfer is re-scheduled with ``continue=true`` so the download
+        resumes from the on-disk ``.aria2`` control file. Recovery is bounded
+        by ``MAX_TRANSFER_RECOVERY_ATTEMPTS``.
+        """
 
         await self._ensure_process()
         save_path = os.path.abspath(save_path)
-        transfer = self._transfers.get(download_id)
-        if transfer is None or os.path.abspath(transfer.save_path) != save_path:
-            gid = await self._schedule_download(
-                url,
-                save_path,
-                download_id=download_id,
-                headers=headers,
-            )
-            transfer = Aria2Transfer(gid=gid, save_path=save_path)
-            self._transfers[download_id] = transfer
 
+        async with self._register_lock:
+            transfer = self._transfers.get(download_id)
+            if transfer is None or os.path.abspath(transfer.save_path) != save_path:
+                transfer = await self._register_transfer(
+                    url,
+                    save_path,
+                    download_id=download_id,
+                    headers=headers,
+                )
+
+        recovery_attempts = 0
         try:
             while True:
-                status = await self._get_status_with_retry(download_id)
+                try:
+                    status = await self._get_status_with_retry(download_id)
+                except Aria2Error:
+                    status = None
+
                 if status is None:
-                    return False, "aria2 download not found"
+                    if recovery_attempts >= MAX_TRANSFER_RECOVERY_ATTEMPTS:
+                        return False, "aria2 download not found"
+                    recovery_attempts += 1
+                    logger.warning(
+                        "aria2 transfer %s lost; re-scheduling with resume "
+                        "(attempt %d/%d)",
+                        download_id,
+                        recovery_attempts,
+                        MAX_TRANSFER_RECOVERY_ATTEMPTS,
+                    )
+                    await asyncio.sleep(1.0)
+                    await self._ensure_process()
+                    async with self._register_lock:
+                        transfer = await self._register_transfer(
+                            url,
+                            save_path,
+                            download_id=download_id,
+                            headers=headers,
+                        )
+                    continue
 
                 snapshot = self._build_progress_snapshot(status)
                 if progress_callback is not None:
@@ -139,7 +176,9 @@ class Aria2Downloader:
 
                 await asyncio.sleep(self._poll_interval)
         finally:
-            self._transfers.pop(download_id, None)
+            current = self._transfers.get(download_id)
+            if current is not None and current.gid == transfer.gid:
+                self._transfers.pop(download_id, None)
 
     async def _get_status_with_retry(
         self, download_id: str, *, max_retries: int = 4, retry_delay: float = 3.0
@@ -241,6 +280,25 @@ class Aria2Downloader:
             },
         )
         return gid
+
+    async def _register_transfer(
+        self,
+        url: str,
+        save_path: str,
+        *,
+        download_id: str,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> Aria2Transfer:
+        """Schedule a download and track it in the in-memory transfer registry."""
+        gid = await self._schedule_download(
+            url,
+            save_path,
+            download_id=download_id,
+            headers=headers,
+        )
+        transfer = Aria2Transfer(gid=gid, save_path=os.path.abspath(save_path))
+        self._transfers[download_id] = transfer
+        return transfer
 
     async def get_status(self, download_id: str) -> Optional[Dict[str, Any]]:
         """Return the raw aria2 status payload for a known download."""
