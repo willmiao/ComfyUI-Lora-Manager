@@ -103,9 +103,13 @@ describe('BulkManager.rematchSelectedRecipes', () => {
     rematchBulkModelsMock.mockResolvedValue({
       success: true,
       total: 3,
-      rematched: 2,
+      rematched: 4,
       skipped: 1,
       errors: 0,
+      matched_recipes: 2,
+      matched_entries: 4,
+      unresolved_recipes: 1,
+      unresolved_entries: 1,
       recipes: [rematchedRecipe],
     });
 
@@ -118,7 +122,7 @@ describe('BulkManager.rematchSelectedRecipes', () => {
     ]);
     expect(showToastMock).toHaveBeenCalledWith(
       'toast.recipes.rematchComplete',
-      { rematched: 2, skipped: 1, total: 3 },
+      { rematched: 4, skipped: 1, total: 3, entries: 4, recipes: 2, failures: 0 },
       'success'
     );
     expect(showToastMock).not.toHaveBeenCalledWith(
@@ -130,6 +134,98 @@ describe('BulkManager.rematchSelectedRecipes', () => {
     expect(loadingManagerStub.showSimpleLoading).toHaveBeenCalled();
     expect(loadingManagerStub.hide).toHaveBeenCalled();
     expect(loadingManagerStub.restoreProgressBar).toHaveBeenCalled();
+  });
+
+  it('uses the errors toast variant when the bulk rematch has failures', async () => {
+    const bulk = await createBulkManager();
+    stateStub.selectedModels.add('/recipes/a.webp');
+    stateStub.selectedModels.add('/recipes/b.webp');
+
+    rematchBulkModelsMock.mockResolvedValue({
+      success: true,
+      total: 2,
+      rematched: 3,
+      skipped: 0,
+      errors: 2,
+      matched_recipes: 1,
+      matched_entries: 3,
+      unresolved_recipes: 0,
+      unresolved_entries: 0,
+      recipes: [],
+    });
+
+    await bulk.rematchSelectedRecipes();
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.recipes.rematchCompleteErrors',
+      { rematched: 3, skipped: 0, total: 2, entries: 3, recipes: 1, failures: 2 },
+      'warning'
+    );
+  });
+
+  it('toasts an error when every selected recipe failed to rematch', async () => {
+    const bulk = await createBulkManager();
+    stateStub.selectedModels.add('/recipes/a.webp');
+    stateStub.selectedModels.add('/recipes/b.webp');
+
+    rematchBulkModelsMock.mockResolvedValue({
+      success: true,
+      total: 2,
+      rematched: 0,
+      skipped: 0,
+      errors: 2,
+      matched_recipes: 0,
+      matched_entries: 0,
+      unresolved_recipes: 0,
+      unresolved_entries: 0,
+      recipes: [],
+    });
+
+    await bulk.rematchSelectedRecipes();
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.recipes.rematchAllFailed',
+      { total: 2, failures: 2 },
+      'error'
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.recipes.rematchSkipped',
+      expect.anything(),
+      expect.anything()
+    );
+  });
+
+  it('toasts an info message when entries had no local match', async () => {
+    const bulk = await createBulkManager();
+    stateStub.selectedModels.add('/recipes/a.webp');
+    stateStub.selectedModels.add('/recipes/b.webp');
+    stateStub.selectedModels.add('/recipes/c.webp');
+
+    rematchBulkModelsMock.mockResolvedValue({
+      success: true,
+      total: 3,
+      rematched: 0,
+      skipped: 2,
+      errors: 0,
+      matched_recipes: 0,
+      matched_entries: 0,
+      unresolved_recipes: 1,
+      unresolved_entries: 2,
+      recipes: [],
+    });
+
+    await bulk.rematchSelectedRecipes();
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.recipes.rematchUnmatched',
+      { entries: 2, recipes: 1, total: 3 },
+      'info'
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.recipes.rematchSkipped',
+      expect.anything(),
+      expect.anything()
+    );
   });
 
   it('toasts the skipped message when nothing was rematched', async () => {

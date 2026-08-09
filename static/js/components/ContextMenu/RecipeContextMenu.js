@@ -352,12 +352,16 @@ export class RecipeContextMenu extends BaseContextMenu {
             const result = await response.json();
 
             if (result.success) {
-                // The rematch backend reports `rematched` (not `repaired`)
-                if (result.rematched > 0) {
+                const matchedEntries = result.matched_entries || result.rematched || 0;
+                const failures = result.errors || 0;
+                if (matchedEntries > 0) {
+                    const toastKey = failures > 0
+                        ? 'toast.recipes.rematchCompleteErrors'
+                        : 'toast.recipes.rematchComplete';
                     showToast(
-                        'toast.recipes.rematchComplete',
-                        { rematched: result.rematched, skipped: result.skipped || 0, total: 1 },
-                        'success'
+                        toastKey,
+                        { rematched: matchedEntries, skipped: result.skipped || 0, total: 1, entries: matchedEntries, recipes: 1, failures },
+                        failures > 0 ? 'warning' : 'success'
                     );
                     const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
                     if (detailResponse.ok) {
@@ -366,6 +370,14 @@ export class RecipeContextMenu extends BaseContextMenu {
                             state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
                         }
                     }
+                } else if (result.unresolved_entries > 0) {
+                    // Entries existed but have no local model — expected for
+                    // models deleted from Civitai; informational, not an error.
+                    showToast(
+                        'toast.recipes.rematchUnmatched',
+                        { entries: result.unresolved_entries, recipes: 1, total: 1 },
+                        'info'
+                    );
                 } else {
                     showToast('toast.recipes.rematchSkipped', { total: 1 }, 'info');
                 }

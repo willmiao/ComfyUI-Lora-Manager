@@ -187,11 +187,14 @@
             "error": "Recipe-Reparatur fehlgeschlagen: {message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "Rezepte lokalen Modellen neu zuordnen",
+            "loading": "Rezepte werden lokalen Modellen neu zugeordnet...",
+            "success": "{entries} Einträge in {recipes} Rezepten zugeordnet",
+            "successErrors": "{entries} Einträge in {recipes} Rezepten zugeordnet, {failures} fehlgeschlagen",
+            "allFailed": "Zuordnung fehlgeschlagen für {failures} von {total} Rezepten",
+            "noMatch": "Keine lokale Übereinstimmung für {entries} Einträge in {recipes} Rezepten gefunden",
+            "cancelled": "Zuordnung abgebrochen. {recipes} Rezepte aktualisiert ({entries} Einträge)",
+            "error": "Zuordnung der Rezepte fehlgeschlagen: {message}"
         },
         "manageExcludedModels": {
             "label": "Ausgeschlossene Modelle verwalten"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "Reparatur abgeschlossen: {repaired} repariert, {skipped} übersprungen (von {total})",
             "repairBulkSkipped": "Keine Reparatur für die {total} ausgewählten Rezepte erforderlich",
             "repairBulkFailed": "Reparatur der ausgewählten Rezepte fehlgeschlagen: {message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "{entries} Einträge in {recipes} Rezepten zugeordnet",
+            "rematchCompleteErrors": "{entries} Einträge in {recipes} Rezepten zugeordnet, {failures} fehlgeschlagen",
+            "rematchAllFailed": "Zuordnung fehlgeschlagen für {failures} von {total} ausgewählten Rezepten",
+            "rematchUnmatched": "Keine lokale Übereinstimmung für {entries} Einträge in {recipes} Rezepten gefunden",
+            "rematchSkipped": "Keine Zuordnung für die {total} ausgewählten Rezepte erforderlich",
+            "rematchFailed": "Zuordnung der ausgewählten Rezepte fehlgeschlagen: {message}",
             "reimporting": "Rezept wird aus Quelle neu importiert...",
             "reimportSuccess": "Rezept erfolgreich neu importiert",
             "reimportBulkComplete": "Neuimport abgeschlossen: {completed} importiert, {failed} fehlgeschlagen (von {total})",

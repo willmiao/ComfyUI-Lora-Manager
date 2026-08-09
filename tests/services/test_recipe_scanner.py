@@ -2317,6 +2317,18 @@ async def test_rematch_recipe_by_id_lora_l1_write_back(tmp_path: Path, monkeypat
     assert result["success"] is True
     assert result["rematched"] == 1
     assert result["skipped"] == 0
+    assert result["matched_recipes"] == 1
+    assert result["matched_entries"] == 1
+    assert result["unresolved_recipes"] == 0
+    assert result["unresolved_entries"] == 0
+    assert result["details"]["matched"] == [
+        {
+            "type": "lora",
+            "entry": "old.safetensors",
+            "file_name": "m.safetensors",
+            "match_level": "L1",
+        }
+    ]
     assert result["recipe"] is enriched
     assert result["recipe"]["file_url"] == "/loras_static/preview/enriched.png"
 
@@ -2874,12 +2886,20 @@ async def test_rematch_all_recipes_progress_sequence(tmp_path: Path, monkeypatch
     assert events[3]["skipped"] == 1
     assert events[3]["errors"] == 0
     assert events[3]["total"] == 2
+    assert events[3]["matched_recipes"] == 1
+    assert events[3]["matched_entries"] == 1
+    assert events[3]["unresolved_recipes"] == 1
+    assert events[3]["unresolved_entries"] == 1
 
     assert result["success"] is True
     assert result["rematched"] == 1
     assert result["skipped"] == 1
     assert result["errors"] == 0
     assert result["total"] == 2
+    assert result["matched_recipes"] == 1
+    assert result["matched_entries"] == 1
+    assert result["unresolved_recipes"] == 1
+    assert result["unresolved_entries"] == 1
     assert "status" not in result
     assert resort_calls == [True]  # Metis F1 — exactly once per run
 
@@ -2953,10 +2973,10 @@ async def test_rematch_all_recipes_per_recipe_error_continues_loop(
         recipe: Dict[str, Any],
         local_cache: dict[str, Any],
         autov3_cache: dict[str, Any],
-    ) -> tuple[int, int]:
+    ) -> tuple[int, int, dict[str, Any]]:
         if recipe.get("id") == "boom":
             raise RuntimeError("kaboom")
-        return (0, 0)
+        return (0, 0, {"matched": [], "unresolved": []})
 
     monkeypatch.setattr(scanner, "_rematch_single_recipe", fake_single)
 
@@ -3140,9 +3160,9 @@ async def test_rematch_bulk_generic_exception_continues(tmp_path: Path, monkeypa
         calls += 1
         if calls == 1:
             raise RuntimeError("match boom")
-        return None
+        return (None, None)
 
-    monkeypatch.setattr(scanner, "_match_rematch_entry", fake_match)
+    monkeypatch.setattr(scanner, "_match_rematch_entry_with_level", fake_match)
 
     result = await scanner.rematch_recipes_bulk(["r0", "r1"])
 

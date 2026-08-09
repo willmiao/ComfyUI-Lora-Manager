@@ -189,8 +189,11 @@
     "rematchRecipes": {
       "label": "Rematch recipes to local models",
       "loading": "Rematching recipes to local models...",
-      "success": "Successfully rematched {count} recipes.",
-      "cancelled": "Rematch cancelled. {count} recipes were rematched.",
+      "success": "Matched {entries} entries across {recipes} recipes",
+      "successErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
+      "allFailed": "Rematch failed for {failures} of {total} recipes",
+      "noMatch": "No local match found for {entries} entries in {recipes} recipes",
+      "cancelled": "Rematch cancelled. {recipes} recipes updated ({entries} entries).",
       "error": "Recipe rematch failed: {message}"
     },
     "manageExcludedModels": {
@@ -1960,7 +1963,10 @@
       "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
       "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
       "repairBulkFailed": "Failed to repair selected recipes: {message}",
-      "rematchComplete": "Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
+      "rematchComplete": "Matched {entries} entries across {recipes} recipes",
+      "rematchCompleteErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
+      "rematchAllFailed": "Rematch failed for {failures} of {total} selected recipes",
+      "rematchUnmatched": "No local match found for {entries} entries in {recipes} recipes",
       "rematchSkipped": "No rematch needed for any of the {total} selected recipes",
       "rematchFailed": "Failed to rematch selected recipes: {message}",
       "reimporting": "Re-importing recipe from source...",

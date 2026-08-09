@@ -227,16 +227,42 @@ class RecipeScanner:
         *,
         is_checkpoint: bool,
     ) -> Optional[dict[str, Any]]:
+        """Match a recipe entry against local models (see
+        ``_match_rematch_entry_with_level`` for the level-aware variant).
+
+        Kept as a thin wrapper so callers that only need the matched item
+        (and the direct tests of this method) keep a stable contract.
+        """
+        item, _level = await self._match_rematch_entry_with_level(
+            entry, local_cache, autov3_cache, is_checkpoint=is_checkpoint
+        )
+        return item
+
+    async def _match_rematch_entry_with_level(
+        self,
+        entry: dict[str, Any],
+        local_cache: dict[str, Any],
+        autov3_cache: dict[str, Any],
+        *,
+        is_checkpoint: bool,
+    ) -> Tuple[Optional[dict[str, Any]], Optional[str]]:
         """Match a recipe entry against local models across three levels.
 
         L1 looks the stored hash up in the type-blind local hash cache; L2
         falls back to the version index via ``modelVersionId`` or ``id``; L3
         resolves 12-char hashes through the computed AutoV3 cache. Matched
         items are type-verified against the entry kind before being returned.
+
+        Returns:
+            Tuple of (matched item, match level) where level is "L1", "L2" or
+            "L3" — or ``(None, None)`` when no usable match exists. A missing
+            local match is an expected outcome (the model may simply not be
+            present locally), not an error.
         """
         entry_hash = (entry.get("hash") or "").lower()
 
         item = local_cache.get(entry_hash)
+        level = "L1" if item is not None else None
 
         if item is None:
             version_id = entry.get("modelVersionId") or entry.get("id")
@@ -245,12 +271,14 @@ class RecipeScanner:
                     item = self._get_checkpoint_from_version_index(str(version_id))
                 else:
                     item = self._get_lora_from_version_index(str(version_id))
+                level = "L2" if item is not None else None
 
         if item is None and len(entry_hash) == 12:
             item = autov3_cache.get(entry_hash)
+            level = "L3" if item is not None else None
 
         if item is None:
-            return None
+            return (None, None)
 
         # Type gate: the L1 cache merges lora and checkpoint items and is
         # type-blind, so a match must be verified against the entry kind.
@@ -260,7 +288,7 @@ class RecipeScanner:
                 VALID_CHECKPOINT_SUB_TYPES if is_checkpoint else VALID_LORA_TYPES
             )
             if sub_type not in valid:
-                return None
+                return (None, None)
         else:
             civitai_type = (
                 (item.get("civitai") or {}).get("model", {}) or {}
@@ -275,9 +303,22 @@ class RecipeScanner:
                 else:
                     valid = VALID_LORA_TYPES
                 if normalized not in valid:
-                    return None
+                    return (None, None)
 
-        return item
+        return (item, level)
+
+    @staticmethod
+    def _entry_identifier(entry: dict[str, Any]) -> str:
+        """Best-effort human-readable identifier for a recipe entry.
+
+        Used for rematch reports and debug logs; falls back through the keys
+        that carry the most recognisable information first.
+        """
+        for key in ("modelName", "name", "file_name", "hash", "modelVersionId"):
+            value = entry.get(key)
+            if value:
+                return str(value)
+        return "unknown"
 
     def on_library_changed(self) -> None:
         """Reset cached state when the active library changes."""
@@ -548,6 +589,32 @@ class RecipeScanner:
     async def rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
         """Rematch a single recipe's deleted lora/checkpoint entries locally.
 
+        Logs one INFO summary line for this run and delegates the per-recipe
+        work to ``_rematch_recipe_by_id`` (shared with the bulk entry point).
+
+        Args:
+            recipe_id: ID of the recipe to rematch
+
+        Returns:
+            Dict summary of the rematch result (see ``_rematch_recipe_by_id``).
+            Raises RecipeNotFoundError when the recipe is missing.
+        """
+        result = await self._rematch_recipe_by_id(recipe_id)
+        recipe_name = (result.get("recipe") or {}).get("name") or recipe_id
+        logger.info(
+            "Recipe rematch %s (%s): success=%s, %d entries matched, %d unresolved, %d errors",
+            recipe_id,
+            recipe_name,
+            result.get("success"),
+            result.get("matched_entries", 0),
+            result.get("unresolved_entries", 0),
+            result.get("errors", 0),
+        )
+        return result
+
+    async def _rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+        """Rematch a single recipe's deleted lora/checkpoint entries locally.
+
         Match snapshots (local hash cache + computed autov3 cache) are built
         BEFORE acquiring the mutation lock — both are read-only snapshots and
         the version-cached hash dict would otherwise rebuild mid-run if a scan
@@ -557,8 +624,13 @@ class RecipeScanner:
             recipe_id: ID of the recipe to rematch
 
         Returns:
-            Dict summary of the rematch result (success/rematched/skipped).
-            Raises RecipeNotFoundError when the recipe is missing.
+            Dict summary of the rematch result with unified counters
+            (matched_recipes, matched_entries, unresolved_recipes,
+            unresolved_entries plus the legacy rematched/skipped/errors
+            fields) and a per-entry ``details`` report. The legacy ``skipped``
+            field means "recipe not updated" and overlaps
+            ``unresolved_recipes`` (a recipe with unmatched candidates counts
+            as both). Raises RecipeNotFoundError when the recipe is missing.
         """
         local_cache = await self.build_local_hash_cache()
         autov3_cache = await self._build_rematch_autov3_cache()
@@ -574,24 +646,43 @@ class RecipeScanner:
                 raise RecipeNotFoundError(f"Recipe {recipe_id} not found")
 
             try:
-                rematched, _errors = await self._rematch_single_recipe(
+                rematched, _errors, details = await self._rematch_single_recipe(
                     recipe, local_cache, autov3_cache
                 )
             except RecipePersistenceError as exc:
+                logger.error(
+                    "Recipe rematch %s (%s) failed to persist: %s",
+                    recipe_id,
+                    recipe.get("name") or recipe.get("file_path"),
+                    exc,
+                )
                 return {
                     "success": False,
                     "errors": 1,
                     "rematched": 0,
                     "skipped": 0,
+                    "matched_recipes": 0,
+                    "matched_entries": 0,
+                    "unresolved_recipes": 0,
+                    "unresolved_entries": 0,
+                    "details": {"matched": [], "unresolved": []},
                     "recipe": recipe,
                     "error": str(exc),
                 }
+
+            unresolved_entries = len(details["unresolved"])
+            unresolved_recipes = 1 if unresolved_entries > 0 else 0
 
             if rematched == 0:
                 return {
                     "success": True,
                     "rematched": 0,
                     "skipped": 1,
+                    "matched_recipes": 0,
+                    "matched_entries": 0,
+                    "unresolved_recipes": unresolved_recipes,
+                    "unresolved_entries": unresolved_entries,
+                    "details": details,
                     "recipe": recipe,
                 }
 
@@ -600,6 +691,11 @@ class RecipeScanner:
                 "success": True,
                 "rematched": rematched,
                 "skipped": 0,
+                "matched_recipes": 1,
+                "matched_entries": rematched,
+                "unresolved_recipes": unresolved_recipes,
+                "unresolved_entries": unresolved_entries,
+                "details": details,
                 "recipe": await self.get_recipe_by_id(recipe_id),
             }
 
@@ -608,7 +704,7 @@ class RecipeScanner:
         recipe: Dict[str, Any],
         local_cache: dict[str, dict[str, Any]],
         autov3_cache: dict[str, dict[str, Any]],
-    ) -> Tuple[int, int]:
+    ) -> Tuple[int, int, Dict[str, Any]]:
         """Rematch a single recipe's lora/checkpoint entries against local models.
 
         Shared per-recipe helper used by ``rematch_recipe_by_id`` and the bulk
@@ -623,15 +719,21 @@ class RecipeScanner:
             autov3_cache: L3 computed-autov3 cache snapshot
 
         Returns:
-            Tuple of (rematched_entries, errors). The errors element is always
-            0 on a normal return — a persistence failure RAISES
-            ``RecipePersistenceError`` so callers can count it.
+            Tuple of (rematched_entries, errors, details). The errors element
+            is always 0 on a normal return — a persistence failure RAISES
+            ``RecipePersistenceError`` so callers can count it. ``details``
+            carries the per-entry outcome:
+            ``{"matched": [{type, entry, file_name, match_level}],
+              "unresolved": [{type, entry}]}`` where an unresolved entry is a
+            rematch candidate that found no local match — an expected outcome
+            (the model may simply not exist locally), not an error.
 
         Raises:
             RecipePersistenceError: when the recipe changed but
                 ``_save_recipe_persistently`` returned False.
         """
         rematched = 0
+        details: Dict[str, Any] = {"matched": [], "unresolved": []}
 
         # Lora entries
         loras = recipe.get("loras", [])
@@ -639,11 +741,24 @@ class RecipeScanner:
             for entry in loras:
                 if not self._is_rematch_candidate(entry):
                     continue
-                item = await self._match_rematch_entry(
+                item, level = await self._match_rematch_entry_with_level(
                     entry, local_cache, autov3_cache, is_checkpoint=False
                 )
                 if item is None:
+                    details["unresolved"].append(
+                        {"type": "lora", "entry": self._entry_identifier(entry)}
+                    )
                     continue
+                # Capture the identifier before the write-back mutates the
+                # entry (file_name/isDeleted are rewritten in place).
+                details["matched"].append(
+                    {
+                        "type": "lora",
+                        "entry": self._entry_identifier(entry),
+                        "file_name": item.get("file_name") or "",
+                        "match_level": level,
+                    }
+                )
                 self._write_rematch_lora_entry(entry, item)
                 rematched += 1
 
@@ -652,15 +767,50 @@ class RecipeScanner:
         checkpoint = recipe.get("checkpoint")
         if isinstance(checkpoint, dict):
             if self._is_rematch_candidate(checkpoint):
-                item = await self._match_rematch_entry(
+                item, level = await self._match_rematch_entry_with_level(
                     checkpoint, local_cache, autov3_cache, is_checkpoint=True
                 )
-                if item is not None:
+                if item is None:
+                    details["unresolved"].append(
+                        {
+                            "type": "checkpoint",
+                            "entry": self._entry_identifier(checkpoint),
+                        }
+                    )
+                else:
+                    details["matched"].append(
+                        {
+                            "type": "checkpoint",
+                            "entry": self._entry_identifier(checkpoint),
+                            "file_name": item.get("file_name") or "",
+                            "match_level": level,
+                        }
+                    )
                     self._write_rematch_checkpoint_entry(checkpoint, item)
                     rematched += 1
 
+        # Per-recipe detail is DEBUG only: one INFO line per recipe would
+        # flood the log for large libraries, and unresolved entries are a
+        # normal outcome rather than something to warn about.
+        if details["matched"] or details["unresolved"]:
+            matched_desc = ", ".join(
+                f"{m['entry']} -> {m['file_name']} ({m['match_level']})"
+                for m in details["matched"]
+            ) or "-"
+            unresolved_desc = ", ".join(
+                u["entry"] for u in details["unresolved"]
+            ) or "-"
+            logger.debug(
+                "Recipe rematch %s: matched %d entries [%s]; unresolved %d [%s]",
+                recipe.get("id") or recipe.get("file_path"),
+                len(details["matched"]),
+                matched_desc,
+                len(details["unresolved"]),
+                unresolved_desc,
+            )
+
         if rematched == 0:
-            return (0, 0)
+            return (0, 0, details)
 
         from ..utils.utils import calculate_recipe_fingerprint
 
@@ -673,7 +823,7 @@ class RecipeScanner:
             )
 
         self._update_fts_index_for_recipe(recipe, "update")
-        return (rematched, 0)
+        return (rematched, 0, details)
 
     async def rematch_all_recipes(
         self, progress_callback: Optional[Callable[[Dict[str, Any]], Any]] = None
@@ -692,9 +842,14 @@ class RecipeScanner:
                 (started/processing/cancelled/completed events).
 
         Returns:
-            Dict summary of the rematch run
-            (success/status/rematched/skipped/errors/total).
+            Dict summary of the rematch run with unified counters
+            (matched_recipes/matched_entries/unresolved_recipes/unresolved_
+            entries plus the legacy success/status/rematched/skipped/errors/
+            total fields). ``rematched`` (legacy) counts updated recipes —
+            use ``matched_entries`` for the entry-level total.
         """
+        start_time = time.perf_counter()
+
         if progress_callback:
             await progress_callback({"status": "started"})
 
@@ -706,31 +861,53 @@ class RecipeScanner:
             cache = await self.get_cached_data()
             all_recipes = list(cache.raw_data)
             total = len(all_recipes)
-            rematched_count = 0
+            matched_recipes = 0
+            matched_entries = 0
+            unresolved_recipes = 0
+            unresolved_entries = 0
             skipped_count = 0
             errors_count = 0
 
             for i, recipe in enumerate(all_recipes):
                 if self.is_cancelled():
-                    logger.info("Recipe rematch cancelled by user")
+                    logger.info(
+                        "Recipe rematch cancelled by user after %d/%d recipes: "
+                        "%d updated (%d entries matched), %d unresolved entries "
+                        "in %d recipes, %d errors",
+                        i,
+                        total,
+                        matched_recipes,
+                        matched_entries,
+                        unresolved_entries,
+                        unresolved_recipes,
+                        errors_count,
+                    )
                     if progress_callback:
                         await progress_callback(
                             {
                                 "status": "cancelled",
                                 "current": i,
                                 "total": total,
-                                "rematched": rematched_count,
+                                "rematched": matched_recipes,
                                 "skipped": skipped_count,
                                 "errors": errors_count,
+                                "matched_recipes": matched_recipes,
+                                "matched_entries": matched_entries,
+                                "unresolved_recipes": unresolved_recipes,
+                                "unresolved_entries": unresolved_entries,
                             }
                         )
                     return {
                         "success": False,
                         "status": "cancelled",
-                        "rematched": rematched_count,
+                        "rematched": matched_recipes,
                         "skipped": skipped_count,
                         "errors": errors_count,
                         "total": total,
+                        "matched_recipes": matched_recipes,
+                        "matched_entries": matched_entries,
+                        "unresolved_recipes": unresolved_recipes,
+                        "unresolved_entries": unresolved_entries,
                     }
 
                 try:
@@ -745,13 +922,19 @@ class RecipeScanner:
                             }
                         )
 
-                    rematched, _ = await self._rematch_single_recipe(
+                    rematched, _errors, details = await self._rematch_single_recipe(
                         recipe, local_cache, autov3_cache
                     )
                     if rematched > 0:
-                        rematched_count += 1
+                        matched_recipes += 1
+                        matched_entries += rematched
                     else:
                         skipped_count += 1
+
+                    recipe_unresolved = len(details["unresolved"])
+                    if recipe_unresolved > 0:
+                        unresolved_recipes += 1
+                        unresolved_entries += recipe_unresolved
 
                 except Exception as exc:
                     logger.error(
@@ -763,30 +946,52 @@ class RecipeScanner:
             # per call, so per-recipe calls would race 5k resort tasks.
             self._schedule_resort()
 
+            logger.info(
+                "Recipe rematch complete: %d/%d recipes updated (%d entries "
+                "matched), %d unresolved entries in %d recipes, %d skipped, "
+                "%d errors in %.2fs",
+                matched_recipes,
+                total,
+                matched_entries,
+                unresolved_entries,
+                unresolved_recipes,
+                skipped_count,
+                errors_count,
+                time.perf_counter() - start_time,
+            )
+
             # Final progress update
             if progress_callback:
                 await progress_callback(
                     {
                         "status": "completed",
-                        "rematched": rematched_count,
+                        "rematched": matched_recipes,
                         "skipped": skipped_count,
                         "errors": errors_count,
                         "total": total,
+                        "matched_recipes": matched_recipes,
+                        "matched_entries": matched_entries,
+                        "unresolved_recipes": unresolved_recipes,
+                        "unresolved_entries": unresolved_entries,
                     }
                 )
 
             return {
                 "success": True,
-                "rematched": rematched_count,
+                "rematched": matched_recipes,
                 "skipped": skipped_count,
                 "errors": errors_count,
                 "total": total,
+                "matched_recipes": matched_recipes,
+                "matched_entries": matched_entries,
+                "unresolved_recipes": unresolved_recipes,
+                "unresolved_entries": unresolved_entries,
             }
 
     async def rematch_recipes_bulk(self, recipe_ids: List[str]) -> Dict[str, Any]:
         """Rematch a set of recipes by their IDs.
 
-        Iterates ``rematch_recipe_by_id`` over each id: not-found ids are
+        Iterates ``_rematch_recipe_by_id`` over each id: not-found ids are
         counted as skipped, and unexpected per-recipe exceptions are counted as
         errors with the loop continuing so partial results are never lost.
         Persist failures are already converted to the by_id return shape and
@@ -796,23 +1001,38 @@ class RecipeScanner:
             recipe_ids: List of recipe ids to rematch.
 
         Returns:
-            Dict summary of the bulk run
-            (success/total/rematched/skipped/errors/recipes).
+            Dict summary of the bulk run with unified counters
+            (matched_recipes, matched_entries, unresolved_recipes,
+            unresolved_entries plus the legacy total/rematched/skipped/errors
+            fields) and a per-recipe ``details`` list. The legacy ``rematched``
+            field is the total entry count (same as ``matched_entries``) —
+            unlike ``rematch_all_recipes`` where it counts updated recipes.
         """
         total = len(recipe_ids)
-        rematched = 0
+        matched_recipes = 0
+        matched_entries = 0
+        unresolved_recipes = 0
+        unresolved_entries = 0
         skipped = 0
         errors = 0
         recipes: List[Dict[str, Any]] = []
+        details_list: List[Dict[str, Any]] = []
 
         for recipe_id in recipe_ids:
             try:
-                result = await self.rematch_recipe_by_id(recipe_id)
+                result = await self._rematch_recipe_by_id(recipe_id)
                 if result.get("success"):
-                    rematched += result.get("rematched", 0)
+                    matched_recipes += result.get("matched_recipes", 0)
+                    matched_entries += result.get("matched_entries", 0)
+                    unresolved_recipes += result.get("unresolved_recipes", 0)
+                    unresolved_entries += result.get("unresolved_entries", 0)
                     skipped += result.get("skipped", 0)
                     if result.get("recipe"):
                         recipes.append(result["recipe"])
+                    if result.get("details"):
+                        details_list.append(
+                            {"recipe_id": recipe_id, **result["details"]}
+                        )
                 else:
                     errors += result.get("errors", 0)
             except RecipeNotFoundError:
@@ -823,13 +1043,30 @@ class RecipeScanner:
 
         self._schedule_resort()
 
+        logger.info(
+            "Recipe bulk rematch: %d/%d recipes updated (%d entries matched), "
+            "%d unresolved entries in %d recipes, %d skipped, %d errors",
+            matched_recipes,
+            total,
+            matched_entries,
+            unresolved_entries,
+            unresolved_recipes,
+            skipped,
+            errors,
+        )
+
         return {
             "success": True,
             "total": total,
-            "rematched": rematched,
+            "rematched": matched_entries,
             "skipped": skipped,
             "errors": errors,
+            "matched_recipes": matched_recipes,
+            "matched_entries": matched_entries,
+            "unresolved_recipes": unresolved_recipes,
+            "unresolved_entries": unresolved_entries,
             "recipes": recipes,
+            "details": details_list,
         }
 
     def _write_rematch_lora_entry(

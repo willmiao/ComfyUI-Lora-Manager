@@ -187,11 +187,14 @@
             "error": "Error al reparar recetas: {message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "Reasociar recetas con modelos locales",
+            "loading": "Reasociando recetas con modelos locales...",
+            "success": "{entries} entradas asociadas en {recipes} recetas",
+            "successErrors": "{entries} entradas asociadas en {recipes} recetas, {failures} fallidas",
+            "allFailed": "Falló la reasociación de {failures} de {total} recetas",
+            "noMatch": "No se encontró coincidencia local para {entries} entradas en {recipes} recetas",
+            "cancelled": "Reasociación cancelada. {recipes} recetas actualizadas ({entries} entradas)",
+            "error": "Falló la reasociación de recetas: {message}"
         },
         "manageExcludedModels": {
             "label": "Gestionar modelos excluidos"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "Reparación completa: {repaired} reparadas, {skipped} omitidas (de {total})",
             "repairBulkSkipped": "No se necesita reparación para ninguna de las {total} recetas seleccionadas",
             "repairBulkFailed": "Error al reparar las recetas seleccionadas: {message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "{entries} entradas asociadas en {recipes} recetas",
+            "rematchCompleteErrors": "{entries} entradas asociadas en {recipes} recetas, {failures} fallidas",
+            "rematchAllFailed": "Falló la reasociación de {failures} de {total} recetas seleccionadas",
+            "rematchUnmatched": "No se encontró coincidencia local para {entries} entradas en {recipes} recetas",
+            "rematchSkipped": "Ninguna de las {total} recetas seleccionadas necesita reasociación",
+            "rematchFailed": "Falló la reasociación de las recetas seleccionadas: {message}",
             "reimporting": "Reimportando receta desde origen...",
             "reimportSuccess": "Receta reimportada exitosamente",
             "reimportBulkComplete": "Reimportación completa: {completed} reimportadas, {failed} fallidas (de {total})",

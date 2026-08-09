@@ -187,11 +187,14 @@
             "error": "配方修复失败：{message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "将食谱重新匹配到本地模型",
+            "loading": "正在将食谱重新匹配到本地模型...",
+            "success": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱",
+            "successErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱，{failures} 个失败",
+            "allFailed": "{failures}/{total} 个食谱重新匹配失败",
+            "noMatch": "在 {recipes} 个食谱中未找到 {entries} 个条目的本地匹配",
+            "cancelled": "已取消重新匹配。{recipes} 个食谱已更新（{entries} 个条目）。",
+            "error": "食谱重新匹配失败：{message}"
         },
         "manageExcludedModels": {
             "label": "管理已排除的模型"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "修复完成：{repaired} 个已修复，{skipped} 个已跳过（共 {total} 个）",
             "repairBulkSkipped": "所选 {total} 个配方无需修复",
             "repairBulkFailed": "修复所选配方失败：{message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱",
+            "rematchCompleteErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱，{failures} 个失败",
+            "rematchAllFailed": "{failures}/{total} 个所选食谱重新匹配失败",
+            "rematchUnmatched": "在 {recipes} 个食谱中未找到 {entries} 个条目的本地匹配",
+            "rematchSkipped": "{total} 个所选食谱均无需重新匹配",
+            "rematchFailed": "重新匹配所选食谱失败：{message}",
             "reimporting": "正在从源重新导入配方...",
             "reimportSuccess": "配方已从源重新导入成功",
             "reimportBulkComplete": "重新导入完成：{completed} 个已导入，{failed} 个失败（共 {total} 个）",

@@ -187,11 +187,14 @@
             "error": "레시피 복구 실패: {message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "레시피를 로컬 모델에 다시 매칭",
+            "loading": "레시피를 로컬 모델에 다시 매칭하는 중...",
+            "success": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다",
+            "successErrors": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다. {failures}개 실패",
+            "allFailed": "{total}개 레시피 중 {failures}개 재매칭 실패",
+            "noMatch": "{recipes}개 레시피에서 {entries}개 항목의 로컬 매칭을 찾지 못했습니다",
+            "cancelled": "재매칭이 취소되었습니다. {recipes}개 레시피 업데이트됨({entries}개 항목)",
+            "error": "레시피 재매칭 실패: {message}"
         },
         "manageExcludedModels": {
             "label": "제외된 모델 관리"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "복구 완료: {repaired}개 복구, {skipped}개 건너뜀 (총 {total}개)",
             "repairBulkSkipped": "선택한 {total}개 레시피는 복구가 필요하지 않습니다",
             "repairBulkFailed": "선택한 레시피 복구 실패: {message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다",
+            "rematchCompleteErrors": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다. {failures}개 실패",
+            "rematchAllFailed": "선택한 {total}개 레시피 중 {failures}개 재매칭 실패",
+            "rematchUnmatched": "{recipes}개 레시피에서 {entries}개 항목의 로컬 매칭을 찾지 못했습니다",
+            "rematchSkipped": "선택한 {total}개 레시피는 재매칭이 필요하지 않습니다",
+            "rematchFailed": "선택한 레시피 재매칭 실패: {message}",
             "reimporting": "소스에서 레시피를 다시 가져오는 중...",
             "reimportSuccess": "레시피를 다시 가져왔습니다",
             "reimportBulkComplete": "다시 가져오기 완료: {completed}개 성공, {failed}개 실패 (총 {total}개)",

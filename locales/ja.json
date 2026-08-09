@@ -187,11 +187,14 @@
             "error": "レシピの修復に失敗しました: {message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "レシピをローカルモデルに再マッチング",
+            "loading": "レシピをローカルモデルに再マッチングしています...",
+            "success": "{recipes} 件のレシピで {entries} エントリをマッチングしました",
+            "successErrors": "{recipes} 件のレシピで {entries} エントリをマッチングしました（{failures} 件失敗）",
+            "allFailed": "{total} 件中 {failures} 件のレシピの再マッチングに失敗しました",
+            "noMatch": "{recipes} 件のレシピで {entries} エントリのローカルマッチが見つかりませんでした",
+            "cancelled": "再マッチングをキャンセルしました。{recipes} 件のレシピを更新（{entries} エントリ）",
+            "error": "レシピの再マッチングに失敗しました：{message}"
         },
         "manageExcludedModels": {
             "label": "除外モデルを管理"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "修復完了：{repaired} 件修復、{skipped} 件スキップ（合計 {total} 件）",
             "repairBulkSkipped": "選択した {total} 件のレシピは修復不要です",
             "repairBulkFailed": "選択したレシピの修復に失敗しました：{message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "{recipes} 件のレシピで {entries} エントリをマッチングしました",
+            "rematchCompleteErrors": "{recipes} 件のレシピで {entries} エントリをマッチングしました（{failures} 件失敗）",
+            "rematchAllFailed": "選択した {total} 件中 {failures} 件のレシピの再マッチングに失敗しました",
+            "rematchUnmatched": "{recipes} 件のレシピで {entries} エントリのローカルマッチが見つかりませんでした",
+            "rematchSkipped": "選択した {total} 件のレシピは再マッチングの必要がありませんでした",
+            "rematchFailed": "選択したレシピの再マッチングに失敗しました：{message}",
             "reimporting": "ソースからレシピを再インポート中...",
             "reimportSuccess": "レシピの再インポートが完了しました",
             "reimportBulkComplete": "再インポート完了：{completed} 件成功、{failed} 件失敗（合計 {total} 件）",

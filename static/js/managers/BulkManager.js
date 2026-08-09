@@ -898,9 +898,17 @@ export class BulkManager {
 
             if (result.success) {
                 const total = result.total || filePaths.length;
-                // The rematch backend reports `rematched` (not `repaired`)
+                // Unified counters from the backend; legacy fields fall back
+                // for older backends: `rematched` (entry count) for
+                // matched_entries, `total` (selection size) for
+                // matched_recipes.
                 const rematched = result.rematched || 0;
                 const skipped = result.skipped || 0;
+                const matchedRecipes = result.matched_recipes || result.total || 0;
+                const matchedEntries = result.matched_entries || rematched;
+                const failures = result.errors || 0;
+                const unresolvedEntries = result.unresolved_entries || 0;
+                const unresolvedRecipes = result.unresolved_recipes || 0;
 
                 const recipes = result.recipes || [];
                 for (const recipe of recipes) {
@@ -912,11 +920,31 @@ export class BulkManager {
                     }
                 }
 
-                if (rematched > 0) {
+                if (matchedEntries > 0) {
+                    const hasFailures = failures > 0;
+                    const toastKey = hasFailures
+                        ? 'toast.recipes.rematchCompleteErrors'
+                        : 'toast.recipes.rematchComplete';
                     showToast(
-                        'toast.recipes.rematchComplete',
-                        { rematched, skipped, total },
-                        'success'
+                        toastKey,
+                        { rematched, skipped, total, entries: matchedEntries, recipes: matchedRecipes, failures },
+                        hasFailures ? 'warning' : 'success'
+                    );
+                } else if (failures > 0) {
+                    // Nothing matched and at least one recipe errored —
+                    // "no rematch needed" would be actively misleading here.
+                    showToast(
+                        'toast.recipes.rematchAllFailed',
+                        { total, failures },
+                        'error'
+                    );
+                } else if (unresolvedEntries > 0) {
+                    // Entries existed but have no local model — expected for
+                    // models deleted from Civitai; informational, not an error.
+                    showToast(
+                        'toast.recipes.rematchUnmatched',
+                        { entries: unresolvedEntries, recipes: unresolvedRecipes, total },
+                        'info'
                     );
                 } else {
                     showToast(

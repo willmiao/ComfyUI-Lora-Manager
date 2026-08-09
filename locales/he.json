@@ -187,11 +187,14 @@
             "error": "תיקון המתכונים נכשל: {message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "התאמה מחדש של מתכונים למודלים מקומיים",
+            "loading": "מתבצעת התאמה מחדש של מתכונים למודלים מקומיים...",
+            "success": "הותאמו {entries} פריטים ב־{recipes} מתכונים",
+            "successErrors": "הותאמו {entries} פריטים ב־{recipes} מתכונים, {failures} נכשלו",
+            "allFailed": "ההתאמה נכשלה עבור {failures} מתוך {total} מתכונים",
+            "noMatch": "לא נמצאה התאמה מקומית עבור {entries} פריטים ב־{recipes} מתכונים",
+            "cancelled": "ההתאמה בוטלה. עודכנו {recipes} מתכונים ({entries} פריטים)",
+            "error": "ההתאמה מחדש של המתכונים נכשלה: {message}"
         },
         "manageExcludedModels": {
             "label": "ניהול מודלים מוחרגים"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "התיקון הושלם: {repaired} תוקנו, {skipped} דולגו (מתוך {total})",
             "repairBulkSkipped": "אין צורך בתיקון עבור {total} המתכונים הנבחרים",
             "repairBulkFailed": "תיקון המתכונים הנבחרים נכשל: {message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "הותאמו {entries} פריטים ב־{recipes} מתכונים",
+            "rematchCompleteErrors": "הותאמו {entries} פריטים ב־{recipes} מתכונים, {failures} נכשלו",
+            "rematchAllFailed": "ההתאמה נכשלה עבור {failures} מתוך {total} מתכונים שנבחרו",
+            "rematchUnmatched": "לא נמצאה התאמה מקומית עבור {entries} פריטים ב־{recipes} מתכונים",
+            "rematchSkipped": "אין צורך בהתאמה עבור {total} המתכונים שנבחרו",
+            "rematchFailed": "ההתאמה מחדש של המתכונים שנבחרו נכשלה: {message}",
             "reimporting": "מייבא מתכון מחדש מהמקור...",
             "reimportSuccess": "המתכון יובא מחדש בהצלחה",
             "reimportBulkComplete": "ייבוא מחדש הושלם: {completed} יובאו, {failed} נכשלו (מתוך {total})",

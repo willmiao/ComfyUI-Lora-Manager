@@ -78,7 +78,7 @@ describe('RecipeContextMenu.rematchRecipe', () => {
     global.fetch
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ success: true, rematched: 2, skipped: 0 }),
+        json: async () => ({ success: true, rematched: 2, skipped: 0, matched_recipes: 1, matched_entries: 2 }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -96,7 +96,7 @@ describe('RecipeContextMenu.rematchRecipe', () => {
     });
     expect(showToastMock).toHaveBeenCalledWith(
       'toast.recipes.rematchComplete',
-      { rematched: 2, skipped: 0, total: 1 },
+      { rematched: 2, skipped: 0, total: 1, entries: 2, recipes: 1, failures: 0 },
       'success'
     );
     expect(showToastMock).not.toHaveBeenCalledWith(
@@ -109,6 +109,35 @@ describe('RecipeContextMenu.rematchRecipe', () => {
       id: 'recipe-1',
       title: 'Updated Recipe',
     });
+  });
+
+  it('toasts an info message when the entries had no local match', async () => {
+    const menu = await createMenu();
+    const card = document.getElementById('card');
+    menu.showMenu(100, 100, card);
+
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ success: true, rematched: 0, skipped: 0, unresolved_recipes: 1, unresolved_entries: 2 }),
+    });
+
+    document
+      .querySelector('[data-action="rematch"]')
+      .dispatchEvent(new Event('click', { bubbles: true }));
+
+    await flushAsyncTasks();
+
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.recipes.rematchUnmatched',
+      { entries: 2, recipes: 1, total: 1 },
+      'info'
+    );
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.recipes.rematchSkipped',
+      expect.anything(),
+      expect.anything()
+    );
+    expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
   it('toasts the skipped message when nothing was rematched', async () => {

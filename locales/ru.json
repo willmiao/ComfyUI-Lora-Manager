@@ -187,11 +187,14 @@
             "error": "Ошибка восстановления рецептов: {message}"
         },
         "rematchRecipes": {
-            "label": "[TODO: Translate] Rematch recipes to local models",
-            "loading": "[TODO: Translate] Rematching recipes to local models...",
-            "success": "[TODO: Translate] Successfully rematched {count} recipes.",
-            "cancelled": "[TODO: Translate] Rematch cancelled. {count} recipes were rematched.",
-            "error": "[TODO: Translate] Recipe rematch failed: {message}"
+            "label": "Повторное сопоставление рецептов с локальными моделями",
+            "loading": "Повторное сопоставление рецептов с локальными моделями...",
+            "success": "Сопоставлено записей: {entries} в рецептах: {recipes}",
+            "successErrors": "Сопоставлено записей: {entries} в рецептах: {recipes}, ошибок: {failures}",
+            "allFailed": "Не удалось сопоставить: {failures} из {total} рецептов",
+            "noMatch": "Не найдено локального сопоставления для {entries} записей в {recipes} рецептах",
+            "cancelled": "Сопоставление отменено. Обновлено рецептов: {recipes} (записей: {entries})",
+            "error": "Не удалось выполнить сопоставление рецептов: {message}"
         },
         "manageExcludedModels": {
             "label": "Управление исключёнными моделями"
@@ -1960,9 +1963,12 @@
             "repairBulkComplete": "Восстановление завершено: {repaired} восстановлено, {skipped} пропущено (из {total})",
             "repairBulkSkipped": "Ни один из {total} выбранных рецептов не требует восстановления",
             "repairBulkFailed": "Не удалось восстановить выбранные рецепты: {message}",
-            "rematchComplete": "[TODO: Translate] Rematch complete: {rematched} rematched, {skipped} skipped (of {total})",
-            "rematchSkipped": "[TODO: Translate] No rematch needed for any of the {total} selected recipes",
-            "rematchFailed": "[TODO: Translate] Failed to rematch selected recipes: {message}",
+            "rematchComplete": "Сопоставлено записей: {entries} в рецептах: {recipes}",
+            "rematchCompleteErrors": "Сопоставлено записей: {entries} в рецептах: {recipes}, ошибок: {failures}",
+            "rematchAllFailed": "Не удалось сопоставить: {failures} из {total} выбранных рецептов",
+            "rematchUnmatched": "Не найдено локального сопоставления для {entries} записей в {recipes} рецептах",
+            "rematchSkipped": "Ни один из {total} выбранных рецептов не требует сопоставления",
+            "rematchFailed": "Не удалось сопоставить выбранные рецепты: {message}",
             "reimporting": "Переимпорт рецепта из источника...",
             "reimportSuccess": "Рецепт успешно переимпортирован",
             "reimportBulkComplete": "Переимпорт завершён: {completed} переимпортировано, {failed} ошибок (из {total})",
