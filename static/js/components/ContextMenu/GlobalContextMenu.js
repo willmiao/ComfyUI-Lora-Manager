@@ -54,7 +54,23 @@ export class GlobalContextMenu extends BaseContextMenu {
             rematchRecipesItem?.classList.add('hidden');
         }
 
+        this._updateSeparatorVisibility();
+
         super.showMenu(x, y, contextOrigin);
+    }
+
+    _updateSeparatorVisibility() {
+        const children = Array.from(this.menu.children);
+        const isVisible = (el) => el.classList.contains('context-menu-item') && !el.classList.contains('hidden');
+
+        children.forEach((el, index) => {
+            if (!el.classList.contains('context-menu-separator')) {
+                return;
+            }
+            const hasVisibleBefore = children.slice(0, index).some(isVisible);
+            const hasVisibleAfter = children.slice(index + 1).some(isVisible);
+            el.classList.toggle('hidden', !(hasVisibleBefore && hasVisibleAfter));
+        });
     }
 
     handleMenuAction(action, menuItem) {
