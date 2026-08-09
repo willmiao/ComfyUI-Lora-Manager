@@ -2,6 +2,14 @@
 
 This document provides detailed test scenarios for end-to-end validation of LoRa Manager features.
 
+> **Run preconditions (from SKILL.md)**: every run uses the **sandboxed** standalone
+> server on a free port `{PORT}` (default candidate `8188`, only if actually free — pick
+> e.g. `8199` when `8188` is occupied by a live ComfyUI). Fixtures live in the sandboxed
+> `recipes_path` as `f"{id}.recipe.json"` files with matching in-JSON `id`; the real user
+> config and real library are never touched (record protection proof before/after).
+> Abort if a phase exceeds ~2x its budget or a tool call retries 3+ times (SKILL.md
+> "Time Budgets & Abort Guidance").
+
 ## Table of Contents
 
 1. [LoRA List Page](#lora-list-page)
@@ -19,7 +27,7 @@ This document provides detailed test scenarios for end-to-end validation of LoRa
 **Objective**: Verify the LoRA list page loads correctly and displays models.
 
 **Steps**:
-1. Navigate to `http://127.0.0.1:8188/loras`
+1. Navigate to `http://127.0.0.1:{PORT}/loras`
 2. Wait for page title "LoRAs" to appear
 3. Take snapshot to verify:
    - Header with "LoRAs" title is visible
@@ -134,7 +142,7 @@ evaluate_script(function="""
 **Objective**: Verify recipes page loads and displays recipes.
 
 **Steps**:
-1. Navigate to `http://127.0.0.1:8188/recipes`
+1. Navigate to `http://127.0.0.1:{PORT}/recipes`
 2. Wait for "Recipes" title
 3. Take snapshot
 
@@ -176,7 +184,7 @@ evaluate_script(function="""
 **Objective**: Verify settings page displays correctly.
 
 **Steps**:
-1. Navigate to `http://127.0.0.1:8188/settings`
+1. Navigate to `http://127.0.0.1:{PORT}/settings`
 2. Wait for "Settings" title
 3. Take snapshot
 
@@ -190,7 +198,7 @@ evaluate_script(function="""
 1. Navigate to settings page
 2. Change a setting (e.g., default view mode)
 3. Save settings
-4. Restart server: `python scripts/start_server.py --restart --wait`
+4. Restart server: `python scripts/start_server.py --port {PORT} --restart --wait --timeout 30 --detach`
 5. Refresh browser page
 6. Navigate to settings
 
