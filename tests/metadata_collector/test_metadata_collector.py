@@ -471,6 +471,172 @@ def test_conditioning_provenance_recovers_combined_controlnet_prompts(
     assert params["negative_prompt"] == "low quality"
 
 
+def test_conditioning_provenance_recovers_transformed_switched_prompts(
+    metadata_registry, monkeypatch
+):
+    prompt_graph = {
+        "encode_pos": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "expected positive", "clip": ["clip", 0]},
+        },
+        "encode_other_pos": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "wrong positive", "clip": ["clip", 0]},
+        },
+        "encode_neg": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "expected negative", "clip": ["clip", 0]},
+        },
+        "encode_other_neg": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "wrong negative", "clip": ["clip", 0]},
+        },
+        "enhancer": {
+            "class_type": "KreaSeedVarianceEnhancer",
+            "inputs": {"conditioning": ["encode_pos", 0]},
+        },
+        "zero_out": {
+            "class_type": "ConditioningZeroOut",
+            "inputs": {"conditioning": ["encode_neg", 0]},
+        },
+        "positive_switch": {
+            "class_type": "ComfySwitchNode",
+            "inputs": {
+                "switch": True,
+                "on_false": ["encode_other_pos", 0],
+                "on_true": ["enhancer", 0],
+            },
+        },
+        "negative_switch": {
+            "class_type": "ComfySwitchNode",
+            "inputs": {
+                "switch": True,
+                "on_false": ["encode_other_neg", 0],
+                "on_true": ["zero_out", 0],
+            },
+        },
+        "sampler": {
+            "class_type": "ClownsharKSampler_Beta",
+            "inputs": {
+                "seed": 123,
+                "steps": 8,
+                "cfg": 1.0,
+                "sampler_name": "linear/euler",
+                "scheduler": "beta57",
+                "denoise": 1.0,
+                "positive": ["positive_switch", 0],
+                "negative": ["negative_switch", 0],
+                "latent_image": {
+                    "samples": types.SimpleNamespace(shape=(1, 4, 16, 16))
+                },
+            },
+        },
+    }
+    prompt = SimpleNamespace(original_prompt=prompt_graph)
+
+    positive_conditioning = object()
+    other_positive_conditioning = object()
+    negative_conditioning = object()
+    other_negative_conditioning = object()
+    enhanced_conditioning = object()
+    zeroed_conditioning = object()
+
+    monkeypatch.setattr(metadata_processor, "standalone_mode", False)
+
+    metadata_registry.start_collection("prompt-transformed-switch")
+    metadata_registry.set_current_prompt(prompt)
+
+    for node_id, text, conditioning in (
+        ("encode_pos", "expected positive", positive_conditioning),
+        ("encode_other_pos", "wrong positive", other_positive_conditioning),
+        ("encode_neg", "expected negative", negative_conditioning),
+        ("encode_other_neg", "wrong negative", other_negative_conditioning),
+    ):
+        metadata_registry.record_node_execution(
+            node_id, "CLIPTextEncode", {"text": text}, None
+        )
+        metadata_registry.update_node_execution(
+            node_id, "CLIPTextEncode", [(conditioning,)]
+        )
+
+    metadata_registry.record_node_execution(
+        "enhancer",
+        "KreaSeedVarianceEnhancer",
+        {"conditioning": positive_conditioning},
+        None,
+        return_types=("CONDITIONING", "STRING"),
+    )
+    metadata_registry.update_node_execution(
+        "enhancer",
+        "KreaSeedVarianceEnhancer",
+        [(enhanced_conditioning, "diagnostics")],
+        return_types=("CONDITIONING", "STRING"),
+    )
+    metadata_registry.record_node_execution(
+        "zero_out",
+        "ConditioningZeroOut",
+        {"conditioning": negative_conditioning},
+        None,
+        return_types=("CONDITIONING",),
+    )
+    metadata_registry.update_node_execution(
+        "zero_out",
+        "ConditioningZeroOut",
+        [(zeroed_conditioning,)],
+        return_types=("CONDITIONING",),
+    )
+    metadata_registry.record_node_execution(
+        "positive_switch",
+        "ComfySwitchNode",
+        {
+            "switch": True,
+            "on_false": other_positive_conditioning,
+            "on_true": enhanced_conditioning,
+        },
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "positive_switch", "ComfySwitchNode", [(enhanced_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "negative_switch",
+        "ComfySwitchNode",
+        {
+            "switch": True,
+            "on_false": other_negative_conditioning,
+            "on_true": zeroed_conditioning,
+        },
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "negative_switch", "ComfySwitchNode", [(zeroed_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "sampler",
+        "ClownsharKSampler_Beta",
+        {
+            "seed": 123,
+            "steps": 8,
+            "cfg": 1.0,
+            "sampler_name": "linear/euler",
+            "scheduler": "beta57",
+            "denoise": 1.0,
+            "positive": enhanced_conditioning,
+            "negative": zeroed_conditioning,
+            "latent_image": {
+                "samples": types.SimpleNamespace(shape=(1, 4, 16, 16))
+            },
+        },
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-transformed-switch")
+    params = MetadataProcessor.extract_generation_params(metadata)
+
+    assert params["prompt"] == "expected positive"
+    assert params["negative_prompt"] == "expected negative"
+
+
 def test_conditioning_provenance_recovers_kj_set_get_prompts(
     metadata_registry, monkeypatch
 ):
