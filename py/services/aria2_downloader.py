@@ -11,6 +11,7 @@ import os
 import secrets
 import shutil
 import socket
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +28,35 @@ logger = logging.getLogger(__name__)
 # Maximum times the download poll loop will re-schedule a transfer after it
 # is lost (daemon restart / RPC outage) before failing the download.
 MAX_TRANSFER_RECOVERY_ATTEMPTS = 2
+
+# stderr lines matching these markers indicate a disk write failure inside
+# aria2 (piece cache flush or raw file write).  They are promoted to INFO so
+# the root cause (disk full, permission denied, file locked by another
+# process, ...) is visible in the default logs; all other stderr output stays
+# at DEBUG to avoid noise.
+_DISK_WRITE_ERROR_MARKERS = (
+    # aria2 wrapper messages (write disk cache flush path)
+    "write disk cache flush failure",
+    "error when trying to flush write cache",
+    "failed to write into the file",
+    "failed to open the file",
+    "failed to seek the file",
+    # underlying root-cause phrases reported via "cause: ..." (POSIX + Windows)
+    "no space left on device",
+    "not enough space on the disk",
+    "input/output error",
+    "permission denied",
+    "access is denied",
+    "disk quota exceeded",
+    "used by another process",
+    "sharing violation",
+)
+
+# Minimum interval between INFO-level reports of the same stderr line so a
+# repeated failure (e.g. aria2 retrying against a full disk) does not spam
+# the log.
+STDERR_ERROR_REPORT_INTERVAL = 60.0
+
 
 def _try_certifi_ca_path() -> str | None:
     """Return the certifi CA bundle path if available, else None."""
@@ -94,6 +124,7 @@ class Aria2Downloader:
         self._poll_interval = 0.5
         self._state_store = Aria2TransferStateStore()
         self._stderr_reader_task: Optional[asyncio.Task[Any]] = None
+        self._stderr_error_report: Dict[str, float] = {}
 
     @property
     def is_running(self) -> bool:
@@ -447,15 +478,50 @@ class Aria2Downloader:
         blocks, which freezes the entire ``aria2c`` process — including its
         RPC handler.  This background task reads lines from stderr as they
         arrive and forwards them to Python's logger.
+
+        Lines that indicate a disk write failure (e.g. the "cause: No space
+        left on device" line that follows "Write disk cache flush failure")
+        are promoted to INFO so the root cause is visible without enabling
+        debug logging; every other line stays at DEBUG to avoid noise.
         """
         try:
             assert self._process is not None and self._process.stderr is not None
             async for line in self._process.stderr:
                 text = line.decode("utf-8", errors="replace").rstrip()
                 if text:
-                    logger.debug("aria2 stderr: %s", text)
+                    if self._is_disk_write_error(text):
+                        self._report_stderr_error(text)
+                    else:
+                        logger.debug("aria2 stderr: %s", text)
         except Exception:
             pass
+
+    @staticmethod
+    def _is_disk_write_error(text: str) -> bool:
+        lowered = text.lower()
+        return any(marker in lowered for marker in _DISK_WRITE_ERROR_MARKERS)
+
+    def _report_stderr_error(self, text: str) -> None:
+        """INFO-log a disk write failure line, rate-limited per line text.
+
+        aria2 re-emits the same error chain on every poll/retry while the
+        underlying condition persists; only the first occurrence within
+        ``STDERR_ERROR_REPORT_INTERVAL`` seconds is promoted to INFO.
+        """
+        now = time.monotonic()
+        last = self._stderr_error_report.get(text)
+        if last is not None and now - last < STDERR_ERROR_REPORT_INTERVAL:
+            logger.debug("aria2 stderr (repeated disk write error): %s", text)
+            return
+        # Drop entries older than the window so the map stays bounded even
+        # during a long disk-full episode (piece indexes change per line).
+        self._stderr_error_report = {
+            line: timestamp
+            for line, timestamp in self._stderr_error_report.items()
+            if now - timestamp < STDERR_ERROR_REPORT_INTERVAL
+        }
+        self._stderr_error_report[text] = now
+        logger.info("aria2 disk write failure: %s", text)
 
     async def _dispatch_progress(self, callback, snapshot: DownloadProgress) -> None:
         try:

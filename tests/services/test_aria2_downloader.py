@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import logging
+import time
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -705,3 +707,104 @@ async def test_wait_until_ready_includes_stderr_in_error():
     msg = str(exc_info.value)
     assert "code 28" in msg
     assert "ERROR: unknown option --fsync" in msg
+
+
+def test_is_disk_write_error_matches_wrapper_and_cause_lines():
+    downloader = Aria2Downloader()
+
+    assert downloader._is_disk_write_error(
+        "[ERROR] [DownloadCommand.cc:127] errorCode=9 Write disk cache flush failure index=18798"
+    )
+    assert downloader._is_disk_write_error(
+        "Exception: [AbstractDiskWriter.cc:454] errNum=28 errorCode=9 "
+        "Failed to write into the file D:\\models\\model.safetensors, "
+        "cause: No space left on device"
+    )
+    # Windows: "used by another process" = the file is locked by antivirus etc.
+    assert downloader._is_disk_write_error(
+        "Exception: ... The process cannot access the file because it is "
+        "being used by another process."
+    )
+    assert not downloader._is_disk_write_error(
+        "Download aborted. URI=https://example.com/model.safetensors"
+    )
+    assert not downloader._is_disk_write_error("")
+    assert not downloader._is_disk_write_error("bad option: --fsync")
+
+
+@pytest.mark.asyncio
+async def test_drain_stderr_promotes_disk_write_failure_to_info(caplog):
+    downloader = Aria2Downloader()
+
+    class FakeStderr:
+        def __init__(self, lines):
+            self._lines = list(lines)
+
+        def __aiter__(self):
+            return self
+
+        async def __anext__(self):
+            if not self._lines:
+                raise StopAsyncIteration
+            return self._lines.pop(0)
+
+    proc = type(
+        "Proc",
+        (),
+        {
+            "stderr": FakeStderr(
+                [
+                    b"",
+                    b"[ERROR] [WrDiskCacheEntry.cc:83] Error when trying to flush write cache",
+                    b"Exception: [AbstractDiskWriter.cc:454] errNum=28 errorCode=9 "
+                    b"Failed to write into the file D:\\models\\model.safetensors, "
+                    b"cause: No space left on device",
+                    b"Download aborted. URI=https://example.com/model.safetensors",
+                ]
+            )
+        },
+    )()
+    downloader._process = proc
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.aria2_downloader"):
+        await downloader._drain_stderr()
+
+    info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+    debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+
+    assert any(
+        "Error when trying to flush write cache" in r.message for r in info_records
+    )
+    assert any("No space left on device" in r.message for r in info_records)
+    assert any("Download aborted" in r.message for r in debug_records)
+    assert not any("Download aborted" in r.message for r in info_records)
+
+
+def test_stderr_error_rate_limited_to_one_info_per_window(caplog, monkeypatch):
+    downloader = Aria2Downloader()
+    line = "Exception: ... cause: No space left on device"
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.aria2_downloader"):
+        downloader._report_stderr_error(line)
+        downloader._report_stderr_error(line)
+        monkeypatch.setattr(downloader, "_stderr_error_report", {})
+        downloader._report_stderr_error(line)
+
+    info_records = [r for r in caplog.records if r.levelno == logging.INFO]
+    debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+
+    assert len(info_records) == 2
+    assert len(debug_records) == 1
+    assert "repeated disk write error" in debug_records[0].message
+
+
+def test_stderr_error_report_prunes_expired_entries():
+    downloader = Aria2Downloader()
+    old_line = "Exception: ... cause: No space left on device"
+    new_line = "Exception: ... cause: Input/output error"
+    downloader._stderr_error_report[old_line] = time.monotonic() - 120.0
+
+    downloader._report_stderr_error(new_line)
+
+    assert old_line not in downloader._stderr_error_report
+    assert new_line in downloader._stderr_error_report
