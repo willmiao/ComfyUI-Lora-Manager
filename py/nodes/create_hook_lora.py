@@ -15,6 +15,7 @@ from .utils import (
     any_type,
     apply_lora_syntax_format,
     get_loras_list,
+    validate_lora_entries,
 )
 
 logger = logging.getLogger(__name__)
@@ -41,6 +42,11 @@ class CreateHookLoraLM:
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("HOOKS", "STRING", "STRING")
     RETURN_NAMES = ("HOOKS", "trigger_words", "active_loras")

@@ -14,6 +14,7 @@ from .utils import (
     get_loras_list,
     nunchaku_load_lora,
     parse_lora_syntax,
+    validate_lora_entries,
 )
 
 logger = logging.getLogger(__name__)
@@ -141,6 +142,11 @@ class LoraLoaderLM:
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING")
     RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")

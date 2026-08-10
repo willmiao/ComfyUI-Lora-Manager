@@ -44,6 +44,7 @@ import re
 import logging
 import copy
 import sys
+import asyncio
 import folder_paths  # pyright: ignore[reportMissingImports]
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,157 @@ def get_loras_list(kwargs):
     else:
         logger.warning(f"Unexpected loras format: {type(loras_data)}")
         return []
+
+
+_LORA_EXTENSIONS = (".safetensors", ".ckpt", ".pt", ".bin")
+
+
+def _strip_lora_extension(name: str) -> str:
+    """Strip a known LoRA model extension from a name (case-insensitive)."""
+    lowered = name.lower()
+    for ext in _LORA_EXTENSIONS:
+        if lowered.endswith(ext):
+            return name[: -len(ext)]
+    return name
+
+
+def _find_missing_loras(names: list[str]) -> list[str]:
+    """Return the names that cannot be resolved to an existing local LoRA file.
+
+    Mirrors the matching semantics of ``get_lora_info_absolute``
+    (py/utils/utils.py): after stripping the extension, a name matches a cached
+    LoRA when it equals the cached file name or the ``folder/file`` path. As a
+    fallback, a name containing a folder that only matches by basename resolves
+    to the first basename match (same behavior as the runtime resolver). Raw
+    absolute paths that exist on disk are always considered available.
+
+    The scanner cache is fetched once for all names; the cache may be stale, so
+    resolved paths are additionally verified with ``os.path.isfile``.
+    """
+    if not names:
+        return []
+
+    async def _check() -> list[str]:
+        from ..services.service_registry import ServiceRegistry
+
+        scanner = await ServiceRegistry.get_lora_scanner()
+        # The scanner cache may not be hydrated yet (startup, library path
+        # change). An empty cache is not authoritative — treat it as "cannot
+        # verify" and skip validation instead of flagging every active LoRA
+        # as missing.
+        if getattr(scanner, "_cache", None) is None or getattr(
+            scanner, "_is_initializing", False
+        ):
+            return []
+        cache = await scanner.get_cached_data()
+
+        lookup = {}
+        basename_candidates = {}
+        for item in cache.raw_data:
+            file_path = item.get("file_path")
+            if not file_path:
+                continue
+            file_name = item.get("file_name", "")
+            folder = item.get("folder", "")
+            file_name_no_ext = _strip_lora_extension(file_name)
+            path_name_no_ext = (
+                f"{folder}/{file_name_no_ext}".replace("\\", "/")
+                if folder
+                else file_name_no_ext
+            )
+            lookup.setdefault(file_name_no_ext, file_path)
+            lookup.setdefault(path_name_no_ext, file_path)
+            basename_candidates.setdefault(file_name_no_ext, []).append(
+                (folder, file_path)
+            )
+
+        missing = []
+        for name in names:
+            if not name:
+                continue
+            normalized = name.replace("\\", "/")
+            # Raw absolute paths (outside the library) are usable as-is.
+            if os.path.isfile(normalized):
+                continue
+            no_ext = _strip_lora_extension(normalized)
+            file_path = lookup.get(no_ext)
+            if file_path is None and "/" in no_ext:
+                # A name with a folder that matches only by basename resolves
+                # at runtime like get_lora_info_absolute's fallback does:
+                # prefer a candidate whose folder prefixes the name, else the
+                # first basename match.
+                folder, basename = no_ext.rsplit("/", 1)
+                candidates = basename_candidates.get(basename, [])
+                file_path = next(
+                    (
+                        fp
+                        for fld, fp in candidates
+                        if fld and no_ext.startswith(fld + "/")
+                    ),
+                    None,
+                )
+                if file_path is None and candidates:
+                    file_path = candidates[0][1]
+            if file_path is None or not os.path.isfile(file_path):
+                missing.append(name)
+        return missing
+
+    try:
+        # Check if we're already in an event loop
+        loop = asyncio.get_running_loop()
+        # If we're in a running loop, run the async check in a separate thread
+        import concurrent.futures
+
+        def run_in_thread():
+            new_loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(new_loop)
+            try:
+                return new_loop.run_until_complete(_check())
+            finally:
+                new_loop.close()
+
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(run_in_thread)
+            return future.result()
+    except RuntimeError:
+        # No event loop is running, we can use asyncio.run()
+        return asyncio.run(_check())
+
+
+def validate_lora_entries(kwargs):
+    """Validate active LoRA widget entries against the local library.
+
+    Used by node ``VALIDATE_INPUTS`` implementations so ComfyUI rejects the
+    prompt at queue time (``custom_validation_failed``) when an active entry
+    references a LoRA that is not available locally — mirroring how built-in
+    loader nodes flag missing models before execution starts.
+
+    Returns:
+        None when every active entry resolves to an existing local file,
+        otherwise a descriptive error string listing the missing LoRAs.
+        Verification failures (e.g. scanner not ready) are treated as valid
+        so queueing is never blocked by validation machinery itself.
+    """
+    # Missing/empty loras input is always valid; skip get_loras_list so it
+    # does not log a warning for the None case on every queue.
+    if not kwargs.get("loras"):
+        return None
+    loras = get_loras_list(kwargs)
+    active_names = []
+    for lora in loras:
+        if not isinstance(lora, dict):
+            continue
+        if not lora.get("active", False):
+            continue
+        active_names.append(apply_lora_syntax_format(str(lora.get("name") or "")))
+    try:
+        missing = _find_missing_loras(active_names)
+    except Exception:
+        logger.exception("Failed to validate LoRA entries against the local library")
+        return None
+    if not missing:
+        return None
+    return "Missing LoRA(s) in local library: " + ", ".join(missing)
 
 
 def load_state_dict_in_safetensors(path, device="cpu", filter_prefix=""):

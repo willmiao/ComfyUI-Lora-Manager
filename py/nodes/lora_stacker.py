@@ -1,6 +1,6 @@
 import os
 from ..utils.utils import get_lora_info
-from .utils import FlexibleOptionalInputType, any_type, apply_lora_syntax_format, extract_lora_name, get_loras_list
+from .utils import FlexibleOptionalInputType, any_type, apply_lora_syntax_format, extract_lora_name, get_loras_list, validate_lora_entries
 
 import logging
 
@@ -21,6 +21,11 @@ class LoraStackerLM:
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("LORA_STACK", "STRING", "STRING")
     RETURN_NAMES = ("LORA_STACK", "trigger_words", "active_loras")

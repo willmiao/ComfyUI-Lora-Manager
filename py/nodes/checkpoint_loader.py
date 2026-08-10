@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, List, Tuple
 import comfy.sd  # pyright: ignore[reportMissingImports]
 import folder_paths  # pyright: ignore[reportMissingImports]
@@ -58,7 +59,10 @@ class CheckpointLoaderLM:
                 for item in cache.raw_data:
                     if item.get("sub_type") == "checkpoint":
                         file_path = item.get("file_path", "")
-                        if file_path:
+                        # Only offer models that still exist on disk so ComfyUI
+                        # flags missing checkpoints at queue time via
+                        # "value not in list" (the scanner cache can be stale).
+                        if file_path and os.path.exists(file_path):
                             # Format using relative path with OS-native separator
                             formatted_name = _format_model_name_for_comfyui(
                                 file_path, model_roots

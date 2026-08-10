@@ -3,7 +3,11 @@ import {
   parseLoraValue, 
   formatLoraValue, 
   shouldShowClipEntry, 
-  syncClipStrengthIfCollapsed
+  syncClipStrengthIfCollapsed,
+  getAvailableLoras,
+  getAvailableLorasSync,
+  isLoraNameAvailable,
+  onLibraryChanged
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
 import { forwardMiddleMouseToCanvas, forwardWheelToCanvas, enableListWheelScroll } from "./utils.js";
@@ -140,6 +144,48 @@ export function addLorasWidget(node, name, opts, callback) {
       emitSelectionChange(buildSelectionPayload(loraName));
     }
   };
+
+  // Mirror ComfyUI's setNodeHasErrors: has_errors is not an auto-tracked
+  // litegraph property, so the node:property:changed event must be fired
+  // manually for the Vue renderer to pick up the error state.
+  //
+  // The flag is applied asynchronously (setTimeout 0): applying it during
+  // LGraphNode.configure makes ComfyUI's errorNodeWidgets.onConfigure create
+  // a fallback UNKNOWN widget for every widgets_values entry, because it
+  // treats has_errors as "node definition missing".
+  let pendingErrorFlag = null;
+  let errorFlagTimer = null;
+
+  const flushErrorFlag = () => {
+    errorFlagTimer = null;
+    const hasMissing = pendingErrorFlag;
+    pendingErrorFlag = null;
+    if (typeof hasMissing !== 'boolean') {
+      return;
+    }
+    const oldValue = node.has_errors === true;
+    if (oldValue === hasMissing) {
+      return;
+    }
+    node.has_errors = hasMissing;
+    if (node.graph) {
+      node.graph.trigger('node:property:changed', {
+        type: 'node:property:changed',
+        nodeId: node.id,
+        property: 'has_errors',
+        oldValue,
+        newValue: hasMissing
+      });
+      node.graph.setDirtyCanvas(true, true);
+    }
+  };
+
+  const updateNodeErrorFlag = (hasMissing) => {
+    pendingErrorFlag = hasMissing;
+    if (errorFlagTimer === null) {
+      errorFlagTimer = setTimeout(flushErrorFlag, 0);
+    }
+  };
   
   // Add keyboard event listener to container
   container.addEventListener('keydown', (e) => {
@@ -220,6 +266,7 @@ export function addLorasWidget(node, name, opts, callback) {
       emptyMessage.textContent = "No LoRAs added";
       emptyMessage.className = "lm-lora-empty-state";
       container.appendChild(emptyMessage);
+      updateNodeErrorFlag(false);
       return;
     }
 
@@ -267,8 +314,21 @@ export function addLorasWidget(node, name, opts, callback) {
     initHeaderDrag(header, widget, renderLoras);
 
     // Render each lora entry
+    const availableSet = getAvailableLorasSync();
+    if (!availableSet) {
+      // Availability data missing (workflow switch without node recreation,
+      // cache expiry): fetch it and re-render once it lands so missing cues
+      // and the node flag always resolve. Only re-render on success to avoid
+      // retry loops on failure.
+      getAvailableLoras().then((set) => {
+        if (set && !widget.__dragActive && container.isConnected) {
+          renderLoras(widget.value, widget);
+        }
+      });
+    }
     lorasData.forEach((loraData) => {
       const { name, strength, clipStrength, active } = loraData;
+      const missing = !isLoraNameAvailable(name, availableSet);
       
       // Determine expansion state using our helper function
       const isExpanded = shouldShowClipEntry(loraData);
@@ -282,6 +342,10 @@ export function addLorasWidget(node, name, opts, callback) {
       loraEl.dataset.loraName = name;
       loraEl.dataset.active = active ? "true" : "false";
       loraEl.dataset.locked = (loraData.locked || false) ? "true" : "false";
+
+      if (missing) {
+        loraEl.setAttribute("data-missing", "true");
+      }
 
       // Add click handler for selection
       loraEl.addEventListener('click', (e) => {
@@ -374,6 +438,9 @@ export function addLorasWidget(node, name, opts, callback) {
       const nameEl = document.createElement("div");
       nameEl.textContent = name;
       nameEl.className = "lm-lora-name";
+      if (missing) {
+        nameEl.title = "LoRA not found in local library";
+      }
 
       // Move preview tooltip events to nameEl instead of loraEl
       let previewTimer = null; // Timer for delayed preview
@@ -387,7 +454,8 @@ export function addLorasWidget(node, name, opts, callback) {
 
       nameEl.addEventListener('mouseenter', (e) => {
         e.stopPropagation();
-        if (shouldSuppressPreview()) {
+        // Missing LoRAs have no preview data — skip the placeholder tooltip.
+        if (missing || shouldSuppressPreview()) {
           return;
         }
         previewTimer = setTimeout(async () => {
@@ -544,10 +612,17 @@ export function addLorasWidget(node, name, opts, callback) {
         clipEl.dataset.loraName = name;
         clipEl.dataset.active = active ? "true" : "false";
 
+        if (missing) {
+          clipEl.setAttribute("data-missing", "true");
+        }
+
         // Create clip name display
         const clipNameEl = document.createElement("div");
         clipNameEl.textContent = "[clip] " + name;
         clipNameEl.className = "lm-lora-name";
+        if (missing) {
+          clipNameEl.title = "LoRA not found in local library";
+        }
 
         // Create clip strength control
         const clipStrengthControl = document.createElement("div");
@@ -667,6 +742,16 @@ export function addLorasWidget(node, name, opts, callback) {
       updateEntrySelection(entry, entryLoraName === selectedLora);
     });
 
+    // Flag the node when any active entry references a LoRA missing locally.
+    // Skipped while the availability set is not loaded (null) to avoid
+    // clearing or setting the flag based on incomplete information.
+    const hasMissingActive = availableSet
+      ? lorasData.some(
+          (lora) => lora.active && !isLoraNameAvailable(lora.name, availableSet)
+        )
+      : null;
+    updateNodeErrorFlag(hasMissingActive);
+
     const selectionExists = selectedLora
       ? currentLorasData.some((lora) => lora.name === selectedLora)
       : false;
@@ -767,7 +852,30 @@ export function addLorasWidget(node, name, opts, callback) {
   
   widget.callback = callback;
 
+  // Invalidate the availability cache and re-render when the local library
+  // changes (e.g. a LoRA is deleted from the Lora Manager UI) so missing
+  // cues and the node error flag update without waiting for the TTL.
+  const unsubscribeLibraryChange = onLibraryChanged(() => {
+    if (!widget.__dragActive && container.isConnected) {
+      renderLoras(widget.value, widget);
+    }
+  });
+
+  // Fetch the local library and re-render once available so missing entries
+  // get their visual cue and the node error flag as soon as the data lands.
+  getAvailableLoras().then(() => {
+    if (!widget.__dragActive && container.isConnected) {
+      renderLoras(widget.value, widget);
+    }
+  });
+
   widget.onRemove = () => {
+    unsubscribeLibraryChange();
+    if (errorFlagTimer !== null) {
+      clearTimeout(errorFlagTimer);
+      errorFlagTimer = null;
+      pendingErrorFlag = null;
+    }
     while (container.firstChild) {
       container.removeChild(container.firstChild);
     }

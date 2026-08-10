@@ -74,7 +74,10 @@ class UNETLoaderLM:
                 for item in cache.raw_data:
                     if item.get("sub_type") == "diffusion_model":
                         file_path = item.get("file_path", "")
-                        if file_path:
+                        # Only offer models that still exist on disk so ComfyUI
+                        # flags missing diffusion models at queue time via
+                        # "value not in list" (the scanner cache can be stale).
+                        if file_path and os.path.exists(file_path):
                             # Format using relative path with OS-native separator
                             formatted_name = _format_model_name_for_comfyui(
                                 file_path, model_roots

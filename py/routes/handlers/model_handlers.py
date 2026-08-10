@@ -51,6 +51,29 @@ LICENSE_FIELDS = (
 )
 
 
+_broadcast_models_changed_tasks: set = set()
+
+
+def _broadcast_models_changed() -> None:
+    """Notify connected clients that the local model library changed.
+
+    The ComfyUI graph page listens for this event to invalidate its cached
+    model availability data (loras widget missing-model cues / error flags)
+    without waiting for the cache TTL to expire.
+    """
+    try:
+        from ...services.websocket_manager import ws_manager
+
+        task = asyncio.create_task(ws_manager.broadcast({"type": "models_changed"}))
+        # Keep a reference so the task is not garbage-collected mid-await.
+        _broadcast_models_changed_tasks.add(task)
+        task.add_done_callback(_broadcast_models_changed_tasks.discard)
+    except Exception:
+        logging.getLogger(__name__).debug(
+            "Failed to broadcast models_changed", exc_info=True
+        )
+
+
 class ModelPageView:
     """Render the HTML view for model listings."""
 
@@ -460,6 +483,7 @@ class ModelManagementHandler:
                 return web.Response(text="Model path is required", status=400)
 
             result = await self._lifecycle_service.delete_model(file_path)
+            _broadcast_models_changed()
             return web.json_response(result)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -931,6 +955,8 @@ class ModelManagementHandler:
                 file_path=file_path, new_file_name=new_file_name
             )
 
+            _broadcast_models_changed()
+
             return web.json_response(
                 {
                     **result,
@@ -959,6 +985,7 @@ class ModelManagementHandler:
                 )
 
             result = await self._lifecycle_service.bulk_delete_models(file_paths)
+            _broadcast_models_changed()
             return web.json_response(result)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -1061,6 +1088,7 @@ class ModelQueryHandler:
             await self._service.scan_models(
                 force_refresh=True, rebuild_cache=full_rebuild
             )
+            _broadcast_models_changed()
             if self._service.scanner.is_cancelled():
                 return web.json_response(
                     {
@@ -2235,6 +2263,8 @@ class ModelMoveHandler:
             result = await self._move_service.move_model(
                 file_path, target_path, use_default_paths=use_default_paths
             )
+            if result.get("success"):
+                _broadcast_models_changed()
             status = 200 if result.get("success") else 500
             return web.json_response(result, status=status)
         except Exception as exc:
@@ -2254,6 +2284,8 @@ class ModelMoveHandler:
             result = await self._move_service.move_models_bulk(
                 file_paths, target_path, use_default_paths=use_default_paths
             )
+            if result.get("success"):
+                _broadcast_models_changed()
             return web.json_response(result)
         except Exception as exc:
             self._logger.error("Error moving models in bulk: %s", exc, exc_info=True)
@@ -2299,6 +2331,7 @@ class ModelAutoOrganizeHandler:
                 progress_callback=self._progress_callback,
                 exclusion_patterns=exclusion_patterns,
             )
+            _broadcast_models_changed()
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:
             return web.json_response(
