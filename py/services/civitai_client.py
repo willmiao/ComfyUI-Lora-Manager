@@ -214,6 +214,104 @@ class CivitaiClient:
             logger.error("API Error: %s", exc)
             return None, str(exc)
 
+    async def get_model_by_name(
+        self,
+        model_name: str,
+        *,
+        model_types: Sequence[str] | None = None,
+        limit: int = 5,
+    ) -> Tuple[Optional[Dict], Optional[str]]:
+        """Look up a model on CivitAI by name, returning a version payload
+        shaped like :meth:`get_model_by_hash`.
+
+        Used as a fallback when a model cannot be found by hash (e.g. Draw
+        Things converted checkpoints whose SHA256 no longer matches the
+        original).  The query is matched against CivitAI's search endpoint;
+        the best matching result whose type is in *model_types* (default:
+        LORA/Checkpoint) is returned with its most relevant version enriched
+        with model-level data (description, tags, license, creator).
+
+        Returns ``(version_dict, None)`` on success or ``(None, reason)``.
+        """
+        if not model_name:
+            return None, "No model name provided"
+
+        search_query = model_name.strip()
+        allowed_types = set(model_types or ("LORA", "Checkpoint"))
+
+        try:
+            success, result = await self._make_request(
+                "GET",
+                f"{self.base_url}/models",
+                use_auth=True,
+                params={
+                    "query": search_query,
+                    "limit": min(max(limit, 1), 20),
+                    "nsfw": "true",
+                },
+            )
+            if not success:
+                return None, str(result)
+
+            items = result.get("items") if isinstance(result, dict) else None
+            if not isinstance(items, list) or not items:
+                return None, "Model not found"
+
+            # Prefer models whose type matches, then the first acceptable one.
+            candidates = [m for m in items if isinstance(m, dict) and m.get("type") in allowed_types]
+            if not candidates:
+                return None, "Model not found"
+
+            # Rank candidates by title similarity to the requested name so we
+            # pick the closest match rather than the first result page entry.
+            def _rank(item: Dict) -> Tuple[int, int]:
+                title = str(item.get("name", "")).lower()
+                target = search_query.lower()
+                if title == target:
+                    return (0, 0)
+                if title in target or target in title:
+                    return (1, 0)
+                return (2, 0)
+
+            candidates.sort(key=_rank)
+            model_data = candidates[0]
+
+            version_entry = None
+            model_versions = model_data.get("modelVersions") or []
+            if model_versions:
+                # Prefer the newest version that has preview images, otherwise
+                # the first version.
+                version_entry = next(
+                    (v for v in model_versions if isinstance(v, dict) and v.get("images")),
+                    None,
+                )
+                if version_entry is None:
+                    version_entry = next(
+                        (v for v in model_versions if isinstance(v, dict)),
+                        None,
+                    )
+
+            if version_entry is None:
+                return None, "Model has no versions"
+
+            version = copy.deepcopy(version_entry)
+            version.pop("index", None)
+            version["modelId"] = model_data.get("id")
+            version["model"] = {
+                "name": model_data.get("name"),
+                "type": model_data.get("type"),
+                "nsfw": model_data.get("nsfw"),
+                "poi": model_data.get("poi"),
+            }
+            self._enrich_version_with_model_data(version, model_data)
+            self._remove_comfy_metadata(version)
+            return version, None
+        except RateLimitError:
+            raise
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Error searching model by name '%s': %s", model_name, exc)
+            return None, str(exc)
+
     async def download_preview_image(self, image_url: str, save_path: str):
         try:
             downloader = await get_downloader()

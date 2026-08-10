@@ -12,7 +12,7 @@ from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
-from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
+from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error, is_offline_cooldown_error
 from .errors import RateLimitError
 
 logger = logging.getLogger(__name__)
@@ -79,6 +79,37 @@ class MetadataSyncService:
         images = meta.get("images")
         source = meta.get("source")
         return bool(files) and bool(images) and source not in ("archive_db", "civarchive")
+
+    @staticmethod
+    def _is_definitive_name_miss(name_error: Optional[str]) -> bool:
+        """Return True when a failed name search is a definitive "not found".
+
+        A definitive miss means the CivitAI search endpoint responded normally
+        but found no acceptable model. Transient upstream failures (search
+        overload, 5xx, connectivity issues) are NOT definitive — the fallback
+        should remain available for a later retry.
+        """
+        if not name_error:
+            return False
+        normalized = name_error.lower()
+        if "model not found" in normalized or "no model" in normalized:
+            return True
+        if any(
+            keyword in normalized
+            for keyword in (
+                "overloaded",
+                "temporarily",
+                "status 5",
+                "status 503",
+                "timed out",
+                "timeout",
+                "connection refused",
+                "connection reset",
+                "offline",
+            )
+        ):
+            return False
+        return False
 
     async def update_model_metadata(
         self,
@@ -201,6 +232,10 @@ class MetadataSyncService:
             sqlite_attempted = False
 
             if model_data.get("civitai_deleted") is True:
+                name_fallback_pending = (
+                    self._settings.get("civitai_name_fallback", True)
+                    and not model_data.get("name_fallback_checked", False)
+                )
                 if previous_source in (None, "civarchive"):
                     try:
                         provider_attempts.append(("civarchive_api", await self._get_provider("civarchive_api")))
@@ -213,7 +248,7 @@ class MetadataSyncService:
                     except Exception as exc:  # pragma: no cover - provider resolution fault
                         logger.debug("Unable to resolve sqlite provider: %s", exc)
 
-                if not provider_attempts:
+                if not provider_attempts and not name_fallback_pending:
                     if not enable_archive:
                         error_msg = "CivitAI model is deleted and metadata archive DB is not enabled"
                     elif model_data.get("db_checked") is True:
@@ -221,6 +256,12 @@ class MetadataSyncService:
                     else:
                         error_msg = "CivitAI model is deleted and no archive provider is available"
                     return False, error_msg
+
+                # When the name fallback is still pending, allow the flow to
+                # continue past the provider loop so the CivitAI search
+                # endpoint can be consulted before giving up.
+                if not provider_attempts:
+                    provider_attempts.append((None, await self._get_default_provider()))
             else:
                 is_hf_source = bool(model_data.get("hf_url"))
                 if is_hf_source:
@@ -276,6 +317,79 @@ class MetadataSyncService:
 
                 last_error = error or last_error
 
+            # -----------------------------------------------------------------
+            # Name-based fallback
+            #
+            # Some libraries (notably Draw Things converted checkpoints) hash
+            # files differently than the original distribution, so a SHA256
+            # lookup against CivitAI reliably fails even though the model
+            # itself is published there.  When every provider failed to find
+            # the model by hash AND the setting is enabled, fall back to the
+            # CivitAI search endpoint using the model name.
+            # -----------------------------------------------------------------
+            # Track whether the name-based fallback reached a definitive
+            # conclusion. A transient upstream failure (e.g. CivitAI search
+            # being overloaded) must NOT mark the fallback as "already
+            # attempted", otherwise the model can never be recovered later.
+            name_fallback_definitive = False
+            if (
+                civitai_metadata is None
+                and metadata_provider is None
+                and self._settings.get("civitai_name_fallback", True)
+                and not any_rate_limited
+                and not is_offline_cooldown_error(last_error or "")
+                and not model_data.get("name_fallback_checked", False)
+            ):
+                logger.debug(
+                    "Name fallback candidate for %s (rate_limited=%s)",
+                    model_data.get("model_name"),
+                    any_rate_limited,
+                )
+                fallback_provider = await self._get_default_provider()
+                search = getattr(fallback_provider, "get_model_by_name", None)
+                if search is not None:
+                    search_name = model_data.get("model_name") or model_data.get("file_name") or ""
+                    search_name = os.path.splitext(os.path.basename(search_name))[0]
+                    if search_name:
+                        try:
+                            name_metadata, name_error = await search(
+                                search_name,
+                                model_types=("LORA", "Checkpoint"),
+                            )
+                            if name_metadata:
+                                logger.info(
+                                    "Hash lookup failed for %s but matched CivitAI model by name",
+                                    search_name,
+                                )
+                                civitai_metadata = name_metadata
+                                metadata_provider = fallback_provider
+                                provider_used = "civitai_api"
+                                civitai_api_not_found = False
+                                model_data["civitai_deleted"] = False
+                                model_data["from_civitai"] = True
+                            else:
+                                logger.debug(
+                                    "Name fallback failed for %s: %s",
+                                    search_name,
+                                    name_error,
+                                )
+                                name_fallback_definitive = self._is_definitive_name_miss(
+                                    name_error
+                                )
+                                # A transient name-search failure must not
+                                # classify the model as "deleted on CivitAI" —
+                                # the model may exist but the search was merely
+                                # overloaded. Leave it searchable for retries.
+                                if not name_fallback_definitive:
+                                    civitai_api_not_found = False
+                        except RateLimitError:
+                            any_rate_limited = True
+                            logger.warning("Name fallback rate limited for %s", search_name)
+                        except Exception as exc:  # pragma: no cover - defensive logging
+                            logger.error(
+                                "Name fallback error for %s: %s", search_name, exc
+                            )
+
             if civitai_metadata is None or metadata_provider is None:
                 # Track if we need to save metadata
                 needs_save = False
@@ -297,6 +411,20 @@ class MetadataSyncService:
                 # ensure the flags are written to the scanner cache + SQLite.
                 if not needs_save and model_data.get("civitai_deleted") is True:
                     model_data["last_checked_at"] = datetime.now().timestamp()
+                    needs_save = True
+
+                # Remember that the name-based fallback was already attempted so
+                # subsequent refresh cycles do not re-hit the search endpoint.
+                # Only persist this when the fallback reached a definitive
+                # conclusion; a transient upstream error (e.g. search overload)
+                # must leave the fallback available for a later retry.
+                if (
+                    name_fallback_definitive
+                    and not model_data.get("name_fallback_checked")
+                    and not any_rate_limited
+                    and not is_offline_cooldown_error(last_error or "")
+                ):
+                    model_data["name_fallback_checked"] = True
                     needs_save = True
 
                 # Save metadata if any state was updated
@@ -349,6 +477,7 @@ class MetadataSyncService:
                 source = "archive_db"
             model_data["metadata_source"] = source
             model_data["last_checked_at"] = datetime.now().timestamp()
+            model_data["name_fallback_checked"] = True
 
             readable_source = {
                 "civitai_api": "CivitAI API",

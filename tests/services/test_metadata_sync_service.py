@@ -336,7 +336,9 @@ async def test_fetch_and_update_model_returns_friendly_offline_message(tmp_path)
 
 @pytest.mark.asyncio
 async def test_fetch_and_update_model_respects_deleted_without_archive():
-    helpers = build_service(settings_values={"enable_metadata_archive_db": False})
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": False, "civitai_name_fallback": False}
+    )
 
     model_data = {
         "civitai_deleted": True,
@@ -687,3 +689,206 @@ async def test_fetch_and_update_model_does_not_overwrite_api_metadata_with_archi
     
     helpers.metadata_manager.save_metadata.assert_awaited()
     update_cache.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_name_fallback_succeeds_when_hash_missing():
+    """When the hash lookup fails, the CivitAI name search is used and the
+    preview/metadata are fetched from the matched model version."""
+    name_metadata = {
+        "id": 123,
+        "modelId": 456,
+        "name": "Remote Model",
+        "model": {"name": "Remote Model", "type": "LORA"},
+        "images": [{"url": "https://example.com/preview.webp"}],
+    }
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_by_name=AsyncMock(return_value=(name_metadata, None)),
+        get_model_version=AsyncMock(),
+    )
+    helpers = build_service(default_provider=provider)
+
+    model_path = "/tmp/model.ckpt"
+    model_data = {
+        "model_name": "local_model",
+        "file_name": "local_model",
+        "file_path": model_path,
+        "folder": "",
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="hash-not-on-civitai",
+        file_path=model_path,
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    # The name search must have been attempted with the stripped file name
+    provider.get_model_by_name.assert_awaited_once()
+    assert provider.get_model_by_name.await_args.args[0] == "local_model"
+    # Model is now linked to CivitAI via the name match
+    assert model_data["from_civitai"] is True
+    assert model_data.get("civitai_deleted") is not True
+    assert model_data["civitai"]["name"] == "Remote Model"
+    update_cache.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_name_fallback_recover_deleted():
+    """A model previously marked civitai_deleted (e.g. Draw Things converted
+    checkpoint whose hash is unknown to CivitAI) is recovered by the name
+    fallback: the deleted flag is cleared and metadata attached."""
+    name_metadata = {
+        "id": 99,
+        "modelId": 88,
+        "name": "Anything2Real",
+        "model": {"name": "Anything2Real", "type": "LORA"},
+        "images": [{"url": "https://example.com/preview.webp"}],
+    }
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_by_name=AsyncMock(return_value=(name_metadata, None)),
+        get_model_version=AsyncMock(),
+    )
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": False},
+        default_provider=provider,
+    )
+
+    model_path = "/tmp/model.ckpt"
+    model_data = {
+        "civitai_deleted": True,
+        "from_civitai": False,
+        "model_name": "anything2real_a_lora_f16",
+        "file_name": "anything2real_a_lora_f16",
+        "file_path": model_path,
+        "folder": "",
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="converted-hash-not-on-civitai",
+        file_path=model_path,
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    provider.get_model_by_name.assert_awaited_once()
+    assert provider.get_model_by_name.await_args.args[0] == "anything2real_a_lora_f16"
+    assert model_data["from_civitai"] is True
+    assert model_data["civitai_deleted"] is False
+    assert model_data["name_fallback_checked"] is True
+    assert model_data["civitai"]["name"] == "Anything2Real"
+    update_cache.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_name_fallback_disabled():
+    """When civitai_name_fallback is disabled, a missing hash is reported as
+    not found without attempting the name search."""
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_by_name=AsyncMock(),
+        get_model_version=AsyncMock(),
+    )
+    helpers = build_service(
+        settings_values={"civitai_name_fallback": False},
+        default_provider=provider,
+    )
+
+    model_path = "/tmp/model.ckpt"
+    model_data = {
+        "model_name": "local_model",
+        "file_name": "local_model",
+        "file_path": model_path,
+        "folder": "",
+    }
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="hash-not-on-civitai",
+        file_path=model_path,
+        model_data=model_data,
+        update_cache_func=AsyncMock(),
+    )
+
+    assert not ok
+    assert "Model not found" in error
+    provider.get_model_by_name.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_name_fallback_transient_error_not_marked():
+    """A transient name-search failure (e.g. CivitAI search overload) must NOT
+    persist name_fallback_checked, so a later refresh can retry the fallback."""
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_by_name=AsyncMock(
+            return_value=(None, "Model search is temporarily overloaded")
+        ),
+        get_model_version=AsyncMock(),
+    )
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": False},
+        default_provider=provider,
+    )
+
+    model_path = "/tmp/model.ckpt"
+    model_data = {
+        "model_name": "anything2real_a_lora_f16",
+        "file_name": "anything2real_a_lora_f16",
+        "file_path": model_path,
+        "folder": "",
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="converted-hash-not-on-civitai",
+        file_path=model_path,
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert not ok
+    provider.get_model_by_name.assert_awaited_once()
+    # The transient failure must not poison the fallback for later retries.
+    assert model_data.get("name_fallback_checked") is not True
+    # It must not be re-classified as deleted either.
+    assert model_data.get("civitai_deleted") is not True
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_name_fallback_definitive_miss_marked():
+    """A definitive 'Model not found' from the name search IS persisted so
+    subsequent refresh cycles do not re-hit the search endpoint."""
+    provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(None, "Model not found")),
+        get_model_by_name=AsyncMock(return_value=(None, "Model not found")),
+        get_model_version=AsyncMock(),
+    )
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": False},
+        default_provider=provider,
+    )
+
+    model_path = "/tmp/model.ckpt"
+    model_data = {
+        "model_name": "some_unknown_model",
+        "file_name": "some_unknown_model",
+        "file_path": model_path,
+        "folder": "",
+    }
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="converted-hash-not-on-civitai",
+        file_path=model_path,
+        model_data=model_data,
+        update_cache_func=AsyncMock(),
+    )
+
+    assert not ok
+    assert "Model not found" in error
+    assert model_data.get("name_fallback_checked") is True
