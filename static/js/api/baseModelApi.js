@@ -201,8 +201,13 @@ export class BaseModelApiClient {
                 if (state.virtualScroller) {
                     state.virtualScroller.removeItemByFilePath(filePath);
                 }
-                showToast('toast.api.deleteSuccess', { type: this.apiConfig.config.displayName }, 'success');
-                return true;
+                const batchId = data.batch_id || null;
+                if (!batchId) {
+                    // Not staged (undo disabled or staging failed): keep the legacy toast.
+                    // When staged, the caller shows the undo action toast instead.
+                    showToast('toast.api.deleteSuccess', { type: this.apiConfig.config.displayName }, 'success');
+                }
+                return { success: true, batch_id: batchId };
             } else {
                 throw new Error(data.error || `Failed to delete ${this.apiConfig.config.singularName}`);
             }
@@ -1622,9 +1627,14 @@ export class BaseModelApiClient {
             if (result.success) {
                 return {
                     success: true,
-                    deleted_count: result.deleted_count,
+                    deleted_count: result.deleted_count ?? result.total_deleted,
                     failed_count: result.failed_count || 0,
-                    errors: result.errors || []
+                    errors: result.errors || [],
+                    // Undo batch fields — batch_id on merge success, batch_ids
+                    // array on merge failure (same success dict for the
+                    // status='cancelled' staged-subset path)
+                    batch_id: result.batch_id || null,
+                    batch_ids: result.batch_ids || null
                 };
             } else {
                 throw new Error(result.error || `Failed to delete ${this.apiConfig.config.displayName.toLowerCase()}s`);

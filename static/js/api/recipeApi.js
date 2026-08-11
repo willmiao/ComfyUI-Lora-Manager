@@ -657,6 +657,10 @@ export class RecipeSidebarApiClient {
                 deleted_count: result.total_deleted,
                 failed_count: result.total_failed || 0,
                 errors: result.failed || [],
+                // Undo batch fields — batch_id on merge success, batch_ids
+                // array on merge failure
+                batch_id: result.batch_id || null,
+                batch_ids: result.batch_ids || null,
             };
         } finally {
             state.loadingManager?.hide();

@@ -1,5 +1,8 @@
 // Model Duplicates Manager Component for LoRAs and Checkpoints
-import { showToast } from '../utils/uiHelpers.js';
+import { showToast, showActionToast } from '../utils/uiHelpers.js';
+import { handleUndoDelete } from '../utils/undoHelpers.js';
+import { armDeleteButton } from '../utils/modalUtils.js';
+import { translate } from '../utils/i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { formatDate } from '../utils/formatters.js';
 import { resetAndReload} from '../api/modelApiFactory.js';
@@ -700,6 +703,7 @@ export class ModelDuplicatesManager {
             
             // Use the modal manager to show the confirmation modal
             modalManager.showModal('modelDuplicateDeleteModal');
+            armDeleteButton(document.getElementById('modelDuplicateDeleteModal'));
         } catch (error) {
             console.error('Error preparing delete:', error);
             showToast('toast.duplicates.deleteError', { message: error.message }, 'error');
@@ -732,8 +736,34 @@ export class ModelDuplicatesManager {
             if (!data.success) {
                 throw new Error(data.error || 'Unknown error deleting models');
             }
-            
-            showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: this.modelType }, 'success');
+
+            const batchIds = !data.batch_id && Array.isArray(data.batch_ids) && data.batch_ids.length
+                ? data.batch_ids
+                : null;
+
+            if (data.batch_id || batchIds) {
+                // One undo action restores the whole selected group
+                const refreshFn = () => resetAndReload(true);
+                const onAction = data.batch_id
+                    ? () => handleUndoDelete(data.batch_id, refreshFn)
+                    : async () => {
+                        for (const id of batchIds) {
+                            const succeeded = await handleUndoDelete(id, null, { showToast: false, refresh: false });
+                            if (!succeeded) {
+                                showToast('toast.undo.failed', { error: '' }, 'error');
+                                return;
+                            }
+                        }
+                        refreshFn();
+                        showToast('toast.undo.restored', {}, 'success');
+                    };
+                showActionToast('toast.undo.deletedBulk', { count: data.total_deleted }, 'success', {
+                    actionText: translate('toast.undo.action'),
+                    onAction,
+                });
+            } else {
+                showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: this.modelType }, 'success');
+            }
             
             // If models were successfully deleted
             if (data.total_deleted > 0) {

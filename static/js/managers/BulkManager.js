@@ -1,5 +1,7 @@
 import { state, getCurrentPageState } from '../state/index.js';
-import { showToast, copyToClipboard, sendLoraToWorkflow, sendEmbeddingToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
+import { showToast, showActionToast, copyToClipboard, sendLoraToWorkflow, sendEmbeddingToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
+import { handleUndoDelete } from '../utils/undoHelpers.js';
+import { armDeleteButton } from '../utils/modalUtils.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -628,6 +630,7 @@ export class BulkManager {
         }
 
         modalManager.showModal('bulkDeleteModal');
+        armDeleteButton(document.getElementById('bulkDeleteModal'));
     }
 
     async confirmBulkDelete() {
@@ -649,10 +652,38 @@ export class BulkManager {
                 showToast('toast.api.operationCancelled', {}, 'info');
             } else if (result.success) {
                 const currentConfig = this.getCurrentDisplayConfig();
-                showToast('toast.models.deletedSuccessfully', {
-                    count: result.deleted_count,
-                    type: currentConfig.displayName.toLowerCase()
-                }, 'success');
+                const isRecipes = state.currentPageType === 'recipes';
+                const refreshFn = isRecipes
+                    ? () => window.recipeManager.loadRecipes(true)
+                    : () => resetAndReload(true);
+
+                if (result.batch_id || (result.batch_ids && result.batch_ids.length)) {
+                    // One undo action for the whole bulk action — the backend
+                    // merges staged per-file batches into a single batch, with
+                    // a batch_ids fallback array when the merge failed
+                    const onAction = result.batch_id
+                        ? () => handleUndoDelete(result.batch_id, refreshFn)
+                        : async () => {
+                            for (const id of result.batch_ids) {
+                                const succeeded = await handleUndoDelete(id, null, { showToast: false, refresh: false });
+                                if (!succeeded) {
+                                    showToast('toast.undo.failed', { error: '' }, 'error');
+                                    return;
+                                }
+                            }
+                            refreshFn();
+                            showToast('toast.undo.restored', {}, 'success');
+                        };
+                    showActionToast('toast.undo.deletedBulk', { count: result.deleted_count }, 'success', {
+                        actionText: translate('toast.undo.action'),
+                        onAction,
+                    });
+                } else {
+                    showToast('toast.models.deletedSuccessfully', {
+                        count: result.deleted_count,
+                        type: currentConfig.displayName.toLowerCase()
+                    }, 'success');
+                }
 
                 filePaths.forEach(path => {
                     state.virtualScroller.removeItemByFilePath(path);

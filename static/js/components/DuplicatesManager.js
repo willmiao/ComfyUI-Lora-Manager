@@ -1,5 +1,7 @@
 // Duplicates Manager Component
-import { showToast } from '../utils/uiHelpers.js';
+import { showToast, showActionToast } from '../utils/uiHelpers.js';
+import { handleUndoDelete } from '../utils/undoHelpers.js';
+import { armDeleteButton } from '../utils/modalUtils.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { RecipeCard } from './RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
@@ -447,6 +449,7 @@ export class DuplicatesManager {
             
             // Use the modal manager to show the confirmation modal
             modalManager.showModal('duplicateDeleteModal');
+            armDeleteButton(document.getElementById('duplicateDeleteModal'));
         } catch (error) {
             console.error('Error preparing delete:', error);
             showToast('toast.duplicates.deleteError', { message: error.message }, 'error');
@@ -479,8 +482,34 @@ export class DuplicatesManager {
             if (!data.success) {
                 throw new Error(data.error || 'Unknown error deleting recipes');
             }
-            
-            showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: 'recipes' }, 'success');
+
+            const batchIds = !data.batch_id && Array.isArray(data.batch_ids) && data.batch_ids.length
+                ? data.batch_ids
+                : null;
+
+            if (data.batch_id || batchIds) {
+                // One undo action restores the whole selected group
+                const refreshFn = () => window.recipeManager.loadRecipes(true);
+                const onAction = data.batch_id
+                    ? () => handleUndoDelete(data.batch_id, refreshFn)
+                    : async () => {
+                        for (const id of batchIds) {
+                            const succeeded = await handleUndoDelete(id, null, { showToast: false, refresh: false });
+                            if (!succeeded) {
+                                showToast('toast.undo.failed', { error: '' }, 'error');
+                                return;
+                            }
+                        }
+                        refreshFn();
+                        showToast('toast.undo.restored', {}, 'success');
+                    };
+                showActionToast('toast.undo.deletedBulk', { count: data.total_deleted }, 'success', {
+                    actionText: translate('toast.undo.action'),
+                    onAction,
+                });
+            } else {
+                showToast('toast.duplicates.deleteSuccess', { count: data.total_deleted, type: 'recipes' }, 'success');
+            }
             
             // Exit duplicate mode if deletions were successful
             if (data.total_deleted > 0) {

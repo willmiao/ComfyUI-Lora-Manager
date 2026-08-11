@@ -1,5 +1,5 @@
 // Recipe Card Component
-import { showToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
+import { showToast, showActionToast, copyToClipboard, sendLoraToWorkflow } from '../utils/uiHelpers.js';
 import { updateRecipeMetadata } from '../api/recipeApi.js';
 import { configureModelCardVideo } from './shared/ModelCard.js';
 import { modalManager } from '../managers/ModalManager.js';
@@ -7,6 +7,9 @@ import { getCurrentPageState } from '../state/index.js';
 import { state } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getMatureBlurThreshold } from '../utils/constants.js';
+import { translate } from '../utils/i18nHelpers.js';
+import { handleUndoDelete } from '../utils/undoHelpers.js';
+import { armDeleteButton } from '../utils/modalUtils.js';
 
 class RecipeCard {
     constructor(recipe, clickHandler) {
@@ -375,8 +378,13 @@ class RecipeCard {
             `;
 
             // Show the modal with custom content and setup callbacks
+            let deleteArmTimer = null;
             modalManager.showModal('deleteModal', deleteModalContent, () => {
                 // This is the onClose callback
+                if (deleteArmTimer) {
+                    clearTimeout(deleteArmTimer);
+                    deleteArmTimer = null;
+                }
                 const deleteModal = document.getElementById('deleteModal');
                 const deleteBtn = deleteModal.querySelector('.delete-btn');
                 deleteBtn.textContent = 'Delete';
@@ -395,6 +403,8 @@ class RecipeCard {
             // Update button event handlers
             cancelBtn.onclick = () => modalManager.closeModal('deleteModal');
             deleteBtn.onclick = () => this.confirmDeleteRecipe();
+
+            deleteArmTimer = armDeleteButton(deleteModal);
 
         } catch (error) {
             console.error('Error showing delete confirmation:', error);
@@ -432,7 +442,16 @@ class RecipeCard {
                 return response.json();
             })
             .then(data => {
-                showToast('toast.recipes.deletedSuccessfully', {}, 'success');
+                if (data.batch_id) {
+                    // Staged delete: offer undo instead of the plain success toast
+                    const batchId = data.batch_id;
+                    showActionToast('toast.undo.deleted', { name: this.recipe.title }, 'success', {
+                        actionText: translate('toast.undo.action'),
+                        onAction: () => handleUndoDelete(batchId, () => window.recipeManager.loadRecipes(true)),
+                    });
+                } else {
+                    showToast('toast.recipes.deletedSuccessfully', {}, 'success');
+                }
 
                 state.virtualScroller.removeItemByFilePath(deleteModal.dataset.filePath);
 

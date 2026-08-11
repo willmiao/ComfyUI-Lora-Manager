@@ -123,6 +123,7 @@ vi.mock('../../../static/js/state/index.js', () => ({
 vi.mock('../../../static/js/utils/modalUtils.js', () => ({
   showExcludeModal: vi.fn(),
   showDeleteModal: vi.fn(),
+  armDeleteButton: vi.fn(),
 }));
 
 vi.mock('../../../static/js/managers/MoveManager.js', () => ({

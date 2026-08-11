@@ -142,8 +142,48 @@ describe('RecipeSidebarApiClient bulk operations', () => {
       success: true,
       deleted_count: 2,
       failed_count: 0,
+      batch_id: null,
+      batch_ids: null,
     });
     expect(loadingManagerMock.hide).toHaveBeenCalled();
+  });
+
+  it('passes through the merged batch_id from a staged bulk delete', async () => {
+    const api = new RecipeSidebarApiClient();
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        total_deleted: 2,
+        total_failed: 0,
+        failed: [],
+        batch_id: 'merged-recipe-batch',
+      }),
+    });
+
+    const result = await api.bulkDeleteModels(['/recipes/a.webp', '/recipes/b.webp']);
+
+    expect(result.batch_id).toBe('merged-recipe-batch');
+    expect(result.batch_ids).toBeNull();
+  });
+
+  it('passes through the batch_ids fallback array when the merge failed', async () => {
+    const api = new RecipeSidebarApiClient();
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        total_deleted: 2,
+        total_failed: 0,
+        failed: [],
+        batch_ids: ['recipe-batch-1', 'recipe-batch-2'],
+      }),
+    });
+
+    const result = await api.bulkDeleteModels(['/recipes/a.webp', '/recipes/b.webp']);
+
+    expect(result.batch_id).toBeNull();
+    expect(result.batch_ids).toEqual(['recipe-batch-1', 'recipe-batch-2']);
   });
 
   it('encodes recipe IDs when fetching recipe details', async () => {
