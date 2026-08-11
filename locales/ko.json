@@ -1283,7 +1283,7 @@
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "deleteRecipe": {
-            "recoverableWarning": "[TODO: Translate] This action can be undone for 30 seconds."
+            "recoverableWarning": "이 작업은 30초 이내에 실행 취소할 수 있습니다."
         },
         "excludeModel": {
             "title": "모델 제외",
