@@ -451,7 +451,9 @@ async def test_g_manifestless_dir_quarantined(tmp_path: Path, monkeypatch) -> No
     await _register_model_root(monkeypatch, lora_roots=[root])
 
     service = await PendingDeleteService.get_instance()
-    await service.purge_expired()
+    # The batch is hand-created (unregistered): the reconciliation pass is
+    # required for the default registry-only purge to discover it.
+    await service.purge_expired(scan_roots=True)
 
     orphaned = staging / "batch1.orphaned"
     assert orphaned.is_dir()
@@ -474,7 +476,8 @@ async def test_h_corrupted_manifest_quarantined(tmp_path: Path, monkeypatch) -> 
     await _register_model_root(monkeypatch, lora_roots=[root])
     service = await PendingDeleteService.get_instance()
 
-    await service.purge_expired()  # must not crash
+    # Hand-created (unregistered) batch: reconciliation discovers it.
+    await service.purge_expired(scan_roots=True)  # must not crash
 
     orphaned = staging / "batch2.orphaned"
     assert orphaned.is_dir()
@@ -1055,7 +1058,8 @@ async def test_r_purge_expired_enumerates_all_scanner_types_and_recipe_dir(
     )
 
     service = await PendingDeleteService.get_instance()
-    purged = await service.purge_expired()
+    # Hand-created (unregistered) batches: reconciliation pass discovers them.
+    purged = await service.purge_expired(scan_roots=True)
 
     assert purged >= 4
     for root in (lora_root, ckpt_root, emb_root):
@@ -1117,12 +1121,13 @@ async def test_t_quarantine_is_terminal(tmp_path: Path, monkeypatch) -> None:
     await _register_model_root(monkeypatch, lora_roots=[root])
     service = await PendingDeleteService.get_instance()
 
-    await service.purge_expired()
+    # Hand-created (unregistered) batch: reconciliation discovers it.
+    await service.purge_expired(scan_roots=True)
     orphaned = staging / "qbatch.orphaned"
     assert orphaned.is_dir()
 
     # Second sweep must NOT re-rename or delete the quarantined dir.
-    await service.purge_expired()
+    await service.purge_expired(scan_roots=True)
     assert orphaned.is_dir()
     assert (orphaned / "model.safetensors").read_bytes() == b"data"
     assert not batch_dir.exists()
@@ -1169,7 +1174,9 @@ async def test_u_lock_no_deadlock_with_concurrent_purge(tmp_path: Path, monkeypa
             cached_entry=None,
         )
 
-    purge_task = asyncio.create_task(service.purge_expired())
+    # Hand-created (unregistered) "expired" batch: the purge task must run the
+    # reconciliation pass to discover it alongside the staged "new" batch.
+    purge_task = asyncio.create_task(service.purge_expired(scan_roots=True))
     stage_task = asyncio.create_task(do_stage())
     results = await asyncio.gather(purge_task, stage_task, return_exceptions=True)
 
@@ -1533,3 +1540,327 @@ async def test_snap2_merge_keeps_both_snapshots(
     snap_entries = [e for e in manifest["entries"] if e.get("snapshot")]
     assert len(snap_entries) == 2
     assert {e["snapshot"]["file_path"] for e in snap_entries} == {str(a1), str(b1)}
+
+
+# ---------------------------------------------------------------------------
+# Batch-registry lifecycle (todo 1: in-process _known_batch_dirs)
+# ---------------------------------------------------------------------------
+
+# (a) stage_model_delete registers in _known_batch_dirs
+async def test_reg_a_stage_model_registers_batch(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "model")
+
+    assert service._known_batch_dirs.get(batch_id) == str(
+        root / PENDING_DELETE_DIR_NAME / batch_id
+    )
+
+
+# (b) undo success removes the entry
+async def test_reg_b_undo_success_removes_registry_entry(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "model")
+    assert batch_id in service._known_batch_dirs
+
+    await service.undo(batch_id)
+
+    assert batch_id not in service._known_batch_dirs
+
+
+# (c) purge_batch removes the entry after a real purge
+async def test_reg_c_purge_batch_removes_registry_entry(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "model")
+    batch_dir = root / PENDING_DELETE_DIR_NAME / batch_id
+    manifest_path = batch_dir / "manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["expires_at"] = int(time.time()) - 10
+    manifest_path.write_text(json.dumps(manifest))
+
+    await service.purge_batch(batch_id)
+
+    assert batch_id not in service._known_batch_dirs
+    assert not batch_dir.exists()
+
+
+# (d) quarantine (corrupted manifest) removes the entry
+async def test_reg_d_quarantine_removes_registry_entry(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "model")
+    batch_dir = root / PENDING_DELETE_DIR_NAME / batch_id
+    assert batch_id in service._known_batch_dirs
+
+    # Corrupt the manifest: purge_batch quarantines the dir (returns True).
+    (batch_dir / "manifest.json").write_text("{ not valid json !!!")
+
+    await service.purge_batch(batch_id)
+
+    assert batch_id not in service._known_batch_dirs
+    assert not batch_dir.exists()
+    assert (batch_dir.with_name(f"{batch_id}.orphaned")).is_dir()
+
+
+# (e) merge success: winner present + losers removed; EXDEV-abort: unchanged
+async def test_reg_e_merge_registry_lifecycle(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    _spy_purge_timers(monkeypatch)
+    service = await PendingDeleteService.get_instance()
+    bid_a = await _stage_simple(service, root, "alpha")
+    bid_b = await _stage_simple(service, root, "beta")
+    bid_c = await _stage_simple(service, root, "gamma")
+    assert set(service._known_batch_dirs) == {bid_a, bid_b, bid_c}
+
+    # Merge success: winner stays, processed loser forgotten, untouched batch stays.
+    assert await service.merge_batches([bid_a, bid_b]) == bid_a
+    assert bid_a in service._known_batch_dirs
+    assert bid_b not in service._known_batch_dirs
+    assert bid_c in service._known_batch_dirs
+
+    # EXDEV-abort: registry untouched.
+    def exdev_rename(src: str, dst: str) -> None:
+        raise OSError(errno.EXDEV, "Invalid cross-device link", src, dst)
+
+    monkeypatch.setattr("py.services.pending_delete_service.os.rename", exdev_rename)
+    before = dict(service._known_batch_dirs)
+    assert await service.merge_batches([bid_a, bid_c]) is None
+    assert dict(service._known_batch_dirs) == before
+
+
+# (f) _reset_pending_delete_service clears the registry
+async def test_reg_f_reset_clears_registry(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "model")
+    assert service._known_batch_dirs
+
+    _reset_pending_delete_service()
+
+    fresh = await PendingDeleteService.get_instance()
+    assert fresh is not service
+    assert fresh._known_batch_dirs == {}
+
+
+# (g) scan_roots=True reconciles externally created batches (expired purged,
+#     non-expired registered); the registry-only default does NOT find them
+async def test_reg_g_reconciliation_finds_external_batches(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+
+    expired_dir = root / PENDING_DELETE_DIR_NAME / "ext-expired"
+    expired_dir.mkdir(parents=True)
+    (expired_dir / "old.safetensors").write_bytes(b"old")
+    _write_batch_manifest(
+        expired_dir,
+        batch_id="ext-expired",
+        kind="model",
+        model_type="loras",
+        expires_at=int(time.time()) - 10,
+        entries=[
+            {
+                "staged": str(expired_dir / "old.safetensors"),
+                "original": str(root / "old.safetensors"),
+                "restored": False,
+            }
+        ],
+    )
+    fresh_dir = root / PENDING_DELETE_DIR_NAME / "ext-fresh"
+    fresh_dir.mkdir(parents=True)
+    (fresh_dir / "new.safetensors").write_bytes(b"new")
+    _write_batch_manifest(
+        fresh_dir,
+        batch_id="ext-fresh",
+        kind="model",
+        model_type="loras",
+        expires_at=int(time.time()) + 100,
+        entries=[
+            {
+                "staged": str(fresh_dir / "new.safetensors"),
+                "original": str(root / "new.safetensors"),
+                "restored": False,
+            }
+        ],
+    )
+
+    service = await PendingDeleteService.get_instance()
+
+    # Registry-only default: the externally created batches are invisible.
+    await service.purge_expired()
+    assert expired_dir.is_dir()
+    assert fresh_dir.is_dir()
+    assert "ext-expired" not in service._known_batch_dirs
+    assert "ext-fresh" not in service._known_batch_dirs
+
+    # Reconciliation pass: expired one purged, non-expired one registered.
+    await service.purge_expired(scan_roots=True)
+
+    assert not expired_dir.exists()
+    assert not (root / "old.safetensors").exists()
+    assert fresh_dir.is_dir()
+    assert (fresh_dir / "new.safetensors").exists()
+    assert "ext-expired" not in service._known_batch_dirs
+    assert service._known_batch_dirs.get("ext-fresh") == str(fresh_dir)
+
+
+# (h) _find_batch_dir with cleared registry locates + registers (restart sim)
+async def test_reg_h_find_batch_dir_restart_simulation(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+    service = await PendingDeleteService.get_instance()
+    batch_id = await _stage_simple(service, root, "model")
+    assert batch_id in service._known_batch_dirs
+
+    # Simulate a restart: the in-process registry is empty but the batch dir
+    # is still on disk.
+    service._known_batch_dirs.clear()
+
+    found = await service._find_batch_dir(batch_id)
+
+    assert found == str(root / PENDING_DELETE_DIR_NAME / batch_id)
+    assert service._known_batch_dirs.get(batch_id) == found
+
+    # Undo works after the restart simulation.
+    await service.undo(batch_id)
+    assert (root / "model.safetensors").read_bytes() == b"model-data"
+    assert batch_id not in service._known_batch_dirs
+
+
+# (i) purge iteration uses a snapshot: no dict-changed-size when entries are
+#     removed mid-iteration
+async def test_reg_i_purge_iteration_uses_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+    service = await PendingDeleteService.get_instance()
+    ids = [await _stage_simple(service, root, f"m{i}") for i in range(5)]
+
+    for batch_id in ids:
+        manifest_path = root / PENDING_DELETE_DIR_NAME / batch_id / "manifest.json"
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        manifest["expires_at"] = int(time.time()) - 10
+        manifest_path.write_text(json.dumps(manifest))
+
+    # Every purge removes its registry entry mid-loop; the snapshot makes this
+    # safe (iterating the dict directly would raise RuntimeError).
+    await service.purge_expired()
+
+    assert service._known_batch_dirs == {}
+    for batch_id in ids:
+        assert not (root / PENDING_DELETE_DIR_NAME / batch_id).exists()
+
+
+# (j) STARTUP SWEEP PIN: the startup sweep task passes scan_roots=True
+async def test_reg_j_startup_sweep_passes_scan_roots_true(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from py import lora_manager
+
+    sweep_calls: List[Dict[str, Any]] = []
+
+    class _SpySweepService:
+        async def purge_expired(self, scan_roots: bool = False) -> int:
+            sweep_calls.append({"scan_roots": scan_roots})
+            return 0
+
+    async def _fake_get_service() -> _SpySweepService:
+        return _SpySweepService()
+
+    monkeypatch.setattr(lora_manager, "get_pending_delete_service", _fake_get_service)
+
+    async def _stub(*args: Any, **_kwargs: Any) -> Any:
+        return args[0] if args else None
+
+    class _DummyScanner:
+        async def initialize_in_background(self) -> None:
+            return None
+
+    dummy = _DummyScanner()
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_civitai_client", lambda: _stub())
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_download_manager", lambda: _stub())
+    monkeypatch.setattr(
+        lora_manager.ServiceRegistry, "get_download_queue_service", lambda: _stub()
+    )
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_backup_service", lambda: _stub())
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_websocket_manager", lambda: _stub())
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_lora_scanner", lambda: _stub(dummy))
+    monkeypatch.setattr(
+        lora_manager.ServiceRegistry, "get_checkpoint_scanner", lambda: _stub(dummy)
+    )
+    monkeypatch.setattr(
+        lora_manager.ServiceRegistry, "get_embedding_scanner", lambda: _stub(dummy)
+    )
+    monkeypatch.setattr(lora_manager.ServiceRegistry, "get_recipe_scanner", lambda: _stub(dummy))
+
+    from py.services import metadata_service as metadata_service_module
+
+    monkeypatch.setattr(
+        metadata_service_module,
+        "initialize_metadata_providers",
+        _stub,
+    )
+
+    from py.services.llm_service import LLMService
+
+    monkeypatch.setattr(LLMService, "get_instance", _stub)
+
+    async def _fake_migration() -> None:
+        return None
+
+    monkeypatch.setattr(
+        lora_manager.ExampleImagesMigration,
+        "check_and_run_migrations",
+        staticmethod(_fake_migration),
+    )
+
+    captured: List[Any] = []
+
+    class _DummyTask:
+        def add_done_callback(self, _cb: Any) -> None:  # pragma: no cover - stub
+            pass
+
+        def done(self) -> bool:  # pragma: no cover - stub
+            return False
+
+    def _capture_task(coro: Any, *args: Any, **kwargs: Any) -> _DummyTask:
+        captured.append(coro)
+        return _DummyTask()
+
+    monkeypatch.setattr(asyncio, "create_task", _capture_task)
+
+    try:
+        await lora_manager.LoraManager._initialize_services()
+    finally:
+        sweep_coro: Any = None
+        for coro in captured:
+            qualname = getattr(coro.cr_code, "co_qualname", "")
+            if "_SpySweepService.purge_expired" in qualname:
+                sweep_coro = coro
+            else:
+                coro.close()
+        if sweep_coro is not None:
+            # The sweep task body only runs when awaited; execute just the
+            # spy's purge_expired so it records its invocation arguments.
+            await sweep_coro
+
+    # The startup sweep must invoke purge_expired with scan_roots=True (the
+    # reconciliation flag) - forgetting it would break restart cleanup.
+    assert sweep_calls == [{"scan_roots": True}]
