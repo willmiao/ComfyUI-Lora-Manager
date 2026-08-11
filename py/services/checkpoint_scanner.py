@@ -13,7 +13,7 @@ from ..utils.models import CheckpointMetadata
 from ..utils.file_utils import find_preview_file, normalize_path, calculate_autov3
 from ..utils.metadata_manager import MetadataManager
 from ..config import config
-from .model_scanner import ModelScanner
+from .model_scanner import ModelScanner, _is_excluded_dir
 from .model_hash_index import ModelHashIndex
 
 logger = logging.getLogger(__name__)
@@ -328,7 +328,8 @@ class CheckpointScanner(ModelScanner):
             if not os.path.exists(root_path):
                 continue
 
-            for dirpath, _dirnames, filenames in os.walk(root_path):
+            for dirpath, dirnames, filenames in os.walk(root_path):
+                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
                 for filename in filenames:
                     if not filename.endswith(".metadata.json"):
                         continue

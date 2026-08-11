@@ -14,6 +14,7 @@ from typing import Any, Awaitable, Dict, Iterable, Optional, cast
 from ...config import config
 from ...recipes.constants import GEN_PARAM_KEYS
 from ...utils.utils import calculate_recipe_fingerprint
+from ..pending_delete_service import get_pending_delete_service
 from .errors import RecipeNotFoundError, RecipeValidationError
 
 
@@ -201,12 +202,31 @@ class RecipePersistenceService:
             recipe_data = json.load(file_obj)
 
         image_path = recipe_data.get("file_path")
+
+        # Stage the delete so the recipe can be undone within the undo window.
+        # The staging service COPIES the JSON (and existing image) into the
+        # global staging dir and stores recipe_data as the manifest snapshot;
+        # the originals are removed below as before. When staging is skipped
+        # (undo disabled / staging failure) the existing hard delete runs.
+        pending_delete_service = await get_pending_delete_service()
+        batch_id = await pending_delete_service.stage_recipe_delete(
+            recipe_json_path=recipe_json_path,
+            image_path=image_path,
+            recipe_data=recipe_data,
+        )
+
         os.remove(recipe_json_path)
         if image_path and os.path.exists(image_path):
             os.remove(image_path)
 
         await recipe_scanner.remove_recipe(recipe_id)
-        return PersistenceResult({"success": True, "message": "Recipe deleted successfully"})
+        return PersistenceResult(
+            {
+                "success": True,
+                "message": "Recipe deleted successfully",
+                "batch_id": batch_id,
+            }
+        )
 
     async def update_recipe(self, *, recipe_scanner, recipe_id: str, updates: dict[str, Any]) -> PersistenceResult:
         """Update persisted metadata for a recipe."""
@@ -450,6 +470,9 @@ class RecipePersistenceService:
 
         deleted_recipes: list[str] = []
         failed_recipes: list[dict[str, Any]] = []
+        batch_ids: list[str] = []
+
+        pending_delete_service = await get_pending_delete_service()
 
         for recipe_id in recipe_ids:
             recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
@@ -461,6 +484,17 @@ class RecipePersistenceService:
                 with open(recipe_json_path, "r", encoding="utf-8") as file_obj:
                     recipe_data = json.load(file_obj)
                 image_path = recipe_data.get("file_path")
+
+                # Stage each recipe into its own batch; collect the ids so the
+                # whole bulk action can be merged into ONE undoable batch.
+                batch_id = await pending_delete_service.stage_recipe_delete(
+                    recipe_json_path=recipe_json_path,
+                    image_path=image_path,
+                    recipe_data=recipe_data,
+                )
+                if batch_id:
+                    batch_ids.append(batch_id)
+
                 os.remove(recipe_json_path)
                 if image_path and os.path.exists(image_path):
                     os.remove(image_path)
@@ -471,15 +505,27 @@ class RecipePersistenceService:
         if deleted_recipes:
             await recipe_scanner.bulk_remove(deleted_recipes)
 
-        return PersistenceResult(
-            {
-                "success": True,
-                "deleted": deleted_recipes,
-                "failed": failed_recipes,
-                "total_deleted": len(deleted_recipes),
-                "total_failed": len(failed_recipes),
-            }
-        )
+        payload: dict[str, Any] = {
+            "success": True,
+            "deleted": deleted_recipes,
+            "failed": failed_recipes,
+            "total_deleted": len(deleted_recipes),
+            "total_failed": len(failed_recipes),
+        }
+
+        if batch_ids:
+            merged_batch_id = await pending_delete_service.merge_batches(batch_ids)
+            if merged_batch_id:
+                # Merge succeeded: one undo action covers the whole bulk.
+                payload["batch_id"] = merged_batch_id
+            else:
+                # Merge failure (e.g. cross-volume move): expose the constituent
+                # batches so the caller can undo them one at a time.
+                payload["batch_ids"] = batch_ids
+        else:
+            payload["batch_id"] = None
+
+        return PersistenceResult(payload)
 
     async def save_recipe_from_widget(
         self,

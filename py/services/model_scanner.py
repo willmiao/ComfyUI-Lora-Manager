@@ -19,10 +19,26 @@ from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
 from .persistent_model_cache import get_persistent_cache
 from .settings_manager import get_settings_manager
+from .pending_delete_service import PENDING_DELETE_DIR_NAME, get_pending_delete_service
 from .cache_entry_validator import CacheEntryValidator
 from .cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
 
 logger = logging.getLogger(__name__)
+
+
+def _is_excluded_dir(name: str) -> bool:
+    """Return True when a directory entry must be skipped during model walks.
+
+    The pending-delete staging directory is excluded so staged files never
+    appear in the library as ghost model entries.
+    """
+    return name == PENDING_DELETE_DIR_NAME
+
+
+def _is_pending_delete_path(path: str) -> bool:
+    """Return True when any path component is the pending-delete staging dir."""
+    normalized = str(path).replace(os.sep, "/")
+    return any(part == PENDING_DELETE_DIR_NAME for part in normalized.split("/"))
 
 
 @dataclass
@@ -711,6 +727,8 @@ class ModelScanner:
                                     if ext in self.file_extensions:
                                         total_files += 1
                                 elif entry.is_dir(follow_symlinks=True):
+                                    if _is_excluded_dir(entry.name):
+                                        continue
                                     count_recursive(entry.path)
                             except Exception as e:
                                 logger.error(f"Error counting files in entry {entry.path}: {e}")
@@ -864,7 +882,8 @@ class ModelScanner:
                     continue
                 
                 # Recursively scan directory
-                for root, _, files in os.walk(root_path, followlinks=True):
+                for root, dirnames, files in os.walk(root_path, followlinks=True):
+                    dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
                     real_root = os.path.realpath(root)
                     if real_root in visited_real_paths:
                         continue
@@ -1136,6 +1155,11 @@ class ModelScanner:
         """Process a single model file and return its metadata"""
         hash_index = hash_index or self._hash_index
         excluded_models = excluded_models if excluded_models is not None else self._excluded_models
+
+        # Belt-and-braces: staged files must never become library entries even
+        # if a caller invokes this method directly with a staging path.
+        if _is_pending_delete_path(file_path):
+            return None
 
         metadata, should_skip = await MetadataManager.load_metadata(file_path, self.model_class)
     
@@ -1456,6 +1480,8 @@ class ModelScanner:
                             if self.is_cancelled():
                                 return
                         elif entry.is_dir(follow_symlinks=True):
+                            if _is_excluded_dir(entry.name):
+                                continue
                             await scan_recursive(entry.path, root_path, visited_paths)
                     except Exception as entry_error:
                         logger.error(f"Error processing entry {entry.path}: {entry_error}")
@@ -2206,6 +2232,11 @@ class ModelScanner:
             # Track deleted models to update cache once
             deleted_models = []
             
+            # Stage each file into the pending-delete staging area and merge
+            # all per-file batches into ONE batch for the whole bulk action.
+            pending_delete_service = await get_pending_delete_service()
+            batch_ids: List[str] = []
+            
             for file_path in file_paths:
                 if self.is_cancelled():
                     logger.info(f"{self.model_type.capitalize()} Scanner: Bulk delete cancelled by user")
@@ -2218,11 +2249,35 @@ class ModelScanner:
                     base_name = os.path.basename(file_path)
                     file_name, main_extension = os.path.splitext(base_name)
 
-                    deleted_files = await delete_model_artifacts(
-                        target_dir,
-                        file_name,
+                    # Snapshot the cache entry BEFORE the cache mutation that
+                    # runs after the loop - the manifest needs it for undo.
+                    cached_entry = None
+                    if cache is not None:
+                        cached_entry = next(
+                            (item for item in cache.raw_data if item.get('file_path') == file_path),
+                            None,
+                        )
+
+                    batch_id = await pending_delete_service.stage_model_delete(
+                        scanner=self,
+                        target_dir=target_dir,
+                        file_name=file_name,
                         main_extension=main_extension,
+                        original_file_path=file_path,
+                        cached_entry=cached_entry,
                     )
+
+                    if batch_id is not None:
+                        # Artifacts were renamed into staging: the main file is
+                        # gone from its original location.
+                        batch_ids.append(batch_id)
+                        deleted_files = [file_path]
+                    else:
+                        deleted_files = await delete_model_artifacts(
+                            target_dir,
+                            file_name,
+                            main_extension=main_extension,
+                        )
                     
                     if deleted_files:
                         deleted_models.append(file_path)
@@ -2246,6 +2301,18 @@ class ModelScanner:
                         'error': str(e)
                     })
             
+            # Merge every staged per-file batch into ONE undoable batch. On a
+            # merge failure (cross-volume EXDEV etc.) the response falls back
+            # to the constituent batch_ids array so the frontend can undo them
+            # sequentially.
+            batch_field: Dict[str, Any] = {}
+            if batch_ids:
+                merged_id = await pending_delete_service.merge_batches(batch_ids)
+                if merged_id is not None:
+                    batch_field['batch_id'] = merged_id
+                else:
+                    batch_field['batch_ids'] = list(batch_ids)
+            
             # Batch update cache if any models were deleted
             if deleted_models:
                 # Update the cache in a batch operation
@@ -2257,7 +2324,8 @@ class ModelScanner:
                 'total_deleted': total_deleted,
                 'total_attempted': len(file_paths),
                 'cache_updated': cache_updated,
-                'results': results
+                'results': results,
+                **batch_field
             }
             
         except Exception as e:

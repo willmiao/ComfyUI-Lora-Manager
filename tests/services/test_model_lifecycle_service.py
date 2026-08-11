@@ -1,11 +1,16 @@
+from __future__ import annotations
+
 import json
 import os
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any, Dict, cast
 
 import pytest
 
 from py.services.model_lifecycle_service import ModelLifecycleService, _require_path_in_library_roots
+from py.services.pending_delete_service import PENDING_DELETE_DIR_NAME, _reset_pending_delete_service
+from py.services.settings_manager import get_settings_manager
 from py.utils.metadata_manager import MetadataManager
 from py.utils.models import LoraMetadata
 
@@ -901,3 +906,167 @@ async def test_extract_model_id_handles_string_values():
 
     payload = {"civitai": {"modelId": "54321"}}
     assert service._extract_model_id_from_payload(payload) == 54321
+
+
+# =============================================================================
+# Tests for delete_model undo staging
+# =============================================================================
+
+
+@pytest.fixture(autouse=True)
+def _reset_pending_delete_singleton() -> Iterator[None]:
+    """Reset the pending-delete singleton around every test in this module.
+
+    The singleton keeps an in-process list of staging roots across tests;
+    resetting avoids cross-test pollution (a stale root from one tmp_path
+    leaking into the next test's opportunistic purge enumeration).
+    """
+    _reset_pending_delete_service()
+    yield
+    _reset_pending_delete_service()
+
+
+@pytest.fixture(autouse=True)
+def _stub_scanner_registry_getters(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Prevent purge enumeration from instantiating real scanner singletons.
+
+    ``stage_model_delete`` triggers an opportunistic purge whose root
+    enumeration queries the ServiceRegistry scanner getters; stubbing them to
+    ``None`` keeps tests fast and isolated (mirrors test_pending_delete_service).
+    """
+    from py.services.service_registry import ServiceRegistry
+
+    async def _none(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", _none)
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _none)
+    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", _none)
+
+
+def _make_delete_service(scanner: Any) -> ModelLifecycleService:
+    return ModelLifecycleService(
+        scanner=scanner,
+        metadata_manager=DummyMetadataManager({"civitai": {"modelId": 1}}),
+        metadata_loader=_empty_metadata_loader,
+    )
+
+
+@pytest.mark.asyncio
+async def test_delete_model_stages_file_when_undo_enabled(tmp_path: Path):
+    """Undo enabled (the default): artifacts are renamed into a
+    ``.lm-pending-delete/<batch_id>/`` staging dir under the model root, the
+    response carries the batch_id, the cache entry is removed and the cache
+    is persisted (``_persist_calls`` tracked by ``ScannerForDelete``)."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    model_path = root / "model.safetensors"
+    model_path.write_bytes(b"content")
+    metadata_path = root / "model.metadata.json"
+    metadata_path.write_text(json.dumps({}))
+    preview_path = root / "model.preview.png"
+    preview_path.write_bytes(b"preview")
+
+    scanner = ScannerForDelete(
+        raw_data=[
+            {
+                "file_path": str(model_path),
+                "civitai": {"modelId": 1, "id": 10},
+                "sha256": "abc123",
+            }
+        ],
+        roots=[str(root)],
+    )
+    service = _make_delete_service(scanner)
+
+    result = await service.delete_model(str(model_path))
+
+    assert result["success"] is True
+    batch_id = result["batch_id"]
+    assert isinstance(batch_id, str)
+
+    assert not model_path.exists()
+    assert not metadata_path.exists()
+    assert not preview_path.exists()
+    batch_dir = root / PENDING_DELETE_DIR_NAME / batch_id
+    assert batch_dir.is_dir()
+    assert (batch_dir / "model.safetensors").read_bytes() == b"content"
+    assert (batch_dir / "model.metadata.json").exists()
+    assert (batch_dir / "model.preview.png").exists()
+
+    assert scanner.cache.raw_data == []
+    assert scanner._hash_index.removed == [str(model_path)]
+    assert scanner._persist_calls == [True]
+
+
+@pytest.mark.asyncio
+async def test_delete_model_hard_deletes_when_undo_disabled(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """delete_undo_enabled=false: old os.remove behavior, batch_id is None and
+    no staging directory is ever created."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    model_path = root / "model.safetensors"
+    model_path.write_bytes(b"content")
+
+    settings_manager = get_settings_manager()
+    monkeypatch.setattr(
+        settings_manager,
+        "get",
+        lambda key, default=None: False
+        if key == "delete_undo_enabled"
+        else default,
+    )
+
+    scanner = ScannerForDelete(
+        raw_data=[{"file_path": str(model_path)}],
+        roots=[str(root)],
+    )
+    service = _make_delete_service(scanner)
+
+    result = await service.delete_model(str(model_path))
+
+    assert result["success"] is True
+    assert result["batch_id"] is None
+    assert result["deleted_files"]
+    assert not model_path.exists()
+    assert not (root / PENDING_DELETE_DIR_NAME).exists()
+
+
+@pytest.mark.asyncio
+async def test_delete_model_falls_back_when_staging_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Staging rename failure: delete_model_artifacts fallback removes the
+    files, batch_id is None and no staged data is left behind."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    model_path = root / "model.safetensors"
+    model_path.write_bytes(b"content")
+
+    real_rename = os.rename
+
+    def _failing_rename(src: str, dst: str) -> None:
+        if PENDING_DELETE_DIR_NAME in dst:
+            raise OSError("simulated staging failure")
+        real_rename(src, dst)
+
+    monkeypatch.setattr(os, "rename", _failing_rename)
+
+    scanner = ScannerForDelete(
+        raw_data=[{"file_path": str(model_path)}],
+        roots=[str(root)],
+    )
+    service = _make_delete_service(scanner)
+
+    result = await service.delete_model(str(model_path))
+
+    assert result["success"] is True
+    assert result["batch_id"] is None
+    assert result["deleted_files"]
+    assert not model_path.exists()
+    # No staged batch files remain (the batch dir is rolled back; an empty
+    # staging parent, if left behind by the rollback, holds no data).
+    staging_parent = root / PENDING_DELETE_DIR_NAME
+    assert not staging_parent.exists() or not any(staging_parent.iterdir())

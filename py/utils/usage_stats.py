@@ -10,6 +10,7 @@ from typing import Any, Awaitable, Dict, Set, cast
 
 from ..config import config
 from ..services.service_registry import ServiceRegistry
+from ..services.model_scanner import _is_excluded_dir
 from ..utils.settings_paths import get_settings_dir
 
 # Check if running in standalone mode
@@ -421,7 +422,8 @@ class UsageStats:
             if not os.path.exists(root_path):
                 continue
 
-            for dirpath, _dirnames, filenames in os.walk(root_path):
+            for dirpath, dirnames, filenames in os.walk(root_path):
+                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
                 for filename in filenames:
                     extension = os.path.splitext(filename)[1].lower()
                     if extension not in supported_extensions:

@@ -7,6 +7,7 @@ import os
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, TYPE_CHECKING, cast
 
 from ..services.service_registry import ServiceRegistry
+from ..services.pending_delete_service import get_pending_delete_service
 from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.metadata_manager import MetadataManager
 
@@ -129,9 +130,24 @@ class ModelLifecycleService:
         target_dir = os.path.dirname(file_path)
         base_name = os.path.basename(file_path)
         file_name, main_extension = os.path.splitext(base_name)
-        deleted_files = await delete_model_artifacts(
-            target_dir, file_name, main_extension=main_extension
+
+        # Stage the delete into the pending-delete service when undo is
+        # enabled; a successful stage renames the artifacts away, otherwise
+        # fall back to the direct hard delete.
+        pending_delete_service = await get_pending_delete_service()
+        batch_id = await pending_delete_service.stage_model_delete(
+            scanner=self._scanner,
+            target_dir=target_dir,
+            file_name=file_name,
+            main_extension=main_extension,
+            original_file_path=file_path,
+            cached_entry=cached_entry,
         )
+        deleted_files: List[str] = []
+        if batch_id is None:
+            deleted_files = await delete_model_artifacts(
+                target_dir, file_name, main_extension=main_extension
+            )
 
         if cache:
             cache.raw_data = [
@@ -151,7 +167,11 @@ class ModelLifecycleService:
         if callable(persist_current_cache):
             await cast(Awaitable[Any], persist_current_cache())
 
-        return {"success": True, "deleted_files": deleted_files}
+        return {
+            "success": True,
+            "deleted_files": deleted_files,
+            "batch_id": batch_id,
+        }
 
     @staticmethod
     def _extract_model_id_from_payload(payload: Any) -> Optional[int]:
