@@ -18,6 +18,16 @@ from py.utils.models import BaseModelMetadata
 from py.utils.utils import calculate_recipe_fingerprint
 
 
+async def _wait_for_resort(scanner: RecipeScanner) -> None:
+    """Deterministically await any pending background cache resort.
+
+    Resort runs in a thread-pool executor; a bare sleep(0) races it.
+    """
+    tasks = list(getattr(scanner, "_resort_tasks", None) or [])
+    if tasks:
+        await asyncio.gather(*tasks, return_exceptions=True)
+
+
 class StubHashIndex:
     def __init__(self) -> None:
         self._hash_to_path: dict[str, str] = {}
@@ -342,6 +352,7 @@ async def test_get_paginated_data_normalizes_legacy_checkpoint(recipe_scanner):
         }
     )
     await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
 
     result = await scanner.get_paginated_data(page=1, page_size=5)
 
@@ -587,6 +598,7 @@ async def test_get_paginated_data_filters_by_checkpoint_hash(recipe_scanner):
         }
     )
     await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
 
     result = await scanner.get_paginated_data(
         page=1,
@@ -619,6 +631,7 @@ async def test_get_paginated_data_normalizes_gen_params_aliases_without_dropping
         }
     )
     await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
 
     result = await scanner.get_paginated_data(page=1, page_size=10)
     item = next(entry for entry in result["items"] if entry["id"] == "dirty-listing")
@@ -899,6 +912,7 @@ async def test_get_paginated_data_filters_by_favorite(recipe_scanner):
 
     # Wait for cache update (it's async in some places, add_recipe is usually enough but let's be safe)
     await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
 
     # Test without filter (should return both)
     result_all = await scanner.get_paginated_data(page=1, page_size=10)
@@ -950,6 +964,7 @@ async def test_get_paginated_data_filters_by_prompt(recipe_scanner):
     )
 
     await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
 
     # Test search in prompt
     result_prompt = await scanner.get_paginated_data(
@@ -1009,6 +1024,7 @@ async def test_get_paginated_data_sorting(recipe_scanner):
     )
 
     await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
 
     # Test Name DESC: Gamma, Beta, Alpha
     res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="name:desc")
