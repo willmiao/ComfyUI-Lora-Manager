@@ -45,8 +45,8 @@ logger = logging.getLogger(__name__)
 
 # Undo window in seconds before a staged batch becomes purge-eligible.
 PENDING_DELETE_TTL_SECONDS = 30
-# Hidden staging directory name placed under each model root (and the settings
-# dir for recipes).
+# Hidden staging directory name placed inside each deleted model's own folder
+# (sibling of the model artifacts) and under the settings dir for recipes.
 PENDING_DELETE_DIR_NAME = ".lm-pending-delete"
 # Manifest file name inside every batch directory.
 MANIFEST_FILE_NAME = "manifest.json"
@@ -116,11 +116,14 @@ class PendingDeleteService:
         original_file_path: str,
         cached_entry: Optional[Dict[str, Any]],
     ) -> Optional[str]:
-        """Rename a model's artifacts into a per-root staging batch.
+        """Rename a model's artifacts into a sibling-of-model staging batch.
 
-        Returns the batch id, or ``None`` when undo is disabled, the staging
-        root cannot be resolved, or staging failed (caller falls back to a
-        hard delete).
+        The batch dir is created inside the model file's OWN directory
+        (``target_dir``), so staging/undo renames stay within one real
+        directory - EXDEV is impossible even when the business path traverses
+        nested symlinks to other volumes. Returns the batch id, or ``None``
+        when undo is disabled, the model root cannot be resolved, or staging
+        failed (caller falls back to a hard delete).
         """
         # LOCK-FREE section: opportunistic purge must never run while holding
         # the ops lock (the lock is not re-entrant).
@@ -153,7 +156,7 @@ class PendingDeleteService:
 
                 batch_id = self._new_batch_id()
                 batch_dir = os.path.join(
-                    os.path.join(root, PENDING_DELETE_DIR_NAME), batch_id
+                    os.path.abspath(target_dir), PENDING_DELETE_DIR_NAME, batch_id
                 )
                 os.makedirs(batch_dir, exist_ok=True)
 

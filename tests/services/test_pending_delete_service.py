@@ -1864,3 +1864,190 @@ async def test_reg_j_startup_sweep_passes_scan_roots_true(
     # The startup sweep must invoke purge_expired with scan_roots=True (the
     # reconciliation flag) - forgetting it would break restart cleanup.
     assert sweep_calls == [{"scan_roots": True}]
+
+
+# ---------------------------------------------------------------------------
+# Todo 2: SIBLING-OF-MODEL STAGING (model file in a SUBDIR of the scanner root)
+# ---------------------------------------------------------------------------
+
+# (a) staging lands in <model_dir>/.lm-pending-delete/<batch_id>, NOT under the
+#     scanner root - manifest entries' staged paths live under the sibling dir.
+async def test_sibling1_stage_model_in_subdir_uses_sibling_dir(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    sub = root / "nested"
+    sub.mkdir()
+    model = sub / "model.safetensors"
+    model.write_bytes(b"sibling-data")
+    metadata = sub / "model.metadata.json"
+    metadata.write_bytes(b"{}")
+
+    service = await PendingDeleteService.get_instance()
+    batch_id = await service.stage_model_delete(
+        scanner=ScannerForStage([root]),
+        target_dir=str(sub),
+        file_name="model",
+        main_extension=".safetensors",
+        original_file_path=str(model),
+        cached_entry=None,
+    )
+    assert batch_id is not None
+
+    sibling_dir = sub / PENDING_DELETE_DIR_NAME / batch_id
+    assert sibling_dir.is_dir()
+    # The OLD location (under the scanner root) must NOT be created.
+    assert not (root / PENDING_DELETE_DIR_NAME).exists()
+
+    manifest = json.loads((sibling_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert len(manifest["entries"]) == 2
+    for entry in manifest["entries"]:
+        assert str(entry["staged"]).startswith(str(sibling_dir))
+    assert (sibling_dir / "model.safetensors").read_bytes() == b"sibling-data"
+    assert (sibling_dir / "model.metadata.json").exists()
+    assert not model.exists()
+    assert not metadata.exists()
+
+
+# (b) undo of a sibling-staged batch restores the files byte-identically.
+async def test_sibling2_undo_restores_byte_identically(tmp_path: Path) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    sub = root / "nested"
+    sub.mkdir()
+    model = sub / "model.safetensors"
+    model.write_bytes(b"payload-1")
+    preview = sub / "model.preview.png"
+    preview.write_bytes(b"payload-2")
+
+    service = await PendingDeleteService.get_instance()
+    batch_id = await service.stage_model_delete(
+        scanner=ScannerForStage([root]),
+        target_dir=str(sub),
+        file_name="model",
+        main_extension=".safetensors",
+        original_file_path=str(model),
+        cached_entry=None,
+    )
+    assert batch_id is not None
+    sibling_dir = sub / PENDING_DELETE_DIR_NAME / batch_id
+    assert sibling_dir.is_dir()
+    assert not model.exists()
+    assert not preview.exists()
+
+    await service.undo(batch_id)
+
+    assert model.read_bytes() == b"payload-1"
+    assert preview.read_bytes() == b"payload-2"
+    assert not sibling_dir.exists()
+    assert batch_id not in service._known_batch_dirs
+
+
+# (c) ROOT GATING: _find_model_root -> None skips staging entirely.
+async def test_sibling3_root_gating_skips_staging(tmp_path: Path, monkeypatch) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    model = root / "model.safetensors"
+    model.write_bytes(b"keep-me")
+
+    service = await PendingDeleteService.get_instance()
+    monkeypatch.setattr(service, "_find_model_root", lambda _scanner, _path: None)
+
+    batch_id = await service.stage_model_delete(
+        scanner=ScannerForStage([root]),
+        target_dir=str(root),
+        file_name="model",
+        main_extension=".safetensors",
+        original_file_path=str(model),
+        cached_entry=None,
+    )
+
+    assert batch_id is None
+    assert model.read_bytes() == b"keep-me"
+    assert not (root / PENDING_DELETE_DIR_NAME).exists()
+
+
+# QA scenario: simulated OSError on the 2nd artifact during sibling staging ->
+# rollback renames the 1st back, returns None, and leaves no orphaned sibling
+# batch dir behind.
+async def test_sibling4_staging_oserror_rolls_back_sibling_dir(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    sub = root / "nested"
+    sub.mkdir()
+    a = sub / "model.safetensors"
+    a.write_bytes(b"a-bytes")
+    b = sub / "model.metadata.json"
+    b.write_bytes(b"b-bytes")
+
+    service = await PendingDeleteService.get_instance()
+
+    real_rename = os.rename
+    calls = {"n": 0}
+
+    def flaky_rename(src: str, dst: str) -> None:
+        calls["n"] += 1
+        if calls["n"] == 2:
+            raise OSError("simulated sibling staging failure")
+        return real_rename(src, dst)
+
+    monkeypatch.setattr("py.services.pending_delete_service.os.rename", flaky_rename)
+
+    batch_id = await service.stage_model_delete(
+        scanner=ScannerForStage([root]),
+        target_dir=str(sub),
+        file_name="model",
+        main_extension=".safetensors",
+        original_file_path=str(a),
+        cached_entry=None,
+    )
+
+    assert batch_id is None
+    # Both artifacts rolled back; no orphaned sibling batch dir holds data.
+    assert a.read_bytes() == b"a-bytes"
+    assert b.read_bytes() == b"b-bytes"
+    sibling = sub / PENDING_DELETE_DIR_NAME
+    if sibling.exists():
+        assert not any(sibling.iterdir())
+
+
+# (d) SCANNER EXCLUSION at a NESTED staging dir: a model staged into
+#     <root>/sub/.lm-pending-delete is excluded from the walk just like the
+#     root-level one (depth independence).
+async def test_p_model_walk_excludes_nested_staging_dir(
+    tmp_path: Path, monkeypatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    (root / "normal.safetensors").write_bytes(b"normal")
+    sub = root / "sub"
+    sub.mkdir()
+    (sub / "real.safetensors").write_bytes(b"real")
+    nested_staging = sub / PENDING_DELETE_DIR_NAME / "x"
+    nested_staging.mkdir(parents=True)
+    (nested_staging / "model.safetensors").write_bytes(b"ghost")
+    (nested_staging / "model.metadata.json").write_bytes(b'{"hash_status": "pending"}')
+    # Root-level staging dir for comparison.
+    root_staging = root / PENDING_DELETE_DIR_NAME / "y"
+    root_staging.mkdir(parents=True)
+    (root_staging / "ghost2.safetensors").write_bytes(b"ghost2")
+
+    from py.services import model_scanner as model_scanner_module
+
+    async def _noop_register(*_args: Any, **_kwargs: Any) -> None:
+        return None
+
+    monkeypatch.setattr(model_scanner_module.ServiceRegistry, "register_service", _noop_register)
+    monkeypatch.setenv("LORA_MANAGER_DISABLE_PERSISTENT_CACHE", "1")
+
+    scanner = DummyScannerForWalk(root)
+
+    result = await scanner._gather_model_data()
+    paths = [entry["file_path"] for entry in result.raw_data]
+    assert not any(PENDING_DELETE_DIR_NAME in p for p in paths)
+    # Real files at both depths are still discovered.
+    assert any(p.endswith("normal.safetensors") for p in paths)
+    assert any(p.endswith("sub/real.safetensors") for p in paths)
+
+    assert scanner._count_model_files() == 2
