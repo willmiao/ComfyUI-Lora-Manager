@@ -1282,6 +1282,9 @@
             "message": "你确定要删除此模型及所有相关文件吗？",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
+        "deleteRecipe": {
+            "recoverableWarning": "[TODO: Translate] This action can be undone for 30 seconds."
+        },
         "excludeModel": {
             "title": "排除模型",
             "message": "你确定要排除此模型吗？被排除的模型不会出现在搜索或模型列表中。"

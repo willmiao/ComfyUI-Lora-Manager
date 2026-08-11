@@ -1282,6 +1282,9 @@
       "message": "Are you sure you want to delete this model and all associated files?",
       "recoverableWarning": "This will permanently delete the file after 30 seconds unless you undo."
     },
+    "deleteRecipe": {
+      "recoverableWarning": "This action can be undone for 30 seconds."
+    },
     "excludeModel": {
       "title": "Exclude Model",
       "message": "Are you sure you want to exclude this model? Excluded models won't appear in searches or model lists."

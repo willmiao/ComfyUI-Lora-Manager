@@ -1282,6 +1282,9 @@
             "message": "האם אתה בטוח שברצונך למחוק מודל זה וכל הקבצים הנלווים?",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
+        "deleteRecipe": {
+            "recoverableWarning": "[TODO: Translate] This action can be undone for 30 seconds."
+        },
         "excludeModel": {
             "title": "החרג מודל",
             "message": "האם אתה בטוח שברצונך להחריג מודל זה? מודלים מוחרגים לא יופיעו בחיפושים או ברשימות מודלים."

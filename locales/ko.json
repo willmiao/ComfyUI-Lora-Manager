@@ -1282,6 +1282,9 @@
             "message": "이 모델과 모든 관련 파일을 삭제하시겠습니까?",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
+        "deleteRecipe": {
+            "recoverableWarning": "[TODO: Translate] This action can be undone for 30 seconds."
+        },
         "excludeModel": {
             "title": "모델 제외",
             "message": "이 모델을 제외하시겠습니까? 제외된 모델은 검색이나 모델 목록에 나타나지 않습니다."

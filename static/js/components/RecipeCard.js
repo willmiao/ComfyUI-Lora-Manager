@@ -365,7 +365,7 @@ class RecipeCard {
                         </div>
                         <div class="delete-info">
                             <h3>${this.recipe.title}</h3>
-                            <p>This action can be undone for 30 seconds.</p>
+                            <p>${translate('modals.deleteRecipe.recoverableWarning')}</p>
                         </div>
                     </div>
                     <p class="delete-note">Note: Deleting this recipe will not affect the LoRA files used in it.</p>

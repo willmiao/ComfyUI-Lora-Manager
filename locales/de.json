@@ -1282,6 +1282,9 @@
             "message": "Sind Sie sicher, dass Sie dieses Modell und alle zugehörigen Dateien löschen möchten?",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
+        "deleteRecipe": {
+            "recoverableWarning": "[TODO: Translate] This action can be undone for 30 seconds."
+        },
         "excludeModel": {
             "title": "Modell ausschließen",
             "message": "Sind Sie sicher, dass Sie dieses Modell ausschließen möchten? Ausgeschlossene Modelle erscheinen nicht in Suchergebnissen oder Modelllisten."
