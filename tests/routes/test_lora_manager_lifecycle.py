@@ -207,6 +207,10 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
     task_names = {task.get_name() for task in scheduled_tasks}
     assert {"lora_cache_init", "checkpoint_cache_init", "embedding_cache_init", "recipe_cache_init", "post_init_tasks", "cleanup_bak_files"}.issubset(task_names)
 
+    # Startup sweep: an expired pending-delete purge task is spawned during
+    # service initialization (covers both plugin and standalone modes).
+    assert "pending_delete_startup_sweep" in task_names
+
     for scanner in scanners.values():
         assert scanner.initialized is True
 

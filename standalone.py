@@ -339,6 +339,7 @@ class StandaloneLoraManager(LoraManager):
         from py.routes.recipe_routes import RecipeRoutes
         from py.routes.update_routes import UpdateRoutes
         from py.routes.misc_routes import MiscRoutes
+        from py.routes.pending_delete_routes import PendingDeleteRoutes
         from py.routes.example_images_routes import ExampleImagesRoutes
         from py.routes.preview_routes import PreviewRoutes
         from py.routes.stats_routes import StatsRoutes
@@ -356,6 +357,7 @@ class StandaloneLoraManager(LoraManager):
         RecipeRoutes.setup_routes(app)
         UpdateRoutes.setup_routes(app)
         MiscRoutes.setup_routes(app)
+        PendingDeleteRoutes.setup_routes(app)
         ExampleImagesRoutes.setup_routes(app, ws_manager=ws_manager)
         PreviewRoutes.setup_routes(app)
 
