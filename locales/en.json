@@ -443,6 +443,7 @@
       "label": "Skip previously downloaded model versions",
       "help": "When enabled, versions downloaded before will be skipped."
     },
+    "deleteUndoEnabled": "Keep deleted items recoverable for 30 seconds (undo)",
     "layoutSettings": {
       "groupByModel": "Group by Model",
       "groupByModelHelp": "When enabled, only the latest version of each Civitai model is shown as a single card. Older versions are hidden.",
@@ -1277,8 +1278,11 @@
       }
     },
     "deleteModel": {
+      "freesSpace": "Frees {size}",
       "title": "Delete Model",
-      "message": "Are you sure you want to delete this model and all associated files?"
+      "message": "Are you sure you want to delete this model and all associated files?",
+      "permanentWarning": "This will permanently delete the file from disk.",
+      "recoverableWarning": "This will permanently delete the file after 30 seconds unless you undo."
     },
     "excludeModel": {
       "title": "Exclude Model",
@@ -2112,6 +2116,14 @@
       "updateSuccess": "Trigger words updated successfully",
       "updateFailed": "Failed to update trigger words",
       "copyFailed": "Copy failed"
+    },
+    "undo": {
+      "action": "Undo",
+      "deleted": "Deleted {name}",
+      "deletedBulk": "Deleted {count} item(s)",
+      "expired": "Undo window expired. The item was permanently deleted.",
+      "failed": "Undo failed: {error}",
+      "restored": "Item restored"
     },
     "virtual": {
       "loadFailed": "Failed to load items",

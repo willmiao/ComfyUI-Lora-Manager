@@ -443,6 +443,7 @@
             "label": "Ignorer les versions de modèles précédemment téléchargées",
             "help": "Lorsque activé, LoRA Manager ignorera le téléchargement d'une version de modèle si le service d'historique des téléchargements enregistre cette version exacte comme déjà téléchargée. S'applique à tous les flux de téléchargement."
         },
+        "deleteUndoEnabled": "[TODO: Translate] Keep deleted items recoverable for 30 seconds (undo)",
         "layoutSettings": {
             "groupByModel": "Grouper par modèle",
             "groupByModelHelp": "Lorsque activé, seule la version la plus récente de chaque modèle Civitai s'affiche sous forme de carte unique. Les versions plus anciennes sont masquées.",
@@ -1277,8 +1278,11 @@
             }
         },
         "deleteModel": {
+            "freesSpace": "[TODO: Translate] Frees {size}",
             "title": "Supprimer le modèle",
-            "message": "Êtes-vous sûr de vouloir supprimer ce modèle et tous les fichiers associés ?"
+            "message": "Êtes-vous sûr de vouloir supprimer ce modèle et tous les fichiers associés ?",
+            "permanentWarning": "[TODO: Translate] This will permanently delete the file from disk.",
+            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "excludeModel": {
             "title": "Exclure le modèle",
@@ -2112,6 +2116,14 @@
             "updateSuccess": "Mots-clés mis à jour avec succès",
             "updateFailed": "Échec de la mise à jour des mots-clés",
             "copyFailed": "Échec de la copie"
+        },
+        "undo": {
+            "action": "[TODO: Translate] Undo",
+            "deleted": "[TODO: Translate] Deleted {name}",
+            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
+            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
+            "failed": "[TODO: Translate] Undo failed: {error}",
+            "restored": "[TODO: Translate] Item restored"
         },
         "virtual": {
             "loadFailed": "Échec du chargement des éléments",

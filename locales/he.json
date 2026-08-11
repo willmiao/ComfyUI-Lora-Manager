@@ -443,6 +443,7 @@
             "label": "דלג על גרסאות מודלים שהורדו בעבר",
             "help": "כאשר מופעל, LoRA Manager ידלג על הורדת גרסת מודל אם שירות היסטוריית ההורדות רושם את הגרסה המדויקת הזו ככבר שהורדה. חל על כל תהליכי ההורדה."
         },
+        "deleteUndoEnabled": "[TODO: Translate] Keep deleted items recoverable for 30 seconds (undo)",
         "layoutSettings": {
             "groupByModel": "קיבוץ לפי דגם",
             "groupByModelHelp": "כאשר מופעל, רק הגרסה העדכנית ביותר של כל דגם Civitai מוצגת ככרטיס בודד. גרסאות ישנות יותר מוסתרות.",
@@ -1277,8 +1278,11 @@
             }
         },
         "deleteModel": {
+            "freesSpace": "[TODO: Translate] Frees {size}",
             "title": "מחק מודל",
-            "message": "האם אתה בטוח שברצונך למחוק מודל זה וכל הקבצים הנלווים?"
+            "message": "האם אתה בטוח שברצונך למחוק מודל זה וכל הקבצים הנלווים?",
+            "permanentWarning": "[TODO: Translate] This will permanently delete the file from disk.",
+            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "excludeModel": {
             "title": "החרג מודל",
@@ -2112,6 +2116,14 @@
             "updateSuccess": "מילות הטריגר עודכנו בהצלחה",
             "updateFailed": "עדכון מילות הטריגר נכשל",
             "copyFailed": "ההעתקה נכשלה"
+        },
+        "undo": {
+            "action": "[TODO: Translate] Undo",
+            "deleted": "[TODO: Translate] Deleted {name}",
+            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
+            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
+            "failed": "[TODO: Translate] Undo failed: {error}",
+            "restored": "[TODO: Translate] Item restored"
         },
         "virtual": {
             "loadFailed": "טעינת הפריטים נכשלה",

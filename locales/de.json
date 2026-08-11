@@ -443,6 +443,7 @@
             "label": "Bereits heruntergeladene Modellversionen überspringen",
             "help": "Wenn aktiviert, überspringt LoRA Manager den Download einer Modellversion, wenn der Download-Verlaufsdienst diese spezifische Version als bereits heruntergeladen erfasst hat. Gilt für alle Download-Abläufe."
         },
+        "deleteUndoEnabled": "[TODO: Translate] Keep deleted items recoverable for 30 seconds (undo)",
         "layoutSettings": {
             "groupByModel": "Nach Modell gruppieren",
             "groupByModelHelp": "Wenn aktiviert, wird nur die neueste Version jedes Civitai-Modells als einzelne Karte angezeigt. Ältere Versionen werden ausgeblendet.",
@@ -1277,8 +1278,11 @@
             }
         },
         "deleteModel": {
+            "freesSpace": "[TODO: Translate] Frees {size}",
             "title": "Modell löschen",
-            "message": "Sind Sie sicher, dass Sie dieses Modell und alle zugehörigen Dateien löschen möchten?"
+            "message": "Sind Sie sicher, dass Sie dieses Modell und alle zugehörigen Dateien löschen möchten?",
+            "permanentWarning": "[TODO: Translate] This will permanently delete the file from disk.",
+            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "excludeModel": {
             "title": "Modell ausschließen",
@@ -2112,6 +2116,14 @@
             "updateSuccess": "Trigger Words erfolgreich aktualisiert",
             "updateFailed": "Fehler beim Aktualisieren der Trigger Words",
             "copyFailed": "Kopieren fehlgeschlagen"
+        },
+        "undo": {
+            "action": "[TODO: Translate] Undo",
+            "deleted": "[TODO: Translate] Deleted {name}",
+            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
+            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
+            "failed": "[TODO: Translate] Undo failed: {error}",
+            "restored": "[TODO: Translate] Item restored"
         },
         "virtual": {
             "loadFailed": "Fehler beim Laden der Elemente",
