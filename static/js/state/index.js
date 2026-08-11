@@ -58,6 +58,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     strip_lora_on_copy: false,
     use_new_license_icons: true,
     group_by_model: false,
+    delete_undo_enabled: true,
     llm_provider: 'openai',
     llm_api_key: '',
     llm_api_base: '',

@@ -811,6 +811,22 @@
                                     </div>
                                 </div>
                             </div>
+                            <div class="setting-item">
+                                <div class="setting-row">
+                                    <div class="setting-info">
+                                        <label for="deleteUndoEnabled">
+                                        {{ t('settings.deleteUndoEnabled') }}
+                                    </label>
+                                    </div>
+                                    <div class="setting-control">
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" id="deleteUndoEnabled"
+                                                   onchange="settingsManager.saveToggleSetting('deleteUndoEnabled', 'delete_undo_enabled')">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                     </div>
