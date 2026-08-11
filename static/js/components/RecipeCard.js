@@ -9,7 +9,6 @@ import { bulkManager } from '../managers/BulkManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getMatureBlurThreshold } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { handleUndoDelete } from '../utils/undoHelpers.js';
-import { armDeleteButton } from '../utils/modalUtils.js';
 
 class RecipeCard {
     constructor(recipe, clickHandler) {
@@ -366,7 +365,7 @@ class RecipeCard {
                         </div>
                         <div class="delete-info">
                             <h3>${this.recipe.title}</h3>
-                            <p>This action cannot be undone.</p>
+                            <p>This action can be undone for 30 seconds.</p>
                         </div>
                     </div>
                     <p class="delete-note">Note: Deleting this recipe will not affect the LoRA files used in it.</p>
@@ -378,13 +377,8 @@ class RecipeCard {
             `;
 
             // Show the modal with custom content and setup callbacks
-            let deleteArmTimer = null;
             modalManager.showModal('deleteModal', deleteModalContent, () => {
                 // This is the onClose callback
-                if (deleteArmTimer) {
-                    clearTimeout(deleteArmTimer);
-                    deleteArmTimer = null;
-                }
                 const deleteModal = document.getElementById('deleteModal');
                 const deleteBtn = deleteModal.querySelector('.delete-btn');
                 deleteBtn.textContent = 'Delete';
@@ -403,8 +397,6 @@ class RecipeCard {
             // Update button event handlers
             cancelBtn.onclick = () => modalManager.closeModal('deleteModal');
             deleteBtn.onclick = () => this.confirmDeleteRecipe();
-
-            deleteArmTimer = armDeleteButton(deleteModal);
 
         } catch (error) {
             console.error('Error showing delete confirmation:', error);

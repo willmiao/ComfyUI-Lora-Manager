@@ -443,7 +443,6 @@
             "label": "Omitir versiones de modelos previamente descargadas",
             "help": "Cuando está habilitado, LoRA Manager omitirá la descarga de una versión de modelo si el servicio de historial de descargas registra esa versión exacta como ya descargada. Aplica a todos los flujos de descarga."
         },
-        "deleteUndoEnabled": "[TODO: Translate] Keep deleted items recoverable for 30 seconds (undo)",
         "layoutSettings": {
             "groupByModel": "Agrupar por modelo",
             "groupByModelHelp": "Cuando está activado, solo se muestra la versión más reciente de cada modelo de Civitai como una tarjeta única. Las versiones anteriores están ocultas.",
@@ -1281,7 +1280,6 @@
             "freesSpace": "[TODO: Translate] Frees {size}",
             "title": "Eliminar modelo",
             "message": "¿Estás seguro de que quieres eliminar este modelo y todos los archivos asociados?",
-            "permanentWarning": "[TODO: Translate] This will permanently delete the file from disk.",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "excludeModel": {

@@ -111,7 +111,6 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "backup_retention_count": 5,
     "use_new_license_icons": True,
     "group_by_model": False,
-    "delete_undo_enabled": True,
     # AI / LLM provider configuration (BYOK)
     "llm_provider": "openai",  # "openai" | "ollama" | "custom"
     "llm_api_key": "",

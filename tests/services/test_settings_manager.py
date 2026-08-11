@@ -1178,8 +1178,3 @@ def test_skip_previously_downloaded_model_versions_coerces_string_input(manager)
 
     assert manager.get_skip_previously_downloaded_model_versions() is True
     assert manager.settings["skip_previously_downloaded_model_versions"] is True
-
-
-def test_delete_undo_enabled_defaults_true(manager):
-    assert settings_manager_module.DEFAULT_SETTINGS.get("delete_undo_enabled") is True
-    assert manager.get("delete_undo_enabled") is True

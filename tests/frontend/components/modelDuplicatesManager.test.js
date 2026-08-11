@@ -18,16 +18,7 @@ vi.mock('../../../static/js/api/modelApiFactory.js', () => ({
   resetAndReload: resetAndReloadMock,
 }));
 
-vi.mock('../../../static/js/utils/modalUtils.js', () => ({
-  armDeleteButton: (modalElement) => {
-    if (!modalElement) return null;
-    const buttons = modalElement.querySelectorAll('.delete-btn');
-    buttons.forEach((button) => { button.disabled = true; });
-    return setTimeout(() => {
-      buttons.forEach((button) => { button.disabled = false; });
-    }, 1500);
-  },
-}));
+vi.mock('../../../static/js/utils/modalUtils.js', () => ({}));
 
 const { ModelDuplicatesManager } = await import('../../../static/js/components/ModelDuplicatesManager.js');
 const { state } = await import('../../../static/js/state/index.js');
@@ -363,38 +354,5 @@ describe('ModelDuplicatesManager confirmDeleteDuplicates undo flows', () => {
       { count: 1, type: 'loras' },
       'success'
     );
-  });
-});
-
-describe('ModelDuplicatesManager deleteSelectedDuplicates delay-activate', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    globalThis.modalManager = { showModal: vi.fn(), closeModal: vi.fn() };
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-    delete globalThis.modalManager;
-  });
-
-  it('opens with the delete button disabled and enables it after 1500ms', async () => {
-    const manager = await createManager();
-    document.body.insertAdjacentHTML('beforeend', `
-      <div id="modelDuplicateDeleteModal" class="modal delete-modal">
-        <div class="delete-model-info"><p><span id="modelDuplicateDeleteCount">0</span></p></div>
-        <button class="cancel-btn">Cancel</button>
-        <button class="delete-btn">Delete</button>
-      </div>
-    `);
-    manager.selectedForDeletion.add(carPath);
-
-    await manager.deleteSelectedDuplicates();
-
-    expect(globalThis.modalManager.showModal).toHaveBeenCalledWith('modelDuplicateDeleteModal');
-    const deleteBtn = document.querySelector('#modelDuplicateDeleteModal .delete-btn');
-    expect(deleteBtn.disabled).toBe(true);
-
-    vi.advanceTimersByTime(1500);
-    expect(deleteBtn.disabled).toBe(false);
   });
 });

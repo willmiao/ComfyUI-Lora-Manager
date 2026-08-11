@@ -36,7 +36,6 @@ vi.mock('../../../static/js/utils/modalUtils.js', () => ({
   closeDeleteModal: closeDeleteModalMock,
   confirmExclude: confirmExcludeMock,
   closeExcludeModal: closeExcludeModalMock,
-  armDeleteButton: vi.fn(),
 }));
 
 vi.mock('../../../static/js/components/ModelDuplicatesManager.js', () => ({

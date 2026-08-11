@@ -1,7 +1,6 @@
 // Model Duplicates Manager Component for LoRAs and Checkpoints
 import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { handleUndoDelete } from '../utils/undoHelpers.js';
-import { armDeleteButton } from '../utils/modalUtils.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { formatDate } from '../utils/formatters.js';
@@ -703,7 +702,6 @@ export class ModelDuplicatesManager {
             
             // Use the modal manager to show the confirmation modal
             modalManager.showModal('modelDuplicateDeleteModal');
-            armDeleteButton(document.getElementById('modelDuplicateDeleteModal'));
         } catch (error) {
             console.error('Error preparing delete:', error);
             showToast('toast.duplicates.deleteError', { message: error.message }, 'error');

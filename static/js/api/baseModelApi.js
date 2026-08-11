@@ -203,7 +203,7 @@ export class BaseModelApiClient {
                 }
                 const batchId = data.batch_id || null;
                 if (!batchId) {
-                    // Not staged (undo disabled or staging failed): keep the legacy toast.
+                    // Not staged (staging failed): keep the legacy toast.
                     // When staged, the caller shows the undo action toast instead.
                     showToast('toast.api.deleteSuccess', { type: this.apiConfig.config.displayName }, 'success');
                 }

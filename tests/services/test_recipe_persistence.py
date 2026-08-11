@@ -31,7 +31,6 @@ from py.services.recipes.persistence_service import (
     PersistenceResult,
     RecipePersistenceService,
 )
-from py.services.settings_manager import get_settings_manager
 from py.utils import settings_paths
 
 
@@ -221,29 +220,6 @@ async def test_delete_recipe_skips_missing_preview_image(tmp_path: Path) -> None
 
     assert not json_path.exists()
     assert scanner.removed == ["r2"]
-
-
-# ---------------------------------------------------------------------------
-# (3) undo disabled -> no staging, payload batch_id None, existing behavior
-# ---------------------------------------------------------------------------
-async def test_delete_recipe_undo_disabled_no_staging(tmp_path: Path) -> None:
-    get_settings_manager().settings["delete_undo_enabled"] = False
-
-    scanner = RecipeScannerStub(tmp_path)
-    json_path, image_path, _recipe_data = _write_recipe(tmp_path, "r3")
-    scanner.register_recipe("r3", json_path)
-
-    result = await _make_service().delete_recipe(
-        recipe_scanner=scanner, recipe_id="r3"
-    )
-
-    assert result.payload["batch_id"] is None
-    # No staging leftovers when undo is disabled.
-    assert not _staging_parent().exists()
-    # Existing hard delete behavior unchanged.
-    assert not json_path.exists()
-    assert not image_path.exists()
-    assert scanner.removed == ["r3"]
 
 
 # ---------------------------------------------------------------------------

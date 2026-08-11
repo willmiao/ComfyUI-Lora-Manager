@@ -443,7 +443,6 @@
             "label": "以前にダウンロードしたモデルバージョンをスキップ",
             "help": "有効にすると、ダウンロード履歴サービスがそのバージョンが既にダウンロード済みと記録している場合、LoRA Managerはそのモデルバージョンのダウンロードをスキップします。すべてのダウンロードフローに適用されます。"
         },
-        "deleteUndoEnabled": "[TODO: Translate] Keep deleted items recoverable for 30 seconds (undo)",
         "layoutSettings": {
             "groupByModel": "モデルでグループ化",
             "groupByModelHelp": "有効にすると、各Civitaiモデルの最新バージョンのみが1枚のカードとして表示され、古いバージョンは非表示になります。",
@@ -1281,7 +1280,6 @@
             "freesSpace": "[TODO: Translate] Frees {size}",
             "title": "モデルを削除",
             "message": "このモデルと関連するすべてのファイルを削除してもよろしいですか？",
-            "permanentWarning": "[TODO: Translate] This will permanently delete the file from disk.",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "excludeModel": {

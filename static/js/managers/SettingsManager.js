@@ -1111,12 +1111,6 @@ export class SettingsManager {
             includeTriggerWordsCheckbox.checked = state.global.settings.include_trigger_words || false;
         }
 
-        // Set delete undo setting (defaults to enabled)
-        const deleteUndoEnabledCheckbox = document.getElementById('deleteUndoEnabled');
-        if (deleteUndoEnabledCheckbox) {
-            deleteUndoEnabledCheckbox.checked = state.global.settings.delete_undo_enabled ?? true;
-        }
-
         // Set lora syntax format
         const loraSyntaxFormatSelect = document.getElementById('loraSyntaxFormat');
         if (loraSyntaxFormatSelect) {

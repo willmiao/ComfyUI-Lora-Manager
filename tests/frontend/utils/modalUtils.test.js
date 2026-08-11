@@ -1,4 +1,4 @@
-import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
+import { describe, it, beforeEach, expect, vi } from 'vitest';
 
 const {
   MODAL_UTILS_MODULE,
@@ -7,7 +7,6 @@ const {
   UI_HELPERS_MODULE,
   I18N_MODULE,
   UNDO_HELPERS_MODULE,
-  STATE_MODULE,
 } = vi.hoisted(() => ({
   MODAL_UTILS_MODULE: new URL('../../../static/js/utils/modalUtils.js', import.meta.url).pathname,
   MODAL_MANAGER_MODULE: new URL('../../../static/js/managers/ModalManager.js', import.meta.url).pathname,
@@ -15,7 +14,6 @@ const {
   UI_HELPERS_MODULE: new URL('../../../static/js/utils/uiHelpers.js', import.meta.url).pathname,
   I18N_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
   UNDO_HELPERS_MODULE: new URL('../../../static/js/utils/undoHelpers.js', import.meta.url).pathname,
-  STATE_MODULE: new URL('../../../static/js/state/index.js', import.meta.url).pathname,
 }));
 
 const deleteModelMock = vi.fn();
@@ -136,75 +134,6 @@ describe('modalUtils confirmDelete undo flow', () => {
   });
 });
 
-describe('modalUtils armDeleteButton delay-activate', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    deleteModelMock.mockReset();
-    showModalMock.mockReset();
-    closeModalMock.mockReset();
-    document.body.innerHTML = `
-      <div class="model-card" data-filepath="/models/foo.safetensors" data-name="Foo Model"></div>
-      <div id="deleteModal">
-        <div class="delete-model-info"></div>
-        <button class="cancel-btn">Cancel</button>
-        <button class="delete-btn">Delete</button>
-      </div>
-    `;
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('opens with the delete button disabled and enables it after exactly 1500ms', async () => {
-    const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
-
-    showDeleteModal('/models/foo.safetensors');
-
-    const deleteBtn = document.querySelector('#deleteModal .delete-btn');
-    expect(deleteBtn.disabled).toBe(true);
-
-    vi.advanceTimersByTime(1499);
-    expect(deleteBtn.disabled).toBe(true);
-
-    vi.advanceTimersByTime(1);
-    expect(deleteBtn.disabled).toBe(false);
-  });
-
-  it('clicking the disabled delete button fires nothing', async () => {
-    const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
-
-    showDeleteModal('/models/foo.safetensors');
-
-    const deleteBtn = document.querySelector('#deleteModal .delete-btn');
-    deleteBtn.click();
-
-    expect(deleteBtn.disabled).toBe(true);
-    expect(deleteModelMock).not.toHaveBeenCalled();
-  });
-
-  it('closing during the countdown clears the timer and reopening re-arms a full 1500ms', async () => {
-    const { showDeleteModal, closeDeleteModal } = await import(MODAL_UTILS_MODULE);
-
-    showDeleteModal('/models/foo.safetensors');
-    const deleteBtn = document.querySelector('#deleteModal .delete-btn');
-
-    vi.advanceTimersByTime(1400);
-    closeDeleteModal();
-    expect(closeModalMock).toHaveBeenCalledWith('deleteModal');
-
-    // Reopen — the stale timer must not enable the button early
-    showDeleteModal('/models/foo.safetensors');
-    expect(deleteBtn.disabled).toBe(true);
-
-    vi.advanceTimersByTime(1499);
-    expect(deleteBtn.disabled).toBe(true);
-
-    vi.advanceTimersByTime(1);
-    expect(deleteBtn.disabled).toBe(false);
-  });
-});
-
 describe('modalUtils showDeleteModal warning copy and size line', () => {
   beforeEach(() => {
     showModalMock.mockReset();
@@ -220,45 +149,16 @@ describe('modalUtils showDeleteModal warning copy and size line', () => {
     `;
   });
 
-  afterEach(async () => {
-    const { state } = await import(STATE_MODULE);
-    state.global.settings.delete_undo_enabled = true;
-  });
-
   function modelInfoHtml() {
     return document.querySelector('#deleteModal .delete-model-info').innerHTML;
   }
 
-  it('shows the recoverable warning when delete_undo_enabled is truthy', async () => {
-    const { state } = await import(STATE_MODULE);
-    state.global.settings.delete_undo_enabled = true;
-
+  it('always shows the recoverable warning', async () => {
     const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
     showDeleteModal('/models/foo.safetensors');
 
     expect(modelInfoHtml()).toContain('modals.deleteModel.recoverableWarning');
     expect(modelInfoHtml()).not.toContain('modals.deleteModel.permanentWarning');
-  });
-
-  it('shows the permanent warning when delete_undo_enabled is falsy', async () => {
-    const { state } = await import(STATE_MODULE);
-    state.global.settings.delete_undo_enabled = false;
-
-    const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
-    showDeleteModal('/models/foo.safetensors');
-
-    expect(modelInfoHtml()).toContain('modals.deleteModel.permanentWarning');
-    expect(modelInfoHtml()).not.toContain('modals.deleteModel.recoverableWarning');
-  });
-
-  it('falls back to the neutral permanent warning when the setting is unavailable', async () => {
-    const { state } = await import(STATE_MODULE);
-    delete state.global.settings.delete_undo_enabled;
-
-    const { showDeleteModal } = await import(MODAL_UTILS_MODULE);
-    showDeleteModal('/models/foo.safetensors');
-
-    expect(modelInfoHtml()).toContain('modals.deleteModel.permanentWarning');
   });
 
   it('appends a formatted "Frees {size}" line when the card carries a file size', async () => {

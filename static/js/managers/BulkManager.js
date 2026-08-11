@@ -1,7 +1,6 @@
 import { state, getCurrentPageState } from '../state/index.js';
 import { showToast, showActionToast, copyToClipboard, sendLoraToWorkflow, sendEmbeddingToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
 import { handleUndoDelete } from '../utils/undoHelpers.js';
-import { armDeleteButton } from '../utils/modalUtils.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -630,7 +629,6 @@ export class BulkManager {
         }
 
         modalManager.showModal('bulkDeleteModal');
-        armDeleteButton(document.getElementById('bulkDeleteModal'));
     }
 
     async confirmBulkDelete() {

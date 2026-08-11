@@ -31,7 +31,6 @@ from py.services.pending_delete_service import (
 )
 from py.services.model_hash_index import ModelHashIndex
 from py.services.model_scanner import ModelScanner
-from py.services.settings_manager import DEFAULT_SETTINGS, get_settings_manager
 from py.utils import settings_paths
 from py.utils.models import LoraMetadata
 
@@ -772,32 +771,6 @@ async def test_l2_merge_basename_collision_aborts_without_dropping_files(
 
 
 # ---------------------------------------------------------------------------
-# (m) delete_undo_enabled=false -> stage returns None, nothing created
-# ---------------------------------------------------------------------------
-async def test_m_undo_disabled_returns_none(tmp_path: Path) -> None:
-    root = tmp_path / "loras"
-    root.mkdir()
-    model = root / "model.safetensors"
-    model.write_bytes(b"data")
-
-    get_settings_manager().settings["delete_undo_enabled"] = False
-
-    service = await PendingDeleteService.get_instance()
-    batch_id = await service.stage_model_delete(
-        scanner=ScannerForStage([root]),
-        target_dir=str(root),
-        file_name="model",
-        main_extension=".safetensors",
-        original_file_path=str(model),
-        cached_entry=None,
-    )
-
-    assert batch_id is None
-    assert model.exists()
-    assert not (root / PENDING_DELETE_DIR_NAME).exists()
-
-
-# ---------------------------------------------------------------------------
 # (n) simulated OSError during staging -> rollback, no orphaned batch dir
 # ---------------------------------------------------------------------------
 async def test_n_staging_oserror_rolls_back(tmp_path: Path, monkeypatch) -> None:
@@ -837,13 +810,6 @@ async def test_n_staging_oserror_rolls_back(tmp_path: Path, monkeypatch) -> None
     staging = root / PENDING_DELETE_DIR_NAME
     if staging.exists():
         assert not any(staging.iterdir())
-
-
-# ---------------------------------------------------------------------------
-# (o) DEFAULT_SETTINGS contains delete_undo_enabled=True
-# ---------------------------------------------------------------------------
-def test_o_default_settings_contains_undo_enabled() -> None:
-    assert DEFAULT_SETTINGS.get("delete_undo_enabled") is True
 
 
 # ---------------------------------------------------------------------------

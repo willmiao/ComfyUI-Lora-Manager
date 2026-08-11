@@ -10,7 +10,6 @@ import pytest
 
 from py.services.model_lifecycle_service import ModelLifecycleService, _require_path_in_library_roots
 from py.services.pending_delete_service import PENDING_DELETE_DIR_NAME, _reset_pending_delete_service
-from py.services.settings_manager import get_settings_manager
 from py.utils.metadata_manager import MetadataManager
 from py.utils.models import LoraMetadata
 
@@ -953,11 +952,11 @@ def _make_delete_service(scanner: Any) -> ModelLifecycleService:
 
 
 @pytest.mark.asyncio
-async def test_delete_model_stages_file_when_undo_enabled(tmp_path: Path):
-    """Undo enabled (the default): artifacts are renamed into a
-    ``.lm-pending-delete/<batch_id>/`` staging dir under the model root, the
-    response carries the batch_id, the cache entry is removed and the cache
-    is persisted (``_persist_calls`` tracked by ``ScannerForDelete``)."""
+async def test_delete_model_stages_file(tmp_path: Path):
+    """Artifacts are renamed into a ``.lm-pending-delete/<batch_id>/`` staging
+    dir under the model root, the response carries the batch_id, the cache
+    entry is removed and the cache is persisted (``_persist_calls`` tracked by
+    ``ScannerForDelete``)."""
     root = tmp_path / "loras"
     root.mkdir()
     model_path = root / "model.safetensors"
@@ -997,41 +996,6 @@ async def test_delete_model_stages_file_when_undo_enabled(tmp_path: Path):
     assert scanner.cache.raw_data == []
     assert scanner._hash_index.removed == [str(model_path)]
     assert scanner._persist_calls == [True]
-
-
-@pytest.mark.asyncio
-async def test_delete_model_hard_deletes_when_undo_disabled(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-):
-    """delete_undo_enabled=false: old os.remove behavior, batch_id is None and
-    no staging directory is ever created."""
-    root = tmp_path / "loras"
-    root.mkdir()
-    model_path = root / "model.safetensors"
-    model_path.write_bytes(b"content")
-
-    settings_manager = get_settings_manager()
-    monkeypatch.setattr(
-        settings_manager,
-        "get",
-        lambda key, default=None: False
-        if key == "delete_undo_enabled"
-        else default,
-    )
-
-    scanner = ScannerForDelete(
-        raw_data=[{"file_path": str(model_path)}],
-        roots=[str(root)],
-    )
-    service = _make_delete_service(scanner)
-
-    result = await service.delete_model(str(model_path))
-
-    assert result["success"] is True
-    assert result["batch_id"] is None
-    assert result["deleted_files"]
-    assert not model_path.exists()
-    assert not (root / PENDING_DELETE_DIR_NAME).exists()
 
 
 @pytest.mark.asyncio

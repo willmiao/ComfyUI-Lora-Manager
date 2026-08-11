@@ -22,7 +22,6 @@ from py.services.pending_delete_service import (
     _reset_pending_delete_service,
 )
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
-from py.services.settings_manager import get_settings_manager
 from py.utils.civitai_utils import build_license_flags
 from py.utils.models import BaseModelMetadata
 
@@ -1164,33 +1163,6 @@ async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
         if f.is_file() and f.name != "manifest.json"
     ]
     assert sorted(staged_files) == ["one.txt", "two.txt"]
-
-
-@pytest.mark.asyncio
-async def test_bulk_delete_undo_disabled_hard_deletes(tmp_path: Path):
-    """delete_undo_enabled=false -> old hard delete, no batch, no staging dirs."""
-    root = tmp_path / "loras"
-    root.mkdir()
-    first = root / "one.txt"
-    first.write_text("one", encoding="utf-8")
-    second = root / "two.txt"
-    second.write_text("two", encoding="utf-8")
-    scanner = _make_bulk_scanner(root, [first, second])
-
-    get_settings_manager().settings["delete_undo_enabled"] = False
-
-    result = await scanner.bulk_delete_models([str(first), str(second)])
-
-    assert result["success"] is True
-    assert result["status"] == "success"
-    assert result["total_deleted"] == 2
-    assert result.get("batch_id") is None
-    assert "batch_ids" not in result
-
-    # Old hard-delete behavior: files removed, zero staging dirs created.
-    assert not first.exists()
-    assert not second.exists()
-    assert not (root / PENDING_DELETE_DIR_NAME).exists()
 
 
 @pytest.mark.asyncio

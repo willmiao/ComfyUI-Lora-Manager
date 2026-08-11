@@ -66,22 +66,11 @@ describe('translate() with real en.json locale', () => {
     it('resolves delete-model modal keys with interpolation', () => {
         installWindowI18n();
 
-        expect(translate('modals.deleteModel.permanentWarning')).toBe(
-            'This will permanently delete the file from disk.',
-        );
         expect(translate('modals.deleteModel.recoverableWarning')).toBe(
             'This will permanently delete the file after 30 seconds unless you undo.',
         );
         expect(translate('modals.deleteModel.freesSpace', { size: '1.2 MB' })).toBe(
             'Frees 1.2 MB',
-        );
-    });
-
-    it('resolves the delete-undo settings label', () => {
-        installWindowI18n();
-
-        expect(translate('settings.deleteUndoEnabled')).toBe(
-            'Keep deleted items recoverable for 30 seconds (undo)',
         );
     });
 

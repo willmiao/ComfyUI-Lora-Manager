@@ -443,7 +443,6 @@
       "label": "Skip previously downloaded model versions",
       "help": "When enabled, versions downloaded before will be skipped."
     },
-    "deleteUndoEnabled": "Keep deleted items recoverable for 30 seconds (undo)",
     "layoutSettings": {
       "groupByModel": "Group by Model",
       "groupByModelHelp": "When enabled, only the latest version of each Civitai model is shown as a single card. Older versions are hidden.",
@@ -1281,7 +1280,6 @@
       "freesSpace": "Frees {size}",
       "title": "Delete Model",
       "message": "Are you sure you want to delete this model and all associated files?",
-      "permanentWarning": "This will permanently delete the file from disk.",
       "recoverableWarning": "This will permanently delete the file after 30 seconds unless you undo."
     },
     "excludeModel": {

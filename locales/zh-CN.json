@@ -443,7 +443,6 @@
             "label": "跳过已下载的模型版本",
             "help": "启用后，如果下载历史服务记录显示该版本已下载，LoRA Manager 将跳过下载该模型版本。适用于所有下载流程。"
         },
-        "deleteUndoEnabled": "[TODO: Translate] Keep deleted items recoverable for 30 seconds (undo)",
         "layoutSettings": {
             "groupByModel": "按模型分组",
             "groupByModelHelp": "开启后，每个 Civitai 模型仅显示最新版本的单张卡片，旧版本将被隐藏。",
@@ -1281,7 +1280,6 @@
             "freesSpace": "[TODO: Translate] Frees {size}",
             "title": "删除模型",
             "message": "你确定要删除此模型及所有相关文件吗？",
-            "permanentWarning": "[TODO: Translate] This will permanently delete the file from disk.",
             "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
         },
         "excludeModel": {

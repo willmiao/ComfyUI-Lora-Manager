@@ -39,7 +39,6 @@ from typing import (
 
 from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils import settings_paths
-from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
@@ -122,15 +121,12 @@ class PendingDeleteService:
         (``target_dir``), so staging/undo renames stay within one real
         directory - EXDEV is impossible even when the business path traverses
         nested symlinks to other volumes. Returns the batch id, or ``None``
-        when undo is disabled, the model root cannot be resolved, or staging
-        failed (caller falls back to a hard delete).
+        when the model root cannot be resolved, or staging failed (caller
+        falls back to a hard delete).
         """
         # LOCK-FREE section: opportunistic purge must never run while holding
         # the ops lock (the lock is not re-entrant).
         await self._opportunistic_purge()
-
-        if not self._undo_enabled():
-            return None
 
         async with self._ops_lock:
             batch_dir: Optional[str] = None
@@ -190,9 +186,10 @@ class PendingDeleteService:
                 # manifest's expires_at at fire time, so stale timers no-op.
                 self._arm_purge_timer(batch_id)
                 logger.info(
-                    "Staged model delete batch %s with %d file(s)",
+                    "Staged model delete batch %s with %d file(s): %s",
                     batch_id,
                     len(staged_pairs),
+                    staged_pairs[0]["original"] if staged_pairs else None,
                 )
                 return batch_id
             except OSError as exc:
@@ -218,13 +215,10 @@ class PendingDeleteService:
     ) -> Optional[str]:
         """Copy a recipe JSON (and, when it exists, its image) into staging.
 
-        Returns the batch id, or ``None`` when undo is disabled / staging
-        failed. Missing or shared preview images are skipped.
+        Returns the batch id, or ``None`` when staging failed. Missing or
+        shared preview images are skipped.
         """
         await self._opportunistic_purge()
-
-        if not self._undo_enabled():
-            return None
 
         async with self._ops_lock:
             batch_dir: Optional[str] = None
@@ -255,9 +249,10 @@ class PendingDeleteService:
                 self._write_manifest_atomic(batch_dir, manifest)
                 self._arm_purge_timer(batch_id)
                 logger.info(
-                    "Staged recipe delete batch %s with %d file(s)",
+                    "Staged recipe delete batch %s with %d file(s): %s",
                     batch_id,
                     len(staged_pairs),
+                    staged_pairs[0]["original"] if staged_pairs else None,
                 )
                 return batch_id
             except OSError as exc:
@@ -572,13 +567,6 @@ class PendingDeleteService:
             await self.purge_expired()
         except Exception as exc:  # defensive - staging/undo must still proceed
             logger.warning("Opportunistic pending-delete purge failed: %s", exc)
-
-    def _undo_enabled(self) -> bool:
-        try:
-            return bool(get_settings_manager().get("delete_undo_enabled", True))
-        except Exception as exc:  # defensive - default to enabled
-            logger.warning("Failed to read delete_undo_enabled setting: %s", exc)
-            return True
 
     def _remember_root(self, root: str) -> None:
         """Record a root the service has staged into (in-process registry)."""

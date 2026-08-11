@@ -1,7 +1,6 @@
 // Duplicates Manager Component
 import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { handleUndoDelete } from '../utils/undoHelpers.js';
-import { armDeleteButton } from '../utils/modalUtils.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { RecipeCard } from './RecipeCard.js';
 import { state, getCurrentPageState } from '../state/index.js';
@@ -449,7 +448,6 @@ export class DuplicatesManager {
             
             // Use the modal manager to show the confirmation modal
             modalManager.showModal('duplicateDeleteModal');
-            armDeleteButton(document.getElementById('duplicateDeleteModal'));
         } catch (error) {
             console.error('Error preparing delete:', error);
             showToast('toast.duplicates.deleteError', { message: error.message }, 'error');

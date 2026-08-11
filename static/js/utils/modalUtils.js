@@ -3,31 +3,11 @@ import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { showActionToast } from './uiHelpers.js';
 import { translate } from './i18nHelpers.js';
 import { handleUndoDelete } from './undoHelpers.js';
-import { state } from '../state/index.js';
 import { formatFileSize } from '../components/shared/utils.js';
-
-const DELETE_BUTTON_ARM_DELAY_MS = 1500;
 
 let pendingDeletePath = null;
 let pendingDeleteName = null;
 let pendingExcludePath = null;
-let pendingDeleteArmTimer = null;
-
-// Delay-activates every delete button inside a delete-confirmation modal so a
-// misclick in the first moments after opening cannot confirm the deletion.
-// Returns the pending timeout id so callers can cancel it when the modal closes early.
-export function armDeleteButton(modalElement, delayMs = DELETE_BUTTON_ARM_DELAY_MS) {
-    if (!modalElement) return null;
-
-    const deleteButtons = modalElement.querySelectorAll('.delete-btn');
-    if (!deleteButtons.length) return null;
-
-    deleteButtons.forEach((button) => { button.disabled = true; });
-
-    return setTimeout(() => {
-        deleteButtons.forEach((button) => { button.disabled = false; });
-    }, delayMs);
-}
 
 export function showDeleteModal(filePath) {
     pendingDeletePath = filePath;
@@ -41,10 +21,6 @@ export function showDeleteModal(filePath) {
     const modal = modalManager.getModal('deleteModal').element;
     const modelInfo = modal.querySelector('.delete-model-info');
 
-    const undoEnabled = state.global?.settings?.delete_undo_enabled;
-    const warningKey = undoEnabled
-        ? 'modals.deleteModel.recoverableWarning'
-        : 'modals.deleteModel.permanentWarning';
     const fileSize = card?.dataset.file_size;
     const sizeLine = fileSize
         ? `<br>${translate('modals.deleteModel.freesSpace', { size: formatFileSize(parseInt(fileSize, 10)) })}`
@@ -55,11 +31,10 @@ export function showDeleteModal(filePath) {
         <br>
         <strong>File:</strong> ${filePath}
         <br>
-        ${translate(warningKey)}${sizeLine}
+        ${translate('modals.deleteModel.recoverableWarning')}${sizeLine}
     `;
 
     modalManager.showModal('deleteModal');
-    pendingDeleteArmTimer = armDeleteButton(modal);
 }
 
 export async function confirmDelete() {
@@ -90,10 +65,6 @@ export async function confirmDelete() {
 
 export function closeDeleteModal() {
     modalManager.closeModal('deleteModal');
-    if (pendingDeleteArmTimer) {
-        clearTimeout(pendingDeleteArmTimer);
-        pendingDeleteArmTimer = null;
-    }
     pendingDeletePath = null;
     pendingDeleteName = null;
 }
