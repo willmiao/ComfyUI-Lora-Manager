@@ -36,7 +36,11 @@ function isMapLike(collection) {
     return collection && typeof collection.entries === "function" && typeof collection.values === "function";
 }
 
-function getChildGraphs(graph) {
+/**
+ * Return the subgraph LGraph instances nested under `graph`, across both
+ * Map-like and plain-object `_subgraphs` containers.
+ */
+export function getChildGraphs(graph) {
     if (!graph || !graph._subgraphs) {
         return [];
     }

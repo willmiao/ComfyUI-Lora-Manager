@@ -1726,6 +1726,7 @@
             "recipeReplaced": "配方已取代於工作流",
             "recipeFailedToSend": "傳送配方到工作流失敗",
             "noMatchingNodes": "目前工作流程中沒有相容的節點",
+            "noPromptTargets": "工作流中沒有相容的 prompt 目標節點。\n在 ComfyUI 中右鍵節點 → Mark as → Send Prompt Target",
             "noTargetNodeSelected": "未選擇目標節點",
             "modelUpdated": "模型已更新到工作流",
             "modelFailed": "更新模型節點失敗",

@@ -315,6 +315,238 @@ describe('UI helper DOM utilities', () => {
     ]);
   });
 
+  it('excludes prompt targets whose text widget is connected to an input', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 4,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Free Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: false,
+              widget_names: ['text', 'clip'],
+            },
+          },
+          'root:2': {
+            id: 2,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Wired Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: true,
+              widget_names: ['text', 'clip'],
+            },
+          },
+          'root:3': {
+            id: 3,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Marked But Wired',
+            type: 'KSampler',
+            mode: 0,
+            marker_role: 'send_prompt_target',
+            capabilities: {
+              has_text_widget: false,
+              text_widget_connected: true,
+              widget_names: ['seed'],
+            },
+          },
+          'root:4': {
+            id: 4,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Free Text 2',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: false,
+              widget_names: ['text', 'clip'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendPromptToWorkflow('a cat');
+
+    expect(result).toBe(true);
+
+    const nodeLabels = Array.from(
+      document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+    ).map((span) => span.textContent.trim());
+
+    expect(nodeLabels).toEqual(['#1 Free Text', '#4 Free Text 2']);
+  });
+
+  it('returns false when the only prompt target has its text widget connected', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 1,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Wired Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: true,
+              widget_names: ['text', 'clip'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+    translateMock.mockReturnValue(
+      'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+    );
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendPromptToWorkflow('a cat');
+
+    expect(result).toBe(false);
+    expect(document.querySelectorAll('#nodeSelector .node-item').length).toBe(0);
+
+    const toast = document.querySelector('.toast-container .toast');
+    expect(toast).not.toBeNull();
+    expect(toast.textContent).toContain('Mark as');
+    expect(toast.textContent).toContain('Send Prompt Target');
+  });
+
+  it('shows the mark-as hint when no embedding target is available', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 1,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Wired Text',
+            type: 'CLIPTextEncode',
+            mode: 0,
+            marker_role: null,
+            capabilities: {
+              has_text_widget: true,
+              text_widget_connected: true,
+              widget_names: ['text', 'clip'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+    translateMock.mockReturnValue(
+      'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+    );
+
+    const { sendEmbeddingToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendEmbeddingToWorkflow('embeddingcode');
+
+    expect(result).toBe(false);
+
+    const toast = document.querySelector('.toast-container .toast');
+    expect(toast).not.toBeNull();
+    expect(toast.textContent).toContain('Send Prompt Target');
+  });
+
+  it('keeps unconnected marker targets in the prompt candidate list', async () => {
+    const registryResponse = {
+      success: true,
+      data: {
+        node_count: 2,
+        nodes: {
+          'root:1': {
+            id: 1,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Marked Target',
+            type: 'KSampler',
+            mode: 0,
+            marker_role: 'send_prompt_target',
+            capabilities: {
+              has_text_widget: false,
+              text_widget_connected: false,
+              widget_names: ['seed'],
+            },
+          },
+          'root:2': {
+            id: 2,
+            graph_id: 'root',
+            graph_name: null,
+            title: 'Marked Target 2',
+            type: 'KSampler',
+            mode: 0,
+            marker_role: 'send_prompt_target',
+            capabilities: {
+              has_text_widget: false,
+              text_widget_connected: false,
+              widget_names: ['seed'],
+            },
+          },
+        },
+      },
+    };
+
+    global.fetch = vi.fn().mockResolvedValue({
+      json: async () => registryResponse,
+    });
+
+    document.body.innerHTML = '<div id="nodeSelector"></div>';
+
+    const { sendPromptToWorkflow } = await import(UI_HELPERS_MODULE);
+
+    const result = await sendPromptToWorkflow('a cat');
+
+    expect(result).toBe(true);
+
+    const nodeLabels = Array.from(
+      document.querySelectorAll('#nodeSelector .node-item[data-node-id] span')
+    ).map((span) => span.textContent.trim());
+
+    expect(nodeLabels).toEqual(['#1 Marked Target', '#2 Marked Target 2']);
+  });
+
   it('opens Civitai links using the preferred host and registers the first-use banner once', async () => {
     const openSpy = vi.fn();
     globalThis.window.open = openSpy;

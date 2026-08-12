@@ -1092,6 +1092,9 @@ export async function sendEmbeddingToWorkflow(embeddingCode, onComplete = null) 
     if (!isNodeEnabled(node)) {
       return false;
     }
+    if (node.capabilities?.text_widget_connected === true) {
+      return false;
+    }
     return (
       node.capabilities?.has_text_widget === true ||
       node.marker_role === "send_prompt_target"
@@ -1100,7 +1103,15 @@ export async function sendEmbeddingToWorkflow(embeddingCode, onComplete = null) 
 
   const nodeKeys = Object.keys(textNodes);
   if (nodeKeys.length === 0) {
-    showToast('uiHelpers.workflow.noMatchingNodes', {}, 'warning');
+    showToast(
+      translate(
+        'uiHelpers.workflow.noPromptTargets',
+        {},
+        'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+      ),
+      {},
+      'warning'
+    );
     return false;
   }
 
@@ -1152,6 +1163,11 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
     if (!isNodeEnabled(node)) {
       return false;
     }
+    // A node whose text widget is backed by a connected input cannot have its
+    // text changed via the widget — execution reads the linked input.
+    if (node.capabilities?.text_widget_connected === true) {
+      return false;
+    }
     return (
       node.capabilities?.has_text_widget === true ||
       node.marker_role === "send_prompt_target"
@@ -1160,7 +1176,12 @@ export async function sendPromptToWorkflow(promptText, options = {}) {
 
   const nodeKeys = Object.keys(textNodes);
   if (nodeKeys.length === 0) {
-    showToast(options.missingNodesMessage || 'uiHelpers.workflow.noMatchingNodes', {}, 'warning');
+    const defaultHint = translate(
+      'uiHelpers.workflow.noPromptTargets',
+      {},
+      'No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target'
+    );
+    showToast(options.missingNodesMessage || defaultHint, {}, 'warning');
     return false;
   }
 

@@ -1726,6 +1726,7 @@
       "recipeReplaced": "Recipe replaced in workflow",
       "recipeFailedToSend": "Failed to send recipe to workflow",
       "noMatchingNodes": "No compatible nodes available in the current workflow",
+      "noPromptTargets": "No compatible prompt targets in the workflow.\nRight-click a node in ComfyUI → Mark as → Send Prompt Target",
       "noTargetNodeSelected": "No target node selected",
       "modelUpdated": "Model updated in workflow",
       "modelFailed": "Failed to update model node",
