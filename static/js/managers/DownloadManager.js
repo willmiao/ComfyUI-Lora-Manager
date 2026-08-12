@@ -912,6 +912,7 @@ export class DownloadManager {
         modelRoot = '',
         targetFolder = '',
         useDefaultPaths = false,
+        useSaveDirAsRoot = false,
         source = null,
         fileParams = null,
         closeModal = false,
@@ -923,7 +924,7 @@ export class DownloadManager {
         }
 
         const displayName = versionName || `#${versionId}`;
-        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, source, fileParams, closeModal: false };
+        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false };
         let ws = null;
         let updateProgress = () => { };
         let cancelled = false;
@@ -995,7 +996,8 @@ export class DownloadManager {
                 useDefaultPaths,
                 downloadId,
                 source,
-                fileParams
+                fileParams,
+                useSaveDirAsRoot
             );
 
             if (cancelled) {
@@ -1809,7 +1811,9 @@ export class DownloadManager {
         versionName = '', 
         source = null,
         modelRoot = '',
-        targetFolder = ''
+        targetFolder = '',
+        useDefaultPaths = null,
+        useSaveDirAsRoot = false
     } = {}) {
         console.warn('[download] downloadVersionWithDefaults: NO fileParams will be sent — backend will always use primary file. '
             + 'modelType=%s, modelId=%s, versionId=%s, versionName="%s"',
@@ -1824,14 +1828,14 @@ export class DownloadManager {
         this.modelId = modelId ? modelId.toString() : null;
         this.source = source;
 
-        const useDefaultPaths = !modelRoot;
         return this.executeDownloadWithProgress({
             modelId,
             versionId,
             versionName,
             modelRoot: modelRoot || '',
             targetFolder: targetFolder || '',
-            useDefaultPaths,
+            useDefaultPaths: useDefaultPaths ?? !modelRoot,
+            useSaveDirAsRoot,
             source,
             closeModal: false,
         });

@@ -234,6 +234,58 @@ async def test_successful_download_uses_defaults(
 
 
 @pytest.mark.asyncio
+async def test_download_keeps_save_dir_when_use_save_dir_as_root(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """use_default_paths with use_save_dir_as_root resolves the template under
+    the provided save_dir instead of switching to the default root."""
+    manager = DownloadManager()
+
+    captured = {}
+
+    async def fake_execute_download(
+        self,
+        *,
+        download_urls,
+        save_dir,
+        metadata,
+        version_info,
+        relative_path,
+        progress_callback,
+        model_type,
+        download_id,
+        transfer_backend=None,
+    ):
+        captured.update(
+            {
+                "save_dir": Path(save_dir),
+                "relative_path": relative_path,
+                "model_type": model_type,
+            }
+        )
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    custom_root = tmp_path / "custom_root"
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        save_dir=str(custom_root),
+        use_default_paths=True,
+        use_save_dir_as_root=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["relative_path"] == "MappedModel/fantasy"
+    assert captured["save_dir"] == custom_root / "MappedModel" / "fantasy"
+    assert captured["model_type"] == "lora"
+
+
+@pytest.mark.asyncio
 async def test_successful_download_schedules_auto_example_images(
     monkeypatch, scanners, metadata_provider, tmp_path
 ):
@@ -618,6 +670,7 @@ async def test_resume_download_restores_persisted_aria2_task(monkeypatch, tmp_pa
         use_default_paths=False,
         source=None,
         file_params=None,
+        use_save_dir_as_root=False,
     ):
         created.update(
             {
@@ -1037,6 +1090,7 @@ async def test_download_uses_captured_backend_when_settings_change(
         transfer_backend="python",
         source=None,
         file_params=None,
+        use_save_dir_as_root=False,
     ):
         captured["transfer_backend"] = transfer_backend
         return {"success": True}

@@ -1233,7 +1233,7 @@ export class BaseModelApiClient {
         }
     }
 
-    async downloadModel(modelId, versionId, modelRoot, relativePath, useDefaultPaths = false, downloadId, source = null, fileParams = null) {
+    async downloadModel(modelId, versionId, modelRoot, relativePath, useDefaultPaths = false, downloadId, source = null, fileParams = null, useSaveDirAsRoot = false) {
         try {
             const response = await fetch(DOWNLOAD_ENDPOINTS.download, {
                 method: 'POST',
@@ -1244,6 +1244,7 @@ export class BaseModelApiClient {
                     model_root: modelRoot,
                     relative_path: relativePath,
                     use_default_paths: useDefaultPaths,
+                    use_save_dir_as_root: useSaveDirAsRoot,
                     download_id: downloadId,
                     ...(source ? { source } : {}),
                     ...(fileParams ? { file_params: fileParams } : {})

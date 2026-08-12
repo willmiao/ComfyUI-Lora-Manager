@@ -1307,15 +1307,41 @@ export function initVersionsTab({
         });
     }
 
-    async function resolveDownloadPathFromCurrentVersion() {
+    function getCurrentInLibraryVersion() {
         if (!normalizedCurrentVersionId || !controller.record?.versions) {
             return null;
         }
-
-        const currentVersion = controller.record.versions.find(
+        return controller.record.versions.find(
             v => v.versionId === normalizedCurrentVersionId && v.isInLibrary && v.filePath
-        );
-        if (!currentVersion?.filePath) {
+        ) || null;
+    }
+
+    function getDownloadPathTemplate() {
+        try {
+            const singularType = modelType.replace(/s$/, '');
+            const templates = state.global?.settings?.download_path_templates;
+            return (templates && templates[singularType]) || '';
+        } catch (error) {
+            return '';
+        }
+    }
+
+    function shouldResolveTemplatePath(targetVersion, pathInfo) {
+        if (!getDownloadPathTemplate() || !pathInfo?.modelRoot) {
+            return false;
+        }
+        const currentVersion = getCurrentInLibraryVersion();
+        const currentBase = normalizeBaseModelName(currentVersion?.baseModel);
+        const targetBase = normalizeBaseModelName(targetVersion?.baseModel);
+        if (!currentBase || !targetBase || currentBase === targetBase) {
+            return false;
+        }
+        return true;
+    }
+
+    async function resolveDownloadPathFromCurrentVersion() {
+        const currentVersion = getCurrentInLibraryVersion();
+        if (!currentVersion) {
             return null;
         }
 
@@ -1372,10 +1398,13 @@ export function initVersionsTab({
 
         try {
             const pathInfo = await resolveDownloadPathFromCurrentVersion();
+            const resolveTemplatePath = shouldResolveTemplatePath(version, pathInfo);
             const success = await downloadManager.downloadVersionWithDefaults(modelType, modelId, versionId, {
                 versionName: version.name || `#${version.versionId}`,
                 modelRoot: pathInfo?.modelRoot || '',
-                targetFolder: pathInfo?.targetFolder || '',
+                targetFolder: resolveTemplatePath ? '' : (pathInfo?.targetFolder || ''),
+                useDefaultPaths: resolveTemplatePath ? true : null,
+                useSaveDirAsRoot: resolveTemplatePath,
             });
 
             if (success) {
