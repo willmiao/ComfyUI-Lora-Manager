@@ -1,4 +1,5 @@
 from types import SimpleNamespace
+from typing import Optional
 from unittest.mock import AsyncMock
 
 import pytest
@@ -21,13 +22,13 @@ class DummyProvider(ModelMetadataProvider):
     async def get_model_versions_bulk(self, model_ids):
         return None
 
-    async def get_model_version(self, model_id: int = None, version_id: int = None):
+    async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None):
         return None
 
     async def get_model_version_info(self, version_id: str):
         return None, None
 
-    async def get_user_models(self, username: str):
+    async def get_user_models(self, username: str, cursor: Optional[str] = None):
         return None
 
 

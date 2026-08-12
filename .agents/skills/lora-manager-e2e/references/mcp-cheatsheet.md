@@ -2,11 +2,13 @@
 
 Quick reference for common MCP commands used in LoRa Manager E2E testing.
 
+> **Port convention**: `{PORT}` is the port chosen for the E2E run (default candidate `8188`, but only if actually free — see the SKILL.md Port Selection section; use e.g. `8199` when `8188` is occupied by a live ComfyUI). Always run against the **sandboxed** standalone server, never a live instance.
+
 ## Navigation
 
 ```python
 # Navigate to LoRA list page
-navigate_page(type="url", url="http://127.0.0.1:8188/loras")
+navigate_page(type="url", url="http://127.0.0.1:{PORT}/loras")
 
 # Reload page with cache clear
 navigate_page(type="reload", ignoreCache=True)
@@ -179,7 +181,7 @@ pages = list_pages()
 select_page(pageId=0, bringToFront=True)
 
 # Create new page
-new_page(url="http://127.0.0.1:8188/loras")
+new_page(url="http://127.0.0.1:{PORT}/loras")
 
 # Close page (keep at least one open!)
 close_page(pageId=1)
@@ -261,7 +263,7 @@ drag(from_uid="draggable-item", to_uid="drop-zone")
 ### Verify LoRA Cards Loaded
 
 ```python
-navigate_page(type="url", url="http://127.0.0.1:8188/loras")
+navigate_page(type="url", url="http://127.0.0.1:{PORT}/loras")
 wait_for(text="LoRAs", timeout=10000)
 
 # Check if cards loaded
@@ -322,3 +324,37 @@ navigate_page(type="reload")
 errors = list_console_messages(types=["error"])
 assert len(errors) == 0, f"Console errors: {errors}"
 ```
+
+## Troubleshooting
+
+### Stale profile lock ("browser is already running" / `list_pages` fails)
+
+A Chrome profile held by a stale Chrome from a prior MCP session makes `list_pages`
+fail with "browser is already running". Fix:
+
+1. Find the stale Chrome that owns the profile dir (e.g. `~/.config/chrome-dev-profile`):
+   ```bash
+   ps -ef | grep -i '[c]hrome.*user-data-dir'
+   ```
+2. Confirm it is a QA Chrome from a completed task (NOT the live ComfyUI server, NOT
+   your current MCP instance).
+3. Kill ONLY that stale Chrome (`kill <stale-pid>`), then retry `list_pages`.
+
+### Screenshot-write restrictions
+
+The MCP may refuse to write into paths outside its configured workspace roots
+(e.g. `.omo/evidence/screenshots/` under a worktree that canonicalizes to an unmapped
+path). Save the screenshot to `/tmp` via the MCP, then copy it into the evidence dir:
+
+```bash
+# MCP:  take_screenshot(filePath="/tmp/<plan>-e2e/recipe-b-after.png", format="png")
+# Shell:
+mkdir -p <repo-root>/.omo/evidence/screenshots
+cp /tmp/<plan>-e2e/recipe-b-after.png <repo-root>/.omo/evidence/screenshots/
+```
+
+### Time budgets & abort rule
+
+See SKILL.md "Time Budgets & Abort Guidance": if a phase exceeds ~2x its budget or a
+tool call retries 3+ times in a row, STOP and report BLOCKED with the last observed
+state (server PID + `ss -tlnp`, page snapshot, last API response). Do not loop.

@@ -1,8 +1,13 @@
+from __future__ import annotations
+
 import asyncio
+import json
 import os
 import sqlite3
+import time
+from collections.abc import Iterator
 from pathlib import Path
-from typing import List
+from typing import Any, Dict, List, Optional
 from types import MethodType
 
 import pytest
@@ -11,6 +16,11 @@ from py.services import model_scanner
 from py.services.model_cache import ModelCache
 from py.services.model_hash_index import ModelHashIndex
 from py.services.model_scanner import CacheBuildResult, ModelScanner
+from py.services.pending_delete_service import (
+    PENDING_DELETE_DIR_NAME,
+    PENDING_DELETE_TTL_SECONDS,
+    _reset_pending_delete_service,
+)
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
 from py.utils.civitai_utils import build_license_flags
 from py.utils.models import BaseModelMetadata
@@ -18,9 +28,9 @@ from py.utils.models import BaseModelMetadata
 
 class RecordingWebSocketManager:
     def __init__(self) -> None:
-        self.payloads: List[dict] = []
+        self.payloads: List[Dict[str, Any]] = []
 
-    async def broadcast_init_progress(self, payload: dict) -> None:
+    async def broadcast_init_progress(self, payload: Dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 
@@ -48,7 +58,7 @@ class DummyScanner(ModelScanner):
         *,
         hash_index: ModelHashIndex | None = None,
         excluded_models: List[str] | None = None,
-    ) -> dict:
+    ) -> Optional[Dict[str, Any]]:
         hash_index = hash_index or self._hash_index
         excluded_models = excluded_models if excluded_models is not None else self._excluded_models
 
@@ -102,6 +112,27 @@ def stub_register_service(monkeypatch):
         return None
 
     monkeypatch.setattr(model_scanner.ServiceRegistry, "register_service", noop)
+
+
+@pytest.fixture(autouse=True)
+def _reset_pending_delete_singleton() -> Iterator[None]:
+    """Reset the pending-delete singleton before and after each test."""
+    _reset_pending_delete_service()
+    yield
+    _reset_pending_delete_service()
+
+
+@pytest.fixture(autouse=True)
+def _stub_service_registry_getters(monkeypatch) -> None:
+    """Prevent pending-delete purge enumeration from building real scanners."""
+    from py.services.service_registry import ServiceRegistry
+
+    async def _none(*_args, **_kwargs) -> None:
+        return None
+
+    monkeypatch.setattr(ServiceRegistry, "get_lora_scanner", _none)
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _none)
+    monkeypatch.setattr(ServiceRegistry, "get_embedding_scanner", _none)
 
 
 def _create_files(root: Path) -> tuple[Path, Path, Path]:
@@ -483,7 +514,7 @@ async def test_version_index_tracks_version_ids(tmp_path: Path):
     assert cache.version_index[202]['file_path'] == second_path
 
     assert await scanner.check_model_version_exists(101) is True
-    assert await scanner.check_model_version_exists('202') is True
+    assert await scanner.check_model_version_exists('202') is True  # pyright: ignore[reportArgumentType]
     assert await scanner.check_model_version_exists(999) is False
 
     removed = await scanner._batch_update_cache_for_deleted_models([first_path])
@@ -530,7 +561,7 @@ async def test_reconcile_cache_applies_adjust_cached_entry(tmp_path: Path):
 
     applied: List[str] = []
 
-    def _adjust(self, entry: dict) -> dict:
+    def _adjust(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         applied.append(entry["file_path"])
         entry["custom_field"] = "adjusted"
         return entry
@@ -607,7 +638,7 @@ async def test_reconcile_cache_removes_duplicate_alias_when_same_real_file_seen_
     scanner = MultiRootDummyScanner([loras_root, extra_root])
     await scanner._initialize_cache()
 
-    duplicate_entry = {
+    duplicate_entry: Dict[str, Any] = {
         "file_path": _normalize_path(extra_root / "one.txt"),
         "folder": "",
         "sha256": "hash-one",
@@ -712,7 +743,7 @@ def test_cache_entries_differ_extra_key():
 # ── sync_cache_from_metadata ─────────────────────────────────────────
 
 
-def _make_cache_entry(**overrides) -> dict:
+def _make_cache_entry(**overrides) -> Dict[str, Any]:
     entry = {
         "file_path": "/m/a.safetensors",
         "model_name": "TestModel",
@@ -884,7 +915,7 @@ async def test_sync_cache_conditional_resort_skipped(tmp_path: Path, monkeypatch
         raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
     )
     await scanner._cache.resort()
-    scanner._cache._last_sort = ("name", "asc")  # name sort is active
+    scanner._cache._last_sort = ("name", "asc", None)  # name sort is active
     scanner._tags_count = {"alpha": 1}
     scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
 
@@ -935,7 +966,7 @@ async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypat
         raw_data=[dict(entry)], folders=[], name_display_mode="model_name"
     )
     await scanner._cache.resort()
-    scanner._cache._last_sort = ("name", "asc")
+    scanner._cache._last_sort = ("name", "asc", None)
     scanner._tags_count = {"alpha": 1}
     scanner._hash_index.add_entry("abc123", "/m/a.safetensors")
 
@@ -974,3 +1005,208 @@ async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypat
     )
     assert changed is True
     assert resort_calls == 1
+
+
+# ── bulk_delete_models staging (undo-delete feature, todo 3) ───────────────
+
+
+def _make_bulk_scanner(root: Path, file_paths: List[Path]) -> DummyScanner:
+    """Build a DummyScanner whose cache mirrors the given files on disk."""
+    scanner = DummyScanner(root)
+    raw_data = []
+    for path in file_paths:
+        name = os.path.splitext(os.path.basename(path))[0]
+        raw_data.append(
+            {
+                "file_path": str(path),
+                "folder": "",
+                "sha256": f"hash-{name}",
+                "tags": ["alpha"] if "one" in name else ["beta"],
+                "model_name": name,
+                "file_name": name,
+                "size": 1,
+                "modified": 1.0,
+            }
+        )
+    scanner._cache = ModelCache(
+        raw_data=raw_data, folders=[], name_display_mode="model_name"
+    )
+    scanner._tags_count = {"alpha": 1, "beta": 1}
+    for entry in raw_data:
+        scanner._hash_index.add_entry(entry["sha256"], entry["file_path"])
+    return scanner
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_stages_two_files_into_single_batch(tmp_path: Path):
+    """Two-file bulk delete -> one merged batch id with both files staged."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["status"] == "success"
+    assert result["total_deleted"] == 2
+    assert result["cache_updated"] is True
+
+    # ONE batch id, no batch_ids array, and both files staged in its dir.
+    assert "batch_id" in result
+    assert "batch_ids" not in result
+    batch_id = result["batch_id"]
+    assert batch_id is not None
+    staging = root / PENDING_DELETE_DIR_NAME
+    batch_dir = staging / batch_id
+    assert batch_dir.is_dir()
+    assert (batch_dir / "one.txt").read_bytes() == b"one"
+    assert (batch_dir / "two.txt").read_bytes() == b"two"
+
+    # Loser batch dirs are removed by the merge - exactly one batch remains.
+    batch_dirs = [d.name for d in staging.iterdir() if d.is_dir()]
+    assert batch_dirs == [batch_id]
+
+    # The manifest carries the winner's cache snapshot for later undo.
+    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["model_snapshot"]["file_path"] == str(first)
+
+    # Originals gone; cache entries removed.
+    assert not first.exists()
+    assert not second.exists()
+    cached_paths = {item["file_path"] for item in scanner._cache.raw_data}
+    assert str(first) not in cached_paths
+    assert str(second) not in cached_paths
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_merged_manifest_reanchors_expiry(tmp_path: Path):
+    """Merged manifest expires_at is re-anchored to now+TTL at merge time."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    before = int(time.time())
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+    after = int(time.time())
+
+    batch_dir = root / PENDING_DELETE_DIR_NAME / result["batch_id"]
+    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
+    # expires_at >= staging completion time + TTL (re-anchor assertion).
+    assert manifest["expires_at"] >= after + PENDING_DELETE_TTL_SECONDS - 2
+    assert manifest["expires_at"] >= before + PENDING_DELETE_TTL_SECONDS
+    # Both files are entries of the merged manifest.
+    assert len(manifest["entries"]) == 2
+    assert (batch_dir / "one.txt").exists()
+    assert (batch_dir / "two.txt").exists()
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
+    tmp_path: Path, monkeypatch
+):
+    """Merge move failure -> batch_ids array of the intact constituent batches."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    real_rename = os.rename
+    fail_next = {"enabled": True}
+
+    def flaky_merge_rename(src: str, dst: str) -> None:
+        # Fail only when moving between batch dirs (merge), never during
+        # staging (src is then the original path, outside .lm-pending-delete).
+        if (
+            fail_next["enabled"]
+            and PENDING_DELETE_DIR_NAME in src
+            and PENDING_DELETE_DIR_NAME in dst
+        ):
+            fail_next["enabled"] = False
+            raise OSError("simulated merge failure")
+        return real_rename(src, dst)
+
+    monkeypatch.setattr(
+        "py.services.pending_delete_service.os.rename", flaky_merge_rename
+    )
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["total_deleted"] == 2
+    # No single batch id - the constituent ids are returned instead.
+    assert "batch_id" not in result
+    assert "batch_ids" in result
+    assert len(result["batch_ids"]) == 2
+
+    # Both constituent batches are intact: dirs + manifests + staged files.
+    staging = root / PENDING_DELETE_DIR_NAME
+    batch_dirs = sorted(d.name for d in staging.iterdir() if d.is_dir())
+    assert sorted(result["batch_ids"]) == batch_dirs
+    for bid in result["batch_ids"]:
+        batch_dir = staging / bid
+        assert (batch_dir / "manifest.json").exists()
+    staged_files = [
+        f.name
+        for bid in result["batch_ids"]
+        for f in (staging / bid).iterdir()
+        if f.is_file() and f.name != "manifest.json"
+    ]
+    assert sorted(staged_files) == ["one.txt", "two.txt"]
+
+
+@pytest.mark.asyncio
+async def test_bulk_delete_cancelled_after_one_staged_batch_present(
+    tmp_path: Path, monkeypatch
+):
+    """Cancelled mid-way -> status='cancelled' AND the staged subset undoable."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    first = root / "one.txt"
+    first.write_text("one", encoding="utf-8")
+    second = root / "two.txt"
+    second.write_text("two", encoding="utf-8")
+    scanner = _make_bulk_scanner(root, [first, second])
+
+    real_rename = os.rename
+    rename_count = {"n": 0}
+
+    def cancelling_rename(src: str, dst: str) -> None:
+        rename_count["n"] += 1
+        result = real_rename(src, dst)
+        # After the first file is staged, request cancellation so the loop
+        # stops before the second file is processed.
+        if rename_count["n"] == 1:
+            scanner.cancel_task()
+        return result
+
+    monkeypatch.setattr(
+        "py.services.pending_delete_service.os.rename", cancelling_rename
+    )
+
+    result = await scanner.bulk_delete_models([str(first), str(second)])
+
+    assert result["success"] is True
+    assert result["status"] == "cancelled"
+    assert result["total_deleted"] == 1
+    assert "batch_id" in result
+    assert result["batch_id"] is not None
+    assert "batch_ids" not in result
+
+    # The staged subset is merged into one undoable batch.
+    batch_dir = root / PENDING_DELETE_DIR_NAME / result["batch_id"]
+    assert batch_dir.is_dir()
+    assert (batch_dir / "one.txt").read_bytes() == b"one"
+    assert not first.exists()
+    # The second file was never touched.
+    assert second.exists()

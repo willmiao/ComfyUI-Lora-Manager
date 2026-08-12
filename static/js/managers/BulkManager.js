@@ -1,5 +1,6 @@
 import { state, getCurrentPageState } from '../state/index.js';
-import { showToast, copyToClipboard, sendLoraToWorkflow, sendEmbeddingToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
+import { showToast, showActionToast, copyToClipboard, sendLoraToWorkflow, sendEmbeddingToWorkflow, buildLoraSyntax, getNSFWLevelName } from '../utils/uiHelpers.js';
+import { handleUndoDelete } from '../utils/undoHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -90,12 +91,13 @@ export class BulkManager {
                 moveAll: true,
                 autoOrganize: false,
                 deleteAll: true,
-                setContentRating: false,
+                setContentRating: true,
                 skipMetadataRefresh: false,
                 setFavorite: true,
                 unfavorite: true,
                 repairMetadata: true,
-                reimportMetadata: true
+                reimportMetadata: true,
+                rematchMetadata: true
             }
         };
 
@@ -648,10 +650,38 @@ export class BulkManager {
                 showToast('toast.api.operationCancelled', {}, 'info');
             } else if (result.success) {
                 const currentConfig = this.getCurrentDisplayConfig();
-                showToast('toast.models.deletedSuccessfully', {
-                    count: result.deleted_count,
-                    type: currentConfig.displayName.toLowerCase()
-                }, 'success');
+                const isRecipes = state.currentPageType === 'recipes';
+                const refreshFn = isRecipes
+                    ? () => window.recipeManager.loadRecipes(true)
+                    : () => resetAndReload(true);
+
+                if (result.batch_id || (result.batch_ids && result.batch_ids.length)) {
+                    // One undo action for the whole bulk action — the backend
+                    // merges staged per-file batches into a single batch, with
+                    // a batch_ids fallback array when the merge failed
+                    const onAction = result.batch_id
+                        ? () => handleUndoDelete(result.batch_id, refreshFn)
+                        : async () => {
+                            for (const id of result.batch_ids) {
+                                const succeeded = await handleUndoDelete(id, null, { showToast: false, refresh: false });
+                                if (!succeeded) {
+                                    showToast('toast.undo.failed', { error: '' }, 'error');
+                                    return;
+                                }
+                            }
+                            refreshFn();
+                            showToast('toast.undo.restored', {}, 'success');
+                        };
+                    showActionToast('toast.undo.deletedBulk', { count: result.deleted_count }, 'success', {
+                        actionText: translate('toast.undo.action'),
+                        onAction,
+                    });
+                } else {
+                    showToast('toast.models.deletedSuccessfully', {
+                        count: result.deleted_count,
+                        type: currentConfig.displayName.toLowerCase()
+                    }, 'success');
+                }
 
                 filePaths.forEach(path => {
                     state.virtualScroller.removeItemByFilePath(path);
@@ -861,6 +891,105 @@ export class BulkManager {
         } catch (error) {
             console.error('Error during bulk recipe repair:', error);
             showToast('toast.recipes.repairBulkFailed', { message: error.message }, 'error');
+        } finally {
+            if (state.loadingManager?.hide) {
+                state.loadingManager.hide();
+            }
+            if (typeof state.loadingManager?.restoreProgressBar === 'function') {
+                state.loadingManager.restoreProgressBar();
+            }
+        }
+    }
+
+    async rematchSelectedRecipes() {
+        if (state.selectedModels.size === 0) {
+            showToast('toast.recipes.noRecipesSelected', {}, 'warning');
+            return;
+        }
+
+        if (state.currentPageType !== 'recipes') {
+            showToast('This operation is only available for recipes', {}, 'warning');
+            return;
+        }
+
+        try {
+            const apiClient = this.getActiveApiClient();
+            const filePaths = Array.from(state.selectedModels);
+
+            if (typeof apiClient.rematchBulkModels !== 'function') {
+                showToast('Bulk rematch is not supported for this model type', {}, 'error');
+                return;
+            }
+
+            state.loadingManager.showSimpleLoading('Rematching recipes to local models...');
+
+            const result = await apiClient.rematchBulkModels(filePaths);
+
+            if (result.success) {
+                const total = result.total || filePaths.length;
+                // Unified counters from the backend; legacy fields fall back
+                // for older backends: `rematched` (entry count) for
+                // matched_entries, `total` (selection size) for
+                // matched_recipes.
+                const rematched = result.rematched || 0;
+                const skipped = result.skipped || 0;
+                const matchedRecipes = result.matched_recipes || result.total || 0;
+                const matchedEntries = result.matched_entries || rematched;
+                const failures = result.errors || 0;
+                const unresolvedEntries = result.unresolved_entries || 0;
+                const unresolvedRecipes = result.unresolved_recipes || 0;
+
+                const recipes = result.recipes || [];
+                for (const recipe of recipes) {
+                    if (recipe.file_path) {
+                        state.virtualScroller.updateSingleItem(
+                            recipe.file_path,
+                            recipe
+                        );
+                    }
+                }
+
+                if (matchedEntries > 0) {
+                    const hasFailures = failures > 0;
+                    const toastKey = hasFailures
+                        ? 'toast.recipes.rematchCompleteErrors'
+                        : 'toast.recipes.rematchComplete';
+                    showToast(
+                        toastKey,
+                        { rematched, skipped, total, entries: matchedEntries, recipes: matchedRecipes, failures },
+                        hasFailures ? 'warning' : 'success'
+                    );
+                } else if (failures > 0) {
+                    // Nothing matched and at least one recipe errored —
+                    // "no rematch needed" would be actively misleading here.
+                    showToast(
+                        'toast.recipes.rematchAllFailed',
+                        { total, failures },
+                        'error'
+                    );
+                } else if (unresolvedEntries > 0) {
+                    // Entries existed but have no local model — expected for
+                    // models deleted from Civitai; informational, not an error.
+                    showToast(
+                        'toast.recipes.rematchUnmatched',
+                        { entries: unresolvedEntries, recipes: unresolvedRecipes, total },
+                        'info'
+                    );
+                } else {
+                    showToast(
+                        'toast.recipes.rematchSkipped',
+                        { total },
+                        'info'
+                    );
+                }
+
+                if (state.bulkMode) this.toggleBulkMode();
+            } else {
+                throw new Error(result.error || 'Bulk rematch failed');
+            }
+        } catch (error) {
+            console.error('Error during bulk recipe rematch:', error);
+            showToast('toast.recipes.rematchFailed', { message: error.message }, 'error');
         } finally {
             if (state.loadingManager?.hide) {
                 state.loadingManager.hide();
@@ -1528,14 +1657,18 @@ export class BulkManager {
         let failureCount = 0;
 
         try {
-            const apiClient = getModelApiClient();
+            const isRecipesPage = state.currentPageType === 'recipes';
             for (const filePath of targets) {
                 if (cancelled) {
                     showToast('toast.api.operationCancelled', {}, 'info');
                     break;
                 }
                 try {
-                    await apiClient.saveModelMetadata(filePath, { preview_nsfw_level: level });
+                    if (isRecipesPage) {
+                        await updateRecipeMetadata(filePath, { preview_nsfw_level: level });
+                    } else {
+                        await getModelApiClient().saveModelMetadata(filePath, { preview_nsfw_level: level });
+                    }
                     successCount++;
                 } catch (error) {
                     failureCount++;

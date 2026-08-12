@@ -96,7 +96,16 @@ export function initSortDropdown(select) {
     };
 
     const choose = (value) => {
-        if (select.value === value) return;
+        if (select.value === value) {
+            // Re-picking the already-selected option is normally a no-op,
+            // matching native <select> behavior. The seeded Random sort is
+            // the exception: clicking it again should reshuffle, so let the
+            // change handler (PageControls) generate a fresh seed.
+            if (String(value).startsWith('random')) {
+                select.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return;
+        }
         select.value = value;
         select.dispatchEvent(new Event('change', { bubbles: true }));
     };
@@ -277,9 +286,10 @@ export function initSortDropdown(select) {
     }
 
     // Rebuild the menu when <option>s change (VLM adds/removes a temporary
-    // option at runtime).
+    // option at runtime, and the seeded Random sort option gets a new value
+    // attribute each time it is picked).
     const observer = new MutationObserver(() => buildMenu());
-    observer.observe(select, { childList: true });
+    observer.observe(select, { childList: true, subtree: true, attributes: true, attributeFilter: ['value'] });
 
     buildMenu();
     group.dataset.sortReady = '1';

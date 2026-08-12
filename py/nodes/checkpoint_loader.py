@@ -1,7 +1,8 @@
 import logging
-from typing import List, Tuple
-import comfy.sd # type: ignore
-import folder_paths # type: ignore
+import os
+from typing import Any, List, Tuple
+import comfy.sd  # pyright: ignore[reportMissingImports]
+import folder_paths  # pyright: ignore[reportMissingImports]
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
 
 logger = logging.getLogger(__name__)
@@ -18,9 +19,9 @@ class CheckpointLoaderLM:
     CATEGORY = "Lora Manager/loaders"
 
     @classmethod
-    def INPUT_TYPES(s):
+    def INPUT_TYPES(cls):
         # Get list of checkpoint names from scanner (includes extra folder paths)
-        checkpoint_names = s._get_checkpoint_names()
+        checkpoint_names = cls._get_checkpoint_names()
         return {
             "required": {
                 "ckpt_name": (
@@ -58,7 +59,10 @@ class CheckpointLoaderLM:
                 for item in cache.raw_data:
                     if item.get("sub_type") == "checkpoint":
                         file_path = item.get("file_path", "")
-                        if file_path:
+                        # Only offer models that still exist on disk so ComfyUI
+                        # flags missing checkpoints at queue time via
+                        # "value not in list" (the scanner cache can be stale).
+                        if file_path and os.path.exists(file_path):
                             # Format using relative path with OS-native separator
                             formatted_name = _format_model_name_for_comfyui(
                                 file_path, model_roots
@@ -89,7 +93,7 @@ class CheckpointLoaderLM:
             logger.error(f"Error getting checkpoint names: {e}")
             return []
 
-    def load_checkpoint(self, ckpt_name: str) -> Tuple:
+    def load_checkpoint(self, ckpt_name: str) -> Tuple[Any, Any, Any]:
         """Load a checkpoint by name, supporting extra folder paths
 
         Args:

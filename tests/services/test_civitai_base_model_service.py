@@ -9,6 +9,8 @@ from py.services.civitai_base_model_service import CivitaiBaseModelService
 class TestCivitaiBaseModelService:
     """Test suite for CivitaiBaseModelService."""
 
+    service = CivitaiBaseModelService()
+
     @pytest.fixture(autouse=True)
     def setup_service(self):
         """Create a fresh service instance for each test."""
@@ -46,7 +48,7 @@ class TestCivitaiBaseModelService:
     def test_generate_abbreviation_edge_cases(self):
         """Test abbreviation generation edge cases."""
         assert self.service.generate_abbreviation("") == "OTH"
-        assert self.service.generate_abbreviation(None) == "OTH"
+        assert self.service.generate_abbreviation(None) == "OTH"  # pyright: ignore[reportArgumentType]
 
     def test_cache_status_no_cache(self):
         """Test cache status when no cache exists."""

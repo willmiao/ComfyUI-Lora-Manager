@@ -1,6 +1,6 @@
 """Test for modelVersionId fallback in fingerprint calculation."""
 import pytest
-from py.utils.utils import calculate_recipe_fingerprint
+from py.utils.utils import calculate_recipe_fingerprint, normalize_prompt_for_dedup
 
 
 def test_calculate_fingerprint_with_model_version_id_fallback():
@@ -98,3 +98,15 @@ def test_calculate_fingerprint_without_hash_or_version_id():
     ]
     fingerprint = calculate_recipe_fingerprint(loras)
     assert fingerprint == ""
+
+
+def test_normalize_prompt_casefolds_and_collapses_whitespace():
+    assert normalize_prompt_for_dedup("A Girl,   blue hair") == "a girl, blue hair"
+    assert normalize_prompt_for_dedup("  landscape \n\t with details  ") == "landscape with details"
+    assert normalize_prompt_for_dedup("MASTERPIECE, best quality") == "masterpiece, best quality"
+
+
+def test_normalize_prompt_handles_missing_or_non_string():
+    assert normalize_prompt_for_dedup(None) == ""
+    assert normalize_prompt_for_dedup("") == ""
+    assert normalize_prompt_for_dedup(12345) == ""

@@ -1,5 +1,5 @@
 from safetensors import safe_open
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 from .model_utils import determine_base_model
 import os
 import logging
@@ -7,7 +7,7 @@ import json
 
 logger = logging.getLogger(__name__)
 
-async def extract_lora_metadata(file_path: str) -> Dict:
+async def extract_lora_metadata(file_path: str) -> Dict[str, str]:
     """Extract essential metadata from safetensors file"""
     try:
         with safe_open(file_path, framework="pt", device="cpu") as f:
@@ -20,7 +20,7 @@ async def extract_lora_metadata(file_path: str) -> Dict:
         logger.error(f"Error reading metadata from {file_path}: {str(e)}")
     return {"base_model": "Unknown"}
 
-async def extract_checkpoint_metadata(file_path: str) -> dict:
+async def extract_checkpoint_metadata(file_path: str) -> dict[str, str]:
     """Extract metadata from a checkpoint file to determine model type and base model"""
     try:
         # Analyze filename for clues about the model
@@ -83,7 +83,7 @@ async def extract_checkpoint_metadata(file_path: str) -> dict:
         # Return default values
         return {'base_model': 'Unknown', 'model_type': 'checkpoint'}
 
-async def extract_trained_words(file_path: str) -> Tuple[List[Tuple[str, int]], str]:
+async def extract_trained_words(file_path: str) -> Tuple[List[Tuple[str, int]], Optional[str]]:
     """Extract trained words from a safetensors file and sort by frequency
     
     Args:

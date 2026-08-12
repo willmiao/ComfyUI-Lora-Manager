@@ -80,6 +80,33 @@
     margin-top: 10px;
 }
 
+/* Action toast: ghost action button + countdown (e.g. Undo delete) */
+.toast-action-btn {
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 4px 12px;
+    background: transparent;
+    color: var(--lora-accent);
+    border: 1px solid var(--lora-accent);
+    border-radius: var(--border-radius-sm);
+    font-size: 0.85em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.toast-action-btn:hover {
+    background: var(--lora-accent);
+    color: #fff;
+}
+
+.toast-countdown {
+    flex-shrink: 0;
+    font-size: 0.75em;
+    opacity: 0.65;
+    white-space: nowrap;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .toast {

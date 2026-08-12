@@ -1,15 +1,16 @@
+import functools
 import json
 import logging
 import os
 import struct
 from io import BytesIO
-from typing import Any, Optional
+from typing import Any, Optional, Tuple, cast
 
-import piexif
+import piexif  # pyright: ignore[reportMissingTypeStubs]
 from PIL import Image, PngImagePlugin
 
 try:
-    import brotli
+    import brotli  # pyright: ignore[reportMissingTypeStubs]
     _BROTLI_AVAILABLE = True
 except ImportError:
     brotli = None
@@ -17,11 +18,27 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+
+@functools.lru_cache(maxsize=2048)
+def _get_image_dimensions_cached(path: str, _mtime_ns: int, _size: int) -> Optional[Tuple[int, int]]:
+    """Return ``(width, height)`` for ``path``, or ``None`` on any failure.
+
+    The ``_mtime_ns`` and ``_size`` arguments are part of the cache key only;
+    they invalidate the entry when the file is replaced with a new image, so a
+    stale preview never serves outdated dimensions.
+    """
+    try:
+        with Image.open(path) as img:
+            return img.size
+    except Exception:
+        return None
+
+
 class ExifUtils:
     """Utility functions for working with EXIF data in images"""
 
     @staticmethod
-    def _parse_isobmff_boxes(data: bytes, offset: int = 0) -> list[dict]:
+    def _parse_isobmff_boxes(data: bytes, offset: int = 0) -> list[dict[str, Any]]:
         boxes = []
         while offset + 8 <= len(data):
             size = struct.unpack('>I', data[offset:offset + 4])[0]
@@ -61,7 +78,7 @@ class ExifUtils:
     _BROTLI_MAX_DECOMPRESSED = 2 * 1024 * 1024
 
     @staticmethod
-    def _extract_isobmff_brotli(image_path: str) -> Optional[dict]:
+    def _extract_isobmff_brotli(image_path: str) -> Optional[dict[str, Any]]:
         try:
             with open(image_path, 'rb') as f:
                 data = f.read()
@@ -90,7 +107,7 @@ class ExifUtils:
 
         if _BROTLI_AVAILABLE:
             try:
-                decompressed = brotli.decompress(compressed)
+                decompressed = brotli.decompress(compressed)  # pyright: ignore[reportOptionalMemberAccess]
                 if len(decompressed) > ExifUtils._BROTLI_MAX_DECOMPRESSED:
                     logger.warning(
                         "Brotli metadata too large (%d bytes, max %d), ignoring",
@@ -109,7 +126,9 @@ class ExifUtils:
         except Exception:
             return None
 
-        result = {"parameters": None, "prompt": None, "workflow": None, "comment": None}
+        result: dict[str, Optional[str]] = {
+            "parameters": None, "prompt": None, "workflow": None, "comment": None
+        }
         if isinstance(meta.get("prompt"), (dict, list)):
             result["prompt"] = json.dumps(meta["prompt"])
         elif isinstance(meta.get("prompt"), str):
@@ -144,7 +163,7 @@ class ExifUtils:
 
     @staticmethod
     def _load_structured_metadata(image_path: str) -> dict[str, Optional[str]]:
-        metadata = {
+        metadata: dict[str, Optional[str]] = {
             "parameters": None,
             "prompt": None,
             "workflow": None,
@@ -180,13 +199,14 @@ class ExifUtils:
                 logger.debug(f"Error loading EXIF data: {e}")
                 exif_dict = {}
 
-            if piexif.ExifIFD.UserComment in exif_dict.get("Exif", {}):
+            exif_ifd = exif_dict.get("Exif")
+            if exif_ifd and piexif.ExifIFD.UserComment in exif_ifd:
                 metadata["comment"] = ExifUtils._decode_user_comment(
-                    exif_dict["Exif"][piexif.ExifIFD.UserComment]
+                    exif_ifd[piexif.ExifIFD.UserComment]
                 )
 
             image_description = ExifUtils._decode_exif_text(
-                exif_dict.get("0th", {}).get(piexif.ImageIFD.ImageDescription)
+                (exif_dict.get("0th") or {}).get(piexif.ImageIFD.ImageDescription)
             )
             if image_description:
                 if image_description.startswith("Workflow:"):
@@ -236,19 +256,26 @@ class ExifUtils:
         workflow = metadata_fields.get("workflow")
         prompt = metadata_fields.get("prompt")
 
+        # Work on local references, then write the (possibly new) IFD dicts back.
+        exif_ifd = exif_dict.get("Exif") or {}
+        exif_0th = exif_dict.get("0th") or {}
+
         if parameters:
-            exif_dict["Exif"][piexif.ExifIFD.UserComment] = (
+            exif_ifd[piexif.ExifIFD.UserComment] = (
                 b"UNICODE\0" + parameters.encode("utf-16be")
             )
         else:
-            exif_dict["Exif"].pop(piexif.ExifIFD.UserComment, None)
+            exif_ifd.pop(piexif.ExifIFD.UserComment, None)
 
         if workflow:
-            exif_dict["0th"][piexif.ImageIFD.ImageDescription] = f"Workflow:{workflow}"
+            exif_0th[piexif.ImageIFD.ImageDescription] = f"Workflow:{workflow}"
         elif prompt:
-            exif_dict["0th"][piexif.ImageIFD.ImageDescription] = prompt
+            exif_0th[piexif.ImageIFD.ImageDescription] = prompt
         else:
-            exif_dict["0th"].pop(piexif.ImageIFD.ImageDescription, None)
+            exif_0th.pop(piexif.ImageIFD.ImageDescription, None)
+
+        exif_dict["Exif"] = exif_ifd
+        exif_dict["0th"] = exif_0th
 
         return piexif.dump(exif_dict)
     
@@ -309,7 +336,7 @@ class ExifUtils:
                 exif_bytes = ExifUtils._build_exif_bytes(
                     metadata_fields, img.info.get("exif")
                 )
-                save_kwargs = {"exif": exif_bytes}
+                save_kwargs: dict[str, Any] = {"exif": exif_bytes}
                 if img_format == "WEBP":
                     save_kwargs["quality"] = 85
 
@@ -423,6 +450,25 @@ class ExifUtils:
             return user_comment[:recipe_marker_index] + user_comment[next_line_index:]
             
     @staticmethod
+    def get_image_dimensions(image_path: str) -> Optional[Tuple[int, int]]:
+        """Return ``(width, height)`` for an image, or ``None`` if unavailable.
+
+        Video containers (``.mp4``/``.webm``/``.avi``) and formats PIL cannot
+        read (``.avif``/``.jxl``) return ``None`` before PIL is invoked.
+        Missing or corrupt files return ``None``. Never raises.
+        """
+        try:
+            ext = os.path.splitext(image_path)[1].lower()
+            if ext in ('.mp4', '.webm', '.avi', '.avif', '.jxl'):
+                return None
+            stat = os.stat(image_path)
+            return _get_image_dimensions_cached(
+                image_path, stat.st_mtime_ns, stat.st_size
+            )
+        except Exception:
+            return None
+
+    @staticmethod
     def optimize_image(image_data, target_width=250, format='webp', quality=85, preserve_metadata=False):
         """
         Optimize an image by resizing and converting to WebP format
@@ -463,12 +509,12 @@ class ExifUtils:
             else:
                 # It's binary data - validate data
                 try:
-                    with BytesIO(image_data) as temp_buf:
+                    with BytesIO(cast(bytes, image_data)) as temp_buf:
                         test_img = Image.open(temp_buf)
                         # Verify the image can be fully loaded
                         width, height = test_img.size
                     # If successful, reopen for processing
-                    img = Image.open(BytesIO(image_data))
+                    img = Image.open(BytesIO(cast(bytes, image_data)))
                 except Exception as e:
                     logger.error(f"Invalid binary image data: {e}")
                     raise ValueError(f"Cannot process corrupt image data: {e}")
@@ -485,7 +531,7 @@ class ExifUtils:
                         import tempfile
                         with tempfile.NamedTemporaryFile(suffix='.jpg', delete=False) as temp_file:
                             temp_path = temp_file.name
-                            temp_file.write(image_data)
+                            temp_file.write(cast(bytes, image_data))
                         try:
                             metadata_fields = ExifUtils._load_structured_metadata(temp_path)
                         except Exception as e:
@@ -506,7 +552,7 @@ class ExifUtils:
             
             # Resize the image with error handling
             try:
-                resized_img = img.resize((target_width, new_height), Image.LANCZOS)
+                resized_img = img.resize((target_width, new_height), Image.Resampling.LANCZOS)
             except Exception as e:
                 logger.error(f"Failed to resize image: {e}")
                 # Return original image if resize fails

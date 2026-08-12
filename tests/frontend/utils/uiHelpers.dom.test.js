@@ -110,6 +110,142 @@ describe('UI helper DOM utilities', () => {
     expect(toast.classList.contains('show')).toBe(false);
   });
 
+  it('renders an action button and countdown span for action toasts', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', { name: 'Demo Model' }, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    expect(toast).not.toBeNull();
+    expect(toast.classList.contains('toast-success')).toBe(true);
+    expect(translateMock).toHaveBeenCalledWith('toast.undo.deleted', { name: 'Demo Model' });
+
+    const button = toast.querySelector('.toast-action-btn');
+    expect(button).not.toBeNull();
+    expect(button.textContent).toBe('Undo');
+
+    const countdown = toast.querySelector('.toast-countdown');
+    expect(countdown).not.toBeNull();
+    expect(countdown.textContent).toBe('(30s)');
+
+    // Ticking one second updates the countdown text
+    vi.advanceTimersByTime(1000);
+    expect(countdown.textContent).toBe('(29s)');
+
+    // Drain remaining timers so no state leaks into other tests
+    vi.advanceTimersByTime(30000);
+  });
+
+  it('invokes onAction once and dismisses immediately when the button is clicked', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    toast.querySelector('.toast-action-btn').click();
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toast.classList.contains('show')).toBe(false);
+
+    // Dismissal removes the element after the transition ends
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container .toast')).toBeNull();
+    expect(document.querySelector('.toast-container')).toBeNull();
+  });
+
+  it('calls onAction exactly once when the button is double-clicked', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const button = document.querySelector('.toast-action-btn');
+    button.click();
+    button.click();
+
+    expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismisses the toast when the countdown reaches zero', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+    // Async RAF mirrors production ordering: the countdown interval is
+    // registered before the dismiss timeout, so the final tick displays (0s)
+    globalThis.requestAnimationFrame = (cb) => setTimeout(cb, 0);
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction: vi.fn(),
+      durationMs: 3000,
+    });
+
+    vi.advanceTimersByTime(0); // Flush the RAF callback
+    const toast = document.querySelector('.toast-container .toast');
+    const countdown = toast.querySelector('.toast-countdown');
+    expect(countdown.textContent).toBe('(3s)');
+
+    vi.advanceTimersByTime(2000);
+    expect(countdown.textContent).toBe('(1s)');
+    expect(toast.classList.contains('show')).toBe(true);
+
+    vi.advanceTimersByTime(1000);
+    expect(countdown.textContent).toBe('(0s)');
+    expect(toast.classList.contains('show')).toBe(false);
+
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container .toast')).toBeNull();
+  });
+
+  it('clears the countdown interval when dismissed via the action button', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+      durationMs: 30000,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    const countdown = toast.querySelector('.toast-countdown');
+    toast.querySelector('.toast-action-btn').click();
+
+    // Advancing past the full duration must not tick the countdown further,
+    // throw, or re-dismiss the already-dismissed toast
+    vi.advanceTimersByTime(60000);
+    expect(countdown.textContent).toBe('(30s)');
+    expect(onAction).toHaveBeenCalledTimes(1);
+    expect(toast.classList.contains('show')).toBe(false);
+
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container')).toBeNull();
+  });
+
   it('toggles the persisted theme and updates DOM attributes', async () => {
     getStorageItemMock.mockReturnValue('light');
     document.body.innerHTML = '<button class="theme-toggle"></button>';

@@ -28,7 +28,8 @@ class TagUpdateService:
         metadata_path = f"{base}.metadata.json"
         metadata = await metadata_loader(metadata_path)
 
-        existing_tags = list(metadata.get("tags", []))
+        raw_tags = metadata.get("tags", [])
+        existing_tags = list(raw_tags) if isinstance(raw_tags, list) else []
         existing_lower = [tag.lower() for tag in existing_tags]
 
         tags_added: List[str] = []

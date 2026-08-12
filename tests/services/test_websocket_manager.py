@@ -172,3 +172,92 @@ def test_generate_download_id(manager):
     download_id = manager.generate_download_id()
     assert isinstance(download_id, str)
     assert download_id
+
+
+# --- Recipe rematch progress channel ---
+
+
+async def test_broadcast_recipe_rematch_progress_stores_and_broadcasts(manager, monkeypatch):
+    payload = {"status": "started", "total": 3}
+    broadcast_calls = []
+
+    async def fake_broadcast(data):
+        broadcast_calls.append(data)
+
+    monkeypatch.setattr(manager, "broadcast", fake_broadcast)
+
+    await manager.broadcast_recipe_rematch_progress(payload)
+
+    assert broadcast_calls == [payload]
+    assert manager.get_recipe_rematch_progress() == payload
+
+
+async def test_get_recipe_rematch_progress_returns_stored(manager):
+    assert manager.get_recipe_rematch_progress() is None
+
+    payload = {"status": "processing", "current": 2, "total": 5}
+    await manager.broadcast_recipe_rematch_progress(payload)
+
+    assert manager.get_recipe_rematch_progress() == payload
+
+
+@pytest.mark.parametrize(
+    "status,should_clear",
+    [
+        ("started", False),
+        ("processing", False),
+        ("completed", True),
+        ("cancelled", True),
+        ("error", True),
+    ],
+)
+async def test_cleanup_recipe_rematch_progress_only_on_terminal(manager, status, should_clear):
+    await manager.broadcast_recipe_rematch_progress({"status": status})
+
+    manager.cleanup_recipe_rematch_progress()
+
+    if should_clear:
+        assert manager.get_recipe_rematch_progress() is None
+    else:
+        assert manager.get_recipe_rematch_progress() == {"status": status}
+
+
+async def test_is_recipe_rematch_running_false_without_progress(manager):
+    assert manager.is_recipe_rematch_running() is False
+
+
+@pytest.mark.parametrize(
+    "status,expected",
+    [
+        ("started", True),
+        ("processing", True),
+        ("completed", False),
+        ("cancelled", False),
+        ("error", False),
+    ],
+)
+async def test_is_recipe_rematch_running_by_status(manager, status, expected):
+    await manager.broadcast_recipe_rematch_progress({"status": status})
+
+    assert manager.is_recipe_rematch_running() is expected
+
+
+async def test_rematch_and_repair_channels_are_independent(manager):
+    # Rematch progress must not leak into the repair channel
+    await manager.broadcast_recipe_rematch_progress({"status": "processing", "current": 1})
+    assert manager.is_recipe_rematch_running() is True
+    assert manager.is_recipe_repair_running() is False
+    assert manager.get_recipe_repair_progress() is None
+
+    # Repair progress must not overwrite the rematch state
+    await manager.broadcast_recipe_repair_progress({"status": "processing", "current": 1})
+    assert manager.is_recipe_repair_running() is True
+    assert manager.is_recipe_rematch_running() is True
+    assert manager.get_recipe_rematch_progress() == {"status": "processing", "current": 1}
+
+    # Cleaning the rematch channel must leave the repair channel untouched
+    await manager.broadcast_recipe_rematch_progress({"status": "completed"})
+    manager.cleanup_recipe_rematch_progress()
+    assert manager.get_recipe_rematch_progress() is None
+    assert manager.get_recipe_repair_progress() == {"status": "processing", "current": 1}
+    assert manager.is_recipe_repair_running() is True

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any, cast
+
 from py.nodes.prompt import PromptLM
 from py.nodes.text import TextLM
 
@@ -49,7 +51,7 @@ def test_prompt_lm_input_types_expose_input_only_seed():
 
     assert seed_type == "INT"
     assert seed_options["forceInput"] is True
-    assert "wildcard generation" in seed_options["tooltip"]
+    assert "wildcard generation" in cast(Any, seed_options)["tooltip"]
 
 
 def test_text_lm_input_types_expose_input_only_seed():
@@ -58,7 +60,7 @@ def test_text_lm_input_types_expose_input_only_seed():
 
     assert seed_type == "INT"
     assert seed_options["forceInput"] is True
-    assert "wildcard generation" in seed_options["tooltip"]
+    assert "wildcard generation" in cast(Any, seed_options)["tooltip"]
 
 
 def test_text_lm_is_changed_forces_rerun_without_seed_when_text_is_dynamic():

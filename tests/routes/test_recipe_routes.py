@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
@@ -11,20 +12,25 @@ from typing import Any, AsyncIterator, Dict, List, Optional
 
 from aiohttp import FormData, web
 from aiohttp.test_utils import TestClient, TestServer
+from PIL import Image
+
+import pytest
 
 from py.config import config
 from py.routes import base_recipe_routes
 from py.routes.handlers import recipe_handlers
 from py.routes.recipe_routes import RecipeRoutes
+from py.recipes.parsers.civitai_image import CivitaiApiMetadataParser
 from py.services.recipes import RecipeValidationError, RecipeNotFoundError
 from py.services.service_registry import ServiceRegistry
+from py.services.websocket_manager import ws_manager
 
 
 @dataclass
 class RecipeRouteHarness:
     """Container exposing the aiohttp client and stubbed collaborators."""
 
-    client: TestClient
+    client: TestClient[Any, Any]
     scanner: "StubRecipeScanner"
     analysis: "StubAnalysisService"
     persistence: "StubPersistenceService"
@@ -47,11 +53,19 @@ class StubRecipeScanner:
         self.lora_lookup: Dict[str, List[Dict[str, Any]]] = {}
         self.checkpoint_lookup: Dict[str, List[Dict[str, Any]]] = {}
         self.image_id_map_override: Dict[str, str] = {}
+        self.local_hash_cache: Dict[str, Dict[str, Any]] | None = None
+        # Rematch double bookkeeping
+        self.cancel_calls = 0
+        self.reset_calls = 0
+        self.rematch_all_calls: List[Any] = []
+        self.rematch_by_id_calls: List[str] = []
+        self.rematch_bulk_calls: List[List[str]] = []
+        self.rematch_results: Dict[str, Dict[str, Any]] = {}
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
             return None
 
-        self._lora_scanner = SimpleNamespace(  # mimic BaseRecipeRoutes expectations
+        self._lora_scanner: Any = SimpleNamespace(  # mimic BaseRecipeRoutes expectations
             get_cached_data=_noop_get_cached_data,
             _hash_index=SimpleNamespace(_hash_to_path={}),
         )
@@ -61,6 +75,11 @@ class StubRecipeScanner:
             raw_data=list(self.cached_raw),
             image_id_map=dict(getattr(self, "image_id_map_override", {})),
         )
+
+    async def build_local_hash_cache(self) -> Dict[str, Dict[str, Any]]:
+        """Return the stub's local hash map; empty unless a test overrides it."""
+        cache = getattr(self, "local_hash_cache", None)
+        return cache if cache is not None else {}
 
     async def get_paginated_data(self, **params: Any) -> Dict[str, Any]:
         self.last_paginated_params = params
@@ -78,6 +97,15 @@ class StubRecipeScanner:
     async def get_recipe_by_id(self, recipe_id: str) -> Optional[Dict[str, Any]]:
         return self.recipes.get(recipe_id)
 
+    async def find_all_duplicate_recipes(
+        self, include_prompt: bool = False
+    ) -> Dict[str, List[Any]]:
+        self.last_duplicate_include_prompt = include_prompt
+        return dict(getattr(self, "duplicate_groups_override", {}))
+
+    async def find_duplicate_recipes_by_source(self) -> Dict[str, List[Any]]:
+        return dict(getattr(self, "duplicate_source_groups_override", {}))
+
     async def get_recipes_for_lora(self, lora_hash: str) -> List[Dict[str, Any]]:
         return list(self.lora_lookup.get(lora_hash.lower(), []))
 
@@ -90,9 +118,71 @@ class StubRecipeScanner:
         candidate = Path(self.recipes_dir) / f"{recipe_id}.recipe.json"
         return str(candidate) if candidate.exists() else None
 
+    async def get_recipe_syntax_tokens(self, recipe_id: str) -> List[str]:
+        return self.recipes.get(recipe_id, {}).get("syntax", [])  # pragma: no cover - overridden per test
+
     async def remove_recipe(self, recipe_id: str) -> None:
         self.removed.append(recipe_id)
         self.recipes.pop(recipe_id, None)
+
+    def cancel_task(self) -> None:
+        self.cancel_calls += 1
+
+    def reset_cancellation(self) -> None:
+        self.reset_calls += 1
+
+    async def rematch_all_recipes(self, progress_callback=None):
+        """Run a canned rematch-all run, mirroring the real progress events."""
+        if progress_callback:
+            await progress_callback({"status": "started"})
+            await progress_callback(
+                {"status": "processing", "current": 1, "total": 1, "recipe_name": "demo"}
+            )
+            await progress_callback(
+                {"status": "completed", "rematched": 1, "skipped": 0, "errors": 0, "total": 1}
+            )
+        self.rematch_all_calls.append(progress_callback)
+        return {
+            "success": True,
+            "status": "completed",
+            "rematched": 1,
+            "skipped": 0,
+            "errors": 0,
+            "total": 1,
+        }
+
+    async def rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+        self.rematch_by_id_calls.append(recipe_id)
+        if recipe_id not in self.rematch_results:
+            raise RecipeNotFoundError(f"Recipe not found: {recipe_id}")
+        return self.rematch_results[recipe_id]
+
+    async def rematch_recipes_bulk(self, recipe_ids: List[str]) -> Dict[str, Any]:
+        self.rematch_bulk_calls.append(list(recipe_ids))
+        total = len(recipe_ids)
+        rematched = 0
+        skipped = 0
+        errors = 0
+        recipes: List[Dict[str, Any]] = []
+        for recipe_id in recipe_ids:
+            result = self.rematch_results.get(recipe_id)
+            if result is None:
+                skipped += 1
+            elif result.get("success"):
+                rematched += result.get("rematched", 0)
+                skipped += result.get("skipped", 0)
+                if result.get("recipe"):
+                    recipes.append(result["recipe"])
+            else:
+                errors += 1
+        return {
+            "success": True,
+            "total": total,
+            "rematched": rematched,
+            "skipped": skipped,
+            "errors": errors,
+            "recipes": recipes,
+        }
 
 
 class StubAnalysisService:
@@ -108,7 +198,7 @@ class StubAnalysisService:
         self.remote_calls: List[Optional[str]] = []
         self.local_calls: List[Optional[str]] = []
         self.result = SimpleNamespace(payload={"loras": []}, status=200)
-        self._recipe_parser_factory = None
+        self._recipe_parser_factory: Any = None
         StubAnalysisService.instances.append(self)
 
     async def analyze_uploaded_image(
@@ -165,6 +255,8 @@ class StubPersistenceService:
         tags,
         metadata,
         extension=None,
+        recipe_id=None,
+        target_dir=None,
     ) -> SimpleNamespace:  # noqa: D401
         self.save_calls.append(
             {
@@ -175,6 +267,8 @@ class StubPersistenceService:
                 "tags": list(tags),
                 "metadata": metadata,
                 "extension": extension,
+                "recipe_id": recipe_id,
+                "target_dir": target_dir,
             }
         )
         return self.save_result
@@ -368,6 +462,163 @@ async def test_list_recipes_provides_file_urls(monkeypatch, tmp_path: Path) -> N
         assert payload["items"][0]["loras"] == []
 
 
+async def test_list_recipes_exposes_preview_dimensions(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(a) Image recipe items carry integer width/height from the on-disk file."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_path = harness.tmp_dir / "recipes" / "real.png"
+        recipe_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (64, 32), color="red").save(recipe_path)
+
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-1",
+                "file_path": str(recipe_path),
+                "title": "Image Recipe",
+                "loras": [],
+            }
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        item = payload["items"][0]
+        assert item["width"] == 64
+        assert item["height"] == 32
+        assert isinstance(item["width"], int)
+        assert isinstance(item["height"], int)
+
+
+async def test_list_recipes_omits_dimensions_for_video_and_missing(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(b) Video/missing-image recipes omit width/height yet still return 200."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-video",
+                "file_path": str(harness.tmp_dir / "recipes" / "preview.mp4"),
+                "title": "Video Recipe",
+                "loras": [],
+            },
+            {
+                "id": "recipe-missing",
+                "file_path": str(harness.tmp_dir / "recipes" / "gone.png"),
+                "title": "Missing Recipe",
+                "loras": [],
+            },
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        for item in payload["items"]:
+            assert "width" not in item
+            assert "height" not in item
+
+
+async def test_list_recipes_offloads_dimensions_to_thread(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(c) Dimension reads run through asyncio.to_thread for every item."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_path = harness.tmp_dir / "recipes" / "real.png"
+        recipe_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (16, 48), color="blue").save(recipe_path)
+
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-1",
+                "file_path": str(recipe_path),
+                "title": "Image Recipe",
+                "loras": [],
+            },
+            {
+                "id": "recipe-2",
+                "file_path": str(harness.tmp_dir / "recipes" / "gone.png"),
+                "title": "Missing Recipe",
+                "loras": [],
+            },
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        real_to_thread = asyncio.to_thread
+        to_thread_calls: list[tuple[Any, ...]] = []
+
+        async def counting_to_thread(fn, *args, **kwargs):
+            to_thread_calls.append((fn, args, kwargs))
+            return await real_to_thread(fn, *args, **kwargs)
+
+        monkeypatch.setattr(asyncio, "to_thread", counting_to_thread)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert len(to_thread_calls) >= len(harness.scanner.listing_items)
+        assert payload["items"][0]["width"] == 16
+        assert payload["items"][0]["height"] == 48
+        assert "width" not in payload["items"][1]
+        assert "height" not in payload["items"][1]
+
+
+async def test_list_recipes_batches_dimensions_for_mixed_items(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """(d) Mixed file_path presence: dims align per-item with their own files."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        wide_path = harness.tmp_dir / "recipes" / "wide.png"
+        tall_path = harness.tmp_dir / "recipes" / "tall.png"
+        wide_path.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGB", (120, 40), color="green").save(wide_path)
+        Image.new("RGB", (30, 90), color="blue").save(tall_path)
+
+        harness.scanner.listing_items = [
+            {
+                "id": "recipe-wide",
+                "file_path": str(wide_path),
+                "title": "Wide",
+                "loras": [],
+            },
+            {"id": "recipe-none", "title": "No Preview", "loras": []},
+            {
+                "id": "recipe-tall",
+                "file_path": str(tall_path),
+                "title": "Tall",
+                "loras": [],
+            },
+            {"id": "recipe-none-2", "title": "No Preview 2", "loras": []},
+        ]
+        harness.scanner.cached_raw = list(harness.scanner.listing_items)
+
+        response = await harness.client.get("/api/lm/recipes")
+        payload = await response.json()
+
+        assert response.status == 200
+        items = payload["items"]
+
+        # Items with a file_path carry integer dims read from their own file;
+        # the two images differ in both dimensions so a shifted pair would
+        # fail these assertions.
+        assert items[0]["width"] == 120
+        assert items[0]["height"] == 40
+        assert isinstance(items[0]["width"], int)
+        assert isinstance(items[0]["height"], int)
+        assert items[2]["width"] == 30
+        assert items[2]["height"] == 90
+
+        # Items without a file_path get the no-preview fallback and omit dims.
+        for item in (items[1], items[3]):
+            assert "width" not in item
+            assert "height" not in item
+            assert item["file_url"] == "/loras_static/images/no-preview.png"
+
+
 async def test_list_recipes_passes_checkpoint_hash_filter(
     monkeypatch, tmp_path: Path
 ) -> None:
@@ -377,6 +628,7 @@ async def test_list_recipes_passes_checkpoint_hash_filter(
 
         assert response.status == 200
         assert payload["items"] == []
+        assert harness.scanner.last_paginated_params is not None
         assert harness.scanner.last_paginated_params["checkpoint_hash"] == "ckpt123"
 
 
@@ -851,7 +1103,9 @@ async def test_get_recipe_syntax(monkeypatch, tmp_path: Path) -> None:
                 return ["<lora:lora1:0.5>"]
             raise RecipeNotFoundError(f"Recipe {rid} not found")
 
-        harness.scanner.get_recipe_syntax_tokens = fake_get_recipe_syntax_tokens
+        harness.scanner.get_recipe_syntax_tokens = (  # pyright: ignore[reportAttributeAccessIssue]
+            fake_get_recipe_syntax_tokens
+        )
 
         response = await harness.client.get(f"/api/lm/recipe/{recipe_id}/syntax")
         payload = await response.json()
@@ -909,8 +1163,6 @@ async def test_batch_import_start_missing_source(monkeypatch, tmp_path: Path) ->
 
 
 async def test_batch_import_start_already_running(monkeypatch, tmp_path: Path) -> None:
-    import asyncio
-
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         original_analyze = harness.analysis.analyze_remote_image
 
@@ -1095,3 +1347,669 @@ async def test_import_from_url_proceeds_when_image_id_not_in_map(
         # but it must NOT return already_exists
         payload = await response.json()
         assert payload.get("already_exists") is not True
+
+
+async def test_import_remote_recipe_passes_local_cache_to_civitai_parser(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """import_remote must hand the same local hash cache to both Civitai parse passes."""
+    parse_calls: list[Dict[str, Any]] = []
+
+    class SpyCivitaiParser(CivitaiApiMetadataParser):
+        async def parse_metadata(
+            self, user_comment, recipe_scanner=None, civitai_client=None,
+            local_cache=None,
+        ) -> Dict[str, Any]:
+            parse_calls.append({"local_cache": local_cache})
+            return {"gen_params": {"prompt": "spy"}}
+
+    class SpyFactory:
+        def create_parser(self, raw):
+            return SpyCivitaiParser()
+
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            return "Recipe metadata: " + json.dumps({"gen_params": {"seed": 7}})
+
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda _id: ({}, None))
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = SpyFactory()
+        cache_marker = {"abcdef123456": {"model_name": "local-lora"}}
+        harness.scanner.local_hash_cache = cache_marker
+        harness.civitai.image_info["1"] = {
+            "id": 1,
+            "url": "https://example.com/images/1.jpg",
+            "meta": {"prompt": "from civitai", "seed": 99},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/1",
+                "name": "Civitai Cache",
+                "resources": json.dumps([]),
+                "gen_params": json.dumps({"prompt": "from request", "steps": 25}),
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        # Both parse passes (EXIF + CivitAI API) ran and received the SAME
+        # local_cache object, built once at handler level.
+        assert len(parse_calls) == 2
+        assert all(call["local_cache"] is cache_marker for call in parse_calls)
+        assert parse_calls[0]["local_cache"] is parse_calls[1]["local_cache"]
+
+
+async def test_import_remote_recipe_does_not_pass_local_cache_to_other_parsers(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Non-Civitai parsers must never receive local_cache (their signature lacks it)."""
+    parse_calls: list[Dict[str, Any]] = []
+
+    class PlainParser:
+        async def parse_metadata(self, raw, recipe_scanner=None, **kwargs):
+            assert "local_cache" not in kwargs, (
+                "local_cache leaked to a non-Civitai parser"
+            )
+            parse_calls.append({"raw": raw})
+            return {"gen_params": {"prompt": "plain"}}
+
+    class PlainFactory:
+        def create_parser(self, raw):
+            return PlainParser()
+
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            return "Recipe metadata: " + json.dumps({"gen_params": {"seed": 7}})
+
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda _id: ({}, None))
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = PlainFactory()
+        harness.scanner.local_hash_cache = {"deadbeef": {"model_name": "local"}}
+        harness.civitai.image_info["1"] = {
+            "id": 1,
+            "url": "https://example.com/images/1.jpg",
+            "meta": {"prompt": "from civitai", "seed": 99},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-remote",
+            params={
+                "image_url": "https://civitai.com/images/1",
+                "name": "Plain Cache",
+                "resources": json.dumps([]),
+                "gen_params": json.dumps({"prompt": "from request", "steps": 25}),
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert len(parse_calls) == 2
+
+
+async def test_import_from_url_passes_local_cache_on_all_three_parse_calls(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """import_from_url must pass local_cache to all three Civitai parse passes."""
+    parse_calls: list[Dict[str, Any]] = []
+    str_call_count = 0
+
+    class SpyCivitaiParser(CivitaiApiMetadataParser):
+        async def parse_metadata(
+            self, user_comment, recipe_scanner=None, civitai_client=None,
+            local_cache=None,
+        ) -> Dict[str, Any]:
+            nonlocal str_call_count
+            parse_calls.append({"local_cache": local_cache})
+            if isinstance(user_comment, str):
+                str_call_count += 1
+                if str_call_count == 1:
+                    # First (optimized EXIF) pass yields an empty dict so the
+                    # handler falls back to the original image, exercising
+                    # pass #2 (an empty dict is falsy for `not parsed_embedded`).
+                    return {}
+                return {"gen_params": {"prompt": "fallback"}}
+            return {"gen_params": {"prompt": "civitai"}}
+
+    class SpyFactory:
+        def create_parser(self, raw):
+            return SpyCivitaiParser()
+
+    class MockExifUtils:
+        @staticmethod
+        def extract_image_metadata(path):
+            if path.endswith(".png"):
+                return "original metadata: " + json.dumps({"gen_params": {"seed": 2}})
+            return "optimized metadata: " + json.dumps({"gen_params": {"seed": 1}})
+
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda _id: ({}, None))
+
+    monkeypatch.setattr(recipe_handlers, "ExifUtils", MockExifUtils)
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = SpyFactory()
+        cache_marker = {"deadbeef": {"model_name": "local-lora"}}
+        harness.scanner.local_hash_cache = cache_marker
+        harness.civitai.image_info["42"] = {
+            "id": 42,
+            "url": "https://image.civitai.com/x/y/original=true/sample.jpeg",
+            "type": "image",
+            "meta": {"prompt": "test", "seed": 3},
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/import-from-url",
+            params={"image_url": "https://civitai.com/images/42"},
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert len(parse_calls) == 3
+        assert all(call["local_cache"] is cache_marker for call in parse_calls)
+        assert parse_calls[0]["local_cache"] is parse_calls[2]["local_cache"]
+
+
+class _RawDataLoraScanner:
+    """Lora-scanner double whose get_cached_data returns a fixed raw_data list."""
+
+    def __init__(self, raw_data: List[Dict[str, Any]]) -> None:
+        self._raw_data = raw_data
+
+    async def get_cached_data(self) -> SimpleNamespace:
+        return SimpleNamespace(raw_data=self._raw_data)
+
+
+class _SpyCivitaiParser(CivitaiApiMetadataParser):
+    """Records the local_cache passed to parse_metadata and returns a canned result."""
+
+    def __init__(self, parse_result: Dict[str, Any]) -> None:
+        self.received_cache: Optional[Dict[str, Dict[str, Any]]] = None
+        self._parse_result = parse_result
+
+    async def parse_metadata(
+        self, user_comment, recipe_scanner=None, civitai_client=None, local_cache=None,
+    ) -> Dict[str, Any]:
+        self.received_cache = local_cache
+        return self._parse_result
+
+
+class _SpyFactory:
+    def __init__(self, parser: _SpyCivitaiParser) -> None:
+        self._parser = parser
+
+    def create_parser(self, raw):  # noqa: ARG001 - mirrors real factory signature
+        return self._parser
+
+
+async def _post_create_from_example(
+    harness: RecipeRouteHarness, model_hash: str, *, model_name: str = "parent.safetensors"
+) -> Any:
+    return await harness.client.post(
+        "/api/lm/recipes/create-from-example",
+        json={
+            "image_data": {
+                "url": "https://image.civitai.com/x/y/original=true/sample.jpeg",
+                "meta": {"prompt": "sample prompt"},
+            },
+            "model_hash": model_hash,
+            "model_name": model_name,
+            "model_type": "loras",
+        },
+    )
+
+
+async def test_create_from_example_resolves_parent_item_by_sha256_key(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A parent present in the shared cache under its sha256 key drives isDeleted reconciliation."""
+    model_hash = "a1b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef"
+    model_name = "parent.safetensors"
+    parent_item: Dict[str, Any] = {
+        "civitai": {"id": 77, "modelId": 88, "name": "v1.0"},
+        "model_name": "Parent Model",
+    }
+    parser = _SpyCivitaiParser(
+        {
+            "loras": [{"isDeleted": True, "file_name": model_name, "name": "Stale"}],
+            "gen_params": {"prompt": "test prompt"},
+        }
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        harness.scanner.local_hash_cache = {model_hash.lower(): parent_item}
+
+        response = await _post_create_from_example(harness, model_hash, model_name=model_name)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        # The shared builder result is the exact object handed to the parser.
+        assert parser.received_cache is harness.scanner.local_hash_cache
+        lora = harness.persistence.save_calls[0]["metadata"]["loras"][0]
+        assert lora["isDeleted"] is False
+        assert lora["existsLocally"] is True
+        assert lora["hash"] == model_hash
+        assert lora["id"] == 77
+        assert lora["modelId"] == 88
+        assert lora["version"] == "v1.0"
+        assert lora["name"] == "Parent Model"
+
+
+async def test_create_from_example_computes_autov3_for_unbackfilled_parent(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A parent with no stored autov3 gets a single-file compute registered in the cache."""
+    model_hash = "b2c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0"
+    model_file = tmp_path / "parent.safetensors"
+    model_file.write_bytes(b"\x00" * 16)
+    parent_item: Dict[str, Any] = {
+        "sha256": model_hash,
+        "autov3": "",
+        "file_path": str(model_file),
+        "model_name": "Parent Model",
+    }
+    autov3_calls: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str | None:
+        autov3_calls.append(file_path)
+        return "abc123def456"
+
+    monkeypatch.setattr("py.utils.file_utils.calculate_autov3", fake_calculate_autov3)
+    parser = _SpyCivitaiParser({"loras": [], "gen_params": {"prompt": "test prompt"}})
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        # The sha256 key is already present (as the real builder registers it);
+        # the supplement must still run because the stored autov3 is empty.
+        harness.scanner.local_hash_cache = {model_hash.lower(): parent_item}
+        harness.scanner._lora_scanner = _RawDataLoraScanner([parent_item])
+
+        response = await _post_create_from_example(harness, model_hash)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        # Bounded: exactly one header read for the single parent file.
+        assert autov3_calls == [str(model_file)]
+        assert parser.received_cache is harness.scanner.local_hash_cache
+        assert parser.received_cache is not None
+        # The computed autov3 key was registered, pointing at the parent item.
+        assert parser.received_cache["abc123def456"] is parent_item
+
+
+async def test_create_from_example_parent_not_in_library_has_no_arbitrary_item(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A missing parent must NOT fall back to an arbitrary cache entry during auto-populate."""
+    model_hash = "c3d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef01"
+    model_name = "parent.safetensors"
+    decoy: Dict[str, Any] = {
+        "civitai": {"id": 999, "modelId": 998, "name": "v9"},
+        "model_name": "Wrong Model",
+    }
+    parser = _SpyCivitaiParser({"loras": [], "gen_params": {"prompt": "test prompt"}})
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        harness.scanner.local_hash_cache = {"someotherhash": decoy}
+
+        response = await _post_create_from_example(harness, model_hash, model_name=model_name)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        lora = harness.persistence.save_calls[0]["metadata"]["loras"][0]
+        assert lora["hash"] == model_hash
+        assert lora["file_name"] == model_name
+        assert lora["existsLocally"] is True
+        # parent_item is None: the entry keeps its default name, and no
+        # enrichment fields may come from any cache entry.
+        assert lora["name"] == model_name
+        assert "id" not in lora
+        assert "modelId" not in lora
+        assert "version" not in lora
+
+
+async def test_create_from_example_parent_not_in_library_isDeleted_reconciliation_has_no_arbitrary_item(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """isDeleted reconciliation must not enrich from an arbitrary entry when the parent is missing."""
+    model_hash = "d4e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef012"
+    model_name = "parent.safetensors"
+    decoy: Dict[str, Any] = {
+        "civitai": {"id": 777, "modelId": 776, "name": "v7"},
+        "model_name": "Decoy Model",
+    }
+    parser = _SpyCivitaiParser(
+        {
+            "loras": [{"isDeleted": True, "file_name": model_name}],
+            "gen_params": {"prompt": "test prompt"},
+        }
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        harness.scanner.local_hash_cache = {"someotherhash": decoy}
+
+        response = await _post_create_from_example(harness, model_hash, model_name=model_name)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        lora = harness.persistence.save_calls[0]["metadata"]["loras"][0]
+        # Reconciliation still runs (parent matched by file_name), but enriches
+        # nothing because parent_item is None.
+        assert lora["isDeleted"] is False
+        assert lora["existsLocally"] is True
+        assert lora["hash"] == model_hash
+        assert "id" not in lora
+        assert "name" not in lora
+
+
+async def test_create_from_example_does_not_pass_local_cache_to_other_parsers(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Non-Civitai parsers must never receive local_cache (their signature lacks it)."""
+    parse_calls: list[Dict[str, Any]] = []
+
+    class PlainParser:
+        async def parse_metadata(self, raw, recipe_scanner=None, **kwargs):
+            assert "local_cache" not in kwargs, (
+                "local_cache leaked to a non-Civitai parser"
+            )
+            parse_calls.append({"raw": raw})
+            return {"loras": [], "gen_params": {"prompt": "plain"}}
+
+    class PlainFactory:
+        def create_parser(self, raw):  # noqa: ARG001 - mirrors real factory signature
+            return PlainParser()
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = PlainFactory()
+        harness.scanner.local_hash_cache = {"deadbeef": {"model_name": "local"}}
+
+        response = await _post_create_from_example(harness, "f1234", model_name="plain.safetensors")
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        assert len(parse_calls) == 1
+
+
+async def test_create_from_example_does_not_recompute_stored_autov3(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A parent whose autov3 is already stored must not trigger the supplement."""
+    model_hash = "e5f60718293a4b5c6d7e8f90123456789abcdef0123456789abcdef0123"
+    model_file = tmp_path / "parent.safetensors"
+    model_file.write_bytes(b"\x00" * 16)
+    parent_item: Dict[str, Any] = {
+        "sha256": model_hash,
+        "autov3": "existing123456",
+        "file_path": str(model_file),
+        "model_name": "Parent Model",
+    }
+    autov3_calls: list[str] = []
+
+    def fake_calculate_autov3(file_path: str) -> str | None:  # noqa: ARG001 - must not run
+        autov3_calls.append(file_path)
+        return "should-not-run"
+
+    monkeypatch.setattr("py.utils.file_utils.calculate_autov3", fake_calculate_autov3)
+    parser = _SpyCivitaiParser({"loras": [], "gen_params": {"prompt": "test prompt"}})
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.analysis._recipe_parser_factory = _SpyFactory(parser)
+        # The shared builder registers both the sha256 and the stored autov3 keys.
+        harness.scanner.local_hash_cache = {
+            model_hash.lower(): parent_item,
+            "existing123456": parent_item,
+        }
+        harness.scanner._lora_scanner = _RawDataLoraScanner([parent_item])
+
+        response = await _post_create_from_example(harness, model_hash)
+        payload = await response.json()
+
+        assert response.status == 200, payload
+        # Stale-state guard: no recompute when autov3 is already stored.
+        assert autov3_calls == []
+        assert parser.received_cache is harness.scanner.local_hash_cache
+        assert parser.received_cache is not None
+        assert parser.received_cache["existing123456"] is parent_item
+
+
+# --- Rematch endpoints ------------------------------------------------------
+
+@pytest.fixture(autouse=True)
+def _clean_recipe_run_progress_state():
+    """Keep the shared WS manager run-state isolated between tests."""
+    ws_manager._recipe_rematch_progress = None
+    ws_manager._recipe_repair_progress = None
+    yield
+    ws_manager._recipe_rematch_progress = None
+    ws_manager._recipe_repair_progress = None
+
+
+def _set_rematch_running(status: str = "processing") -> None:
+    ws_manager._recipe_rematch_progress = {"status": status}
+
+
+def _set_repair_running(status: str = "processing") -> None:
+    ws_manager._recipe_repair_progress = {"status": status}
+
+
+async def test_rematch_recipes_starts_background_run(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert payload["success"] is True
+        assert payload["message"] == "Recipe rematch started"
+        assert harness.scanner.reset_calls == 1
+        # Allow the spawned background task to reach its progress broadcasts.
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_calls == [harness.scanner.rematch_all_calls[0]]
+
+
+async def test_rematch_recipes_409_when_rematch_running(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running()
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert "already in progress" in payload["error"].lower()
+
+
+async def test_rematch_recipes_409_when_repair_running(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_repair_running()
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert "already in progress" in payload["error"].lower()
+
+
+async def test_rematch_recipe_409_when_rematch_running(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running()
+        response = await harness.client.post("/api/lm/recipe/abc123/rematch")
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert harness.scanner.rematch_by_id_calls == []
+
+
+async def test_rematch_recipes_bulk_409_when_rematch_running(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running()
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk", json={"recipe_ids": ["abc123"]}
+        )
+        payload = await response.json()
+        assert response.status == 409
+        assert payload["success"] is False
+        assert harness.scanner.rematch_bulk_calls == []
+
+
+async def test_cancel_rematch_calls_scanner_cancel_task(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/cancel-rematch")
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["message"] == "Cancellation requested"
+        assert harness.scanner.cancel_calls == 1
+
+
+async def test_rematch_recipes_bulk_parses_ids_and_returns_summary(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.rematch_results = {
+            "r1": {
+                "success": True,
+                "rematched": 2,
+                "skipped": 0,
+                "errors": 0,
+                "recipe": {"id": "r1", "title": "Found"},
+            },
+        }
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk",
+            json={"recipe_ids": ["r1", "missing-id"]},
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        # The loop is delegated to the scanner, not re-implemented in the handler.
+        assert harness.scanner.rematch_bulk_calls == [["r1", "missing-id"]]
+        assert harness.scanner.rematch_by_id_calls == []
+        assert payload["success"] is True
+        assert payload["total"] == 2
+        assert payload["rematched"] == 2
+        assert payload["skipped"] == 1  # missing-id counted as skipped
+        assert payload["errors"] == 0
+        assert payload["recipes"] == [{"id": "r1", "title": "Found"}]
+
+
+async def test_rematch_recipes_bulk_missing_recipe_ids_400(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk", json={"recipe_ids": []}
+        )
+        payload = await response.json()
+        assert response.status == 400
+        assert payload["success"] is False
+        assert "recipe_ids" in payload["error"].lower()
+
+
+async def test_rematch_recipe_maps_not_found_to_404(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipe/ghost/rematch")
+        payload = await response.json()
+        assert response.status == 404
+        assert payload["success"] is False
+        assert harness.scanner.rematch_by_id_calls == ["ghost"]
+
+
+async def test_get_rematch_progress_404_when_no_progress(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get("/api/lm/recipes/rematch-progress")
+        payload = await response.json()
+        assert response.status == 404
+        assert payload["success"] is False
+
+
+async def test_get_rematch_progress_returns_stored_progress(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        _set_rematch_running("processing")
+        response = await harness.client.get("/api/lm/recipes/rematch-progress")
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["progress"]["status"] == "processing"
+
+
+async def test_find_duplicates_defaults_to_fingerprint_only(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.recipes = {
+            "r1": {"id": "r1", "title": "One", "modified": 100},
+            "r2": {"id": "r2", "title": "Two", "modified": 200},
+        }
+        harness.scanner.duplicate_groups_override = {"abc:0.8": ["r1", "r2"]}
+        harness.scanner.duplicate_source_groups_override = {}
+
+        response = await harness.client.get("/api/lm/recipes/find-duplicates")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert harness.scanner.last_duplicate_include_prompt is False
+        assert len(payload["duplicate_groups"]) == 1
+        group = payload["duplicate_groups"][0]
+        assert group["type"] == "fingerprint"
+        assert group["key"] == "g-1"
+        assert group["fingerprint"] == "abc:0.8"
+        assert group["count"] == 2
+
+
+async def test_find_duplicates_forwards_include_prompt_and_assigns_unique_keys(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.recipes = {
+            "r1": {"id": "r1", "title": "One", "modified": 100},
+            "r2": {"id": "r2", "title": "Two", "modified": 200},
+            "r3": {"id": "r3", "title": "Three", "modified": 300},
+            "r4": {"id": "r4", "title": "Four", "modified": 400},
+        }
+        harness.scanner.duplicate_groups_override = {"abc:0.8\x1fa girl": ["r1", "r2"]}
+        harness.scanner.duplicate_source_groups_override = {
+            "civitai.com/images/9": ["r3", "r4"]
+        }
+
+        response = await harness.client.get(
+            "/api/lm/recipes/find-duplicates?include_prompt=1"
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert harness.scanner.last_duplicate_include_prompt is True
+        groups = payload["duplicate_groups"]
+        assert len(groups) == 2
+        assert {g["type"] for g in groups} == {"fingerprint", "source_path"}
+        assert len({g["key"] for g in groups}) == 2

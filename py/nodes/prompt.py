@@ -67,7 +67,7 @@ class PromptLM:
 
         stack = inspect.stack()
         if len(stack) > 2 and stack[2].function == "get_input_info":
-            optional_inputs = _PromptOptionalInputs(optional_inputs)  # type: ignore[assignment]
+            optional_inputs = _PromptOptionalInputs(optional_inputs)  # pyright: ignore[reportAssignmentType]
 
         return {
             "required": {
@@ -126,7 +126,7 @@ class PromptLM:
         else:
             prompt = expanded_text
 
-        from nodes import CLIPTextEncode  # type: ignore
+        from nodes import CLIPTextEncode  # pyright: ignore[reportMissingImports, reportAttributeAccessIssue]
 
         conditioning = CLIPTextEncode().encode(clip, prompt)[0]
         return (conditioning, prompt)

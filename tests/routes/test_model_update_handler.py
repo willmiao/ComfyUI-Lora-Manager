@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -198,22 +199,24 @@ async def test_get_civitai_versions_degrades_when_download_history_unavailable(m
 
     handler = ModelCivitaiHandler(
         service=service,
-        settings_service=SimpleNamespace(get=lambda *_: False),
-        ws_manager=SimpleNamespace(),
+        settings_service=SimpleNamespace(get=lambda *_: False),  # pyright: ignore[reportArgumentType]
+        ws_manager=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
         logger=logging.getLogger(__name__),
         metadata_provider_factory=metadata_provider_factory,
         validate_model_type=lambda *_: True,
         expected_model_types=lambda: "LoRA",
         find_model_file=lambda *_: None,
-        metadata_sync=SimpleNamespace(),
-        metadata_refresh_use_case=SimpleNamespace(),
-        metadata_progress_callback=lambda *_args, **_kwargs: None,
+        metadata_sync=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_refresh_use_case=SimpleNamespace(),  # pyright: ignore[reportArgumentType]
+        metadata_progress_callback=lambda *_args, **_kwargs: None,  # pyright: ignore[reportArgumentType]
     )
 
     response = await handler.get_civitai_versions(
-        SimpleNamespace(match_info={"model_id": "42"})
+        SimpleNamespace(match_info={"model_id": "42"})  # pyright: ignore[reportArgumentType]
     )
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert response.status == 200
     assert payload[0]["id"] == 7
@@ -284,10 +287,14 @@ async def test_refresh_model_updates_filters_records_without_updates():
         async def json(self):
             return {}
 
-    response = await handler.refresh_model_updates(DummyRequest())
+    response = await handler.refresh_model_updates(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
     assert payload["success"] is True
     assert len(payload["records"]) == 1
     assert payload["records"][0]["modelId"] == 1
@@ -347,7 +354,9 @@ async def test_refresh_model_updates_with_target_ids():
         async def json(self):
             return {"modelIds": [1, "2", None]}
 
-    response = await handler.refresh_model_updates(DummyRequest())
+    response = await handler.refresh_model_updates(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
     call = update_service.calls[0]
@@ -399,7 +408,9 @@ async def test_refresh_model_updates_accepts_snake_case_ids():
         async def json(self):
             return {"model_ids": [3, "4", "abc", None]}
 
-    response = await handler.refresh_model_updates(DummyRequest())
+    response = await handler.refresh_model_updates(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
     call = update_service.calls[0]
@@ -429,9 +440,9 @@ async def test_fetch_missing_license_data_updates_metadata(monkeypatch):
             return None, False
         return SimpleNamespace(to_dict=lambda: copy.deepcopy(data)), False
 
-    saved: list[tuple[str, dict]] = []
+    saved: list[tuple[str, dict[str, Any]]] = []
 
-    async def fake_save(path: str, metadata: dict):
+    async def fake_save(path: str, metadata: dict[str, Any]):
         saved.append((path, copy.deepcopy(metadata)))
         return True
 
@@ -479,10 +490,14 @@ async def test_fetch_missing_license_data_updates_metadata(monkeypatch):
         async def json(self):
             return {}
 
-    response = await handler.fetch_missing_civitai_license_data(DummyRequest())
+    response = await handler.fetch_missing_civitai_license_data(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
     assert payload["success"] is True
     assert len(payload["updated"]) == 3
     assert provider_calls == [[10, 20]]
@@ -516,9 +531,9 @@ async def test_fetch_missing_license_data_filters_model_ids(monkeypatch):
             return None, False
         return SimpleNamespace(to_dict=lambda: copy.deepcopy(data)), False
 
-    saved: list[tuple[str, dict]] = []
+    saved: list[tuple[str, dict[str, Any]]] = []
 
-    async def fake_save(path: str, metadata: dict):
+    async def fake_save(path: str, metadata: dict[str, Any]):
         saved.append((path, copy.deepcopy(metadata)))
         return True
 
@@ -566,10 +581,14 @@ async def test_fetch_missing_license_data_filters_model_ids(monkeypatch):
         async def json(self):
             return {"modelIds": [20]}
 
-    response = await handler.fetch_missing_civitai_license_data(DummyRequest())
+    response = await handler.fetch_missing_civitai_license_data(
+    DummyRequest()  # pyright: ignore[reportArgumentType]
+)
     assert response.status == 200
 
-    payload = json.loads(response.text)
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
     assert payload["success"] is True
     assert len(payload["updated"]) == 1
     assert provider_calls == [[20]]

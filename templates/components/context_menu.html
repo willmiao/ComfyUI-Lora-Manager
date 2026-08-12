@@ -44,8 +44,18 @@
     <div class="context-menu-item" data-action="preview">
         <i class="fas fa-folder-open"></i> <span>{{ t('loras.contextMenu.openExamples') }}</span>
     </div>
-    <div class="context-menu-item" data-action="download-examples">
-        <i class="fas fa-download"></i> <span>{{ t('loras.contextMenu.downloadExamples') }}</span>
+    <div class="context-menu-item has-submenu" data-has-submenu="download-examples">
+        <i class="fas fa-download"></i>
+        <span>{{ t('loras.contextMenu.downloadExamples') }}</span>
+        <i class="fas fa-chevron-right submenu-arrow"></i>
+        <div class="context-submenu">
+            <div class="context-menu-item" data-action="download-examples">
+                <i class="fas fa-download"></i> <span>{{ t('loras.contextMenu.downloadMissingExamples') }}</span>
+            </div>
+            <div class="context-menu-item" data-action="download-examples-force">
+                <i class="fas fa-redo-alt"></i> <span>{{ t('loras.contextMenu.reprocessExamples') }}</span>
+            </div>
+        </div>
     </div>
     <div class="context-menu-item" data-action="replace-preview">
         <i class="fas fa-image"></i> <span>{{ t('loras.contextMenu.replacePreview') }}</span>
@@ -85,7 +95,10 @@
             <i class="fas fa-bell"></i> <span>{{ t('loras.bulkOperations.checkUpdates') }}</span>
         </div>
         <div class="context-menu-item" data-action="repair-metadata">
-            <i class="fas fa-tools"></i> <span>{{ t('loras.bulkOperations.repairMetadata') }}</span>
+            <i class="fas fa-tools"></i> <span>{{ t('loras.bulkOperations.repairMetadata') }}</span> (Deprecated)
+        </div>
+        <div class="context-menu-item" data-action="rematch-metadata">
+            <i class="fas fa-link"></i> <span>{{ t('loras.bulkOperations.rematchMetadata') }}</span>
         </div>
         <div class="context-menu-item" data-action="reimport-metadata">
             <i class="fas fa-undo-alt"></i> <span>{{ t('loras.bulkOperations.reimportMetadata') }}</span>
@@ -136,8 +149,18 @@
     </div>
     <div class="context-menu-section" data-section="download">
         <div class="context-menu-section-header">{{ t('loras.bulkOperations.sections.download') }}</div>
-        <div class="context-menu-item" data-action="download-example-images">
-            <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadExamples') }}</span>
+        <div class="context-menu-item has-submenu" data-has-submenu="download-example-images">
+            <i class="fas fa-download"></i>
+            <span>{{ t('loras.bulkOperations.downloadExamples') }}</span>
+            <i class="fas fa-chevron-right submenu-arrow"></i>
+            <div class="context-submenu">
+                <div class="context-menu-item" data-action="download-missing-example-images">
+                    <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingExamples') }}</span>
+                </div>
+                <div class="context-menu-item" data-action="download-example-images">
+                    <i class="fas fa-redo-alt"></i> <span>{{ t('loras.bulkOperations.reprocessExamples') }}</span>
+                </div>
+            </div>
         </div>
         <div class="context-menu-item" data-action="download-missing-loras">
             <i class="fas fa-download"></i> <span>{{ t('loras.bulkOperations.downloadMissingLoras') }}</span>
@@ -180,7 +203,10 @@
         <i class="fas fa-check check-indicator" style="margin-left:auto;display:none"></i>
     </div>
     <div class="context-menu-item" data-action="repair-recipes">
-        <i class="fas fa-tools"></i> <span>{{ t('globalContextMenu.repairRecipes.label') }}</span>
+        <i class="fas fa-tools"></i> <span>{{ t('globalContextMenu.repairRecipes.label') }}</span> (Deprecated)
+    </div>
+    <div class="context-menu-item" data-action="rematch-recipes">
+        <i class="fas fa-link"></i> <span>{{ t('globalContextMenu.rematchRecipes.label') }}</span>
     </div>
 </div>
 

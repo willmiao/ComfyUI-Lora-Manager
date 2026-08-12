@@ -9,6 +9,8 @@ from typing import Any
 from .constants import (
     CARD_PREVIEW_WIDTH,
     DEFAULT_HASH_CHUNK_SIZE_MB,
+    INVALID_AUTOV3_EMPTY_HASH,
+    MAX_SAFETENSORS_HEADER_BYTES,
     PREVIEW_EXTENSIONS,
 )
 from .exif_utils import ExifUtils
@@ -90,6 +92,8 @@ def read_safetensors_metadata(file_path: str) -> dict[str, Any]:
             if len(header_len_bytes) < 8:
                 return {}
             header_len = struct.unpack("<Q", header_len_bytes)[0]
+            if header_len > MAX_SAFETENSORS_HEADER_BYTES:
+                return {}
             header_bytes = f.read(header_len)
             if len(header_bytes) < header_len:
                 return {}
@@ -123,8 +127,16 @@ def calculate_autov3(file_path: str) -> str | None:
         return None
 
     embedded_hash = metadata.get("sshs_model_hash") or metadata.get("modelspec.hash_sha256")
-    if embedded_hash and isinstance(embedded_hash, str) and len(embedded_hash) >= 12:
-        return embedded_hash[:12]
+    if embedded_hash and isinstance(embedded_hash, str):
+        # OneTrainer writes modelspec.hash_sha256 with a "0x" prefix.
+        embedded_hash = embedded_hash.strip().removeprefix("0x").removeprefix("0X")
+        if len(embedded_hash) >= 12:
+            autov3 = embedded_hash[:12].lower()
+            # The empty-string SHA256 placeholder written by some repackaging
+            # tools is not a real hash; treat it as unavailable so broken
+            # models never share one bogus value.
+            if autov3 != INVALID_AUTOV3_EMPTY_HASH:
+                return autov3
 
     return None
 

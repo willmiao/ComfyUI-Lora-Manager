@@ -34,8 +34,12 @@ async def test_recipe_query_handler_base_models_limit_zero_returns_all():
         logger=logging.getLogger(__name__),
     )
 
-    response = await handler.get_base_models(SimpleNamespace(query={"limit": "0"}))
-    payload = json.loads(response.text)
+    response = await handler.get_base_models(
+        SimpleNamespace(query={"limit": "0"})  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
 
     assert payload["success"] is True
     assert payload["base_models"] == [

@@ -20,3 +20,12 @@ class RecipeDownloadError(RecipeServiceError):
 
 class RecipeConflictError(RecipeServiceError):
     """Raised when a conflicting recipe state is detected."""
+
+
+class RecipePersistenceError(RecipeServiceError):
+    """Raised when a rematched recipe cannot be persisted to disk.
+
+    Raised by the recipe rematch path when ``_save_recipe_persistently``
+    returns False (JSON/EXIF/SQLite write failure). Callers translate it
+    into a ``success: False`` summary with an ``error`` message key.
+    """

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import pytest
 
@@ -12,9 +12,9 @@ from py.services.persistent_model_cache import PersistedCacheData
 
 class RecordingWebSocketManager:
     def __init__(self) -> None:
-        self.payloads: List[dict] = []
+        self.payloads: List[dict[str, Any]] = []
 
-    async def broadcast_init_progress(self, payload: dict) -> None:
+    async def broadcast_init_progress(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 

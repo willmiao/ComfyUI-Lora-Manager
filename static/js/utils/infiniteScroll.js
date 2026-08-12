@@ -1,5 +1,6 @@
 import { state, getCurrentPageState } from '../state/index.js';
 import { VirtualScroller } from './VirtualScroller.js';
+import { MasonryScroller } from './MasonryScroller.js';
 import { createModelCard, setupModelCardEventDelegation } from '../components/shared/ModelCard.js';
 import { getModelApiClient } from '../api/modelApiFactory.js';
 import { showToast } from './uiHelpers.js';
@@ -141,8 +142,14 @@ async function initializeVirtualScroll(pageType) {
             throw new Error(`Required components not available for ${pageType} page`);
         }
 
+        // Masonry applies to the recipes page only; the read pattern mirrors
+        // VirtualScroller.js (display_density).
+        const useMasonry = pageType === 'recipes'
+            && (state.global.settings?.recipes_layout ?? 'grid') === 'masonry';
+        const ScrollerClass = useMasonry ? MasonryScroller : VirtualScroller;
+
         // Initialize virtual scroller with renamed container elements
-        state.virtualScroller = new VirtualScroller({
+        state.virtualScroller = new ScrollerClass({
             gridElement: grid,
             containerElement: gridContainer,
             scrollContainer: scrollContainer,
@@ -249,4 +256,20 @@ export async function refreshVirtualScroll(options = {}) {
             await restoreScrollPosition(scrollSnapshot);
         }
     }
+}
+
+// Rebuild the virtual scroller from scratch (used for layout switching).
+// refreshVirtualScroll only resets the existing instance, so it cannot swap
+// the scroller class. Keyboard navigation must be cleaned up first:
+// setupKeyboardNavigation appends a new document keydown listener on every
+// initializeVirtualScroll call and never removes the previous one.
+export async function recreateVirtualScroll(pageType) {
+    cleanupKeyboardNavigation();
+
+    if (state.virtualScroller) {
+        state.virtualScroller.dispose();
+        state.virtualScroller = null;
+    }
+
+    await initializeVirtualScroll(pageType);
 }

@@ -49,7 +49,7 @@ _FRONTMATTER_RE = re.compile(
 )
 
 
-def _parse_skill_file(path: Path) -> tuple[dict, str]:
+def _parse_skill_file(path: Path) -> tuple[dict[str, Any], str]:
     """Read a prompt definition file (``prompt.md`` or legacy ``SKILL.md``) and
     return (frontmatter_dict, body_text).
 

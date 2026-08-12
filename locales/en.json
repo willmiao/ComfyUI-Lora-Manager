@@ -186,6 +186,16 @@
       "cancelled": "Repair cancelled. {count} recipes were repaired.",
       "error": "Recipe repair failed: {message}"
     },
+    "rematchRecipes": {
+      "label": "Rematch recipes to local models",
+      "loading": "Rematching recipes to local models...",
+      "success": "Matched {entries} entries across {recipes} recipes",
+      "successErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
+      "allFailed": "Rematch failed for {failures} of {total} recipes",
+      "noMatch": "No local match found for {entries} entries in {recipes} recipes",
+      "cancelled": "Rematch cancelled. {recipes} recipes updated ({entries} entries).",
+      "error": "Recipe rematch failed: {message}"
+    },
     "manageExcludedModels": {
       "label": "Manage Excluded Models"
     },
@@ -449,6 +459,12 @@
         "compact": "7 (1080p), 8 (2K), 10 (4K)"
       },
       "displayDensityWarning": "Warning: Higher densities may cause performance issues on systems with limited resources.",
+      "recipesLayout": "Recipes Layout",
+      "recipesLayoutHelp": "Choose how recipe cards are arranged: a uniform grid or a masonry (Pinterest-style) layout that preserves each image's aspect ratio.",
+      "recipesLayoutOptions": {
+        "grid": "Grid",
+        "masonry": "Masonry"
+      },
       "showFolderSidebar": "Show Folder Sidebar",
       "showFolderSidebarHelp": "Toggle the folder navigation sidebar on model pages. When disabled, the sidebar and hover area stay hidden.",
       "cardInfoDisplay": "Card Info Display",
@@ -678,6 +694,7 @@
         "deepseek": "DeepSeek",
         "groq": "Groq",
         "openrouter": "OpenRouter",
+        "google": "Gemini",
         "opencode-go": "OpenCode Go",
         "custom": "Custom (OpenAI-compatible)"
       },
@@ -714,7 +731,9 @@
         "versionsCount": "Local Versions",
         "versionsCountDesc": "Most versions first",
         "versionsCountAsc": "Fewest versions first",
-        "versionIdDesc": "Newest version first"
+        "versionIdDesc": "Newest version first",
+        "random": "Random",
+        "randomAction": "Randomize (shuffle)"
       },
       "refresh": {
         "title": "Refresh model list",
@@ -759,6 +778,7 @@
       "copyAll": "Copy Selected Syntax",
       "refreshAll": "Refresh Selected Metadata",
       "repairMetadata": "Repair Metadata for Selected",
+      "rematchMetadata": "Rematch Selected to Local Models",
       "reimportMetadata": "Re-import from Source",
       "checkUpdates": "Check Updates for Selected",
       "moveAll": "Move Selected to Folder",
@@ -771,6 +791,8 @@
       "deleteAll": "Delete Selected",
       "downloadMissingLoras": "Download Missing LoRAs",
       "downloadExamples": "Download Example Images",
+      "downloadMissingExamples": "Download Missing",
+      "reprocessExamples": "Re-process All",
       "clear": "Clear Selection",
       "skipMetadataRefreshCount": "Skip ({count} models)",
       "resumeMetadataRefreshCount": "Resume ({count} models)",
@@ -806,10 +828,13 @@
       "sendToWorkflowReplace": "Send to Workflow (Replace)",
       "openExamples": "Open Examples Folder",
       "downloadExamples": "Download Example Images",
+      "downloadMissingExamples": "Download Missing",
+      "reprocessExamples": "Re-process All",
       "replacePreview": "Replace Preview",
       "setContentRating": "Set Content Rating",
       "moveToFolder": "Move to Folder",
       "repairMetadata": "Repair metadata",
+      "rematchMetadata": "Rematch to local models",
       "reimportMetadata": "Re-import from Source",
       "excludeModel": "Exclude Model",
       "restoreModel": "Restore Model",
@@ -910,8 +935,16 @@
     },
     "duplicates": {
       "found": "Found {count} duplicate groups",
+      "noGroups": "No duplicate groups found with the current matching basis",
       "keepLatest": "Keep Latest Versions",
-      "deleteSelected": "Delete Selected"
+      "deleteSelected": "Delete Selected",
+      "includePromptLabel": "Include prompt in matching",
+      "basis": {
+        "loraCombo": "Matched by: LoRA combination",
+        "loraComboAndPrompt": "Matched by: LoRA combination + prompt",
+        "hintLoraCombo": "Recipes with the same LoRAs at identical strengths are grouped.",
+        "hintPromptIncluded": "Recipes are grouped only when they use the same LoRAs at identical strengths AND have the same prompt."
+      }
     },
     "contextMenu": {
       "copyRecipe": {
@@ -1244,8 +1277,13 @@
       }
     },
     "deleteModel": {
+      "freesSpace": "Frees {size}",
       "title": "Delete Model",
-      "message": "Are you sure you want to delete this model and all associated files?"
+      "message": "Are you sure you want to delete this model and all associated files?",
+      "recoverableWarning": "This will permanently delete the file after 30 seconds unless you undo."
+    },
+    "deleteRecipe": {
+      "recoverableWarning": "This action can be undone for 30 seconds."
     },
     "excludeModel": {
       "title": "Exclude Model",
@@ -1575,6 +1613,21 @@
       "downloadCsv": "Download CSV",
       "columnModelName": "Model Name",
       "columnError": "Error"
+    },
+    "downloadBatchSummary": {
+      "title": "Batch Download Summary",
+      "statSuccess": "Success",
+      "statFailed": "Failed",
+      "statTotal": "Total",
+      "successMessage": "All {count} models downloaded successfully",
+      "completedWithErrors": "Completed with errors",
+      "failed": "Download failed",
+      "failedItems": "Failed Items ({count})",
+      "columnName": "Model Name",
+      "columnError": "Error",
+      "close": "Close",
+      "copyReport": "Copy Report",
+      "retryFailed": "Retry Failed ({count})"
     }
   },
   "modelTags": {
@@ -1923,6 +1976,12 @@
       "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
       "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
       "repairBulkFailed": "Failed to repair selected recipes: {message}",
+      "rematchComplete": "Matched {entries} entries across {recipes} recipes",
+      "rematchCompleteErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
+      "rematchAllFailed": "Rematch failed for {failures} of {total} selected recipes",
+      "rematchUnmatched": "No local match found for {entries} entries in {recipes} recipes",
+      "rematchSkipped": "No rematch needed for any of the {total} selected recipes",
+      "rematchFailed": "Failed to rematch selected recipes: {message}",
       "reimporting": "Re-importing recipe from source...",
       "reimportSuccess": "Recipe re-imported successfully",
       "reimportBulkComplete": "Re-import complete: {completed} re-imported, {failed} failed (of {total})",
@@ -2031,7 +2090,6 @@
       "presetNameTooLong": "Preset name must be {max} characters or less",
       "presetNameInvalidChars": "Preset name contains invalid characters",
       "presetNameExists": "A preset with this name already exists",
-      "maxPresetsReached": "Maximum {max} presets allowed. Delete one to add more.",
       "presetNotFound": "Preset not found",
       "invalidPreset": "Invalid preset data",
       "deletePresetFailed": "Failed to delete preset",
@@ -2059,6 +2117,14 @@
       "updateSuccess": "Trigger words updated successfully",
       "updateFailed": "Failed to update trigger words",
       "copyFailed": "Copy failed"
+    },
+    "undo": {
+      "action": "Undo",
+      "deleted": "Deleted {name}",
+      "deletedBulk": "Deleted {count} item(s)",
+      "expired": "Undo window expired. The item was permanently deleted.",
+      "failed": "Undo failed: {error}",
+      "restored": "Item restored"
     },
     "virtual": {
       "loadFailed": "Failed to load items",

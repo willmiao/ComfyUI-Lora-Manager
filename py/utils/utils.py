@@ -1,7 +1,7 @@
 from difflib import SequenceMatcher
 import os
 import re
-from typing import Dict
+from typing import Any, Dict, List, Optional
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
@@ -261,7 +261,7 @@ def get_checkpoint_info_absolute(checkpoint_name):
         return asyncio.run(_get_checkpoint_info_absolute_async())
 
 
-def _format_model_name_for_comfyui(file_path: str, model_roots: list) -> str:
+def _format_model_name_for_comfyui(file_path: str, model_roots: list[str]) -> str:
     """Format file path to ComfyUI-style model name (relative path with extension)
 
     Example: /path/to/checkpoints/Illustrious/model.safetensors -> Illustrious/model.safetensors
@@ -292,6 +292,53 @@ def _format_model_name_for_comfyui(file_path: str, model_roots: list) -> str:
 
     # If no root matches, just return the basename with extension
     return os.path.basename(file_path)
+
+
+def model_patcher_to_name(model_patcher: Any) -> Optional[str]:
+    """Extract a ComfyUI-style model name from a MODEL (ModelPatcher) object.
+
+    Core ComfyUI loaders record the absolute weight file path on the patcher's
+    ``cached_patcher_init`` attribute:
+      - load_checkpoint_guess_config -> (fn, (ckpt_path, ...), index)
+      - load_diffusion_model -> (fn, (unet_path, model_options))
+    Patcher clones (LoRA loaders, model merges, ...) preserve the attribute,
+    so the name is recoverable anywhere downstream of a core loader — including
+    from LoRA Manager's own loaders (CheckpointLoaderLM / UNETLoaderLM), which
+    call the same core load functions.
+
+    The absolute path is converted to the ComfyUI-style relative name used by
+    the metadata pipeline (covering standard ComfyUI roots and LoRA Manager
+    extra folder paths).
+
+    Returns None when the path cannot be recovered (e.g. third-party loaders
+    that never set ``cached_patcher_init``).
+    """
+    init = getattr(model_patcher, "cached_patcher_init", None)
+    if not isinstance(init, (tuple, list)) or len(init) < 2:
+        return None
+    args = init[1]
+    abs_path = args[0] if args else None
+    if not isinstance(abs_path, str) or not abs_path:
+        return None
+    return _abs_model_path_to_name(abs_path)
+
+
+def _abs_model_path_to_name(abs_path: str) -> str:
+    """Convert an absolute model path to a ComfyUI-style relative name.
+
+    Tries standard ComfyUI model roots plus LoRA Manager extra folder paths;
+    falls back to the bare filename.
+    """
+    try:
+        roots: List[str] = list(config.base_models_roots or [])
+        roots.extend(config.extra_checkpoints_roots or [])
+        roots.extend(config.extra_unet_roots or [])
+        formatted = _format_model_name_for_comfyui(abs_path, roots)
+        if formatted:
+            return formatted
+    except Exception:
+        pass
+    return os.path.basename(abs_path)
 
 
 def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
@@ -422,8 +469,26 @@ def calculate_recipe_fingerprint(loras):
     return fingerprint
 
 
+def normalize_prompt_for_dedup(prompt) -> str:
+    """Normalize a positive prompt for duplicate recipe matching.
+
+    Applies casefolding, collapses whitespace runs into single spaces, and
+    trims leading/trailing whitespace. Missing or non-string prompts
+    normalize to an empty string.
+
+    Args:
+        prompt: The positive prompt text (or None)
+
+    Returns:
+        str: The normalized prompt
+    """
+    if not prompt or not isinstance(prompt, str):
+        return ""
+    return re.sub(r"\s+", " ", prompt).strip().casefold()
+
+
 def calculate_relative_path_for_model(
-    model_data: Dict, model_type: str = "lora"
+    model_data: Dict[str, Any], model_type: str = "lora"
 ) -> str:
     """Calculate relative path for existing model using template from settings
 

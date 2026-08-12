@@ -2,7 +2,7 @@
 
 import os
 import tempfile
-from typing import Dict, List
+from typing import Any, Dict, List
 
 import pytest
 
@@ -25,7 +25,7 @@ def temp_db_path():
 
 
 @pytest.fixture
-def sample_recipes() -> List[Dict]:
+def sample_recipes() -> List[Dict[str, Any]]:
     """Create sample recipe data for FTS indexing."""
     return [
         {

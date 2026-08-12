@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Callable, Mapping
+from typing import Awaitable, Callable, Mapping
 
 from aiohttp import web
 
@@ -170,7 +170,7 @@ class ExampleImagesHandlerSet:
     management: ExampleImagesManagementHandler
     files: ExampleImagesFileHandler
 
-    def to_route_mapping(self) -> Mapping[str, Callable[[web.Request], web.StreamResponse]]:
+    def to_route_mapping(self) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         """Flatten handler methods into the registrar mapping."""
 
         return {

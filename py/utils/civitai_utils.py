@@ -224,7 +224,7 @@ def _normalize_commercial_values(value: Any) -> Sequence[str]:
         if result:
             return result
         try:
-            if len(value) == 0:  # type: ignore[arg-type]
+            if len(value) == 0:  # pyright: ignore[reportArgumentType]
                 return []
         except TypeError:
             pass

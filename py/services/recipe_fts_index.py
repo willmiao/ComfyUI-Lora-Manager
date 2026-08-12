@@ -58,8 +58,8 @@ class RecipeFTSIndex:
         self._warned_not_ready = False
 
         # Ensure directory exists
+        directory = os.path.dirname(self._db_path)
         try:
-            directory = os.path.dirname(self._db_path)
             if directory:
                 os.makedirs(directory, exist_ok=True)
         except Exception as exc:
@@ -509,7 +509,7 @@ class RecipeFTSIndex:
             (recipe_id,)
         )
 
-    def _prepare_fts_row(self, recipe: Dict[str, Any]) -> tuple:
+    def _prepare_fts_row(self, recipe: Dict[str, Any]) -> tuple[str, str, str, str, str, str, str]:
         """Prepare a row tuple for FTS insertion."""
         recipe_id = str(recipe.get('id', ''))
         title = str(recipe.get('title', ''))

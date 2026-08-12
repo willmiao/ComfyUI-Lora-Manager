@@ -9,10 +9,8 @@ but users may wire 0 to express "no clip skip / default".
 
 from typing import Any
 
-from ..metadata_collector.constants import (
-    CLIP_SKIP_SENTINEL as _CLIP_SKIP_SENTINEL,
-    METADATA_OVERWRITE_FIELDS,
-)
+from ..metadata_collector.constants import CLIP_SKIP_SENTINEL as _CLIP_SKIP_SENTINEL
+from ..metadata_collector.overwrite_utils import collect_overwrite_params
 
 
 class MetadataOverwriteLM:
@@ -87,12 +85,16 @@ class MetadataOverwriteLM:
                     },
                 ),
                 "model": (
-                    "STRING",
+                    "STRING,MODEL",
                     {
                         "default": "",
+                        "widgetType": "STRING",
                         "tooltip": (
                             "The checkpoint or diffusion model (UNet) used "
-                            "for generation. Only overwrites when non-empty."
+                            "for generation. Fill in the name manually or "
+                            "connect a MODEL output — the model name is then "
+                            "extracted automatically. Only overwrites when "
+                            "non-empty."
                         ),
                     },
                 ),
@@ -158,13 +160,10 @@ class MetadataOverwriteLM:
         For most fields, a falsy value (empty string, 0) means "not set"
         and is skipped.  clip_skip uses a dedicated sentinel (-25) so that
         a wired value of 0 is preserved and reaches the metadata pipeline.
+
+        The ``model`` field accepts either a manual string or a wired MODEL
+        (ModelPatcher) connection; in the latter case the underlying model
+        name is extracted from the patcher's ``cached_patcher_init`` and
+        stored as a ComfyUI-style relative path.
         """
-        result: dict[str, Any] = {}
-        for key in METADATA_OVERWRITE_FIELDS:
-            value = kwargs.get(key)
-            if key == "clip_skip":
-                if value != _CLIP_SKIP_SENTINEL:
-                    result[key] = value
-            elif value:
-                result[key] = value
-        return (result,)
+        return (collect_overwrite_params(kwargs),)

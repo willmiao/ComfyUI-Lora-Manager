@@ -39,6 +39,9 @@ const NEW_TAB_ZOOM_LEVEL = 0.8;
 const STRENGTH_STEP_SETTING_ID = "loramanager.strength_step";
 const STRENGTH_STEP_DEFAULT = 0.05;
 
+const LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID = "loramanager.lora_active_filters_autocomplete";
+const LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT = false;
+
 // ============================================================================
 // Helper Functions
 // ============================================================================
@@ -360,6 +363,32 @@ const getStrengthStepPreference = (() => {
     };
 })();
 
+const getLoraActiveFiltersAutocompletePreference = (() => {
+    let settingsUnavailableLogged = false;
+
+    return () => {
+        const settingManager = app?.extensionManager?.setting;
+        if (!settingManager || typeof settingManager.get !== "function") {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: settings API unavailable, using default lora active filters autocomplete setting.");
+                settingsUnavailableLogged = true;
+            }
+            return LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT;
+        }
+
+        try {
+            const value = settingManager.get(LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID);
+            return value ?? LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT;
+        } catch (error) {
+            if (!settingsUnavailableLogged) {
+                console.warn("LoRA Manager: unable to read lora active filters autocomplete setting, using default.", error);
+                settingsUnavailableLogged = true;
+            }
+            return LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT;
+        }
+    };
+})();
+
 // ============================================================================
 // Register Extension with All Settings
 // ============================================================================
@@ -395,6 +424,14 @@ app.registerExtension({
             defaultValue: PROMPT_TAG_AUTOCOMPLETE_DEFAULT,
             tooltip: "When enabled, typing will trigger tag autocomplete suggestions. Commands (e.g., /character, /artist) always work regardless of this setting.",
             category: ["LoRA Manager", "Autocomplete", "Prompt"],
+        },
+        {
+            id: LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID,
+            name: "Search LoRA autocomplete within active filters",
+            type: "boolean",
+            defaultValue: LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT,
+            tooltip: "When enabled, LoRA autocomplete suggestions respect the active filters (folder/base model/tags) set in the LoRA Manager page. Commands /af and /noaf toggle this mode.",
+            category: ["LoRA Manager", "Autocomplete", "LoRA Active Filters"],
         },
         {
             id: AUTOCOMPLETE_APPEND_COMMA_SETTING_ID,
@@ -549,4 +586,5 @@ export {
     getUsageStatisticsPreference,
     getNewTabTemplatePreference,
     getStrengthStepPreference,
+    getLoraActiveFiltersAutocompletePreference,
 };

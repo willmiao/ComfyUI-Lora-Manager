@@ -31,6 +31,10 @@
     overflow: hidden;
 }
 
+.card-grid.masonry-layout .model-card {
+    aspect-ratio: auto;
+}
+
 .model-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);

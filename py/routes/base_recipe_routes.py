@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Callable, Mapping
+from typing import Awaitable, Callable, Mapping
 
 import jinja2
 from aiohttp import web
@@ -61,7 +61,9 @@ class BaseRecipeRoutes:
         self._i18n_registered = False
         self._startup_hooks_registered = False
         self._handler_set: RecipeHandlerSet | None = None
-        self._handler_mapping: dict[str, Callable] | None = None
+        self._handler_mapping: Mapping[
+            str, Callable[[web.Request], Awaitable[web.StreamResponse]]
+        ] | None = None
 
     async def attach_dependencies(self, app: web.Application | None = None) -> None:
         """Resolve shared services from the registry."""
@@ -84,7 +86,9 @@ class BaseRecipeRoutes:
         app.on_startup.append(self.attach_dependencies)
         self._startup_hooks_registered = True
 
-    def to_route_mapping(self) -> Mapping[str, Callable]:
+    def to_route_mapping(
+        self,
+    ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         """Return a mapping of handler name to coroutine for registrar binding."""
 
         if self._handler_mapping is None:
@@ -124,17 +128,17 @@ class BaseRecipeRoutes:
             or os.environ.get("HF_HUB_DISABLE_TELEMETRY", "0") == "0"
         )
         if not standalone_mode:
-            from ..metadata_collector import get_metadata  # type: ignore[import-not-found]
-            from ..metadata_collector.metadata_processor import (  # type: ignore[import-not-found]
+            from ..metadata_collector import get_metadata  # pyright: ignore[reportMissingImports]
+            from ..metadata_collector.metadata_processor import (  # pyright: ignore[reportMissingImports]
                 MetadataProcessor,
             )
-            from ..metadata_collector.metadata_registry import (  # type: ignore[import-not-found]
+            from ..metadata_collector.metadata_registry import (  # pyright: ignore[reportMissingImports]
                 MetadataRegistry,
             )
         else:  # pragma: no cover - optional dependency path
-            get_metadata = None  # type: ignore[assignment]
-            MetadataProcessor = None  # type: ignore[assignment]
-            MetadataRegistry = None  # type: ignore[assignment]
+            get_metadata = None  # pyright: ignore[reportAssignmentType]
+            MetadataProcessor = None  # pyright: ignore[reportAssignmentType]
+            MetadataRegistry = None  # pyright: ignore[reportAssignmentType]
 
         analysis_service = RecipeAnalysisService(
             exif_utils=ExifUtils,

@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-3f3d7a1a] {
+.autocomplete-text-widget[data-v-55e3316e] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-3f3d7a1a] {
+.input-wrapper[data-v-55e3316e] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-3f3d7a1a] {
+.text-input[data-v-55e3316e] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2152,7 +2152,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-3f3d7a1a] {
+.text-input.vue-dom-mode[data-v-55e3316e] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2161,12 +2161,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-3f3d7a1a]:focus {
+.text-input[data-v-55e3316e]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-3f3d7a1a] {
+.clear-button[data-v-55e3316e] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2189,31 +2189,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-3f3d7a1a] {
+.input-wrapper:hover .clear-button[data-v-55e3316e] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-3f3d7a1a]:hover {
+.clear-button[data-v-55e3316e]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-3f3d7a1a] {
+.clear-button svg[data-v-55e3316e] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-3f3d7a1a] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-3f3d7a1a]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-3f3d7a1a] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-55e3316e] {
   width: 14px;
   height: 14px;
 }
@@ -2224,7 +2224,7 @@ to { transform: rotate(360deg);
   resize: vertical !important;
 }
 
-.lora-info-widget[data-v-a99cc1ab] {
+.lora-info-widget[data-v-d7692b6f] {
   padding: 12px;
   background: rgba(40, 44, 52, 0.6);
   border-radius: 4px;
@@ -2240,45 +2240,45 @@ to { transform: rotate(360deg);
    determined solely by CSS — not by descendant content. This breaks the
    feedback loop where content grows → ResizeObserver resizes → content
    reflows → repeat. Same technique used by tags_widget.js + lm_styles.css. */
-.lora-info-widget.lm-vue-node[data-v-a99cc1ab] {
+.lora-info-widget.lm-vue-node[data-v-d7692b6f] {
   contain: layout size;
 }
 
 /* ── Tab bar ── */
-.lora-info-tabs[data-v-a99cc1ab] {
+.lora-info-tabs[data-v-d7692b6f] {
   display: flex;
   gap: 0;
   margin-bottom: 10px;
   border-bottom: 1px solid var(--border-color, #444);
   flex-shrink: 0;
 }
-.lora-info-tab[data-v-a99cc1ab] {
+.lora-info-tab[data-v-d7692b6f] {
   flex: 1;
   text-align: center;
   cursor: pointer;
   padding: 6px 0;
   position: relative;
 }
-.lora-info-tab-input[data-v-a99cc1ab] {
+.lora-info-tab-input[data-v-d7692b6f] {
   position: absolute;
   opacity: 0;
   width: 0;
   height: 0;
 }
-.lora-info-tab-label[data-v-a99cc1ab] {
+.lora-info-tab-label[data-v-d7692b6f] {
   font-size: 12px;
   font-weight: 500;
   color: var(--fg-color, #fff);
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.lora-info-tab:hover .lora-info-tab-label[data-v-a99cc1ab] {
+.lora-info-tab:hover .lora-info-tab-label[data-v-d7692b6f] {
   opacity: 0.75;
 }
-.lora-info-tab.active .lora-info-tab-label[data-v-a99cc1ab] {
+.lora-info-tab.active .lora-info-tab-label[data-v-d7692b6f] {
   opacity: 1;
 }
-.lora-info-tab.active[data-v-a99cc1ab]::after {
+.lora-info-tab.active[data-v-d7692b6f]::after {
   content: '';
   position: absolute;
   bottom: -1px;
@@ -2290,16 +2290,16 @@ to { transform: rotate(360deg);
 }
 
 /* ── Tab content ── */
-.tab-content[data-v-a99cc1ab] {
+.tab-content[data-v-d7692b6f] {
   flex: 1;
   min-height: 0;
   overflow: hidden;
 }
-.notes-tab[data-v-a99cc1ab] {
+.notes-tab[data-v-d7692b6f] {
   display: flex;
   flex-direction: column;
 }
-.description-tab[data-v-a99cc1ab] {
+.description-tab[data-v-d7692b6f] {
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -2307,12 +2307,12 @@ to { transform: rotate(360deg);
 }
 
 /* ── Info fields (shared) ── */
-.info-field[data-v-a99cc1ab] {
+.info-field[data-v-d7692b6f] {
   display: flex;
   flex-direction: column;
   gap: 4px;
 }
-.info-label[data-v-a99cc1ab] {
+.info-label[data-v-d7692b6f] {
   font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
@@ -2320,7 +2320,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.6;
 }
-.lora-filename[data-v-a99cc1ab] {
+.lora-filename[data-v-d7692b6f] {
   font-size: 13px;
   font-weight: 500;
   color: var(--fg-color, #fff);
@@ -2331,11 +2331,11 @@ to { transform: rotate(360deg);
   user-select: text;
   -webkit-user-select: text;
 }
-.notes-field[data-v-a99cc1ab] {
+.notes-field[data-v-d7692b6f] {
   flex: 1;
   min-height: 0;
 }
-.lora-notes[data-v-a99cc1ab] {
+.lora-notes[data-v-d7692b6f] {
   width: 100%;
   flex: 1;
   min-height: 60px;
@@ -2350,14 +2350,14 @@ to { transform: rotate(360deg);
   font-family: inherit;
   outline: none;
 }
-.lora-notes[data-v-a99cc1ab]:focus {
+.lora-notes[data-v-d7692b6f]:focus {
   border-color: var(--comfy-input-border, #444);
 }
-.lora-notes[data-v-a99cc1ab]:disabled {
+.lora-notes[data-v-d7692b6f]:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
-.save-btn[data-v-a99cc1ab] {
+.save-btn[data-v-d7692b6f] {
   width: 100%;
   margin-top: 8px;
   padding: 6px 12px;
@@ -2371,11 +2371,11 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
   flex-shrink: 0;
 }
-.save-btn[data-v-a99cc1ab]:hover:not(:disabled) {
+.save-btn[data-v-d7692b6f]:hover:not(:disabled) {
   background: rgba(66, 153, 225, 0.25);
   border-color: rgba(66, 153, 225, 0.6);
 }
-.save-btn[data-v-a99cc1ab]:disabled {
+.save-btn[data-v-d7692b6f]:disabled {
   opacity: 0.4;
   cursor: not-allowed;
   background: rgba(66, 153, 225, 0.05);
@@ -2383,7 +2383,7 @@ to { transform: rotate(360deg);
 }
 
 /* ── Description states ── */
-.description-state[data-v-a99cc1ab] {
+.description-state[data-v-d7692b6f] {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2395,22 +2395,22 @@ to { transform: rotate(360deg);
   min-height: 0;
   flex-shrink: 0;
 }
-.description-state.error[data-v-a99cc1ab] {
+.description-state.error[data-v-d7692b6f] {
   opacity: 0.7;
   color: #f87171;
 }
 
 /* ── Description content ── */
-.description-content[data-v-a99cc1ab] {
+.description-content[data-v-d7692b6f] {
   min-height: 0;
 }
-.description-section[data-v-a99cc1ab] {
+.description-section[data-v-d7692b6f] {
   margin-bottom: 14px;
 }
-.description-section[data-v-a99cc1ab]:last-child {
+.description-section[data-v-d7692b6f]:last-child {
   margin-bottom: 0;
 }
-.description-text[data-v-a99cc1ab] {
+.description-text[data-v-d7692b6f] {
   padding: 8px 0;
   font-size: 12px;
   line-height: 1.5;
@@ -2422,41 +2422,41 @@ to { transform: rotate(360deg);
   user-select: text;
   -webkit-user-select: text;
 }
-.description-text[data-v-a99cc1ab] p {
+.description-text[data-v-d7692b6f] p {
   margin: 0 0 8px 0;
 }
-.description-text[data-v-a99cc1ab] p:last-child {
+.description-text[data-v-d7692b6f] p:last-child {
   margin-bottom: 0;
 }
-.description-text[data-v-a99cc1ab] a {
+.description-text[data-v-d7692b6f] a {
   color: rgba(66, 153, 225, 0.9);
 }
-.description-text[data-v-a99cc1ab] ul,
-.description-text[data-v-a99cc1ab] ol {
+.description-text[data-v-d7692b6f] ul,
+.description-text[data-v-d7692b6f] ol {
   padding-left: 20px;
   margin: 4px 0;
 }
-.description-text[data-v-a99cc1ab] h1,
-.description-text[data-v-a99cc1ab] h2,
-.description-text[data-v-a99cc1ab] h3 {
+.description-text[data-v-d7692b6f] h1,
+.description-text[data-v-d7692b6f] h2,
+.description-text[data-v-d7692b6f] h3 {
   font-size: 13px;
   margin: 10px 0 4px 0;
   font-weight: 600;
   opacity: 0.95;
 }
-.description-text[data-v-a99cc1ab] code {
+.description-text[data-v-d7692b6f] code {
   background: rgba(255, 255, 255, 0.08);
   padding: 1px 4px;
   border-radius: 3px;
   font-size: 11px;
 }
-.description-text[data-v-a99cc1ab] img {
+.description-text[data-v-d7692b6f] img {
   max-width: 100%;
   border-radius: 4px;
 }
 
 /* ── Placeholder (shared) ── */
-.placeholder[data-v-a99cc1ab] {
+.placeholder[data-v-d7692b6f] {
   font-style: italic;
   color: rgba(226, 232, 240, 0.5);
   text-align: center;
@@ -2465,10 +2465,10 @@ to { transform: rotate(360deg);
 }
 
 /* ── Spinner (Font Awesome) ── */
-.fa-spinner[data-v-a99cc1ab] {
-  animation: fa-spin-a99cc1ab 1s linear infinite;
+.fa-spinner[data-v-d7692b6f] {
+  animation: fa-spin-d7692b6f 1s linear infinite;
 }
-@keyframes fa-spin-a99cc1ab {
+@keyframes fa-spin-d7692b6f {
 0% { transform: rotate(0deg);
 }
 100% { transform: rotate(360deg);
@@ -15316,7 +15316,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-3f3d7a1a"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-55e3316e"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
@@ -15511,8 +15511,12 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
           if (data.filePath !== void 0) filePath.value = data.filePath;
         }
       };
-      props.widget.options.getValue = buildValue;
-      props.widget.options.setValue = applyValue;
+      if (props.widget.options) {
+        props.widget.options.getValue = buildValue;
+        props.widget.options.setValue = applyValue;
+      } else {
+        console.warn("[LoraInfoWidget] widget.options missing, value persistence disabled");
+      }
       props.widget.serializeValue = async () => buildValue();
       props.widget.onSetValue = applyValue;
       const widgetIndex = (_b = (_a2 = props.widget.node) == null ? void 0 : _a2.widgets) == null ? void 0 : _b.findIndex(
@@ -15641,7 +15645,7 @@ const _sfc_main = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraInfoWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-a99cc1ab"]]);
+const LoraInfoWidget = /* @__PURE__ */ _export_sfc(_sfc_main, [["__scopeId", "data-v-d7692b6f"]]);
 function createVueWidgetCleanup(vueApp, onCleanup) {
   let didUnmount = false;
   return () => {
@@ -16637,7 +16641,7 @@ function createAutocompleteTextWidgetFactory(node, widgetName, modelType, inputO
     applyAutocompleteTextLayoutFix(
       widget,
       container,
-      typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode
+      typeof LiteGraph !== "undefined" && LiteGraph.vueNodesMode === true
     );
   }
   const vueCleanup = createVueWidgetCleanup(vueApp, () => {
@@ -16747,13 +16751,7 @@ app$1.registerExtension({
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};
         return createAutocompleteTextWidgetFactory(node, "text", "loras", options);
       },
-      // Autocomplete text widget for embeddings (used by Prompt node)
-      // @ts-ignore
-      AUTOCOMPLETE_TEXT_EMBEDDINGS(node) {
-        const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};
-        return createAutocompleteTextWidgetFactory(node, "text", "embeddings", options);
-      },
-      // Autocomplete text widget for prompt (supports both embeddings and custom words)
+      // Autocomplete text widget for prompt (used by Prompt and Text nodes)
       // @ts-ignore
       AUTOCOMPLETE_TEXT_PROMPT(node) {
         const options = widgetInputOptions.get(`${node.comfyClass}:text`) || {};

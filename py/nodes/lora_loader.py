@@ -1,8 +1,8 @@
 import importlib
 import logging
 
-import comfy.sd  # type: ignore
-import comfy.utils  # type: ignore
+import comfy.sd  # pyright: ignore[reportMissingImports]
+import comfy.utils  # pyright: ignore[reportMissingImports]
 
 from ..utils.utils import get_lora_info_absolute
 from .utils import (
@@ -14,6 +14,7 @@ from .utils import (
     get_loras_list,
     nunchaku_load_lora,
     parse_lora_syntax,
+    validate_lora_entries,
 )
 
 logger = logging.getLogger(__name__)
@@ -196,6 +197,11 @@ class LoraLoaderLM:
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("MODEL", "CLIP", "STRING", "STRING", "STRING", "STRING", "STRING")
     RETURN_NAMES = (

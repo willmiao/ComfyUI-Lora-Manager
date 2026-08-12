@@ -486,6 +486,26 @@
     }
 }
 
+/* Empty-state hint in the duplicates view */
+.duplicates-empty-state {
+    padding: 48px 16px;
+    text-align: center;
+    opacity: 0.7;
+    font-size: 0.95em;
+    width: 100%;
+}
+
+/* Matching basis text in the duplicates banner */
+.duplicates-basis {
+    font-size: 0.85em;
+    opacity: 0.8;
+    padding: 3px 10px;
+    border-radius: var(--border-radius-xs);
+    background: oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.12);
+    border: 1px solid oklch(var(--color-accent-l) var(--color-accent-c) var(--color-accent-h) / 0.25);
+    white-space: nowrap;
+}
+
 /* Help icon styling */
 .help-icon {
     color: var(--text-color);

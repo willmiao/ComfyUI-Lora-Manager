@@ -1,9 +1,13 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 import os
 import platform
 import posixpath
 import threading
 from pathlib import Path
-import folder_paths  # type: ignore
+import folder_paths  # pyright: ignore[reportMissingImports]
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Set, Tuple
 import logging
 import json
@@ -90,7 +94,7 @@ def _resolve_valid_default_root(
 
 
 def _normalize_folder_paths_for_comparison(
-    folder_paths: Mapping[str, Iterable[str]],
+    folder_paths: Mapping[str, Any],
 ) -> Dict[str, Set[str]]:
     """Normalize folder paths for comparison across libraries."""
 
@@ -482,7 +486,7 @@ class Config:
                     import ctypes
 
                     FILE_ATTRIBUTE_REPARSE_POINT = 0x400
-                    attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))  # type: ignore[attr-defined]
+                    attrs = ctypes.windll.kernel32.GetFileAttributesW(str(path))  # pyright: ignore[reportAttributeAccessIssue]
                     return attrs != -1 and (attrs & FILE_ATTRIBUTE_REPARSE_POINT)
                 except Exception as e:
                     logger.error(f"Error checking Windows reparse point: {e}")
@@ -491,7 +495,7 @@ class Config:
             logger.error(f"Error checking link status for {path}: {e}")
             return False
 
-    def _entry_is_symlink(self, entry: os.DirEntry) -> bool:
+    def _entry_is_symlink(self, entry: os.DirEntry[str]) -> bool:
         """Check if a directory entry is a symlink, including Windows junctions."""
         if entry.is_symlink():
             return True
@@ -500,7 +504,7 @@ class Config:
                 import ctypes
 
                 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
-                attrs = ctypes.windll.kernel32.GetFileAttributesW(entry.path)  # type: ignore[attr-defined]
+                attrs = ctypes.windll.kernel32.GetFileAttributesW(entry.path)  # pyright: ignore[reportAttributeAccessIssue]
                 return attrs != -1 and (attrs & FILE_ATTRIBUTE_REPARSE_POINT)
             except Exception:
                 pass
@@ -1126,8 +1130,8 @@ class Config:
 
     def _apply_library_paths(
         self,
-        folder_paths: Mapping[str, Iterable[str]],
-        extra_folder_paths: Optional[Mapping[str, Iterable[str]]] = None,
+        folder_paths: Mapping[str, Any],
+        extra_folder_paths: Optional[Mapping[str, Any]] = None,
         recipes_path: str = "",
     ) -> None:
         self._path_mappings.clear()
@@ -1432,12 +1436,13 @@ class Config:
 # ('_lm_config_cache') that is NEVER removed from sys.modules (its key does
 # NOT start with 'py.'), so it survives re-imports of py.* modules.
 _CONFIG_SENTINEL = "_lm_config_cache"
+config: Config
 if _CONFIG_SENTINEL in _sys.modules:
     # Re-import: reuse the existing singleton from the sentinel.
-    config: Config = _sys.modules[_CONFIG_SENTINEL].config  # type: ignore[valid-type]
+    config = _sys.modules[_CONFIG_SENTINEL].config
 else:
-    config: Config = Config()
+    config = Config()
     # Register the sentinel so re-imports of py.config find us.
     _sentinel_mod = _types.ModuleType(_CONFIG_SENTINEL)
-    _sentinel_mod.config = config
+    setattr(_sentinel_mod, "config", config)
     _sys.modules[_CONFIG_SENTINEL] = _sentinel_mod

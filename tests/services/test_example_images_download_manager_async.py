@@ -4,6 +4,7 @@ import asyncio
 import json
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -15,23 +16,32 @@ class RecordingWebSocketManager:
     """Collects broadcast payloads for assertions."""
 
     def __init__(self) -> None:
-        self.payloads: list[dict] = []
+        self.payloads: list[dict[str, Any]] = []
 
-    async def broadcast(self, payload: dict) -> None:
+    async def broadcast(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 
 class StubScanner:
     """Scanner double returning predetermined cache contents."""
 
-    def __init__(self, models: list[dict]) -> None:
+    def __init__(self, models: list[dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
+        self.sync_calls: list[tuple[str, dict[str, Any]]] = []
 
     async def get_cached_data(self):
         return self._cache
 
     async def update_single_model_cache(self, _old_path, _new_path, metadata):
         # Replace the cached entry with the updated metadata for assertions.
+        for index, model in enumerate(self._cache.raw_data):
+            if model.get("file_path") == metadata.get("file_path"):
+                self._cache.raw_data[index] = metadata
+                break
+        return True
+
+    async def sync_cache_from_metadata(self, file_path: str, metadata: dict[str, Any]) -> bool:
+        self.sync_calls.append((file_path, metadata))
         for index, model in enumerate(self._cache.raw_data):
             if model.get("file_path") == metadata.get("file_path"):
                 self._cache.raw_data[index] = metadata
@@ -502,7 +512,7 @@ async def test_not_found_example_images_are_cleaned(
     missing_url = "https://example.com/missing.png"
     valid_url = "https://example.com/valid.png"
 
-    model_metadata = {
+    model_metadata: dict[str, Any] = {
         "sha256": model_hash,
         "model_name": "Missing Example",
         "file_path": str(model_path),
@@ -520,7 +530,8 @@ async def test_not_found_example_images_are_cleaned(
 
     model_dir = images_root / model_hash
     model_dir.mkdir(parents=True, exist_ok=True)
-    (model_dir / "image_0.png").write_bytes(b"first")
+    # Pre-existing file collides with the valid image index (1) so the
+    # pre-download existence check must skip it without a network request
     (model_dir / "image_1.png").write_bytes(b"second")
 
     async def fake_process_local_examples(*_args, **_kwargs):
@@ -588,6 +599,9 @@ async def test_not_found_example_images_are_cleaned(
     assert missing_url in downloader.calls
     assert manager._progress["failed_models"] == {model_hash}
     assert model_hash in manager._progress["processed_models"]
+    assert scanner.sync_calls
+    assert len(scanner.sync_calls) == 1
+    assert scanner.sync_calls[0][0] == str(model_path)
 
     remaining_images = model_metadata["civitai"]["images"]
     assert remaining_images == [
@@ -596,9 +610,186 @@ async def test_not_found_example_images_are_cleaned(
     ]
 
     files = sorted(p.name for p in model_dir.iterdir())
-    assert files == ["image_0.png", "image_1.png"]
-    assert (model_dir / "image_0.png").read_bytes() == b"first"
+    assert files == ["image_1.png"]
     assert (model_dir / "image_1.png").read_bytes() == b"second"
+
+
+async def test_failed_models_retried_when_explicitly_targeted(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    images_root = tmp_path / "examples"
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(images_root))
+
+    model_hash = "a" * 64
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "Failed Example",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+        "civitai": {"images": [{"url": "https://example.com/valid.png"}]},
+    }
+
+    scanner = StubScanner([model_metadata.copy()])
+    _patch_scanner(monkeypatch, scanner)
+
+    # Persist a previous failure so the skip path is exercised
+    images_root.mkdir(parents=True, exist_ok=True)
+    (images_root / ".download_progress.json").write_text(
+        json.dumps(
+            {
+                "failed_models": [model_hash],
+                "processed_models": [],
+                "rate_limited_models": [],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    async def fake_get_updated_model(model_hash_arg, _scanner):
+        return model_metadata
+
+    class DownloaderStub:
+        def __init__(self):
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, *_args, **_kwargs):
+            self.calls.append(url)
+            return True, b"\x89PNG\r\n\x1a\n", {"content-type": "image/png"}
+
+    downloader = DownloaderStub()
+
+    async def fake_get_downloader():
+        return downloader
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "get_updated_model",
+        staticmethod(fake_get_updated_model),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+
+    # Without explicit hashes the previously failed model is skipped
+    skipped_manager = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    result = await skipped_manager.start_download({"model_types": ["lora"], "delay": 0})
+    assert result["success"] is True
+    if skipped_manager._download_task is not None:
+        await asyncio.wait_for(skipped_manager._download_task, timeout=1)
+    assert downloader.calls == []
+
+    # With explicit hashes the previously failed model is retried and cleared
+    result = await manager.start_download(
+        {"model_types": ["lora"], "delay": 0, "model_hashes": [model_hash]}
+    )
+    assert result["success"] is True
+    if manager._download_task is not None:
+        await asyncio.wait_for(manager._download_task, timeout=1)
+    assert downloader.calls == ["https://example.com/valid.png"]
+    assert manager._progress["failed_models"] == set()
+    assert model_hash in manager._progress["processed_models"]
+
+
+async def test_explicit_targets_fill_partial_example_gaps(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    ws_manager = RecordingWebSocketManager()
+
+    images_root = tmp_path / "examples"
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(images_root))
+
+    model_hash = "b" * 64
+    model_path = tmp_path / "model.safetensors"
+    model_path.write_text("data", encoding="utf-8")
+
+    model_metadata = {
+        "sha256": model_hash,
+        "model_name": "Partial Example",
+        "file_path": str(model_path),
+        "file_name": "model.safetensors",
+        "civitai": {
+            "images": [
+                {"url": "https://example.com/first.png"},
+                {"url": "https://example.com/second.png"},
+            ]
+        },
+    }
+
+    scanner = StubScanner([model_metadata.copy()])
+    _patch_scanner(monkeypatch, scanner)
+
+    # Simulate a partially populated folder: index 0 already downloaded
+    model_dir = images_root / model_hash
+    model_dir.mkdir(parents=True, exist_ok=True)
+    (model_dir / "image_0.png").write_bytes(b"existing")
+
+    async def fake_process_local_examples(*_args, **_kwargs):
+        return False
+
+    async def fake_get_updated_model(model_hash_arg, _scanner):
+        return model_metadata
+
+    class DownloaderStub:
+        def __init__(self):
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, *_args, **_kwargs):
+            self.calls.append(url)
+            return True, b"\x89PNG\r\n\x1a\n", {"content-type": "image/png"}
+
+    downloader = DownloaderStub()
+
+    async def fake_get_downloader():
+        return downloader
+
+    monkeypatch.setattr(
+        download_module.ExampleImagesProcessor,
+        "process_local_examples",
+        staticmethod(fake_process_local_examples),
+    )
+    monkeypatch.setattr(
+        download_module.MetadataUpdater,
+        "get_updated_model",
+        staticmethod(fake_get_updated_model),
+    )
+    monkeypatch.setattr(download_module, "get_downloader", fake_get_downloader)
+
+    # Untargeted run treats the populated folder as done
+    untargeted = download_module.DownloadManager(ws_manager=RecordingWebSocketManager())
+    result = await untargeted.start_download({"model_types": ["lora"], "delay": 0})
+    assert result["success"] is True
+    if untargeted._download_task is not None:
+        await asyncio.wait_for(untargeted._download_task, timeout=1)
+    assert downloader.calls == []
+
+    # Explicitly targeted run fills only the missing index, skipping the
+    # existing file without a network request
+    targeted = download_module.DownloadManager(ws_manager=ws_manager)
+    result = await targeted.start_download(
+        {"model_types": ["lora"], "delay": 0, "model_hashes": [model_hash]}
+    )
+    assert result["success"] is True
+    if targeted._download_task is not None:
+        await asyncio.wait_for(targeted._download_task, timeout=1)
+    assert downloader.calls == ["https://example.com/second.png"]
+    assert (model_dir / "image_1.png").exists()
+    assert (model_dir / "image_0.png").read_bytes() == b"existing"
 
 
 @pytest.fixture

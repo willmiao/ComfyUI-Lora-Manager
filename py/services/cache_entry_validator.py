@@ -59,6 +59,7 @@ class CacheEntryValidator:
         'notes': ('', False),
         'usage_tips': ('', False),
         'hash_status': ('completed', False),
+        'autov3': (None, False),
     }
 
     @classmethod
@@ -119,8 +120,13 @@ class CacheEntryValidator:
                 if is_required:
                     errors.append(f"Required field '{field_name}' is missing or None")
                 if auto_repair:
-                    working_entry[field_name] = cls._get_default_copy(default_value)
-                    repaired = True
+                    # A missing optional field whose default is None is already
+                    # semantically equal to its default (e.g. autov3: absent
+                    # means "not checked") — writing None back is a no-op, not
+                    # a repair.
+                    if default_value is not None:
+                        working_entry[field_name] = cls._get_default_copy(default_value)
+                        repaired = True
                 continue
 
             # Validate field type and value
@@ -174,6 +180,15 @@ class CacheEntryValidator:
                     # If not auto-repairing, we don't consider case difference as a "critical error" 
                     # that invalidates the entry, but we also don't mark it repaired.
                     pass
+
+        # Normalize autov3 to lowercase if needed (optional field, never stripped).
+        autov3 = working_entry.get('autov3')
+        if isinstance(autov3, str) and autov3:
+            normalized_autov3 = autov3.lower()
+            if normalized_autov3 != autov3:
+                if auto_repair:
+                    working_entry['autov3'] = normalized_autov3
+                    repaired = True
 
         # Determine if entry is valid
         # Entry is valid if no critical required field errors remain after repair
@@ -241,6 +256,19 @@ class CacheEntryValidator:
         Returns an error message if invalid, None if valid.
         """
         expected_type = type(default_value)
+
+        # Special case: autov3 is optional with a three-state contract.
+        # None = not checked, "" = checked but unavailable, otherwise a
+        # 12-character hex string (case-insensitive here; normalized to
+        # lowercase separately).
+        if field_name == 'autov3':
+            if value is None or value == "":
+                return None
+            if not isinstance(value, str):
+                return f"Field 'autov3' should be string or None, got {type(value).__name__}"
+            if len(value) != 12 or any(c not in '0123456789abcdefABCDEF' for c in value):
+                return "Field 'autov3' should be a 12-character hex string"
+            return None
 
         # Special handling for numeric types
         if expected_type == int:

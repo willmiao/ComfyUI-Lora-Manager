@@ -434,6 +434,22 @@ export class ModalManager {
         this.currentOpenModal = id; // Update currently open modal
         document.body.style.top = `-${this.scrollPosition}px`;
         document.body.classList.add('modal-open');
+
+        modal.restoreFocusTo = null;
+        if (this._isDeleteConfirmModal(modal.element)) {
+            const activeElement = document.activeElement;
+            modal.restoreFocusTo = activeElement && activeElement !== document.body
+                ? activeElement
+                : null;
+            modal.element.querySelector('.cancel-btn')?.focus();
+        }
+    }
+
+    // Several non-delete modals share the delete-modal styling class, so an
+    // actual .delete-btn is required before focus is moved to Cancel.
+    _isDeleteConfirmModal(element) {
+        return element.classList.contains('delete-modal') &&
+            Boolean(element.querySelector('.delete-btn'));
     }
 
     closeModal(id) {
@@ -462,6 +478,13 @@ export class ModalManager {
         if (modal.cleanupCallback) {
             modal.cleanupCallback();
             modal.cleanupCallback = null;
+        }
+
+        if (modal.restoreFocusTo) {
+            if (modal.restoreFocusTo.isConnected) {
+                modal.restoreFocusTo.focus();
+            }
+            modal.restoreFocusTo = null;
         }
     }
 

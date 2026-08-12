@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, List, Set
+from typing import Any, Dict, List, Set
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
@@ -28,13 +28,13 @@ class CheckpointRoutes(BaseModelRoutes):
         # Attach service dependencies
         self.attach_service(self.service)
     
-    def setup_routes(self, app: web.Application):
+    def setup_routes(self, app: web.Application, prefix: str = "checkpoints"):
         """Setup Checkpoint routes"""
         # Schedule service initialization on app startup
         app.on_startup.append(lambda _: self.initialize_services())
-        
+
         # Setup common routes with 'checkpoints' prefix (includes page route)
-        super().setup_routes(app, 'checkpoints')
+        super().setup_routes(app, prefix)
     
     def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup Checkpoint-specific routes"""
@@ -53,9 +53,9 @@ class CheckpointRoutes(BaseModelRoutes):
         """Get expected model types string for error messages"""
         return "Checkpoint"
 
-    def _parse_specific_params(self, request: web.Request) -> Dict:
+    def _parse_specific_params(self, request: web.Request) -> Dict[str, Any]:
         """Parse Checkpoint-specific parameters"""
-        params: Dict = {}
+        params: Dict[str, Any] = {}
 
         if 'checkpoint_hash' in request.query:
             params['hash_filters'] = {'single_hash': request.query['checkpoint_hash'].lower()}
@@ -70,7 +70,7 @@ class CheckpointRoutes(BaseModelRoutes):
         """Get detailed information for a specific checkpoint by name"""
         try:
             name = request.match_info.get('name', '')
-            checkpoint_info = await self.service.get_model_info_by_name(name)
+            checkpoint_info = await self.service.get_model_info_by_name(name)  # pyright: ignore[reportAttributeAccessIssue]
             
             if checkpoint_info:
                 return web.json_response(checkpoint_info)
@@ -89,7 +89,7 @@ class CheckpointRoutes(BaseModelRoutes):
             roots.extend(config.checkpoints_roots or [])
             roots.extend(config.extra_checkpoints_roots or [])
             # Remove duplicates while preserving order
-            seen: set = set()
+            seen: set[str] = set()
             unique_roots: List[str] = []
             for root in roots:
                 if root and root not in seen:
@@ -114,7 +114,7 @@ class CheckpointRoutes(BaseModelRoutes):
             roots.extend(config.unet_roots or [])
             roots.extend(config.extra_unet_roots or [])
             # Remove duplicates while preserving order
-            seen: set = set()
+            seen: set[str] = set()
             unique_roots: List[str] = []
             for root in roots:
                 if root and root not in seen:

@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 from __future__ import annotations
 
 import asyncio
@@ -7,6 +11,7 @@ import os
 import secrets
 import shutil
 import socket
+import time
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -20,10 +25,43 @@ from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
 
+# Maximum times the download poll loop will re-schedule a transfer after it
+# is lost (daemon restart / RPC outage) before failing the download.
+MAX_TRANSFER_RECOVERY_ATTEMPTS = 2
+
+# stderr lines matching these markers indicate a disk write failure inside
+# aria2 (piece cache flush or raw file write).  They are promoted to INFO so
+# the root cause (disk full, permission denied, file locked by another
+# process, ...) is visible in the default logs; all other stderr output stays
+# at DEBUG to avoid noise.
+_DISK_WRITE_ERROR_MARKERS = (
+    # aria2 wrapper messages (write disk cache flush path)
+    "write disk cache flush failure",
+    "error when trying to flush write cache",
+    "failed to write into the file",
+    "failed to open the file",
+    "failed to seek the file",
+    # underlying root-cause phrases reported via "cause: ..." (POSIX + Windows)
+    "no space left on device",
+    "not enough space on the disk",
+    "input/output error",
+    "permission denied",
+    "access is denied",
+    "disk quota exceeded",
+    "used by another process",
+    "sharing violation",
+)
+
+# Minimum interval between INFO-level reports of the same stderr line so a
+# repeated failure (e.g. aria2 retrying against a full disk) does not spam
+# the log.
+STDERR_ERROR_REPORT_INTERVAL = 60.0
+
+
 def _try_certifi_ca_path() -> str | None:
     """Return the certifi CA bundle path if available, else None."""
     try:
-        import certifi  # type: ignore[import-untyped]
+        import certifi  # pyright: ignore[reportMissingTypeStubs]
 
         path = certifi.where()
         if os.path.isfile(path):
@@ -81,10 +119,12 @@ class Aria2Downloader:
         self._rpc_session: Optional[aiohttp.ClientSession] = None
         self._rpc_session_lock = asyncio.Lock()
         self._process_lock = asyncio.Lock()
+        self._register_lock = asyncio.Lock()
         self._transfers: Dict[str, Aria2Transfer] = {}
         self._poll_interval = 0.5
         self._state_store = Aria2TransferStateStore()
-        self._stderr_reader_task: Optional[asyncio.Task] = None
+        self._stderr_reader_task: Optional[asyncio.Task[Any]] = None
+        self._stderr_error_report: Dict[str, float] = {}
 
     @property
     def is_running(self) -> bool:
@@ -99,26 +139,58 @@ class Aria2Downloader:
         progress_callback=None,
         headers: Optional[Dict[str, str]] = None,
     ) -> Tuple[bool, str]:
-        """Download a file using aria2 RPC and wait for completion."""
+        """Download a file using aria2 RPC and wait for completion.
+
+        The poll loop is self-healing: when the in-memory transfer entry
+        disappears (e.g. another download restarted the daemon and
+        ``close()`` cleared ``_transfers``) or the RPC becomes unreachable,
+        the transfer is re-scheduled with ``continue=true`` so the download
+        resumes from the on-disk ``.aria2`` control file. Recovery is bounded
+        by ``MAX_TRANSFER_RECOVERY_ATTEMPTS``.
+        """
 
         await self._ensure_process()
         save_path = os.path.abspath(save_path)
-        transfer = self._transfers.get(download_id)
-        if transfer is None or os.path.abspath(transfer.save_path) != save_path:
-            gid = await self._schedule_download(
-                url,
-                save_path,
-                download_id=download_id,
-                headers=headers,
-            )
-            transfer = Aria2Transfer(gid=gid, save_path=save_path)
-            self._transfers[download_id] = transfer
 
+        async with self._register_lock:
+            transfer = self._transfers.get(download_id)
+            if transfer is None or os.path.abspath(transfer.save_path) != save_path:
+                transfer = await self._register_transfer(
+                    url,
+                    save_path,
+                    download_id=download_id,
+                    headers=headers,
+                )
+
+        recovery_attempts = 0
         try:
             while True:
-                status = await self._get_status_with_retry(download_id)
+                try:
+                    status = await self._get_status_with_retry(download_id)
+                except Aria2Error:
+                    status = None
+
                 if status is None:
-                    return False, "aria2 download not found"
+                    if recovery_attempts >= MAX_TRANSFER_RECOVERY_ATTEMPTS:
+                        return False, "aria2 download not found"
+                    recovery_attempts += 1
+                    logger.warning(
+                        "aria2 transfer %s lost; re-scheduling with resume "
+                        "(attempt %d/%d)",
+                        download_id,
+                        recovery_attempts,
+                        MAX_TRANSFER_RECOVERY_ATTEMPTS,
+                    )
+                    await asyncio.sleep(1.0)
+                    await self._ensure_process()
+                    async with self._register_lock:
+                        transfer = await self._register_transfer(
+                            url,
+                            save_path,
+                            download_id=download_id,
+                            headers=headers,
+                        )
+                    continue
 
                 snapshot = self._build_progress_snapshot(status)
                 if progress_callback is not None:
@@ -135,7 +207,9 @@ class Aria2Downloader:
 
                 await asyncio.sleep(self._poll_interval)
         finally:
-            self._transfers.pop(download_id, None)
+            current = self._transfers.get(download_id)
+            if current is not None and current.gid == transfer.gid:
+                self._transfers.pop(download_id, None)
 
     async def _get_status_with_retry(
         self, download_id: str, *, max_retries: int = 4, retry_delay: float = 3.0
@@ -190,7 +264,7 @@ class Aria2Downloader:
                     download_id,
                 )
 
-        options: Dict[str, str] = {
+        options: Dict[str, Any] = {
             "dir": save_dir,
             "out": out_name,
             "continue": "true",
@@ -237,6 +311,25 @@ class Aria2Downloader:
             },
         )
         return gid
+
+    async def _register_transfer(
+        self,
+        url: str,
+        save_path: str,
+        *,
+        download_id: str,
+        headers: Optional[Dict[str, str]] = None,
+    ) -> Aria2Transfer:
+        """Schedule a download and track it in the in-memory transfer registry."""
+        gid = await self._schedule_download(
+            url,
+            save_path,
+            download_id=download_id,
+            headers=headers,
+        )
+        transfer = Aria2Transfer(gid=gid, save_path=os.path.abspath(save_path))
+        self._transfers[download_id] = transfer
+        return transfer
 
     async def get_status(self, download_id: str) -> Optional[Dict[str, Any]]:
         """Return the raw aria2 status payload for a known download."""
@@ -385,15 +478,50 @@ class Aria2Downloader:
         blocks, which freezes the entire ``aria2c`` process — including its
         RPC handler.  This background task reads lines from stderr as they
         arrive and forwards them to Python's logger.
+
+        Lines that indicate a disk write failure (e.g. the "cause: No space
+        left on device" line that follows "Write disk cache flush failure")
+        are promoted to INFO so the root cause is visible without enabling
+        debug logging; every other line stays at DEBUG to avoid noise.
         """
         try:
             assert self._process is not None and self._process.stderr is not None
             async for line in self._process.stderr:
                 text = line.decode("utf-8", errors="replace").rstrip()
                 if text:
-                    logger.debug("aria2 stderr: %s", text)
+                    if self._is_disk_write_error(text):
+                        self._report_stderr_error(text)
+                    else:
+                        logger.debug("aria2 stderr: %s", text)
         except Exception:
             pass
+
+    @staticmethod
+    def _is_disk_write_error(text: str) -> bool:
+        lowered = text.lower()
+        return any(marker in lowered for marker in _DISK_WRITE_ERROR_MARKERS)
+
+    def _report_stderr_error(self, text: str) -> None:
+        """INFO-log a disk write failure line, rate-limited per line text.
+
+        aria2 re-emits the same error chain on every poll/retry while the
+        underlying condition persists; only the first occurrence within
+        ``STDERR_ERROR_REPORT_INTERVAL`` seconds is promoted to INFO.
+        """
+        now = time.monotonic()
+        last = self._stderr_error_report.get(text)
+        if last is not None and now - last < STDERR_ERROR_REPORT_INTERVAL:
+            logger.debug("aria2 stderr (repeated disk write error): %s", text)
+            return
+        # Drop entries older than the window so the map stays bounded even
+        # during a long disk-full episode (piece indexes change per line).
+        self._stderr_error_report = {
+            line: timestamp
+            for line, timestamp in self._stderr_error_report.items()
+            if now - timestamp < STDERR_ERROR_REPORT_INTERVAL
+        }
+        self._stderr_error_report[text] = now
+        logger.info("aria2 disk write failure: %s", text)
 
     async def _dispatch_progress(self, callback, snapshot: DownloadProgress) -> None:
         try:

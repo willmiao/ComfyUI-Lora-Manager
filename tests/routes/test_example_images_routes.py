@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
-from typing import Any, Dict, List, Tuple
+from typing import Any, AsyncGenerator, Dict, List, Tuple
 
 from aiohttp import web
 from aiohttp.test_utils import TestClient, TestServer
@@ -19,11 +19,16 @@ from py.routes.handlers.example_images_handlers import (
 )
 
 
+def _json_response(response) -> Any:
+    """Decode the JSON body of a handler response."""
+    return json.loads(response.text)
+
+
 @dataclass
 class ExampleImagesHarness:
     """Container exposing the aiohttp client and stubbed collaborators."""
 
-    client: TestClient
+    client: TestClient[Any, Any]
     download_manager: "StubDownloadManager"
     processor: "StubExampleImagesProcessor"
     file_manager: "StubExampleImagesFileManager"
@@ -35,27 +40,27 @@ class StubDownloadManager:
     def __init__(self) -> None:
         self.calls: List[Tuple[str, Any]] = []
 
-    async def start_download(self, payload: Any) -> dict:
+    async def start_download(self, payload: Any) -> Dict[str, Any]:
         self.calls.append(("start_download", payload))
         return {"operation": "start_download", "payload": payload}
 
-    async def get_status(self, request: web.Request) -> dict:
+    async def get_status(self, request: web.Request) -> Dict[str, Any]:
         self.calls.append(("get_status", dict(request.query)))
         return {"operation": "get_status"}
 
-    async def pause_download(self, request: web.Request) -> dict:
+    async def pause_download(self, request: web.Request) -> Dict[str, Any]:
         self.calls.append(("pause_download", None))
         return {"operation": "pause_download"}
 
-    async def resume_download(self, request: web.Request) -> dict:
+    async def resume_download(self, request: web.Request) -> Dict[str, Any]:
         self.calls.append(("resume_download", None))
         return {"operation": "resume_download"}
 
-    async def stop_download(self, request: web.Request) -> dict:
+    async def stop_download(self, request: web.Request) -> Dict[str, Any]:
         self.calls.append(("stop_download", None))
         return {"operation": "stop_download"}
 
-    async def start_force_download(self, payload: Any) -> dict:
+    async def start_force_download(self, payload: Any) -> Dict[str, Any]:
         self.calls.append(("start_force_download", payload))
         return {"operation": "start_force_download", "payload": payload}
 
@@ -64,7 +69,7 @@ class StubExampleImagesProcessor:
     def __init__(self) -> None:
         self.calls: List[Tuple[str, Any]] = []
 
-    async def import_images(self, model_hash: str, files: List[str]) -> dict:
+    async def import_images(self, model_hash: str, files: List[str]) -> Dict[str, Any]:
         payload = {"model_hash": model_hash, "file_paths": files}
         self.calls.append(("import_images", payload))
         return {"operation": "import_images", "payload": payload}
@@ -122,7 +127,7 @@ class StubWebSocketManager:
 
 
 @asynccontextmanager
-async def example_images_app() -> ExampleImagesHarness:
+async def example_images_app() -> AsyncGenerator[ExampleImagesHarness, None]:
     """Yield an ExampleImagesRoutes app wired with stubbed collaborators."""
 
     download_manager = StubDownloadManager()
@@ -133,10 +138,10 @@ async def example_images_app() -> ExampleImagesHarness:
 
     controller = ExampleImagesRoutes(
         ws_manager=ws_manager,
-        download_manager=download_manager,
+        download_manager=download_manager,  # pyright: ignore[reportArgumentType]
         processor=processor,
-        file_manager=file_manager,
-        cleanup_service=cleanup_service,
+        file_manager=file_manager,  # pyright: ignore[reportArgumentType]
+        cleanup_service=cleanup_service,  # pyright: ignore[reportArgumentType]
     )
 
     app = web.Application()
@@ -323,23 +328,23 @@ async def test_download_handler_methods_delegate() -> None:
         def __init__(self) -> None:
             self.calls: List[Tuple[str, Any]] = []
 
-        async def get_status(self, request) -> dict:
+        async def get_status(self, request) -> Dict[str, Any]:
             self.calls.append(("get_status", request))
             return {"status": "ok"}
 
-        async def pause_download(self, request) -> dict:
+        async def pause_download(self, request) -> Dict[str, Any]:
             self.calls.append(("pause_download", request))
             return {"status": "paused"}
 
-        async def resume_download(self, request) -> dict:
+        async def resume_download(self, request) -> Dict[str, Any]:
             self.calls.append(("resume_download", request))
             return {"status": "running"}
 
-        async def stop_download(self, request) -> dict:
+        async def stop_download(self, request) -> Dict[str, Any]:
             self.calls.append(("stop_download", request))
             return {"status": "stopping"}
 
-        async def start_force_download(self, payload) -> dict:
+        async def start_force_download(self, payload) -> Dict[str, Any]:
             self.calls.append(("start_force_download", payload))
             return {"status": "force", "payload": payload}
 
@@ -347,35 +352,50 @@ async def test_download_handler_methods_delegate() -> None:
         def __init__(self) -> None:
             self.payloads: List[Any] = []
 
-        async def execute(self, payload: dict) -> dict:
+        async def execute(self, payload: Dict[str, Any]) -> Dict[str, Any]:
             self.payloads.append(payload)
             return {"status": "started", "payload": payload}
 
     class DummyRequest:
-        def __init__(self, payload: dict) -> None:
+        def __init__(self, payload: Dict[str, Any]) -> None:
             self._payload = payload
             self.query = {}
 
-        async def json(self) -> dict:
+        async def json(self) -> Dict[str, Any]:
             return self._payload
 
     recorder = Recorder()
     use_case = StubDownloadUseCase()
-    handler = ExampleImagesDownloadHandler(use_case, recorder)
+    handler = ExampleImagesDownloadHandler(
+        use_case,  # pyright: ignore[reportArgumentType]
+        recorder,
+    )
     request = DummyRequest({"foo": "bar"})
 
-    download_response = await handler.download_example_images(request)
-    assert json.loads(download_response.text) == {"status": "started", "payload": {"foo": "bar"}}
-    status_response = await handler.get_example_images_status(request)
-    assert json.loads(status_response.text) == {"status": "ok"}
-    pause_response = await handler.pause_example_images(request)
-    assert json.loads(pause_response.text) == {"status": "paused"}
-    resume_response = await handler.resume_example_images(request)
-    assert json.loads(resume_response.text) == {"status": "running"}
-    stop_response = await handler.stop_example_images(request)
-    assert json.loads(stop_response.text) == {"status": "stopping"}
-    force_response = await handler.force_download_example_images(request)
-    assert json.loads(force_response.text) == {"status": "force", "payload": {"foo": "bar"}}
+    download_response = await handler.download_example_images(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(download_response) == {"status": "started", "payload": {"foo": "bar"}}
+    status_response = await handler.get_example_images_status(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(status_response) == {"status": "ok"}
+    pause_response = await handler.pause_example_images(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(pause_response) == {"status": "paused"}
+    resume_response = await handler.resume_example_images(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(resume_response) == {"status": "running"}
+    stop_response = await handler.stop_example_images(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(stop_response) == {"status": "stopping"}
+    force_response = await handler.force_download_example_images(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(force_response) == {"status": "force", "payload": {"foo": "bar"}}
 
     assert use_case.payloads == [{"foo": "bar"}]
     assert recorder.calls == [
@@ -393,7 +413,7 @@ async def test_management_handler_methods_delegate() -> None:
         def __init__(self) -> None:
             self.requests: List[Any] = []
 
-        async def execute(self, request: Any) -> dict:
+        async def execute(self, request: Any) -> Dict[str, Any]:
             self.requests.append(request)
             return {"status": "imported"}
 
@@ -412,15 +432,23 @@ async def test_management_handler_methods_delegate() -> None:
     recorder = Recorder()
     cleanup_service = StubExampleImagesCleanupService()
     use_case = StubImportUseCase()
-    handler = ExampleImagesManagementHandler(use_case, recorder, cleanup_service)
+    handler = ExampleImagesManagementHandler(
+        use_case,  # pyright: ignore[reportArgumentType]
+        recorder,
+        cleanup_service,
+    )
     request = object()
 
-    import_response = await handler.import_example_images(request)
-    assert json.loads(import_response.text) == {"status": "imported"}
-    assert await handler.delete_example_image(request) == "delete"
+    import_response = await handler.import_example_images(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(import_response) == {"status": "imported"}
+    assert await handler.delete_example_image(request) == "delete"  # pyright: ignore[reportArgumentType]
     cleanup_service.result = {"success": True}
-    cleanup_response = await handler.cleanup_example_image_folders(request)
-    assert json.loads(cleanup_response.text) == {"success": True}
+    cleanup_response = await handler.cleanup_example_image_folders(
+        request  # pyright: ignore[reportArgumentType]
+    )
+    assert _json_response(cleanup_response) == {"success": True}
     assert use_case.requests == [request]
     assert recorder.calls == [("delete_custom_image", request)]
     assert len(cleanup_service.calls) == 1
@@ -448,9 +476,9 @@ async def test_file_handler_methods_delegate() -> None:
     handler = ExampleImagesFileHandler(recorder)
     request = object()
 
-    assert await handler.open_example_images_folder(request) == "open"
-    assert await handler.get_example_image_files(request) == "files"
-    assert await handler.has_example_images(request) == "has"
+    assert await handler.open_example_images_folder(request) == "open"  # pyright: ignore[reportArgumentType]
+    assert await handler.get_example_image_files(request) == "files"  # pyright: ignore[reportArgumentType]
+    assert await handler.has_example_images(request) == "has"  # pyright: ignore[reportArgumentType]
     assert recorder.calls == [
         ("open_folder", request),
         ("get_files", request),
@@ -483,9 +511,16 @@ def test_handler_set_route_mapping_includes_all_handlers() -> None:
         async def set_example_image_nsfw_level(self, request):
             return {}
 
-    download = ExampleImagesDownloadHandler(DummyUseCase(), DummyManager())
+    download = ExampleImagesDownloadHandler(
+        DummyUseCase(),  # pyright: ignore[reportArgumentType]
+        DummyManager(),
+    )
     cleanup_service = StubExampleImagesCleanupService()
-    management = ExampleImagesManagementHandler(DummyUseCase(), DummyProcessor(), cleanup_service)
+    management = ExampleImagesManagementHandler(
+        DummyUseCase(),  # pyright: ignore[reportArgumentType]
+        DummyProcessor(),
+        cleanup_service,
+    )
     files = ExampleImagesFileHandler(object())
     handler_set = ExampleImagesHandlerSet(
         download=download,

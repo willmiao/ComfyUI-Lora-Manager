@@ -3,6 +3,7 @@
 import os
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Optional
 from unittest.mock import AsyncMock
 
 import pytest
@@ -99,7 +100,8 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
             self.file_path = str(path)
             self.sha256 = "sha256"
             self.file_name = path.stem
-            self.preview_url = None
+            self.preview_url: Optional[str] = None
+            self.autov3 = None
             self.preview_nsfw_level = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
@@ -181,6 +183,7 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
     assert any("width=450,optimized=true" in url for url in preview_urls)
     assert dummy_downloader.memory_calls == 0
     assert optimize_called["value"] is False
+    assert metadata.preview_url is not None
     assert metadata.preview_url.endswith(".jpeg")
     assert metadata.preview_nsfw_level == 2
     stored_preview = manager._active_downloads["dl"]["preview_path"]
@@ -203,7 +206,8 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
             self.file_path = str(path)
             self.sha256 = "sha256"
             self.file_name = path.stem
-            self.preview_url = None
+            self.preview_url: Optional[str] = None
+            self.autov3 = None
             self.preview_nsfw_level = None
 
         def generate_unique_filename(self, *_args, **_kwargs):
@@ -324,7 +328,8 @@ async def test_execute_download_uses_auth_for_red_civitai_downloads(monkeypatch,
             self.file_path = str(path)
             self.sha256 = "sha256"
             self.file_name = path.stem
-            self.preview_url = None
+            self.preview_url: Optional[str] = None
+            self.autov3 = None
             self.preview_nsfw_level = None
 
         def generate_unique_filename(self, *_args, **_kwargs):

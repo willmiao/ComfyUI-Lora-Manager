@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 """
 Unified download manager for all HTTP/HTTPS downloads in the application.
 
@@ -20,7 +24,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 from email.utils import parsedate_to_datetime
 from urllib.parse import urlparse
-from typing import Optional, Dict, Tuple, Callable, Union, Awaitable
+from typing import Optional, Dict, Tuple, Callable, Union, Awaitable, Any, cast
 from ..services.settings_manager import get_settings_manager
 from .connectivity_guard import (
     OFFLINE_COOLDOWN_ERROR,
@@ -204,6 +208,7 @@ class Downloader:
                 # Double check after acquiring lock
                 if self._session is None or self._should_refresh_session():
                     await self._create_session()
+        assert self._session is not None
         return self._session
 
     @property
@@ -231,7 +236,7 @@ class Downloader:
         )
 
         try:
-            timeout_value = float(raw_value)
+            timeout_value = float(cast(Any, raw_value))
         except (TypeError, ValueError):
             timeout_value = default_timeout
 
@@ -243,7 +248,7 @@ class Downloader:
         raw_value = os.environ.get("COMFYUI_DOWNLOAD_MAX_RETRIES")
 
         try:
-            retries = int(raw_value)
+            retries = int(cast(Any, raw_value))
         except (TypeError, ValueError):
             retries = default_retries
 
@@ -320,7 +325,7 @@ class Downloader:
         # CA coverage across different Python environments (especially
         # embedded/compatibility Python builds).
         try:
-            import certifi  # type: ignore[import-untyped]
+            import certifi  # pyright: ignore[reportMissingTypeStubs]
 
             ca_path = certifi.where()
             ssl_context = ssl.create_default_context(cafile=ca_path)
@@ -330,7 +335,7 @@ class Downloader:
             logger.debug("SSL: certifi unavailable; using system default CA bundle")
 
         # Optimize TCP connection parameters
-        connector_kwargs = dict(
+        connector_kwargs: Dict[str, Any] = dict(
             ssl=ssl_context,
             limit=8,  # Concurrent connections
             ttl_dns_cache=300,  # DNS cache timeout
@@ -890,7 +895,7 @@ class Downloader:
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
         return_headers: bool = False,
-    ) -> Tuple[bool, Union[bytes, str], Optional[Dict]]:
+    ) -> Tuple[bool, Union[bytes, str], Optional[Dict[str, Any]]]:
         """
         Download a file to memory (for small files like preview images)
 
@@ -976,7 +981,7 @@ class Downloader:
         url: str,
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
-    ) -> Tuple[bool, Union[Dict, str]]:
+    ) -> Tuple[bool, Union[Dict[str, Any], str]]:
         """
         Get response headers without downloading the full content
 
@@ -1036,7 +1041,7 @@ class Downloader:
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
         **kwargs,
-    ) -> Tuple[bool, Union[Dict, str]]:
+    ) -> Tuple[bool, Union[Dict[str, Any], str, RateLimitError]]:
         """
         Make a generic HTTP request and return JSON response
 

@@ -39,6 +39,7 @@ These fields are present in all model metadata files.
 | `metadata_source` | string\|null | ❌ No | ✅ Yes | Last provider that supplied metadata (see below) |
 | `last_checked_at` | float | ❌ No (default: `0`) | ✅ Yes | Unix timestamp of last metadata check |
 | `hash_status` | string | ❌ No (default: `"completed"`) | ✅ Yes | Hash calculation status: `"pending"`, `"calculating"`, `"completed"`, `"failed"` |
+| `autov3` | string\|null | ❌ No | ✅ Yes | CivitAI AutoV3 hash (first 12 chars, lowercase hex) sourced from the safetensors embedded metadata (`sshs_model_hash` / `modelspec.hash_sha256`). **Absent** = not yet checked (may be backfilled later); **`null`** = checked but unavailable (header has no recognized hash); **12-char hex string** = value |
 
 ---
 
@@ -287,6 +288,7 @@ These fields are automatically synchronized with the filesystem:
 - `preview_url` — Updated if preview file is moved/removed
 - `sha256` — Updated during hash calculation (when `hash_status="pending"`)
 - `hash_status` — Updated during hash calculation
+- `autov3` — Set when metadata is first created (from safetensors header); may be backfilled later for entries where it is absent
 - `last_checked_at` — Timestamp of scan
 - `metadata_source` — Set based on metadata provider
 
@@ -345,6 +347,7 @@ These fields can be edited by users at any time through the Lora Manager UI or b
 | `metadata_source` | `null` |
 | `last_checked_at` | `0` |
 | `hash_status` | `"completed"` |
+| `autov3` | absent (not checked) or `null` (checked, no value) |
 | `usage_tips` | `"{}"` (LoRA only) |
 | `model_type` | `"checkpoint"` or `"embedding"` (not present in LoRA models) |
 
@@ -354,6 +357,7 @@ These fields can be edited by users at any time through the Lora Manager UI or b
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1 | 2026-08 | Added `autov3` field (CivitAI AutoV3 hash with three-state semantics) |
 | 1.0 | 2026-03 | Initial schema documentation |
 
 ---

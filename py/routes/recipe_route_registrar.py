@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Mapping
+from typing import Any, Callable, Mapping
 
 from aiohttp import web
 
@@ -61,6 +61,11 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/recipe/{recipe_id}/repair", "repair_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/repair-bulk", "repair_recipes_bulk"),
     RouteDefinition("GET", "/api/lm/recipes/repair-progress", "get_repair_progress"),
+    RouteDefinition("POST", "/api/lm/recipes/rematch", "rematch_recipes"),
+    RouteDefinition("POST", "/api/lm/recipes/rematch-bulk", "rematch_recipes_bulk"),
+    RouteDefinition("POST", "/api/lm/recipe/{recipe_id}/rematch", "rematch_recipe"),
+    RouteDefinition("POST", "/api/lm/recipes/cancel-rematch", "cancel_rematch"),
+    RouteDefinition("GET", "/api/lm/recipes/rematch-progress", "get_rematch_progress"),
     RouteDefinition("POST", "/api/lm/recipes/batch-import/start", "start_batch_import"),
     RouteDefinition(
         "GET", "/api/lm/recipes/batch-import/progress", "get_batch_import_progress"
@@ -105,7 +110,7 @@ class RecipeRouteRegistrar:
             handler = handler_lookup[definition.handler_name]
             self._bind_route(definition.method, definition.path, handler)
 
-    def _bind_route(self, method: str, path: str, handler: Callable) -> None:
+    def _bind_route(self, method: str, path: str, handler: Callable[..., Any]) -> None:
         add_method_name = self._METHOD_MAP[method.upper()]
         add_method = getattr(self._app.router, add_method_name)
         add_method(path, handler)

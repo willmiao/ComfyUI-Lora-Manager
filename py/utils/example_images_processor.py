@@ -4,12 +4,13 @@ import os
 import re
 import random
 import string
+from typing import Any
 from aiohttp import web
 from ..utils.constants import SUPPORTED_MEDIA_EXTENSIONS
 from ..services.service_registry import ServiceRegistry
 from ..services.settings_manager import get_settings_manager
 from ..utils.example_images_paths import get_model_folder, get_model_relative_path
-from .example_images_metadata import MetadataUpdater
+from .example_images_metadata import MetadataUpdater, update_cache_from_metadata
 from ..utils.metadata_manager import MetadataManager
 
 logger = logging.getLogger(__name__)
@@ -114,6 +115,26 @@ class ExampleImagesProcessor:
         return '404' in message or 'file not found' in message
 
     @staticmethod
+    def _example_image_file_exists(model_dir: str, index: int, media_type_hint: str | None = None) -> bool:
+        """Return True when the file that would be written for a media index already exists.
+
+        The final filename (``image_{index}{extension}``) depends on the downloaded
+        content, so the extension cannot be known ahead of time. The post-download
+        check skips the write when the exact target file exists; this pre-check
+        approximates that with the candidate extensions for the media type (videos
+        only when the metadata hints at a video) so the network request is avoided
+        for files that already exist on disk.
+        """
+        if media_type_hint == "video":
+            extensions = SUPPORTED_MEDIA_EXTENSIONS['videos']
+        else:
+            extensions = SUPPORTED_MEDIA_EXTENSIONS['images']
+        return any(
+            os.path.exists(os.path.join(model_dir, f"image_{index}{ext}"))
+            for ext in extensions
+        )
+
+    @staticmethod
     async def download_model_images(model_hash, model_name, model_images, model_dir, optimize, downloader):
         """Download images for a single model
         
@@ -139,7 +160,12 @@ class ExampleImagesProcessor:
             original_url = image_url
             if optimize and 'civitai.com' in image_url:
                 image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
-            
+
+            # Skip the download when the file already exists on disk
+            if ExampleImagesProcessor._example_image_file_exists(model_dir, i, image.get("type")):
+                logger.debug("File already exists, skipping download for %s", image_url)
+                continue
+
             # Download the file first to determine the actual file type
             try:
                 logger.debug(f"Downloading media file {i} for {model_name}")
@@ -229,7 +255,12 @@ class ExampleImagesProcessor:
             if optimize and 'civitai.com' in image_url:
                 image_url = ExampleImagesProcessor.get_civitai_optimized_url(image_url)
 
-            async def _attempt_download() -> tuple:
+            # Skip the download when the file already exists on disk
+            if ExampleImagesProcessor._example_image_file_exists(model_dir, i, image.get("type")):
+                logger.debug("File already exists, skipping download for %s", image_url)
+                continue
+
+            async def _attempt_download() -> tuple[bool, Any, Any]:
                 logger.debug("Downloading media file %s for %s", i, model_name)
                 return await downloader.download_to_memory(
                     image_url,
@@ -644,7 +675,7 @@ class ExampleImagesProcessor:
                     }, status=500)
             
                 # Update cache
-                await scanner.update_single_model_cache(file_path, file_path, model_data)
+                await update_cache_from_metadata(scanner, file_path, model_data)
             
             # Get regular images array (might be None)
             regular_images = civitai_data.get('images', [])
@@ -759,7 +790,7 @@ class ExampleImagesProcessor:
                 model_copy = model_data.copy()
                 model_copy.pop('folder', None)
                 await MetadataManager.save_metadata(file_path, model_copy)
-                await scanner.update_single_model_cache(file_path, file_path, model_data)
+                await update_cache_from_metadata(scanner, file_path, model_copy)
 
             return web.json_response({
                 'success': True,

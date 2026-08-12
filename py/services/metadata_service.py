@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 import os
 import logging
 from .model_metadata_provider import (
@@ -170,7 +174,7 @@ def _wrap_provider_with_rate_limit(provider_name: str | None, provider: ModelMet
     return RateLimitRetryingProvider(provider, label=provider_name)
 
 
-async def get_metadata_provider(provider_name: str = None):
+async def get_metadata_provider(provider_name: str | None = None):
     """Get a specific metadata provider or default provider with rate-limit handling."""
 
     provider_manager = await ModelMetadataProviderManager.get_instance()

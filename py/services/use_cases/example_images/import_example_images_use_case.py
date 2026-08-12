@@ -5,9 +5,10 @@ from __future__ import annotations
 import os
 import tempfile
 from contextlib import suppress
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from aiohttp import web
+from aiohttp.multipart import BodyPartReader
 
 from ....utils.example_images_processor import (
     ExampleImagesImportError,
@@ -35,7 +36,8 @@ class ImportExampleImagesUseCase:
             if request.content_type and "multipart/form-data" in request.content_type:
                 reader = await request.multipart()
 
-                first_field = await reader.next()
+                first_field_raw = await reader.next()
+                first_field = cast(BodyPartReader, first_field_raw) if first_field_raw is not None else None
                 if first_field and first_field.name == "model_hash":
                     model_hash = await first_field.text()
                 else:
@@ -43,7 +45,8 @@ class ImportExampleImagesUseCase:
                     if first_field is not None:
                         await self._collect_upload_file(first_field, files_to_import, temp_files)
 
-                async for field in reader:
+                async for raw_field in reader:
+                    field = cast(BodyPartReader, raw_field)
                     if field.name == "model_hash" and not model_hash:
                         model_hash = await field.text()
                     elif field.name == "files":
@@ -53,6 +56,8 @@ class ImportExampleImagesUseCase:
                 model_hash = data.get("model_hash")
                 files_to_import = list(data.get("file_paths", []))
 
+            if not model_hash:
+                raise ImportExampleImagesValidationError("Missing model_hash parameter")
             result = await self._processor.import_images(model_hash, files_to_import)
             return result
         except ExampleImagesValidationError as exc:

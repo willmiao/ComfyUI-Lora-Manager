@@ -1,7 +1,7 @@
 import logging
 import json
 import os
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 from .base_model_service import BaseModelService
 from .model_query import resolve_sub_type
@@ -24,7 +24,7 @@ class LoraService(BaseModelService):
         """
         super().__init__("lora", scanner, LoraMetadata, update_service=update_service)
 
-    async def format_response(self, lora_data: Dict) -> Optional[Dict]:
+    async def format_response(self, model_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Format LoRA data for API response.
 
         Returns None when the entry is missing critical fields (corrupted cache
@@ -32,56 +32,56 @@ class LoraService(BaseModelService):
         whole listing request. See issue #730.
         """
         # Guard against corrupted cache entries missing critical fields
-        file_path = lora_data.get("file_path")
+        file_path = model_data.get("file_path")
         if not file_path or not isinstance(file_path, str):
             logger.warning(
                 "Skipping corrupted LoRA entry (missing file_path): %s",
-                lora_data.get("file_name", "<unknown>"),
+                model_data.get("file_name", "<unknown>"),
             )
             return None
 
         # Resolve sub_type using priority: sub_type > model_type > civitai.model.type > default
         # Normalize to lowercase for consistent API responses
-        sub_type = resolve_sub_type(lora_data).lower()
+        sub_type = resolve_sub_type(model_data).lower()
 
-        file_name = lora_data.get("file_name") or ""
-        model_name = lora_data.get("model_name") or file_name
-        folder = lora_data.get("folder") or ""
+        file_name = model_data.get("file_name") or ""
+        model_name = model_data.get("model_name") or file_name
+        folder = model_data.get("folder") or ""
 
         return {
             "model_name": model_name,
             "file_name": file_name,
             "preview_url": config.get_preview_static_url(
-                lora_data.get("preview_url", "")
+                model_data.get("preview_url", "")
             ),
-            "preview_nsfw_level": lora_data.get("preview_nsfw_level", 0),
-            "base_model": lora_data.get("base_model", ""),
+            "preview_nsfw_level": model_data.get("preview_nsfw_level", 0),
+            "base_model": model_data.get("base_model", ""),
             "folder": folder,
-            "sha256": lora_data.get("sha256", ""),
+            "sha256": model_data.get("sha256", ""),
             "file_path": file_path.replace(os.sep, "/"),
-            "file_size": lora_data.get("size", 0),
-            "modified": lora_data.get("modified", ""),
-            "tags": lora_data.get("tags", []),
-            "from_civitai": lora_data.get("from_civitai", True),
-            "usage_count": lora_data.get("usage_count", 0),
-            "usage_tips": lora_data.get("usage_tips", ""),
-            "notes": lora_data.get("notes", ""),
-            "favorite": lora_data.get("favorite", False),
-            "exclude": bool(lora_data.get("exclude", False)),
-            "update_available": bool(lora_data.get("update_available", False)),
+            "file_size": model_data.get("size", 0),
+            "modified": model_data.get("modified", ""),
+            "tags": model_data.get("tags", []),
+            "from_civitai": model_data.get("from_civitai", True),
+            "usage_count": model_data.get("usage_count", 0),
+            "usage_tips": model_data.get("usage_tips", ""),
+            "notes": model_data.get("notes", ""),
+            "favorite": model_data.get("favorite", False),
+            "exclude": bool(model_data.get("exclude", False)),
+            "update_available": bool(model_data.get("update_available", False)),
             "skip_metadata_refresh": bool(
-                lora_data.get("skip_metadata_refresh", False)
+                model_data.get("skip_metadata_refresh", False)
             ),
             "sub_type": sub_type,
             "civitai": self.filter_civitai_data(
-                lora_data.get("civitai", {}), minimal=True
+                model_data.get("civitai", {}), minimal=True
             ),
-            "auto_tags": lora_data.get("auto_tags") or extract_auto_tags(lora_data),
-            "version_count": lora_data.get("version_count"),
-            "hf_url": lora_data.get("hf_url", ""),
+            "auto_tags": model_data.get("auto_tags") or extract_auto_tags(model_data),
+            "version_count": model_data.get("version_count"),
+            "hf_url": model_data.get("hf_url", ""),
         }
 
-    async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:
+    async def _apply_specific_filters(self, data: List[Dict[str, Any]], **kwargs) -> List[Dict[str, Any]]:
         """Apply LoRA-specific filters"""
         # Handle first_letter filter for LoRAs
         first_letter = kwargs.get("first_letter")
@@ -152,7 +152,7 @@ class LoraService(BaseModelService):
 
         return data
 
-    def _filter_by_first_letter(self, data: List[Dict], letter: str) -> List[Dict]:
+    def _filter_by_first_letter(self, data: List[Dict[str, Any]], letter: str) -> List[Dict[str, Any]]:
         """Filter data by first letter of model name
 
         Special handling:
@@ -307,7 +307,7 @@ class LoraService(BaseModelService):
         return None
 
     @staticmethod
-    def get_recommended_strength_from_lora_data(lora_data: Dict) -> Optional[float]:
+    def get_recommended_strength_from_lora_data(lora_data: Dict[str, Any]) -> Optional[float]:
         """Parse usage_tips JSON and extract recommended model strength."""
         try:
             usage_tips = lora_data.get("usage_tips", "")
@@ -320,7 +320,7 @@ class LoraService(BaseModelService):
 
     @staticmethod
     def get_recommended_clip_strength_from_lora_data(
-        lora_data: Dict,
+        lora_data: Dict[str, Any],
     ) -> Optional[float]:
         """Parse usage_tips JSON and extract recommended clip strength."""
         try:
@@ -332,7 +332,7 @@ class LoraService(BaseModelService):
         except (json.JSONDecodeError, TypeError, AttributeError):
             return None
 
-    async def get_lora_metadata_by_filename(self, filename: str) -> Optional[Dict]:
+    async def get_lora_metadata_by_filename(self, filename: str) -> Optional[Dict[str, Any]]:
         """Return cached raw metadata for a LoRA matching the given filename."""
         cache = await self.scanner.get_cached_data(force_refresh=False)
 
@@ -357,11 +357,11 @@ class LoraService(BaseModelService):
 
         return None
 
-    def find_duplicate_hashes(self) -> Dict:
+    def find_duplicate_hashes(self) -> Dict[str, Any]:
         """Find LoRAs with duplicate SHA256 hashes"""
         return self.scanner._hash_index.get_duplicate_hashes()
 
-    def find_duplicate_filenames(self) -> Dict:
+    def find_duplicate_filenames(self) -> Dict[str, Any]:
         """Find LoRAs with conflicting filenames"""
         return self.scanner._hash_index.get_duplicate_filenames()
 
@@ -373,8 +373,8 @@ class LoraService(BaseModelService):
         use_same_clip_strength: bool = True,
         clip_strength_min: float = 0.0,
         clip_strength_max: float = 1.0,
-        locked_loras: Optional[List[Dict]] = None,
-        pool_config: Optional[Dict] = None,
+        locked_loras: Optional[List[Dict[str, Any]]] = None,
+        pool_config: Optional[Dict[str, Any]] = None,
         count_mode: str = "fixed",
         count_min: int = 3,
         count_max: int = 7,
@@ -382,7 +382,7 @@ class LoraService(BaseModelService):
         recommended_strength_scale_min: float = 0.5,
         recommended_strength_scale_max: float = 1.0,
         seed: Optional[int] = None,
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """
         Get random LoRAs with specified strength ranges.
 
@@ -513,8 +513,8 @@ class LoraService(BaseModelService):
         return result_loras
 
     async def _apply_pool_filters(
-        self, available_loras: List[Dict], pool_config: Dict
-    ) -> List[Dict]:
+        self, available_loras: List[Dict[str, Any]], pool_config: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
         """
         Apply pool_config filters to available LoRAs.
 
@@ -671,8 +671,8 @@ class LoraService(BaseModelService):
         return available_loras
 
     async def get_cycler_list(
-        self, pool_config: Optional[Dict] = None, sort_by: str = "filename"
-    ) -> List[Dict]:
+        self, pool_config: Optional[Dict[str, Any]] = None, sort_by: str = "filename"
+    ) -> List[Dict[str, Any]]:
         """
         Get filtered and sorted LoRA list for cycling.
 

@@ -92,6 +92,7 @@ vi.mock('../../../static/js/utils/eventManagementInit.js', () => ({
 
 vi.mock('../../../static/js/utils/infiniteScroll.js', () => ({
   initializeInfiniteScroll: vi.fn(),
+  recreateVirtualScroll: vi.fn(),
 }));
 
 vi.mock('../../../static/js/components/ContextMenu/index.js', () => ({

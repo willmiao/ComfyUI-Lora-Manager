@@ -333,7 +333,7 @@ class TestBatchImportService:
         )
 
         service = BatchImportService(
-            analysis_service=analysis_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
             persistence_service=persistence_service,
             ws_manager=ws_manager,
             logger=logger,
@@ -445,8 +445,8 @@ class TestBatchImportServiceEdgeCases:
         logger = logging.getLogger("test")
 
         return BatchImportService(
-            analysis_service=analysis_service,
-            persistence_service=persistence_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
             ws_manager=ws_manager,
             logger=logger,
         )
@@ -506,8 +506,8 @@ class TestBatchImportServiceEdgeCases:
         (tmp_path / "test.png").write_bytes(b"fake-image")
 
         service = BatchImportService(
-            analysis_service=analysis_service,
-            persistence_service=persistence_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
             ws_manager=ws_manager,
             logger=logger,
         )
@@ -571,8 +571,8 @@ class TestInputValidation:
         logger = logging.getLogger("test")
 
         return BatchImportService(
-            analysis_service=analysis_service,
-            persistence_service=persistence_service,
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
             ws_manager=ws_manager,
             logger=logger,
         )

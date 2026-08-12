@@ -2,17 +2,18 @@ import asyncio
 import json
 import pytest
 from pathlib import Path
+from typing import Any
 from py.services.settings_manager import get_settings_manager
 from py.utils import example_images_download_manager as download_module
 
 class RecordingWebSocketManager:
     def __init__(self) -> None:
-        self.payloads: list[dict] = []
-    async def broadcast(self, payload: dict) -> None:
+        self.payloads: list[dict[str, Any]] = []
+    async def broadcast(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 class StubScanner:
-    def __init__(self, models: list[dict]) -> None:
+    def __init__(self, models: list[dict[str, Any]]) -> None:
         self.raw_data = models
     async def get_cached_data(self):
         class Cache:

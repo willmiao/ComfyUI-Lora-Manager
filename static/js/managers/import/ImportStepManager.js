@@ -47,11 +47,8 @@ export class ImportStepManager {
                 targetStep.offsetHeight;
             }
             
-            // Scroll modal content to top
-            const modalContent = document.querySelector('#importModal .modal-content');
-            if (modalContent) {
-                modalContent.scrollTop = 0;
-            }
+            // Scroll the active step back to top (steps scroll independently of the modal shell)
+            targetStep.scrollTop = 0;
         }
     }
 }

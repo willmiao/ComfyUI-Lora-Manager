@@ -4,6 +4,7 @@ import asyncio
 import logging
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 from aiohttp import web
@@ -160,7 +161,7 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
     )
 
     original_create_task = asyncio.create_task
-    scheduled_tasks: list[asyncio.Task] = []
+    scheduled_tasks: list[asyncio.Task[Any]] = []
 
     def track_create_task(coro, *, name=None):
         task = original_create_task(coro, name=name)
@@ -205,6 +206,10 @@ async def test_lora_manager_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path:
 
     task_names = {task.get_name() for task in scheduled_tasks}
     assert {"lora_cache_init", "checkpoint_cache_init", "embedding_cache_init", "recipe_cache_init", "post_init_tasks", "cleanup_bak_files"}.issubset(task_names)
+
+    # Startup sweep: an expired pending-delete purge task is spawned during
+    # service initialization (covers both plugin and standalone modes).
+    assert "pending_delete_startup_sweep" in task_names
 
     for scanner in scanners.values():
         assert scanner.initialized is True

@@ -1,5 +1,5 @@
 import logging
-from typing import Dict, Iterable, List
+from typing import Any, Dict, Iterable, List
 
 import pytest
 
@@ -146,6 +146,8 @@ def test_save_paths_repairs_empty_default_roots(monkeypatch: pytest.MonkeyPatch,
 
     class FakeSettingsService:
         active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
 
         def get_libraries(self):
             return {
@@ -183,6 +185,8 @@ def test_save_paths_repairs_stale_default_roots(monkeypatch: pytest.MonkeyPatch,
 
     class FakeSettingsService:
         active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
 
         def get_libraries(self):
             return {
@@ -220,6 +224,8 @@ def test_save_paths_keeps_valid_default_roots(monkeypatch: pytest.MonkeyPatch, t
 
     class FakeSettingsService:
         active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
 
         def get_libraries(self):
             return {
@@ -357,6 +363,8 @@ def test_save_paths_keeps_default_roots_in_extra_paths(monkeypatch: pytest.Monke
 
     class FakeSettingsService:
         active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
 
         def get_libraries(self):
             return {
@@ -409,6 +417,8 @@ def test_save_paths_keeps_default_roots_in_extra_paths_with_windows_slash_mismat
 
     class FakeSettingsService:
         active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
 
         def get_libraries(self):
             return {
@@ -460,6 +470,8 @@ def test_save_paths_repairs_empty_default_roots_to_extra_paths_when_primary_miss
 
     class FakeSettingsService:
         active_library = "comfyui"
+        name: str = ""
+        payload: Dict[str, Any] = {}
 
         def get_libraries(self):
             return {
@@ -577,7 +589,7 @@ def test_apply_library_settings_merges_extra_paths(monkeypatch, tmp_path):
     assert str(extra_loras_dir) in config_instance.extra_loras_roots
     assert str(checkpoints_dir) in config_instance.base_models_roots
     assert str(extra_checkpoints_dir) in config_instance.extra_checkpoints_roots
-    assert str(embeddings_dir) in config_instance.embeddings_roots
+    assert str(embeddings_dir) in (config_instance.embeddings_roots or [])
     assert str(extra_embeddings_dir) in config_instance.extra_embeddings_roots
 
 
@@ -609,7 +621,7 @@ def test_apply_library_settings_without_extra_paths(monkeypatch, tmp_path):
     assert config_instance.extra_loras_roots == []
     assert str(checkpoints_dir) in config_instance.base_models_roots
     assert config_instance.extra_checkpoints_roots == []
-    assert str(embeddings_dir) in config_instance.embeddings_roots
+    assert str(embeddings_dir) in (config_instance.embeddings_roots or [])
     assert config_instance.extra_embeddings_roots == []
 
 
@@ -858,7 +870,7 @@ def test_save_paths_removes_stale_empty_default_when_comfyui_exists(
             # dict order, returning "default".
             self.active_library = "default"
             self.delete_calls: list[str] = []
-            self.upsert_calls: list[tuple[str, dict]] = []
+            self.upsert_calls: list[tuple[str, dict[str, Any]]] = []
 
         def get_libraries(self):
             return dict(self.libraries)

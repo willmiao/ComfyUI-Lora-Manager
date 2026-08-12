@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import html as html_module
 import re
-from typing import List, Tuple
+from typing import Any, List, Tuple
 
 
 _REPO_URL_PATTERN = re.compile(r"https?://huggingface\.co/([^/]+/[^/]+)")
@@ -18,10 +18,10 @@ _REPO_URL_PATTERN = re.compile(r"https?://huggingface\.co/([^/]+/[^/]+)")
 def extract_simple_markdown_images(
     markdown_text: str,
     repo: str,
-    existing_urls: set | None = None,
+    existing_urls: set[str] | None = None,
     default_width: int = 512,
     default_height: int = 512,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Extract standalone markdown images from the README body.
 
     Matches ``![alt](url)`` on lines that are NOT part of a markdown table
@@ -36,8 +36,8 @@ def extract_simple_markdown_images(
         return []
 
     base_url = f"https://huggingface.co/{repo}/resolve/main"
-    images: list[dict] = []
-    seen_urls: set = set(existing_urls) if existing_urls else set()
+    images: list[dict[str, Any]] = []
+    seen_urls: set[str] = set(existing_urls) if existing_urls else set()
 
     # Collect lines that are NOT inside fenced code blocks
     lines = markdown_text.split("\n")
@@ -86,10 +86,10 @@ def extract_simple_markdown_images(
 def extract_html_img_tags(
     markdown_text: str,
     repo: str,
-    existing_urls: set | None = None,
+    existing_urls: set[str] | None = None,
     default_width: int = 512,
     default_height: int = 512,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Extract image URLs from HTML ``<img src=\"...\">`` tags in the README.
 
     Many HF collection repos (e.g. ``deadman44/Z-Image_LoRA``) use raw HTML
@@ -103,8 +103,8 @@ def extract_html_img_tags(
         return []
 
     base_url = f"https://huggingface.co/{repo}/resolve/main"
-    images: list[dict] = []
-    seen_urls: set = set(existing_urls) if existing_urls else set()
+    images: list[dict[str, Any]] = []
+    seen_urls: set[str] = set(existing_urls) if existing_urls else set()
 
     for m in re.finditer(
         r'<img\s[^>]*src=\"([^\"]+)\"',
@@ -175,7 +175,7 @@ def extract_gallery_images(
     repo: str,
     default_width: int = 512,
     default_height: int = 512,
-) -> List[dict]:
+) -> List[dict[str, Any]]:
     """Extract widget/gallery images from the YAML frontmatter of a HF README.
 
     Args:
@@ -196,7 +196,7 @@ def extract_gallery_images(
     if not frontmatter:
         return []
 
-    images: List[dict] = []
+    images: List[dict[str, Any]] = []
     base_url = f"https://huggingface.co/{repo}/resolve/main"
     w = default_width or 512
     h = default_height or 512
@@ -258,7 +258,7 @@ def extract_gallery_images(
                     text = raw_text
 
         if url:
-            image: dict = {
+            image: dict[str, Any] = {
                 "url": url,
                 "type": "image",
                 "nsfwLevel": 0,
@@ -276,10 +276,10 @@ def extract_gallery_images(
 def extract_gallery_table_images(
     markdown_text: str,
     repo: str,
-    existing_urls: set | None = None,
+    existing_urls: set[str] | None = None,
     default_width: int = 512,
     default_height: int = 512,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     """Extract images from ``| Preview | Prompt |`` markdown gallery tables.
 
     Many HF READMEs include a sample-gallery table in the body (outside
@@ -295,8 +295,8 @@ def extract_gallery_table_images(
         return []
 
     base_url = f"https://huggingface.co/{repo}/resolve/main"
-    images: list[dict] = []
-    seen_urls: set = set(existing_urls) if existing_urls else set()
+    images: list[dict[str, Any]] = []
+    seen_urls: set[str] = set(existing_urls) if existing_urls else set()
     lines = markdown_text.split("\n")
     n = len(lines)
     i = 0
@@ -514,7 +514,7 @@ def _strip_standalone_images(text: str) -> str:
     URL was stripped entirely, making it impossible for the LLM to return
     a ``preview_url`` for repos that use HTML ``<img>`` tags exclusively.
     """
-    def _img_to_md(match: re.Match) -> str:
+    def _img_to_md(match: re.Match[str]) -> str:
         """Convert an ``<img>`` tag to markdown image syntax ``![alt](src)``."""
         tag = match.group(0)
         src_m = re.search(r'src="([^"]+)"', tag) or re.search(r"src='([^']+)'", tag)
@@ -942,7 +942,7 @@ def _strip_badge_images(text: str) -> str:
         "twitter", "colab", "gradio", "space",
     )
 
-    def _should_remove(m: re.Match) -> str:
+    def _should_remove(m: re.Match[str]) -> str:
         alt = (m.group(1) or "").lower()
         for kw in badge_keywords:
             if kw in alt:

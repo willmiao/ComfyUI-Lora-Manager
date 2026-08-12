@@ -1666,4 +1666,374 @@ describe('AutoComplete widget interactions', () => {
     // Entire phrase should be replaced with selected tag
     expect(input.value).toBe('looking_to_the_side,');
   });
+
+  it('shows /af command for loras when active-filters autocomplete is off (default)', async () => {
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minChars: 1 });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const commandNames = autoComplete.items.map((item) => item.command);
+    expect(commandNames).toContain('/af');
+    expect(commandNames).not.toContain('/noaf');
+    expect(commandNames).toContain('/activefilters');
+    expect(commandNames).not.toContain('/noactivefilters');
+  });
+
+  it('does not trigger preview for command items when selecting the loras command list', async () => {
+    // Regression: with showPreview enabled (the default for loras widgets), the
+    // auto-selected first command item was passed to showPreviewForItem() as a
+    // relative path, crashing on relativePath.split.
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: true, minChars: 1 });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Allow the async preview tooltip import to resolve
+    await Promise.resolve();
+    await Promise.resolve();
+
+    const commandNames = autoComplete.items.map((item) => item.command);
+    expect(commandNames).toContain('/af');
+    expect(previewTooltipMock.show).not.toHaveBeenCalled();
+  });
+
+  it('shows /noaf command for loras when active-filters autocomplete is on', async () => {
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') {
+        return true;
+      }
+      return undefined;
+    });
+
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = input.value.length;
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minChars: 1 });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const commandNames = autoComplete.items.map((item) => item.command);
+    expect(commandNames).toContain('/noaf');
+    expect(commandNames).not.toContain('/af');
+    expect(commandNames).toContain('/noactivefilters');
+    expect(commandNames).not.toContain('/activefilters');
+  });
+
+  it('toggles the active-filters setting when /activefilters alias is used', async () => {
+    const input = document.createElement('textarea');
+    input.value = '/activefilters';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/activefilters');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minChars: 1 });
+
+    const commandResult = autoComplete._parseCommandInput('/activefilters');
+    expect(commandResult.command).toBeDefined();
+    expect(commandResult.command.type).toBe('toggle_setting');
+    expect(commandResult.command.value).toBe(true);
+
+    await autoComplete._handleToggleSettingCommand(commandResult.command);
+
+    expect(settingSetMock).toHaveBeenCalledWith('loramanager.lora_active_filters_autocomplete', true);
+  });
+
+  it('toggles the active-filters setting when /af is accepted', async () => {
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = input.value.length;
+    input.focus = vi.fn();
+    input.setSelectionRange = vi.fn();
+    document.body.append(input);
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minChars: 1 });
+
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    const afItem = autoComplete.items.find((item) => item.command === '/af');
+    expect(afItem).toBeDefined();
+
+    // Simulate the input being cleared after the command is accepted so the
+    // cleared-token input event does not re-trigger command parsing.
+    caretHelperInstance.getBeforeCursor.mockReturnValue('');
+    await autoComplete._handleToggleSettingCommand(afItem);
+
+    expect(settingSetMock).toHaveBeenCalledWith('loramanager.lora_active_filters_autocomplete', true);
+  });
+
+  it('appends active filter params to loras autocomplete requests when enabled', async () => {
+    vi.useFakeTimers();
+
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') {
+        return true;
+      }
+      return undefined;
+    });
+
+    localStorage.setItem('lora_manager_loras_filters', JSON.stringify({
+      baseModel: ['SD 1.5'],
+      tags: { anime: 'include', nsfw: 'exclude', __no_tags__: 'exclude' },
+      autoTags: { I2V: 'include' },
+      modelTypes: ['standard'],
+      tagLogic: 'all',
+      license: { noCredit: 'include', allowSelling: 'exclude' },
+    }));
+    localStorage.setItem('lora_manager_loras_activeFolder', 'MyLoras');
+    localStorage.setItem('lora_manager_loras_recursiveSearch', 'true');
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = 'example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    const calledUrl = fetchApiMock.mock.calls[0][0];
+    expect(calledUrl).toContain('/lm/loras/relative-paths?search=example&limit=100');
+    expect(calledUrl).toContain('folder=MyLoras');
+    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('tag_include=anime');
+    expect(calledUrl).toContain('tag_exclude=nsfw');
+    expect(calledUrl).toContain('tag_exclude=__no_tags__');
+    expect(calledUrl).toContain('auto_tag_include=I2V');
+    expect(calledUrl).toContain('tag_logic=all');
+    expect(calledUrl).toContain('credit_required=false');
+    expect(calledUrl).toContain('allow_selling_generated_content=false');
+    const parsed = new URL(calledUrl, 'https://example.com');
+    expect(parsed.searchParams.get('base_model')).toBe('SD 1.5');
+    expect(parsed.searchParams.get('model_type')).toBe('standard');
+  });
+
+  it('keeps the default loras autocomplete URL when active-filters mode is off', async () => {
+    vi.useFakeTimers();
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = 'example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    expect(fetchApiMock).toHaveBeenCalledWith('/lm/loras/relative-paths?search=example&limit=100');
+  });
+
+  it('sends the filter-pipeline signal even when no filters are stored', async () => {
+    // Regression: with filter mode on but no folder/filters stored, the request
+    // carried no params, so the backend skipped the filter pipeline and global
+    // settings like show_only_sfw diverged from the list endpoint.
+    vi.useFakeTimers();
+
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') {
+        return true;
+      }
+      return undefined;
+    });
+
+    localStorage.removeItem('lora_manager_loras_filters');
+    localStorage.removeItem('lora_manager_loras_activeFolder');
+    localStorage.removeItem('lora_manager_loras_recursiveSearch');
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = 'example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    const calledUrl = fetchApiMock.mock.calls[0][0];
+    expect(calledUrl).toContain('recursive=true');
+  });
+
+  it('omits folder param when active folder is root and recursion is enabled', async () => {
+    vi.useFakeTimers();
+
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') {
+        return true;
+      }
+      return undefined;
+    });
+
+    localStorage.setItem('lora_manager_loras_filters', JSON.stringify({
+      baseModel: ['SD 1.5'],
+      tags: { anime: 'include' },
+    }));
+    localStorage.setItem('lora_manager_loras_activeFolder', '');
+    localStorage.removeItem('lora_manager_loras_recursiveSearch');
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = 'example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    const calledUrl = fetchApiMock.mock.calls[0][0];
+    expect(calledUrl).not.toContain('folder=');
+    expect(calledUrl).toContain('recursive=true');
+  });
+
+  it('sends an empty folder param for root with recursion disabled, mirroring the page list', async () => {
+    vi.useFakeTimers();
+
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') {
+        return true;
+      }
+      return undefined;
+    });
+
+    localStorage.setItem('lora_manager_loras_filters', JSON.stringify({
+      baseModel: ['SD 1.5'],
+      tags: { anime: 'include' },
+    }));
+    localStorage.setItem('lora_manager_loras_activeFolder', '');
+    localStorage.setItem('lora_manager_loras_recursiveSearch', 'false');
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = 'example';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    const calledUrl = fetchApiMock.mock.calls[0][0];
+    expect(calledUrl).toContain('folder=');
+    expect(calledUrl).toContain('recursive=false');
+    const parsed = new URL(calledUrl, 'https://example.com');
+    expect(parsed.searchParams.get('folder')).toBe('');
+  });
+
+  it('applies the active folder even when no filter-panel filters are set', async () => {
+    // Regression: folder was skipped when lora_manager_loras_filters was
+    // missing because the filters key gate returned early.
+    vi.useFakeTimers();
+
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') {
+        return true;
+      }
+      return undefined;
+    });
+
+    localStorage.removeItem('lora_manager_loras_filters');
+    localStorage.setItem('lora_manager_loras_activeFolder', 'Flux.1 D/style');
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['Flux.1 D/style/3D_Fairytales.safetensors'] }),
+    });
+
+    caretHelperInstance.getBeforeCursor.mockReturnValue('3D');
+    caretHelperInstance.getCursorOffset.mockReturnValue({ left: 15, top: 25 });
+
+    const input = document.createElement('textarea');
+    document.body.append(input);
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    new AutoComplete(input, 'loras', { debounceDelay: 0, showPreview: false, minChars: 1 });
+
+    input.value = '3D';
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await vi.runAllTimersAsync();
+    await Promise.resolve();
+
+    const calledUrl = fetchApiMock.mock.calls[0][0];
+    expect(calledUrl).toContain('folder=Flux.1+D%2Fstyle');
+    expect(calledUrl).toContain('recursive=true');
+  });
 });

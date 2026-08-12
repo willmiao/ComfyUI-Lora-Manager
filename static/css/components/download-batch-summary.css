@@ -1,0 +1,67 @@
+/* Batch Download Summary Modal — component styles only.
+   Stat cards and failure table styles are shared with the metadata refresh
+   result modal (metadata-refresh-result.css) and are not redefined here. */
+
+.download-batch-summary-modal {
+    max-width: 700px;
+}
+
+.summary-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-2) 0;
+}
+
+.summary-header i {
+    font-size: 1.4em;
+}
+
+.summary-header.success i {
+    color: var(--color-success);
+}
+
+.summary-header.warning i {
+    color: var(--color-warning);
+}
+
+.summary-header.error i {
+    color: var(--color-error);
+}
+
+.summary-title {
+    font-weight: var(--weight-semibold);
+    color: var(--lora-text);
+}
+
+.summary-hint {
+    margin-left: auto;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+}
+
+.btn-retry {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    background: var(--lora-accent, #4f46e5);
+    color: #fff;
+    border: none;
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    font-weight: var(--weight-semibold);
+}
+
+.btn-retry:hover {
+    background: var(--lora-accent-hover, #4338ca);
+}
+
+.failure-link {
+    color: var(--lora-accent, #4f46e5);
+    text-decoration: none;
+}
+
+.failure-link:hover {
+    text-decoration: underline;
+}

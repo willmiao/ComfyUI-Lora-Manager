@@ -24,6 +24,7 @@ export class GlobalContextMenu extends BaseContextMenu {
         const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
         const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
         const repairRecipesItem = this.menu.querySelector('[data-action="repair-recipes"]');
+        const rematchRecipesItem = this.menu.querySelector('[data-action="rematch-recipes"]');
         const groupByModelItem = this.menu.querySelector('[data-action="toggle-group-by-model"]');
         const groupByModelCheck = groupByModelItem?.querySelector('.check-indicator');
 
@@ -41,6 +42,7 @@ export class GlobalContextMenu extends BaseContextMenu {
             excludedModelsItem?.classList.add('hidden');
             groupByModelItem?.classList.add('hidden');
             repairRecipesItem?.classList.remove('hidden');
+            rematchRecipesItem?.classList.remove('hidden');
         } else {
             modelUpdateItem?.classList.remove('hidden');
             licenseRefreshItem?.classList.remove('hidden');
@@ -49,9 +51,26 @@ export class GlobalContextMenu extends BaseContextMenu {
             excludedModelsItem?.classList.remove('hidden');
             groupByModelItem?.classList.remove('hidden');
             repairRecipesItem?.classList.add('hidden');
+            rematchRecipesItem?.classList.add('hidden');
         }
 
+        this._updateSeparatorVisibility();
+
         super.showMenu(x, y, contextOrigin);
+    }
+
+    _updateSeparatorVisibility() {
+        const children = Array.from(this.menu.children);
+        const isVisible = (el) => el.classList.contains('context-menu-item') && !el.classList.contains('hidden');
+
+        children.forEach((el, index) => {
+            if (!el.classList.contains('context-menu-separator')) {
+                return;
+            }
+            const hasVisibleBefore = children.slice(0, index).some(isVisible);
+            const hasVisibleAfter = children.slice(index + 1).some(isVisible);
+            el.classList.toggle('hidden', !(hasVisibleBefore && hasVisibleAfter));
+        });
     }
 
     handleMenuAction(action, menuItem) {
@@ -79,6 +98,11 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'repair-recipes':
                 this.repairRecipes(menuItem).catch((error) => {
                     console.error('Failed to repair recipes:', error);
+                });
+                break;
+            case 'rematch-recipes':
+                this.rematchRecipes(menuItem).catch((error) => {
+                    console.error('Failed to rematch recipes:', error);
                 });
                 break;
             case 'manage-excluded-models':
@@ -437,6 +461,145 @@ export class GlobalContextMenu extends BaseContextMenu {
             });
         } catch (error) {
             console.error('Failed to cancel recipe repair:', error);
+        }
+    }
+
+    async rematchRecipes(menuItem) {
+        if (this._rematchInProgress) {
+            return;
+        }
+
+        this._rematchInProgress = true;
+        menuItem?.classList.add('disabled');
+
+        const loadingMessage = translate(
+            'globalContextMenu.rematchRecipes.loading',
+            {},
+            'Rematching recipes to local models...'
+        );
+
+        const progressUI = state.loadingManager?.showEnhancedProgress(loadingMessage);
+        progressUI?.showCancelButton(() => this.cancelRematch());
+
+        try {
+            const response = await fetch('/api/lm/recipes/rematch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to start rematch');
+            }
+
+            // Poll for progress (mirrors the repair flow; the backend reports `rematched` counts)
+            let isComplete = false;
+            while (!isComplete && this._rematchInProgress) {
+                const progressResponse = await fetch('/api/lm/recipes/rematch-progress');
+                if (progressResponse.ok) {
+                    const progressResult = await progressResponse.json();
+                    if (progressResult.success && progressResult.progress) {
+                        const p = progressResult.progress;
+                        if (p.status === 'processing') {
+                            const percent = (p.current / p.total) * 100;
+                            progressUI?.updateProgress(percent, p.recipe_name, `${loadingMessage} (${p.current}/${p.total})`);
+                        } else if (p.status === 'completed') {
+                            isComplete = true;
+                            // Newer backends report unified matched_entries /
+                            // matched_recipes; fall back to legacy `rematched`
+                            // (recipe count) for older ones.
+                            const entries = p.matched_entries ?? p.rematched ?? 0;
+                            const recipes = p.matched_recipes ?? p.rematched ?? 0;
+                            const failures = p.errors || 0;
+                            const unresolved = p.unresolved_entries ?? 0;
+                            if (entries > 0) {
+                                const successKey = failures > 0
+                                    ? 'globalContextMenu.rematchRecipes.successErrors'
+                                    : 'globalContextMenu.rematchRecipes.success';
+                                const successText = failures > 0
+                                    ? `Matched ${entries} entries across ${recipes} recipes, ${failures} failed.`
+                                    : `Matched ${entries} entries across ${recipes} recipes.`;
+                                progressUI?.complete(translate(
+                                    successKey,
+                                    { count: recipes, recipes, entries, failures },
+                                    successText
+                                ));
+                                showToast(successKey, { count: recipes, recipes, entries, failures }, failures > 0 ? 'warning' : 'success');
+                            } else if (failures > 0) {
+                                // Nothing matched and at least one recipe
+                                // errored — "no rematch needed" would be
+                                // actively misleading here.
+                                progressUI?.complete(translate(
+                                    'globalContextMenu.rematchRecipes.allFailed',
+                                    { total: p.total, recipes, entries, failures },
+                                    `Rematch failed for ${failures} of ${p.total} recipes.`
+                                ));
+                                showToast('globalContextMenu.rematchRecipes.allFailed', { total: p.total, recipes, entries, failures }, 'error');
+                            } else if (unresolved > 0) {
+                                // Entries existed but have no local model —
+                                // expected for models deleted from Civitai;
+                                // informational, not an error.
+                                const unresolvedRecipes = p.unresolved_recipes ?? 0;
+                                progressUI?.complete(translate(
+                                    'globalContextMenu.rematchRecipes.noMatch',
+                                    { entries: unresolved, recipes: unresolvedRecipes, total: p.total, failures },
+                                    `No local match found for ${unresolved} entries in ${unresolvedRecipes} recipes.`
+                                ));
+                                showToast('globalContextMenu.rematchRecipes.noMatch', { entries: unresolved, recipes: unresolvedRecipes, total: p.total, failures }, 'info');
+                            } else {
+                                // Everything was skipped (nothing to do).
+                                progressUI?.complete(translate(
+                                    'globalContextMenu.rematchRecipes.success',
+                                    { count: recipes, recipes, entries, failures },
+                                    `Matched ${entries} entries across ${recipes} recipes.`
+                                ));
+                                showToast('globalContextMenu.rematchRecipes.success', { count: recipes, recipes, entries, failures }, 'success');
+                            }
+                            // Refresh recipes page if active
+                            if (window.recipesPage) {
+                                window.recipesPage.refresh();
+                            }
+                        } else if (p.status === 'error') {
+                            throw new Error(p.error || 'Rematch failed');
+                        } else if (p.status === 'cancelled') {
+                            isComplete = true;
+                            const cancelledEntries = p.matched_entries ?? p.rematched ?? 0;
+                            const cancelledRecipes = p.matched_recipes ?? p.rematched ?? 0;
+                            progressUI?.complete(translate(
+                                'globalContextMenu.rematchRecipes.cancelled',
+                                { count: cancelledRecipes, recipes: cancelledRecipes, entries: cancelledEntries },
+                                `Rematch cancelled. ${cancelledRecipes} recipes updated (${cancelledEntries} entries).`
+                            ));
+                            showToast('globalContextMenu.rematchRecipes.cancelled', { count: cancelledRecipes, recipes: cancelledRecipes, entries: cancelledEntries }, 'info');
+                        }
+                    } else if (progressResponse.status === 404) {
+                        // Progress might have finished quickly and been cleaned up
+                        isComplete = true;
+                        progressUI?.complete();
+                    }
+                }
+
+                if (!isComplete) {
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                }
+            }
+        } catch (error) {
+            console.error('Recipe rematch failed:', error);
+            progressUI?.complete(translate('globalContextMenu.rematchRecipes.error', { message: error.message }, 'Rematch failed: {message}'));
+            showToast('globalContextMenu.rematchRecipes.error', { message: error.message }, 'error');
+        } finally {
+            this._rematchInProgress = false;
+            menuItem?.classList.remove('disabled');
+        }
+    }
+
+    async cancelRematch() {
+        try {
+            await fetch('/api/lm/recipes/cancel-rematch', {
+                method: 'POST',
+            });
+        } catch (error) {
+            console.error('Failed to cancel recipe rematch:', error);
         }
     }
 }

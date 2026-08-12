@@ -14,7 +14,7 @@ standalone_mode = (
 if not standalone_mode:
     setup_logging()
 
-from server import PromptServer  # type: ignore
+from server import PromptServer  # pyright: ignore[reportMissingImports]
 
 from .config import config
 from .services.model_service_factory import (
@@ -25,10 +25,12 @@ from .routes.recipe_routes import RecipeRoutes
 from .routes.stats_routes import StatsRoutes
 from .routes.update_routes import UpdateRoutes
 from .routes.misc_routes import MiscRoutes
+from .routes.pending_delete_routes import PendingDeleteRoutes
 from .routes.preview_routes import PreviewRoutes
 from .routes.example_images_routes import ExampleImagesRoutes
 from .services.service_registry import ServiceRegistry
 from .services.settings_manager import get_settings_manager
+from .services.pending_delete_service import get_pending_delete_service
 from .utils.example_images_migration import ExampleImagesMigration
 from .services.websocket_manager import ws_manager
 from .services.example_images_cleanup_service import ExampleImagesCleanupService
@@ -170,6 +172,7 @@ class LoraManager:
         RecipeRoutes.setup_routes(app)
         UpdateRoutes.setup_routes(app)
         MiscRoutes.setup_routes(app)
+        PendingDeleteRoutes.setup_routes(app)
         ExampleImagesRoutes.setup_routes(app, ws_manager=ws_manager)
         PreviewRoutes.setup_routes(app)
 
@@ -243,6 +246,20 @@ class LoraManager:
             # Schedule post-initialization tasks to run after scanners complete
             asyncio.create_task(
                 cls._run_post_initialization_tasks(init_tasks), name="post_init_tasks"
+            )
+
+            # Startup sweep: purge pending-delete batches that expired during a
+            # previous run. Non-blocking (fire-and-forget); purge_expired only
+            # removes already-expired batches, so a staged undo that survived a
+            # restart stays restorable. scan_roots=True runs the reconciliation
+            # pass first so leftover batches (the in-process registry is empty
+            # after a restart) are re-discovered on disk. Covers both plugin
+            # and standalone modes (StandaloneLoraManager reuses this
+            # classmethod).
+            pending_delete_service = await get_pending_delete_service()
+            asyncio.create_task(
+                pending_delete_service.purge_expired(scan_roots=True),
+                name="pending_delete_startup_sweep",
             )
 
             logger.debug(

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from types import SimpleNamespace
 
 import jinja2
@@ -48,19 +49,16 @@ async def test_model_page_view_reads_version_per_request():
         template_env=template_env,
         template_name="dummy.html",
         service=DummyService(),
-        settings_service=DummySettings(),
+        settings_service=DummySettings(),  # pyright: ignore[reportArgumentType]
         server_i18n=DummyI18n(),
-        logger=SimpleNamespace(
-            debug=lambda *_args, **_kwargs: None,
-            error=lambda *_args, **_kwargs: None,
-        ),
+        logger=logging.getLogger("test_model_page_view"),
     )
 
     view._get_app_version = lambda: "1.0.2-old"
-    first = await view.handle(SimpleNamespace())
+    first = await view.handle(SimpleNamespace())  # pyright: ignore[reportArgumentType]
 
     view._get_app_version = lambda: "1.0.2-new"
-    second = await view.handle(SimpleNamespace())
+    second = await view.handle(SimpleNamespace())  # pyright: ignore[reportArgumentType]
 
     assert first.text == "1.0.2-old"
     assert second.text == "1.0.2-new"

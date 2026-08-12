@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
 
@@ -13,7 +14,7 @@ from py.utils import example_images_download_manager as download_module
 class StubScanner:
     """Scanner double returning predetermined cache contents."""
 
-    def __init__(self, models: list[dict]) -> None:
+    def __init__(self, models: list[dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
 
     async def get_cached_data(self):
@@ -58,9 +59,9 @@ class RecordingWebSocketManager:
     """Collects broadcast payloads for assertions."""
 
     def __init__(self) -> None:
-        self.payloads: list[dict] = []
+        self.payloads: list[dict[str, Any]] = []
 
-    async def broadcast(self, payload: dict) -> None:
+    async def broadcast(self, payload: dict[str, Any]) -> None:
         self.payloads.append(payload)
 
 
@@ -361,6 +362,148 @@ async def test_check_pending_models_handles_corrupted_progress_file(
     assert result["success"] is True
     assert result["total_models"] == 1
     assert result["pending_count"] == 1
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("tmp_path")
+async def test_check_pending_models_uses_bulk_folder_index_for_large_libraries(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """For >1000 candidates the pre-check scans the library root once instead of
+    probing every folder individually."""
+
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    # 1500 unprocessed models triggers the bulk lookup path
+    models = [
+        {"sha256": f"{i:064x}", "model_name": f"Model {i}"}
+        for i in range(1500)
+    ]
+
+    # Create folders with files for the first 500 models
+    for i in range(500):
+        model_dir = tmp_path / f"{i:064x}"
+        model_dir.mkdir()
+        (model_dir / "image_0.png").write_text("data")
+
+    _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
+
+    per_model_checks = 0
+
+    def counting_model_directory_has_files(path: str) -> bool:
+        nonlocal per_model_checks
+        per_model_checks += 1
+        return False
+
+    monkeypatch.setattr(
+        download_module,
+        "_model_directory_has_files",
+        counting_model_directory_has_files,
+    )
+
+    result = await manager.check_pending_models(["lora"])
+
+    assert result["success"] is True
+    assert result["total_models"] == 1500
+    assert result["pending_count"] == 1000
+    assert result["needs_download"] is True
+    # The per-folder check should not be used once we cross the threshold.
+    assert per_model_checks == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("tmp_path")
+async def test_check_pending_models_uses_per_folder_check_for_small_candidate_sets(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """For <=1000 candidates the pre-check keeps the accurate per-folder path."""
+
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+
+    models = [
+        {"sha256": f"{i:064x}", "model_name": f"Model {i}"}
+        for i in range(500)
+    ]
+
+    # Create folders with files for the first 200 models
+    for i in range(200):
+        model_dir = tmp_path / f"{i:064x}"
+        model_dir.mkdir()
+        (model_dir / "image_0.png").write_text("data")
+
+    _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
+
+    per_model_checks = 0
+    original_has_files = download_module._model_directory_has_files
+
+    def counting_model_directory_has_files(path: str) -> bool:
+        nonlocal per_model_checks
+        per_model_checks += 1
+        return original_has_files(path)
+
+    monkeypatch.setattr(
+        download_module,
+        "_model_directory_has_files",
+        counting_model_directory_has_files,
+    )
+
+    result = await manager.check_pending_models(["lora"])
+
+    assert result["success"] is True
+    assert result["total_models"] == 500
+    assert result["pending_count"] == 300
+    assert result["needs_download"] is True
+    # Per-folder path should run once per candidate.
+    assert per_model_checks == 500
+
+
+@pytest.mark.asyncio
+@pytest.mark.usefixtures("tmp_path")
+async def test_check_pending_models_bulk_index_includes_legacy_folders(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path,
+    settings_manager,
+):
+    """In multi-library mode the bulk index also scans the legacy root so models
+    whose folders have not been consolidated yet are not reported pending."""
+
+    ws_manager = RecordingWebSocketManager()
+    manager = download_module.DownloadManager(ws_manager=ws_manager)
+
+    monkeypatch.setitem(settings_manager.settings, "example_images_path", str(tmp_path))
+    monkeypatch.setitem(settings_manager.settings, "libraries", {"default": {}, "extra": {}})
+    monkeypatch.setitem(settings_manager.settings, "active_library", "extra")
+
+    # 1500 unprocessed models triggers the bulk lookup path
+    models = [
+        {"sha256": f"{i:064x}", "model_name": f"Model {i}"}
+        for i in range(1500)
+    ]
+
+    # Folders live at the LEGACY root/<hash> path (not yet consolidated)
+    for i in range(500):
+        model_dir = tmp_path / f"{i:064x}"
+        model_dir.mkdir()
+        (model_dir / "image_0.png").write_text("data")
+
+    _patch_scanners(monkeypatch, lora_scanner=StubScanner(models))
+
+    result = await manager.check_pending_models(["lora"])
+
+    assert result["success"] is True
+    assert result["total_models"] == 1500
+    assert result["pending_count"] == 1000
+    assert result["needs_download"] is True
 
 
 @pytest.fixture

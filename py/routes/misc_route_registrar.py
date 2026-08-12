@@ -5,7 +5,7 @@ miscellaneous endpoints share a consistent registration flow.
 """
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, Mapping
+from typing import Any, Callable, Iterable, Mapping
 
 from aiohttp import web
 
@@ -147,7 +147,7 @@ class MiscRouteRegistrar:
                 handler_lookup[definition.handler_name],
             )
 
-    def _bind(self, method: str, path: str, handler: Callable) -> None:
+    def _bind(self, method: str, path: str, handler: Callable[..., Any]) -> None:
         add_method_name = self._METHOD_MAP[method.upper()]
         add_method = getattr(self._app.router, add_method_name)
         add_method(path, handler)

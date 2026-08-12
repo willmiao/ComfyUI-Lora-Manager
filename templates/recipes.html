@@ -19,7 +19,10 @@
     <!-- <div class="context-menu-item" data-action="details"><i class="fas fa-info-circle"></i> View Details</div> -->
     <!-- Metadata -->
     <div class="context-menu-item" data-action="repair">
-        <i class="fas fa-tools"></i> {{ t('loras.contextMenu.repairMetadata') }}
+        <i class="fas fa-tools"></i> {{ t('loras.contextMenu.repairMetadata') }} (Deprecated)
+    </div>
+    <div class="context-menu-item" data-action="rematch">
+        <i class="fas fa-link"></i> {{ t('loras.contextMenu.rematchMetadata') }}
     </div>
     <div class="context-menu-item" data-action="reimport">
         <i class="fas fa-undo-alt"></i> {{ t('loras.contextMenu.reimportMetadata') }}
@@ -71,7 +74,16 @@
     <div class="banner-content">
         <i class="fas fa-exclamation-triangle"></i>
         <span id="duplicatesCount">{{ t('recipes.duplicates.found', count=0) }}</span>
+        <span id="duplicatesBasis" class="duplicates-basis"></span>
+        <i class="fas fa-question-circle help-icon" id="duplicatesHelp" aria-label="{{ t('common.actions.help') }}"></i>
         <div class="banner-actions">
+            <div class="setting-contro" id="promptMatchControl">
+                <span>{{ t('recipes.duplicates.includePromptLabel') }}:</span>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="promptMatchInput">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
             <button class="btn-select-latest" onclick="recipeManager.selectLatestDuplicates()">
                 {{ t('recipes.duplicates.keepLatest') }}
             </button>
@@ -82,6 +94,9 @@
                 <i class="fas fa-times"></i>
             </button>
         </div>
+    </div>
+    <div class="help-tooltip" id="duplicatesHelpTooltip">
+        <p id="duplicatesHelpText"></p>
     </div>
 </div>
 

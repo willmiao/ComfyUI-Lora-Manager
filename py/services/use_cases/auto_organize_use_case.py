@@ -13,9 +13,11 @@ class AutoOrganizeLockProvider(Protocol):
 
     def is_auto_organize_running(self) -> bool:
         """Return ``True`` when an auto-organize operation is in-flight."""
+        ...
 
     async def get_auto_organize_lock(self) -> asyncio.Lock:
         """Return the asyncio lock guarding auto-organize operations."""
+        ...
 
 
 class AutoOrganizeInProgressError(RuntimeError):

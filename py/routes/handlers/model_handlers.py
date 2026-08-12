@@ -51,6 +51,29 @@ LICENSE_FIELDS = (
 )
 
 
+_broadcast_models_changed_tasks: set = set()
+
+
+def _broadcast_models_changed() -> None:
+    """Notify connected clients that the local model library changed.
+
+    The ComfyUI graph page listens for this event to invalidate its cached
+    model availability data (loras widget missing-model cues / error flags)
+    without waiting for the cache TTL to expire.
+    """
+    try:
+        from ...services.websocket_manager import ws_manager
+
+        task = asyncio.create_task(ws_manager.broadcast({"type": "models_changed"}))
+        # Keep a reference so the task is not garbage-collected mid-await.
+        _broadcast_models_changed_tasks.add(task)
+        task.add_done_callback(_broadcast_models_changed_tasks.discard)
+    except Exception:
+        logging.getLogger(__name__).debug(
+            "Failed to broadcast models_changed", exc_info=True
+        )
+
+
 class ModelPageView:
     """Render the HTML view for model listings."""
 
@@ -71,7 +94,7 @@ class ModelPageView:
         self._server_i18n = server_i18n
         self._logger = logger
 
-    def _load_supporters(self) -> dict:
+    def _load_supporters(self) -> dict[str, Any]:
         """Load supporters data from JSON file."""
         try:
             current_file = os.path.abspath(__file__)
@@ -152,7 +175,7 @@ class ModelPageView:
                 self._template_env.filters["t"] = (
                     self._server_i18n.create_template_filter()
                 )
-                self._template_env._i18n_filter_added = True  # type: ignore[attr-defined]
+                self._template_env._i18n_filter_added = True  # pyright: ignore[reportAttributeAccessIssue]
 
             from ...services.llm_service import PROVIDER_PRESETS
 
@@ -199,7 +222,7 @@ class ModelListingHandler:
         self,
         *,
         service,
-        parse_specific_params: Callable[[web.Request], Dict],
+        parse_specific_params: Callable[[web.Request], Dict[str, Any]],
         logger: logging.Logger,
     ) -> None:
         self._service = service
@@ -287,7 +310,7 @@ class ModelListingHandler:
             )
             return web.json_response({"error": str(exc)}, status=500)
 
-    def _parse_common_params(self, request: web.Request) -> Dict:
+    def _parse_common_params(self, request: web.Request) -> Dict[str, Any]:
         page = int(request.query.get("page", "1"))
         page_size = min(int(request.query.get("page_size", "20")), 100)
         sort_by = request.query.get("sort_by", "name")
@@ -460,6 +483,7 @@ class ModelManagementHandler:
                 return web.Response(text="Model path is required", status=400)
 
             result = await self._lifecycle_service.delete_model(file_path)
+            _broadcast_models_changed()
             return web.json_response(result)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -658,7 +682,7 @@ class ModelManagementHandler:
         try:
             reader = await request.multipart()
 
-            field = await reader.next()
+            field: Any = await reader.next()
             if field is None or field.name != "preview_file":
                 raise ValueError("Expected 'preview_file' field")
             content_type = field.headers.get("Content-Type", "image/png")
@@ -700,7 +724,7 @@ class ModelManagementHandler:
                 {
                     "success": True,
                     "preview_url": config.get_preview_static_url(
-                        result["preview_path"]
+                        str(result["preview_path"])
                     ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
@@ -781,7 +805,7 @@ class ModelManagementHandler:
 
             result = await self._preview_service.replace_preview(
                 model_path=model_path,
-                preview_data=preview_data,
+                preview_data=preview_bytes,
                 content_type=content_type,
                 original_filename=original_filename,
                 nsfw_level=nsfw_level,
@@ -793,7 +817,7 @@ class ModelManagementHandler:
                 {
                     "success": True,
                     "preview_url": config.get_preview_static_url(
-                        result["preview_path"]
+                        str(result["preview_path"])
                     ),
                     "preview_nsfw_level": result["preview_nsfw_level"],
                 }
@@ -931,6 +955,8 @@ class ModelManagementHandler:
                 file_path=file_path, new_file_name=new_file_name
             )
 
+            _broadcast_models_changed()
+
             return web.json_response(
                 {
                     **result,
@@ -959,6 +985,7 @@ class ModelManagementHandler:
                 )
 
             result = await self._lifecycle_service.bulk_delete_models(file_paths)
+            _broadcast_models_changed()
             return web.json_response(result)
         except ValueError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -1061,6 +1088,7 @@ class ModelQueryHandler:
             await self._service.scan_models(
                 force_refresh=True, rebuild_cache=full_rebuild
             )
+            _broadcast_models_changed()
             if self._service.scanner.is_cancelled():
                 return web.json_response(
                     {
@@ -1488,8 +1516,73 @@ class ModelQueryHandler:
             search = request.query.get("search", "").strip()
             limit = min(int(request.query.get("limit", "15")), 100)
             offset = max(0, int(request.query.get("offset", "0")))
+
+            folder = request.query.get("folder")
+            recursive = request.query.get("recursive", "true").lower() == "true"
+            base_models = list(request.query.getall("base_model", []))
+            model_types = list(request.query.getall("model_type", []))
+
+            tag_filters: Dict[str, str] = {}
+            for tag in request.query.getall("tag_include", []):
+                if tag:
+                    tag_filters[tag] = "include"
+            for tag in request.query.getall("tag_exclude", []):
+                if tag:
+                    tag_filters[tag] = "exclude"
+
+            auto_tag_filters: Dict[str, str] = {}
+            for tag in request.query.getall("auto_tag_include", []):
+                if tag:
+                    auto_tag_filters[tag] = "include"
+            for tag in request.query.getall("auto_tag_exclude", []):
+                if tag:
+                    auto_tag_filters[tag] = "exclude"
+
+            tag_logic = request.query.get("tag_logic", "any").lower()
+            if tag_logic not in ("any", "all"):
+                tag_logic = "any"
+
+            credit_required = request.query.get("credit_required")
+            if credit_required is not None:
+                credit_required = credit_required.lower() not in ("false", "0", "")
+
+            allow_selling_generated_content = request.query.get(
+                "allow_selling_generated_content"
+            )
+            if allow_selling_generated_content is not None:
+                allow_selling_generated_content = (
+                    allow_selling_generated_content.lower() not in ("false", "0", "")
+                )
+
+            # The presence of the recursive param (always sent by the loras
+            # widget when filter mode is on) signals that the filter pipeline
+            # must run even when no concrete filter is set, so global settings
+            # like show_only_sfw stay consistent with the list endpoint.
+            apply_filters = (
+                "recursive" in request.query
+                or folder is not None
+                or bool(base_models)
+                or bool(model_types)
+                or bool(tag_filters)
+                or bool(auto_tag_filters)
+                or credit_required is not None
+                or allow_selling_generated_content is not None
+            )
+
             matching_paths = await self._service.search_relative_paths(
-                search, limit, offset
+                search,
+                limit,
+                offset,
+                folder=folder,
+                recursive=recursive,
+                base_models=base_models,
+                model_types=model_types,
+                tags=tag_filters,
+                auto_tags=auto_tag_filters,
+                tag_logic=tag_logic,
+                credit_required=credit_required,
+                allow_selling_generated_content=allow_selling_generated_content,
+                apply_filters=apply_filters,
             )
             return web.json_response(
                 {"success": True, "relative_paths": matching_paths}
@@ -1995,7 +2088,7 @@ class ModelCivitaiHandler:
         settings_service: SettingsManager,
         ws_manager: WebSocketManager,
         logger: logging.Logger,
-        metadata_provider_factory: Callable[[], Awaitable],
+        metadata_provider_factory: Callable[[], Awaitable[Any]],
         validate_model_type: Callable[[str], bool],
         expected_model_types: Callable[[], str],
         find_model_file: Callable[
@@ -2060,7 +2153,7 @@ class ModelCivitaiHandler:
                 downloaded_version_ids = set(
                     await history_service.get_downloaded_version_ids(
                         self._service.model_type,
-                        model_id,
+                        int(model_id),
                     )
                 )
             except Exception as exc:  # pragma: no cover - defensive logging
@@ -2170,6 +2263,8 @@ class ModelMoveHandler:
             result = await self._move_service.move_model(
                 file_path, target_path, use_default_paths=use_default_paths
             )
+            if result.get("success"):
+                _broadcast_models_changed()
             status = 200 if result.get("success") else 500
             return web.json_response(result, status=status)
         except Exception as exc:
@@ -2189,6 +2284,8 @@ class ModelMoveHandler:
             result = await self._move_service.move_models_bulk(
                 file_paths, target_path, use_default_paths=use_default_paths
             )
+            if result.get("success"):
+                _broadcast_models_changed()
             return web.json_response(result)
         except Exception as exc:
             self._logger.error("Error moving models in bulk: %s", exc, exc_info=True)
@@ -2234,6 +2331,7 @@ class ModelAutoOrganizeHandler:
                 progress_callback=self._progress_callback,
                 exclusion_patterns=exclusion_patterns,
             )
+            _broadcast_models_changed()
             return web.json_response(result.to_dict())
         except AutoOrganizeInProgressError:
             return web.json_response(
@@ -2337,8 +2435,8 @@ class ModelUpdateHandler:
             self._logger.error("Failed to fetch license info: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
-        updated: List[Dict[str, str]] = []
-        errors: List[Dict[str, str]] = []
+        updated: List[Dict[str, Any]] = []
+        errors: List[Dict[str, Any]] = []
         for model_id in model_ids:
             license_payload = license_map.get(model_id)
             if not license_payload:
@@ -2351,6 +2449,7 @@ class ModelUpdateHandler:
                 model_section = civitai_section.get("model")
                 if not isinstance(model_section, Mapping):
                     model_section = {}
+                model_section = dict(model_section)
                 model_section.update(resolved_payload)
                 civitai_section["model"] = model_section
                 metadata_payload["civitai"] = civitai_section
@@ -2366,7 +2465,7 @@ class ModelUpdateHandler:
                     )
                     errors.append({"filePath": metadata_path, "error": str(exc)})
 
-        response_payload = {"success": True, "updated": updated}
+        response_payload: Dict[str, Any] = {"success": True, "updated": updated}
         missing_model_ids = [mid for mid in model_ids if mid not in license_map]
         if missing_model_ids:
             response_payload["missingModelIds"] = missing_model_ids
@@ -2715,6 +2814,7 @@ class ModelUpdateHandler:
             civitai_payload = metadata_payload.get("civitai")
             if not isinstance(civitai_payload, Mapping):
                 civitai_payload = {}
+            civitai_payload = dict(civitai_payload)
 
             model_payload = civitai_payload.get("model")
             if not isinstance(model_payload, Mapping):
@@ -2759,7 +2859,7 @@ class ModelUpdateHandler:
 
         return aggregated
 
-    def _extract_target_model_ids(self, payload: Dict) -> Optional[List[int]]:
+    def _extract_target_model_ids(self, payload: Dict[str, Any]) -> Optional[List[int]]:
         if not isinstance(payload, Mapping):
             return None
 
@@ -2787,7 +2887,7 @@ class ModelUpdateHandler:
             return {}
 
         to_dict = getattr(metadata, "to_dict", None)
-        if callable(to_dict):
+        if to_dict:
             try:
                 return to_dict()
             except Exception:
@@ -2798,7 +2898,7 @@ class ModelUpdateHandler:
 
         return {}
 
-    async def _read_json(self, request: web.Request) -> Dict:
+    async def _read_json(self, request: web.Request) -> Dict[str, Any]:
         if not request.can_read_body:
             return {}
         try:
@@ -2830,7 +2930,7 @@ class ModelUpdateHandler:
         record,
         *,
         version_context: Optional[Dict[int, Dict[str, Any]]] = None,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         context = version_context or {}
         # Check user setting for hiding early access versions
         hide_early_access = False
@@ -2859,7 +2959,7 @@ class ModelUpdateHandler:
     @staticmethod
     def _serialize_version(
         version, context: Optional[Dict[str, Any]]
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         context = context or {}
         preview_override = context.get("preview_override")
         preview_url = (

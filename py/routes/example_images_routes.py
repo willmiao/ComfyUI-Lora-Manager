@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import logging
-from typing import Callable, Mapping
+from typing import Any, Awaitable, Callable, Mapping
 
 from aiohttp import web
 
@@ -35,7 +35,7 @@ class ExampleImagesRoutes:
         *,
         ws_manager,
         download_manager: DownloadManager | None = None,
-        processor=ExampleImagesProcessor,
+        processor: Any = ExampleImagesProcessor,
         file_manager=ExampleImagesFileManager,
         cleanup_service: ExampleImagesCleanupService | None = None,
     ) -> None:
@@ -46,7 +46,9 @@ class ExampleImagesRoutes:
         self._file_manager = file_manager
         self._cleanup_service = cleanup_service or ExampleImagesCleanupService()
         self._handler_set: ExampleImagesHandlerSet | None = None
-        self._handler_mapping: Mapping[str, Callable[[web.Request], web.StreamResponse]] | None = None
+        self._handler_mapping: Mapping[
+            str, Callable[[web.Request], Awaitable[web.StreamResponse]]
+        ] | None = None
 
     @classmethod
     def setup_routes(cls, app: web.Application, *, ws_manager) -> None:
@@ -61,7 +63,9 @@ class ExampleImagesRoutes:
         registrar = ExampleImagesRouteRegistrar(app)
         registrar.register_routes(self.to_route_mapping())
 
-    def to_route_mapping(self) -> Mapping[str, Callable[[web.Request], web.StreamResponse]]:
+    def to_route_mapping(
+        self,
+    ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         """Return the registrar-compatible mapping of handler names to callables."""
 
         if self._handler_mapping is None:

@@ -27,7 +27,7 @@ class EmbeddingScanner(ModelScanner):
         roots.extend(config.embeddings_roots or [])
         roots.extend(config.extra_embeddings_roots or [])
         # Remove duplicates while preserving order
-        seen: set = set()
+        seen: set[str] = set()
         unique_roots: List[str] = []
         for root in roots:
             if root and root not in seen:

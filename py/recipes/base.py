@@ -1,3 +1,7 @@
+# pyright: reportImportCycles=false
+# Lazy (function-local) imports still count as static edges in basedpyright's
+# reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
+# import cycles. Breaking them would require an architectural refactor.
 """Base classes for recipe parsers."""
 
 import json
@@ -38,7 +42,7 @@ class RecipeMetadataParser(ABC):
         pass
     
     @staticmethod
-    async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any], Optional[str]], 
+    async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any] | None, str | None] | Dict[str, Any],
                                          recipe_scanner=None, base_model_counts=None, hash_value=None) -> Optional[Dict[str, Any]]:
         """
         Populate a lora entry with information from Civitai API response
@@ -175,10 +179,18 @@ class RecipeMetadataParser(ABC):
                                 lora_entry['localPath'] = local_path
                                 lora_entry['file_name'] = os.path.splitext(os.path.basename(local_path))[0]
                                 
-                                # Get thumbnail from local preview if available
+                                # Get thumbnail from local preview if available.
+                                # Match the cache item by local path first (get_path_by_hash
+                                # cascade: 10-char autov2 / 12-char autov3), then by hash.
                                 lora_cache = await lora_scanner.get_cached_data()
-                                lora_item = next((item for item in lora_cache.raw_data 
-                                                    if item['sha256'].lower() == lora_entry['hash'].lower()), None)
+                                h = (lora_entry.get("hash") or "").lower()
+                                lora_item = next((item for item in lora_cache.raw_data
+                                                  if (item.get("file_path") or "") == local_path), None)
+                                if lora_item is None:
+                                    lora_item = next((item for item in lora_cache.raw_data
+                                                      if (item.get("sha256") or "").lower() == h
+                                                      or (item.get("autov3") or "").lower() == h
+                                                      or (item.get("sha256") or "")[:10].lower() == h), None)
                                 if lora_item and 'preview_url' in lora_item:
                                     lora_entry['thumbnailUrl'] = config.get_preview_static_url(lora_item['preview_url'])
                             except Exception as e:
@@ -194,7 +206,7 @@ class RecipeMetadataParser(ABC):
         return lora_entry
     
     @staticmethod
-    async def populate_checkpoint_from_civitai(checkpoint: Dict[str, Any], civitai_info: Dict[str, Any]) -> Dict[str, Any]:
+    async def populate_checkpoint_from_civitai(checkpoint: Dict[str, Any], civitai_info: Dict[str, Any] | Tuple[Dict[str, Any] | None, str | None] | None) -> Dict[str, Any]:
         """
         Populate checkpoint information from Civitai API response
         

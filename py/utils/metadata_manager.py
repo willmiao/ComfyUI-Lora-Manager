@@ -3,10 +3,10 @@ import os
 import json
 import logging
 import time
-from typing import Any, Dict, Optional, Type, Union
+from typing import Any, Dict, Optional, Type, Union, cast
 
-from .models import BaseModelMetadata, LoraMetadata
-from .file_utils import normalize_path, find_preview_file, calculate_sha256
+from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, LoraMetadata
+from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
 
 logger = logging.getLogger(__name__)
@@ -56,13 +56,39 @@ class MetadataManager:
             return None, True  # should_skip = True
 
     @staticmethod
-    async def load_metadata_payload(file_path: str) -> Dict:
+    def _fill_local_file_facts(payload: Dict[str, Any], file_path: str) -> None:
+        """Fill missing local file facts (``file_name``/``size``/``modified``) from disk.
+
+        These three fields are part of the required metadata schema but describe
+        the local file, not remote metadata. Payloads rebuilt by the self-heal
+        refresh flow (sidecar deleted, then recreated from remote data) lack
+        them, which makes the recreated sidecar unparseable by
+        ``BaseModelMetadata.from_dict`` and causes the scanner to skip the model.
+        Fill them from the actual file whenever absent.
+        """
+        if not file_path:
+            return
+        if payload.get("file_name") and "size" in payload and "modified" in payload:
+            return
+        try:
+            stat_result = os.stat(file_path)
+        except OSError:
+            return
+        if not payload.get("file_name"):
+            payload["file_name"] = os.path.splitext(os.path.basename(file_path))[0]
+        if "size" not in payload:
+            payload["size"] = stat_result.st_size
+        if "modified" not in payload:
+            payload["modified"] = stat_result.st_mtime
+
+    @staticmethod
+    async def load_metadata_payload(file_path: str) -> Dict[str, Any]:
         """
         Load metadata and return it as a dictionary, including any unknown fields.
         Falls back to reading the raw JSON file if parsing into a model class fails.
         """
 
-        payload: Dict = {}
+        payload: Dict[str, Any] = {}
         metadata_obj, should_skip = await MetadataManager.load_metadata(file_path)
 
         if metadata_obj:
@@ -96,6 +122,11 @@ class MetadataManager:
 
         if file_path:
             payload.setdefault("file_path", normalize_path(file_path))
+            # Required schema fields that are local filesystem facts. When the
+            # sidecar is missing (e.g. deleted and being recreated by the
+            # self-heal refresh flow), restore them so the recreated sidecar
+            # and cache entries stay parseable.
+            MetadataManager._fill_local_file_facts(payload, file_path)
 
         return payload
 
@@ -104,6 +135,14 @@ class MetadataManager:
         """
         Replace the provided model data with the authoritative payload from disk.
         Preserves the cached folder entry if present.
+
+        When the sidecar is missing entirely (self-heal after manual deletion),
+        the disk payload is nearly empty and the cache snapshot is the only
+        source for the schema fields required by ``BaseModelMetadata.from_dict``
+        (file_name/model_name/size/modified/sha256/base_model/preview_url), so
+        every missing key is restored from it to keep any recreated sidecar
+        parseable and avoid data loss on failed refreshes. When the sidecar
+        exists, disk data stays authoritative and no cache key is resurrected.
         """
 
         file_path = model_data.get("file_path")
@@ -111,16 +150,33 @@ class MetadataManager:
             return model_data
 
         folder = model_data.get("folder")
+        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        sidecar_exists = os.path.exists(metadata_path)
+        cached = model_data.copy()
         payload = await MetadataManager.load_metadata_payload(file_path)
         if folder is not None:
             payload["folder"] = folder
 
         model_data.clear()
         model_data.update(payload)
+
+        if not sidecar_exists:
+            for key, value in cached.items():
+                if key not in model_data and key != "folder":
+                    model_data[key] = value
+            # The schema defines `modified` as the import timestamp; keep the
+            # cache's value over the stat-derived fallback from
+            # load_metadata_payload.
+            if "modified" in cached:
+                model_data["modified"] = cached["modified"]
+
+        # file_name/size are local file facts; prefer fresh stat values over
+        # the possibly stale cache snapshot.
+        MetadataManager._fill_local_file_facts(model_data, file_path)
         return model_data
     
     @staticmethod
-    async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict]) -> bool:
+    async def save_metadata(path: str, metadata: Union[BaseModelMetadata, Dict[str, Any]]) -> bool:
         """
         Save metadata with atomic write operations.
         
@@ -155,7 +211,12 @@ class MetadataManager:
                 metadata_dict['file_path'] = normalize_path(metadata_dict['file_path'])
             if 'preview_url' in metadata_dict:
                 metadata_dict['preview_url'] = normalize_path(metadata_dict['preview_url'])
-            
+
+            # Local file facts are required schema fields; fill them when a
+            # payload rebuilt without them (e.g. self-heal) is being persisted.
+            if metadata_dict.get("file_path"):
+                MetadataManager._fill_local_file_facts(metadata_dict, metadata_dict["file_path"])
+
             # Write to temporary file first
             with open(temp_path, 'w', encoding='utf-8') as f:
                 json.dump(metadata_dict, f, indent=2, ensure_ascii=False)
@@ -210,9 +271,14 @@ class MetadataManager:
             hash_duration = time.perf_counter() - start_hash_time
             logger.info(f"SHA256 hash calculated for {real_path} in {hash_duration:.3f}s")
             
+            # AutoV3 reads only the safetensors header, so it is cheap even for
+            # large files. At creation time we always know the checked state:
+            # store "" when no recognized hash is embedded (checked-unavailable).
+            autov3 = calculate_autov3(real_path)
+            
             # Create instance based on model type
             if model_class.__name__ == "CheckpointMetadata":
-                metadata = model_class(
+                metadata = cast(Type[CheckpointMetadata], model_class)(
                     file_name=base_name,
                     model_name=base_name,
                     file_path=normalize_path(file_path),
@@ -227,7 +293,7 @@ class MetadataManager:
                     from_civitai=True
                 )
             elif model_class.__name__ == "EmbeddingMetadata":
-                metadata = model_class(
+                metadata = cast(Type[EmbeddingMetadata], model_class)(
                     file_name=base_name,
                     model_name=base_name,
                     file_path=normalize_path(file_path),
@@ -242,7 +308,7 @@ class MetadataManager:
                     from_civitai=True
                 )
             else:  # Default to LoraMetadata
-                metadata = model_class(
+                metadata = cast(Type[LoraMetadata], model_class)(
                     file_name=base_name,
                     model_name=base_name,
                     file_path=normalize_path(file_path),
@@ -257,6 +323,9 @@ class MetadataManager:
                     usage_tips="{}"
                 )
             
+            # Record the AutoV3 state explicitly ("" = checked, no value).
+            metadata.autov3 = autov3 or ""
+
             # Try to extract model-specific metadata
             # await MetadataManager._enrich_metadata(metadata, real_path)
             

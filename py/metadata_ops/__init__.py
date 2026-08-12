@@ -43,7 +43,7 @@ SCANNER_GETTER_NAMES = tuple(SCANNER_TYPE_MAP.keys())
 
 async def _find_model_entry(
     model_path: str,
-) -> tuple[object, object, str | None] | tuple[None, None, None]:
+) -> tuple[Any, object, str | None] | tuple[None, None, None]:
     """Iterate all scanners and return the first (scanner, entry, getter_name)
     that owns *model_path*.  Returns ``(None, None, None)`` when no scanner
     claims it.
@@ -73,7 +73,7 @@ async def _find_model_entry(
 
 async def _find_scanner_for_model(
     model_path: str,
-) -> tuple[object, object] | tuple[None, None]:
+) -> tuple[Any, object] | tuple[None, None]:
     """Find the (scanner, cache_entry) responsible for *model_path*."""
     scanner, entry, _ = await _find_model_entry(model_path)
     return scanner, entry

@@ -133,15 +133,28 @@ export async function copyToClipboard(text, successMessage = null) {
   }
 }
 
-export function showToast(key, params = {}, type = 'info', fallback = null) {
-  // Plain messages (contain spaces) are not i18n dot-notation keys — use verbatim
-  // to avoid spurious "Translation key not found" warnings from i18next
-  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
-  const message = isPlainMessage ? key : translate(key, params, fallback);
+/**
+ * Build a toast element (internal — not exported).
+ * @param {string} message - Already-resolved message text
+ * @param {string} type - Toast type (info/success/warning/error)
+ * @returns {HTMLElement} The toast element (not yet attached to the DOM)
+ */
+function createToastElement(message, type) {
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
   toast.textContent = message;
+  return toast;
+}
 
+/**
+ * Attach a toast to the shared container, position it, and schedule its
+ * dismissal (internal — not exported).
+ * @param {HTMLElement} toast - The toast element to display
+ * @param {number} durationMs - How long the toast stays visible
+ * @param {Function} [onDismiss] - Optional callback fired once when dismissal begins
+ * @returns {Function} Manual dismiss function (idempotent)
+ */
+function appendToast(toast, durationMs, onDismiss = null) {
   // Get or create toast container
   let toastContainer = document.querySelector('.toast-container');
   if (!toastContainer) {
@@ -161,35 +174,127 @@ export function showToast(key, params = {}, type = 'info', fallback = null) {
   // Set position based on existing toasts
   toast.style.top = `${topOffset + (toastIndex * (toast.offsetHeight || 60 + spacing))}px`;
 
-  requestAnimationFrame(() => {
-    toast.classList.add('show');
+  let dismissed = false;
+  const dismiss = () => {
+    if (dismissed) return;
+    dismissed = true;
 
-    // Set timeout based on type
-    let timeout = 2000; // Default (info)
-    if (type === 'warning' || type === 'error') {
-      timeout = 5000;
+    if (typeof onDismiss === 'function') {
+      onDismiss();
     }
 
-    setTimeout(() => {
-      toast.classList.remove('show');
-      toast.addEventListener('transitionend', () => {
-        toast.remove();
+    toast.classList.remove('show');
+    toast.addEventListener('transitionend', () => {
+      toast.remove();
 
-        // Reposition remaining toasts
-        if (toastContainer) {
-          const remainingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
-          remainingToasts.forEach((t, index) => {
-            t.style.top = `${topOffset + (index * (t.offsetHeight || 60 + spacing))}px`;
-          });
+      // Reposition remaining toasts
+      if (toastContainer) {
+        const remainingToasts = Array.from(toastContainer.querySelectorAll('.toast'));
+        remainingToasts.forEach((t, index) => {
+          t.style.top = `${topOffset + (index * (t.offsetHeight || 60 + spacing))}px`;
+        });
 
-          // Remove container if empty
-          if (remainingToasts.length === 0) {
-            toastContainer.remove();
-          }
+        // Remove container if empty
+        if (remainingToasts.length === 0) {
+          toastContainer.remove();
         }
-      });
-    }, timeout);
+      }
+    });
+  };
+
+  requestAnimationFrame(() => {
+    toast.classList.add('show');
+    setTimeout(dismiss, durationMs);
   });
+
+  return dismiss;
+}
+
+export function showToast(key, params = {}, type = 'info', fallback = null) {
+  // Plain messages (contain spaces) are not i18n dot-notation keys — use verbatim
+  // to avoid spurious "Translation key not found" warnings from i18next
+  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
+  const message = isPlainMessage ? key : translate(key, params, fallback);
+  const toast = createToastElement(message, type);
+
+  // Set timeout based on type
+  let duration = 2000; // Default (info)
+  if (type === 'warning' || type === 'error') {
+    duration = 5000;
+  }
+
+  appendToast(toast, duration);
+}
+
+/**
+ * Show a toast with an action button (e.g. Undo) and an optional countdown.
+ * The message accepts the same key/plain-string contract as showToast, so
+ * callers may pass either an i18n key or an already-translated string.
+ * @param {string} key - i18n key or plain message
+ * @param {Object} [params] - i18n interpolation params
+ * @param {string} [type] - Toast type (info/success/warning/error)
+ * @param {Object} [options]
+ * @param {string} [options.actionText] - Label for the action button (button omitted when empty)
+ * @param {Function} [options.onAction] - Callback invoked at most once on button click
+ * @param {number} [options.durationMs=30000] - How long the toast stays visible
+ * @param {boolean} [options.countdown=true] - Show a ticking `(N)s` countdown
+ */
+export function showActionToast(key, params = {}, type = 'info', options = {}) {
+  const { actionText, onAction, durationMs = 30000, countdown = true } = options;
+
+  const isPlainMessage = typeof key === 'string' && /\s/.test(key);
+  const message = isPlainMessage ? key : translate(key, params);
+  const toast = createToastElement(message, type);
+
+  let countdownInterval = null;
+  const clearCountdown = () => {
+    if (countdownInterval !== null) {
+      clearInterval(countdownInterval);
+      countdownInterval = null;
+    }
+  };
+
+  // The interval must be cleared on EVERY dismiss path (timeout, countdown end,
+  // manual button click) — the onDismiss hook covers the appendToast timeout path.
+  const dismiss = appendToast(toast, durationMs, clearCountdown);
+
+  let actionFired = false;
+  if (actionText) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'toast-action-btn';
+    button.textContent = actionText;
+    button.addEventListener('click', (event) => {
+      event.preventDefault();
+      // Guard against double-click firing the action twice
+      if (actionFired) return;
+      actionFired = true;
+
+      clearCountdown();
+      if (typeof onAction === 'function') {
+        onAction();
+      }
+      dismiss();
+    });
+    toast.append(button);
+  }
+
+  if (countdown) {
+    const countdownEl = document.createElement('span');
+    countdownEl.className = 'toast-countdown';
+    let remainingSeconds = Math.max(0, Math.ceil(durationMs / 1000));
+    countdownEl.textContent = `(${remainingSeconds}s)`;
+    toast.append(countdownEl);
+
+    countdownInterval = setInterval(() => {
+      remainingSeconds -= 1;
+      countdownEl.textContent = `(${Math.max(remainingSeconds, 0)}s)`;
+      if (remainingSeconds <= 0) {
+        clearCountdown();
+        dismiss();
+      }
+    }, 1000);
+  }
 }
 
 export function restoreFolderFilter() {
@@ -356,6 +461,8 @@ export function updatePanelPositions() {
 
   if (filterPanel) {
     filterPanel.style.top = `${topPosition}px`;
+    // Clamp panel height to the viewport below the header
+    filterPanel.style.maxHeight = `calc(100vh - ${topPosition + 10}px)`;
   }
 
   // Adjust panel horizontal position based on the search container

@@ -1,7 +1,12 @@
 #!/usr/bin/env python3
 """
 Wait for LoRa Manager server to become ready.
+
+Timeout is configurable via --timeout (default 30s); the script polls the port
+until the server accepts connections or the timeout expires.
 """
+
+from __future__ import annotations
 
 import argparse
 import socket
@@ -9,7 +14,7 @@ import sys
 import time
 
 
-def is_server_ready(port: int, timeout: float = 0.5) -> bool:
+def is_server_ready(port: int, timeout: float = 2.0) -> bool:
     """Check if server is accepting connections."""
     try:
         with socket.create_connection(("127.0.0.1", port), timeout=timeout):
@@ -21,9 +26,15 @@ def is_server_ready(port: int, timeout: float = 0.5) -> bool:
 def wait_for_server(port: int, timeout: int = 30) -> bool:
     """Wait for server to become ready."""
     start = time.time()
+    last_report = 0.0
     while time.time() - start < timeout:
         if is_server_ready(port):
             return True
+        # Report progress every ~5s so a slow boot is visible, not silent.
+        elapsed = time.time() - start
+        if elapsed - last_report >= 5:
+            print(f"  ...still waiting ({int(elapsed)}s/{timeout}s)")
+            last_report = elapsed
         time.sleep(0.5)
     return False
 
@@ -36,25 +47,24 @@ def main() -> int:
         "--port",
         type=int,
         default=8188,
-        help="Server port (default: 8188)"
+        help="Server port (default: 8188)",
     )
     parser.add_argument(
         "--timeout",
         type=int,
         default=30,
-        help="Timeout in seconds (default: 30)"
+        help="Timeout in seconds (default: 30)",
     )
-    
+
     args = parser.parse_args()
-    
+
     print(f"Waiting for server on port {args.port} (timeout: {args.timeout}s)...")
-    
+
     if wait_for_server(args.port, args.timeout):
         print(f"Server ready at http://127.0.0.1:{args.port}/loras")
         return 0
-    else:
-        print(f"Timeout: Server not ready after {args.timeout}s")
-        return 1
+    print(f"Timeout: Server not ready after {args.timeout}s")
+    return 1
 
 
 if __name__ == "__main__":

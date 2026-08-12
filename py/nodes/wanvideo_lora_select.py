@@ -1,7 +1,7 @@
 import os
 from ..utils.utils import get_lora_info_absolute
 from ..config import config
-from .utils import FlexibleOptionalInputType, any_type, get_loras_list
+from .utils import FlexibleOptionalInputType, any_type, get_loras_list, validate_lora_entries
 import logging
 
 logger = logging.getLogger(__name__)
@@ -34,6 +34,11 @@ class WanVideoLoraSelectLM:
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
+
+    @classmethod
+    def VALIDATE_INPUTS(cls, loras=None):
+        """Queue-time validation: reject missing local LoRAs before execution."""
+        return validate_lora_entries({"loras": loras}) or True
 
     RETURN_TYPES = ("WANVIDLORA", "STRING", "STRING")
     RETURN_NAMES = ("lora", "trigger_words", "active_loras")

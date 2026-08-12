@@ -391,6 +391,7 @@ async def test_update_in_library_versions_changes_update_state(tmp_path):
     await service.update_in_library_versions("lora", 3, [31, 35])
     record = await service.get_record("lora", 3)
 
+    assert record is not None
     assert record.has_update() is False
 
 

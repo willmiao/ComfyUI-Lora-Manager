@@ -4,7 +4,7 @@ import json
 import os
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Generator, Tuple
 
 import pytest
 
@@ -15,7 +15,7 @@ from py.utils.example_images_paths import get_model_folder
 
 
 @pytest.fixture(autouse=True)
-def restore_settings() -> None:
+def restore_settings() -> Generator[None, None, None]:
     manager = get_settings_manager()
     original = manager.settings.copy()
     try:
@@ -100,6 +100,54 @@ def test_get_file_extension_media_type_hint_low_priority() -> None:
     assert ext == ".mp4"
 
 
+def test_example_image_file_exists_checks_plausible_extensions(tmp_path) -> None:
+    proc = processor_module.ExampleImagesProcessor
+    assert proc._example_image_file_exists(str(tmp_path), 0) is False
+    Path(tmp_path, "image_0.webp").write_bytes(b"x")
+    assert proc._example_image_file_exists(str(tmp_path), 0) is True
+    assert proc._example_image_file_exists(str(tmp_path), 1) is False
+
+
+def test_example_image_file_exists_video_hint_only_checks_video_extensions(tmp_path) -> None:
+    proc = processor_module.ExampleImagesProcessor
+    Path(tmp_path, "image_2.jpg").write_bytes(b"x")
+    # An existing image file must not satisfy a video-hinted lookup
+    assert proc._example_image_file_exists(str(tmp_path), 2, "video") is False
+    Path(tmp_path, "image_2.mp4").write_bytes(b"x")
+    assert proc._example_image_file_exists(str(tmp_path), 2, "video") is True
+
+
+async def test_download_model_images_with_tracking_skips_existing_files(tmp_path) -> None:
+    proc = processor_module.ExampleImagesProcessor
+    images = [
+        {"url": "https://image.civitai.com/a/b", "type": "image"},
+        {"url": "https://image.civitai.com/c/d", "type": "image"},
+    ]
+    Path(tmp_path, "image_0.jpg").write_bytes(b"existing")
+
+    class RecordingDownloader:
+        def __init__(self) -> None:
+            self.calls: list[str] = []
+
+        async def download_to_memory(self, url, use_auth=False, return_headers=False):
+            self.calls.append(url)
+            return True, b"\xff\xd8\xff" + b"data", {}
+
+    downloader = RecordingDownloader()
+    success, is_stale, failed, rate_limited = await proc.download_model_images_with_tracking(
+        "hash", "model", images, str(tmp_path), False, downloader
+    )
+
+    assert success is True
+    assert is_stale is False
+    assert failed == []
+    assert rate_limited == []
+    # Only the missing image is requested; the existing one is skipped without a network call
+    assert len(downloader.calls) == 1
+    assert "c/d" in downloader.calls[0]
+    assert Path(tmp_path, "image_1.jpg").exists()
+
+
 class StubScanner:
     def __init__(self, models: list[Dict[str, Any]]) -> None:
         self._cache = SimpleNamespace(raw_data=models)
@@ -158,7 +206,7 @@ async def test_import_images_creates_hash_directory(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(processor_module.MetadataUpdater, "update_metadata_after_import", staticmethod(fake_update_metadata))
 
-    result = await processor_module.ExampleImagesProcessor.import_images("a" * 64, [str(source_file)])
+    result: Dict[str, Any] = await processor_module.ExampleImagesProcessor.import_images("a" * 64, [str(source_file)])
 
     assert result["success"] is True
     assert result["files"][0]["name"].startswith("custom_short")
@@ -207,7 +255,7 @@ async def test_delete_custom_image_preserves_existing_metadata(monkeypatch: pyte
     model_file.write_text("content", encoding="utf-8")
     metadata_path = tmp_path / "keep.metadata.json"
 
-    existing_metadata = {
+    existing_metadata: Dict[str, Any] = {
         "model_name": "Keep",
         "file_path": str(model_file),
         "civitai": {
@@ -265,6 +313,7 @@ async def test_delete_custom_image_preserves_existing_metadata(monkeypatch: pyte
     )
 
     assert response.status == 200
+    assert response.text is not None
     body = json.loads(response.text)
     assert body["success"] is True
     assert body["custom_images"] == []

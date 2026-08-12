@@ -124,7 +124,7 @@ def mock_metadata_manager():
     """Provide a mock metadata manager."""
     class MockMetadataManager:
         def __init__(self):
-            self.saved_metadata: List[tuple] = []
+            self.saved_metadata: List[tuple[str, Any]] = []
             self.loaded_payloads: Dict[str, Dict[str, Any]] = {}
 
         async def save_metadata(self, file_path: str, metadata: Dict[str, Any]) -> None:
@@ -194,7 +194,7 @@ async def test_http_server(
     site = web.TCPSite(runner, "127.0.0.1", 0)
     await site.start()
 
-    port = site._server.sockets[0].getsockname()[1]
+    port = site._server.sockets[0].getsockname()[1]  # pyright: ignore[reportAttributeAccessIssue, reportOptionalMemberAccess]
     base_url = f"http://127.0.0.1:{port}"
 
     yield base_url, port

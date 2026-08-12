@@ -26,13 +26,13 @@ class EmbeddingRoutes(BaseModelRoutes):
         # Attach service dependencies
         self.attach_service(self.service)
     
-    def setup_routes(self, app: web.Application):
+    def setup_routes(self, app: web.Application, prefix: str = "embeddings"):
         """Setup Embedding routes"""
         # Schedule service initialization on app startup
         app.on_startup.append(lambda _: self.initialize_services())
-        
+
         # Setup common routes with 'embeddings' prefix (includes page route)
-        super().setup_routes(app, 'embeddings')
+        super().setup_routes(app, prefix)
     
     def setup_specific_routes(self, registrar: ModelRouteRegistrar, prefix: str):
         """Setup Embedding-specific routes"""
@@ -51,7 +51,7 @@ class EmbeddingRoutes(BaseModelRoutes):
         """Get detailed information for a specific embedding by name"""
         try:
             name = request.match_info.get('name', '')
-            embedding_info = await self.service.get_model_info_by_name(name)
+            embedding_info = await self.service.get_model_info_by_name(name)  # pyright: ignore[reportAttributeAccessIssue]
             
             if embedding_info:
                 return web.json_response(embedding_info)

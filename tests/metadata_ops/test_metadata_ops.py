@@ -9,6 +9,7 @@ Mock targets must match where imports are resolved inside each function
 
 from __future__ import annotations
 
+from typing import Any
 from unittest import mock
 
 import pytest
@@ -28,14 +29,14 @@ from py.metadata_ops import (
 
 
 class MockCache:
-    def __init__(self, raw_data: list[dict] | None = None):
+    def __init__(self, raw_data: list[dict[str, Any]] | None = None):
         self.raw_data = raw_data or []
 
 
 class MockScanner:
     """Simulates a ModelScanner for testing."""
 
-    def __init__(self, raw_data: list[dict] | None = None):
+    def __init__(self, raw_data: list[dict[str, Any]] | None = None):
         self._raw_data = raw_data or []
         self.update_single_model_cache = mock.AsyncMock(return_value=True)
 
@@ -599,7 +600,7 @@ class TestExtractGalleryTableImages:
 """
 
     @staticmethod
-    def _extract(md: str, repo: str = _REPO, existing: set | None = None):
+    def _extract(md: str, repo: str = _REPO, existing: set[str] | None = None):
         from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             extract_gallery_table_images
         return extract_gallery_table_images(md, repo, existing_urls=existing)
@@ -643,7 +644,7 @@ class TestExtractGalleryTableImages:
 class TestCleanReadmeForLlm:
 
     @staticmethod
-    def _clean(md: str, max_length: int = 6000) -> str:
+    def _clean(md: str | None, max_length: int = 6000) -> str:
         from py.services.agent.skills.enrich_hf_metadata.readme_processor import \
             clean_readme_for_llm
         return clean_readme_for_llm(md, max_length=max_length)
@@ -651,7 +652,7 @@ class TestCleanReadmeForLlm:
     # -- basic guards --------------------------------------------------------
 
     def test_none_returns_empty(self):
-        assert self._clean(None) == ""  # type: ignore[arg-type]
+        assert self._clean(None) == ""
 
     def test_empty_returns_empty(self):
         assert self._clean("") == ""

@@ -1,6 +1,7 @@
 import sys
 import types
 from types import SimpleNamespace
+from typing import Any, Dict
 
 from py.metadata_collector import metadata_processor
 from py.metadata_collector.metadata_hook import MetadataHook
@@ -44,6 +45,7 @@ def test_metadata_hook_installs_and_traces_execution(monkeypatch, metadata_regis
 
     class FakeNode:
         FUNCTION = "run"
+        unique_id: str = ""
 
     node = FakeNode()
     node.unique_id = "node-1"
@@ -702,7 +704,7 @@ def test_lora_manager_cache_updates_when_loras_removed(metadata_registry):
     class LoraLoaderLM:  # type: ignore[too-many-ancestors]
         __name__ = "LoraLoaderLM"
 
-    nodes.NODE_CLASS_MAPPINGS["LoraLoaderLM"] = LoraLoaderLM
+    nodes.NODE_CLASS_MAPPINGS["LoraLoaderLM"] = LoraLoaderLM  # pyright: ignore[reportAttributeAccessIssue]
 
     prompt_graph = {
         "lora_node": {"class_type": "LoraLoaderLM", "inputs": {}},
@@ -883,7 +885,7 @@ def test_metadata_overwrite_extractor_empty_inputs(metadata_registry):
 
     from py.metadata_collector.constants import CLIP_SKIP_SENTINEL
 
-    inputs = {key: "" for key in METADATA_OVERWRITE_FIELDS}
+    inputs: Dict[str, Any] = {key: "" for key in METADATA_OVERWRITE_FIELDS}
     inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": CLIP_SKIP_SENTINEL})
 
     MetadataOverwriteExtractor.extract("ow-2", inputs, None, metadata)

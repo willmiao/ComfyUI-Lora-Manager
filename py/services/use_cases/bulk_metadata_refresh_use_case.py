@@ -81,7 +81,7 @@ class BulkMetadataRefreshUseCase:
         async def emit(status: str, **extra: Any) -> None:
             if progress_callback is None:
                 return
-            payload = {
+            payload: Dict[str, Any] = {
                 "status": status,
                 "total": total_models,
                 "processed": processed,

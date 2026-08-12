@@ -15,7 +15,7 @@ def _extract_nsfw_level(entry: Mapping[str, object]) -> int:
 
     value = entry.get("nsfwLevel", 0)
     try:
-        return int(value)  # type: ignore[return-value]
+        return int(value)  # pyright: ignore[reportArgumentType, reportReturnType]
     except (TypeError, ValueError):
         return 0
 

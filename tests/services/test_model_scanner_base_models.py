@@ -3,13 +3,19 @@ from types import SimpleNamespace
 import pytest
 
 from py.services.model_scanner import ModelScanner
+from py.utils.models import BaseModelMetadata
 
 
-class DummyScanner:
+class DummyScanner(ModelScanner):
     def __init__(self, raw_data):
+        super().__init__(
+            model_type="dummy",
+            model_class=BaseModelMetadata,
+            file_extensions={".safetensors"},
+        )
         self._cache = SimpleNamespace(raw_data=raw_data)
 
-    async def get_cached_data(self):
+    async def get_cached_data(self, force_refresh: bool = False, rebuild_cache: bool = False):
         return self._cache
 
 

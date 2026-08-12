@@ -76,6 +76,7 @@ class TestRewritePreviewUrl:
         for url in test_cases:
             result, was_rewritten = rewrite_preview_url(url, "image")
             assert was_rewritten is True
+            assert result is not None
             assert "width=450,optimized=true" in result
 
     def test_handles_urls_with_explicit_port(self):
@@ -83,6 +84,7 @@ class TestRewritePreviewUrl:
         url = "https://image.civitai.com:443/checkpoints/original=true"
         result, was_rewritten = rewrite_preview_url(url, "image")
         assert was_rewritten is True
+        assert result is not None
         assert "width=450,optimized=true" in result
         # Port is preserved in the URL (this is acceptable behavior)
         assert ":443" in result
@@ -104,6 +106,8 @@ class TestRewritePreviewUrl:
         result2, was2 = rewrite_preview_url(url, "Video")
         assert was1 is True
         assert was2 is True
+        assert result1 is not None
+        assert result2 is not None
         assert "transcode=true" in result1
         assert "transcode=true" in result2
 
@@ -119,6 +123,7 @@ class TestRewritePreviewUrl:
         url = "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.png"
         result, was_rewritten = rewrite_preview_url(url, "image")
         assert was_rewritten is True
+        assert result is not None
         assert result.startswith(
             "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/"
         )
@@ -129,6 +134,7 @@ class TestRewritePreviewUrl:
         url = "https://image.civitai.com/original=true/test.png"
         result, was_rewritten = rewrite_preview_url(url, None)
         assert was_rewritten is True
+        assert result is not None
         assert "transcode=true" not in result
         assert "width=450,optimized=true" in result
 

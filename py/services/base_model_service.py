@@ -1,7 +1,8 @@
 from abc import ABC, abstractmethod
 import asyncio
 import re
-from typing import Any, Dict, List, Optional, Type, Union, TYPE_CHECKING
+import random
+from typing import Any, Awaitable, Dict, List, Optional, Type, Union, TYPE_CHECKING, cast
 import logging
 import os
 import time
@@ -69,24 +70,24 @@ class BaseModelService(ABC):
         page: int,
         page_size: int,
         sort_by: str = "name",
-        folder: str = None,
-        folder_include: list = None,
-        folder_exclude: list = None,
-        search: str = None,
+        folder: str | None = None,
+        folder_include: list[str] | None = None,
+        folder_exclude: list[str] | None = None,
+        search: str | None = None,
         fuzzy_search: bool = False,
-        base_models: list = None,
-        model_types: list = None,
+        base_models: list[str] | None = None,
+        model_types: list[str] | None = None,
         tags: Optional[Dict[str, str]] = None,
         auto_tags: Optional[Dict[str, str]] = None,
-        search_options: dict = None,
-        hash_filters: dict = None,
+        search_options: dict[str, Any] | None = None,
+        hash_filters: dict[str, Any] | None = None,
         favorites_only: bool = False,
         update_available_only: bool = False,
         credit_required: Optional[bool] = None,
         allow_selling_generated_content: Optional[bool] = None,
         tag_logic: str = "any",
         **kwargs,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Get paginated and filtered model data"""
         overall_start = time.perf_counter()
 
@@ -177,8 +178,8 @@ class BaseModelService(ABC):
                 ufs = self.settings.get("version_grouping", "same_base")
                 group_by_base = ufs == "same_base"
 
-                model_groups: Dict[Any, List[Dict]] = {}
-                ungrouped_standalone: List[Dict] = []
+                model_groups: Dict[Any, List[Dict[str, Any]]] = {}
+                ungrouped_standalone: List[Dict[str, Any]] = []
                 for item in sorted_data:
                     mid = self._extract_group_key(item)
                     if mid is None:
@@ -248,7 +249,7 @@ class BaseModelService(ABC):
         filter_duration = time.perf_counter() - t1
         post_filter_count = len(filtered_data)
 
-        annotated_for_filter: Optional[List[Dict]] = None
+        annotated_for_filter: Optional[List[Dict[str, Any]]] = None
         t2 = time.perf_counter()
         if update_available_only:
             annotated_for_filter = await self._annotate_update_flags(filtered_data)
@@ -295,11 +296,11 @@ class BaseModelService(ABC):
         page: int,
         page_size: int,
         sort_by: str = "name",
-        search: str = None,
+        search: str | None = None,
         fuzzy_search: bool = False,
-        search_options: dict = None,
+        search_options: dict[str, Any] | None = None,
         **kwargs,
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Get paginated excluded model data."""
         excluded_paths = list(self.scanner.get_excluded_models())
         excluded_entries: List[Dict[str, Any]] = []
@@ -325,7 +326,7 @@ class BaseModelService(ABC):
                 ]
                 persist_current_cache = getattr(self.scanner, "_persist_current_cache", None)
                 if callable(persist_current_cache):
-                    await persist_current_cache()
+                    await cast(Awaitable[Any], persist_current_cache())
 
         excluded_entries = self._sort_entries(excluded_entries, sort_by)
 
@@ -390,6 +391,12 @@ class BaseModelService(ABC):
                 (item.get("model_name") or item.get("file_name") or "").lower(),
                 item.get("file_path", "").lower(),
             )
+        elif key_name == "random":
+            # Seeded random shuffle: same seed -> same order (stable pagination)
+            rng = random.Random(sort_params.seed or "random")
+            result = list(data)
+            rng.shuffle(result)
+            return result
         elif key_name == "size":
             key_fn = lambda item: (
                 int(item.get("size", 0) or 0),
@@ -437,39 +444,50 @@ class BaseModelService(ABC):
         return entry
 
     async def _apply_hash_filters(
-        self, data: List[Dict], hash_filters: Dict
-    ) -> List[Dict]:
-        """Apply hash-based filtering"""
+        self, data: List[Dict[str, Any]], hash_filters: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Apply hash-based filtering (SHA256 and AutoV3)."""
+
+        def matches_hash_set(item: Dict[str, Any], hash_set: set[str]) -> bool:
+            """Check whether an item matches any hash in the set.
+
+            Compares the item's ``sha256`` field and its non-empty ``autov3``
+            field, both case-insensitively.
+            """
+            if item.get("sha256", "").lower() in hash_set:
+                return True
+            autov3 = item.get("autov3", "")
+            return bool(autov3) and autov3.lower() in hash_set
+
         single_hash = hash_filters.get("single_hash")
         multiple_hashes = hash_filters.get("multiple_hashes")
 
         if single_hash:
-            # Filter by single hash
-            single_hash = single_hash.lower()
+            # Filter by single hash (SHA256 or AutoV3)
             return [
-                item for item in data if item.get("sha256", "").lower() == single_hash
+                item for item in data if matches_hash_set(item, {single_hash.lower()})
             ]
         elif multiple_hashes:
-            # Filter by multiple hashes
-            hash_set = set(hash.lower() for hash in multiple_hashes)
-            return [item for item in data if item.get("sha256", "").lower() in hash_set]
+            # Filter by multiple hashes (SHA256 or AutoV3)
+            hash_set = {hash.lower() for hash in multiple_hashes}
+            return [item for item in data if matches_hash_set(item, hash_set)]
 
         return data
 
     async def _apply_common_filters(
         self,
-        data: List[Dict],
-        folder: str = None,
-        folder_include: list = None,
-        folder_exclude: list = None,
-        base_models: list = None,
-        model_types: list = None,
+        data: List[Dict[str, Any]],
+        folder: str | None = None,
+        folder_include: list[str] | None = None,
+        folder_exclude: list[str] | None = None,
+        base_models: list[str] | None = None,
+        model_types: list[str] | None = None,
         tags: Optional[Dict[str, str]] = None,
         auto_tags: Optional[Dict[str, str]] = None,
         favorites_only: bool = False,
-        search_options: dict = None,
+        search_options: dict[str, Any] | None = None,
         tag_logic: str = "any",
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """Apply common filters that work across all model types"""
         normalized_options = self.search_strategy.normalize_options(search_options)
         criteria = FilterCriteria(
@@ -488,24 +506,24 @@ class BaseModelService(ABC):
 
     async def _apply_search_filters(
         self,
-        data: List[Dict],
+        data: List[Dict[str, Any]],
         search: str,
         fuzzy_search: bool,
-        search_options: dict,
-    ) -> List[Dict]:
+        search_options: dict[str, Any] | None,
+    ) -> List[Dict[str, Any]]:
         """Apply search filtering"""
         normalized_options = self.search_strategy.normalize_options(search_options)
         return self.search_strategy.apply(
             data, search, normalized_options, fuzzy_search
         )
 
-    async def _apply_specific_filters(self, data: List[Dict], **kwargs) -> List[Dict]:
+    async def _apply_specific_filters(self, data: List[Dict[str, Any]], **kwargs) -> List[Dict[str, Any]]:
         """Apply model-specific filters - to be overridden by subclasses if needed"""
         return data
 
     async def _apply_credit_required_filter(
-        self, data: List[Dict], credit_required: bool
-    ) -> List[Dict]:
+        self, data: List[Dict[str, Any]], credit_required: bool
+    ) -> List[Dict[str, Any]]:
         """Apply credit required filtering based on license_flags.
 
         Args:
@@ -535,8 +553,8 @@ class BaseModelService(ABC):
         return filtered_data
 
     async def _apply_allow_selling_filter(
-        self, data: List[Dict], allow_selling: bool
-    ) -> List[Dict]:
+        self, data: List[Dict[str, Any]], allow_selling: bool
+    ) -> List[Dict[str, Any]]:
         """Apply allow selling generated content filtering based on license_flags.
 
         Args:
@@ -568,8 +586,8 @@ class BaseModelService(ABC):
 
     async def _annotate_update_flags(
         self,
-        items: List[Dict],
-    ) -> List[Dict]:
+        items: List[Dict[str, Any]],
+    ) -> List[Dict[str, Any]]:
         """Attach an update_available flag to each response item.
 
         Items without a civitai model id default to False.
@@ -584,7 +602,7 @@ class BaseModelService(ABC):
                 item["update_available"] = False
             return annotated
 
-        id_to_items: Dict[int, List[Dict]] = {}
+        id_to_items: Dict[int, List[Dict[str, Any]]] = {}
         ordered_ids: List[int] = []
         for item in annotated:
             model_id = self._extract_model_id(item)
@@ -621,7 +639,7 @@ class BaseModelService(ABC):
             record_method = getattr(self.update_service, "get_records_bulk", None)
             if callable(record_method):
                 try:
-                    records = await record_method(self.model_type, ordered_ids)
+                    records = await cast(Awaitable[Any], record_method(self.model_type, ordered_ids))
                     resolved = {
                         model_id: record.has_update(hide_early_access=hide_early_access)
                         for model_id, record in records.items()
@@ -641,11 +659,11 @@ class BaseModelService(ABC):
             bulk_method = getattr(self.update_service, "has_updates_bulk", None)
             if callable(bulk_method):
                 try:
-                    resolved = await bulk_method(
+                    resolved = await cast(Awaitable[Any], bulk_method(
                         self.model_type,
                         ordered_ids,
                         hide_early_access=hide_early_access,
-                    )
+                    ))
                 except Exception as exc:
                     logger.error(
                         "Failed to resolve update status in bulk for %s models (%s): %s",
@@ -707,7 +725,7 @@ class BaseModelService(ABC):
         return annotated
 
     @staticmethod
-    def _extract_hf_group_key(item: Dict) -> Optional[str]:
+    def _extract_hf_group_key(item: Dict[str, Any]) -> Optional[str]:
         """Extract `hf:{owner}/{repo}` from item's ``hf_url``, or None."""
         hf_url = item.get("hf_url") if isinstance(item, dict) else None
         if not hf_url or not isinstance(hf_url, str):
@@ -720,7 +738,7 @@ class BaseModelService(ABC):
         return f"hf:{m.group(1)}"
 
     @staticmethod
-    def _extract_group_key(item: Dict) -> Union[int, str, None]:
+    def _extract_group_key(item: Dict[str, Any]) -> Union[int, str, None]:
         """Return the group identity key: CivitAI modelId (int) or HF repo (str).
 
         Preference order:
@@ -734,7 +752,7 @@ class BaseModelService(ABC):
         return BaseModelService._extract_hf_group_key(item)
 
     @staticmethod
-    def _extract_model_id(item: Dict) -> Optional[int]:
+    def _extract_model_id(item: Dict[str, Any]) -> Optional[int]:
         civitai = item.get("civitai") if isinstance(item, dict) else None
         if not isinstance(civitai, dict):
             return None
@@ -747,7 +765,7 @@ class BaseModelService(ABC):
             return None
 
     @staticmethod
-    def _extract_version_id(item: Dict) -> Optional[int]:
+    def _extract_version_id(item: Dict[str, Any]) -> Optional[int]:
         civitai = item.get("civitai") if isinstance(item, dict) else None
         if not isinstance(civitai, dict):
             return None
@@ -760,7 +778,7 @@ class BaseModelService(ABC):
             return None
 
     @staticmethod
-    def _extract_base_model(item: Dict) -> Optional[str]:
+    def _extract_base_model(item: Dict[str, Any]) -> Optional[str]:
         value = item.get("base_model")
         if value is None:
             return None
@@ -812,7 +830,7 @@ class BaseModelService(ABC):
 
         return highest_by_base
 
-    def _paginate(self, data: List[Dict], page: int, page_size: int) -> Dict:
+    def _paginate(self, data: List[Dict[str, Any]], page: int, page_size: int) -> Dict[str, Any]:
         """Apply pagination to filtered data"""
         total_items = len(data)
         start_idx = (page - 1) * page_size
@@ -827,7 +845,7 @@ class BaseModelService(ABC):
         }
 
     @abstractmethod
-    async def format_response(self, model_data: Dict) -> Optional[Dict]:
+    async def format_response(self, model_data: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Format model data for API response - must be implemented by subclasses.
 
         Subclasses should return None for corrupted entries so the handler
@@ -836,17 +854,17 @@ class BaseModelService(ABC):
         pass
 
     # Common service methods that delegate to scanner
-    async def get_top_tags(self, limit: int = 20) -> List[Dict]:
+    async def get_top_tags(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Get top tags sorted by frequency"""
         return await self.scanner.get_top_tags(limit)
 
     async def search_tags(
         self, query: str, limit: int = 50
-    ) -> List[Dict]:
+    ) -> List[Dict[str, Any]]:
         """Search tags by substring, sorted by frequency"""
         return await self.scanner.search_tags(query, limit)
 
-    async def get_base_models(self, limit: int = 20) -> List[Dict]:
+    async def get_base_models(self, limit: int = 20) -> List[Dict[str, Any]]:
         """Get base models sorted by frequency"""
         return await self.scanner.get_base_models(limit)
 
@@ -913,7 +931,7 @@ class BaseModelService(ABC):
         """Get model root directories"""
         return self.scanner.get_model_roots()
 
-    def filter_civitai_data(self, data: Dict, minimal: bool = False) -> Dict:
+    def filter_civitai_data(self, data: Dict[str, Any], minimal: bool = False) -> Dict[str, Any]:
         """Filter relevant fields from CivitAI data"""
         if not data:
             return {}
@@ -939,7 +957,7 @@ class BaseModelService(ABC):
         )
         return {k: data[k] for k in fields if k in data}
 
-    async def get_folder_tree(self, model_root: str) -> Dict:
+    async def get_folder_tree(self, model_root: str) -> Dict[str, Any]:
         """Get hierarchical folder tree for a specific model root"""
         cache = await self.scanner.get_cached_data()
 
@@ -968,7 +986,7 @@ class BaseModelService(ABC):
 
         return tree
 
-    async def get_unified_folder_tree(self) -> Dict:
+    async def get_unified_folder_tree(self) -> Dict[str, Any]:
         """Get unified folder tree across all model roots"""
         cache = await self.scanner.get_cached_data()
 
@@ -997,7 +1015,7 @@ class BaseModelService(ABC):
 
         return unified_tree
 
-    async def get_model_notes(self, model_name: str) -> Optional[dict]:
+    async def get_model_notes(self, model_name: str) -> Optional[dict[str, Any]]:
         """Get notes and file_path for a specific model file.
 
         Supports both simple names (``OWSMianne_ANIMA_V1``) and full-path
@@ -1129,7 +1147,7 @@ class BaseModelService(ABC):
 
         return {"civitai_url": None, "model_id": None, "version_id": None}
 
-    async def get_model_metadata(self, file_path: str) -> Optional[Dict]:
+    async def get_model_metadata(self, file_path: str) -> Optional[Dict[str, Any]]:
         """Load full metadata for a single model.
 
         Listing/search endpoints return lightweight cache entries; this method performs
@@ -1225,7 +1243,7 @@ class BaseModelService(ABC):
         return True
 
     @staticmethod
-    def _relative_path_sort_key(relative_path: str, include_terms: List[str]) -> tuple:
+    def _relative_path_sort_key(relative_path: str, include_terms: List[str]) -> tuple[int, int, int, str]:
         """Sort paths by how well they satisfy the include tokens.
 
         Sorts based on path without extension for consistent ordering.
@@ -1252,11 +1270,79 @@ class BaseModelService(ABC):
         )
 
     async def search_relative_paths(
-        self, search_term: str, limit: int = 15, offset: int = 0
+        self,
+        search_term: str,
+        limit: int = 15,
+        offset: int = 0,
+        *,
+        folder: Optional[str] = None,
+        folder_include: Optional[list[str]] = None,
+        folder_exclude: Optional[list[str]] = None,
+        base_models: Optional[list[str]] = None,
+        model_types: Optional[list[str]] = None,
+        tags: Optional[dict[str, str]] = None,
+        auto_tags: Optional[dict[str, str]] = None,
+        tag_logic: str = "any",
+        credit_required: Optional[bool] = None,
+        allow_selling_generated_content: Optional[bool] = None,
+        recursive: bool = True,
+        apply_filters: bool = False,
     ) -> List[str]:
-        """Search model relative file paths for autocomplete functionality"""
+        """Search model relative file paths for autocomplete functionality.
+
+        Optional filter kwargs mirror the filters used by the list endpoint
+        (/api/lm/{prefix}/list). When no filter kwargs are provided the
+        behavior is identical to plain token-based path matching.
+        """
         cache = await self.scanner.get_cached_data()
         include_terms, exclude_terms = self._parse_search_tokens(search_term)
+
+        data = cache.raw_data
+        has_filters = any(
+            [
+                apply_filters,
+                folder is not None,
+                folder_include,
+                folder_exclude,
+                base_models,
+                model_types,
+                tags,
+                auto_tags,
+                credit_required is not None,
+                allow_selling_generated_content is not None,
+            ]
+        )
+        if has_filters:
+            # Auto-tags are not stored in the scanner cache — they are computed
+            # on the fly. Pre-compute them only when an auto-tag filter is
+            # active to avoid mutating cache entries unnecessarily.
+            if auto_tags:
+                from .auto_tag_service import extract_auto_tags
+
+                for item in data:
+                    if not item.get("auto_tags"):
+                        item["auto_tags"] = extract_auto_tags(item)
+
+            criteria = FilterCriteria(
+                folder=folder,
+                folder_include=folder_include,
+                folder_exclude=folder_exclude,
+                base_models=base_models,
+                model_types=model_types,
+                tags=tags,
+                auto_tags=auto_tags,
+                search_options={"recursive": recursive},
+                tag_logic=tag_logic,
+            )
+            data = self.filter_set.apply(data, criteria)
+            if credit_required is not None:
+                data = await self._apply_credit_required_filter(
+                    data, credit_required
+                )
+            if allow_selling_generated_content is not None:
+                data = await self._apply_allow_selling_filter(
+                    data, allow_selling_generated_content
+                )
 
         matching_paths = []
 
@@ -1264,7 +1350,7 @@ class BaseModelService(ABC):
         model_roots = self.scanner.get_model_roots()
 
         # Collect all matching paths first (needed for proper sorting and offset)
-        for model in cache.raw_data:
+        for model in data:
             file_path = model.get("file_path", "")
             if not file_path:
                 continue

@@ -12,6 +12,7 @@ from threading import Lock
 from typing import (
     Any,
     Awaitable,
+    Coroutine,
     Dict,
     Iterable,
     List,
@@ -92,6 +93,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "mature_blur_level": "R",
     "autoplay_on_hover": False,
     "display_density": "default",
+    "recipes_layout": "grid",
     "card_info_display": "always",
     "include_trigger_words": False,
     "compact_mode": False,
@@ -410,7 +412,12 @@ class SettingsManager:
 
         needs_library_bootstrap = not isinstance(libraries, dict) or not libraries
 
-        if not needs_library_bootstrap and top_level_has_paths and len(libraries) == 1:
+        if (
+            not needs_library_bootstrap
+            and top_level_has_paths
+            and isinstance(libraries, Mapping)
+            and len(libraries) == 1
+        ):
             only_library_payload = next(iter(libraries.values()))
             if isinstance(only_library_payload, Mapping):
                 folder_payload = only_library_payload.get("folder_paths")
@@ -453,6 +460,9 @@ class SettingsManager:
                     candidate_payload.get("folder_paths")
                 ):
                     seed_library_name = target_name
+
+        if not isinstance(libraries, dict) or not libraries:
+            return
 
         sanitized_libraries: Dict[str, Dict[str, Any]] = {}
         changed = False
@@ -593,7 +603,7 @@ class SettingsManager:
         return payload
 
     def _normalize_folder_paths(
-        self, folder_paths: Mapping[str, Iterable[str]]
+        self, folder_paths: Mapping[str, Any]
     ) -> Dict[str, List[str]]:
         normalized: Dict[str, List[str]] = {}
         for key, values in folder_paths.items():
@@ -622,7 +632,7 @@ class SettingsManager:
                 candidate_values = [values]
             else:
                 try:
-                    candidate_values = list(values)  # type: ignore[arg-type]
+                    candidate_values = list(values)  # pyright: ignore[reportArgumentType]
                 except TypeError:
                     continue
 
@@ -655,7 +665,7 @@ class SettingsManager:
     def _validate_folder_paths(
         self,
         library_name: str,
-        folder_paths: Mapping[str, Iterable[str]],
+        folder_paths: Mapping[str, Any],
     ) -> None:
         """Ensure folder paths do not overlap with other libraries.
 
@@ -1118,7 +1128,7 @@ class SettingsManager:
             return []
 
         if isinstance(value, str):
-            candidates: Iterable[str] = (
+            candidates: Iterable[Any] = (
                 value.replace("\n", ",").replace(";", ",").split(",")
             )
         elif isinstance(value, Sequence) and not isinstance(
@@ -1166,7 +1176,7 @@ class SettingsManager:
             return []
 
         if isinstance(value, str):
-            candidates: Iterable[str] = (
+            candidates: Iterable[Any] = (
                 value.replace("\n", ",").replace(";", ",").split(",")
             )
         elif isinstance(value, Sequence) and not isinstance(
@@ -1206,7 +1216,7 @@ class SettingsManager:
             return []
 
         if isinstance(value, str):
-            candidates: Iterable[str] = (
+            candidates: Iterable[Any] = (
                 value.replace("\n", ",").replace(";", ",").split(",")
             )
         elif isinstance(value, Sequence) and not isinstance(
@@ -1473,10 +1483,12 @@ class SettingsManager:
 
         try:
             common_root = os.path.commonpath([source, target])
-        except ValueError as exc:
-            raise ValueError("Invalid recipes path change") from exc
+        except ValueError:
+            # Windows: paths on different drives share no common root.
+            # A cross-drive move is valid, so treat it as no common root.
+            common_root = None
 
-        if common_root == source:
+        if common_root is not None and common_root == source:
             raise ValueError("Recipes path cannot be moved into a nested directory")
 
         planned_recipe_updates: Dict[str, Dict[str, Any]] = {}
@@ -1592,11 +1604,11 @@ class SettingsManager:
         if key == "folder_paths" and isinstance(value, Mapping):
             active_name = self.get_active_library_name()
             self._validate_folder_paths(active_name, value)
-            self._update_active_library_entry(folder_paths=value)  # type: ignore[arg-type]
+            self._update_active_library_entry(folder_paths=value)  # pyright: ignore[reportArgumentType]
         elif key == "extra_folder_paths" and isinstance(value, Mapping):
             active_name = self.get_active_library_name()
             self._validate_folder_paths(active_name, value)
-            self._update_active_library_entry(extra_folder_paths=value)  # type: ignore[arg-type]
+            self._update_active_library_entry(extra_folder_paths=value)  # pyright: ignore[reportArgumentType]
         elif key == "default_lora_root":
             self._update_active_library_entry(default_lora_root=str(value))
         elif key == "default_checkpoint_root":
@@ -1749,12 +1761,12 @@ class SettingsManager:
         """Trigger cache resorting when the model name display preference updates."""
 
         try:
-            from .service_registry import ServiceRegistry  # type: ignore
+            from .service_registry import ServiceRegistry  # pyright: ignore[reportImportCycles]
         except Exception:  # pragma: no cover - registry optional in some contexts
             return
 
         display_mode = value if isinstance(value, str) else "model_name"
-        pending: List[Tuple[Optional[asyncio.AbstractEventLoop], Awaitable[Any]]] = []
+        pending: List[Tuple[Optional[asyncio.AbstractEventLoop], Coroutine[Any, Any, Any]]] = []
 
         def _resolve_service_loop(service: Any) -> Optional[asyncio.AbstractEventLoop]:
             loop = getattr(service, "loop", None)
@@ -2115,7 +2127,7 @@ class SettingsManager:
             logger.debug("Failed to apply library settings to config: %s", exc)
 
         try:
-            from .service_registry import ServiceRegistry  # type: ignore
+            from .service_registry import ServiceRegistry  # pyright: ignore[reportImportCycles]
 
             for service_name in (
                 "lora_scanner",

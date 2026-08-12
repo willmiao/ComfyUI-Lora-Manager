@@ -1,5 +1,7 @@
 """Tests for model sub_type field refactoring."""
 
+from typing import Any, Dict
+
 import pytest
 from py.utils.models import (
     BaseModelMetadata,
@@ -44,7 +46,7 @@ class TestCheckpointMetadataSubType:
 
     def test_checkpoint_from_civitai_info_uses_sub_type(self):
         """from_civitai_info should use sub_type from version_info."""
-        version_info = {
+        version_info: Dict[str, Any] = {
             "baseModel": "SDXL",
             "model": {"name": "Test", "description": "", "tags": []},
             "files": [{"name": "model.safetensors", "sizeKB": 1000, "hashes": {"SHA256": "abc123"}, "primary": True}],
@@ -79,7 +81,7 @@ class TestEmbeddingMetadataSubType:
 
     def test_embedding_from_civitai_info_uses_sub_type(self):
         """from_civitai_info should use sub_type from version_info."""
-        version_info = {
+        version_info: Dict[str, Any] = {
             "baseModel": "SD1.5",
             "model": {"name": "Test", "description": "", "tags": []},
             "files": [{"name": "model.pt", "sizeKB": 1000, "hashes": {"SHA256": "abc123"}, "primary": True}],
@@ -113,7 +115,7 @@ class TestLoraMetadataConsistency:
 
     def test_lora_from_civitai_info_extracts_type(self):
         """from_civitai_info should extract type from civitai data."""
-        version_info = {
+        version_info: Dict[str, Any] = {
             "baseModel": "SDXL",
             "model": {"name": "Test", "description": "", "tags": [], "type": "Lora"},
             "files": [{"name": "model.safetensors", "sizeKB": 1000, "hashes": {"SHA256": "abc123"}, "primary": True}],
@@ -125,3 +127,232 @@ class TestLoraMetadataConsistency:
         
         # Type is stored in civitai dict
         assert metadata.civitai.get("model", {}).get("type") == "Lora"
+
+
+class TestBaseModelMetadataAutov3:
+    """Three-state autov3 semantics on BaseModelMetadata (None/''/12-hex)."""
+
+    def _make_dict(self, **overrides):
+        data = {
+            "file_name": "model",
+            "model_name": "Model",
+            "file_path": "/tmp/model.safetensors",
+            "size": 0,
+            "modified": 0.0,
+            "sha256": "deadbeef",
+            "base_model": "Unknown",
+            "preview_url": "",
+        }
+        data.update(overrides)
+        return data
+
+    def test_from_dict_null_autov3_normalizes_to_empty_string(self):
+        metadata = BaseModelMetadata.from_dict(self._make_dict(autov3=None))
+
+        assert metadata.autov3 == ""
+
+    def test_to_dict_emits_autov3_null_when_checked_unavailable(self):
+        metadata = BaseModelMetadata.from_dict(self._make_dict(autov3=None))
+
+        payload = metadata.to_dict()
+
+        assert "autov3" in payload
+        assert payload["autov3"] is None
+
+    def test_from_dict_absent_autov3_stays_none(self):
+        metadata = BaseModelMetadata.from_dict(self._make_dict())
+
+        assert metadata.autov3 is None
+
+    def test_to_dict_omits_autov3_when_not_checked(self):
+        metadata = BaseModelMetadata.from_dict(self._make_dict())
+
+        assert "autov3" not in metadata.to_dict()
+
+    def test_from_dict_preserves_lowercase_autov3_value(self):
+        metadata = BaseModelMetadata.from_dict(self._make_dict(autov3="abcdef123456"))
+
+        assert metadata.autov3 == "abcdef123456"
+        assert metadata.to_dict()["autov3"] == "abcdef123456"
+
+    @pytest.mark.parametrize("model_cls", [LoraMetadata, CheckpointMetadata, EmbeddingMetadata])
+    def test_from_civitai_info_extracts_autov3(self, model_cls):
+        # The downloaded file is exactly ``file_info``, so AutoV3 is read
+        # directly from its own hashes — no SHA256 cross-matching against
+        # version_info.files (which may hold sibling files of the version).
+        version_info = {
+            "baseModel": "SDXL",
+            "model": {"name": "Test", "description": "", "tags": []},
+            "files": [
+                {"name": "other.safetensors", "sizeKB": 100, "hashes": {"SHA256": "zzz999", "AutoV3": "999999999999"}},
+                {
+                    "name": "model.safetensors",
+                    "sizeKB": 1000,
+                    "hashes": {"SHA256": "abc123", "AutoV3": "ABCDEF1234567890ABCDEF"},
+                },
+            ],
+        }
+        file_info = {
+            "name": "model.safetensors",
+            "sizeKB": 1000,
+            "hashes": {"SHA256": "abc123", "AutoV3": "ABCDEF1234567890ABCDEF"},
+        }
+
+        metadata = model_cls.from_civitai_info(version_info, file_info, "/test/model.safetensors")
+
+        assert metadata.autov3 == "abcdef123456"
+
+    @pytest.mark.parametrize("model_cls", [LoraMetadata, CheckpointMetadata, EmbeddingMetadata])
+    def test_from_civitai_info_reads_autov3_without_sha256(self, model_cls):
+        # The direct read must not depend on the API reporting SHA256 for the
+        # file — AutoV3 alone suffices (the old SHA256-matching extraction
+        # silently failed whenever hashes.SHA256 was missing).
+        version_info = {
+            "baseModel": "SDXL",
+            "model": {"name": "Test", "description": "", "tags": []},
+            "files": [],
+        }
+        file_info = {
+            "name": "model.safetensors",
+            "sizeKB": 1000,
+            "hashes": {"AutoV3": "ABCDEF1234567890ABCDEF"},
+        }
+
+        metadata = model_cls.from_civitai_info(version_info, file_info, "/test/model.safetensors")
+
+        assert metadata.autov3 == "abcdef123456"
+
+    @pytest.mark.parametrize(
+        "hashes",
+        [
+            {},
+            {"SHA256": "abc123"},
+            {"SHA256": "abc123", "AutoV3": "abc"},
+            {"SHA256": "abc123", "AutoV3": 123},
+            {"SHA256": "abc123", "AutoV3": None},
+            {"SHA256": "abc123", "AutoV3": "E3B0C44298FC1C149AFB..."},
+        ],
+    )
+    @pytest.mark.parametrize("model_cls", [LoraMetadata, CheckpointMetadata, EmbeddingMetadata])
+    def test_from_civitai_info_autov3_none_when_missing_or_invalid(self, model_cls, hashes):
+        version_info = {
+            "baseModel": "SDXL",
+            "model": {"name": "Test", "description": "", "tags": []},
+            "files": [{"name": "model.safetensors", "sizeKB": 1000, "hashes": hashes}],
+        }
+        file_info = {"name": "model.safetensors", "sizeKB": 1000, "hashes": hashes}
+
+        metadata = model_cls.from_civitai_info(version_info, file_info, "/test/model.safetensors")
+
+        assert metadata.autov3 is None
+
+    def test_normalize_autov3(self):
+        from py.utils.models import normalize_autov3
+
+        assert normalize_autov3("ABCDEF1234567890ABCDEF") == "abcdef123456"
+        assert normalize_autov3("abcdef123456") == "abcdef123456"
+        assert normalize_autov3("abc") is None
+        assert normalize_autov3(123) is None
+        assert normalize_autov3(None) is None
+        assert normalize_autov3("E3B0C44298FC1C149AFB") is None  # empty-hash placeholder
+
+    def test_autov3_from_civitai_files_matches_sha256_case_insensitively(self):
+        from py.utils.models import autov3_from_civitai_files
+
+        civitai = {
+            "files": [
+                {"name": "a.safetensors", "hashes": {"SHA256": "111AAA"}},
+                {"name": "b.safetensors", "hashes": {"SHA256": "222BBB", "AutoV3": "ABCDEF123456"}},
+            ]
+        }
+        assert autov3_from_civitai_files(civitai, "222bbb") == "abcdef123456"
+        assert autov3_from_civitai_files(civitai, "111aaa") is None
+        assert autov3_from_civitai_files(civitai, "999999") is None
+        assert autov3_from_civitai_files(None, "222bbb") is None
+        assert autov3_from_civitai_files(civitai, "") is None
+
+    def test_autov3_from_civitai_files_ignores_files_without_sha256(self):
+        from py.utils.models import autov3_from_civitai_files
+
+        civitai = {
+            "files": [
+                {"name": "a.safetensors", "hashes": {"AutoV3": "ABCDEF123456"}},
+                {"name": "b.safetensors", "hashes": {"SHA256": "222BBB", "AutoV3": "123456ABCDEF"}},
+            ]
+        }
+        assert autov3_from_civitai_files(civitai, "222bbb") == "123456abcdef"
+
+    def test_autov3_from_civitai_files_rejects_empty_hash_placeholder(self):
+        from py.utils.models import autov3_from_civitai_files
+
+        civitai = {
+            "files": [
+                {"name": "b.safetensors", "hashes": {"SHA256": "222BBB", "AutoV3": "E3B0C44298FC1C149AFB..."}},
+            ]
+        }
+        # The empty-string SHA256 placeholder must never be adopted as a value.
+        assert autov3_from_civitai_files(civitai, "222bbb") is None
+
+    def test_update_civitai_info_populates_autov3_from_matching_file(self):
+        metadata = CheckpointMetadata(
+            file_name="kreamania",
+            model_name="Kreamania",
+            file_path="/test/kreamania_variant5.safetensors",
+            size=1000,
+            modified=1234567890.0,
+            sha256="111AABBF94DD9E59C05D842FCCF57BEC915B2A3C237F6B54F8D614E40858D717",
+            base_model="FLUX.1 D",
+            preview_url="",
+            autov3="",
+        )
+        version_info = {
+            "files": [
+                {
+                    "name": "kreamania_variant5.safetensors",
+                    "hashes": {"SHA256": "111aabbf94dd9e59c05d842fccf57bec915b2a3c237f6b54f8d614e40858d717", "AutoV3": "8A582E901D7F"},
+                }
+            ]
+        }
+
+        metadata.update_civitai_info(version_info)
+
+        assert metadata.autov3 == "8a582e901d7f"
+
+    def test_update_civitai_info_prefers_civitai_over_header_value(self):
+        metadata = BaseModelMetadata(
+            file_name="model",
+            model_name="Model",
+            file_path="/test/model.safetensors",
+            size=1000,
+            modified=1234567890.0,
+            sha256="abc123",
+            base_model="SDXL",
+            preview_url="",
+            autov3="e3b0c44298fc",  # stale header-extracted value
+        )
+        version_info = {
+            "files": [
+                {"name": "model.safetensors", "hashes": {"SHA256": "abc123", "AutoV3": "DEF456ABC789"}}
+            ]
+        }
+
+        metadata.update_civitai_info(version_info)
+
+        assert metadata.autov3 == "def456abc789"
+
+    def test_update_civitai_info_keeps_autov3_when_no_match(self):
+        metadata = BaseModelMetadata(
+            file_name="model",
+            model_name="Model",
+            file_path="/test/model.safetensors",
+            size=1000,
+            modified=1234567890.0,
+            sha256="abc123",
+            base_model="SDXL",
+            preview_url="",
+            autov3="",
+        )
+
+        metadata.update_civitai_info({"files": [{"name": "other.safetensors", "hashes": {"SHA256": "zzz999", "AutoV3": "DEF456ABC789"}}]})
+
+        assert metadata.autov3 == ""

@@ -101,6 +101,7 @@ class RecipeAnalysisService:
 
         temp_path = None
         metadata: Optional[dict[str, Any]] = None
+        image_info: Optional[dict[str, Any]] = None
         is_video = False
         extension = ".jpg"  # Default
 
@@ -413,14 +414,27 @@ class RecipeAnalysisService:
                 error_msg = "This image does not contain any generation metadata (prompt, models, or parameters)"
             else:
                 error_msg = "No parser found for this image"
-            payload = {"error": error_msg, "loras": []}
+            payload: dict[str, Any] = {"error": error_msg, "loras": []}
             if include_image_base64 and image_path:
                 payload["image_base64"] = self._encode_file(image_path)
             payload["is_video"] = is_video
             payload["extension"] = extension
             return AnalysisResult(payload)
 
-        result = await parser.parse_metadata(metadata, recipe_scanner=recipe_scanner)
+        # Only the Civitai image parser accepts a local_cache parameter;
+        # passing it to other parsers would raise TypeError. Lazy import
+        # mirrors the repo style used in recipe_handlers.
+        from ...recipes.parsers.civitai_image import CivitaiApiMetadataParser
+
+        if isinstance(parser, CivitaiApiMetadataParser):
+            local_cache = await recipe_scanner.build_local_hash_cache()
+            result = await parser.parse_metadata(
+                metadata, recipe_scanner=recipe_scanner, local_cache=local_cache
+            )
+        else:
+            result = await parser.parse_metadata(
+                metadata, recipe_scanner=recipe_scanner
+            )
 
         if include_image_base64 and image_path:
             result["image_base64"] = self._encode_file(image_path)
@@ -494,7 +508,7 @@ class RecipeAnalysisService:
                     getattr(tensor_image, "dtype", None),
                 )
 
-            import torch  # type: ignore[import-not-found]
+            import torch  # pyright: ignore[reportMissingImports]
 
             if isinstance(tensor_image, torch.Tensor):
                 image_np = tensor_image.cpu().numpy()

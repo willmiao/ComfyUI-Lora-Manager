@@ -6,6 +6,8 @@ property-based testing to catch edge cases and ensure correctness.
 
 from __future__ import annotations
 
+from typing import Any, Dict
+
 import pytest
 from hypothesis import given, settings, strategies as st
 
@@ -80,6 +82,8 @@ class TestNormalizePath:
     @given(st.text(alphabet='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-/\\') | st.none())
     def test_normalize_path_is_idempotent_for_ascii(self, path: str | None):
         """Normalizing an already normalized ASCII path should not change it."""
+        if path is None:
+            return
         normalized = normalize_path(path)
         renormalized = normalize_path(normalized)
         assert normalized == renormalized
@@ -160,14 +164,14 @@ class TestCalculateRecipeFingerprint:
     """Property-based tests for calculate_recipe_fingerprint function."""
 
     @given(st.lists(st.dictionaries(st.text(), st.text() | st.integers() | st.floats(), min_size=1), min_size=0, max_size=50))
-    def test_fingerprint_is_deterministic(self, loras: list):
+    def test_fingerprint_is_deterministic(self, loras: list[Dict[str, Any]]):
         """Same input should always produce same fingerprint."""
         fp1 = calculate_recipe_fingerprint(loras)
         fp2 = calculate_recipe_fingerprint(loras)
         assert fp1 == fp2
 
     @given(st.lists(st.dictionaries(st.text(), st.text() | st.integers() | st.floats(), min_size=1), min_size=0, max_size=50))
-    def test_fingerprint_returns_string(self, loras: list):
+    def test_fingerprint_returns_string(self, loras: list[Dict[str, Any]]):
         """Function should always return a string."""
         result = calculate_recipe_fingerprint(loras)
         assert isinstance(result, str)
@@ -178,7 +182,7 @@ class TestCalculateRecipeFingerprint:
         assert result == ""
 
     @given(st.lists(st.dictionaries(st.text(), st.text() | st.integers() | st.floats(), min_size=1), min_size=1, max_size=10))
-    def test_fingerprint_different_inputs_produce_different_results(self, loras1: list):
+    def test_fingerprint_different_inputs_produce_different_results(self, loras1: list[Dict[str, Any]]):
         """Different inputs should generally produce different fingerprints."""
         # Create a different input by modifying the first LoRA
         loras2 = loras1.copy()
