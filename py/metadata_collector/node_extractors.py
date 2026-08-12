@@ -82,11 +82,7 @@ class GenericNodeExtractor(NodeMetadataExtractor):
                     text = val.strip()
                     break
 
-            input_conditionings = [
-                value
-                for input_name, value in inputs.items()
-                if input_name.startswith("conditioning") and value is not None
-            ]
+            input_conditionings = _collect_conditioning_inputs(inputs)
             if text or input_conditionings:
                 prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
                 if text:
@@ -434,6 +430,24 @@ def _first_output_tuple(outputs):
     return None
 
 
+def _collect_conditioning_inputs(inputs):
+    """Collect conditioning object inputs (``conditioning*`` keys).
+
+    Primitive values (None, str, int, float, bool) are excluded so scalar
+    fields like ``conditioning_strength`` are not mistaken for conditioning
+    objects during provenance tracking.
+    """
+    if not inputs:
+        return []
+    return [
+        value
+        for input_name, value in inputs.items()
+        if input_name.startswith("conditioning")
+        and value is not None
+        and not isinstance(value, (str, int, float, bool))
+    ]
+
+
 def _record_conditioning_source(
     metadata, node_id, output_conditioning, input_conditionings
 ):
@@ -525,13 +539,7 @@ class ConditioningCombineExtractor(NodeMetadataExtractor):
         if not inputs:
             return
 
-        input_conditionings = []
-        for input_name in inputs:
-            if (
-                input_name.startswith("conditioning")
-                and inputs[input_name] is not None
-            ):
-                input_conditionings.append(inputs[input_name])
+        input_conditionings = _collect_conditioning_inputs(inputs)
 
         if input_conditionings:
             prompt_metadata = _ensure_prompt_metadata(metadata, node_id)

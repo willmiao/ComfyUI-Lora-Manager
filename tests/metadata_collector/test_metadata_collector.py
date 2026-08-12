@@ -637,6 +637,134 @@ def test_conditioning_provenance_recovers_transformed_switched_prompts(
     assert params["negative_prompt"] == "expected negative"
 
 
+def test_conditioning_provenance_identity_switch_between_encoders(
+    metadata_registry, monkeypatch
+):
+    """Lock identity-preserving switches placed directly between encoders.
+
+    A switch returns the selected input conditioning verbatim, so provenance
+    must be recovered through object identity without any transform metadata.
+    """
+    prompt_graph = {
+        "encode_pos": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "chosen positive", "clip": ["clip", 0]},
+        },
+        "encode_other_pos": {
+            "class_type": "CLIPTextEncode",
+            "inputs": {"text": "unchosen positive", "clip": ["clip", 0]},
+        },
+        "positive_switch": {
+            "class_type": "ComfySwitchNode",
+            "inputs": {
+                "switch": True,
+                "on_false": ["encode_other_pos", 0],
+                "on_true": ["encode_pos", 0],
+            },
+        },
+        "sampler": {
+            "class_type": "ClownsharKSampler_Beta",
+            "inputs": {
+                "seed": 123,
+                "steps": 8,
+                "cfg": 1.0,
+                "sampler_name": "linear/euler",
+                "scheduler": "beta57",
+                "denoise": 1.0,
+                "positive": ["positive_switch", 0],
+                "negative": ["encode_other_pos", 0],
+                "latent_image": {
+                    "samples": types.SimpleNamespace(shape=(1, 4, 16, 16))
+                },
+            },
+        },
+    }
+    prompt = SimpleNamespace(original_prompt=prompt_graph)
+
+    chosen_conditioning = object()
+    unchosen_conditioning = object()
+
+    monkeypatch.setattr(metadata_processor, "standalone_mode", False)
+
+    metadata_registry.start_collection("prompt-identity-switch")
+    metadata_registry.set_current_prompt(prompt)
+
+    metadata_registry.record_node_execution(
+        "encode_pos", "CLIPTextEncode", {"text": "chosen positive"}, None
+    )
+    metadata_registry.update_node_execution(
+        "encode_pos", "CLIPTextEncode", [(chosen_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "encode_other_pos", "CLIPTextEncode", {"text": "unchosen positive"}, None
+    )
+    metadata_registry.update_node_execution(
+        "encode_other_pos", "CLIPTextEncode", [(unchosen_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "positive_switch",
+        "ComfySwitchNode",
+        {
+            "switch": True,
+            "on_false": unchosen_conditioning,
+            "on_true": chosen_conditioning,
+        },
+        None,
+    )
+    metadata_registry.update_node_execution(
+        "positive_switch", "ComfySwitchNode", [(chosen_conditioning,)]
+    )
+    metadata_registry.record_node_execution(
+        "sampler",
+        "ClownsharKSampler_Beta",
+        {
+            "seed": 123,
+            "steps": 8,
+            "cfg": 1.0,
+            "sampler_name": "linear/euler",
+            "scheduler": "beta57",
+            "denoise": 1.0,
+            "positive": chosen_conditioning,
+            "negative": unchosen_conditioning,
+            "latent_image": {
+                "samples": types.SimpleNamespace(shape=(1, 4, 16, 16))
+            },
+        },
+        None,
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-identity-switch")
+    params = MetadataProcessor.extract_generation_params(metadata)
+
+    assert params["prompt"] == "chosen positive"
+    assert params["negative_prompt"] == "unchosen positive"
+
+
+def test_conditioning_provenance_ignores_scalar_conditioning_fields(
+    metadata_registry, monkeypatch
+):
+    """Scalar fields like ``conditioning_strength`` must not be collected as
+    conditioning objects for unregistered transform nodes."""
+    monkeypatch.setattr(metadata_processor, "standalone_mode", False)
+
+    metadata_registry.start_collection("prompt-scalar-filter")
+    metadata_registry.set_current_prompt(SimpleNamespace(original_prompt={}))
+
+    input_conditioning = object()
+    metadata_registry.record_node_execution(
+        "strength_node",
+        "SomeStrengthTransform",
+        {"conditioning": input_conditioning, "conditioning_strength": 0.8},
+        None,
+        return_types=("CONDITIONING",),
+    )
+
+    metadata = metadata_registry.get_metadata("prompt-scalar-filter")
+    assert metadata[PROMPTS]["strength_node"]["orig_conditionings"] == [
+        input_conditioning
+    ]
+
+
 def test_conditioning_provenance_recovers_kj_set_get_prompts(
     metadata_registry, monkeypatch
 ):
