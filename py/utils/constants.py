@@ -62,6 +62,20 @@ MODEL_FILE_EXTENSIONS = {
     ".gguf",
 }
 
+# CivitAI ModelFile.type values eligible as the main download file.
+# Mirrors CivitAI's getPrimaryFile() (model-helpers.ts): weight types are
+# preferred, but any file CivitAI marks `primary` is accepted — newer types
+# like 'Enhancement LoRA' (Anima/AIR image-editing LoRAs) are valid primary
+# files despite not being in the traditional weights allowlist.
+MODEL_WEIGHT_FILE_TYPES = (
+    "Model",
+    "Pruned Model",
+    "Negative",
+    "UNet",
+    "Diffusion Model",
+    "Enhancement LoRA",
+)
+
 # Valid sub-types for each scanner type
 VALID_LORA_SUB_TYPES = ["lora", "locon", "dora"]
 VALID_CHECKPOINT_SUB_TYPES = ["checkpoint", "diffusion_model"]

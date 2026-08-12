@@ -18,6 +18,7 @@ from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
     DIFFUSION_MODEL_BASE_MODELS,
+    MODEL_WEIGHT_FILE_TYPES,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
 )
@@ -44,6 +45,11 @@ CIVITAI_DOWNLOAD_URL_PREFIXES = (
     "https://civitai.com/api/download/",
     "https://civitai.red/api/download/",
 )
+
+
+# File types that are never the intended download target even when CivitAI
+# marks them primary — configs/archives/workflows are auxiliary artifacts.
+NON_DOWNLOADABLE_PRIMARY_TYPES = ("Config", "Archive", "Workflow", "Training Data")
 
 
 class DownloadManager:
@@ -1500,7 +1506,7 @@ class DownloadManager:
                             f
                             for f in files
                             if f.get("primary")
-                            and f.get("type") in ("Model", "Negative", "Diffusion Model", "UNet")
+                            and f.get("type") in MODEL_WEIGHT_FILE_TYPES
                         ),
                         None,
                     )
@@ -1540,21 +1546,52 @@ class DownloadManager:
             # Fallback to primary file if no match found
             if not file_info:
                 logger.debug("[download] Looking for primary file as fallback")
+                # Prefer a weights-type file CivitAI marked primary; then any
+                # weights-type file (providers without primary flags, e.g.
+                # civarchive); then trust CivitAI's primary flag regardless of
+                # type — newer types like 'Enhancement LoRA' are valid primary
+                # files. Weights files are preferred over non-weights primary
+                # files so a Config/Archive primary never replaces a Model.
                 file_info = next(
                     (
                         f
                         for f in files
-                        if f.get("primary") and f.get("type") in ("Model", "Negative", "Diffusion Model", "UNet")
+                        if f.get("primary") and f.get("type") in MODEL_WEIGHT_FILE_TYPES
                     ),
                     None,
                 )
                 if file_info:
                     logger.debug(
-                        "[download] Fallback primary file selected: id=%s, name=%s",
+                        "[download] Fallback primary file selected (primary + weights): id=%s, name=%s",
                         file_info.get("id"), file_info.get("name"),
                     )
                 else:
-                    logger.debug("[download] No primary file found in fallback lookup")
+                    file_info = next(
+                        (f for f in files if f.get("type") in MODEL_WEIGHT_FILE_TYPES),
+                        None,
+                    )
+                    if file_info:
+                        logger.debug(
+                            "[download] Fallback primary file selected (weights type, no primary flag): id=%s, name=%s",
+                            file_info.get("id"), file_info.get("name"),
+                        )
+                    else:
+                        file_info = next(
+                            (
+                                f
+                                for f in files
+                                if f.get("primary")
+                                and f.get("type") not in NON_DOWNLOADABLE_PRIMARY_TYPES
+                            ),
+                            None,
+                        )
+                        if file_info:
+                            logger.debug(
+                                "[download] Fallback primary file selected (trusting CivitAI primary flag): id=%s, name=%s, type=%s",
+                                file_info.get("id"), file_info.get("name"), file_info.get("type"),
+                            )
+                        else:
+                            logger.debug("[download] No primary file found in fallback lookup")
 
             if not file_info:
                 return {"success": False, "error": "No suitable file found in metadata"}

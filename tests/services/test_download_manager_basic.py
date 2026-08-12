@@ -123,10 +123,7 @@ def metadata_provider(monkeypatch):
     class DummyProvider:
         def __init__(self):
             self.calls = []
-
-        async def get_model_version(self, model_id, model_version_id):
-            self.calls.append((model_id, model_version_id))
-            return {
+            self.payload = {
                 "id": 42,
                 "model": {"type": "LoRA", "tags": ["fantasy"]},
                 "baseModel": "BaseModel",
@@ -140,6 +137,10 @@ def metadata_provider(monkeypatch):
                     }
                 ],
             }
+
+        async def get_model_version(self, model_id, model_version_id):
+            self.calls.append((model_id, model_version_id))
+            return self.payload
 
     provider = DummyProvider()
     monkeypatch.setattr(
@@ -231,6 +232,165 @@ async def test_successful_download_uses_defaults(
     assert captured["save_dir"] == expected_dir
     assert captured["model_type"] == "lora"
     assert captured["download_urls"] == ["https://example.invalid/file.safetensors"]
+
+
+@pytest.mark.asyncio
+async def test_download_accepts_enhancement_lora_primary_file(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """A version whose only file has type 'Enhancement LoRA' (Anima/AIR
+    image-editing LoRAs) must download — previously failed with
+    "No suitable file found in metadata" because the type was missing from
+    the primary-file weights allowlist."""
+    manager = DownloadManager()
+    metadata_provider.payload = {
+        "id": 3219121,
+        "model": {"type": "LORA", "tags": ["style"]},
+        "baseModel": "Anima",
+        "creator": {"username": "Deskup"},
+        "files": [
+            {
+                "id": 3100968,
+                "type": "Enhancement LoRA",
+                "primary": True,
+                "name": "deskup-anima-edit-general.safetensors",
+                "sizeKB": 358501.13,
+                "downloadUrl": "https://example.invalid/deskup-anima-edit-general.safetensors",
+            }
+        ],
+    }
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured.update(
+            {
+                "download_urls": kwargs["download_urls"],
+                "model_type": kwargs["model_type"],
+            }
+        )
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_id=2850692,
+        model_version_id=3219121,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["model_type"] == "lora"
+    assert captured["download_urls"] == [
+        "https://example.invalid/deskup-anima-edit-general.safetensors"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_download_falls_back_to_civitai_primary_flag_regardless_of_type(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """If no weights-type file exists, trust CivitAI's `primary` flag on any
+    file — mirrors CivitAI's getPrimaryFile() which never excludes a file by
+    type."""
+    manager = DownloadManager()
+    metadata_provider.payload = {
+        "id": 77,
+        "model": {"type": "LORA", "tags": ["concept"]},
+        "baseModel": "Anima",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 100,
+                "type": "Other",
+                "primary": True,
+                "name": "custom-type-lora.safetensors",
+                "downloadUrl": "https://example.invalid/custom-type-lora.safetensors",
+            }
+        ],
+    }
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["download_urls"] = kwargs["download_urls"]
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=77,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["download_urls"] == [
+        "https://example.invalid/custom-type-lora.safetensors"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_download_prefers_weights_file_over_non_weights_primary(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """A Config/Archive-type primary must never replace an existing weights
+    file — the weights file wins even without the primary flag."""
+    manager = DownloadManager()
+    metadata_provider.payload = {
+        "id": 78,
+        "model": {"type": "LORA", "tags": ["concept"]},
+        "baseModel": "BaseModel",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 201,
+                "type": "Config",
+                "primary": True,
+                "name": "config.json",
+                "downloadUrl": "https://example.invalid/config.json",
+            },
+            {
+                "id": 202,
+                "type": "Model",
+                "primary": False,
+                "name": "weights.safetensors",
+                "downloadUrl": "https://example.invalid/weights.safetensors",
+            },
+        ],
+    }
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["download_urls"] = kwargs["download_urls"]
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=78,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["download_urls"] == [
+        "https://example.invalid/weights.safetensors"
+    ]
 
 
 @pytest.mark.asyncio

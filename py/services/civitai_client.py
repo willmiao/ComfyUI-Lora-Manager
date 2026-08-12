@@ -21,6 +21,7 @@ from .model_metadata_provider import (
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
 from ..utils.civitai_utils import resolve_license_payload
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -538,10 +539,16 @@ class CivitaiClient:
         return model_versions[0]
 
     def _extract_primary_model_hash(self, version_entry: Dict[str, Any]) -> Optional[str]:
+        # Prefer the generic "Model" file (most reliable version identity);
+        # fall back to any other weights-type primary.
         for file_info in version_entry.get("files", []):
             if file_info.get("type") == "Model" and file_info.get("primary"):
-                hashes = file_info.get("hashes", {})
-                model_hash = hashes.get("SHA256")
+                model_hash = (file_info.get("hashes", {}) or {}).get("SHA256")
+                if model_hash:
+                    return model_hash
+        for file_info in version_entry.get("files", []):
+            if file_info.get("type") in MODEL_WEIGHT_FILE_TYPES and file_info.get("primary"):
+                model_hash = (file_info.get("hashes", {}) or {}).get("SHA256")
                 if model_hash:
                     return model_hash
         return None

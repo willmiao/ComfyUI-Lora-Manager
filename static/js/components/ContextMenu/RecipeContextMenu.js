@@ -1,6 +1,7 @@
 import { BaseContextMenu } from './BaseContextMenu.js';
 import { ModelContextMenuMixin } from './ModelContextMenuMixin.js';
 import { showToast, copyToClipboard, sendLoraToWorkflow } from '../../utils/uiHelpers.js';
+import { isModelWeightFile } from '../../utils/modelFileTypes.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
 import { state } from '../../state/index.js';
@@ -255,7 +256,7 @@ export class RecipeContextMenu extends BaseContextMenu {
                 loras: validLoras.map(lora => {
                     const civitaiInfo = lora.civitaiInfo;
                     const modelFile = civitaiInfo.files ?
-                        civitaiInfo.files.find(file => file.type === 'Model') : null;
+                        civitaiInfo.files.find(file => isModelWeightFile(file.type)) : null;
 
                     return {
                         // Basic lora info

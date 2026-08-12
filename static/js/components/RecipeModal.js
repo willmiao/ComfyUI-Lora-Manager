@@ -1,5 +1,6 @@
 // Recipe Modal Component
 import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow } from '../utils/uiHelpers.js';
+import { isModelWeightFile } from '../utils/modelFileTypes.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
@@ -1412,7 +1413,7 @@ class RecipeModal {
                 loras: validLoras.map(lora => {
                     const civitaiInfo = lora.civitaiInfo;
                     const modelFile = civitaiInfo.files ?
-                        civitaiInfo.files.find(file => file.type === 'Model') : null;
+                        civitaiInfo.files.find(file => isModelWeightFile(file.type)) : null;
 
                     return {
                         // Basic lora info

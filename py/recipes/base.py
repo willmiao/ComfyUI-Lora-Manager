@@ -11,7 +11,7 @@ import re
 from typing import Dict, List, Any, Optional, Tuple
 from abc import ABC, abstractmethod
 from ..config import config
-from ..utils.constants import VALID_LORA_TYPES, VALID_CHECKPOINT_SUB_TYPES
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES, VALID_LORA_TYPES, VALID_CHECKPOINT_SUB_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 
 logger = logging.getLogger(__name__)
@@ -155,9 +155,9 @@ class RecipeMetadataParser(ABC):
             
             # Process file information if available
             if 'files' in civitai_info:
-                # Find the primary model file (type="Model" and primary=true) in the files list
+                # Find the primary model file (weights-type and primary=true) in the files list
                 model_file = next((file for file in civitai_info.get('files', []) 
-                                    if file.get('type') == 'Model' and file.get('primary') == True), None)
+                                    if file.get('type') in MODEL_WEIGHT_FILE_TYPES and file.get('primary') == True), None)
                 
                 if model_file:
                     # Get size
@@ -261,11 +261,21 @@ class RecipeMetadataParser(ABC):
             checkpoint['id'] = civitai_data.get('id', 0)
 
             if 'files' in civitai_data:
+                # Prefer the file CivitAI marked primary; fall back to any
+                # weights-type file (providers without primary flags).
                 model_file = next(
                     (
                         file
                         for file in civitai_data.get('files', [])
-                        if file.get('type') == 'Model'
+                        if file.get('type') in MODEL_WEIGHT_FILE_TYPES
+                        and file.get('primary') is True
+                    ),
+                    None,
+                ) or next(
+                    (
+                        file
+                        for file in civitai_data.get('files', [])
+                        if file.get('type') in MODEL_WEIGHT_FILE_TYPES
                     ),
                     None,
                 )

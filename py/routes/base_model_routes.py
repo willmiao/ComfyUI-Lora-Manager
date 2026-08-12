@@ -30,6 +30,7 @@ from ..services.websocket_progress_callback import (
     WebSocketProgressCallback,
 )
 from ..utils.exif_utils import ExifUtils
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES
 from ..utils.metadata_manager import MetadataManager
 from .model_route_registrar import COMMON_ROUTE_DEFINITIONS, ModelRouteRegistrar
 from .handlers.model_handlers import (
@@ -251,7 +252,7 @@ class BaseModelRoutes(ABC):
 
     def _find_model_file(self, files):
         """Find the appropriate model file from the files list - can be overridden by subclasses."""
-        return next((file for file in files if file.get("type") in ("Model", "Diffusion Model") and file.get("primary") is True), None)
+        return next((file for file in files if file.get("type") in MODEL_WEIGHT_FILE_TYPES and file.get("primary") is True), None)
 
     def get_handler(self, name: str) -> Callable[[web.Request], Awaitable[web.StreamResponse]]:
         """Expose handlers for subclasses or tests."""
