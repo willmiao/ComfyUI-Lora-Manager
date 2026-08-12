@@ -104,7 +104,11 @@ class GenericNodeExtractor(NodeMetadataExtractor):
         if not output_tuple or len(output_tuple) < 1:
             return
 
-        output_conditioning = output_tuple[0]
+        conditioning_index = _first_conditioning_index(return_types)
+        if conditioning_index is None or len(output_tuple) <= conditioning_index:
+            return
+
+        output_conditioning = output_tuple[conditioning_index]
         if output_conditioning is None:
             return
 
@@ -430,6 +434,16 @@ def _first_output_tuple(outputs):
     return None
 
 
+def _first_conditioning_index(return_types):
+    """Return the index of the first CONDITIONING output slot, or None."""
+    if not return_types:
+        return None
+    for index, return_type in enumerate(return_types):
+        if "CONDITIONING" in str(return_type):
+            return index
+    return None
+
+
 def _collect_conditioning_inputs(inputs):
     """Collect conditioning object inputs (``conditioning*`` keys).
 
@@ -459,6 +473,14 @@ def _record_conditioning_source(
     ]
     if not sources:
         return
+
+    # Identity-preserving selectors return one of their inputs unchanged:
+    # only that input contributed to the output, so record it alone instead
+    # of treating every input as a combination source.
+    for conditioning in sources:
+        if id(conditioning) == id(output_conditioning):
+            sources = [conditioning]
+            break
 
     prompt_metadata = _ensure_prompt_metadata(metadata, node_id)
     prompt_metadata.setdefault("conditioning_sources", []).append(
