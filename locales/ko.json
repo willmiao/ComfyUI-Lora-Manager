@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "{size} 확보",
             "title": "모델 삭제",
             "message": "이 모델과 모든 관련 파일을 삭제하시겠습니까?",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "실행 취소하지 않으면 20초 후에 파일이 영구적으로 삭제됩니다."
         },
         "deleteRecipe": {
-            "recoverableWarning": "이 작업은 30초 이내에 실행 취소할 수 있습니다."
+            "recoverableWarning": "이 작업은 20초 이내에 실행 취소할 수 있습니다."
         },
         "excludeModel": {
             "title": "모델 제외",
@@ -2120,12 +2120,12 @@
             "copyFailed": "복사 실패"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "실행 취소",
+            "deleted": "{name} 삭제됨",
+            "deletedBulk": "{count}개 항목 삭제됨",
+            "expired": "실행 취소 기간이 만료되었습니다. 항목이 영구적으로 삭제되었습니다.",
+            "failed": "실행 취소 실패: {error}",
+            "restored": "항목이 복원되었습니다"
         },
         "virtual": {
             "loadFailed": "항목 로딩 실패",

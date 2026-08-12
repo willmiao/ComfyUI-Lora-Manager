@@ -67,7 +67,7 @@ describe('translate() with real en.json locale', () => {
         installWindowI18n();
 
         expect(translate('modals.deleteModel.recoverableWarning')).toBe(
-            'This will permanently delete the file after 30 seconds unless you undo.',
+            'This will permanently delete the file after 20 seconds unless you undo.',
         );
         expect(translate('modals.deleteModel.freesSpace', { size: '1.2 MB' })).toBe(
             'Frees 1.2 MB',

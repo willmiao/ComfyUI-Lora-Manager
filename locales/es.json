@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "Libera {size}",
             "title": "Eliminar modelo",
             "message": "¿Estás seguro de que quieres eliminar este modelo y todos los archivos asociados?",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "El archivo se eliminará permanentemente después de 20 segundos a menos que deshaga la acción."
         },
         "deleteRecipe": {
-            "recoverableWarning": "Esta acción se puede deshacer durante 30 segundos."
+            "recoverableWarning": "Esta acción se puede deshacer durante 20 segundos."
         },
         "excludeModel": {
             "title": "Excluir modelo",
@@ -2120,12 +2120,12 @@
             "copyFailed": "Error al copiar"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "Deshacer",
+            "deleted": "Eliminado: {name}",
+            "deletedBulk": "{count} elemento(s) eliminado(s)",
+            "expired": "La ventana de deshacer ha caducado. El elemento se eliminó permanentemente.",
+            "failed": "No se pudo deshacer: {error}",
+            "restored": "Elemento restaurado"
         },
         "virtual": {
             "loadFailed": "Error al cargar elementos",

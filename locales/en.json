@@ -1280,10 +1280,10 @@
       "freesSpace": "Frees {size}",
       "title": "Delete Model",
       "message": "Are you sure you want to delete this model and all associated files?",
-      "recoverableWarning": "This will permanently delete the file after 30 seconds unless you undo."
+      "recoverableWarning": "This will permanently delete the file after 20 seconds unless you undo."
     },
     "deleteRecipe": {
-      "recoverableWarning": "This action can be undone for 30 seconds."
+      "recoverableWarning": "This action can be undone for 20 seconds."
     },
     "excludeModel": {
       "title": "Exclude Model",

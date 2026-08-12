@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "{size} を解放します",
             "title": "モデルを削除",
             "message": "このモデルと関連するすべてのファイルを削除してもよろしいですか？",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "元に戻さない場合、このファイルは20秒後に完全に削除されます。"
         },
         "deleteRecipe": {
-            "recoverableWarning": "この操作は30秒以内であれば元に戻せます。"
+            "recoverableWarning": "この操作は20秒以内であれば元に戻せます。"
         },
         "excludeModel": {
             "title": "モデルを除外",
@@ -2120,12 +2120,12 @@
             "copyFailed": "コピーに失敗しました"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "元に戻す",
+            "deleted": "{name} を削除しました",
+            "deletedBulk": "{count} 個のアイテムを削除しました",
+            "expired": "元に戻せる時間が経過しました。アイテムは完全に削除されました。",
+            "failed": "元に戻せませんでした: {error}",
+            "restored": "アイテムを復元しました"
         },
         "virtual": {
             "loadFailed": "アイテムの読み込みに失敗しました",

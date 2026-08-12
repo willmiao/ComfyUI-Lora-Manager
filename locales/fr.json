@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "Libère {size}",
             "title": "Supprimer le modèle",
             "message": "Êtes-vous sûr de vouloir supprimer ce modèle et tous les fichiers associés ?",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "Le fichier sera définitivement supprimé après 20 secondes, sauf si vous annulez."
         },
         "deleteRecipe": {
-            "recoverableWarning": "Cette action peut être annulée pendant 30 secondes."
+            "recoverableWarning": "Cette action peut être annulée pendant 20 secondes."
         },
         "excludeModel": {
             "title": "Exclure le modèle",
@@ -2120,12 +2120,12 @@
             "copyFailed": "Échec de la copie"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "Annuler",
+            "deleted": "Supprimé : {name}",
+            "deletedBulk": "{count} élément(s) supprimé(s)",
+            "expired": "La fenêtre d'annulation a expiré. L'élément a été définitivement supprimé.",
+            "failed": "Échec de l'annulation : {error}",
+            "restored": "Élément restauré"
         },
         "virtual": {
             "loadFailed": "Échec du chargement des éléments",

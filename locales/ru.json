@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "Освобождает {size}",
             "title": "Удалить модель",
             "message": "Вы уверены, что хотите удалить эту модель и все связанные файлы?",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "Файл будет удалён навсегда через 20 секунд, если вы не отмените действие."
         },
         "deleteRecipe": {
-            "recoverableWarning": "Это действие можно отменить в течение 30 секунд."
+            "recoverableWarning": "Это действие можно отменить в течение 20 секунд."
         },
         "excludeModel": {
             "title": "Исключить модель",
@@ -2120,12 +2120,12 @@
             "copyFailed": "Копирование не удалось"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "Отменить",
+            "deleted": "Удалено: {name}",
+            "deletedBulk": "Удалено: {count} шт.",
+            "expired": "Время отмены истекло. Элемент был удалён навсегда.",
+            "failed": "Не удалось отменить: {error}",
+            "restored": "Элемент восстановлен"
         },
         "virtual": {
             "loadFailed": "Не удалось загрузить элементы",

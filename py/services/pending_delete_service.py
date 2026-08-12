@@ -43,7 +43,7 @@ from ..utils import settings_paths
 logger = logging.getLogger(__name__)
 
 # Undo window in seconds before a staged batch becomes purge-eligible.
-PENDING_DELETE_TTL_SECONDS = 30
+PENDING_DELETE_TTL_SECONDS = 20
 # Hidden staging directory name placed inside each deleted model's own folder
 # (sibling of the model artifacts) and under the settings dir for recipes.
 PENDING_DELETE_DIR_NAME = ".lm-pending-delete"

@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "מפנה {size}",
             "title": "מחק מודל",
             "message": "האם אתה בטוח שברצונך למחוק מודל זה וכל הקבצים הנלווים?",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "הקובץ יימחק לצמיתות לאחר 20 שניות, אלא אם תבטלו את הפעולה."
         },
         "deleteRecipe": {
-            "recoverableWarning": "ניתן לבטל פעולה זו תוך 30 שניות."
+            "recoverableWarning": "ניתן לבטל פעולה זו תוך 20 שניות."
         },
         "excludeModel": {
             "title": "החרג מודל",
@@ -2120,12 +2120,12 @@
             "copyFailed": "ההעתקה נכשלה"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "בטל",
+            "deleted": "נמחק: {name}",
+            "deletedBulk": "{count} פריטים נמחקו",
+            "expired": "חלון הביטול פג. הפריט נמחק לצמיתות.",
+            "failed": "הביטול נכשל: {error}",
+            "restored": "הפריט שוחזר"
         },
         "virtual": {
             "loadFailed": "טעינת הפריטים נכשלה",

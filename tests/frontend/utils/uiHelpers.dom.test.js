@@ -133,14 +133,14 @@ describe('UI helper DOM utilities', () => {
 
     const countdown = toast.querySelector('.toast-countdown');
     expect(countdown).not.toBeNull();
-    expect(countdown.textContent).toBe('(30s)');
+    expect(countdown.textContent).toBe('(20s)');
 
     // Ticking one second updates the countdown text
     vi.advanceTimersByTime(1000);
-    expect(countdown.textContent).toBe('(29s)');
+    expect(countdown.textContent).toBe('(19s)');
 
     // Drain remaining timers so no state leaks into other tests
-    vi.advanceTimersByTime(30000);
+    vi.advanceTimersByTime(20000);
   });
 
   it('invokes onAction once and dismisses immediately when the button is clicked', async () => {
@@ -184,6 +184,34 @@ describe('UI helper DOM utilities', () => {
     button.click();
 
     expect(onAction).toHaveBeenCalledTimes(1);
+  });
+
+  it('dismisses the toast via the close button without firing onAction', async () => {
+    vi.useFakeTimers();
+    translateMock.mockReturnValue('Deleted Demo Model');
+
+    const { showActionToast } = await import(UI_HELPERS_MODULE);
+
+    const onAction = vi.fn();
+    showActionToast('toast.undo.deleted', {}, 'success', {
+      actionText: 'Undo',
+      onAction,
+    });
+
+    const toast = document.querySelector('.toast-container .toast');
+    const countdown = toast.querySelector('.toast-countdown');
+    toast.querySelector('.toast-close-btn').click();
+
+    expect(onAction).not.toHaveBeenCalled();
+    expect(toast.classList.contains('show')).toBe(false);
+
+    // Advancing past the full duration must not tick the countdown further,
+    // throw, or re-dismiss the already-dismissed toast
+    vi.advanceTimersByTime(60000);
+    expect(countdown.textContent).toBe('(20s)');
+
+    toast.dispatchEvent(new Event('transitionend', { bubbles: true }));
+    expect(document.querySelector('.toast-container .toast')).toBeNull();
   });
 
   it('dismisses the toast when the countdown reaches zero', async () => {

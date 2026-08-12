@@ -1277,13 +1277,13 @@
             }
         },
         "deleteModel": {
-            "freesSpace": "[TODO: Translate] Frees {size}",
+            "freesSpace": "释放 {size}",
             "title": "删除模型",
             "message": "你确定要删除此模型及所有相关文件吗？",
-            "recoverableWarning": "[TODO: Translate] This will permanently delete the file after 30 seconds unless you undo."
+            "recoverableWarning": "如果不撤销，文件将在 20 秒后被永久删除。"
         },
         "deleteRecipe": {
-            "recoverableWarning": "此操作可在 30 秒内撤销。"
+            "recoverableWarning": "此操作可在 20 秒内撤销。"
         },
         "excludeModel": {
             "title": "排除模型",
@@ -2120,12 +2120,12 @@
             "copyFailed": "复制失败"
         },
         "undo": {
-            "action": "[TODO: Translate] Undo",
-            "deleted": "[TODO: Translate] Deleted {name}",
-            "deletedBulk": "[TODO: Translate] Deleted {count} item(s)",
-            "expired": "[TODO: Translate] Undo window expired. The item was permanently deleted.",
-            "failed": "[TODO: Translate] Undo failed: {error}",
-            "restored": "[TODO: Translate] Item restored"
+            "action": "撤销",
+            "deleted": "已删除 {name}",
+            "deletedBulk": "已删除 {count} 个项目",
+            "expired": "撤销窗口已过期，项目已被永久删除。",
+            "failed": "撤销失败：{error}",
+            "restored": "项目已恢复"
         },
         "virtual": {
             "loadFailed": "加载项目失败",
