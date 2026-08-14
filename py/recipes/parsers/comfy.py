@@ -33,39 +33,63 @@ class ComfyMetadataParser(RecipeMetadataParser):
             data = json.loads(user_comment)
             loras = []
             
-            # Find all LoraLoader nodes
-            lora_nodes = {k: v for k, v in data.items() if isinstance(v, dict) and v.get('class_type') == 'LoraLoader'}
-            
-            # Process each LoraLoader node
-            for node_id, node in lora_nodes.items():
-                if 'inputs' not in node or 'lora_name' not in node['inputs']:
+            lora_candidates = []
+            for node in data.values():
+                if not isinstance(node, dict):
                     continue
-                    
-                lora_name = node['inputs'].get('lora_name', '')
-                
-                # Parse the URN to extract model ID and version ID
-                # Format: "urn:air:sdxl:lora:civitai:1107767@1253442"
+
+                inputs = node.get('inputs')
+                if not isinstance(inputs, dict):
+                    continue
+
+                if node.get('class_type') == 'LoraLoader':
+                    lora_name = inputs.get('lora_name', '')
+                    if isinstance(lora_name, str) and lora_name:
+                        lora_candidates.append((lora_name, inputs.get('strength_model', 1.0)))
+                    continue
+
+                if node.get('class_type') != 'LoraLoaderLM':
+                    continue
+
+                loras_data = inputs.get('loras', [])
+                if isinstance(loras_data, dict):
+                    loras_data = loras_data.get('__value__', [])
+                if isinstance(loras_data, list) and len(loras_data) == 1 and isinstance(loras_data[0], list):
+                    loras_data = loras_data[0]
+                if not isinstance(loras_data, list):
+                    continue
+
+                for lora in loras_data:
+                    if not isinstance(lora, dict) or not lora.get('active', False) or lora.get('_isDummy', False):
+                        continue
+                    lora_name = lora.get('name', '')
+                    if isinstance(lora_name, str) and lora_name:
+                        lora_candidates.append((lora_name, lora.get('strength', 1.0)))
+
+            for lora_name, weight in lora_candidates:
+                if isinstance(weight, str):
+                    weight = float(weight)
                 lora_id_match = re.search(r'civitai:(\d+)@(\d+)', lora_name)
-                if not lora_id_match:
-                    continue
-                    
-                model_id = lora_id_match.group(1)
-                model_version_id = lora_id_match.group(2)
-                
-                # Get strength from node inputs
-                weight = node['inputs'].get('strength_model', 1.0)
-                
-                # Initialize lora entry with default values
+                if lora_id_match:
+                    model_id = lora_id_match.group(1)
+                    model_version_id = lora_id_match.group(2)
+                    entry_name = f"Lora {model_id}"
+                else:
+                    model_id = 0
+                    model_version_id = 0
+                    entry_name = re.split(r'[\\/]', lora_name)[-1]
+                    entry_name = re.sub(r'\.[^.]+$', '', entry_name)
+
                 lora_entry = {
                     'id': model_version_id,
                     'modelId': model_id,
-                    'name': f"Lora {model_id}",  # Default name
+                    'name': entry_name,
                     'version': '',
                     'type': 'lora',
                     'weight': weight,
                     'existsLocally': False,
                     'localPath': None,
-                    'file_name': '',
+                    'file_name': entry_name,
                     'hash': '',
                     'thumbnailUrl': '/loras_static/images/no-preview.png',
                     'baseModel': '',
@@ -73,23 +97,29 @@ class ComfyMetadataParser(RecipeMetadataParser):
                     'downloadUrl': '',
                     'isDeleted': False
                 }
-                
-                # Get additional info from Civitai if metadata provider is available
-                if metadata_provider:
-                    try:
-                        civitai_info_tuple = await metadata_provider.get_model_version_info(model_version_id)
-                        # Populate lora entry with Civitai info
-                        populated_entry = await self.populate_lora_from_civitai(
-                            lora_entry, 
-                            civitai_info_tuple, 
-                            recipe_scanner
-                        )
-                        if populated_entry is None:
-                            continue  # Skip invalid LoRA types
-                        lora_entry = populated_entry
-                    except Exception as e:
-                        logger.error(f"Error fetching Civitai info for LoRA: {e}")
-                
+
+                if lora_id_match:
+                    if metadata_provider:
+                        try:
+                            civitai_info_tuple = await metadata_provider.get_model_version_info(model_version_id)
+                            populated_entry = await self.populate_lora_from_civitai(
+                                lora_entry,
+                                civitai_info_tuple,
+                                recipe_scanner
+                            )
+                            if populated_entry is None:
+                                continue
+                            lora_entry = populated_entry
+                        except Exception as e:
+                            logger.error(f"Error fetching Civitai info for LoRA: {e}")
+                else:
+                    if not recipe_scanner:
+                        continue
+                    local_lora = await recipe_scanner.get_local_lora(lora_name)
+                    if not local_lora:
+                        continue
+                    lora_entry = self.populate_lora_from_local(lora_entry, local_lora)
+
                 loras.append(lora_entry)
             
             # Find checkpoint info
