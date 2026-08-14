@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "重命名文件失败：{error}",
             "previewUpdated": "预览图片更新成功",
             "previewUploadFailed": "上传预览图片失败",
+            "previewDropInvalid": "不支持的文件类型：{name}。请拖入图片或 MP4 视频。",
             "refreshComplete": "{action} 完成",
             "refreshFailed": "{action} {type} 失败",
             "metadataRefreshed": "元数据刷新成功",

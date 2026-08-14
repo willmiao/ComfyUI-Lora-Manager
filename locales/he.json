@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "שינוי שם הקובץ נכשל: {error}",
             "previewUpdated": "התצוגה המקדימה עודכנה בהצלחה",
             "previewUploadFailed": "העלאת תמונת התצוגה המקדימה נכשלה",
+            "previewDropInvalid": "סוג קובץ לא נתמך: {name}. גרור במקום זאת תמונה או סרטון MP4.",
             "refreshComplete": "{action} הושלם",
             "refreshFailed": "{action} של {type}s נכשל",
             "metadataRefreshed": "המטא-דאטה רועננה בהצלחה",

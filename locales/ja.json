@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "ファイル名の変更に失敗しました：{error}",
             "previewUpdated": "プレビューが正常に更新されました",
             "previewUploadFailed": "プレビュー画像のアップロードに失敗しました",
+            "previewDropInvalid": "サポートされていないファイル形式：{name}。画像またはMP4ビデオをドロップしてください。",
             "refreshComplete": "{action} 完了",
             "refreshFailed": "{type}の{action}に失敗しました",
             "metadataRefreshed": "メタデータが正常に更新されました",

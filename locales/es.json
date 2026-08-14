@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "Error al renombrar archivo: {error}",
             "previewUpdated": "Vista previa actualizada exitosamente",
             "previewUploadFailed": "Error al subir imagen de vista previa",
+            "previewDropInvalid": "Tipo de archivo no admitido: {name}. Arrastra una imagen o un video MP4 en su lugar.",
             "refreshComplete": "{action} completada",
             "refreshFailed": "Error al {action} {type}s",
             "metadataRefreshed": "Metadatos actualizados exitosamente",

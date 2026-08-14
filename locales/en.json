@@ -2190,6 +2190,7 @@
       "fileRenameFailed": "Failed to rename file: {error}",
       "previewUpdated": "Preview updated successfully",
       "previewUploadFailed": "Failed to upload preview image",
+      "previewDropInvalid": "Unsupported file type: {name}. Drop an image or MP4 video instead.",
       "refreshComplete": "{action} complete",
       "refreshFailed": "Failed to {action} {type}s",
       "metadataRefreshed": "Metadata refreshed successfully",
