@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Any, List, Tuple
+import random
+from typing import Any, List, Optional, Tuple
 import comfy.sd  # pyright: ignore[reportMissingImports]
 from ..utils.utils import get_checkpoint_info_absolute, _format_model_name_for_comfyui
 
@@ -37,6 +38,7 @@ class UNETLoaderLM:
     def INPUT_TYPES(cls):
         # Get list of unet names from scanner (includes extra folder paths)
         unet_names = cls._get_unet_names()
+        base_models = cls._get_available_base_models()
         return {
             "required": {
                 "unet_name": (
@@ -47,6 +49,23 @@ class UNETLoaderLM:
                     ["default", "fp8_e4m3fn", "fp8_e4m3fn_fast", "fp8_e5m2"],
                     {"tooltip": "The dtype to use for the model weights."},
                 ),
+                "select_at_random": (
+                    "BOOLEAN",
+                    {
+                        "default": False,
+                        "tooltip": (
+                            "Ignore unet_name and pick a random diffusion model from "
+                            "the pool (optionally filtered by base_model) on every run."
+                        ),
+                    },
+                ),
+                "base_model": (
+                    base_models,
+                    {
+                        "default": "Any",
+                        "tooltip": "Restrict random selection to this base model. 'Any' uses the full pool.",
+                    },
+                ),
             }
         }
 
@@ -56,11 +75,47 @@ class UNETLoaderLM:
     FUNCTION = "load_unet"
 
     @classmethod
-    def _get_unet_names(cls) -> List[str]:
-        """Get list of diffusion model names from scanner cache in ComfyUI format (relative path with extension)"""
+    def IS_CHANGED(
+        cls, unet_name, weight_dtype, select_at_random=False, base_model="Any"
+    ):
+        # Force re-execution on every run while randomizing, since the widget
+        # values themselves don't change between queue runs.
+        if select_at_random:
+            return float("nan")
+        return unet_name
+
+    @staticmethod
+    def _run_async(coro_fn):
+        """Run an async fetcher, handling the case where an event loop is already running."""
+        import asyncio
+
+        try:
+            asyncio.get_running_loop()
+            import concurrent.futures
+
+            def run_in_thread():
+                new_loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(new_loop)
+                try:
+                    return new_loop.run_until_complete(coro_fn())
+                finally:
+                    new_loop.close()
+
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                future = executor.submit(run_in_thread)
+                return future.result()
+        except RuntimeError:
+            return asyncio.run(coro_fn())
+
+    @classmethod
+    def _get_unet_names(cls, base_model: Optional[str] = None) -> List[str]:
+        """Get list of diffusion model names from scanner cache in ComfyUI format (relative path with extension)
+
+        Args:
+            base_model: If given (and not "Any"), only include models matching this base model.
+        """
         try:
             from ..services.service_registry import ServiceRegistry
-            import asyncio
 
             async def _get_names():
                 scanner = await ServiceRegistry.get_checkpoint_scanner()
@@ -72,53 +127,88 @@ class UNETLoaderLM:
                 # Filter only diffusion_model type and format names
                 names = []
                 for item in cache.raw_data:
-                    if item.get("sub_type") == "diffusion_model":
-                        file_path = item.get("file_path", "")
-                        # Only offer models that still exist on disk so ComfyUI
-                        # flags missing diffusion models at queue time via
-                        # "value not in list" (the scanner cache can be stale).
-                        if file_path and os.path.exists(file_path):
-                            # Format using relative path with OS-native separator
-                            formatted_name = _format_model_name_for_comfyui(
-                                file_path, model_roots
-                            )
-                            if formatted_name:
-                                names.append(formatted_name)
+                    if item.get("sub_type") != "diffusion_model":
+                        continue
+                    if (
+                        base_model
+                        and base_model != "Any"
+                        and item.get("base_model") != base_model
+                    ):
+                        continue
+                    file_path = item.get("file_path", "")
+                    # Only offer models that still exist on disk so ComfyUI
+                    # flags missing diffusion models at queue time via
+                    # "value not in list" (the scanner cache can be stale).
+                    if file_path and os.path.exists(file_path):
+                        # Format using relative path with OS-native separator
+                        formatted_name = _format_model_name_for_comfyui(
+                            file_path, model_roots
+                        )
+                        if formatted_name:
+                            names.append(formatted_name)
 
                 return sorted(names)
 
-            try:
-                loop = asyncio.get_running_loop()
-                import concurrent.futures
-
-                def run_in_thread():
-                    new_loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(new_loop)
-                    try:
-                        return new_loop.run_until_complete(_get_names())
-                    finally:
-                        new_loop.close()
-
-                with concurrent.futures.ThreadPoolExecutor() as executor:
-                    future = executor.submit(run_in_thread)
-                    return future.result()
-            except RuntimeError:
-                return asyncio.run(_get_names())
+            return cls._run_async(_get_names)
         except Exception as e:
             logger.error(f"Error getting unet names: {e}")
             return []
 
-    def load_unet(self, unet_name: str, weight_dtype: str) -> Tuple[Any, ...]:
+    @classmethod
+    def _get_available_base_models(cls) -> List[str]:
+        """Get distinct base_model values present among indexed diffusion models, for the random-selection filter."""
+        try:
+            from ..services.service_registry import ServiceRegistry
+
+            async def _get_base_models():
+                scanner = await ServiceRegistry.get_checkpoint_scanner()
+                cache = await scanner.get_cached_data()
+
+                base_models = set()
+                for item in cache.raw_data:
+                    if item.get("sub_type") != "diffusion_model":
+                        continue
+                    base_model = item.get("base_model")
+                    file_path = item.get("file_path", "")
+                    if base_model and file_path and os.path.exists(file_path):
+                        base_models.add(base_model)
+
+                return sorted(base_models)
+
+            return ["Any"] + cls._run_async(_get_base_models)
+        except Exception as e:
+            logger.error(f"Error getting available base models: {e}")
+            return ["Any"]
+
+    def load_unet(
+        self,
+        unet_name: str,
+        weight_dtype: str,
+        select_at_random: bool = False,
+        base_model: str = "Any",
+    ) -> Tuple[Any, ...]:
         """Load a diffusion model by name, supporting extra folder paths
 
         Args:
             unet_name: The name of the diffusion model to load (relative path with extension)
             weight_dtype: The dtype to use for model weights
+            select_at_random: If True, ignore unet_name and pick randomly from the pool
+            base_model: Restricts random selection to this base model ("Any" = no filter)
 
         Returns:
             Tuple of (MODEL,)
         """
         import torch
+
+        if select_at_random:
+            pool = self._get_unet_names(base_model)
+            if not pool:
+                raise FileNotFoundError(
+                    f"No diffusion models found for base model '{base_model}'. "
+                    "Pick a different base model or disable 'select_at_random'."
+                )
+            unet_name = random.choice(pool)
+            logger.info(f"[UNETLoaderLM] Randomly selected diffusion model: {unet_name}")
 
         # Get absolute path from cache using ComfyUI-style name
         unet_path, metadata = get_checkpoint_info_absolute(unet_name)
