@@ -78,7 +78,17 @@ const updateHasTextState = () => {
   hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false
 }
 
-const onInput = () => {
+const onInput = (event: Event) => {
+  // A clear via execCommand captures the full-text selection in the browser's
+  // undo entry; Ctrl+Z restores the content together with that selection.
+  // Collapse the caret so the restored text is not left selected.
+  if ((event as InputEvent).inputType === 'historyUndo') {
+    const ta = textareaRef.value
+    if (ta && ta.selectionStart === 0 && ta.selectionEnd === ta.value.length) {
+      ta.setSelectionRange(ta.value.length, ta.value.length)
+    }
+  }
+
   // Update hasText state
   updateHasTextState()
   
@@ -156,20 +166,44 @@ const setupWidgetOnSetValue = () => {
   }
 }
 
+/**
+ * Clear the textarea contents.
+ *
+ * Uses a trusted editing command (execCommand: select all + replace with
+ * empty string) so the browser records the clear as an undoable edit —
+ * Ctrl+Z with focus in the textarea restores the cleared text. Falls back
+ * to a plain programmatic clear when execCommand is unavailable (e.g. jsdom
+ * test environment), which is not undoable via native Ctrl+Z.
+ */
 const clearText = () => {
-  if (textareaRef.value) {
-    textareaRef.value.value = ''
-    hasText.value = false
-    textareaRef.value.focus()
-    
-    // Trigger callback with empty value
-    if (typeof props.widget.callback === 'function') {
-      props.widget.callback('')
-    }
-    
-    // Dispatch input event to ensure autocomplete handles the change
-    textareaRef.value.dispatchEvent(new Event('input'))
+  const ta = textareaRef.value
+  if (!ta || ta.value.length === 0) return
+
+  // Select all + replace via a trusted edit command so the browser pushes an
+  // undo entry that restores the full previous content.
+  ta.focus()
+  ta.setSelectionRange(0, ta.value.length)
+  let ok = false
+  try {
+    // Guarded for engines without execCommand (jsdom); some engines also
+    // throw instead of returning false for unsupported commands.
+    ok = typeof document.execCommand === 'function' && document.execCommand('insertText', false, '')
+  } catch {
+    ok = false
   }
+
+  if (ok) {
+    // execCommand fired a trusted 'input' event → onInput already synced
+    // hasText, called the widget callback, and notified the autocomplete.
+    hasText.value = false
+    return
+  }
+
+  // Fallback: execCommand unavailable (jsdom / unsupported browser) — plain
+  // programmatic clear. The dispatched input event keeps onInput, the widget
+  // callback, and the autocomplete in sync.
+  ta.value = ''
+  ta.dispatchEvent(new Event('input'))
 }
 
 onMounted(() => {
