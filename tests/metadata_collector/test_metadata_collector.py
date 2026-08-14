@@ -1373,6 +1373,97 @@ def test_metadata_overwrite_extractor_empty_inputs(metadata_registry):
     metadata_registry.clear_metadata()
 
 
+def _make_ksampler(func_name: str):
+    """Build a duck-typed comfy.samplers.KSAMPLER stub with a named function."""
+    def _sampler_function(*args, **kwargs):
+        pass
+
+    _sampler_function.__name__ = func_name
+    return SimpleNamespace(sampler_function=_sampler_function)
+
+
+def test_metadata_overwrite_extractor_sampler_union(metadata_registry):
+    """Wired SAMPLER objects should be converted to sampler names."""
+    from py.metadata_collector.constants import CLIP_SKIP_SENTINEL
+
+    metadata_registry.start_collection("prompt-ow-sampler")
+    metadata = metadata_registry.prompt_metadata["prompt-ow-sampler"]
+
+    inputs: Dict[str, Any] = {key: "" for key in METADATA_OVERWRITE_FIELDS}
+    inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": CLIP_SKIP_SENTINEL})
+    inputs["sampler"] = _make_ksampler("sample_euler")
+
+    MetadataOverwriteExtractor.extract("ow-sampler-1", inputs, None, metadata)
+
+    params = metadata[OVERWRITE]["ow-sampler-1"]["parameters"]
+    assert params["sampler"] == "euler"
+
+    metadata_registry.clear_metadata()
+
+
+def test_metadata_overwrite_extractor_sampler_union_special_cases(metadata_registry):
+    """Sampler functions whose names diverge from SAMPLER_NAMES entries."""
+    from py.metadata_collector.constants import CLIP_SKIP_SENTINEL
+
+    metadata_registry.start_collection("prompt-ow-sampler2")
+    metadata = metadata_registry.prompt_metadata["prompt-ow-sampler2"]
+
+    cases = [
+        ("dpm_fast_function", "dpm_fast"),
+        ("dpm_adaptive_function", "dpm_adaptive"),
+        ("sample_unipc", "uni_pc"),
+        ("sample_unipc_bh2", "uni_pc_bh2"),
+        ("sample_dpmpp_2m_sde", "dpmpp_2m_sde"),
+    ]
+    for i, (func_name, expected) in enumerate(cases):
+        inputs: Dict[str, Any] = {key: "" for key in METADATA_OVERWRITE_FIELDS}
+        inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": CLIP_SKIP_SENTINEL})
+        inputs["sampler"] = _make_ksampler(func_name)
+        MetadataOverwriteExtractor.extract(f"ow-sampler-{i}", inputs, None, metadata)
+
+    params_by_node = {node_id: entry["parameters"] for node_id, entry in metadata[OVERWRITE].items()}
+    for i, (func_name, expected) in enumerate(cases):
+        assert params_by_node[f"ow-sampler-{i}"]["sampler"] == expected, func_name
+
+    metadata_registry.clear_metadata()
+
+
+def test_metadata_overwrite_extractor_sampler_union_unrecognized_skipped(metadata_registry):
+    """Unrecognized sampler functions should skip the field, not crash."""
+    from py.metadata_collector.constants import CLIP_SKIP_SENTINEL
+
+    metadata_registry.start_collection("prompt-ow-sampler3")
+    metadata = metadata_registry.prompt_metadata["prompt-ow-sampler3"]
+
+    inputs: Dict[str, Any] = {key: "" for key in METADATA_OVERWRITE_FIELDS}
+    inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": CLIP_SKIP_SENTINEL})
+    inputs["sampler"] = _make_ksampler("my_custom_sampler_function")
+
+    MetadataOverwriteExtractor.extract("ow-sampler-unrec", inputs, None, metadata)
+
+    assert not metadata[OVERWRITE]
+
+    metadata_registry.clear_metadata()
+
+
+def test_metadata_overwrite_extractor_sampler_union_no_sampler_function(metadata_registry):
+    """Objects without a sampler_function (e.g. old KUNASampler classes) are skipped."""
+    from py.metadata_collector.constants import CLIP_SKIP_SENTINEL
+
+    metadata_registry.start_collection("prompt-ow-sampler4")
+    metadata = metadata_registry.prompt_metadata["prompt-ow-sampler4"]
+
+    inputs: Dict[str, Any] = {key: "" for key in METADATA_OVERWRITE_FIELDS}
+    inputs.update({"seed": 0, "steps": 0, "cfg_scale": 0.0, "clip_skip": CLIP_SKIP_SENTINEL})
+    inputs["sampler"] = SimpleNamespace()
+
+    MetadataOverwriteExtractor.extract("ow-sampler-nofn", inputs, None, metadata)
+
+    assert not metadata[OVERWRITE]
+
+    metadata_registry.clear_metadata()
+
+
 def test_extract_generation_params_applies_overwrite(metadata_registry, populated_registry, monkeypatch):
     """overwrite values should replace inferred params in extract_generation_params."""
     import py.metadata_collector.metadata_processor as mp

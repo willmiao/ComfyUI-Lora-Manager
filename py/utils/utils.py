@@ -323,6 +323,42 @@ def model_patcher_to_name(model_patcher: Any) -> Optional[str]:
     return _abs_model_path_to_name(abs_path)
 
 
+def sampler_object_to_name(sampler: Any) -> Optional[str]:
+    """Extract a ComfyUI-style sampler name from a SAMPLER (KSAMPLER) object.
+
+    Standard outputs (KSamplerSelect, most built-in sampler nodes) round-trip
+    losslessly via the underlying sampler function's ``__name__``
+    (``sample_euler`` -> ``euler``). A few edge cases need special-casing
+    because the function name diverges from the ``SAMPLER_NAMES`` entry:
+
+      - ``dpm_fast`` / ``dpm_adaptive`` are local closures inside
+        ``comfy.samplers.ksampler`` (``dpm_fast_function`` / ``dpm_adaptive_function``)
+      - ``uni_pc`` / ``uni_pc_bh2`` use ``sample_unipc`` / ``sample_unipc_bh2``
+
+    ``ddim`` is constructed by ComfyUI as ``euler`` with random inpaint, so
+    the original ``ddim`` name is unrecoverable (extracts as ``euler``).
+    Custom sampler nodes that pass non-``sample_*`` functions return None.
+
+    Returns None when the name cannot be recovered.
+    """
+    sampler_function = getattr(sampler, "sampler_function", None)
+    func_name = getattr(sampler_function, "__name__", None)
+    if not isinstance(func_name, str) or not func_name:
+        return None
+    if func_name == "dpm_fast_function":
+        return "dpm_fast"
+    if func_name == "dpm_adaptive_function":
+        return "dpm_adaptive"
+    if func_name.startswith("sample_"):
+        name = func_name[len("sample_"):]
+        if name == "unipc":
+            return "uni_pc"
+        if name == "unipc_bh2":
+            return "uni_pc_bh2"
+        return name or None
+    return None
+
+
 def _abs_model_path_to_name(abs_path: str) -> str:
     """Convert an absolute model path to a ComfyUI-style relative name.
 

@@ -8,7 +8,7 @@ cannot drift between the two paths.
 import logging
 from typing import Any, Dict
 
-from ..utils.utils import model_patcher_to_name
+from ..utils.utils import model_patcher_to_name, sampler_object_to_name
 from .constants import CLIP_SKIP_SENTINEL, METADATA_OVERWRITE_FIELDS
 
 logger = logging.getLogger(__name__)
@@ -22,7 +22,9 @@ def collect_overwrite_params(values: Dict[str, Any]) -> Dict[str, Any]:
     of 0 is preserved.  The ``model`` field accepts either a manual string or
     a wired MODEL (ModelPatcher) connection; in the latter case the source
     model name is extracted from the patcher's ``cached_patcher_init`` and
-    stored as a ComfyUI-style relative path.
+    stored as a ComfyUI-style relative path.  The ``sampler`` field likewise
+    accepts a manual string or a wired SAMPLER (KSAMPLER) connection, from
+    which the sampler name is extracted via the sampler function's name.
     """
     result: Dict[str, Any] = {}
     for key in METADATA_OVERWRITE_FIELDS:
@@ -33,6 +35,13 @@ def collect_overwrite_params(values: Dict[str, Any]) -> Dict[str, Any]:
                 logger.warning(
                     "Could not extract model name from wired MODEL input "
                     "(no cached_patcher_init); model metadata overwrite skipped"
+                )
+        elif key == "sampler" and not isinstance(value, str):
+            value = sampler_object_to_name(value)
+            if value is None:
+                logger.warning(
+                    "Could not extract sampler name from wired SAMPLER input "
+                    "(unrecognized sampler function); sampler metadata overwrite skipped"
                 )
         if key == "clip_skip":
             if value != CLIP_SKIP_SENTINEL:
