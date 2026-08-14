@@ -853,7 +853,8 @@
     "recipes": {
         "title": "LoRA 配方",
         "actions": {
-            "sendCheckpoint": "傳送到 ComfyUI"
+            "sendCheckpoint": "傳送到 ComfyUI",
+            "sendRecipe": "傳送到 ComfyUI"
         },
         "controls": {
             "import": {

@@ -853,7 +853,8 @@
     "recipes": {
         "title": "LoRA Recipes",
         "actions": {
-            "sendCheckpoint": "Envoyer vers ComfyUI"
+            "sendCheckpoint": "Envoyer vers ComfyUI",
+            "sendRecipe": "Envoyer vers ComfyUI"
         },
         "controls": {
             "import": {

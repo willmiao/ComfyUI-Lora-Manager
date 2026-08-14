@@ -4,21 +4,27 @@
         
         <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
-            <!-- Header Actions: populated dynamically in RecipeModal.js -->
-            <div class="recipe-header-actions" id="recipeHeaderActions"></div>
+            <!-- Header Actions: Send button is static; source URL button is appended dynamically in RecipeModal.js -->
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+                <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                    <i class="fas fa-paper-plane"></i> <span>{{ t('recipes.actions.sendRecipe') }}</span>
+                </button>
+            </div>
             <!-- Recipe Tags Container (rendered by renderCompactTags) -->
             <div id="recipeTagsContainer"></div>
         </header>
         
         <div class="modal-body">
-            <!-- Top Section: Preview and Generation Parameters -->
-            <div class="recipe-top-section">
+            <!-- Left Column: Preview -->
+            <div class="recipe-media-column">
                 <div class="recipe-preview-container" id="recipePreviewContainer">
                     <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
                     <!-- Source URL elements are now added dynamically in RecipeModal.js -->
                 </div>
-                
-                <div class="info-section recipe-gen-params">
+            </div>
+
+            <!-- Center Column: Generation Parameters -->
+            <div class="info-section recipe-gen-params">
                     <div class="gen-params-header-row">
                         <h3>Generation Parameters</h3>
                         <label class="inline-toggle-container lora-strip-toggle" title="When enabled, &lt;lora:...&gt; tags are removed from prompt text when copying">
@@ -103,9 +109,8 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            
-            <!-- Bottom Section: Resources -->
+
+            <!-- Right Column: Resources -->
             <div class="info-section recipe-bottom-section">
                 <div class="recipe-section-header">
                     <h3>Resources</h3>
@@ -113,12 +118,6 @@
                     <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                     <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                         <i class="fas fa-external-link-alt"></i>
-                    </button>
-                    <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                        <i class="fas fa-copy"></i>
-                    </button>
-                    <button class="action-btn send-recipe-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
-                        <i class="fas fa-paper-plane"></i>
                     </button>
                 </div>
             </div>

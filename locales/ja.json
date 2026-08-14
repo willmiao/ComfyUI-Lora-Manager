@@ -853,7 +853,8 @@
     "recipes": {
         "title": "LoRAレシピ",
         "actions": {
-            "sendCheckpoint": "ComfyUIへ送信"
+            "sendCheckpoint": "ComfyUIへ送信",
+            "sendRecipe": "ComfyUIへ送信"
         },
         "controls": {
             "import": {

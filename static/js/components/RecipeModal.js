@@ -515,7 +515,7 @@ class RecipeModal {
             return;
         }
 
-        actionsContainer.innerHTML = '';
+        actionsContainer.querySelectorAll('.recipe-source-url-btn').forEach(btn => btn.remove());
 
         const sourcePath = this.currentRecipe?.source_path || '';
         const isValidUrl = sourcePath.startsWith('http://') || sourcePath.startsWith('https://');
@@ -719,7 +719,7 @@ class RecipeModal {
                 }
             }
 
-            lorasCountElement.innerHTML = `<i class="fas fa-layer-group"></i> ${totalCount} LoRAs ${statusHTML}`;
+            lorasCountElement.innerHTML = `<i class="fas fa-layer-group"></i> ${totalCount} ${totalCount === 1 ? 'LoRA' : 'LoRAs'} ${statusHTML}`;
 
             setTimeout(() => {
                 const viewRecipeLorasBtn = document.getElementById('viewRecipeLorasBtn');
@@ -1180,11 +1180,10 @@ class RecipeModal {
         });
     }
 
-    // Setup copy buttons for prompts and recipe syntax
+    // Setup copy buttons for prompts and send recipe button
     setupCopyButtons() {
         const copyPromptBtn = document.getElementById('copyPromptBtn');
         const copyNegativePromptBtn = document.getElementById('copyNegativePromptBtn');
-        const copyRecipeSyntaxBtn = document.getElementById('copyRecipeSyntaxBtn');
         const sendRecipeBtn = document.getElementById('sendRecipeBtn');
 
         if (copyPromptBtn) {
@@ -1204,13 +1203,6 @@ class RecipeModal {
                     negativePromptText = RecipeModal.stripLoraTags(negativePromptText);
                 }
                 this.copyToClipboard(negativePromptText, 'Negative prompt copied to clipboard');
-            });
-        }
-
-        if (copyRecipeSyntaxBtn) {
-            copyRecipeSyntaxBtn.addEventListener('click', () => {
-                // Use backend API to get recipe syntax
-                this.fetchAndCopyRecipeSyntax();
             });
         }
 
@@ -1297,35 +1289,6 @@ class RecipeModal {
             setStorageItem('strip_lora_on_copy', checked);
             state.global.settings.strip_lora_on_copy = checked;
         });
-    }
-
-    // Fetch recipe syntax from backend and copy to clipboard
-    async fetchAndCopyRecipeSyntax() {
-        if (!this.recipeId) {
-            showToast('toast.recipes.noRecipeId', {}, 'error');
-            return;
-        }
-
-        try {
-            // Fetch recipe syntax from backend
-            const response = await fetch(`/api/lm/recipe/${this.recipeId}/syntax`);
-
-            if (!response.ok) {
-                throw new Error(`Failed to get recipe syntax: ${response.statusText}`);
-            }
-
-            const data = await response.json();
-
-            if (data.success && data.syntax) {
-                // Use the centralized copyToClipboard utility function
-                await copyToClipboard(data.syntax, 'Recipe syntax copied to clipboard');
-            } else {
-                throw new Error(data.error || 'No syntax returned from server');
-            }
-        } catch (error) {
-            console.error('Error fetching recipe syntax:', error);
-            showToast('toast.recipes.copyFailed', { message: error.message }, 'error');
-        }
     }
 
     // Helper method to copy text to clipboard
@@ -1632,7 +1595,7 @@ class RecipeModal {
         let headerAction = '';
         if (existsLocally && localPath) {
             headerAction = `
-                <button class="resource-action primary compact checkpoint-send">
+                <button class="resource-action compact checkpoint-send">
                     <i class="fas fa-paper-plane"></i>
                     <span>${translate('recipes.actions.sendCheckpoint', {}, 'Send to ComfyUI')}</span>
                 </button>

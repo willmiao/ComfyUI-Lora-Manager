@@ -246,13 +246,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -284,7 +290,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -292,9 +297,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -370,13 +372,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -408,7 +416,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -416,9 +423,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -464,13 +468,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -502,7 +512,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -510,9 +519,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -573,13 +579,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -611,7 +623,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -619,9 +630,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -662,13 +670,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -700,7 +714,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -708,9 +721,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -765,13 +775,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -803,7 +819,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -811,9 +826,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -885,13 +897,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -923,7 +941,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -931,9 +948,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1019,13 +1033,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1057,7 +1077,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div id="recipeCheckpoint"></div>
               <div id="recipeResourceDivider"></div>
@@ -1067,9 +1086,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1138,7 +1154,7 @@ describe('Interaction-level regression coverage', () => {
         <div id="recipeLorasList"></div>
         <span id="recipeLorasCount"></span>
         <button id="viewRecipeLorasBtn"></button>
-        <button id="copyRecipeSyntaxBtn"></button>
+        
       </div>
     `;
 
@@ -1191,7 +1207,7 @@ describe('Interaction-level regression coverage', () => {
         <div id="recipeLorasList"></div>
         <span id="recipeLorasCount"></span>
         <button id="viewRecipeLorasBtn"></button>
-        <button id="copyRecipeSyntaxBtn"></button>
+        
       </div>
     `;
 
@@ -1255,13 +1271,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1293,7 +1315,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div id="recipeCheckpoint"></div>
               <div id="recipeResourceDivider"></div>
@@ -1303,9 +1324,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1368,13 +1386,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1406,7 +1430,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div id="recipeCheckpoint"></div>
               <div id="recipeResourceDivider"></div>
@@ -1416,9 +1439,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1486,13 +1506,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1524,7 +1550,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1532,9 +1557,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1594,13 +1616,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1632,7 +1660,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1640,9 +1667,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1711,13 +1735,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1749,7 +1779,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1757,9 +1786,6 @@ describe('Interaction-level regression coverage', () => {
                   <span id="recipeLorasCount"><i class="fas fa-layer-group"></i> 0 LoRAs</span>
                   <button class="action-btn view-loras-btn" id="viewRecipeLorasBtn" title="View all LoRAs in this recipe">
                     <i class="fas fa-external-link-alt"></i>
-                  </button>
-                  <button class="copy-btn" id="copyRecipeSyntaxBtn" title="Copy Recipe Syntax">
-                    <i class="fas fa-copy"></i>
                   </button>
                 </div>
               </div>
@@ -1808,13 +1834,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1846,7 +1878,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>
@@ -1932,13 +1963,19 @@ describe('Interaction-level regression coverage', () => {
         <div class="modal-content">
           <header class="recipe-modal-header">
             <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-header-actions" id="recipeHeaderActions">
+              <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
+                <i class="fas fa-paper-plane"></i> <span>Send to ComfyUI</span>
+              </button>
+            </div>
             <div id="recipeTagsContainer"></div>
           </header>
           <div class="modal-body">
-            <div class="recipe-top-section">
+            <div class="recipe-media-column">
               <div class="recipe-preview-container" id="recipePreviewContainer">
                 <img id="recipeModalImage" src="" alt="Recipe Preview" class="recipe-preview-media">
               </div>
+            </div>
               <div class="info-section recipe-gen-params">
                 <div class="gen-params-container">
                   <div class="param-group info-item">
@@ -1970,7 +2007,6 @@ describe('Interaction-level regression coverage', () => {
                   <div class="other-params" id="recipeOtherParams"></div>
                 </div>
               </div>
-            </div>
             <div class="info-section recipe-bottom-section">
               <div class="recipe-section-header">
                 <h3>Resources</h3>

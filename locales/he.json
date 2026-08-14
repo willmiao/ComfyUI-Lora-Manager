@@ -853,7 +853,8 @@
     "recipes": {
         "title": "מתכוני LoRA",
         "actions": {
-            "sendCheckpoint": "שלח ל-ComfyUI"
+            "sendCheckpoint": "שלח ל-ComfyUI",
+            "sendRecipe": "שלח ל-ComfyUI"
         },
         "controls": {
             "import": {
