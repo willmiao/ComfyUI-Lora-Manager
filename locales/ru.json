@@ -622,6 +622,10 @@
             "label": "Скрыть обновления раннего доступа",
             "help": "Только обновления раннего доступа"
         },
+        "hidePaidUpdates": {
+            "label": "[TODO: Translate] Hide Paid Updates",
+            "help": "[TODO: Translate] When enabled, models with only paid updates will not show 'Update available' badge"
+        },
         "licenseIcons": {
             "useNewStyle": "Использовать обновлённые значки лицензии",
             "useNewStyleHelp": "Отображать разрешения лицензии с цветными индикаторами (новый стиль) или только значки ограничений (классический стиль). Соответствует текущему дизайну CivitAI."
@@ -1550,6 +1554,8 @@
                     "newerTooltip": "Эта версия новее вашей последней локальной версии",
                     "earlyAccess": "Ранний доступ",
                     "earlyAccessTooltip": "Для этой версии сейчас требуется ранний доступ Civitai",
+                    "paid": "[TODO: Translate] Paid",
+                    "paidTooltip": "[TODO: Translate] This version requires payment to download",
                     "ignored": "Игнорируется",
                     "ignoredTooltip": "Уведомления об обновлениях для этой версии отключены",
                     "onSiteOnly": "Только на Сайте",
@@ -1559,6 +1565,7 @@
                     "download": "Скачать",
                     "downloadTooltip": "Скачать эту версию",
                     "downloadEarlyAccessTooltip": "Скачать эту версию раннего доступа с Civitai",
+                    "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "Эта версия доступна только для генерации на сайте Civitai",
                     "delete": "Удалить",
                     "deleteTooltip": "Удалить эту локальную версию",

@@ -622,6 +622,10 @@
             "label": "Ocultar actualizaciones de acceso temprano",
             "help": "Solo actualizaciones de acceso temprano"
         },
+        "hidePaidUpdates": {
+            "label": "[TODO: Translate] Hide Paid Updates",
+            "help": "[TODO: Translate] When enabled, models with only paid updates will not show 'Update available' badge"
+        },
         "licenseIcons": {
             "useNewStyle": "Usar iconos de licencia actualizados",
             "useNewStyleHelp": "Mostrar permisos de licencia con indicadores de color (nuevo estilo) o solo iconos de restricción (estilo clásico). Refleja el diseño actual de CivitAI."
@@ -1550,6 +1554,8 @@
                     "newerTooltip": "Esta versión es más reciente que tu última versión local",
                     "earlyAccess": "Acceso temprano",
                     "earlyAccessTooltip": "Esta versión requiere actualmente acceso temprano de Civitai",
+                    "paid": "[TODO: Translate] Paid",
+                    "paidTooltip": "[TODO: Translate] This version requires payment to download",
                     "ignored": "Ignorada",
                     "ignoredTooltip": "Las notificaciones de actualización están desactivadas para esta versión",
                     "onSiteOnly": "Solo en Sitio",
@@ -1559,6 +1565,7 @@
                     "download": "Descargar",
                     "downloadTooltip": "Descargar esta versión",
                     "downloadEarlyAccessTooltip": "Descargar esta versión de acceso temprano desde Civitai",
+                    "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "Esta versión solo está disponible para generación en el sitio de Civitai",
                     "delete": "Eliminar",
                     "deleteTooltip": "Eliminar esta versión local",

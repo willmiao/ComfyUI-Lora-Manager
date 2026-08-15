@@ -49,6 +49,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
     version_grouping: 'same_base',
     hide_early_access_updates: false,
+    hide_paid_updates: false,
     auto_organize_exclusions: [],
     metadata_refresh_skip_paths: [],
     skip_previously_downloaded_model_versions: false,

@@ -447,6 +447,19 @@
     border-color: color-mix(in oklch, #F59F00 45%, transparent);
 }
 
+/* Paid badge - violet tone (#845EF7) to distinguish from early-access amber */
+.version-badge-paid {
+    background: color-mix(in oklch, #845EF7 25%, transparent);
+    color: #7048E8;
+    border-color: color-mix(in oklch, #845EF7 55%, transparent);
+}
+
+[data-theme="dark"] .version-badge-paid {
+    background: color-mix(in oklch, #845EF7 20%, transparent);
+    color: #9775FA;
+    border-color: color-mix(in oklch, #845EF7 45%, transparent);
+}
+
 .version-meta-ea {
     color: #E67700;
     font-weight: 600;

@@ -1064,6 +1064,12 @@ export class SettingsManager {
             hideEarlyAccessUpdatesCheckbox.checked = state.global.settings.hide_early_access_updates || false;
         }
 
+        // Set hide paid updates setting
+        const hidePaidUpdatesCheckbox = document.getElementById('hidePaidUpdates');
+        if (hidePaidUpdatesCheckbox) {
+            hidePaidUpdatesCheckbox.checked = state.global.settings.hide_paid_updates || false;
+        }
+
         const skipPreviouslyDownloadedModelVersionsCheckbox = document.getElementById('skipPreviouslyDownloadedModelVersions');
         if (skipPreviouslyDownloadedModelVersionsCheckbox) {
             skipPreviouslyDownloadedModelVersionsCheckbox.checked =

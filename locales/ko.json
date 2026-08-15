@@ -622,6 +622,10 @@
             "label": "얼리 액세스 업데이트 숨기기",
             "help": "얼리 액세스 업데이트만"
         },
+        "hidePaidUpdates": {
+            "label": "[TODO: Translate] Hide Paid Updates",
+            "help": "[TODO: Translate] When enabled, models with only paid updates will not show 'Update available' badge"
+        },
         "licenseIcons": {
             "useNewStyle": "업데이트된 라이선스 아이콘 사용",
             "useNewStyleHelp": "색상 표시기가 있는 라이선스 권한(새 스타일) 또는 제한 전용 아이콘(클래식 스타일)을 표시합니다. 현재 CivitAI 디자인을 반영합니다."
@@ -1550,6 +1554,8 @@
                     "newerTooltip": "이 버전은 로컬의 최신 버전보다 더 새롭습니다",
                     "earlyAccess": "얼리 액세스",
                     "earlyAccessTooltip": "이 버전은 현재 Civitai 얼리 액세스가 필요합니다",
+                    "paid": "[TODO: Translate] Paid",
+                    "paidTooltip": "[TODO: Translate] This version requires payment to download",
                     "ignored": "무시됨",
                     "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다",
                     "onSiteOnly": "사이트 내 전용",
@@ -1559,6 +1565,7 @@
                     "download": "다운로드",
                     "downloadTooltip": "이 버전 다운로드",
                     "downloadEarlyAccessTooltip": "Civitai에서 이 얼리 액세스 버전 다운로드",
+                    "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "이 버전은 Civitai 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
                     "delete": "삭제",
                     "deleteTooltip": "이 로컬 버전 삭제",

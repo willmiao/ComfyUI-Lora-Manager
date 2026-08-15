@@ -3,6 +3,7 @@
 # reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
 # import cycles. Breaking them would require an architectural refactor.
 import copy
+import json
 import logging
 import os
 import asyncio
@@ -1434,24 +1435,48 @@ class DownloadManager:
                 # Create directory if it doesn't exist
                 os.makedirs(save_dir, exist_ok=True)
 
-            # Check if this is an early access model
-            if version_info.get("earlyAccessEndsAt"):
-                early_access_date = version_info.get("earlyAccessEndsAt", "")
-                # Convert to a readable date if possible
+            # Check if this is a paid or early access model
+            paid_access = version_info.get("paidAccess")
+            if isinstance(paid_access, str):
+                # Some providers (e.g. CivArchive fallback) carry the DTO as JSON text
                 try:
-                    from datetime import datetime
-
-                    date_obj = datetime.fromisoformat(
-                        early_access_date.replace("Z", "+00:00")
-                    )
-                    formatted_date = date_obj.strftime("%Y-%m-%d")
+                    parsed = json.loads(paid_access)
+                    paid_access = parsed if isinstance(parsed, dict) else None
+                except (TypeError, ValueError):
+                    paid_access = None
+            if not isinstance(paid_access, dict):
+                paid_access = None
+            # An empty DTO ({"permanent": false, "endsAt": null}) is not a gate
+            if paid_access and not paid_access.get("permanent") and not paid_access.get("endsAt"):
+                paid_access = None
+            if version_info.get("earlyAccessEndsAt") or paid_access:
+                permanent_paid = bool(paid_access.get("permanent")) if paid_access else False
+                if permanent_paid:
                     early_access_msg = (
-                        f"This model requires payment (until {formatted_date}). "
+                        "This model requires payment. Please ensure you have "
+                        "purchased access and are logged in to Civitai."
                     )
-                except:
-                    early_access_msg = "This model requires payment. "
+                else:
+                    early_access_date = version_info.get("earlyAccessEndsAt")
+                    if not early_access_date and paid_access:
+                        early_access_date = paid_access.get("endsAt")
+                    if not early_access_date:
+                        early_access_date = ""
+                    # Convert to a readable date if possible
+                    try:
+                        from datetime import datetime
 
-                early_access_msg += "Please ensure you have purchased early access and are logged in to Civitai."
+                        date_obj = datetime.fromisoformat(
+                            early_access_date.replace("Z", "+00:00")
+                        )
+                        formatted_date = date_obj.strftime("%Y-%m-%d")
+                        early_access_msg = (
+                            f"This model requires payment (until {formatted_date}). "
+                        )
+                    except Exception:
+                        early_access_msg = "This model requires payment. "
+
+                    early_access_msg += "Please ensure you have purchased early access and are logged in to Civitai."
                 logger.warning(
                     f"Early access model detected: {version_info.get('name', 'Unknown')}"
                 )

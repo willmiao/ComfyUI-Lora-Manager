@@ -622,6 +622,10 @@
       "label": "Hide Early Access Updates",
       "help": "When enabled, models with only early access updates will not show 'Update available' badge"
     },
+    "hidePaidUpdates": {
+      "label": "Hide Paid Updates",
+      "help": "When enabled, models with only paid updates will not show 'Update available' badge"
+    },
     "licenseIcons": {
       "useNewStyle": "Use updated license icons",
       "useNewStyleHelp": "Display license permissions with colored indicators (new style) or restriction-only icons (classic style). Mirroring the current CivitAI design."
@@ -1550,6 +1554,8 @@
           "newerTooltip": "This version is newer than your latest local version",
           "earlyAccess": "Early Access",
           "earlyAccessTooltip": "This version currently requires Civitai early access",
+          "paid": "Paid",
+          "paidTooltip": "This version requires payment to download",
           "ignored": "Ignored",
           "ignoredTooltip": "Update notifications are disabled for this version",
           "onSiteOnly": "On-Site Only",
@@ -1559,6 +1565,7 @@
           "download": "Download",
           "downloadTooltip": "Download this version",
           "downloadEarlyAccessTooltip": "Download this early access version from Civitai",
+          "downloadPaidTooltip": "Download this paid version from Civitai",
           "downloadNotAllowedTooltip": "This version is only available for on-site generation on Civitai",
           "delete": "Delete",
           "deleteTooltip": "Delete this local version",

@@ -633,6 +633,13 @@ class BaseModelService(ABC):
         except Exception:
             hide_early_access = False
 
+        # Check user setting for hiding permanent paid updates
+        hide_paid = False
+        try:
+            hide_paid = bool(self.settings.get("hide_paid_updates", False))
+        except Exception:
+            hide_paid = False
+
         records = None
         resolved: Optional[Dict[int, bool]] = None
         if same_base_mode:
@@ -641,7 +648,10 @@ class BaseModelService(ABC):
                 try:
                     records = await cast(Awaitable[Any], record_method(self.model_type, ordered_ids))
                     resolved = {
-                        model_id: record.has_update(hide_early_access=hide_early_access)
+                        model_id: record.has_update(
+                            hide_early_access=hide_early_access,
+                            hide_paid=hide_paid,
+                        )
                         for model_id, record in records.items()
                     }
                 except Exception as exc:
@@ -663,6 +673,7 @@ class BaseModelService(ABC):
                         self.model_type,
                         ordered_ids,
                         hide_early_access=hide_early_access,
+                        hide_paid=hide_paid,
                     ))
                 except Exception as exc:
                     logger.error(
@@ -677,7 +688,10 @@ class BaseModelService(ABC):
         if resolved is None:
             tasks = [
                 self.update_service.has_update(
-                    self.model_type, model_id, hide_early_access=hide_early_access
+                    self.model_type,
+                    model_id,
+                    hide_early_access=hide_early_access,
+                    hide_paid=hide_paid,
                 )
                 for model_id in ordered_ids
             ]
@@ -717,6 +731,7 @@ class BaseModelService(ABC):
                         threshold_version,
                         base_model,
                         hide_early_access=hide_early_access,
+                        hide_paid=hide_paid,
                     )
                 else:
                     flag = default_flag

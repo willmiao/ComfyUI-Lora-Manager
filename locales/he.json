@@ -622,6 +622,10 @@
             "label": "הסתר עדכוני גישה מוקדמת",
             "help": "רק עדכוני גישה מוקדמת"
         },
+        "hidePaidUpdates": {
+            "label": "[TODO: Translate] Hide Paid Updates",
+            "help": "[TODO: Translate] When enabled, models with only paid updates will not show 'Update available' badge"
+        },
         "licenseIcons": {
             "useNewStyle": "השתמש בסמלי רישיון מעודכנים",
             "useNewStyleHelp": "הצג הרשאות רישיון עם מחוונים צבעוניים (סגנון חדש) או סמלי הגבלה בלבד (סגנון קלאסי). משקף את העיצוב העדכני של CivitAI."
@@ -1550,6 +1554,8 @@
                     "newerTooltip": "גרסה זו חדשה יותר מהגרסה המקומית האחרונה שלך",
                     "earlyAccess": "גישה מוקדמת",
                     "earlyAccessTooltip": "גרסה זו דורשת כרגע גישת Early Access של Civitai",
+                    "paid": "[TODO: Translate] Paid",
+                    "paidTooltip": "[TODO: Translate] This version requires payment to download",
                     "ignored": "התעלם",
                     "ignoredTooltip": "התראות העדכון מושבתות עבור גרסה זו",
                     "onSiteOnly": "רק באתר",
@@ -1559,6 +1565,7 @@
                     "download": "הורדה",
                     "downloadTooltip": "הורד את הגרסה הזו",
                     "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-Civitai",
+                    "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai",
                     "delete": "מחיקה",
                     "deleteTooltip": "מחק את הגרסה המקומית הזו",

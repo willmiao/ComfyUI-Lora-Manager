@@ -2535,6 +2535,7 @@ class ModelUpdateHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
         hide_early_access = False
+        hide_paid = False
         if self._settings is not None:
             try:
                 hide_early_access = bool(
@@ -2542,12 +2543,17 @@ class ModelUpdateHandler:
                 )
             except Exception:
                 pass
+            try:
+                hide_paid = bool(self._settings.get("hide_paid_updates", False))
+            except Exception:
+                pass
 
         serialized_records = []
         for record in records.values():
             has_update_fn = getattr(record, "has_update", None)
             if callable(has_update_fn) and has_update_fn(
-                hide_early_access=hide_early_access
+                hide_early_access=hide_early_access,
+                hide_paid=hide_paid,
             ):
                 serialized_records.append(self._serialize_record(record))
 
@@ -2701,10 +2707,16 @@ class ModelUpdateHandler:
         if not record or not record.versions:
             return record
 
-        # Find versions that need enrichment
+        # Find versions that need enrichment. Permanent paid versions are not
+        # early access (mirror _is_early_access_active) and never carry an end
+        # time, so skip them to avoid pointless per-version API calls.
         versions_needing_update = []
         for version in record.versions:
-            if version.is_early_access and not version.early_access_ends_at:
+            if (
+                version.is_early_access
+                and not version.early_access_ends_at
+                and not getattr(version, "is_paid", False)
+            ):
                 versions_needing_update.append(version)
 
         if not versions_needing_update:
@@ -2934,11 +2946,16 @@ class ModelUpdateHandler:
         context = version_context or {}
         # Check user setting for hiding early access versions
         hide_early_access = False
+        hide_paid = False
         if self._settings is not None:
             try:
                 hide_early_access = bool(
                     self._settings.get("hide_early_access_updates", False)
                 )
+            except Exception:
+                pass
+            try:
+                hide_paid = bool(self._settings.get("hide_paid_updates", False))
             except Exception:
                 pass
         return {
@@ -2949,7 +2966,10 @@ class ModelUpdateHandler:
             "inLibraryVersionIds": record.in_library_version_ids,
             "lastCheckedAt": record.last_checked_at,
             "shouldIgnore": record.should_ignore_model,
-            "hasUpdate": record.has_update(hide_early_access=hide_early_access),
+            "hasUpdate": record.has_update(
+                hide_early_access=hide_early_access,
+                hide_paid=hide_paid,
+            ),
             "versions": [
                 self._serialize_version(version, context.get(version.version_id))
                 for version in record.versions
@@ -2968,8 +2988,11 @@ class ModelUpdateHandler:
 
         # Determine if version is currently in early access
         # Two-phase detection: use exact end time if available, otherwise fallback to basic flag
+        # Mirror _is_early_access_active: permanent paid versions (no end time) are NOT early access
         is_early_access = False
-        if version.early_access_ends_at:
+        if getattr(version, "is_paid", False) and not version.early_access_ends_at:
+            is_early_access = False
+        elif version.early_access_ends_at:
             try:
                 from datetime import datetime, timezone
 
@@ -2984,6 +3007,13 @@ class ModelUpdateHandler:
             # Fallback to basic EA flag from bulk API
             is_early_access = True
 
+        paid_access_payload = None
+        if getattr(version, "paid_access", None):
+            try:
+                paid_access_payload = json.loads(version.paid_access)
+            except (TypeError, ValueError):
+                paid_access_payload = None
+
         return {
             "versionId": version.version_id,
             "name": version.name,
@@ -2997,6 +3027,8 @@ class ModelUpdateHandler:
             "earlyAccessEndsAt": version.early_access_ends_at,
             "isEarlyAccess": is_early_access,
             "usageControl": version.usage_control,
+            "isPaid": bool(getattr(version, "is_paid", False)),
+            "paidAccess": paid_access_payload,
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
         }

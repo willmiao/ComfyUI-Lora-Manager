@@ -59,7 +59,17 @@ class NotFoundProvider:
         return {}
 
 
-def make_version(version_id, *, in_library, base_model=None, should_ignore=False):
+def make_version(
+    version_id,
+    *,
+    in_library,
+    base_model=None,
+    should_ignore=False,
+    early_access_ends_at=None,
+    is_early_access=False,
+    is_paid=False,
+    paid_access=None,
+):
     return ModelVersionRecord(
         version_id=version_id,
         name=None,
@@ -69,6 +79,10 @@ def make_version(version_id, *, in_library, base_model=None, should_ignore=False
         preview_url=None,
         is_in_library=in_library,
         should_ignore=should_ignore,
+        early_access_ends_at=early_access_ends_at,
+        is_early_access=is_early_access,
+        is_paid=is_paid,
+        paid_access=paid_access,
     )
 
 
@@ -622,3 +636,165 @@ async def test_refresh_folder_filter_considers_cross_folder_versions(tmp_path):
     # has_update must be True (version 20 > max_in_library=15)
     assert record.has_update() is True
 
+
+def test_extract_single_version_paid_access_timed(tmp_path):
+    """A timed paidAccess gate (permanent=False + future endsAt) is detected
+    as early access while availability stays 'Public'."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    entry = {
+        "id": 42,
+        "name": "v1 paid",
+        "availability": "Public",
+        "paidAccess": {
+            "permanent": False,
+            "endsAt": "2026-08-22T18:30:00.000Z",
+        },
+        "files": [],
+        "images": [],
+    }
+
+    version = service._extract_single_version(entry, index=0)
+
+    assert version is not None
+    assert version.is_early_access is True
+    assert version.early_access_ends_at == "2026-08-22T18:30:00.000Z"
+    assert version.is_paid is False
+    assert version.paid_access is not None
+
+
+def test_extract_single_version_paid_access_permanent(tmp_path):
+    """A permanent paidAccess gate (permanent=True, no endsAt) is detected and
+    flagged as paid but is NOT early access and carries no end date."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    entry = {
+        "id": 42,
+        "name": "v1 paid",
+        "availability": "Public",
+        "paidAccess": {"permanent": True, "endsAt": None},
+        "files": [],
+        "images": [],
+    }
+
+    version = service._extract_single_version(entry, index=0)
+
+    assert version is not None
+    assert version.is_early_access is False
+    assert version.is_paid is True
+    assert version.early_access_ends_at is None
+    assert version.paid_access is not None
+
+
+def test_normalize_paid_access_accepts_json_string():
+    """The by-hash enrichment path may hand paidAccess to _normalize_paid_access
+    as a JSON string; both the permanent and timed shapes must normalize."""
+    service = ModelUpdateService.__new__(ModelUpdateService)
+
+    permanent = ModelUpdateService._normalize_paid_access(
+        '{"permanent": true, "endsAt": null}'
+    )
+    assert permanent == {"permanent": True, "endsAt": None}
+
+    timed = ModelUpdateService._normalize_paid_access(
+        '{"permanent": false, "endsAt": "2026-08-22T18:30:00.000Z"}'
+    )
+    assert timed == {"permanent": False, "endsAt": "2026-08-22T18:30:00.000Z"}
+
+    empty = ModelUpdateService._normalize_paid_access(
+        '{"permanent": false, "endsAt": null}'
+    )
+    assert empty is None
+
+    malformed = ModelUpdateService._normalize_paid_access("{not json")
+    assert malformed is None
+
+
+def test_has_update_for_base_hide_paid():
+    """hide_paid also suppresses permanent paid versions in the same-base
+    update path (has_update_for_base)."""
+    record = make_record(
+        make_version(5, in_library=True, base_model="illustrious"),
+        make_version(
+            7,
+            in_library=False,
+            base_model="illustrious",
+            is_paid=True,
+            paid_access='{"permanent": true, "endsAt": null}',
+        ),
+    )
+
+    assert record.has_update_for_base(5, "illustrious") is True
+    assert record.has_update_for_base(5, "illustrious", hide_paid=True) is False
+
+
+def test_has_update_hide_paid():
+    """hide_paid suppresses update flags raised by a permanent paid version."""
+    record = make_record(
+        make_version(5, in_library=True),
+        make_version(
+            7,
+            in_library=False,
+            is_paid=True,
+            paid_access='{"permanent": true, "endsAt": null}',
+        ),
+    )
+
+    assert record.has_update() is True
+    assert record.has_update(hide_paid=True) is False
+
+
+def test_has_update_hide_early_access_paid_timed():
+    """hide_early_access suppresses a newer timed paidAccess version."""
+    record = make_record(
+        make_version(5, in_library=True),
+        make_version(
+            7,
+            in_library=False,
+            is_early_access=True,
+            early_access_ends_at="2099-01-01T00:00:00Z",
+        ),
+    )
+
+    assert record.has_update() is True
+    assert record.has_update(hide_early_access=True) is False
+
+
+
+def test_build_record_from_remote_preserves_paid_fields(tmp_path):
+    """_build_record_from_remote must carry paid_access/is_paid from the
+    parsed remote versions into the rebuilt record, or the refresh path
+    silently drops paid data before persistence."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    remote_version = ModelVersionRecord(
+        version_id=7,
+        name="v7",
+        base_model=None,
+        released_at=None,
+        size_bytes=None,
+        preview_url=None,
+        is_in_library=False,
+        should_ignore=False,
+        early_access_ends_at=None,
+        is_early_access=True,
+        usage_control="Download",
+        paid_access='{"permanent": true, "endsAt": null}',
+        is_paid=True,
+    )
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=123,
+        local_versions=[],
+        remote_versions=[remote_version],
+        existing=None,
+        timestamp=1.0,
+    )
+
+    rebuilt = record.versions[0]
+    assert rebuilt.paid_access == '{"permanent": true, "endsAt": null}'
+    assert rebuilt.is_paid is True
