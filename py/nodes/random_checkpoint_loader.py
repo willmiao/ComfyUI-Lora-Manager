@@ -171,7 +171,7 @@ class RandomCheckpointLoaderLM:
         ckpt_name: str,
         select_at_random: bool = False,
         base_model: str = "Any",
-    ) -> Tuple[Any, Any, Any]:
+    ) -> Tuple[Any, Any, Any, str]:
         """Load a checkpoint by name, supporting extra folder paths
 
         Args:
