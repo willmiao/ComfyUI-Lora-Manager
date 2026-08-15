@@ -19,6 +19,44 @@ const SORT_GROUP_SELECTOR = '.sort-dropdown-group';
 const ACTIVE_GROUP_SELECTOR = '.sort-dropdown-group.active, .dropdown-group.active';
 
 /**
+ * Apply a sort value to the page's native sort <select>, keeping the Random
+ * option's value in sync when the persisted value carries a seed
+ * (e.g. "random:abc123"). Must be used instead of assigning
+ * sortSelect.value directly whenever the value may be a seeded random
+ * sort, otherwise the native select has no matching option.
+ * @param {string} sortValue - Sort value like "name:asc" or "random:<seed>"
+ */
+export function applySortToSelect(sortValue) {
+    const sortSelect = document.getElementById('sortSelect');
+    if (!sortSelect) return;
+    const randomOpt = sortSelect.querySelector('option[value="random"], option[value^="random:"]');
+    if (randomOpt) {
+        randomOpt.value = String(sortValue).startsWith('random') ? sortValue : 'random';
+    }
+    sortSelect.value = sortValue;
+}
+
+/**
+ * Generate a fresh seeded random sort value ("random:<seed>") and keep the
+ * native <select> in sync so its value matches the persisted sort string and
+ * the dropdown shows the selected label.
+ * @returns {string} The new sort value, e.g. "random:abc123xyz"
+ */
+export function randomizeSortValue() {
+    const seed = Math.random().toString(36).slice(2, 12);
+    const value = `random:${seed}`;
+    const sortSelect = document.getElementById('sortSelect');
+    if (sortSelect) {
+        const randomOpt = sortSelect.querySelector('option[value="random"], option[value^="random:"]');
+        if (randomOpt) {
+            randomOpt.value = value;
+        }
+        sortSelect.value = value;
+    }
+    return value;
+}
+
+/**
  * Initialize a decoupled sort dropdown around a native <select>.
  * Idempotent: safe to call more than once on the same element.
  * @param {HTMLSelectElement|null} select

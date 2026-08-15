@@ -1,4 +1,5 @@
 import { describe, it, beforeEach, afterEach, expect, vi } from 'vitest';
+import { applySortToSelect } from '../../../static/js/components/controls/SortDropdown.js';
 
 const resetAndReloadMock = vi.fn();
 const getModelApiClientMock = vi.fn();
@@ -190,7 +191,7 @@ describe('Random sort option', () => {
     sortSelect.value = 'random';
     sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
     await Promise.resolve();
-    controls.applySortToSelect('name:desc');
+    applySortToSelect('name:desc');
 
     expect(sortSelect.value).toBe('name:desc');
     expect(randomOpt.value).toBe('random');

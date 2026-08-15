@@ -4,7 +4,7 @@ import { getStorageItem, setStorageItem, removeStorageItem, getSessionItem, setS
 import { showToast, openCivitaiByMetadata } from '../../utils/uiHelpers.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
 import { sidebarManager } from '../SidebarManager.js';
-import { initSortDropdown } from './SortDropdown.js';
+import { initSortDropdown, applySortToSelect, randomizeSortValue } from './SortDropdown.js';
 
 /**
  * PageControls class - Unified control management for model pages
@@ -108,20 +108,20 @@ export class PageControls {
         const sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
             initSortDropdown(sortSelect);
-            this.applySortToSelect(this.pageState.sortBy);
+            applySortToSelect(this.pageState.sortBy);
             sortSelect.addEventListener('change', async (e) => {
                 let value = e.target.value;
                 if (value.startsWith('random')) {
                     // Every pick of Random reshuffles the list: generate a
                     // fresh seed so the backend keeps a stable order across
                     // paginated requests.
-                    value = this._randomizeSortValue();
+                    value = randomizeSortValue();
                 }
                 this.pageState.sortBy = value;
                 this.saveSortPreference(value);
                 // Reset the seeded Random option when switching away from
                 // Random, or re-apply the fresh seed when picking it again.
-                this.applySortToSelect(value);
+                applySortToSelect(value);
                 await this.resetAndReload();
             });
         }
@@ -323,44 +323,6 @@ export class PageControls {
     }
     
     /**
-     * Apply a sort value to the native sort <select>, keeping the Random
-     * option's value in sync when the persisted value carries a seed
-     * (e.g. "random:abc123"). Must be used instead of assigning
-     * sortSelect.value directly whenever the value may be a seeded random
-     * sort, otherwise the native select has no matching option.
-     * @param {string} sortValue - Sort value like "name:asc" or "random:<seed>"
-     */
-    applySortToSelect(sortValue) {
-        const sortSelect = document.getElementById('sortSelect');
-        if (!sortSelect) return;
-        const randomOpt = sortSelect.querySelector('option[value="random"], option[value^="random:"]');
-        if (randomOpt) {
-            randomOpt.value = String(sortValue).startsWith('random') ? sortValue : 'random';
-        }
-        sortSelect.value = sortValue;
-    }
-
-    /**
-     * Generate a fresh seeded random sort value ("random:<seed>") and keep
-     * the native <select> in sync so its value matches the persisted sort
-     * string and the dropdown shows the selected label.
-     * @returns {string} The new sort value, e.g. "random:abc123xyz"
-     */
-    _randomizeSortValue() {
-        const seed = Math.random().toString(36).slice(2, 12);
-        const value = `random:${seed}`;
-        const sortSelect = document.getElementById('sortSelect');
-        if (sortSelect) {
-            const randomOpt = sortSelect.querySelector('option[value="random"], option[value^="random:"]');
-            if (randomOpt) {
-                randomOpt.value = value;
-            }
-            sortSelect.value = value;
-        }
-        return value;
-    }
-
-    /**
      * Load sort preference from storage
      */
     loadSortPreference() {
@@ -374,7 +336,7 @@ export class PageControls {
             // Handle legacy format conversion
             const convertedSort = this.convertLegacySortFormat(savedSort);
             this.pageState.sortBy = convertedSort;
-            this.applySortToSelect(convertedSort);
+            applySortToSelect(convertedSort);
         }
     }
     
@@ -568,7 +530,7 @@ export class PageControls {
         this.pageState.sortBy = restoredSort;
         this.saveSortPreference(restoredSort);
         this._removeVlmSortOption();
-        this.applySortToSelect(restoredSort);
+        applySortToSelect(restoredSort);
         const sortSelect = document.getElementById('sortSelect');
         if (sortSelect) {
             sortSelect.disabled = false;
@@ -620,7 +582,7 @@ export class PageControls {
             const savedGroupedSort = getStorageItem(groupedKey);
             if (savedGroupedSort) {
                 this.pageState.sortBy = savedGroupedSort;
-                this.applySortToSelect(savedGroupedSort);
+                applySortToSelect(savedGroupedSort);
             }
         } else {
             // Leaving group mode: persist current sort for next time, restore non-group sort
@@ -628,7 +590,7 @@ export class PageControls {
             const savedNormalSort = getStorageItem(`${this.pageType}_sort`);
             if (savedNormalSort) {
                 this.pageState.sortBy = savedNormalSort;
-                this.applySortToSelect(savedNormalSort);
+                applySortToSelect(savedNormalSort);
             }
         }
     }
@@ -913,7 +875,7 @@ export class PageControls {
         }
 
         if (sortSelect) {
-            this.applySortToSelect(this.pageState.sortBy);
+            applySortToSelect(this.pageState.sortBy);
         }
         if (searchInput) {
             searchInput.value = this.pageState.filters?.search || '';

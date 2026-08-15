@@ -10,7 +10,7 @@ import { DuplicatesManager } from './components/DuplicatesManager.js';
 import { refreshVirtualScroll, recreateVirtualScroll } from './utils/infiniteScroll.js';
 import { refreshRecipes, RecipeSidebarApiClient } from './api/recipeApi.js';
 import { sidebarManager } from './components/SidebarManager.js';
-import { initSortDropdown } from './components/controls/SortDropdown.js';
+import { initSortDropdown, applySortToSelect, randomizeSortValue } from './components/controls/SortDropdown.js';
 
 class RecipePageControls {
     constructor() {
@@ -245,20 +245,20 @@ class RecipeManager {
                 this.pageState.sortBy = savedSort;
             }
             initSortDropdown(sortSelect);
-            this.applySortToSelect(this.pageState.sortBy || 'date:desc');
+            applySortToSelect(this.pageState.sortBy || 'date:desc');
             sortSelect.addEventListener('change', () => {
                 let value = sortSelect.value;
                 if (value.startsWith('random')) {
                     // Every pick of Random reshuffles the list: generate a
                     // fresh seed so the backend keeps a stable order across
                     // paginated requests.
-                    value = this._randomizeSortValue();
+                    value = randomizeSortValue();
                 }
                 this.pageState.sortBy = value;
                 setStorageItem('recipes_sort', value);
                 // Reset the seeded Random option when switching away from
                 // Random, or re-apply the fresh seed when picking it again.
-                this.applySortToSelect(value);
+                applySortToSelect(value);
                 refreshVirtualScroll();
             });
         }
@@ -349,44 +349,6 @@ class RecipeManager {
         document.querySelectorAll('.dropdown-group.active').forEach(group => {
             group.classList.remove('active');
         });
-    }
-
-    /**
-     * Apply a sort value to the native sort <select>, keeping the Random
-     * option's value in sync when the persisted value carries a seed
-     * (e.g. "random:abc123"). Must be used instead of assigning
-     * sortSelect.value directly whenever the value may be a seeded random
-     * sort, otherwise the native select has no matching option.
-     * @param {string} sortValue - Sort value like "date:desc" or "random:<seed>"
-     */
-    applySortToSelect(sortValue) {
-        const sortSelect = document.getElementById('sortSelect');
-        if (!sortSelect) return;
-        const randomOpt = sortSelect.querySelector('option[value="random"], option[value^="random:"]');
-        if (randomOpt) {
-            randomOpt.value = String(sortValue).startsWith('random') ? sortValue : 'random';
-        }
-        sortSelect.value = sortValue;
-    }
-
-    /**
-     * Generate a fresh seeded random sort value ("random:<seed>") and keep
-     * the native <select> in sync so its value matches the persisted sort
-     * string and the dropdown shows the selected label.
-     * @returns {string} The new sort value, e.g. "random:abc123xyz"
-     */
-    _randomizeSortValue() {
-        const seed = Math.random().toString(36).slice(2, 12);
-        const value = `random:${seed}`;
-        const sortSelect = document.getElementById('sortSelect');
-        if (sortSelect) {
-            const randomOpt = sortSelect.querySelector('option[value="random"], option[value^="random:"]');
-            if (randomOpt) {
-                randomOpt.value = value;
-            }
-            sortSelect.value = value;
-        }
-        return value;
     }
 
     normalizeLoadRecipesOptions(options = true) {

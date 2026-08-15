@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderRecipesPage } from '../utils/pageFixtures.js';
+import { applySortToSelect } from '../../../static/js/components/controls/SortDropdown.js';
 
 const initializeAppMock = vi.fn();
 const initializePageFeaturesMock = vi.fn();
@@ -203,12 +204,12 @@ describe('RecipeManager Random sort', () => {
   it('applies a non-random sort back to the plain random option', async () => {
     const sortSelect = renderSortSelect();
     const randomOpt = sortSelect.querySelector('option[value="random"]');
-    const manager = await createManager();
+    await createManager();
 
     sortSelect.value = 'random';
     sortSelect.dispatchEvent(new Event('change', { bubbles: true }));
     await Promise.resolve();
-    manager.applySortToSelect('name:asc');
+    applySortToSelect('name:asc');
 
     expect(sortSelect.value).toBe('name:asc');
     expect(randomOpt.value).toBe('random');
