@@ -33,14 +33,14 @@ const TAG_COMMANDS = {
     '/embedding': { type: 'embedding', label: 'Embeddings' },
     ...WILDCARD_COMMANDS,
     // Autocomplete toggle commands - only show one based on current state
-    '/ac': {
+    '/autocomplete': {
         type: 'toggle_setting',
         settingId: 'loramanager.prompt_tag_autocomplete',
         value: true,
         label: 'Autocomplete: ON',
         condition: () => !getPromptTagAutocompletePreference()
     },
-    '/noac': {
+    '/noautocomplete': {
         type: 'toggle_setting',
         settingId: 'loramanager.prompt_tag_autocomplete',
         value: false,
@@ -50,26 +50,7 @@ const TAG_COMMANDS = {
 };
 
 // Command definitions for LoRA active-filters search
-// Aliases (/activefilters, /noactivefilters) mirror /emb ↔ /embedding
 const LORAS_COMMANDS = {
-    '/af': {
-        type: 'toggle_setting',
-        settingId: 'loramanager.lora_active_filters_autocomplete',
-        value: true,
-        label: 'Active Filters: ON',
-        feedbackSummary: 'Active Filters Search: ON',
-        feedbackDetail: 'LoRA autocomplete now searches within the active filters of the LoRA Manager page.',
-        condition: () => !getLoraActiveFiltersAutocompletePreference()
-    },
-    '/noaf': {
-        type: 'toggle_setting',
-        settingId: 'loramanager.lora_active_filters_autocomplete',
-        value: false,
-        label: 'Active Filters: OFF',
-        feedbackSummary: 'Active Filters Search: OFF',
-        feedbackDetail: 'LoRA autocomplete searches the full library again.',
-        condition: () => getLoraActiveFiltersAutocompletePreference()
-    },
     '/activefilters': {
         type: 'toggle_setting',
         settingId: 'loramanager.lora_active_filters_autocomplete',
@@ -761,7 +742,7 @@ class AutoComplete {
             searchTerm = (match[1] || '').trim();
         }
 
-        // For loras model type, check if we're in command mode (/af, /noaf)
+        // For loras model type, check if we're in command mode (/activefilters, /noactivefilters)
         if (this.modelType === 'loras') {
             const commandResult = this._parseCommandInput(rawSearchTerm);
 
@@ -773,7 +754,7 @@ class AutoComplete {
                 this._showCommandList(commandResult.commandFilter);
                 return;
             } else if (commandResult.command?.type === 'toggle_setting') {
-                // Handle toggle setting command (/af, /noaf)
+                // Handle toggle setting command (/activefilters, /noactivefilters)
                 this._handleToggleSettingCommand(commandResult.command);
                 return;
             } else if (commandResult.command) {
@@ -813,7 +794,7 @@ class AutoComplete {
                     this._showCommandList(commandResult.commandFilter);
                     return;
                 } else if (commandResult.command?.type === 'toggle_setting') {
-                    // Handle toggle setting command (/ac, /noac)
+                    // Handle toggle setting command (/autocomplete, /noautocomplete)
                     this._handleToggleSettingCommand(commandResult.command);
                     return;
                 } else if (commandResult.command) {
@@ -2866,7 +2847,7 @@ class AutoComplete {
     }
 
     /**
-     * Handle toggle setting command (/ac, /noac)
+     * Handle toggle setting command (e.g., /autocomplete, /activefilters)
      * @param {Object} command - The toggle command with settingId and value
      */
     async _handleToggleSettingCommand(command) {

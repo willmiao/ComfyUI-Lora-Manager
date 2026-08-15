@@ -1667,7 +1667,7 @@ describe('AutoComplete widget interactions', () => {
     expect(input.value).toBe('looking_to_the_side,');
   });
 
-  it('shows /af command for loras when active-filters autocomplete is off (default)', async () => {
+  it('shows /activefilters command for loras when active-filters autocomplete is off (default)', async () => {
     const input = document.createElement('textarea');
     input.value = '/';
     input.selectionStart = input.value.length;
@@ -1682,8 +1682,6 @@ describe('AutoComplete widget interactions', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
     const commandNames = autoComplete.items.map((item) => item.command);
-    expect(commandNames).toContain('/af');
-    expect(commandNames).not.toContain('/noaf');
     expect(commandNames).toContain('/activefilters');
     expect(commandNames).not.toContain('/noactivefilters');
   });
@@ -1710,11 +1708,11 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const commandNames = autoComplete.items.map((item) => item.command);
-    expect(commandNames).toContain('/af');
+    expect(commandNames).toContain('/activefilters');
     expect(previewTooltipMock.show).not.toHaveBeenCalled();
   });
 
-  it('shows /noaf command for loras when active-filters autocomplete is on', async () => {
+  it('shows /noactivefilters command for loras when active-filters autocomplete is on', async () => {
     settingGetMock.mockImplementation((key) => {
       if (key === 'loramanager.lora_active_filters_autocomplete') {
         return true;
@@ -1736,8 +1734,6 @@ describe('AutoComplete widget interactions', () => {
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
     const commandNames = autoComplete.items.map((item) => item.command);
-    expect(commandNames).toContain('/noaf');
-    expect(commandNames).not.toContain('/af');
     expect(commandNames).toContain('/noactivefilters');
     expect(commandNames).not.toContain('/activefilters');
   });
@@ -1766,7 +1762,7 @@ describe('AutoComplete widget interactions', () => {
     expect(settingSetMock).toHaveBeenCalledWith('loramanager.lora_active_filters_autocomplete', true);
   });
 
-  it('toggles the active-filters setting when /af is accepted', async () => {
+  it('toggles the active-filters setting when /activefilters is accepted', async () => {
     const input = document.createElement('textarea');
     input.value = '/';
     input.selectionStart = input.value.length;
@@ -1782,7 +1778,7 @@ describe('AutoComplete widget interactions', () => {
 
     input.dispatchEvent(new Event('input', { bubbles: true }));
 
-    const afItem = autoComplete.items.find((item) => item.command === '/af');
+    const afItem = autoComplete.items.find((item) => item.command === '/activefilters');
     expect(afItem).toBeDefined();
 
     // Simulate the input being cleared after the command is accepted so the
