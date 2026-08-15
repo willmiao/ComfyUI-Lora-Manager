@@ -3,6 +3,8 @@ try:  # pragma: no cover - import fallback for pytest collection
     from .py.nodes.lora_loader import LoraLoaderLM, LoraTextLoaderLM
     from .py.nodes.checkpoint_loader import CheckpointLoaderLM
     from .py.nodes.unet_loader import UNETLoaderLM
+    from .py.nodes.random_checkpoint_loader import RandomCheckpointLoaderLM
+    from .py.nodes.random_unet_loader import RandomUNETLoaderLM
     from .py.nodes.trigger_word_toggle import TriggerWordToggleLM
     from .py.nodes.prompt import PromptLM
     from .py.nodes.text import TextLM
@@ -40,6 +42,12 @@ except (
         "py.nodes.checkpoint_loader"
     ).CheckpointLoaderLM
     UNETLoaderLM = importlib.import_module("py.nodes.unet_loader").UNETLoaderLM
+    RandomCheckpointLoaderLM = importlib.import_module(
+        "py.nodes.random_checkpoint_loader"
+    ).RandomCheckpointLoaderLM
+    RandomUNETLoaderLM = importlib.import_module(
+        "py.nodes.random_unet_loader"
+    ).RandomUNETLoaderLM
     TriggerWordToggleLM = importlib.import_module(
         "py.nodes.trigger_word_toggle"
     ).TriggerWordToggleLM
@@ -79,6 +87,8 @@ NODE_CLASS_MAPPINGS = {
     LoraTextLoaderLM.NAME: LoraTextLoaderLM,
     CheckpointLoaderLM.NAME: CheckpointLoaderLM,
     UNETLoaderLM.NAME: UNETLoaderLM,
+    RandomCheckpointLoaderLM.NAME: RandomCheckpointLoaderLM,
+    RandomUNETLoaderLM.NAME: RandomUNETLoaderLM,
     TriggerWordToggleLM.NAME: TriggerWordToggleLM,
     LoraStackerLM.NAME: LoraStackerLM,
     LoraStackCombinerLM.NAME: LoraStackCombinerLM,
