@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "Fehler beim Umbenennen der Datei: {error}",
             "previewUpdated": "Vorschau erfolgreich aktualisiert",
             "previewUploadFailed": "Fehler beim Hochladen des Vorschaubilds",
+            "previewDropInvalid": "Nicht unterstützter Dateityp: {name}. Ziehen Sie stattdessen ein Bild oder ein MP4-Video hinein.",
             "refreshComplete": "{action} abgeschlossen",
             "refreshFailed": "Fehler beim {action} der {type}s",
             "metadataRefreshed": "Metadaten erfolgreich aktualisiert",

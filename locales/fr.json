@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "Échec du renommage du fichier : {error}",
             "previewUpdated": "Aperçu mis à jour avec succès",
             "previewUploadFailed": "Échec du téléchargement de l'image d'aperçu",
+            "previewDropInvalid": "Type de fichier non pris en charge : {name}. Déposez plutôt une image ou une vidéo MP4.",
             "refreshComplete": "{action} terminé",
             "refreshFailed": "Échec de {action} des {type}s",
             "metadataRefreshed": "Métadonnées actualisées avec succès",

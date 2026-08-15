@@ -741,6 +741,46 @@ export function createModelCard(model, modelType) {
         configureModelCardVideo(videoElement, autoplayOnHover);
     }
 
+    // Dropping an image/video onto the card replaces the model preview via the
+    // existing replace-preview endpoint (overwrites file on disk, refreshes card).
+    const preventDragDefaults = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+    };
+
+    ['dragenter', 'dragover'].forEach((eventName) => {
+        card.addEventListener(eventName, (event) => {
+            preventDragDefaults(event);
+            card.classList.add('drag-over');
+        });
+    });
+
+    card.addEventListener('dragleave', (event) => {
+        preventDragDefaults(event);
+        card.classList.remove('drag-over');
+    });
+
+    card.addEventListener('drop', (event) => {
+        preventDragDefaults(event);
+        card.classList.remove('drag-over');
+
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) return;
+
+        const file = files[0];
+        // Keep in sync with the accept list of the preview file picker (image/* + video/mp4).
+        if (!file.type.startsWith('image/') && file.type !== 'video/mp4') {
+            showToast('toast.api.previewDropInvalid', { name: file.name || '' }, 'error');
+            return;
+        }
+
+        const filePath = card.dataset.filepath;
+        if (!filePath) return;
+
+        // uploadPreview handles loading state, card refresh and error toasts internally.
+        getModelApiClient().uploadPreview(filePath, file);
+    });
+
     return card;
 }
 

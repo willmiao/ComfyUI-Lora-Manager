@@ -41,6 +41,11 @@
     border-color: var(--lora-accent);
 }
 
+.model-card.drag-over {
+    outline: 2px dashed var(--lora-accent);
+    outline-offset: -2px;
+}
+
 .model-card:focus-visible {
     outline: 2px solid var(--lora-accent);
     outline-offset: 2px;

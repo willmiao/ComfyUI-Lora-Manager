@@ -2190,6 +2190,7 @@
             "fileRenameFailed": "파일 이름 변경 실패: {error}",
             "previewUpdated": "미리보기가 성공적으로 업데이트되었습니다",
             "previewUploadFailed": "미리보기 이미지 업로드 실패",
+            "previewDropInvalid": "지원되지 않는 파일 형식: {name}. 이미지 또는 MP4 동영상을 드롭하세요.",
             "refreshComplete": "{action} 완료",
             "refreshFailed": "{type} {action} 실패",
             "metadataRefreshed": "메타데이터가 성공적으로 새로고침되었습니다",

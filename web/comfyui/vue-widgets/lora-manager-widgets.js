@@ -2118,14 +2118,14 @@ to { transform: rotate(360deg);
   padding: 20px 0;
 }
 
-.autocomplete-text-widget[data-v-55e3316e] {
+.autocomplete-text-widget[data-v-4e322fec] {
   background: transparent;
   height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
 }
-.input-wrapper[data-v-55e3316e] {
+.input-wrapper[data-v-4e322fec] {
   position: relative;
   flex: 1;
   display: flex;
@@ -2133,7 +2133,7 @@ to { transform: rotate(360deg);
 }
 
 /* Canvas mode styles (default) - matches built-in comfy-multiline-input */
-.text-input[data-v-55e3316e] {
+.text-input[data-v-4e322fec] {
   flex: 1;
   width: 100%;
   background-color: var(--comfy-input-bg, #222);
@@ -2152,7 +2152,7 @@ to { transform: rotate(360deg);
 }
 
 /* Vue DOM mode styles - matches built-in p-textarea in Vue DOM mode */
-.text-input.vue-dom-mode[data-v-55e3316e] {
+.text-input.vue-dom-mode[data-v-4e322fec] {
   background-color: var(--color-charcoal-400, #313235);
   color: #fff;
   padding: 8px 12px 30px 12px;  /* Reserve bottom space for clear button */
@@ -2161,12 +2161,12 @@ to { transform: rotate(360deg);
   font-size: 12px;
   font-family: inherit;
 }
-.text-input[data-v-55e3316e]:focus {
+.text-input[data-v-4e322fec]:focus {
   outline: none;
 }
 
 /* Clear button styles */
-.clear-button[data-v-55e3316e] {
+.clear-button[data-v-4e322fec] {
   position: absolute;
   right: 6px;
   bottom: 6px;  /* Changed from top to bottom */
@@ -2189,31 +2189,31 @@ to { transform: rotate(360deg);
 }
 
 /* Show clear button when hovering over input wrapper */
-.input-wrapper:hover .clear-button[data-v-55e3316e] {
+.input-wrapper:hover .clear-button[data-v-4e322fec] {
   opacity: 0.7;
   pointer-events: auto;
 }
-.clear-button[data-v-55e3316e]:hover {
+.clear-button[data-v-4e322fec]:hover {
   opacity: 1;
   background: rgba(255, 100, 100, 0.8);
 }
-.clear-button svg[data-v-55e3316e] {
+.clear-button svg[data-v-4e322fec] {
   width: 12px;
   height: 12px;
 }
 
 /* Vue DOM mode adjustments for clear button */
-.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e] {
+.text-input.vue-dom-mode ~ .clear-button[data-v-4e322fec] {
   right: 8px;
   bottom: 10px;  /* Changed from top to bottom, adjusted for Vue DOM padding */
   width: 20px;
   height: 20px;
   background: rgba(107, 114, 128, 0.6);
 }
-.text-input.vue-dom-mode ~ .clear-button[data-v-55e3316e]:hover {
+.text-input.vue-dom-mode ~ .clear-button[data-v-4e322fec]:hover {
   background: oklch(62% 0.18 25);
 }
-.text-input.vue-dom-mode ~ .clear-button svg[data-v-55e3316e] {
+.text-input.vue-dom-mode ~ .clear-button svg[data-v-4e322fec] {
   width: 14px;
   height: 14px;
 }
@@ -15168,7 +15168,13 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     const updateHasTextState = () => {
       hasText.value = textareaRef.value ? textareaRef.value.value.length > 0 : false;
     };
-    const onInput = () => {
+    const onInput = (event) => {
+      if (event.inputType === "historyUndo") {
+        const ta = textareaRef.value;
+        if (ta && ta.selectionStart === 0 && ta.selectionEnd === ta.value.length) {
+          ta.setSelectionRange(ta.value.length, ta.value.length);
+        }
+      }
       updateHasTextState();
       if (textareaRef.value && typeof props.widget.callback === "function") {
         props.widget.callback(textareaRef.value.value);
@@ -15215,15 +15221,22 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
       }
     };
     const clearText = () => {
-      if (textareaRef.value) {
-        textareaRef.value.value = "";
-        hasText.value = false;
-        textareaRef.value.focus();
-        if (typeof props.widget.callback === "function") {
-          props.widget.callback("");
-        }
-        textareaRef.value.dispatchEvent(new Event("input"));
+      const ta = textareaRef.value;
+      if (!ta || ta.value.length === 0) return;
+      ta.focus();
+      ta.setSelectionRange(0, ta.value.length);
+      let ok = false;
+      try {
+        ok = typeof document.execCommand === "function" && document.execCommand("insertText", false, "");
+      } catch {
+        ok = false;
       }
+      if (ok) {
+        hasText.value = false;
+        return;
+      }
+      ta.value = "";
+      ta.dispatchEvent(new Event("input"));
     };
     onMounted(() => {
       if (textareaRef.value) {
@@ -15316,7 +15329,7 @@ const _sfc_main$1 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-55e3316e"]]);
+const AutocompleteTextWidget = /* @__PURE__ */ _export_sfc(_sfc_main$1, [["__scopeId", "data-v-4e322fec"]]);
 const _hoisted_1 = { class: "lora-info-tabs" };
 const _hoisted_2 = { class: "tab-content notes-tab" };
 const _hoisted_3 = { class: "info-field" };
