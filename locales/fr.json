@@ -920,7 +920,9 @@
                 "dateAsc": "Plus ancien",
                 "lorasCount": "Nombre de LoRAs",
                 "lorasCountDesc": "Plus",
-                "lorasCountAsc": "Moins"
+                "lorasCountAsc": "Moins",
+                "opened": "Récemment ouverts",
+                "openedDesc": "Récemment ouverts"
             },
             "refresh": {
                 "title": "Actualiser la liste des recipes",

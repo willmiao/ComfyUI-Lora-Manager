@@ -324,6 +324,18 @@ describe('MasonryScroller', () => {
     expect(placeholder.textContent).toContain('No recipes found');
   });
 
+  it('shows the recently-opened empty placeholder under the opened sort', async () => {
+    getCurrentPageState().sortBy = 'opened:desc';
+    const { scroller, grid } = track(createScroller({ items: [] }));
+
+    await scroller.initialize();
+
+    const placeholder = grid.querySelector('#virtualScrollPlaceholder');
+    expect(placeholder).not.toBeNull();
+    expect(placeholder.textContent).toContain('No recently opened recipes');
+    getCurrentPageState().sortBy = '';
+  });
+
   it('dispose removes classes, spacer and event listeners', () => {
     const { scroller, grid } = track(createScroller());
 

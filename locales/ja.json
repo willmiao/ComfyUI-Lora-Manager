@@ -920,7 +920,9 @@
                 "dateAsc": "古い順",
                 "lorasCount": "LoRA数",
                 "lorasCountDesc": "多い順",
-                "lorasCountAsc": "少ない順"
+                "lorasCountAsc": "少ない順",
+                "opened": "最近開いた",
+                "openedDesc": "最近開いた"
             },
             "refresh": {
                 "title": "レシピリストを更新",

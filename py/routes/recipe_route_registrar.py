@@ -43,6 +43,9 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     ),
     RouteDefinition("GET", "/api/lm/recipe/{recipe_id}/syntax", "get_recipe_syntax"),
     RouteDefinition("PUT", "/api/lm/recipe/{recipe_id}/update", "update_recipe"),
+    RouteDefinition(
+        "POST", "/api/lm/recipe/{recipe_id}/opened", "record_recipe_open"
+    ),
     RouteDefinition("POST", "/api/lm/recipe/move", "move_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/move-bulk", "move_recipes_bulk"),
     RouteDefinition("POST", "/api/lm/recipe/lora/reconnect", "reconnect_lora"),

@@ -920,7 +920,9 @@
                 "dateAsc": "最舊",
                 "lorasCount": "LoRA 數量",
                 "lorasCountDesc": "最多",
-                "lorasCountAsc": "最少"
+                "lorasCountAsc": "最少",
+                "opened": "最近開啟",
+                "openedDesc": "最近開啟"
             },
             "refresh": {
                 "title": "重新整理配方列表",

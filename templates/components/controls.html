@@ -54,6 +54,11 @@
                             <option value="loras_count:asc">{{ t('recipes.controls.sort.lorasCountAsc') }}</option>
                         </optgroup>
                     {% endif %}
+                    {% if page_id == 'recipes' %}
+                        <optgroup label="{{ t('recipes.controls.sort.opened', default='Recently Opened') }}">
+                            <option value="opened:desc">{{ t('recipes.controls.sort.openedDesc', default='Recently opened') }}</option>
+                        </optgroup>
+                    {% endif %}
                     <optgroup label="{{ t('loras.controls.sort.random', default='Random') }}">
                         <option value="random">{{ t('loras.controls.sort.randomAction', default='Randomize (shuffle)') }}</option>
                     </optgroup>

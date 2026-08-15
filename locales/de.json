@@ -920,7 +920,9 @@
                 "dateAsc": "Älteste",
                 "lorasCount": "LoRA-Anzahl",
                 "lorasCountDesc": "Meiste",
-                "lorasCountAsc": "Wenigste"
+                "lorasCountAsc": "Wenigste",
+                "opened": "Zuletzt geöffnet",
+                "openedDesc": "Zuletzt geöffnet"
             },
             "refresh": {
                 "title": "Rezeptliste aktualisieren",

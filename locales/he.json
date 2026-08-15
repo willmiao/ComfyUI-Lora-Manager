@@ -920,7 +920,9 @@
                 "dateAsc": "הכי ישן",
                 "lorasCount": "מספר LoRAs",
                 "lorasCountDesc": "הכי הרבה",
-                "lorasCountAsc": "הכי פחות"
+                "lorasCountAsc": "הכי פחות",
+                "opened": "נפתחו לאחרונה",
+                "openedDesc": "נפתחו לאחרונה"
             },
             "refresh": {
                 "title": "רענן רשימת מתכונים",

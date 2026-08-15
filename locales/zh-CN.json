@@ -920,7 +920,9 @@
                 "dateAsc": "最早",
                 "lorasCount": "LoRA 数量",
                 "lorasCountDesc": "最多",
-                "lorasCountAsc": "最少"
+                "lorasCountAsc": "最少",
+                "opened": "最近打开",
+                "openedDesc": "最近打开"
             },
             "refresh": {
                 "title": "刷新配方列表",

@@ -920,7 +920,9 @@
                 "dateAsc": "Сначала старые",
                 "lorasCount": "Кол-во LoRA",
                 "lorasCountDesc": "Больше всего",
-                "lorasCountAsc": "Меньше всего"
+                "lorasCountAsc": "Меньше всего",
+                "opened": "Недавно открытые",
+                "openedDesc": "Недавно открытые"
             },
             "refresh": {
                 "title": "Обновить список рецептов",

@@ -306,6 +306,14 @@ class RecipeModal {
         modalManager.showModal('recipeModal');
 
         if (this.recipeId) {
+            // Fire-and-forget: record this open for the "Recently Opened"
+            // sort. Tracking must never disturb the modal, so failures are
+            // swallowed.
+            fetch(`/api/lm/recipe/${encodeURIComponent(this.recipeId)}/opened`, {
+                method: 'POST',
+                keepalive: true,
+            }).catch(() => {});
+
             const hydrationRequestId = ++this.recipeHydrationRequestId;
             const requestEditVersions = this.captureLocalEditVersions();
             this.hydrateRecipeDetails(

@@ -699,10 +699,17 @@ export class VirtualScroller {
             const pageType = state.currentPageType;
 
             if (pageType === 'recipes') {
-                placeholderText = `
-                    <p>No recipes found</p>
-                    <p>Add recipe images to your recipes folder to see them here.</p>
-                `;
+                if (String(getCurrentPageState().sortBy).startsWith('opened')) {
+                    placeholderText = `
+                        <p>No recently opened recipes</p>
+                        <p>Recipes you open will appear here.</p>
+                    `;
+                } else {
+                    placeholderText = `
+                        <p>No recipes found</p>
+                        <p>Add recipe images to your recipes folder to see them here.</p>
+                    `;
+                }
             } else if (pageType === 'loras') {
                 placeholderText = `
                     <p>No LoRAs found</p>

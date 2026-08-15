@@ -920,7 +920,9 @@
         "dateAsc": "Oldest",
         "lorasCount": "LoRA Count",
         "lorasCountDesc": "Most",
-        "lorasCountAsc": "Least"
+        "lorasCountAsc": "Least",
+        "opened": "Recently Opened",
+        "openedDesc": "Recently opened"
       },
       "refresh": {
         "title": "Refresh recipe list",

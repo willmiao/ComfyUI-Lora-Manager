@@ -920,7 +920,9 @@
                 "dateAsc": "오래된순",
                 "lorasCount": "LoRA 수",
                 "lorasCountDesc": "많은순",
-                "lorasCountAsc": "적은순"
+                "lorasCountAsc": "적은순",
+                "opened": "최근에 연",
+                "openedDesc": "최근에 연"
             },
             "refresh": {
                 "title": "레시피 목록 새로고침",

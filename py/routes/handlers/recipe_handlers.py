@@ -34,6 +34,7 @@ from ...utils.civitai_utils import (
 )
 from ...utils.constants import NSFW_LEVELS
 from ...utils.exif_utils import ExifUtils
+from ...utils.recipe_open_stats import RecipeOpenStats
 from ...recipes.merger import GenParamsMerger
 from ...recipes.enrichment import RecipeEnricher
 from ...services.websocket_manager import ws_manager as default_ws_manager
@@ -98,6 +99,7 @@ class RecipeHandlerSet:
             "download_shared_recipe": self.sharing.download_shared_recipe,
             "get_recipe_syntax": self.query.get_recipe_syntax,
             "update_recipe": self.management.update_recipe,
+            "record_recipe_open": self.management.record_recipe_open,
             "reconnect_lora": self.management.reconnect_lora,
             "find_duplicates": self.query.find_duplicates,
             "move_recipes_bulk": self.management.move_recipes_bulk,
@@ -1457,6 +1459,33 @@ class RecipeManagementHandler:
         except Exception as exc:
             self._logger.error("Error updating recipe: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
+
+    async def record_recipe_open(self, request: web.Request) -> web.Response:
+        """Record that a recipe's detail modal was opened.
+
+        Lightweight fire-and-forget endpoint backing the "Recently Opened"
+        sort. It only writes the timestamp into the separate open-stats file
+        — recipe JSON and EXIF are never touched.
+        """
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            recipe_id = request.match_info["recipe_id"]
+            # Skip recording opens for recipes the scanner no longer knows.
+            recipe_json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+            if not recipe_json_path:
+                return web.json_response(
+                    {"success": False, "error": "Recipe not found"}, status=404
+                )
+
+            RecipeOpenStats().record_open(recipe_id)
+            return web.json_response({"success": True})
+        except Exception as exc:
+            self._logger.error("Error recording recipe open: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def move_recipe(self, request: web.Request) -> web.Response:
         try:

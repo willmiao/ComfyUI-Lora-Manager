@@ -1095,6 +1095,58 @@ async def test_get_paginated_data_random_sort(recipe_scanner):
     assert len(set(combined)) == 3
 
 
+@pytest.mark.asyncio
+async def test_get_paginated_data_opened_sort(recipe_scanner, monkeypatch):
+    scanner, _ = recipe_scanner
+
+    for rid, title in [("A", "Alpha"), ("B", "Beta"), ("C", "Gamma")]:
+        await scanner.add_recipe(
+            {
+                "id": rid,
+                "title": title,
+                "created_date": 10.0,
+                "loras": [{}],
+                "file_path": f"{rid.lower()}.png",
+            }
+        )
+
+    await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
+
+    class _FakeStats:
+        def get_opened_map(self):
+            return {"B": 300.0, "C": 200.0}
+
+    monkeypatch.setattr(
+        "py.services.recipe_scanner.RecipeOpenStats", lambda: _FakeStats()
+    )
+
+    # Never-opened A is hidden from the view; B (300) > C (200)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="opened:desc")
+    assert [i["id"] for i in res["items"]] == ["B", "C"]
+    assert res["total"] == 2
+
+    # ASC: C (200) < B (300)
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="opened:asc")
+    assert [i["id"] for i in res["items"]] == ["C", "B"]
+
+    # Plain "opened" (no direction) behaves like desc by default
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="opened")
+    assert [i["id"] for i in res["items"]] == ["B", "C"]
+
+    # When nothing was opened the view is empty (not a fallback reorder)
+    class _EmptyStats:
+        def get_opened_map(self):
+            return {}
+
+    monkeypatch.setattr(
+        "py.services.recipe_scanner.RecipeOpenStats", lambda: _EmptyStats()
+    )
+    res = await scanner.get_paginated_data(page=1, page_size=10, sort_by="opened:desc")
+    assert res["items"] == []
+    assert res["total"] == 0
+
+
 async def test_build_image_id_map_filters_correctly(recipe_scanner):
     """Only recipes with valid CivitAI source_path appear in image_id_map.
 
