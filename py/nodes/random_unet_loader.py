@@ -19,7 +19,7 @@ def _reload_gguf_unet(
     with core ComfyUI loaders.
     """
     loader = RandomUNETLoaderLM()
-    model, = loader._load_gguf_unet(unet_path, unet_path, weight_dtype)
+    model, _unet_name = loader._load_gguf_unet(unet_path, unet_path, weight_dtype)
     return model
 
 
@@ -71,9 +71,12 @@ class RandomUNETLoaderLM:
             }
         }
 
-    RETURN_TYPES = ("MODEL",)
-    RETURN_NAMES = ("MODEL",)
-    OUTPUT_TOOLTIPS = ("The model used for denoising latents.",)
+    RETURN_TYPES = ("MODEL", "STRING")
+    RETURN_NAMES = ("MODEL", "model_name")
+    OUTPUT_TOOLTIPS = (
+        "The model used for denoising latents.",
+        "The name of the diffusion model that was loaded (useful when select_at_random is enabled).",
+    )
     FUNCTION = "load_unet"
 
     @classmethod
@@ -198,7 +201,7 @@ class RandomUNETLoaderLM:
             base_model: Restricts random selection to this base model ("Any" = no filter)
 
         Returns:
-            Tuple of (MODEL,)
+            Tuple of (MODEL, model_name)
         """
         import torch
 
@@ -241,7 +244,7 @@ class RandomUNETLoaderLM:
             model_options["dtype"] = torch.float8_e5m2
 
         model = comfy.sd.load_diffusion_model(unet_path, model_options=model_options)
-        return (model,)
+        return (model, unet_name)
 
     def _load_gguf_unet(
         self, unet_path: str, unet_name: str, weight_dtype: str
@@ -254,7 +257,7 @@ class RandomUNETLoaderLM:
             weight_dtype: The dtype to use for model weights
 
         Returns:
-            Tuple of (MODEL,)
+            Tuple of (MODEL, model_name)
         """
         import torch
         from .gguf_import_helper import get_gguf_modules
@@ -314,7 +317,7 @@ class RandomUNETLoaderLM:
             # deepclone/dynamic machinery.
             model.cached_patcher_init = (_reload_gguf_unet, (unet_path, weight_dtype))
 
-            return (model,)
+            return (model, unet_name)
 
         except Exception as e:
             logger.error(f"Error loading GGUF diffusion model '{unet_name}': {e}")

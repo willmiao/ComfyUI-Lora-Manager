@@ -52,12 +52,13 @@ class RandomCheckpointLoaderLM:
             }
         }
 
-    RETURN_TYPES = ("MODEL", "CLIP", "VAE")
-    RETURN_NAMES = ("MODEL", "CLIP", "VAE")
+    RETURN_TYPES = ("MODEL", "CLIP", "VAE", "STRING")
+    RETURN_NAMES = ("MODEL", "CLIP", "VAE", "model_name")
     OUTPUT_TOOLTIPS = (
         "The model used for denoising latents.",
         "The CLIP model used for encoding text prompts.",
         "The VAE model used for encoding and decoding images to and from latent space.",
+        "The name of the checkpoint that was loaded (useful when select_at_random is enabled).",
     )
     FUNCTION = "load_checkpoint"
 
@@ -179,7 +180,7 @@ class RandomCheckpointLoaderLM:
             base_model: Restricts random selection to this base model ("Any" = no filter)
 
         Returns:
-            Tuple of (MODEL, CLIP, VAE)
+            Tuple of (MODEL, CLIP, VAE, model_name)
         """
         if select_at_random:
             pool = self._get_checkpoint_names(base_model)
@@ -210,4 +211,4 @@ class RandomCheckpointLoaderLM:
             output_clip=True,
             embedding_directory=folder_paths.get_folder_paths("embeddings"),
         )
-        return out[:3]
+        return out[:3] + (ckpt_name,)

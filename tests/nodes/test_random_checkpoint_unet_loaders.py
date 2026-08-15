@@ -151,10 +151,11 @@ def test_load_checkpoint_random_selection_uses_pool(base_model_library, monkeypa
     )
 
     node = RandomCheckpointLoaderLM()
-    node.load_checkpoint(
+    result = node.load_checkpoint(
         "ignored.safetensors", select_at_random=True, base_model="Illustrious"
     )
     # Only one checkpoint matches "Illustrious", so the random pick is deterministic here.
+    assert result[3] == "illustrious.safetensors"
 
 
 def test_load_checkpoint_random_selection_raises_when_pool_empty(base_model_library):
