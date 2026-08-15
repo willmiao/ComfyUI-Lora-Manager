@@ -48,17 +48,15 @@
                             <option value="versions_count:asc">{{ t('loras.controls.sort.versionsCountAsc', default='Fewest versions first') }}</option>
                         </optgroup>
                     {% endif %}
-                    {% if page_id != 'recipes' %}
-                        <optgroup label="{{ t('loras.controls.sort.random', default='Random') }}">
-                            <option value="random">{{ t('loras.controls.sort.randomAction', default='Randomize (shuffle)') }}</option>
-                        </optgroup>
-                    {% endif %}
                     {% if page_id == 'recipes' %}
                         <optgroup label="{{ t('recipes.controls.sort.lorasCount') }}">
                             <option value="loras_count:desc">{{ t('recipes.controls.sort.lorasCountDesc') }}</option>
                             <option value="loras_count:asc">{{ t('recipes.controls.sort.lorasCountAsc') }}</option>
                         </optgroup>
                     {% endif %}
+                    <optgroup label="{{ t('loras.controls.sort.random', default='Random') }}">
+                        <option value="random">{{ t('loras.controls.sort.randomAction', default='Randomize (shuffle)') }}</option>
+                    </optgroup>
                 </select>
             </div>
             <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.title') }}{% else %}{{ t('loras.controls.refresh.title') }}{% endif %}" class="control-group dropdown-group">

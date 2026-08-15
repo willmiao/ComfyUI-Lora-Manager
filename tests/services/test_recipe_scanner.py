@@ -1047,6 +1047,54 @@ async def test_get_paginated_data_sorting(recipe_scanner):
     assert [i["id"] for i in res["items"]] == ["C", "A", "B"]
 
 
+@pytest.mark.asyncio
+async def test_get_paginated_data_random_sort(recipe_scanner):
+    scanner, _ = recipe_scanner
+
+    # Add test recipes
+    for rid, title in [("A", "Alpha"), ("B", "Beta"), ("C", "Gamma")]:
+        await scanner.add_recipe(
+            {
+                "id": rid,
+                "title": title,
+                "created_date": 10.0,
+                "loras": [{}],
+                "file_path": f"{rid.lower()}.png",
+            }
+        )
+
+    await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
+
+    # Same seed -> same order (deterministic, stable pagination)
+    res1 = await scanner.get_paginated_data(
+        page=1, page_size=10, sort_by="random:seed123"
+    )
+    res2 = await scanner.get_paginated_data(
+        page=1, page_size=10, sort_by="random:seed123"
+    )
+    ids1 = [i["id"] for i in res1["items"]]
+    ids2 = [i["id"] for i in res2["items"]]
+    assert ids1 == ids2
+    assert sorted(ids1) == ["A", "B", "C"]
+
+    # Plain "random" (no seed) also returns the full set
+    res3 = await scanner.get_paginated_data(page=1, page_size=10, sort_by="random")
+    assert sorted(i["id"] for i in res3["items"]) == ["A", "B", "C"]
+
+    # Stable pagination: page1 + page2 with the same seed concatenate to the
+    # full seeded order, with no duplicates across pages
+    p1 = await scanner.get_paginated_data(
+        page=1, page_size=2, sort_by="random:seed123"
+    )
+    p2 = await scanner.get_paginated_data(
+        page=2, page_size=2, sort_by="random:seed123"
+    )
+    combined = [i["id"] for i in p1["items"]] + [i["id"] for i in p2["items"]]
+    assert combined == ids1
+    assert len(set(combined)) == 3
+
+
 async def test_build_image_id_map_filters_correctly(recipe_scanner):
     """Only recipes with valid CivitAI source_path appear in image_id_map.
 
