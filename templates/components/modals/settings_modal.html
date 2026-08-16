@@ -629,16 +629,22 @@
                             <div class="setting-item">
                                 <div class="setting-row">
                                     <div class="setting-info">
-                                        <label for="recipesLayout">
+                                        <label id="recipesLayoutLabel">
                                         {{ t('settings.layoutSettings.recipesLayout') }}
                                         <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.recipesLayoutHelp') }}"></i>
                                     </label>
                                     </div>
-                                    <div class="setting-control select-control">
-                                        <select id="recipesLayout" onchange="settingsManager.saveSelectSetting('recipesLayout', 'recipes_layout')">
-                                            <option value="grid">{{ t('settings.layoutSettings.recipesLayoutOptions.grid') }}</option>
-                                            <option value="masonry">{{ t('settings.layoutSettings.recipesLayoutOptions.masonry') }}</option>
-                                        </select>
+                                    <div class="setting-control layout-options-control">
+                                        <div id="recipesLayoutOptions" class="layout-options" role="radiogroup" aria-label="{{ t('settings.layoutSettings.recipesLayout') }}" aria-labelledby="recipesLayoutLabel">
+                                            <button type="button" class="layout-option" data-recipes-layout="grid" onclick="settingsManager.saveRecipesLayout('grid')" role="radio" aria-checked="true">
+                                                <span class="layout-option-preview layout-preview-grid" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+                                                <span class="layout-option-label">{{ t('settings.layoutSettings.recipesLayoutOptions.grid') }}</span>
+                                            </button>
+                                            <button type="button" class="layout-option" data-recipes-layout="masonry" onclick="settingsManager.saveRecipesLayout('masonry')" role="radio" aria-checked="false">
+                                                <span class="layout-option-preview layout-preview-masonry" aria-hidden="true"><span></span><span></span><span></span></span>
+                                                <span class="layout-option-label">{{ t('settings.layoutSettings.recipesLayoutOptions.masonry') }}</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

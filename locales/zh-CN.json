@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "仅显示收藏",
                 "action": "收藏"
+            },
+            "layout": {
+                "title": "配方布局",
+                "grid": "网格布局",
+                "masonry": "瀑布流布局（Pinterest 风格，保留图片原始宽高比）"
             }
         },
         "duplicates": {

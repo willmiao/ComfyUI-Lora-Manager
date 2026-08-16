@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "お気に入りのみ表示",
                 "action": "お気に入り"
+            },
+            "layout": {
+                "title": "レシピのレイアウト",
+                "grid": "グリッドレイアウト",
+                "masonry": "メイソンリーレイアウト（Pinterest スタイル、画像のアスペクト比を保持）"
             }
         },
         "duplicates": {

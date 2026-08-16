@@ -937,6 +937,11 @@
       "favorites": {
         "title": "Show Favorites Only",
         "action": "Favorites"
+      },
+      "layout": {
+        "title": "Recipes Layout",
+        "grid": "Grid layout",
+        "masonry": "Masonry layout (Pinterest-style, preserves image aspect ratio)"
       }
     },
     "duplicates": {

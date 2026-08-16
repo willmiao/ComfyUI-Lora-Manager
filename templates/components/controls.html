@@ -134,6 +134,16 @@
         </div>
         
         <div class="controls-right">
+            {% if page_id == 'recipes' %}
+            <div class="control-group layout-toggle-group" role="group" aria-label="{{ t('recipes.controls.layout.title') }}" title="{{ t('recipes.controls.layout.title') }}">
+                <button type="button" class="layout-toggle-btn" data-recipes-layout="grid" aria-pressed="false" title="{{ t('recipes.controls.layout.grid') }}" aria-label="{{ t('recipes.controls.layout.grid') }}">
+                    <i class="fas fa-th-large" aria-hidden="true"></i>
+                </button>
+                <button type="button" class="layout-toggle-btn" data-recipes-layout="masonry" aria-pressed="false" title="{{ t('recipes.controls.layout.masonry') }}" aria-label="{{ t('recipes.controls.layout.masonry') }}">
+                    <i class="fas fa-columns" aria-hidden="true"></i>
+                </button>
+            </div>
+            {% endif %}
             <div class="control-group doctor-control-group">
                 <button id="doctorTriggerBtn" class="doctor-trigger" title="{{ t('doctor.buttonTitle', default='Run diagnostics and common fixes') }}">
                     <i class="fas fa-stethoscope"></i>

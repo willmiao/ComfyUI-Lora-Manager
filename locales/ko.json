@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "즐겨찾기만 표시",
                 "action": "즐겨찾기"
+            },
+            "layout": {
+                "title": "레시피 레이아웃",
+                "grid": "그리드 레이아웃",
+                "masonry": "메이슨리 레이아웃 (Pinterest 스타일, 이미지 종횡비 유지)"
             }
         },
         "duplicates": {

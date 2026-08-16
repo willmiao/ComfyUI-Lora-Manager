@@ -168,6 +168,34 @@
     border-color: var(--lora-accent);
 }
 
+/* Recipes layout toggle (grid / masonry) — segmented control in the toolbar */
+.layout-toggle-group {
+    display: flex;
+    gap: 0;
+}
+
+.layout-toggle-group .layout-toggle-btn {
+    min-width: 36px;
+    width: 36px;
+    padding: 4px 0;
+    border-radius: 0;
+}
+
+.layout-toggle-group .layout-toggle-btn:first-child {
+    border-radius: var(--border-radius-xs) 0 0 var(--border-radius-xs);
+    border-right: none;
+}
+
+.layout-toggle-group .layout-toggle-btn:last-child {
+    border-radius: 0 var(--border-radius-xs) var(--border-radius-xs) 0;
+}
+
+.layout-toggle-group .layout-toggle-btn:hover,
+.layout-toggle-group .layout-toggle-btn:focus-visible {
+    transform: none;
+    box-shadow: var(--shadow-xs);
+}
+
 /* Keyboard shortcut indicator styling */
 .shortcut-key {
     display: inline-flex;

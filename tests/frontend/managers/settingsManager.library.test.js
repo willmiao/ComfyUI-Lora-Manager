@@ -530,4 +530,49 @@ describe('SettingsManager recipes layout switch', () => {
         dispatchSpy.mockRestore();
         delete state.virtualScroller;
     });
+
+    it('saveRecipesLayout persists, dispatches the layout event, and syncs controls', async () => {
+        const manager = createManager();
+
+        const gridBtn = document.createElement('button');
+        gridBtn.dataset.recipesLayout = 'grid';
+        gridBtn.setAttribute('aria-pressed', 'false');
+        const masonryBtn = document.createElement('button');
+        masonryBtn.dataset.recipesLayout = 'masonry';
+        masonryBtn.setAttribute('aria-pressed', 'false');
+        masonryBtn.setAttribute('role', 'radio');
+        masonryBtn.setAttribute('aria-checked', 'false');
+        document.body.appendChild(gridBtn);
+        document.body.appendChild(masonryBtn);
+
+        const calculateLayout = vi.fn();
+        state.virtualScroller = { calculateLayout };
+
+        const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+
+        await manager.saveRecipesLayout('masonry');
+
+        expect(state.global.settings.recipes_layout).toBe('masonry');
+        expect(masonryBtn.classList.contains('active')).toBe(true);
+        expect(masonryBtn.getAttribute('aria-pressed')).toBe('true');
+        expect(masonryBtn.getAttribute('aria-checked')).toBe('true');
+        expect(gridBtn.classList.contains('active')).toBe(false);
+        expect(gridBtn.getAttribute('aria-pressed')).toBe('false');
+
+        const layoutEvent = dispatchSpy.mock.calls
+            .map(([event]) => event)
+            .find(event => event.type === 'lm:recipes-layout-changed');
+        expect(layoutEvent).toBeInstanceOf(CustomEvent);
+        expect(calculateLayout).not.toHaveBeenCalled();
+        expect(showToast).not.toHaveBeenCalled();
+
+        dispatchSpy.mockRestore();
+        delete state.virtualScroller;
+    });
+
+    it('ignores invalid recipes layout values', async () => {
+        const manager = createManager();
+        await manager.saveRecipesLayout('bogus');
+        expect(state.global.settings.recipes_layout).toBeUndefined();
+    });
 });

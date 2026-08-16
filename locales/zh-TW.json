@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "僅顯示收藏",
                 "action": "收藏"
+            },
+            "layout": {
+                "title": "配方版面",
+                "grid": "網格版面",
+                "masonry": "瀑布流版面（Pinterest 風格，保留圖片原始寬高比）"
             }
         },
         "duplicates": {

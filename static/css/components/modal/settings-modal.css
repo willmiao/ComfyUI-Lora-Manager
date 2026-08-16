@@ -911,6 +911,93 @@
     outline: none;
 }
 
+/* Recipes layout segmented control with visual previews */
+.layout-options-control {
+    width: 100%;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.layout-options {
+    display: flex;
+    gap: 6px;
+    width: 100%;
+}
+
+.layout-option {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 8px;
+    border-radius: var(--border-radius-sm);
+    border: 1px solid var(--border-color);
+    background-color: var(--lora-surface);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.layout-option:hover,
+.layout-option:focus-visible {
+    border-color: var(--lora-accent);
+    outline: none;
+}
+
+.layout-option.active {
+    border-color: var(--lora-accent);
+    background-color: rgba(from var(--lora-accent) r g b / 0.12);
+    color: var(--lora-accent);
+}
+
+.layout-option-label {
+    font-size: 0.85em;
+    white-space: nowrap;
+}
+
+.layout-option-preview {
+    width: 72px;
+    height: 44px;
+    padding: 4px;
+    border-radius: var(--border-radius-xs);
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    box-sizing: border-box;
+}
+
+.layout-option-preview span {
+    background: currentColor;
+    opacity: 0.4;
+    border-radius: 1px;
+}
+
+.layout-preview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 1fr 1fr;
+    gap: 3px;
+}
+
+.layout-preview-masonry {
+    display: flex;
+    gap: 3px;
+    align-items: flex-start;
+}
+
+.layout-preview-masonry span {
+    flex: 1;
+    height: 100%;
+}
+
+.layout-preview-masonry span:nth-child(2) {
+    height: 60%;
+}
+
+.layout-preview-masonry span:nth-child(3) {
+    height: 80%;
+}
+
 /* Range Slider Control */
 .range-control {
     width: 100%;

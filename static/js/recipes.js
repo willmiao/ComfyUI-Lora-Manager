@@ -282,6 +282,30 @@ class RecipeManager {
             });
         }
 
+        // Layout toggle (grid / masonry) — shares the recipes_layout setting with
+        // the settings modal segmented control; active states stay in sync via
+        // settingsManager.updateRecipesLayoutControls() after each save
+        const layoutToggleBtns = document.querySelectorAll('.layout-toggle-btn');
+        if (layoutToggleBtns.length) {
+            const currentLayout = state.global.settings?.recipes_layout || 'grid';
+            layoutToggleBtns.forEach((btn) => {
+                const isActive = btn.dataset.recipesLayout === currentLayout;
+                btn.classList.toggle('active', isActive);
+                btn.setAttribute('aria-pressed', String(isActive));
+                btn.addEventListener('click', async () => {
+                    const layout = btn.dataset.recipesLayout;
+                    if ((state.global.settings?.recipes_layout || 'grid') === layout) {
+                        return;
+                    }
+                    try {
+                        await window.settingsManager?.saveRecipesLayout(layout);
+                    } catch (error) {
+                        console.error('Failed to switch recipes layout:', error);
+                    }
+                });
+            });
+        }
+
         // Rebuild the scroller on layout switch; in duplicates mode defer until
         // exitDuplicateMode re-enables the scroller (direct recreation would dispose
         // the old instance while initializeVirtualScroll skips duplicates mode)

@@ -1017,11 +1017,8 @@ export class SettingsManager {
             displayDensitySelect.value = state.global.settings.display_density || 'default';
         }
 
-        // Set recipes layout setting
-        const recipesLayoutSelect = document.getElementById('recipesLayout');
-        if (recipesLayoutSelect) {
-            recipesLayoutSelect.value = state.global.settings.recipes_layout || 'grid';
-        }
+        // Set recipes layout setting (segmented control active state)
+        this.updateRecipesLayoutControls(state.global.settings.recipes_layout || 'grid');
 
         // Set card info display setting
         const cardInfoDisplaySelect = document.getElementById('cardInfoDisplay');
@@ -2294,18 +2291,17 @@ export class SettingsManager {
             : element.value;
 
         try {
+            // Recipes layout has its own shared entry point used by both the
+            // settings modal segmented control and the recipes page toolbar toggle
+            if (settingKey === 'recipes_layout') {
+                return this.saveRecipesLayout(element.value);
+            }
+
             // Update frontend state with mapped keys
             await this.saveSetting(settingKey, value);
 
             // Apply frontend settings immediately
             this.applyFrontendSettings();
-
-            // Dispatch layout change event; the scroller instance is about to be rebuilt,
-            // so calculateLayout() must NOT run on the old instance here
-            if (settingKey === 'recipes_layout') {
-                window.dispatchEvent(new CustomEvent('lm:recipes-layout-changed'));
-                return;
-            }
 
             // Recalculate layout when display density changes
             if (settingKey === 'display_density' && state.virtualScroller) {
@@ -2332,6 +2328,47 @@ export class SettingsManager {
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
+    }
+
+    /**
+     * Save the recipes page layout (grid | masonry) and rebuild the scroller.
+     * Shared entry point for the settings modal segmented control and the
+     * recipes page toolbar toggle; both stay in sync via
+     * updateRecipesLayoutControls().
+     */
+    async saveRecipesLayout(value) {
+        if (value !== 'grid' && value !== 'masonry') {
+            return;
+        }
+
+        // Update frontend state with mapped keys
+        await this.saveSetting('recipes_layout', value);
+
+        // Apply frontend settings immediately
+        this.applyFrontendSettings();
+
+        // Dispatch layout change event; the scroller instance is about to be rebuilt,
+        // so calculateLayout() must NOT run on the old instance here
+        window.dispatchEvent(new CustomEvent('lm:recipes-layout-changed'));
+
+        this.updateRecipesLayoutControls(value);
+    }
+
+    /**
+     * Sync the active state of every recipes layout control
+     * (settings modal segmented control and recipes page toolbar toggle).
+     */
+    updateRecipesLayoutControls(value) {
+        document.querySelectorAll('[data-recipes-layout]').forEach((control) => {
+            const active = control.dataset.recipesLayout === value;
+            control.classList.toggle('active', active);
+            if (control.hasAttribute('aria-pressed')) {
+                control.setAttribute('aria-pressed', String(active));
+            }
+            if (control.hasAttribute('aria-checked')) {
+                control.setAttribute('aria-checked', String(active));
+            }
+        });
     }
 
     async saveRangeSetting(elementId, displayId, settingKey) {

@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "הצג מועדפים בלבד",
                 "action": "מועדפים"
+            },
+            "layout": {
+                "title": "פריסת מתכונים",
+                "grid": "פריסת רשת",
+                "masonry": "פריסת Masonry (בסגנון Pinterest, שומרת על יחס הגובה-רוחב של התמונה)"
             }
         },
         "duplicates": {

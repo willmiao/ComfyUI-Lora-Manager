@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "Mostrar solo favoritos",
                 "action": "Favoritos"
+            },
+            "layout": {
+                "title": "Diseño de recetas",
+                "grid": "Vista de cuadrícula",
+                "masonry": "Vista masonry (estilo Pinterest, conserva la proporción de aspecto de la imagen)"
             }
         },
         "duplicates": {

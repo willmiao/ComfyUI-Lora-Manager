@@ -937,6 +937,11 @@
             "favorites": {
                 "title": "Afficher uniquement les favoris",
                 "action": "Favoris"
+            },
+            "layout": {
+                "title": "Disposition des recettes",
+                "grid": "Disposition en grille",
+                "masonry": "Disposition masonry (style Pinterest, préserve le rapport d'aspect de l'image)"
             }
         },
         "duplicates": {
