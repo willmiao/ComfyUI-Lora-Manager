@@ -36,6 +36,11 @@ logger = logging.getLogger(__name__)
 # explicitly to "diffusion_model" (mirrors Oracle R2-F1).
 _CHECKPOINT_MODEL_TYPE_ALIASES = {"diffusionmodel": "diffusion_model"}
 
+# Known weight-file extensions stripped by _normalize_filename_key. Names are
+# stored extensionless on both sides, so splitext would misread dotted stems
+# ("my.mix" -> "my") and silently collide distinct models.
+_WEIGHT_FILE_EXTS = (".safetensors", ".ckpt", ".pt", ".pth", ".gguf", ".bin", ".safebin", ".sft")
+
 
 class RecipeScanner:
     """Service for scanning and managing recipe images"""
@@ -116,6 +121,12 @@ class RecipeScanner:
             self._rematch_autov3_cache: dict[str, dict[str, Any]] | None = None
             self._rematch_autov3_versions: tuple[int, int] | None = None
             self._rematch_autov3_lock = asyncio.Lock()
+            # Normalized filename -> [items] map for the L4 rematch fallback,
+            # rebuilt only when either model scanner's cache_version changes.
+            # Mirrors the build_local_hash_cache version pattern.
+            self._local_filename_cache: dict[str, list[dict[str, Any]]] | None = None
+            self._local_filename_cache_versions: tuple[int, int] | None = None
+            self._local_filename_cache_lock = asyncio.Lock()
             self._initialized = True
 
     async def build_local_hash_cache(self) -> dict[str, dict[str, Any]]:
@@ -162,6 +173,70 @@ class RecipeScanner:
             self._local_hash_cache_versions = versions
             return cache
 
+    @staticmethod
+    def _normalize_filename_key(name: str) -> str:
+        """Normalize a file name to a lookup key (basename, lowercase).
+
+        Only known weight-file extensions are stripped — names are stored
+        extensionless on both sides, so splitext would misread dotted stems
+        ("my.mix" -> "my") and collide distinct models.
+        """
+        if not name:
+            return ""
+        basename = os.path.basename(name.replace("\\", "/"))
+        lower = basename.lower()
+        for ext in _WEIGHT_FILE_EXTS:
+            if lower.endswith(ext):
+                basename = basename[: -len(ext)]
+                break
+        return basename.strip().lower()
+
+    async def _build_local_filename_cache(self) -> dict[str, list[dict[str, Any]]]:
+        """Build a version-cached map of normalized file names to local items.
+
+        Keys are lowercase basenames without extension. Values are lists of
+        items (lora + checkpoint, type-blind) sharing that name. Only items
+        with a sha256 are indexed — matching a pending or failed download
+        (empty sha256) would leave the entry without a usable hash. The dict
+        is reused while both scanners' cache_version values are unchanged;
+        concurrent callers share a single build via the lock.
+        """
+        async with self._local_filename_cache_lock:
+            lora_scanner = self._lora_scanner
+            checkpoint_scanner = self._checkpoint_scanner
+            versions = (
+                lora_scanner.cache_version if lora_scanner is not None else 0,
+                checkpoint_scanner.cache_version
+                if checkpoint_scanner is not None
+                else 0,
+            )
+            if (
+                self._local_filename_cache is not None
+                and self._local_filename_cache_versions == versions
+            ):
+                return self._local_filename_cache
+
+            cache: dict[str, list[dict[str, Any]]] = {}
+            for scanner in (lora_scanner, checkpoint_scanner):
+                if scanner is None:
+                    continue
+                data = await scanner.get_cached_data()
+                for item in data.raw_data:
+                    if not isinstance(item, dict):
+                        continue
+                    if not (item.get("sha256") or "").lower():
+                        continue
+                    file_path = item.get("file_path") or ""
+                    file_name = item.get("file_name") or ""
+                    key = self._normalize_filename_key(file_name or file_path)
+                    if not key:
+                        continue
+                    cache.setdefault(key, []).append(item)
+
+            self._local_filename_cache = cache
+            self._local_filename_cache_versions = versions
+            return cache
+
     def _is_rematch_candidate(self, entry: dict[str, Any]) -> bool:
         """Return True when a recipe entry is eligible for local re-matching."""
         if not isinstance(entry, dict):
@@ -170,7 +245,10 @@ class RecipeScanner:
             entry.get("isDeleted") or not entry.get("hash") or not entry.get("file_name")
         )
         has_identifier = (
-            entry.get("hash") or entry.get("modelVersionId") or entry.get("id")
+            entry.get("hash")
+            or entry.get("modelVersionId")
+            or entry.get("id")
+            or entry.get("file_name")
         )
         return bool(unresolved and has_identifier)
 
@@ -221,6 +299,97 @@ class RecipeScanner:
             self._rematch_autov3_versions = versions
             return cache
 
+    def _is_type_compatible(self, item: dict[str, Any], *, is_checkpoint: bool) -> bool:
+        """Return True when a local item's type matches the entry kind.
+
+        The L1 hash cache and the L4 filename cache merge lora and checkpoint
+        items and are type-blind, so a match must be verified against the
+        entry kind before it is accepted.
+        """
+        sub_type = (item.get("sub_type") or "").lower()
+        if sub_type:
+            valid = (
+                VALID_CHECKPOINT_SUB_TYPES if is_checkpoint else VALID_LORA_TYPES
+            )
+            return sub_type in valid
+
+        civitai_type = (
+            (item.get("civitai") or {}).get("model", {}) or {}
+        ).get("type", "")
+        if civitai_type:
+            normalized = civitai_type.lower()
+            if is_checkpoint:
+                normalized = _CHECKPOINT_MODEL_TYPE_ALIASES.get(
+                    normalized, normalized
+                )
+                valid = VALID_CHECKPOINT_SUB_TYPES
+            else:
+                valid = VALID_LORA_TYPES
+            return normalized in valid
+        return True
+
+    @staticmethod
+    def _has_positive_type_evidence(item: dict[str, Any]) -> bool:
+        """Return True when the item carries an explicit type marker.
+
+        Lora raw items rarely carry ``sub_type`` (it is only written when
+        metadata provides it), while checkpoint items always do — so for
+        checkpoint slots a type-less candidate is a red flag, not the norm.
+        """
+        if (item.get("sub_type") or "").lower():
+            return True
+        civitai_type = (
+            (item.get("civitai") or {}).get("model", {}) or {}
+        ).get("type", "")
+        return bool(civitai_type)
+
+    def _match_rematch_entry_filename(
+        self,
+        entry: dict[str, Any],
+        recipe_base_model: Optional[str],
+        filename_cache: dict[str, list[dict[str, Any]]],
+        *,
+        is_checkpoint: bool,
+    ) -> Tuple[Optional[dict[str, Any]], Optional[str]]:
+        """Match a recipe entry against local models by file name (L4).
+
+        Conservative fallback used only after the hash (L1), version-index
+        (L2) and computed-autov3 (L3) tiers all failed. Candidates share the
+        entry's normalized file name; a candidate is accepted only when BOTH
+        the recipe base model and the candidate's base model are known and
+        equal (unknown on either side rejects — never guess on missing
+        metadata), the type gate passes, and exactly one candidate survives
+        (ambiguity is a miss). Checkpoint slots additionally require positive
+        type evidence: lora raw items often lack ``sub_type`` while
+        checkpoints always carry it, so a type-less candidate is a red flag
+        there — an unknown-type lora must not be bound into a checkpoint
+        slot.
+
+        Returns:
+            Tuple of (matched item, "L4") — or ``(None, None)``.
+        """
+        entry_name = self._normalize_filename_key(entry.get("file_name") or "")
+        if not entry_name:
+            return (None, None)
+
+        recipe_base = (recipe_base_model or "").strip().lower()
+        matched: list[dict[str, Any]] = []
+        for candidate in filename_cache.get(entry_name, []):
+            candidate_base = (candidate.get("base_model") or "").strip().lower()
+            if not recipe_base or not candidate_base:
+                continue
+            if recipe_base != candidate_base:
+                continue
+            if is_checkpoint and not self._has_positive_type_evidence(candidate):
+                continue
+            if not self._is_type_compatible(candidate, is_checkpoint=is_checkpoint):
+                continue
+            matched.append(candidate)
+
+        if len(matched) != 1:
+            return (None, None)
+        return (matched[0], "L4")
+
     async def _match_rematch_entry(
         self,
         entry: dict[str, Any],
@@ -247,19 +416,23 @@ class RecipeScanner:
         autov3_cache: dict[str, Any],
         *,
         is_checkpoint: bool,
+        filename_cache: Optional[dict[str, list[dict[str, Any]]]] = None,
+        recipe_base_model: Optional[str] = None,
     ) -> Tuple[Optional[dict[str, Any]], Optional[str]]:
-        """Match a recipe entry against local models across three levels.
+        """Match a recipe entry against local models across four levels.
 
         L1 looks the stored hash up in the type-blind local hash cache; L2
         falls back to the version index via ``modelVersionId`` or ``id``; L3
-        resolves 12-char hashes through the computed AutoV3 cache. Matched
-        items are type-verified against the entry kind before being returned.
+        resolves 12-char hashes through the computed AutoV3 cache; L4
+        (conservative) falls back to the file name when a filename cache is
+        provided. Matched items are type-verified against the entry kind
+        before being returned.
 
         Returns:
-            Tuple of (matched item, match level) where level is "L1", "L2" or
-            "L3" — or ``(None, None)`` when no usable match exists. A missing
-            local match is an expected outcome (the model may simply not be
-            present locally), not an error.
+            Tuple of (matched item, match level) where level is "L1", "L2",
+            "L3" or "L4" — or ``(None, None)`` when no usable match exists. A
+            missing local match is an expected outcome (the model may simply
+            not be present locally), not an error.
         """
         entry_hash = (entry.get("hash") or "").lower()
 
@@ -279,33 +452,20 @@ class RecipeScanner:
             item = autov3_cache.get(entry_hash)
             level = "L3" if item is not None else None
 
+        if item is None and filename_cache is not None:
+            item, level = self._match_rematch_entry_filename(
+                entry,
+                recipe_base_model,
+                filename_cache,
+                is_checkpoint=is_checkpoint,
+            )
+            level = "L4" if item is not None else None
+
         if item is None:
             return (None, None)
 
-        # Type gate: the L1 cache merges lora and checkpoint items and is
-        # type-blind, so a match must be verified against the entry kind.
-        sub_type = (item.get("sub_type") or "").lower()
-        if sub_type:
-            valid = (
-                VALID_CHECKPOINT_SUB_TYPES if is_checkpoint else VALID_LORA_TYPES
-            )
-            if sub_type not in valid:
-                return (None, None)
-        else:
-            civitai_type = (
-                (item.get("civitai") or {}).get("model", {}) or {}
-            ).get("type", "")
-            if civitai_type:
-                normalized = civitai_type.lower()
-                if is_checkpoint:
-                    normalized = _CHECKPOINT_MODEL_TYPE_ALIASES.get(
-                        normalized, normalized
-                    )
-                    valid = VALID_CHECKPOINT_SUB_TYPES
-                else:
-                    valid = VALID_LORA_TYPES
-                if normalized not in valid:
-                    return (None, None)
+        if not self._is_type_compatible(item, is_checkpoint=is_checkpoint):
+            return (None, None)
 
         return (item, level)
 
@@ -617,10 +777,11 @@ class RecipeScanner:
     async def _rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
         """Rematch a single recipe's deleted lora/checkpoint entries locally.
 
-        Match snapshots (local hash cache + computed autov3 cache) are built
-        BEFORE acquiring the mutation lock — both are read-only snapshots and
-        the version-cached hash dict would otherwise rebuild mid-run if a scan
-        bumps a scanner's cache_version while we hold the lock.
+        Match snapshots (local hash cache, computed autov3 cache, filename
+        cache) are built BEFORE acquiring the mutation lock — all three are
+        read-only snapshots and the version-cached dicts would otherwise
+        rebuild mid-run if a scan bumps a scanner's cache_version while we
+        hold the lock.
 
         Args:
             recipe_id: ID of the recipe to rematch
@@ -636,6 +797,7 @@ class RecipeScanner:
         """
         local_cache = await self.build_local_hash_cache()
         autov3_cache = await self._build_rematch_autov3_cache()
+        filename_cache = await self._build_local_filename_cache()
 
         async with self._mutation_lock:
             # Get raw recipe from cache directly to avoid formatted fields
@@ -649,7 +811,7 @@ class RecipeScanner:
 
             try:
                 rematched, _errors, details = await self._rematch_single_recipe(
-                    recipe, local_cache, autov3_cache
+                    recipe, local_cache, autov3_cache, filename_cache
                 )
             except RecipePersistenceError as exc:
                 logger.error(
@@ -706,6 +868,7 @@ class RecipeScanner:
         recipe: Dict[str, Any],
         local_cache: dict[str, dict[str, Any]],
         autov3_cache: dict[str, dict[str, Any]],
+        filename_cache: Optional[dict[str, list[dict[str, Any]]]] = None,
     ) -> Tuple[int, int, Dict[str, Any]]:
         """Rematch a single recipe's lora/checkpoint entries against local models.
 
@@ -719,6 +882,8 @@ class RecipeScanner:
             recipe: The recipe dictionary to rematch (modified in-place)
             local_cache: L1 hash cache snapshot (build_local_hash_cache)
             autov3_cache: L3 computed-autov3 cache snapshot
+            filename_cache: L4 filename cache snapshot, or None to disable
+                the filename fallback
 
         Returns:
             Tuple of (rematched_entries, errors, details). The errors element
@@ -744,7 +909,13 @@ class RecipeScanner:
                 if not self._is_rematch_candidate(entry):
                     continue
                 item, level = await self._match_rematch_entry_with_level(
-                    entry, local_cache, autov3_cache, is_checkpoint=False
+                    entry,
+                    local_cache,
+                    autov3_cache,
+                    is_checkpoint=False,
+                    filename_cache=filename_cache,
+                    recipe_base_model=entry.get("baseModel")
+                    or recipe.get("base_model"),
                 )
                 if item is None:
                     details["unresolved"].append(
@@ -770,7 +941,13 @@ class RecipeScanner:
         if isinstance(checkpoint, dict):
             if self._is_rematch_candidate(checkpoint):
                 item, level = await self._match_rematch_entry_with_level(
-                    checkpoint, local_cache, autov3_cache, is_checkpoint=True
+                    checkpoint,
+                    local_cache,
+                    autov3_cache,
+                    is_checkpoint=True,
+                    filename_cache=filename_cache,
+                    recipe_base_model=checkpoint.get("baseModel")
+                    or recipe.get("base_model"),
                 )
                 if item is None:
                     details["unresolved"].append(
@@ -832,12 +1009,13 @@ class RecipeScanner:
     ) -> Dict[str, Any]:
         """Rematch every recipe's deleted lora/checkpoint entries locally.
 
-        Match snapshots (local hash cache + computed autov3 cache) are built
-        ONCE before the loop — both are read-only and the version-cached hash
-        dict would otherwise rebuild mid-run if a scan bumps a scanner's
-        cache_version while the mutation lock is held. ``_schedule_resort`` is
-        called exactly once after the loop: it spawns an asyncio task per call,
-        so per-recipe calls would race one resort task per recipe.
+        Match snapshots (local hash cache, computed autov3 cache, filename
+        cache) are built ONCE before the loop — all three are read-only and
+        the version-cached dicts would otherwise rebuild mid-run if a scan
+        bumps a scanner's cache_version while the mutation lock is held.
+        ``_schedule_resort`` is called exactly once after the loop: it spawns
+        an asyncio task per call, so per-recipe calls would race one resort
+        task per recipe.
 
         Args:
             progress_callback: Optional callback for progress updates
@@ -858,6 +1036,7 @@ class RecipeScanner:
         # Match snapshots built once and shared by every recipe in the loop.
         local_cache = await self.build_local_hash_cache()
         autov3_cache = await self._build_rematch_autov3_cache()
+        filename_cache = await self._build_local_filename_cache()
 
         async with self._mutation_lock:
             cache = await self.get_cached_data()
@@ -925,7 +1104,7 @@ class RecipeScanner:
                         )
 
                     rematched, _errors, details = await self._rematch_single_recipe(
-                        recipe, local_cache, autov3_cache
+                        recipe, local_cache, autov3_cache, filename_cache
                     )
                     if rematched > 0:
                         matched_recipes += 1

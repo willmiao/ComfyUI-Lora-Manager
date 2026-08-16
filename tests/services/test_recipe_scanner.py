@@ -1883,9 +1883,10 @@ async def test_is_rematch_candidate_rejects_healthy_entry(tmp_path: Path):
     assert not scanner._is_rematch_candidate({"hash": "abc", "file_name": "m.safetensors"})
 
 
-async def test_is_rematch_candidate_rejects_no_identifier(tmp_path: Path):
+async def test_is_rematch_candidate_file_name_only_is_identifier(tmp_path: Path):
     scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
-    assert not scanner._is_rematch_candidate({"isDeleted": True, "file_name": "m.safetensors"})
+    # file_name alone is now an identifier (enables the L4 filename fallback)
+    assert scanner._is_rematch_candidate({"isDeleted": True, "file_name": "m.safetensors"})
     assert not scanner._is_rematch_candidate({"isDeleted": True})
 
 
@@ -2218,6 +2219,481 @@ async def test_match_rematch_type_gate_lora_accepts_lora_typed_item(tmp_path: Pa
         )
 
         assert matched is not None
+
+
+# _match_rematch_entry — L4 filename fallback (conservative)
+
+
+async def test_match_rematch_entry_l4_filename_hit(tmp_path: Path):
+    item = _rematch_item(
+        sha256=("T1" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, lora, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert level == "L4"
+
+
+async def test_match_rematch_entry_l4_filename_normalized_key(tmp_path: Path):
+    # case, path and extension differences are normalized on both sides
+    item = _rematch_item(
+        sha256=("T2" * 32).lower(),
+        sub_type="lora",
+        base_model="SDXL",
+        file_name="My_Mix.safetensors",
+    )
+    scanner, lora, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "subdir/my_mix", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="sdxl",
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert level == "L4"
+
+
+async def test_match_rematch_entry_l4_dotted_stem_no_collision(tmp_path: Path):
+    # "my.mix" (dotted stem) and "my" are distinct names — splitext-style
+    # stripping would collapse both to "my" and bind the wrong model as a
+    # unique candidate.
+    item = _rematch_item(
+        sha256=("T2A" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="my.mix",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "my", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_extension_bearing_entry_reconciled(tmp_path: Path):
+    # extension-bearing entry names reconcile with extensionless items
+    item = _rematch_item(
+        sha256=("T2B" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="my.mix.v1",
+    )
+    scanner, lora, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "my.mix.v1.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert level == "L4"
+
+
+async def test_match_rematch_entry_l4_base_model_mismatch_rejects(tmp_path: Path):
+    item = _rematch_item(
+        sha256=("T3" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SDXL",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_recipe_base_model_unknown_rejects(tmp_path: Path):
+    item = _rematch_item(
+        sha256=("T4" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_item_base_model_unknown_rejects(tmp_path: Path):
+    item = _rematch_item(
+        sha256=("T5" * 32).lower(), sub_type="lora", file_name="detail.safetensors"
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_ambiguous_same_base_model_rejects(tmp_path: Path):
+    items = [
+        _rematch_item(
+            sha256=("T6" * 32).lower(),
+            sub_type="lora",
+            base_model="SD 1.5",
+            file_name="detail.safetensors",
+        ),
+        _rematch_item(
+            sha256=("T7" * 32).lower(),
+            sub_type="lora",
+            base_model="SD 1.5",
+            file_name="detail.safetensors",
+        ),
+    ]
+    scanner, _, _ = _make_rematch_scanner(items, [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_ambiguity_resolved_by_base_model(tmp_path: Path):
+    sdxl_item = _rematch_item(
+        sha256=("T8" * 32).lower(),
+        sub_type="lora",
+        base_model="SDXL",
+        file_name="detail.safetensors",
+    )
+    sd15_item = _rematch_item(
+        sha256=("T9" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, lora, _ = _make_rematch_scanner([sdxl_item, sd15_item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SDXL",
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert level == "L4"
+
+
+async def test_match_rematch_entry_l4_type_gate_rejects(tmp_path: Path):
+    # a checkpoint-typed item with a matching name must not satisfy a lora entry
+    item = _rematch_item(
+        sha256=("TA" * 32).lower(),
+        sub_type="checkpoint",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_checkpoint_slot_rejects_type_less_candidate(
+    tmp_path: Path,
+):
+    # lora raw items often carry no sub_type; an unknown-type candidate must
+    # not be bound into a checkpoint slot
+    item = _rematch_item(
+        sha256=("TA1" * 32).lower(),
+        base_model="SD 1.5",
+        file_name="realistic.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "realistic.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=True,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_checkpoint_slot_accepts_typed_candidate(
+    tmp_path: Path,
+):
+    item = _rematch_item(
+        sha256=("TA2" * 32).lower(),
+        sub_type="checkpoint",
+        base_model="SD 1.5",
+        file_name="realistic.safetensors",
+    )
+    scanner, _, checkpoint = _make_rematch_scanner([], [item], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "realistic.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=True,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert matched is checkpoint._cache.raw_data[0]
+    assert level == "L4"
+
+
+async def test_match_rematch_entry_l4_lora_slot_accepts_type_less_candidate(tmp_path: Path):
+    # asymmetry: lora slots still accept type-less candidates (the norm for
+    # lora raw items); checkpoint items always carry sub_type, so the type
+    # gate alone protects the reverse direction
+    item = _rematch_item(
+        sha256=("TA3" * 32).lower(), base_model="SD 1.5", file_name="detail.safetensors"
+    )
+    scanner, lora, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "detail.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert level == "L4"
+
+
+async def test_rematch_l4_entry_base_model_preferred_over_recipe(tmp_path: Path, monkeypatch):
+    # a Pony lora inside an SD 1.5 recipe matches via its own baseModel
+    item = _rematch_item(
+        sha256=("TB1" * 32).lower(),
+        sub_type="lora",
+        base_model="Pony",
+        file_name="pony.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+    saved, _ = await _spy_rematch_persistence(scanner, monkeypatch)
+    await _spy_fts(scanner, monkeypatch)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "base_model": "SD 1.5",
+        "loras": [
+            {"file_name": "pony.safetensors", "isDeleted": True, "baseModel": "Pony"}
+        ],
+    }
+    rematched, _errors, details = await scanner._rematch_single_recipe(
+        recipe, {}, {}, filename_cache
+    )
+
+    assert rematched == 1
+    assert details["matched"][0]["match_level"] == "L4"
+    assert recipe["loras"][0]["hash"] == ("TB1" * 32).lower()
+    assert saved == [recipe]
+
+
+async def test_rematch_l4_entry_base_model_missing_falls_back_to_recipe(
+    tmp_path: Path, monkeypatch
+):
+    # without entry-level baseModel the recipe-level gate governs: a Pony
+    # candidate must not match an SD 1.5 recipe
+    item = _rematch_item(
+        sha256=("TB2" * 32).lower(),
+        sub_type="lora",
+        base_model="Pony",
+        file_name="pony.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+    await _spy_rematch_persistence(scanner, monkeypatch)
+    await _spy_fts(scanner, monkeypatch)
+
+    recipe: Dict[str, Any] = {
+        "id": "r1",
+        "base_model": "SD 1.5",
+        "loras": [{"file_name": "pony.safetensors", "isDeleted": True}],
+    }
+    rematched, _errors, details = await scanner._rematch_single_recipe(
+        recipe, {}, {}, filename_cache
+    )
+
+    assert rematched == 0
+    assert details["unresolved"] == [{"type": "lora", "entry": "pony.safetensors"}]
+
+
+async def test_match_rematch_entry_l4_no_filename_hit(tmp_path: Path):
+    item = _rematch_item(
+        sha256=("TB" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="other.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"file_name": "missing.safetensors", "isDeleted": True},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l4_entry_without_file_name_skipped(tmp_path: Path):
+    item = _rematch_item(
+        sha256=("TC" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, _, _ = _make_rematch_scanner([item], [], tmp_path)
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"isDeleted": True, "hash": ""},
+        {},
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert (matched, level) == (None, None)
+
+
+async def test_match_rematch_entry_l1_wins_over_l4_filename(tmp_path: Path):
+    # a valid stored hash resolves via L1 even when the filename would match
+    sha256 = ("TD" * 32).lower()
+    l1_item = _rematch_item(
+        sha256=sha256, sub_type="lora", base_model="SD 1.5", file_name="l1-item.safetensors"
+    )
+    l4_item = _rematch_item(
+        sha256=("TE" * 32).lower(),
+        sub_type="lora",
+        base_model="SD 1.5",
+        file_name="detail.safetensors",
+    )
+    scanner, lora, _ = _make_rematch_scanner([l1_item, l4_item], [], tmp_path)
+    local_cache = await scanner.build_local_hash_cache()
+    filename_cache = await scanner._build_local_filename_cache()
+
+    matched, level = await scanner._match_rematch_entry_with_level(
+        {"hash": sha256, "file_name": "detail.safetensors", "isDeleted": True},
+        local_cache,
+        {},
+        is_checkpoint=False,
+        filename_cache=filename_cache,
+        recipe_base_model="SD 1.5",
+    )
+
+    assert matched is lora._cache.raw_data[0]
+    assert level == "L1"
+
+
+# _build_local_filename_cache
+
+
+async def test_build_local_filename_cache_normalized_keys_sha256_only(tmp_path: Path):
+    lora_items = [
+        _rematch_item(sha256=("TF" * 32).lower(), file_name="Case.Mix.safetensors"),
+        _rematch_item(sha256="", file_name="no-hash.safetensors"),  # skipped
+    ]
+    checkpoint_items = [
+        _rematch_item(
+            sha256=("TG" * 32).lower(), sub_type="checkpoint", file_name="Base.safetensors"
+        )
+    ]
+    scanner, lora, checkpoint = _make_rematch_scanner(
+        lora_items, checkpoint_items, tmp_path
+    )
+
+    result = await scanner._build_local_filename_cache()
+
+    assert set(result) == {"case.mix", "base"}
+    assert len(result["case.mix"]) == 1
+    assert result["case.mix"][0] is lora._cache.raw_data[0]
+    # checkpoint items are indexed too (type-blind cache)
+    assert result["base"][0] is checkpoint._cache.raw_data[0]
 
 
 # _build_rematch_autov3_cache
@@ -3089,6 +3565,7 @@ async def test_rematch_all_recipes_per_recipe_error_continues_loop(
         recipe: Dict[str, Any],
         local_cache: dict[str, Any],
         autov3_cache: dict[str, Any],
+        filename_cache=None,
     ) -> tuple[int, int, dict[str, Any]]:
         if recipe.get("id") == "boom":
             raise RuntimeError("kaboom")
@@ -3146,12 +3623,13 @@ async def test_rematch_all_recipes_holds_mutation_lock(tmp_path: Path, monkeypat
         recipe: Dict[str, Any],
         local_cache: dict[str, Any],
         autov3_cache: dict[str, Any],
-    ) -> tuple[int, int]:
+        filename_cache=None,
+    ) -> tuple[int, int, dict[str, Any]]:
         nonlocal entered
         if recipe.get("id") == "r0":
             entered = True
             await release.wait()
-        return await original(recipe, local_cache, autov3_cache)
+        return await original(recipe, local_cache, autov3_cache, filename_cache)
 
     monkeypatch.setattr(scanner, "_rematch_single_recipe", blocking_single)
 
@@ -3271,6 +3749,8 @@ async def test_rematch_bulk_generic_exception_continues(tmp_path: Path, monkeypa
         autov3_cache: dict[str, Any],
         *,
         is_checkpoint: bool,
+        filename_cache=None,
+        recipe_base_model=None,
     ) -> Any:
         nonlocal calls
         calls += 1
