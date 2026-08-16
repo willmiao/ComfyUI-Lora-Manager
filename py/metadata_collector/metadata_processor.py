@@ -214,6 +214,24 @@ class MetadataProcessor:
                     max_denoise = denoise
                     primary_sampler = sampler_info
                     primary_sampler_id = node_id
+
+        # Last resort: any registered sampler. Samplers without a denoise or
+        # add_noise parameter (e.g. multi-stage samplers like KreaTwoStageSampler)
+        # are not caught by the criteria above. Prefer execution order so the
+        # first executed sampler wins, matching the downstream_id branch.
+        if primary_sampler is None:
+            sampler_ids = [
+                node_id
+                for node_id, sampler_info in metadata.get(SAMPLING, {}).items()
+                if sampler_info.get(IS_SAMPLER, False)
+            ]
+            if sampler_ids:
+                if downstream_id and "execution_order" in metadata:
+                    for node_id in metadata["execution_order"]:
+                        if node_id in sampler_ids:
+                            return node_id, metadata[SAMPLING][node_id]
+                primary_sampler_id = sampler_ids[0]
+                primary_sampler = metadata[SAMPLING][sampler_ids[0]]
                 
         return primary_sampler_id, primary_sampler
     

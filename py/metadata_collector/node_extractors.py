@@ -861,6 +861,65 @@ class TSCKSamplerAdvancedExtractor(KSamplerAdvancedExtractor, TSCSamplerBaseExtr
 
     # Update method is inherited from TSCSamplerBaseExtractor
 
+class KreaTwoStageSamplerExtractor(BaseSamplerExtractor):
+    """Extractor for Krea Two/Three Stage Samplers (Auryg/Krea-2-Two-Stage-Sampler).
+
+    The node samples in two (or three) stages with per-stage settings
+    (stage1_steps/stage2_steps, stage1_cfg/stage2_cfg, ...). The canonical
+    metadata fields consumed by ``extract_generation_params`` (steps, cfg,
+    sampler_name, scheduler) are derived from the base stage (stage 1; the
+    three-stage variant reuses stage 1 settings for stage 3), while the full
+    per-stage breakdown is preserved in the raw parameters.
+    """
+
+    # All per-stage parameter keys present on both node variants.
+    _STAGE_PARAM_KEYS = (
+        "stage1_steps", "stage1_cfg", "stage1_sampler_name", "stage1_scheduler",
+        "stage2_steps", "stage2_cfg", "stage2_sampler_name", "stage2_scheduler",
+    )
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        if not inputs:
+            return
+
+        BaseSamplerExtractor.extract_sampling_params(
+            node_id,
+            inputs,
+            metadata,
+            ("seed", "handoff_percent", "stage3_handoff_percent")
+            + KreaTwoStageSamplerExtractor._STAGE_PARAM_KEYS,
+        )
+
+        # Derive the canonical fields expected by extract_generation_params.
+        sampling_params = metadata[SAMPLING][node_id]["parameters"]
+        if "stage1_steps" in sampling_params or "stage2_steps" in sampling_params:
+            sampling_params["steps"] = (
+                (sampling_params.get("stage1_steps") or 0)
+                + (sampling_params.get("stage2_steps") or 0)
+            )
+        if "stage1_cfg" in sampling_params:
+            sampling_params["cfg"] = sampling_params["stage1_cfg"]
+        if "stage1_sampler_name" in sampling_params:
+            sampling_params["sampler_name"] = sampling_params["stage1_sampler_name"]
+        if "stage1_scheduler" in sampling_params:
+            sampling_params["scheduler"] = sampling_params["stage1_scheduler"]
+
+        BaseSamplerExtractor.extract_conditioning(node_id, inputs, metadata)
+
+        # Prefer the final generation resolution; latent dims are the fallback.
+        BaseSamplerExtractor.extract_latent_dimensions(node_id, inputs, metadata)
+        final_width = inputs.get("final_width")
+        final_height = inputs.get("final_height")
+        if final_width and final_height:
+            if SIZE not in metadata:
+                metadata[SIZE] = {}
+            metadata[SIZE][node_id] = {
+                "width": final_width,
+                "height": final_height,
+                "node_id": node_id,
+            }
+
 class LoraLoaderExtractor(NodeMetadataExtractor):
     @staticmethod
     def extract(node_id, inputs, outputs, metadata):
@@ -899,6 +958,37 @@ class ImageSizeExtractor(NodeMetadataExtractor):
             "width": width,
             "height": height,
             "node_id": node_id
+        }
+
+class KreaDualResolutionSelectorExtractor(NodeMetadataExtractor):
+    """Extract base resolution from Krea Dual Resolution Selector outputs
+    (Auryg/Krea-2-Two-Stage-Sampler).
+
+    The node computes base/final dimensions at runtime from aspect ratio and
+    megapixel settings, so the values are only available in the update phase
+    (outputs: base_width, base_height, final_width, final_height, seed).
+    """
+
+    @staticmethod
+    def extract(node_id, inputs, outputs, metadata):
+        # Dimensions are computed at runtime; nothing to do here.
+        pass
+
+    @staticmethod
+    def update(node_id, outputs, metadata):
+        output_tuple = _first_output_tuple(outputs)
+        if not output_tuple or len(output_tuple) < 2:
+            return
+        width, height = output_tuple[0], output_tuple[1]
+        if not isinstance(width, int) or not isinstance(height, int):
+            return
+
+        if SIZE not in metadata:
+            metadata[SIZE] = {}
+        metadata[SIZE][node_id] = {
+            "width": width,
+            "height": height,
+            "node_id": node_id,
         }
 
 class RgthreePowerLoraLoaderExtractor(NodeMetadataExtractor):
@@ -1302,6 +1392,8 @@ NODE_EXTRACTORS = {
     "ClownsharKSampler_Beta": SamplerExtractor,
     "TSC_KSampler": TSCKSamplerExtractor,   # Efficient Nodes
     "TSC_KSamplerAdvanced": TSCKSamplerAdvancedExtractor,  # Efficient Nodes
+    "KreaTwoStageSampler": KreaTwoStageSamplerExtractor,  # Auryg/Krea-2-Two-Stage-Sampler
+    "KreaThreeStageSampler": KreaTwoStageSamplerExtractor,  # Auryg/Krea-2-Two-Stage-Sampler
     "KSamplerBasicPipe": KSamplerBasicPipeExtractor,    # comfyui-impact-pack
     "KSamplerAdvancedBasicPipe": KSamplerAdvancedBasicPipeExtractor,    # comfyui-impact-pack
     "KSampler_inspire_pipe": KSamplerBasicPipeExtractor,    # comfyui-inspire-pack
@@ -1353,6 +1445,7 @@ NODE_EXTRACTORS = {
     "GetNode": GetNodeExtractor,
     # Latent
     "EmptyLatentImage": ImageSizeExtractor,
+    "KreaDualResolutionSelector": KreaDualResolutionSelectorExtractor,  # Auryg/Krea-2-Two-Stage-Sampler
     # Flux
     "FluxGuidance": FluxGuidanceExtractor,      # Add FluxGuidance
     "CFGGuider": CFGGuiderExtractor,            # Add CFGGuider
