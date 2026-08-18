@@ -3590,9 +3590,6 @@ class RecipeScanner:
 
         syntax_parts: List[str] = []
         for lora in loras:
-            if lora.get("isDeleted", False):
-                continue
-
             file_name = None
             folder = ""
             hash_value = (lora.get("hash") or "").lower()
@@ -3627,6 +3624,8 @@ class RecipeScanner:
                         break
 
             if not file_name:
+                if lora.get("isDeleted", False):
+                    continue
                 file_name = lora.get("file_name", "unknown-lora")
                 folder = lora.get("folder", "")
 
