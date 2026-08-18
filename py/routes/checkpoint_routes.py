@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Dict, List, Set
 from aiohttp import web
 
@@ -7,6 +8,7 @@ from .model_route_registrar import ModelRouteRegistrar
 from ..services.checkpoint_service import CheckpointService
 from ..services.service_registry import ServiceRegistry
 from ..config import config
+from ..utils.utils import _format_model_name_for_comfyui
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +46,45 @@ class CheckpointRoutes(BaseModelRoutes):
         # Checkpoint roots and Unet roots
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/checkpoints_roots', prefix, self.get_checkpoints_roots)
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/unet_roots', prefix, self.get_unet_roots)
+
+        # Name/base_model pool for the Random Checkpoint/Unet Loader nodes
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/loader-pool', prefix, self.get_loader_pool)
     
+    async def get_loader_pool(self, request: web.Request) -> web.Response:
+        """Return ComfyUI-formatted model names with their base_model.
+
+        Backing data for the Random Checkpoint/Unet Loader nodes: the front-end
+        filters the ckpt_name/unet_name combo options by base_model using this
+        pool, so control_after_generate randomizes within the narrowed set.
+        """
+        try:
+            sub_type = request.query.get("sub_type", "checkpoint")
+            if sub_type not in ("checkpoint", "diffusion_model"):
+                return web.json_response({"error": "invalid sub_type"}, status=400)
+            scanner = await ServiceRegistry.get_checkpoint_scanner()
+            cache = await scanner.get_cached_data()
+            model_roots = scanner.get_model_roots()
+            items: List[Dict[str, str]] = []
+            for item in cache.raw_data:
+                if item.get("sub_type") != sub_type:
+                    continue
+                file_path = item.get("file_path", "")
+                if not file_path or not os.path.exists(file_path):
+                    continue
+                formatted_name = _format_model_name_for_comfyui(file_path, model_roots)
+                if formatted_name:
+                    items.append(
+                        {
+                            "name": formatted_name,
+                            "base_model": item.get("base_model", "") or "",
+                        }
+                    )
+            items.sort(key=lambda x: x["name"])
+            return web.json_response({"items": items})
+        except Exception as e:
+            logger.error(f"Error getting loader pool: {e}", exc_info=True)
+            return web.json_response({"error": str(e)}, status=500)
+
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for Checkpoint"""
         return model_type.lower() == 'checkpoint'

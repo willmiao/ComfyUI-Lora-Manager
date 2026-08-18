@@ -83,3 +83,64 @@ def test_checkpoint_names_empty_when_scanner_fails(tmp_path, monkeypatch):
 
     monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _boom)
     assert CheckpointLoaderLM._get_checkpoint_names() == []
+
+
+def test_checkpoint_available_base_models(tmp_path, monkeypatch):
+    from py.services.service_registry import ServiceRegistry
+
+    sd15 = tmp_path / "sd15.safetensors"
+    sd15.write_bytes(b"x")
+    flux = tmp_path / "flux.safetensors"
+    flux.write_bytes(b"x")
+    missing = tmp_path / "missing.safetensors"  # referenced but never created
+
+    raw_data = [
+        {"sub_type": "checkpoint", "file_path": str(sd15), "base_model": "SD1.5"},
+        {"sub_type": "checkpoint", "file_path": str(flux), "base_model": "Flux.1 D"},
+        # Deleted files must drop out; wrong sub_type must be excluded.
+        {"sub_type": "checkpoint", "file_path": str(missing), "base_model": "SDXL 1.0"},
+        {"sub_type": "diffusion_model", "file_path": str(flux), "base_model": "Flux.1 D"},
+    ]
+
+    async def _fake_scanner():
+        return _FakeScanner(raw_data, [str(tmp_path)])
+
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _fake_scanner)
+    assert CheckpointLoaderLM._get_available_base_models() == [
+        "Any",
+        "Flux.1 D",
+        "SD1.5",
+    ]
+
+
+def test_unet_available_base_models(tmp_path, monkeypatch):
+    from py.services.service_registry import ServiceRegistry
+
+    flux = tmp_path / "flux.safetensors"
+    flux.write_bytes(b"x")
+
+    raw_data = [
+        {
+            "sub_type": "diffusion_model",
+            "file_path": str(flux),
+            "base_model": "Flux.1 D",
+        },
+        # Checkpoint entries must stay excluded by the sub_type filter.
+        {"sub_type": "checkpoint", "file_path": str(flux), "base_model": "SD1.5"},
+    ]
+
+    async def _fake_scanner():
+        return _FakeScanner(raw_data, [str(tmp_path)])
+
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _fake_scanner)
+    assert UNETLoaderLM._get_available_base_models() == ["Any", "Flux.1 D"]
+
+
+def test_available_base_models_empty_when_scanner_fails(tmp_path, monkeypatch):
+    from py.services.service_registry import ServiceRegistry
+
+    def _boom():
+        raise RuntimeError("scanner not available")
+
+    monkeypatch.setattr(ServiceRegistry, "get_checkpoint_scanner", _boom)
+    assert CheckpointLoaderLM._get_available_base_models() == ["Any"]
