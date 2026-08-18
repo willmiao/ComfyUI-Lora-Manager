@@ -1,3 +1,10 @@
+/* Blurred backdrop for the model modal to match the recipe modal */
+#modelModal {
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
 /* Lora Modal Header */
 .modal-header {
     display: flex;
