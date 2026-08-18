@@ -3,7 +3,7 @@ import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
-import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES } from '../../utils/constants.js';
+import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES, MODEL_CARD_DRAG_MIME_TYPE } from '../../utils/constants.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { showDeleteModal } from '../../utils/modalUtils.js';
@@ -455,6 +455,9 @@ function showExampleAccessModal(card, modelType) {
 export function createModelCard(model, modelType) {
     const card = document.createElement('div');
     card.className = 'model-card';  // Reuse the same class for styling
+    // Always draggable (move-to-folder in the sidebar). Accidental micro-drags
+    // from click jitter are rendered harmless by the preview-drop handlers
+    // below, which ignore internal card drags via MODEL_CARD_DRAG_MIME_TYPE.
     card.draggable = true;
     card.dataset.sha256 = model.sha256;
     card.dataset.filepath = model.file_path;
@@ -647,7 +650,7 @@ export function createModelCard(model, modelType) {
         <div class="card-preview ${shouldBlur ? 'blurred' : ''}">
             ${isVideo ?
             `<video ${videoAttrs.join(' ')} style="pointer-events: none;"></video>` :
-            `<img src="${versionedPreviewUrl}" alt="${model.model_name}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
+            `<img draggable="false" src="${versionedPreviewUrl}" alt="${model.model_name}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
         }
             <div class="card-header">
                 ${shouldBlur ?
@@ -741,6 +744,11 @@ export function createModelCard(model, modelType) {
 
     // Dropping an image/video onto the card replaces the model preview via the
     // existing replace-preview endpoint (overwrites file on disk, refreshes card).
+    // Internal card drags (move-to-folder) are tagged with a custom MIME type by
+    // SidebarManager and must be ignored here entirely: no highlight, no upload.
+    const isInternalCardDrag = (event) =>
+        Boolean(event.dataTransfer?.types?.includes(MODEL_CARD_DRAG_MIME_TYPE));
+
     const preventDragDefaults = (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -748,17 +756,20 @@ export function createModelCard(model, modelType) {
 
     ['dragenter', 'dragover'].forEach((eventName) => {
         card.addEventListener(eventName, (event) => {
+            if (isInternalCardDrag(event)) return;
             preventDragDefaults(event);
             card.classList.add('drag-over');
         });
     });
 
     card.addEventListener('dragleave', (event) => {
+        if (isInternalCardDrag(event)) return;
         preventDragDefaults(event);
         card.classList.remove('drag-over');
     });
 
     card.addEventListener('drop', (event) => {
+        if (isInternalCardDrag(event)) return;
         preventDragDefaults(event);
         card.classList.remove('drag-over');
 

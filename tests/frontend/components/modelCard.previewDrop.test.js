@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { MODEL_CARD_DRAG_MIME_TYPE } from '../../../static/js/utils/constants.js';
 
 const {
   MODEL_CARD_MODULE,
@@ -108,9 +109,9 @@ describe('ModelCard drag & drop preview upload', () => {
     return createModelCard(model, 'loras');
   }
 
-  function dispatchDrop(card, files) {
+  function dispatchDrop(card, files, types = []) {
     const event = new Event('drop', { bubbles: true, cancelable: true });
-    Object.defineProperty(event, 'dataTransfer', { value: { files } });
+    Object.defineProperty(event, 'dataTransfer', { value: { files, types } });
     card.dispatchEvent(event);
     return event;
   }
@@ -178,5 +179,42 @@ describe('ModelCard drag & drop preview upload', () => {
 
     expect(event.defaultPrevented).toBe(true);
     expect(card.classList.contains('drag-over')).toBe(false);
+  });
+
+  it('ignores drops tagged as internal card drags (move-to-folder)', () => {
+    const card = createCard();
+    const file = new File(['data'], 'preview.png', { type: 'image/png' });
+
+    const event = dispatchDrop(card, [file], [MODEL_CARD_DRAG_MIME_TYPE]);
+
+    expect(uploadPreviewMock).not.toHaveBeenCalled();
+    expect(showToastMock).not.toHaveBeenCalled();
+    expect(event.defaultPrevented).toBe(false);
+    expect(card.classList.contains('drag-over')).toBe(false);
+  });
+
+  it('does not highlight or intercept internal card drags during dragover', () => {
+    const card = createCard();
+
+    const dragOverEvent = new Event('dragover', { bubbles: true, cancelable: true });
+    Object.defineProperty(dragOverEvent, 'dataTransfer', {
+      value: { types: [MODEL_CARD_DRAG_MIME_TYPE] },
+    });
+    card.dispatchEvent(dragOverEvent);
+
+    expect(dragOverEvent.defaultPrevented).toBe(false);
+    expect(card.classList.contains('drag-over')).toBe(false);
+  });
+
+  it('keeps the card draggable (move-to-folder) but the preview image non-draggable', () => {
+    const card = createCard();
+
+    // The card itself must stay draggable for sidebar move-to-folder drags.
+    expect(card.draggable).toBe(true);
+    // The preview image must not start a native image drag: the browser would
+    // synthesize a File payload from it, which the drop handler would mistake
+    // for an external preview replacement.
+    const img = card.querySelector('.card-preview img');
+    expect(img.getAttribute('draggable')).toBe('false');
   });
 });

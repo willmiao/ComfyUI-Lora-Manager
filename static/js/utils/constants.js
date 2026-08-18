@@ -87,6 +87,10 @@ export const BASE_MODELS = {
     UNKNOWN: "Other"
 };
 
+// Custom dataTransfer MIME type tagging internal model-card drags (move-to-folder).
+// Preview-drop handlers use it to ignore drags that did not come from the OS file system.
+export const MODEL_CARD_DRAG_MIME_TYPE = 'application/x-lora-manager-model-card';
+
 // Model sub-type display names (new canonical field: sub_type)
 export const MODEL_SUBTYPE_DISPLAY_NAMES = {
     // LoRA sub-types

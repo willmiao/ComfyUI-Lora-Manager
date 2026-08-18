@@ -9,6 +9,7 @@ import { bulkManager } from '../managers/BulkManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
+import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
 
 export class SidebarManager {
     constructor() {
@@ -252,6 +253,9 @@ export class SidebarManager {
         if (dataTransfer) {
             dataTransfer.effectAllowed = 'move';
             dataTransfer.setData('text/plain', filePaths.join(','));
+            // Tag the drag as an internal card drag so preview-drop handlers on
+            // other cards ignore it (no highlight, no preview replacement).
+            dataTransfer.setData(MODEL_CARD_DRAG_MIME_TYPE, filePaths.join(','));
             try {
                 dataTransfer.setData('application/json', JSON.stringify({ filePaths }));
             } catch (error) {
