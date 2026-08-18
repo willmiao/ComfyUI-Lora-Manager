@@ -134,6 +134,10 @@ export function openMediaViewer(arg1, arg2, arg3) {
 
     const keyHandler = (e) => {
         if (e.key === 'Escape') {
+            // Stop propagation so bubble-phase handlers (e.g. ModalManager's
+            // Escape handler) do not also close the modal underneath.
+            e.stopPropagation();
+            e.preventDefault();
             closeMediaViewer();
             return;
         }
