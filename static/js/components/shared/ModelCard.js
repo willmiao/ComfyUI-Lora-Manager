@@ -1,7 +1,6 @@
 import { showToast, openCivitai, openHuggingFace, copyToClipboard, copyLoraSyntax, sendLoraToWorkflow, sendEmbeddingToWorkflow, openExampleImagesFolder, buildLoraSyntax, sendModelPathToWorkflow } from '../../utils/uiHelpers.js';
 import { state, getCurrentPageState } from '../../state/index.js';
 import { showModelModal } from './ModelModal.js';
-import { toggleShowcase } from './showcase/ShowcaseView.js';
 import { bulkManager } from '../../managers/BulkManager.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { NSFW_LEVELS, getBaseModelAbbreviation, getSubTypeAbbreviation, getMatureBlurThreshold, MODEL_SUBTYPE_DISPLAY_NAMES } from '../../utils/constants.js';
@@ -304,10 +303,20 @@ function handleCardClick(card, modelType) {
     }
 }
 
+// Preview URL is not in the dataset; read it from the card's rendered media
+function getCardPreviewUrl(card) {
+    const cardMedia = card.querySelector('.card-preview img, .card-preview video');
+    if (!cardMedia) return '';
+    return cardMedia.tagName === 'VIDEO'
+        ? (cardMedia.dataset.src || '')
+        : (cardMedia.src || '');
+}
+
 async function showModelModalFromCard(card, modelType) {
     // Create model metadata object
     const modelMeta = {
         sha256: card.dataset.sha256,
+        preview_url: getCardPreviewUrl(card),
         file_path: card.dataset.filepath,
         model_name: card.dataset.name,
         file_name: card.dataset.file_name,
@@ -397,6 +406,7 @@ function showExampleAccessModal(card, modelType) {
             // Get the model data from card dataset (works for both lora and checkpoint)
             const modelMeta = {
                 sha256: card.dataset.sha256,
+                preview_url: getCardPreviewUrl(card),
                 file_path: card.dataset.filepath,
                 model_name: card.dataset.name,
                 file_name: card.dataset.file_name,
@@ -421,30 +431,18 @@ function showExampleAccessModal(card, modelType) {
             // Show the model modal
             await showModelModal(modelMeta, modelType);
 
-            // Scroll to import area after modal is visible
+            // Reveal the import entry once the modal content has rendered
             setTimeout(() => {
-                const importArea = document.querySelector('.example-import-area');
+                // Gallery mode: the import button is always visible — expand the zone
+                const importBtn = document.querySelector('#modelModal .gallery-import-btn');
+                if (importBtn) {
+                    importBtn.click();
+                    return;
+                }
+                // Empty state: the import area is the whole tab content — scroll to it
+                const importArea = document.querySelector('#modelModal .example-import-area');
                 if (importArea) {
-                    const showcaseTab = document.getElementById('showcase-tab');
-                    if (showcaseTab) {
-                        // First make sure showcase tab is visible
-                        const tabBtn = document.querySelector('.tab-btn[data-tab="showcase"]');
-                        if (tabBtn && !tabBtn.classList.contains('active')) {
-                            tabBtn.click();
-                        }
-
-                        // Then toggle showcase if collapsed
-                        const carousel = showcaseTab.querySelector('.carousel');
-                        if (carousel && carousel.classList.contains('collapsed')) {
-                            const scrollIndicator = showcaseTab.querySelector('.scroll-indicator');
-                            if (scrollIndicator) {
-                                toggleShowcase(scrollIndicator);
-                            }
-                        }
-
-                        // Finally scroll to the import area
-                        importArea.scrollIntoView({ behavior: 'smooth' });
-                    }
+                    importArea.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
                 }
             }, 500);
         };

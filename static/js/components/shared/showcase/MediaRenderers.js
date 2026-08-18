@@ -4,9 +4,9 @@
  */
 
 /**
- * Generate video wrapper HTML
+ * Generate video wrapper HTML. The wrapper fills its container (the gallery's
+ * main viewer) and the media is letterboxed inside via object-fit: contain.
  * @param {Object} media - Media metadata
- * @param {number} heightPercent - Height percentage for container
  * @param {boolean} shouldBlur - Whether content should be blurred
  * @param {string} nsfwText - NSFW warning text
  * @param {string} metadataPanel - Metadata panel HTML
@@ -15,11 +15,11 @@
  * @param {string} mediaControlsHtml - HTML for media control buttons
  * @returns {string} HTML content
  */
-export function generateVideoWrapper(media, heightPercent, shouldBlur, nsfwText, metadataPanel, localUrl, remoteUrl, mediaControlsHtml = '') {
+export function generateVideoWrapper(media, shouldBlur, nsfwText, metadataPanel, localUrl, remoteUrl, mediaControlsHtml = '') {
     const nsfwLevel = media.nsfwLevel !== undefined ? media.nsfwLevel : 0;
-    
+
     return `
-        <div class="media-wrapper ${shouldBlur ? 'nsfw-media-wrapper' : ''}" style="padding-bottom: ${heightPercent}%" data-short-id="${media.id || ''}" data-nsfw-level="${nsfwLevel}">
+        <div class="media-wrapper ${shouldBlur ? 'nsfw-media-wrapper' : ''}" data-short-id="${media.id || ''}" data-nsfw-level="${nsfwLevel}">
             ${shouldBlur ? `
                 <button class="toggle-blur-btn showcase-toggle-btn" title="Toggle blur">
                     <i class="fas fa-eye"></i>
@@ -48,9 +48,9 @@ export function generateVideoWrapper(media, heightPercent, shouldBlur, nsfwText,
 }
 
 /**
- * Generate image wrapper HTML
+ * Generate image wrapper HTML. The wrapper fills its container (the gallery's
+ * main viewer) and the media is letterboxed inside via object-fit: contain.
  * @param {Object} media - Media metadata
- * @param {number} heightPercent - Height percentage for container
  * @param {boolean} shouldBlur - Whether content should be blurred
  * @param {string} nsfwText - NSFW warning text
  * @param {string} metadataPanel - Metadata panel HTML
@@ -59,11 +59,11 @@ export function generateVideoWrapper(media, heightPercent, shouldBlur, nsfwText,
  * @param {string} mediaControlsHtml - HTML for media control buttons
  * @returns {string} HTML content
  */
-export function generateImageWrapper(media, heightPercent, shouldBlur, nsfwText, metadataPanel, localUrl, remoteUrl, mediaControlsHtml = '') {
+export function generateImageWrapper(media, shouldBlur, nsfwText, metadataPanel, localUrl, remoteUrl, mediaControlsHtml = '') {
     const nsfwLevel = media.nsfwLevel !== undefined ? media.nsfwLevel : 0;
-    
+
     return `
-        <div class="media-wrapper ${shouldBlur ? 'nsfw-media-wrapper' : ''}" style="padding-bottom: ${heightPercent}%" data-short-id="${media.id || ''}" data-nsfw-level="${nsfwLevel}">
+        <div class="media-wrapper ${shouldBlur ? 'nsfw-media-wrapper' : ''}" data-short-id="${media.id || ''}" data-nsfw-level="${nsfwLevel}">
             ${shouldBlur ? `
                 <button class="toggle-blur-btn showcase-toggle-btn" title="Toggle blur">
                     <i class="fas fa-eye"></i>

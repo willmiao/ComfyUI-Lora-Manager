@@ -2,8 +2,6 @@ import { showToast, openCivitai, sendLoraToWorkflow, sendEmbeddingToWorkflow, se
 import { modalManager } from '../../managers/ModalManager.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import {
-    toggleShowcase,
-    setupShowcaseScroll,
     scrollToTop,
     loadExampleImages
 } from './showcase/ShowcaseView.js';
@@ -727,18 +725,12 @@ export async function showModelModal(model, modelType) {
         updateCardUpdateAvailability(hasUpdate);
     }
 
-    let showcaseCleanup;
-
     const onCloseCallback = function () {
         // Clean up all handlers when modal closes for LoRA
         const modalElement = document.getElementById(modalId);
         if (modalElement && modalElement._clickHandler) {
             modalElement.removeEventListener('click', modalElement._clickHandler);
             delete modalElement._clickHandler;
-        }
-        if (showcaseCleanup) {
-            showcaseCleanup();
-            showcaseCleanup = null;
         }
         cleanupNavigationShortcuts();
     };
@@ -759,6 +751,14 @@ export async function showModelModal(model, modelType) {
         if (modelType === 'embeddings' && modelWithFullData.folder) {
             activeModalElement.dataset.folder = modelWithFullData.folder;
         }
+        // Show the back-to-top button once the modal content is scrolled
+        const modalContent = activeModalElement.querySelector('.modal-content');
+        const backToTopBtn = activeModalElement.querySelector('.back-to-top');
+        if (modalContent && backToTopBtn) {
+            modalContent.addEventListener('scroll', () => {
+                backToTopBtn.classList.toggle('visible', modalContent.scrollTop > 300);
+            });
+        }
     }
     updateVersionsTabBadge(updateAvailabilityState.hasUpdateAvailable);
     const versionsTabController = initVersionsTab({
@@ -771,7 +771,6 @@ export async function showModelModal(model, modelType) {
         onUpdateStatusChange: handleUpdateStatusChange,
     });
     setupEditableFields(modelWithFullData.file_path, modelType);
-    showcaseCleanup = setupShowcaseScroll(modalId);
     setupTabSwitching({
         onTabChange: async (tab) => {
             if (tab === 'versions') {
@@ -814,7 +813,7 @@ export async function showModelModal(model, modelType) {
     const customImages = modelWithFullData.civitai?.customImages || [];
     // Combine images - regular images first, then custom images
     const allImages = [...regularImages, ...customImages];
-    loadExampleImages(allImages, modelWithFullData.sha256);
+    loadExampleImages(allImages, modelWithFullData.sha256, modelWithFullData.preview_url || '');
 }
 
 function renderLoraSpecificContent(lora, escapedWords) {
@@ -1316,7 +1315,6 @@ async function handleSendToWorkflow(target, modelType) {
 // Export the model modal API
 const modelModal = {
     show: showModelModal,
-    toggleShowcase,
     scrollToTop
 };
 

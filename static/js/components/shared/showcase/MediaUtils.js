@@ -213,190 +213,170 @@ export function getRenderedMediaRect(mediaElement, containerWidth, containerHeig
 }
 
 /**
- * Initialize metadata panel interaction handlers
+ * Initialize metadata panel interaction handlers: hover over the media reveals
+ * the panel and media controls (same as the legacy carousel). Panel-internal
+ * buttons and wheel isolation are bound here as well.
  * @param {HTMLElement} container - Container element with media wrappers
  */
 export function initMetadataPanelHandlers(container) {
     const mediaWrappers = container.querySelectorAll('.media-wrapper');
-    
+
     mediaWrappers.forEach(wrapper => {
-        // Get the metadata panel and media element (img or video)
         const metadataPanel = wrapper.querySelector('.image-metadata-panel');
+        if (!metadataPanel) return;
+
         const mediaControls = wrapper.querySelector('.media-controls');
         const mediaElement = wrapper.querySelector('img, video');
-        
-        if (!mediaElement) return;
-        
-        let isOverMetadataPanel = false;
-        
-        // Add event listeners to the wrapper for mouse tracking
-        wrapper.addEventListener('mousemove', (e) => {
-            // Get mouse position relative to wrapper
-            const rect = wrapper.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            // Get the actual displayed dimensions of the media element
-            const mediaRect = getRenderedMediaRect(mediaElement, rect.width, rect.height);
-            
-            // Check if mouse is over the actual media content
-            const isOverMedia = (
-                mouseX >= mediaRect.left && 
-                mouseX <= mediaRect.right && 
-                mouseY >= mediaRect.top && 
-                mouseY <= mediaRect.bottom
-            );
-            
-            // Show metadata panel and controls when over media content or metadata panel itself
-            if (isOverMedia || isOverMetadataPanel) {
-                if (metadataPanel) metadataPanel.classList.add('visible');
-                if (mediaControls) mediaControls.classList.add('visible');
-            } else {
-                if (metadataPanel) metadataPanel.classList.remove('visible');
-                if (mediaControls) mediaControls.classList.remove('visible');
-            }
-        });
-        
-        wrapper.addEventListener('mouseleave', () => {
-            if (!isOverMetadataPanel) {
-                if (metadataPanel) metadataPanel.classList.remove('visible');
-                if (mediaControls) mediaControls.classList.remove('visible');
-            }
-        });
-        
-        // Add mouse enter/leave events for the metadata panel itself
-        if (metadataPanel) {
+
+        if (mediaElement) {
+            let isOverMetadataPanel = false;
+
+            // Hovering the actual media content reveals the metadata panel and controls
+            wrapper.addEventListener('mousemove', (e) => {
+                const rect = wrapper.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                const mediaRect = getRenderedMediaRect(mediaElement, rect.width, rect.height);
+                const isOverMedia = (
+                    mouseX >= mediaRect.left &&
+                    mouseX <= mediaRect.right &&
+                    mouseY >= mediaRect.top &&
+                    mouseY <= mediaRect.bottom
+                );
+
+                if (isOverMedia || isOverMetadataPanel) {
+                    metadataPanel.classList.add('visible');
+                    if (mediaControls) mediaControls.classList.add('visible');
+                } else {
+                    metadataPanel.classList.remove('visible');
+                    if (mediaControls) mediaControls.classList.remove('visible');
+                }
+            });
+
+            wrapper.addEventListener('mouseleave', () => {
+                if (!isOverMetadataPanel) {
+                    metadataPanel.classList.remove('visible');
+                    if (mediaControls) mediaControls.classList.remove('visible');
+                }
+            });
+
             metadataPanel.addEventListener('mouseenter', () => {
                 isOverMetadataPanel = true;
                 metadataPanel.classList.add('visible');
                 if (mediaControls) mediaControls.classList.add('visible');
             });
-            
+
             metadataPanel.addEventListener('mouseleave', () => {
                 isOverMetadataPanel = false;
-                // Only hide if mouse is not over the media
-                const rect = wrapper.getBoundingClientRect();
-                const mediaRect = getRenderedMediaRect(mediaElement, rect.width, rect.height);
-                const mouseX = event.clientX - rect.left;
-                const mouseY = event.clientY - rect.top;
-                
-                const isOverMedia = (
-                    mouseX >= mediaRect.left && 
-                    mouseX <= mediaRect.right && 
-                    mouseY >= mediaRect.top && 
-                    mouseY <= mediaRect.bottom
-                );
-                
-                if (!isOverMedia) {
-                    metadataPanel.classList.remove('visible');
-                    if (mediaControls) mediaControls.classList.remove('visible');
-                }
+                metadataPanel.classList.remove('visible');
+                if (mediaControls) mediaControls.classList.remove('visible');
             });
-            
-            // Prevent events from bubbling
-            metadataPanel.addEventListener('click', (e) => {
-                e.stopPropagation();
-            });
-            
-            // Handle copy prompt buttons
-            const copyBtns = metadataPanel.querySelectorAll('.copy-prompt-btn');
-            copyBtns.forEach(copyBtn => {
-                const promptIndex = copyBtn.dataset.promptIndex;
-                const promptElement = wrapper.querySelector(`#prompt-${promptIndex}`);
-                
-                copyBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    
-                    if (!promptElement) return;
-                    
-                    try {
-                        await copyToClipboard(promptElement.textContent, 'Prompt copied to clipboard');
-                    } catch (err) {
-                        console.error('Copy failed:', err);
-                        showToast('toast.triggerWords.copyFailed', {}, 'error');
-                    }
-                });
-            });
-            
-            // Handle send prompt buttons
-            const sendBtns = metadataPanel.querySelectorAll('.send-prompt-btn');
-            sendBtns.forEach(sendBtn => {
-                const promptIndex = sendBtn.dataset.promptIndex;
-                const promptElement = wrapper.querySelector(`#prompt-${promptIndex}`);
-                
-                sendBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    
-                    if (!promptElement) return;
-                    
-                    let promptText = promptElement.textContent || '';
-                    if (!promptText.trim()) {
-                        showToast('toast.recipes.noPromptToSend', {}, 'warning');
-                        return;
-                    }
-                    
-                    // Respect strip <lora> setting from global state
-                    if (state.global.settings?.strip_lora_on_copy) {
-                        promptText = stripLoraTags(promptText);
-                    }
-                    
-                    sendPromptToWorkflow(promptText);
-                });
-            });
-            
-            // Handle send params buttons
-            const paramsBtn = metadataPanel.querySelector('.send-params-btn');
-            if (paramsBtn) {
-                paramsBtn.addEventListener('click', async (e) => {
-                    e.stopPropagation();
-                    
-                    // Collect gen params from the param-tag elements
-                    const tagsContainer = wrapper.querySelector('.params-tags');
-                    if (!tagsContainer) return;
-                    
-                    const paramTags = tagsContainer.querySelectorAll('.param-tag');
-                    const genParams = {};
-                    
-                    // Map display labels to genParams keys
-                    const labelToKey = {
-                        'Seed': 'seed',
-                        'Steps': 'steps',
-                        'Sampler': 'sampler',
-                        'CFG': 'cfg_scale',
-                    };
-                    
-                    paramTags.forEach(tag => {
-                        const nameEl = tag.querySelector('.param-name');
-                        const valueEl = tag.querySelector('.param-value');
-                        if (!nameEl || !valueEl) return;
-                        
-                        const label = nameEl.textContent.replace(':', '').trim();
-                        const key = labelToKey[label];
-                        if (key) {
-                            genParams[key] = valueEl.textContent.trim();
-                        }
-                    });
-                    
-                    if (Object.keys(genParams).length === 0) {
-                        showToast('No sendable parameters found', {}, 'warning');
-                        return;
-                    }
-                    
-                    await sendGenParamsToWorkflow(genParams);
-                });
-            }
-            
-            // Prevent panel scroll from causing modal scroll
-            metadataPanel.addEventListener('wheel', (e) => {
-                const isAtTop = metadataPanel.scrollTop === 0;
-                const isAtBottom = metadataPanel.scrollHeight - metadataPanel.scrollTop === metadataPanel.clientHeight;
-                
-                // Only prevent default if scrolling would cause the panel to scroll
-                if ((e.deltaY < 0 && !isAtTop) || (e.deltaY > 0 && !isAtBottom)) {
-                    e.stopPropagation();
-                }
-            }, { passive: true });
         }
+
+        // Prevent events from bubbling
+        metadataPanel.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Handle copy prompt buttons
+        const copyBtns = metadataPanel.querySelectorAll('.copy-prompt-btn');
+        copyBtns.forEach(copyBtn => {
+            const promptIndex = copyBtn.dataset.promptIndex;
+            const promptElement = wrapper.querySelector(`#prompt-${promptIndex}`);
+
+            copyBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+
+                if (!promptElement) return;
+
+                try {
+                    await copyToClipboard(promptElement.textContent, 'Prompt copied to clipboard');
+                } catch (err) {
+                    console.error('Copy failed:', err);
+                    showToast('toast.triggerWords.copyFailed', {}, 'error');
+                }
+            });
+        });
+
+        // Handle send prompt buttons
+        const sendBtns = metadataPanel.querySelectorAll('.send-prompt-btn');
+        sendBtns.forEach(sendBtn => {
+            const promptIndex = sendBtn.dataset.promptIndex;
+            const promptElement = wrapper.querySelector(`#prompt-${promptIndex}`);
+
+            sendBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+
+                if (!promptElement) return;
+
+                let promptText = promptElement.textContent || '';
+                if (!promptText.trim()) {
+                    showToast('toast.recipes.noPromptToSend', {}, 'warning');
+                    return;
+                }
+
+                // Respect strip <lora> setting from global state
+                if (state.global.settings?.strip_lora_on_copy) {
+                    promptText = stripLoraTags(promptText);
+                }
+
+                sendPromptToWorkflow(promptText);
+            });
+        });
+
+        // Handle send params buttons
+        const paramsBtn = metadataPanel.querySelector('.send-params-btn');
+        if (paramsBtn) {
+            paramsBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+
+                // Collect gen params from the param-tag elements
+                const tagsContainer = wrapper.querySelector('.params-tags');
+                if (!tagsContainer) return;
+
+                const paramTags = tagsContainer.querySelectorAll('.param-tag');
+                const genParams = {};
+
+                // Map display labels to genParams keys
+                const labelToKey = {
+                    'Seed': 'seed',
+                    'Steps': 'steps',
+                    'Sampler': 'sampler',
+                    'CFG': 'cfg_scale',
+                };
+
+                paramTags.forEach(tag => {
+                    const nameEl = tag.querySelector('.param-name');
+                    const valueEl = tag.querySelector('.param-value');
+                    if (!nameEl || !valueEl) return;
+
+                    const label = nameEl.textContent.replace(':', '').trim();
+                    const key = labelToKey[label];
+                    if (key) {
+                        genParams[key] = valueEl.textContent.trim();
+                    }
+                });
+
+                if (Object.keys(genParams).length === 0) {
+                    showToast('No sendable parameters found', {}, 'warning');
+                    return;
+                }
+
+                await sendGenParamsToWorkflow(genParams);
+            });
+        }
+
+        // Prevent panel scroll from causing modal scroll
+        metadataPanel.addEventListener('wheel', (e) => {
+            const isAtTop = metadataPanel.scrollTop === 0;
+            const isAtBottom = metadataPanel.scrollHeight - metadataPanel.scrollTop === metadataPanel.clientHeight;
+
+            // Only prevent default if scrolling would cause the panel to scroll
+            if ((e.deltaY < 0 && !isAtTop) || (e.deltaY > 0 && !isAtBottom)) {
+                e.stopPropagation();
+            }
+        }, { passive: true });
     });
 }
 
@@ -525,6 +505,12 @@ export function initMediaControlHandlers(container) {
                     const result = await response.json();
                     
                     if (result.success) {
+                        // Let the gallery refresh itself (removes thumbnail + selects a neighbor)
+                        mediaWrapper.dispatchEvent(new CustomEvent('example-media-deleted', {
+                            bubbles: true,
+                            detail: { shortId }
+                        }));
+
                         // Success: remove the media wrapper from the DOM
                         mediaWrapper.style.opacity = '0';
                         mediaWrapper.style.height = '0';
@@ -649,7 +635,7 @@ export function initMediaControlHandlers(container) {
     // Initialize NSFW level buttons
     initSetNsfwHandlers(container);
     
-    // Media control visibility is now handled in initMetadataPanelHandlers
+    // Media control visibility is handled with pure CSS (.media-wrapper:hover .media-controls)
     // Any click handlers or other functionality can still be added here
 }
 
