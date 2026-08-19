@@ -1659,7 +1659,8 @@ class ModelDownloadHandler:
                 import json
 
                 try:
-                    data["file_params"] = json.loads(file_params_json)
+                    # Normalize falsy payloads (e.g. {}) to None (#1058)
+                    data["file_params"] = json.loads(file_params_json) or None
                 except json.JSONDecodeError:
                     self._logger.warning(
                         "Invalid file_params JSON: %s", file_params_json
@@ -1811,7 +1812,8 @@ class ModelDownloadHandler:
 
             model_id = int(model_id_str) if model_id_str else None
             model_version_id = int(model_version_id_str) if model_version_id_str else None
-            file_params = json.loads(file_params_json) if file_params_json else None
+            # Normalize falsy payloads (e.g. {}) to None (#1058)
+            file_params = (json.loads(file_params_json) if file_params_json else None) or None
 
             service = await DownloadQueueService.get_instance()
             item = await service.add_to_queue(

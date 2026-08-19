@@ -595,7 +595,10 @@ export class DownloadManager {
                  </div>`;
             }
 
-            const fileBadge = modelFiles.length > 1 && !existsLocally
+            // Always offer the file-selection entry for multi-file versions,
+            // even when the version is already (partially) in the library, so
+            // remaining files can still be downloaded (#1058).
+            const fileBadge = modelFiles.length > 1
                 ? `<span class="file-select-badge" data-version-id="${version.id}">
                      <i class="fas fa-th-list"></i> ${modelFiles.length} ${translate('modals.download.fileSelection.files')} <i class="fas fa-chevron-right badge-arrow"></i>
                    </span>`
@@ -1016,6 +1019,16 @@ export class DownloadManager {
 
             if (!response?.success) {
                 this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
+                const errorMessage = response?.error || 'Unknown error';
+                // A file-level "already in library" rejection is an expected
+                // outcome when browsing files of a partially downloaded
+                // version — surface it as a lightweight toast instead of the
+                // failure summary modal so the user can simply go back and
+                // pick another file (#1058).
+                if (typeof errorMessage === 'string' && errorMessage.includes('already exists in')) {
+                    showToast(errorMessage, {}, 'info');
+                    return false;
+                }
                 showDownloadBatchSummary({
                     total: 1,
                     completed: 0,
@@ -1026,7 +1039,7 @@ export class DownloadManager {
                             source,
                             url: this._buildSingleItemUrl({ modelId, versionId, source }),
                         },
-                        error: response?.error || 'Unknown error',
+                        error: errorMessage,
                         name: displayName,
                     }],
                     onRetry: () => this.executeDownloadWithProgress(retryParams),
@@ -1610,6 +1623,7 @@ export class DownloadManager {
 
             const fileParams = this.selectedFile ? {
                 id: this.selectedFile.id,
+                name: this.selectedFile.name || null,
                 type: this.selectedFile.type || 'Model',
                 format: this.selectedFile.metadata?.format || null,
                 size: this.selectedFile.metadata?.size || null,

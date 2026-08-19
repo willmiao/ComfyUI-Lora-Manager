@@ -213,6 +213,162 @@ class DownloadManager:
             )
             return False
 
+    async def _get_scanner_for_model_type(self, model_type: str):
+        """Return the scanner responsible for the given model type."""
+        if model_type == "checkpoint":
+            return await self._get_checkpoint_scanner()
+        if model_type == "embedding":
+            return await ServiceRegistry.get_embedding_scanner()
+        return await self._get_lora_scanner()
+
+    @staticmethod
+    def _resolve_target_file(
+        files: Any, file_params: Dict[str, Any] | None
+    ) -> Optional[Dict[str, Any]]:
+        """Resolve the target file within a version's file list from file_params.
+
+        Shared by the existence gate and the actual file selection so both
+        always agree on which file a download refers to (#1058). Returns None
+        when file_params is None or no file matches.
+        """
+        if not file_params or not isinstance(files, list):
+            return None
+
+        target_file_id = file_params.get("id")
+        target_type = file_params.get("type", "Model")
+        target_format = file_params.get("format")
+        target_size = file_params.get("size")
+        target_fp = file_params.get("fp")
+        is_primary = file_params.get("isPrimary", False)
+
+        logger.debug(
+            "[download] file_params received: id=%s, type=%s, format=%s, size=%s, fp=%s, "
+            "isPrimary=%s, total_files=%d",
+            target_file_id, target_type, target_format, target_size, target_fp,
+            is_primary, len(files),
+        )
+
+        file_info: Optional[Dict[str, Any]] = None
+
+        if target_file_id:
+            target_id_str = str(target_file_id)
+            for f in files:
+                if not isinstance(f, dict):
+                    continue
+                f_id = f.get("id")
+                if str(f_id) == target_id_str:
+                    file_info = f
+                    logger.debug(
+                        "[download] MATCH by ID: id=%s name='%s'",
+                        f_id, f.get("name"),
+                    )
+                    break
+            if not file_info:
+                logger.debug("[download] No file found with id=%s", target_file_id)
+
+        elif is_primary:
+            file_info = next(
+                (
+                    f
+                    for f in files
+                    if isinstance(f, dict)
+                    and f.get("primary")
+                    and f.get("type") in MODEL_WEIGHT_FILE_TYPES
+                ),
+                None,
+            )
+        else:
+            # Lenient metadata match: only compare fields present on both sides
+            for f in files:
+                if not isinstance(f, dict):
+                    continue
+                f_type = f.get("type", "")
+                if f_type != target_type:
+                    continue
+
+                f_meta = f.get("metadata", {})
+                f_format = f_meta.get("format") or f.get("format")
+                f_size = f_meta.get("size") or f.get("size")
+                f_fp = f_meta.get("fp") or f.get("fp")
+
+                if target_format and f_format != target_format:
+                    continue
+                if target_size and f_size and f_size != target_size:
+                    continue
+                if target_fp and f_fp and f_fp != target_fp:
+                    continue
+
+                file_info = f
+                break
+
+        return file_info
+
+    async def _find_local_file_entry(
+        self,
+        model_type: str,
+        model_version_id: int,
+        target_file: Dict[str, Any],
+    ) -> Optional[Dict[str, Any]]:
+        """Find a local library entry for a specific file of a model version.
+
+        Matches per design rule D2 (#1058): SHA256 is only compared when both
+        sides carry a non-empty hash; otherwise fall back to (extension-less)
+        file name equality. Never let two empty hashes compare equal.
+        """
+        try:
+            normalized_version_id = int(model_version_id)
+        except (TypeError, ValueError):
+            return None
+
+        try:
+            scanner = await self._get_scanner_for_model_type(model_type)
+            cache = await scanner.get_cached_data()
+        except Exception as exc:
+            logger.debug(
+                "Failed to scan local entries for version %s file check: %s",
+                model_version_id,
+                exc,
+            )
+            return None
+
+        raw_data = getattr(cache, "raw_data", None) if cache else None
+        if not raw_data:
+            return None
+
+        target_hash = str(
+            (target_file.get("hashes") or {}).get("SHA256") or ""
+        ).strip().lower()
+        target_name = str(target_file.get("name") or "").strip()
+        target_base = os.path.splitext(target_name)[0] if target_name else ""
+
+        for item in raw_data:
+            if not isinstance(item, dict):
+                continue
+            civitai_data = item.get("civitai")
+            if not isinstance(civitai_data, dict):
+                continue
+            try:
+                item_version_id = int(civitai_data.get("id"))
+            except (TypeError, ValueError):
+                continue
+            if item_version_id != normalized_version_id:
+                continue
+
+            local_hash = str(item.get("sha256") or "").strip().lower()
+            if target_hash and local_hash:
+                if local_hash == target_hash:
+                    return item
+                # Both sides carry hashes that differ: this is a different
+                # file of the same version — do not fall back to name match.
+                continue
+
+            if target_base:
+                local_name = str(item.get("file_name") or "").strip()
+                if local_name == target_base:
+                    return item
+
+        return None
+
     async def download_from_civitai(
         self,
         model_id: int | None = None,
@@ -242,6 +398,10 @@ class DownloadManager:
         Returns:
             Dict with download result
         """
+        # Normalize falsy file_params (e.g. an empty dict from API JSON
+        # parsing) to None so gate conditions behave consistently (#1058).
+        file_params = file_params or None
+
         logger.debug(
             "[download] download_from_civitai called: model_id=%s, model_version_id=%s, "
             "source=%s, file_params=%s",
@@ -1152,9 +1312,13 @@ class DownloadManager:
         use_save_dir_as_root: bool = False,
     ) -> Dict[str, Any]:
         """Wrapper for original download_from_civitai implementation"""
+        file_params = file_params or None
         try:
-            # Check if model version already exists in library
-            if model_version_id is not None:
+            # Check if model version already exists in library.
+            # With an explicit file selection (file_params) the version-level
+            # check is deferred until after the metadata fetch, when the target
+            # file can be resolved and checked individually (#1058).
+            if model_version_id is not None and file_params is None:
                 # Check both scanners
                 lora_scanner = await self._get_lora_scanner()
                 checkpoint_scanner = await self._get_checkpoint_scanner()
@@ -1235,8 +1399,26 @@ class DownloadManager:
                 except (TypeError, ValueError):
                     resolved_version_id = None
 
+            # Resolve the explicitly selected file (if any) up front so the
+            # existence gates and the actual file selection below always agree
+            # on the target file (#1058).
+            target_file: Optional[Dict[str, Any]] = None
+            if file_params is not None:
+                target_file = self._resolve_target_file(
+                    version_info.get("files") or [], file_params
+                )
+                if target_file is None:
+                    logger.warning(
+                        "[download] file_params provided but no file matched; "
+                        "falling back to version-level checks and primary file "
+                        "selection (model_version_id=%s)",
+                        resolved_version_id,
+                    )
+            explicit_file = target_file is not None
+
             if (
-                get_settings_manager().get_skip_previously_downloaded_model_versions()
+                not explicit_file
+                and get_settings_manager().get_skip_previously_downloaded_model_versions()
                 and resolved_version_id is not None
                 and await self._has_been_downloaded(model_type, resolved_version_id)
             ):
@@ -1346,9 +1528,38 @@ class DownloadManager:
                         f"baseModel '{base_model_value}' is a known diffusion model, routing to unet folder"
                     )
 
-            # Case 2: model_version_id was None, check after getting version_info
-            if model_version_id is None:
-                version_id = version_info.get("id")
+            # Existence check after the metadata fetch (#1058):
+            # - An explicit file selection only blocks when THIS file is
+            #   already in the library; other files of the same version
+            #   remain downloadable.
+            # - Without file_params (or when file_params failed to resolve),
+            #   keep version-level protection. The case "model_version_id
+            #   given + no file_params" was already covered by the early
+            #   gate above.
+            if explicit_file and resolved_version_id is not None:
+                existing_entry = await self._find_local_file_entry(
+                    model_type, resolved_version_id, target_file
+                )
+                if existing_entry is not None:
+                    error_message = (
+                        f"File '{target_file.get('name')}' from model version "
+                        f"{resolved_version_id} already exists in {model_type} library"
+                    )
+                    logger.info("[download] %s", error_message)
+                    return {"success": False, "error": error_message}
+                logger.info(
+                    "[download] File '%s' of model version %s not in %s library — "
+                    "download allowed (other files of this version may exist locally)",
+                    target_file.get("name"), resolved_version_id, model_type,
+                )
+            elif file_params is not None or model_version_id is None:
+                # Case 2: model_version_id was None, or file_params did not
+                # resolve to a concrete file — check at version level.
+                version_id = (
+                    resolved_version_id
+                    if resolved_version_id is not None
+                    else version_info.get("id")
+                )
 
                 if model_type == "lora":
                     # Check lora scanner
@@ -1495,73 +1706,16 @@ class DownloadManager:
             files = version_info.get("files", [])
             file_info = None
 
-            # If file_params is provided, try to find matching file
-            if file_params and model_version_id:
-                target_file_id = file_params.get("id")
-                target_type = file_params.get("type", "Model")
-                target_format = file_params.get("format")
-                target_size = file_params.get("size")
-                target_fp = file_params.get("fp")
-                is_primary = file_params.get("isPrimary", False)
-
-                logger.debug(
-                    "[download] file_params received: id=%s, type=%s, format=%s, size=%s, fp=%s, isPrimary=%s, "
-                    "model_version_id=%s, total_files=%d",
-                    target_file_id, target_type, target_format, target_size, target_fp, is_primary,
-                    model_version_id, len(files),
-                )
-
-                if target_file_id:
-                    target_id_str = str(target_file_id)
-                    for f in files:
-                        f_id = f.get("id")
-                        if str(f_id) == target_id_str:
-                            file_info = f
-                            logger.debug(
-                                "[download] MATCH by ID: id=%s name='%s'",
-                                f_id, f.get("name"),
-                            )
-                            break
-                    if not file_info:
-                        logger.debug("[download] No file found with id=%s", target_file_id)
-
-                elif is_primary:
-                    file_info = next(
-                        (
-                            f
-                            for f in files
-                            if f.get("primary")
-                            and f.get("type") in MODEL_WEIGHT_FILE_TYPES
-                        ),
-                        None,
-                    )
-                else:
-                    # Lenient metadata match: only compare fields present on both sides
-                    for f in files:
-                        f_type = f.get("type", "")
-                        if f_type != target_type:
-                            continue
-
-                        f_meta = f.get("metadata", {})
-                        f_format = f_meta.get("format") or f.get("format")
-                        f_size = f_meta.get("size") or f.get("size")
-                        f_fp = f_meta.get("fp") or f.get("fp")
-
-                        if target_format and f_format != target_format:
-                            continue
-                        if target_size and f_size and f_size != target_size:
-                            continue
-                        if target_fp and f_fp and f_fp != target_fp:
-                            continue
-
-                        file_info = f
-                        break
-
+            # If file_params is provided, reuse the file resolved right after
+            # the metadata fetch so the existence gate and this selection
+            # always agree on the target file (#1058).
+            if file_params is not None:
+                file_info = target_file
                 if not file_info:
                     logger.debug(
                         "[download] No match found via file_params — falling back to primary file lookup",
                     )
-            elif not file_params:
+            else:
                 logger.debug(
                     "[download] No file_params provided (null/None) — will use primary file lookup. "
                     "model_version_id=%s, total_files=%d",

@@ -87,7 +87,9 @@ class DownloadCoordinator:
             progress_callback=progress_callback,
             download_id=download_id,
             source=payload.get("source"),
-            file_params=payload.get("file_params"),
+            # Normalize falsy file_params (e.g. {}) to None so download gates
+            # treat it as "no explicit file selection" (#1058).
+            file_params=payload.get("file_params") or None,
         )
 
         result["download_id"] = download_id

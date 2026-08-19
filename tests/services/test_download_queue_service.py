@@ -5,6 +5,8 @@ Covers the new ``download_id``-based code paths in
 compatibility with ``id``.
 """
 
+import json
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -191,3 +193,131 @@ async def test_retry_unknown_download_id(tmp_path: Path) -> None:
 
     item = await svc.retry_from_history(download_id="dl-nope")
     assert item is None
+
+
+# ---------------------------------------------------------------------------
+# file_params persistence across queue -> history -> retry (#1058)
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_file_params_survive_queue_to_history(tmp_path: Path) -> None:
+    """complete_download copies the queue row's file_params into history."""
+    svc = _make_service(tmp_path)
+    await svc.add_to_queue(
+        download_id="dl-fp",
+        model_id=1,
+        model_version_id=100,
+        file_params={"id": 1002, "type": "Model"},
+    )
+
+    await svc.complete_download("dl-fp", status="failed", error="boom")
+
+    history = await svc.get_history()
+    assert len(history["items"]) == 1
+    assert json.loads(history["items"][0]["file_params"]) == {
+        "id": 1002,
+        "type": "Model",
+    }
+
+
+@pytest.mark.asyncio
+async def test_retry_restores_file_params(tmp_path: Path) -> None:
+    """retry_from_history re-queues with the originally selected file."""
+    svc = _make_service(tmp_path)
+    await svc.add_to_history(
+        download_id="dl-fail-fp",
+        model_id=1,
+        model_version_id=100,
+        status="failed",
+        file_params={"id": 1002, "type": "Model"},
+    )
+
+    item = await svc.retry_from_history(download_id="dl-fail-fp")
+
+    assert item is not None
+    assert item["status"] == "queued"
+    assert json.loads(item["file_params"]) == {"id": 1002, "type": "Model"}
+
+
+@pytest.mark.asyncio
+async def test_retry_all_restores_file_params(tmp_path: Path) -> None:
+    """retry_all_failed preserves file_params for every re-queued item."""
+    svc = _make_service(tmp_path)
+    await svc.add_to_history(
+        download_id="dl-f1", status="failed", file_params={"id": 1001}
+    )
+    await svc.add_to_history(download_id="dl-f2", status="canceled")
+
+    count = await svc.retry_all_failed()
+    assert count == 2
+
+    queue = await svc.get_queue()
+    restored = sorted(
+        (q["file_params"] or "") for q in queue
+    )
+    assert restored[0] == ""  # dl-f2 never had file_params
+    assert json.loads(restored[1]) == {"id": 1001}
+
+
+@pytest.mark.asyncio
+async def test_legacy_history_db_gains_file_params_column(tmp_path: Path) -> None:
+    """Databases created before the file_params column get migrated (#1058)."""
+    db_path = tmp_path / "queue.sqlite"
+    conn = sqlite3.connect(db_path)
+    conn.executescript(
+        """
+        CREATE TABLE download_queue (
+            download_id TEXT PRIMARY KEY,
+            model_id INTEGER,
+            model_version_id INTEGER,
+            model_name TEXT NOT NULL DEFAULT '',
+            version_name TEXT DEFAULT '',
+            thumbnail_url TEXT DEFAULT '',
+            source TEXT,
+            file_params TEXT,
+            status TEXT NOT NULL DEFAULT 'queued',
+            priority INTEGER DEFAULT 0,
+            progress INTEGER DEFAULT 0,
+            bytes_downloaded INTEGER DEFAULT 0,
+            total_bytes INTEGER,
+            bytes_per_second REAL DEFAULT 0.0,
+            error TEXT,
+            file_path TEXT,
+            added_at REAL NOT NULL,
+            started_at REAL,
+            completed_at REAL
+        );
+        CREATE TABLE download_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            download_id TEXT,
+            model_id INTEGER,
+            model_version_id INTEGER,
+            model_name TEXT NOT NULL DEFAULT '',
+            version_name TEXT DEFAULT '',
+            thumbnail_url TEXT DEFAULT '',
+            status TEXT NOT NULL,
+            error TEXT,
+            file_path TEXT,
+            bytes_downloaded INTEGER DEFAULT 0,
+            total_bytes INTEGER,
+            completed_at REAL NOT NULL,
+            is_already_exists INTEGER DEFAULT 0
+        );
+        """
+    )
+    conn.close()
+
+    svc = DownloadQueueService(db_path=str(db_path))
+
+    # The migrated table accepts file_params writes
+    await svc.add_to_history(
+        download_id="dl-legacy-fp", status="failed", file_params={"id": 5}
+    )
+    history = await svc.get_history()
+    assert json.loads(history["items"][0]["file_params"]) == {"id": 5}
+
+    # And retry restores them
+    item = await svc.retry_from_history(download_id="dl-legacy-fp")
+    assert item is not None
+    assert json.loads(item["file_params"]) == {"id": 5}

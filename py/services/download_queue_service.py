@@ -64,6 +64,7 @@ class DownloadQueueService:
             model_name TEXT NOT NULL DEFAULT '',
             version_name TEXT DEFAULT '',
             thumbnail_url TEXT DEFAULT '',
+            file_params TEXT,
             status TEXT NOT NULL,
             error TEXT,
             file_path TEXT,
@@ -119,6 +120,18 @@ class DownloadQueueService:
             return
         with self._connect() as conn:
             conn.executescript(self._SCHEMA_TABLES)
+
+            # Databases created by older versions lack
+            # download_history.file_params; add it so retry-from-history can
+            # restore the originally selected file (#1058).
+            history_columns = {
+                row["name"]
+                for row in conn.execute("PRAGMA table_info(download_history)")
+            }
+            if "file_params" not in history_columns:
+                conn.execute(
+                    "ALTER TABLE download_history ADD COLUMN file_params TEXT"
+                )
 
             # Creating the unique index on download_history.download_id can
             # fail if pre-existing rows have duplicate values (e.g. from a
@@ -418,6 +431,12 @@ class DownloadQueueService:
                 return None
 
             now = completed_at if completed_at is not None else time.time()
+            # Guard against legacy databases whose download_queue table
+            # predates the file_params column.
+            queue_columns = set(row.keys())
+            file_params_json = (
+                row["file_params"] if "file_params" in queue_columns else None
+            )
             conn.execute(
                 "DELETE FROM download_queue WHERE download_id = ?",
                 (download_id,),
@@ -426,9 +445,9 @@ class DownloadQueueService:
                 """
                 INSERT OR IGNORE INTO download_history (
                     download_id, model_id, model_version_id, model_name,
-                    version_name, thumbnail_url, status, error, file_path,
-                    bytes_downloaded, total_bytes, completed_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    version_name, thumbnail_url, file_params, status, error,
+                    file_path, bytes_downloaded, total_bytes, completed_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     row["download_id"],
@@ -437,6 +456,7 @@ class DownloadQueueService:
                     row["model_name"],
                     row["version_name"],
                     row["thumbnail_url"],
+                    file_params_json,
                     status,
                     error,
                     file_path,
@@ -503,6 +523,7 @@ class DownloadQueueService:
         bytes_downloaded: int = 0,
         total_bytes: Optional[int] = None,
         is_already_exists: int = 0,
+        file_params: Optional[dict[str, Any]] = None,
     ) -> int:
         """Insert a record into the download history.
 
@@ -510,6 +531,7 @@ class DownloadQueueService:
         inserted row.
         """
         now = time.time()
+        file_params_json = json.dumps(file_params) if file_params is not None else None
 
         async with self._lock:
             conn = self._get_conn()
@@ -517,9 +539,10 @@ class DownloadQueueService:
                 """
                 INSERT INTO download_history (
                     download_id, model_id, model_version_id, model_name,
-                    version_name, thumbnail_url, status, error, file_path,
-                    bytes_downloaded, total_bytes, completed_at, is_already_exists
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    version_name, thumbnail_url, file_params, status, error,
+                    file_path, bytes_downloaded, total_bytes, completed_at,
+                    is_already_exists
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                 """,
                 (
                     download_id,
@@ -528,6 +551,7 @@ class DownloadQueueService:
                     model_name,
                     version_name,
                     thumbnail_url,
+                    file_params_json,
                     status,
                     error,
                     file_path,
@@ -702,7 +726,7 @@ class DownloadQueueService:
                     download_id, model_id, model_version_id, model_name,
                     version_name, thumbnail_url, source, file_params,
                     status, priority, added_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'queued', 0, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?)
                 """,
                 (
                     new_id,
@@ -712,6 +736,7 @@ class DownloadQueueService:
                     row["version_name"],
                     row["thumbnail_url"],
                     "retry",
+                    row["file_params"],
                     now,
                 ),
             )
@@ -755,7 +780,7 @@ class DownloadQueueService:
                         download_id, model_id, model_version_id, model_name,
                         version_name, thumbnail_url, source, file_params,
                         status, priority, added_at
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'queued', 0, ?)
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'queued', 0, ?)
                     """,
                     (
                         new_id,
@@ -765,6 +790,7 @@ class DownloadQueueService:
                         row["version_name"],
                         row["thumbnail_url"],
                         "retry",
+                        row["file_params"],
                         now,
                     ),
                 )
