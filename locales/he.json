@@ -1244,13 +1244,13 @@
             "downloaded": "הורד",
             "downloadedTooltip": "הורד בעבר, אך הוא אינו נמצא כרגע בספרייה שלך.",
             "alreadyInLibrary": "כבר בספרייה",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "הורד חלקית",
             "autoOrganizedPath": "[מאורגן אוטומטית לפי תבנית נתיב]",
             "fileSelection": {
                 "title": "בחר פורמט קובץ",
                 "files": "קבצים",
                 "select": "בחר קובץ",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "בספרייה"
             },
             "errors": {
                 "invalidUrl": "פורמט URL של Civitai לא חוקי",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "הורדה",
                     "downloadTooltip": "הורד את הגרסה הזו",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "הורד את הקבצים הנותרים של גרסה זו",
                     "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-Civitai",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "הורדו {completed} מתוך {total} LoRAs",
             "downloadPartialWithAccess": "הורדו {completed} מתוך {total} LoRAs. {accessFailures} נכשלו עקב הגבלות גישה. בדוק את מפתח ה-API שלך בהגדרות או את סטטוס הגישה המוקדמת.",
             "pleaseSelectVersion": "אנא בחר גרסה",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "אנא בחר לפחות קובץ אחד",
             "versionExists": "גרסה זו כבר קיימת בספרייה שלך",
             "downloadCompleted": "ההורדה הושלמה בהצלחה",
             "downloadSkippedByBaseModel": "ההורדה דולגה כי מודל הבסיס {baseModel} מוחרג",

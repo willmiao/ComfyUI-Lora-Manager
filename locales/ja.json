@@ -1244,13 +1244,13 @@
             "downloaded": "ダウンロード済み",
             "downloadedTooltip": "以前にダウンロード済みですが、現在はライブラリにありません。",
             "alreadyInLibrary": "既にライブラリ内",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "一部ダウンロード済み",
             "autoOrganizedPath": "[パステンプレートによる自動整理]",
             "fileSelection": {
                 "title": "ファイル形式を選択",
                 "files": "ファイル",
                 "select": "ファイルを選択",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "ライブラリ内"
             },
             "errors": {
                 "invalidUrl": "無効なCivitai URL形式",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "ダウンロード",
                     "downloadTooltip": "このバージョンをダウンロード",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "このバージョンの残りのファイルをダウンロード",
                     "downloadEarlyAccessTooltip": "Civitai からこの早期アクセス版をダウンロード",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "このバージョンはCivitaiサイト内でのみ利用可能で、ダウンロードはできません",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "{total} LoRAのうち {completed} がダウンロードされました",
             "downloadPartialWithAccess": "{total} LoRAのうち {completed} がダウンロードされました。{accessFailures} はアクセス制限により失敗しました。設定でAPIキーまたはアーリーアクセス状況を確認してください。",
             "pleaseSelectVersion": "バージョンを選択してください",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "ファイルを1つ以上選択してください",
             "versionExists": "このバージョンは既にライブラリに存在します",
             "downloadCompleted": "ダウンロードが正常に完了しました",
             "downloadSkippedByBaseModel": "ベースモデル {baseModel} が除外されているため、ダウンロードをスキップしました",

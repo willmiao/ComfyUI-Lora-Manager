@@ -1244,13 +1244,13 @@
             "downloaded": "Descargado",
             "downloadedTooltip": "Descargado anteriormente, pero actualmente no está en tu biblioteca.",
             "alreadyInLibrary": "Ya en la biblioteca",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "Descargado parcialmente",
             "autoOrganizedPath": "[Auto-organizado por plantilla de ruta]",
             "fileSelection": {
                 "title": "Seleccionar formato de archivo",
                 "files": "archivos",
                 "select": "Seleccionar archivo",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "En la biblioteca"
             },
             "errors": {
                 "invalidUrl": "Formato de URL de Civitai inválido",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "Descargar",
                     "downloadTooltip": "Descargar esta versión",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "Descargar los archivos restantes de esta versión",
                     "downloadEarlyAccessTooltip": "Descargar esta versión de acceso temprano desde Civitai",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "Esta versión solo está disponible para generación en el sitio de Civitai",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "Descargados {completed} de {total} LoRAs",
             "downloadPartialWithAccess": "Descargados {completed} de {total} LoRAs. {accessFailures} fallaron debido a restricciones de acceso. Revisa tu clave API en configuración o estado de acceso temprano.",
             "pleaseSelectVersion": "Por favor selecciona una versión",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "Por favor selecciona al menos un archivo",
             "versionExists": "Esta versión ya existe en tu biblioteca",
             "downloadCompleted": "Descarga completada exitosamente",
             "downloadSkippedByBaseModel": "Descarga omitida porque el modelo base {baseModel} está excluido",

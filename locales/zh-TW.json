@@ -1244,13 +1244,13 @@
             "downloaded": "已下載",
             "downloadedTooltip": "先前已下載，但目前不在你的庫中。",
             "alreadyInLibrary": "已在庫存",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "部分已下載",
             "autoOrganizedPath": "[依路徑範本自動整理]",
             "fileSelection": {
                 "title": "選擇檔案格式",
                 "files": "個檔案",
                 "select": "選擇檔案",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "已在庫中"
             },
             "errors": {
                 "invalidUrl": "Civitai 網址格式無效",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "下載",
                     "downloadTooltip": "下載此版本",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "下載此版本的剩餘檔案",
                     "downloadEarlyAccessTooltip": "從 Civitai 下載此搶先體驗版本",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "此版本僅在 Civitai 站內可用，無法下載",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "已下載 {completed} 個 LoRA，共 {total} 個",
             "downloadPartialWithAccess": "已下載 {completed} 個 LoRA，共 {total} 個。{accessFailures} 個因訪問限制而失敗。請檢查您的 API 密鑰或提前訪問狀態。",
             "pleaseSelectVersion": "請選擇一個版本",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "請至少選擇一個檔案",
             "versionExists": "此版本已存在於您的庫中",
             "downloadCompleted": "下載成功完成",
             "downloadSkippedByBaseModel": "由於基礎模型 {baseModel} 已被排除，已跳過下載",

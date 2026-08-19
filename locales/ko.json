@@ -1244,13 +1244,13 @@
             "downloaded": "다운로드됨",
             "downloadedTooltip": "이전에 다운로드했지만 현재 라이브러리에 없습니다.",
             "alreadyInLibrary": "이미 라이브러리에 있음",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "부분적으로 다운로드됨",
             "autoOrganizedPath": "[경로 템플릿으로 자동 정리됨]",
             "fileSelection": {
                 "title": "파일 형식 선택",
                 "files": "개 파일",
                 "select": "파일 선택",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "라이브러리에 있음"
             },
             "errors": {
                 "invalidUrl": "잘못된 Civitai URL 형식",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "다운로드",
                     "downloadTooltip": "이 버전 다운로드",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "이 버전의 나머지 파일 다운로드",
                     "downloadEarlyAccessTooltip": "Civitai에서 이 얼리 액세스 버전 다운로드",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "이 버전은 Civitai 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "{total}개 중 {completed}개 LoRA가 다운로드되었습니다",
             "downloadPartialWithAccess": "{total}개 중 {completed}개 LoRA가 다운로드되었습니다. {accessFailures}개는 액세스 제한으로 실패했습니다. 설정에서 API 키 또는 얼리 액세스 상태를 확인하세요.",
             "pleaseSelectVersion": "버전을 선택해주세요",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "파일을 하나 이상 선택해주세요",
             "versionExists": "이 버전은 이미 라이브러리에 있습니다",
             "downloadCompleted": "다운로드가 성공적으로 완료되었습니다",
             "downloadSkippedByBaseModel": "기본 모델 {baseModel}이(가) 제외되어 다운로드를 건너뛰었습니다",

@@ -1244,13 +1244,13 @@
             "downloaded": "Загружено",
             "downloadedTooltip": "Ранее загружено, но сейчас этого нет в вашей библиотеке.",
             "alreadyInLibrary": "Уже в библиотеке",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "Загружено частично",
             "autoOrganizedPath": "[Автоматически организовано по шаблону пути]",
             "fileSelection": {
                 "title": "Выбрать формат файла",
                 "files": "файлов",
                 "select": "Выбрать файл",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "В библиотеке"
             },
             "errors": {
                 "invalidUrl": "Неверный формат URL Civitai",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "Скачать",
                     "downloadTooltip": "Скачать эту версию",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "Скачать оставшиеся файлы этой версии",
                     "downloadEarlyAccessTooltip": "Скачать эту версию раннего доступа с Civitai",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "Эта версия доступна только для генерации на сайте Civitai",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "Загружено {completed} из {total} LoRAs",
             "downloadPartialWithAccess": "Загружено {completed} из {total} LoRAs. {accessFailures} не удалось из-за ограничений доступа. Проверьте ваш API ключ в настройках или статус раннего доступа.",
             "pleaseSelectVersion": "Пожалуйста, выберите версию",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "Пожалуйста, выберите хотя бы один файл",
             "versionExists": "Эта версия уже существует в вашей библиотеке",
             "downloadCompleted": "Загрузка успешно завершена",
             "downloadSkippedByBaseModel": "Загрузка пропущена, потому что базовая модель {baseModel} исключена",

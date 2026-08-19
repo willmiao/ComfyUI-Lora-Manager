@@ -1244,13 +1244,13 @@
             "downloaded": "Téléchargé",
             "downloadedTooltip": "Déjà téléchargé, mais il n'est actuellement pas dans votre bibliothèque.",
             "alreadyInLibrary": "Déjà dans la bibliothèque",
-            "partiallyDownloaded": "[TODO: Translate] Partially downloaded",
+            "partiallyDownloaded": "Téléchargé partiellement",
             "autoOrganizedPath": "[Auto-organisé par modèle de chemin]",
             "fileSelection": {
                 "title": "Choisir le format de fichier",
                 "files": "fichiers",
                 "select": "Choisir le fichier",
-                "inLibrary": "[TODO: Translate] In Library"
+                "inLibrary": "Dans la bibliothèque"
             },
             "errors": {
                 "invalidUrl": "Format d'URL Civitai invalide",
@@ -1596,7 +1596,7 @@
                 "actions": {
                     "download": "Télécharger",
                     "downloadTooltip": "Télécharger cette version",
-                    "downloadRemainingTooltip": "[TODO: Translate] Download remaining files of this version",
+                    "downloadRemainingTooltip": "Télécharger les fichiers restants de cette version",
                     "downloadEarlyAccessTooltip": "Télécharger cette version en accès anticipé depuis Civitai",
                     "downloadPaidTooltip": "[TODO: Translate] Download this paid version from Civitai",
                     "downloadNotAllowedTooltip": "Cette version n'est disponible que pour la génération sur le site Civitai",
@@ -1945,7 +1945,7 @@
             "downloadPartialSuccess": "{completed} sur {total} LoRAs téléchargés",
             "downloadPartialWithAccess": "{completed} sur {total} LoRAs téléchargés. {accessFailures} ont échoué en raison de restrictions d'accès. Vérifiez votre clé API dans les paramètres ou le statut d'accès anticipé.",
             "pleaseSelectVersion": "Veuillez sélectionner une version",
-            "pleaseSelectFile": "[TODO: Translate] Please select at least one file",
+            "pleaseSelectFile": "Veuillez sélectionner au moins un fichier",
             "versionExists": "Cette version existe déjà dans votre bibliothèque",
             "downloadCompleted": "Téléchargement terminé avec succès",
             "downloadSkippedByBaseModel": "Téléchargement ignoré, car le modèle de base {baseModel} est exclu",
