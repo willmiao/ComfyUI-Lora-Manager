@@ -42,6 +42,40 @@ class RecipeMetadataParser(ABC):
         pass
     
     @staticmethod
+    def populate_lora_from_local(lora_entry: Dict[str, Any], local_lora: Dict[str, Any], base_model_counts=None) -> Dict[str, Any]:
+        """Populate a recipe LoRA entry from the local scanner cache."""
+        local_path = local_lora.get('file_path') or ''
+        file_name = local_lora.get('file_name') or os.path.splitext(os.path.basename(local_path))[0]
+        base_model = local_lora.get('base_model') or ''
+
+        lora_entry['name'] = local_lora.get('model_name') or file_name or lora_entry.get('name', '')
+        lora_entry['file_name'] = file_name
+        lora_entry['hash'] = (local_lora.get('sha256') or lora_entry.get('hash') or '').lower()
+        lora_entry['localPath'] = local_path or None
+        lora_entry['size'] = local_lora.get('size', 0) or 0
+        lora_entry['baseModel'] = base_model
+        lora_entry['existsLocally'] = True
+        lora_entry['isDeleted'] = False
+
+        preview_url = local_lora.get('preview_url')
+        if preview_url:
+            lora_entry['thumbnailUrl'] = config.get_preview_static_url(preview_url)
+
+        civitai_info = local_lora.get('civitai') or {}
+        if isinstance(civitai_info, dict):
+            if civitai_info.get('id') is not None:
+                lora_entry['id'] = civitai_info['id']
+            if civitai_info.get('modelId') is not None:
+                lora_entry['modelId'] = civitai_info['modelId']
+            if civitai_info.get('name'):
+                lora_entry['version'] = civitai_info['name']
+
+        if base_model_counts is not None and base_model:
+            base_model_counts[base_model] = base_model_counts.get(base_model, 0) + 1
+
+        return lora_entry
+
+    @staticmethod
     async def populate_lora_from_civitai(lora_entry: Dict[str, Any], civitai_info_tuple: Tuple[Dict[str, Any] | None, str | None] | Dict[str, Any],
                                          recipe_scanner=None, base_model_counts=None, hash_value=None) -> Optional[Dict[str, Any]]:
         """

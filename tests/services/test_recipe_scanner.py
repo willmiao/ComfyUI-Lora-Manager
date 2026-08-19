@@ -107,6 +107,35 @@ def recipe_scanner(tmp_path: Path, monkeypatch):
     settings_manager_module.reset_settings_manager()
 
 
+@pytest.mark.asyncio
+async def test_local_lora_lookup_requires_unambiguous_name_and_matching_base_model(recipe_scanner):
+    scanner, stub = recipe_scanner
+    models = [
+        {
+            "file_name": "style.safetensors",
+            "folder": "sd15",
+            "file_path": "/models/loras/sd15/style.safetensors",
+            "sha256": "a" * 64,
+            "base_model": "SD 1.5",
+        },
+        {
+            "file_name": "style.safetensors",
+            "folder": "sdxl",
+            "file_path": "/models/loras/sdxl/style.safetensors",
+            "sha256": "b" * 64,
+            "base_model": "SDXL 1.0",
+        },
+    ]
+    stub._cache.raw_data = models
+    stub._hash_meta["b" * 64] = {"path": models[1]["file_path"]}
+
+    assert await scanner.get_local_lora("style") is None
+    assert await scanner.get_local_lora("sdxl/style.safetensors", "SDXL 1.0") is models[1]
+    assert await scanner.get_local_lora("sdxl/style.safetensors", "SD 1.5") is None
+    assert await scanner.get_local_lora("other/style.safetensors") is None
+    assert await scanner.get_local_lora_by_hash("b" * 64) is models[1]
+
+
 def test_recipes_dir_uses_custom_settings_path(tmp_path: Path, monkeypatch):
     RecipeScanner._instance = None
     settings_manager_module.reset_settings_manager()
