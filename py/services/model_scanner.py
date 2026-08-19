@@ -25,6 +25,28 @@ from .cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
 
 logger = logging.getLogger(__name__)
 
+# Canonical set of weight-file extensions stripped when normalizing model
+# names for matching (ModelScanner.find_matching_models and the recipe rematch
+# filename key share this set). It is the union of the LoRA scanner set
+# ({".safetensors"}) and the Checkpoint scanner set (ComfyUI's
+# supported_pt_extensions plus ".gguf") so type-blind lookups (lora +
+# checkpoint merged) cover every format either scanner indexes. ".safebin"
+# is deliberately absent — no scanner indexes it, so a recipe entry
+# "model.safebin" must not be bound to a local "model.safetensors".
+WEIGHT_FILE_EXTENSIONS = frozenset(
+    {
+        ".safetensors",
+        ".ckpt",
+        ".pt",
+        ".pt2",
+        ".bin",
+        ".pth",
+        ".pkl",
+        ".sft",
+        ".gguf",
+    }
+)
+
 
 def _is_excluded_dir(name: str) -> bool:
     """Return True when a directory entry must be skipped during model walks.
@@ -2155,10 +2177,11 @@ class ModelScanner:
         ``base_model`` is given, confident mismatches are rejected while
         unknowns on either side stay eligible (lenient guard).
         ``extensions`` should be the scanner's own ``file_extensions`` so
-        suffix stripping only covers formats the scanner actually indexes.
+        suffix stripping only covers formats the scanner actually indexes;
+        when omitted, the shared :data:`WEIGHT_FILE_EXTENSIONS` set is used.
         """
         # Longest first so overlapping suffixes strip correctly.
-        exts = sorted(extensions or (".safetensors", ".ckpt", ".pt", ".bin"), key=len, reverse=True)
+        exts = sorted(extensions or WEIGHT_FILE_EXTENSIONS, key=len, reverse=True)
 
         normalized_name = str(name).replace("\\", "/").casefold()
         for ext in exts:

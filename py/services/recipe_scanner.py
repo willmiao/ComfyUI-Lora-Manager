@@ -15,6 +15,7 @@ from ..config import config
 from ..utils.constants import VALID_CHECKPOINT_SUB_TYPES, VALID_LORA_TYPES
 from ..utils.file_utils import calculate_autov3
 from ..utils.recipe_open_stats import RecipeOpenStats
+from .model_scanner import WEIGHT_FILE_EXTENSIONS
 from .recipe_cache import RecipeCache
 from .recipes.errors import RecipeNotFoundError, RecipePersistenceError
 from natsort import natsorted
@@ -35,11 +36,6 @@ logger = logging.getLogger(__name__)
 # lowercase to "diffusionmodel", which is not a valid sub-type. Map it
 # explicitly to "diffusion_model" (mirrors Oracle R2-F1).
 _CHECKPOINT_MODEL_TYPE_ALIASES = {"diffusionmodel": "diffusion_model"}
-
-# Known weight-file extensions stripped by _normalize_filename_key. Names are
-# stored extensionless on both sides, so splitext would misread dotted stems
-# ("my.mix" -> "my") and silently collide distinct models.
-_WEIGHT_FILE_EXTS = (".safetensors", ".ckpt", ".pt", ".pth", ".gguf", ".bin", ".safebin", ".sft")
 
 
 class RecipeScanner:
@@ -179,13 +175,15 @@ class RecipeScanner:
 
         Only known weight-file extensions are stripped — names are stored
         extensionless on both sides, so splitext would misread dotted stems
-        ("my.mix" -> "my") and collide distinct models.
+        ("my.mix" -> "my") and collide distinct models. The extension set is
+        shared with ModelScanner.find_matching_models, and is iterated longest
+        first to keep the strip ordering identical to that function.
         """
         if not name:
             return ""
         basename = os.path.basename(name.replace("\\", "/"))
         lower = basename.lower()
-        for ext in _WEIGHT_FILE_EXTS:
+        for ext in sorted(WEIGHT_FILE_EXTENSIONS, key=len, reverse=True):
             if lower.endswith(ext):
                 basename = basename[: -len(ext)]
                 break
