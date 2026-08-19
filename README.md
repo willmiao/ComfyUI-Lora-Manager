@@ -350,4 +350,4 @@ Join our Discord community for support, discussions, and updates:
 ---
 ## Star History
 
-[![Star History Chart](https://api.star-history.com/svg?repos=willmiao/ComfyUI-Lora-Manager&type=Date)](https://star-history.com/#willmiao/ComfyUI-Lora-Manager&Date)
+[![Star History Chart](https://api.star-history.com/chart?repos=willmiao/ComfyUI-Lora-Manager&type=date&legend=top-left&sealed_token=Ly6HDvUHnRrM7jWpL67I1aYGnmRiLyxEMcrPz8tNEHpaIAzxVsJVO6trhjWB2gG333EyqRL8ygW0pETjKgRHzoePaQXtaw3xIt6ODjo_5zER74xU51xLVruGOi9kkb16G7Mv8Unq5PkBtQW88tPa53b2jzwZYbDa7GP_k3K8aiA49uk1Vd4yU4uG1q-0)](https://www.star-history.com/?repos=willmiao%2FComfyUI-Lora-Manager&type=date&legend=top-left)
