@@ -314,4 +314,19 @@ describe('DownloadManager multi-select file dialog (#1058)', () => {
     const nextButton = document.getElementById('nextFromVersion');
     expect(nextButton.disabled).toBe(true);
   });
+
+  it('hides every other step (including the URL step) when the file dialog shows', () => {
+    // Regression: entering via openFileSelectionForVersion (ModelVersionsTab)
+    // left the URL step visible alongside the file selection step (#1058).
+    const manager = new DownloadManager();
+    manager.versions = [makeMultiFileVersion()];
+    document.getElementById('urlStep').style.display = 'block';
+    document.getElementById('versionStep').style.display = 'block';
+
+    manager.showFileSelectionStep('201');
+
+    expect(document.getElementById('urlStep').style.display).toBe('none');
+    expect(document.getElementById('versionStep').style.display).toBe('none');
+    expect(document.getElementById('fileSelectionStep').style.display).toBe('block');
+  });
 });

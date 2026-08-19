@@ -785,7 +785,10 @@ export class DownloadManager {
             (version.downloadedFiles || []).map(f => String(f.fileId))
         );
 
-        document.getElementById('versionStep').style.display = 'none';
+        // Hide every other step — this dialog can be entered directly from
+        // entry points like ModelVersionsTab, where the URL step would
+        // otherwise remain visible (#1058).
+        document.querySelectorAll('.download-step').forEach(step => step.style.display = 'none');
         document.getElementById('fileSelectionStep').style.display = 'block';
 
         const nameEl = document.getElementById('fileSelectionVersionName');
