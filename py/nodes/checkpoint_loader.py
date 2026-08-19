@@ -37,7 +37,7 @@ class CheckpointLoaderLM:
                             "control_after_generate to pick a random model on "
                             "every run."
                         ),
-                        "control_after_generate": True,
+                        "control_after_generate": "fixed",
                     },
                 ),
                 "base_model": (
