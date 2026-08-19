@@ -12,10 +12,12 @@ class LocalRecipeScanner:
     def __init__(self, models):
         self.models = models
         self.queries = []
+        self.base_models = []
         self._lora_scanner = self.LoraScanner()
 
-    async def get_local_lora(self, name):
+    async def get_local_lora(self, name, base_model=None):
         self.queries.append(name)
+        self.base_models.append(base_model)
         return self.models.get(name)
 
 
@@ -161,6 +163,39 @@ async def test_parse_metadata_resolves_standard_and_manager_local_loras(monkeypa
     assert all(entry["existsLocally"] is True for entry in result["loras"])
     assert all(entry["isDeleted"] is False for entry in result["loras"])
     assert scanner.queries == ["styles/standard.safetensors", "manager"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_defaults_malformed_weight_and_passes_checkpoint_base_model(monkeypatch):
+    checkpoint_info = {
+        "id": 456,
+        "modelId": 123,
+        "model": {"name": "Checkpoint", "type": "checkpoint"},
+        "name": "v1",
+        "baseModel": "SDXL 1.0",
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                return checkpoint_info, None
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.comfy.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"style": local_lora("style")})
+    metadata_json = {
+        "1": {"class_type": "LoraLoader", "inputs": {"lora_name": "style", "strength_model": "invalid"}},
+        "2": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "civitai:123@456"}},
+    }
+
+    result = await ComfyMetadataParser().parse_metadata(json.dumps(metadata_json), scanner)
+
+    assert result["loras"][0]["weight"] == 1.0
+    assert scanner.base_models == ["SDXL 1.0"]
 
 
 @pytest.mark.asyncio

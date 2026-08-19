@@ -12,11 +12,16 @@ class LocalRecipeScanner:
     def __init__(self, models):
         self.models = models
         self.queries = []
+        self.hash_queries = []
         self._lora_scanner = self.LoraScanner()
 
-    async def get_local_lora(self, name):
+    async def get_local_lora(self, name, base_model=None):
         self.queries.append(name)
         return self.models.get(name)
+
+    async def get_local_lora_by_hash(self, hash_value):
+        self.hash_queries.append(hash_value)
+        return next((model for model in self.models.values() if model.get("sha256") == hash_value), None)
 
 
 def local_lora(file_name="local_only"):
@@ -219,11 +224,20 @@ async def test_parse_metadata_resolves_prompt_lora_without_hashes(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_parse_metadata_prefers_local_lora_over_hash_lookup(monkeypatch):
+async def test_parse_metadata_prefers_hash_over_colliding_local_name(monkeypatch):
+    remote_info = {
+        "id": 100,
+        "modelId": 200,
+        "model": {"name": "Hash Match", "type": "LORA"},
+        "name": "v1",
+        "files": [{"type": "Model", "primary": True, "name": "hash_match.safetensors", "hashes": {"SHA256": "b" * 64}}],
+    }
+
     async def fake_metadata_provider():
         class Provider:
             async def get_model_by_hash(self, model_hash):
-                raise AssertionError("A locally resolved LoRA must not query Civitai")
+                assert model_hash == "deadbeef00"
+                return remote_info, None
 
         return Provider()
 
@@ -241,9 +255,35 @@ async def test_parse_metadata_prefers_local_lora_over_hash_lookup(monkeypatch):
     result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
 
     assert len(result["loras"]) == 1
+    assert result["loras"][0]["id"] == 100
     assert result["loras"][0]["weight"] == 0.8
+    assert scanner.queries == []
+    assert scanner.hash_queries == ["deadbeef00"]
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_falls_back_to_name_when_hash_is_unresolved(monkeypatch):
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                return None, "Model not found"
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+    scanner = LocalRecipeScanner({"local_only": local_lora()})
+    metadata_text = (
+        "portrait <lora:local_only:0.8>\nSteps: 20, Seed: 1, "
+        'Hashes: {"lora:local_only": "deadbeef00"}'
+    )
+
+    result = await AutomaticMetadataParser().parse_metadata(metadata_text, scanner)
+
     assert result["loras"][0]["hash"] == "a" * 64
-    assert result["loras"][0]["existsLocally"] is True
+    assert scanner.queries == ["local_only"]
 
 
 @pytest.mark.asyncio

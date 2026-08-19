@@ -388,6 +388,15 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                 key = (lora_type, normalize_lora_name(lora_name, True))
                 prompt_by_basename.setdefault(key, []).append((lora_name, round(float(lora_weight), 2)))
 
+            hash_basenames = {
+                (hash_key.split(':', 1)[0], normalize_lora_name(hash_key.split(':', 1)[1], True))
+                for hash_key, hash_value in metadata.get("hashes", {}).items()
+                if hash_value and hash_key.startswith(("lora:", "hypernet:"))
+            }
+            recipe_base_model = checkpoint.get("baseModel") if checkpoint else None
+            if not recipe_base_model and len(base_model_counts) == 1:
+                recipe_base_model = next(iter(base_model_counts))
+
             resource_lora_count = len(loras)
 
             def make_lora_entry(lora_type, lora_name, weight, lora_hash=''):
@@ -405,6 +414,33 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                     'downloadUrl': '',
                     'isDeleted': False
                 }
+
+            def merge_or_append_civitai(civitai_entry, preserve_existing_weight=False):
+                civitai_id = get_version_id(civitai_entry)
+                civitai_hash = (civitai_entry.get('hash') or '').lower()
+                for index, existing in enumerate(loras):
+                    existing_id = get_version_id(existing)
+                    existing_hash = (existing.get('hash') or '').lower()
+                    if not (
+                        (civitai_id and existing_id == civitai_id)
+                        or (civitai_hash and existing_hash == civitai_hash)
+                    ):
+                        continue
+
+                    if preserve_existing_weight:
+                        civitai_entry['weight'] = existing.get('weight', civitai_entry['weight'])
+                    existing_base = existing.get('baseModel')
+                    if not civitai_entry.get('baseModel'):
+                        civitai_entry['baseModel'] = existing_base or ''
+                    elif existing_base:
+                        remaining = base_model_counts.get(existing_base, 0) - 1
+                        if remaining > 0:
+                            base_model_counts[existing_base] = remaining
+                        else:
+                            base_model_counts.pop(existing_base, None)
+                    loras[index] = civitai_entry
+                    return
+                loras.append(civitai_entry)
 
             def merge_or_append_local(local_entry):
                 local_id = get_version_id(local_entry)
@@ -457,13 +493,17 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                 ]
                 if len(prompt_by_basename[basename_key]) == 1 and len(matching_resources) == 1:
                     matching_resources[0]['weight'] = weight
-                    resolved_prompt_basenames.add(basename_key)
+                    if basename_key not in hash_basenames:
+                        resolved_prompt_basenames.add(basename_key)
+                    continue
+
+                if basename_key in hash_basenames:
                     continue
 
                 if not recipe_scanner or lora_type != 'lora':
                     continue
                 queried_local_basenames.add(basename_key)
-                local_lora = await recipe_scanner.get_local_lora(lora_name)
+                local_lora = await recipe_scanner.get_local_lora(lora_name, recipe_base_model)
                 if not local_lora:
                     continue
 
@@ -484,23 +524,17 @@ class AutomaticMetadataParser(RecipeMetadataParser):
 
                 prompt_entries = prompt_by_basename.get(basename_key, [])
                 weight = prompt_entries[0][1] if len(prompt_entries) == 1 else 1.0
+                lora_entry = make_lora_entry(lora_type, lora_name, weight, lora_hash)
 
-                if recipe_scanner and lora_type == 'lora' and basename_key not in queried_local_basenames:
-                    local_lora = await recipe_scanner.get_local_lora(lora_name)
+                if lora_hash and recipe_scanner and lora_type == 'lora':
+                    local_lora = await recipe_scanner.get_local_lora_by_hash(lora_hash)
                     if local_lora:
-                        local_entry = self.populate_lora_from_local(
-                            make_lora_entry(lora_type, lora_name, weight, lora_hash),
-                            local_lora,
-                        )
+                        local_entry = self.populate_lora_from_local(lora_entry, local_lora)
                         merge_or_append_local(local_entry)
                         continue
 
-                if resource_lora_count or not lora_hash:
-                    continue
-
-                lora_entry = make_lora_entry(lora_type, lora_name, weight, lora_hash)
-
-                if metadata_provider:
+                hash_resolved = False
+                if lora_hash and metadata_provider:
                     try:
                         civitai_info = await metadata_provider.get_model_by_hash(lora_hash)
                         populated_entry = await self.populate_lora_from_civitai(
@@ -513,10 +547,23 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                         if populated_entry is None:
                             continue
                         lora_entry = populated_entry
+                        hash_resolved = not lora_entry.get('isDeleted')
                     except Exception as e:
                         logger.error(f"Error fetching Civitai info for LoRA {lora_name}: {e}")
 
-                loras.append(lora_entry)
+                if hash_resolved:
+                    merge_or_append_civitai(lora_entry, preserve_existing_weight=not prompt_entries)
+                    continue
+
+                if recipe_scanner and lora_type == 'lora' and basename_key not in queried_local_basenames:
+                    local_lora = await recipe_scanner.get_local_lora(lora_name, recipe_base_model)
+                    if local_lora:
+                        local_entry = self.populate_lora_from_local(lora_entry, local_lora)
+                        merge_or_append_local(local_entry)
+                        continue
+
+                if lora_hash and not resource_lora_count:
+                    loras.append(lora_entry)
                 
             # Try to get base model from resources or make educated guess
             base_model = None

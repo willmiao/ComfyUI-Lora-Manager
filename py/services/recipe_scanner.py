@@ -2926,13 +2926,70 @@ class RecipeScanner:
 
         return normalized
 
-    async def get_local_lora(self, name: str) -> Optional[Dict[str, Any]]:
-        """Lookup a local LoRA model by name."""
+    async def get_local_lora(
+        self, name: str, base_model: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Lookup an unambiguous local LoRA by name and optional base model."""
 
         if not self._lora_scanner or not name:
             return None
 
-        return await self._lora_scanner.get_model_info_by_name(name)
+        normalized_name = str(name).replace("\\", "/").casefold()
+        for extension in (".safetensors", ".ckpt", ".pt", ".bin"):
+            if normalized_name.endswith(extension):
+                normalized_name = normalized_name[: -len(extension)]
+                break
+        has_path = "/" in normalized_name
+        basename = normalized_name.rsplit("/", 1)[-1]
+
+        cached_data = await self._lora_scanner.get_cached_data()
+        matches = []
+        for model in cached_data.raw_data:
+            file_name = str(model.get("file_name") or "").replace("\\", "/")
+            folder = str(model.get("folder") or "").replace("\\", "/").strip("/")
+            model_path = f"{folder}/{file_name}" if folder else file_name
+            for extension in (".safetensors", ".ckpt", ".pt", ".bin"):
+                if model_path.casefold().endswith(extension):
+                    model_path = model_path[: -len(extension)]
+                    break
+            if (has_path and model_path.casefold() == normalized_name) or (
+                not has_path and model_path.rsplit("/", 1)[-1].casefold() == basename
+            ):
+                matches.append(model)
+
+        if len(matches) != 1:
+            return None
+
+        match = matches[0]
+        expected_base = str(base_model or "").strip().casefold()
+        actual_base = str(match.get("base_model") or "").strip().casefold()
+        if (
+            expected_base
+            and expected_base != "unknown"
+            and actual_base
+            and actual_base != "unknown"
+            and expected_base != actual_base
+        ):
+            return None
+        return match
+
+    async def get_local_lora_by_hash(self, hash_value: str) -> Optional[Dict[str, Any]]:
+        """Lookup a local LoRA through the scanner's hash index."""
+
+        if not self._lora_scanner or not hash_value:
+            return None
+
+        file_path = self._lora_scanner.get_path_by_hash(hash_value)
+        if not file_path:
+            return None
+
+        target_path = os.path.normcase(os.path.abspath(file_path))
+        cached_data = await self._lora_scanner.get_cached_data()
+        for model in cached_data.raw_data:
+            model_path = model.get("file_path")
+            if model_path and os.path.normcase(os.path.abspath(model_path)) == target_path:
+                return model
+        return None
 
     async def get_local_checkpoint(self, name: str) -> Optional[Dict[str, Any]]:
         """Lookup a local checkpoint model by name."""
