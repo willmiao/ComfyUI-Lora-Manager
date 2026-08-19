@@ -2934,44 +2934,19 @@ class RecipeScanner:
         if not self._lora_scanner or not name:
             return None
 
-        normalized_name = str(name).replace("\\", "/").casefold()
-        for extension in (".safetensors", ".ckpt", ".pt", ".bin"):
-            if normalized_name.endswith(extension):
-                normalized_name = normalized_name[: -len(extension)]
-                break
-        has_path = "/" in normalized_name
-        basename = normalized_name.rsplit("/", 1)[-1]
+        return await self._lora_scanner.get_model_info_by_name(
+            name, require_unique=True, base_model=base_model
+        )
 
-        cached_data = await self._lora_scanner.get_cached_data()
-        matches = []
-        for model in cached_data.raw_data:
-            file_name = str(model.get("file_name") or "").replace("\\", "/")
-            folder = str(model.get("folder") or "").replace("\\", "/").strip("/")
-            model_path = f"{folder}/{file_name}" if folder else file_name
-            for extension in (".safetensors", ".ckpt", ".pt", ".bin"):
-                if model_path.casefold().endswith(extension):
-                    model_path = model_path[: -len(extension)]
-                    break
-            if (has_path and model_path.casefold() == normalized_name) or (
-                not has_path and model_path.rsplit("/", 1)[-1].casefold() == basename
-            ):
-                matches.append(model)
+    async def find_local_loras_by_name(
+        self, name: str, base_model: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Return every local LoRA matching ``name`` (used to explain lookup misses)."""
 
-        if len(matches) != 1:
-            return None
+        if not self._lora_scanner or not name:
+            return []
 
-        match = matches[0]
-        expected_base = str(base_model or "").strip().casefold()
-        actual_base = str(match.get("base_model") or "").strip().casefold()
-        if (
-            expected_base
-            and expected_base != "unknown"
-            and actual_base
-            and actual_base != "unknown"
-            and expected_base != actual_base
-        ):
-            return None
-        return match
+        return await self._lora_scanner.find_models_by_name(name, base_model=base_model)
 
     async def get_local_lora_by_hash(self, hash_value: str) -> Optional[Dict[str, Any]]:
         """Lookup a local LoRA through the scanner's hash index."""

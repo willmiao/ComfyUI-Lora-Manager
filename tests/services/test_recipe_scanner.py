@@ -57,8 +57,32 @@ class StubLoraScanner:
         meta = self._hash_meta.get(hash_value.lower())
         return meta.get("path") if meta else None
 
-    async def get_model_info_by_name(self, name: str):
+    async def get_model_info_by_name(
+        self,
+        name: str,
+        *,
+        require_unique: bool = False,
+        base_model: str | None = None,
+    ):
+        if require_unique or base_model:
+            matches = ModelScanner.find_matching_models(
+                self._cache.raw_data,
+                name,
+                base_model=base_model,
+                extensions={".safetensors"},
+            )
+            if require_unique and len(matches) != 1:
+                return None
+            return matches[0] if matches else None
         return self._models_by_name.get(name)
+
+    async def find_models_by_name(self, name: str, *, base_model: str | None = None):
+        return ModelScanner.find_matching_models(
+            self._cache.raw_data,
+            name,
+            base_model=base_model,
+            extensions={".safetensors"},
+        )
 
     def register_model(self, name: str, info: Dict[str, Any]) -> None:
         self._models_by_name[name] = info
@@ -130,7 +154,11 @@ async def test_local_lora_lookup_requires_unambiguous_name_and_matching_base_mod
     stub._hash_meta["b" * 64] = {"path": models[1]["file_path"]}
 
     assert await scanner.get_local_lora("style") is None
+    assert await scanner.get_local_lora("style", "SDXL 1.0") is models[1]
     assert await scanner.get_local_lora("sdxl/style.safetensors", "SDXL 1.0") is models[1]
+    # The lora scanner only indexes .safetensors, so a .pt name must not be
+    # stripped into a cross-extension match.
+    assert await scanner.get_local_lora("sdxl/style.pt", "SDXL 1.0") is None
     assert await scanner.get_local_lora("sdxl/style.safetensors", "SD 1.5") is None
     assert await scanner.get_local_lora("other/style.safetensors") is None
     assert await scanner.get_local_lora_by_hash("b" * 64) is models[1]

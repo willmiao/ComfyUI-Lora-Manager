@@ -2140,8 +2140,97 @@ class ModelScanner:
             return sorted_models
         return sorted_models[:limit]
         
-    async def get_model_info_by_name(self, name):
-        """Get model information by name"""
+    @staticmethod
+    def find_matching_models(
+        raw_data: List[Dict[str, Any]],
+        name: str,
+        *,
+        base_model: Optional[str] = None,
+        extensions: Optional[Set[str]] = None,
+    ) -> List[Dict[str, Any]]:
+        """Return all cached models matching ``name`` (case-insensitive).
+
+        A name containing a path separator must equal the model's
+        folder-relative path; a bare name matches on basename. When
+        ``base_model`` is given, confident mismatches are rejected while
+        unknowns on either side stay eligible (lenient guard).
+        ``extensions`` should be the scanner's own ``file_extensions`` so
+        suffix stripping only covers formats the scanner actually indexes.
+        """
+        # Longest first so overlapping suffixes strip correctly.
+        exts = sorted(extensions or (".safetensors", ".ckpt", ".pt", ".bin"), key=len, reverse=True)
+
+        normalized_name = str(name).replace("\\", "/").casefold()
+        for ext in exts:
+            if normalized_name.endswith(ext):
+                normalized_name = normalized_name[: -len(ext)]
+                break
+        has_path = "/" in normalized_name
+        basename = normalized_name.rsplit("/", 1)[-1]
+
+        matches = []
+        for model in raw_data:
+            file_name = str(model.get("file_name") or "").replace("\\", "/")
+            folder = str(model.get("folder") or "").replace("\\", "/").strip("/")
+            model_path = f"{folder}/{file_name}" if folder else file_name
+            for ext in exts:
+                if model_path.casefold().endswith(ext):
+                    model_path = model_path[: -len(ext)]
+                    break
+            if (has_path and model_path.casefold() == normalized_name) or (
+                not has_path and model_path.rsplit("/", 1)[-1].casefold() == basename
+            ):
+                matches.append(model)
+
+        expected_base = str(base_model or "").strip().casefold()
+        if expected_base and expected_base != "unknown":
+            matches = [
+                model
+                for model in matches
+                if str(model.get("base_model") or "").strip().casefold()
+                in ("", "unknown", expected_base)
+            ]
+        return matches
+
+    async def find_models_by_name(
+        self, name: str, *, base_model: Optional[str] = None
+    ) -> List[Dict[str, Any]]:
+        """Return every cached model matching ``name`` (see ``find_matching_models``)."""
+        try:
+            cache = await self.get_cached_data()
+            return self.find_matching_models(
+                cache.raw_data,
+                name,
+                base_model=base_model,
+                extensions=self.file_extensions,
+            )
+        except Exception as e:
+            logger.error(f"Error finding models by name: {e}", exc_info=True)
+            return []
+
+    async def get_model_info_by_name(
+        self,
+        name: str,
+        *,
+        require_unique: bool = False,
+        base_model: Optional[str] = None,
+    ):
+        """Get model information by name.
+
+        Default mode keeps the legacy first-match/fallback semantics. With
+        ``require_unique`` an ambiguous name is a miss, and ``base_model``
+        rejects confident base-model mismatches (unknowns stay eligible).
+        """
+        if require_unique or base_model:
+            try:
+                matches = await self.find_models_by_name(name, base_model=base_model)
+                if require_unique and len(matches) != 1:
+                    return None
+                return matches[0] if matches else None
+            except Exception as e:
+                logger.error(f"Error getting model info by name: {e}", exc_info=True)
+                return None
+
         try:
             cache = await self.get_cached_data()
 
