@@ -62,6 +62,14 @@ class DownloadedVersionHistoryService:
         );
         CREATE INDEX IF NOT EXISTS idx_downloaded_model_versions_model
             ON downloaded_model_versions(model_type, model_id);
+        CREATE TABLE IF NOT EXISTS downloaded_version_files (
+            model_type TEXT NOT NULL,
+            version_id INTEGER NOT NULL,
+            file_id INTEGER NOT NULL,
+            file_name TEXT,
+            downloaded_at REAL NOT NULL,
+            PRIMARY KEY (model_type, version_id, file_id)
+        );
     """
 
     def __init__(self, db_path: str | None = None, *, settings_manager=None) -> None:
@@ -131,10 +139,13 @@ class DownloadedVersionHistoryService:
         source: str = "manual",
         file_path: str | None = None,
         library_name: str | None = None,
+        file_id: int | None = None,
+        file_name: str | None = None,
     ) -> None:
         normalized_type = _normalize_model_type(model_type)
         normalized_version_id = _normalize_int(version_id)
         normalized_model_id = _normalize_int(model_id)
+        normalized_file_id = _normalize_int(file_id)
         if normalized_type is None or normalized_version_id is None:
             return
 
@@ -168,6 +179,25 @@ class DownloadedVersionHistoryService:
                     active_library_name,
                 ),
             )
+            if normalized_file_id is not None:
+                # Per-file history for multi-file versions (#1058)
+                conn.execute(
+                    """
+                    INSERT INTO downloaded_version_files (
+                        model_type, version_id, file_id, file_name, downloaded_at
+                    ) VALUES (?, ?, ?, ?, ?)
+                    ON CONFLICT(model_type, version_id, file_id) DO UPDATE SET
+                        file_name = COALESCE(excluded.file_name, downloaded_version_files.file_name),
+                        downloaded_at = excluded.downloaded_at
+                    """,
+                    (
+                        normalized_type,
+                        normalized_version_id,
+                        normalized_file_id,
+                        file_name,
+                        timestamp,
+                    ),
+                )
             conn.commit()
 
     async def mark_downloaded_bulk(
@@ -255,7 +285,62 @@ class DownloadedVersionHistoryService:
                     self._get_active_library_name(),
                 ),
             )
+            # Whole-version deletion also clears the per-file records (#1058)
+            conn.execute(
+                """
+                DELETE FROM downloaded_version_files
+                WHERE model_type = ? AND version_id = ?
+                """,
+                (normalized_type, normalized_version_id),
+            )
             conn.commit()
+
+    async def mark_file_deleted(
+        self, model_type: str, version_id: int, file_id: int
+    ) -> None:
+        """Drop a single file record of a version, keeping siblings (#1058)."""
+        normalized_type = _normalize_model_type(model_type)
+        normalized_version_id = _normalize_int(version_id)
+        normalized_file_id = _normalize_int(file_id)
+        if (
+            normalized_type is None
+            or normalized_version_id is None
+            or normalized_file_id is None
+        ):
+            return
+
+        async with self._lock:
+            conn = self._get_conn()
+            conn.execute(
+                """
+                DELETE FROM downloaded_version_files
+                WHERE model_type = ? AND version_id = ? AND file_id = ?
+                """,
+                (normalized_type, normalized_version_id, normalized_file_id),
+            )
+            conn.commit()
+
+    async def get_downloaded_file_ids(
+        self, model_type: str, version_id: int
+    ) -> list[int]:
+        """Return the CivitAI file ids recorded as downloaded for a version."""
+        normalized_type = _normalize_model_type(model_type)
+        normalized_version_id = _normalize_int(version_id)
+        if normalized_type is None or normalized_version_id is None:
+            return []
+
+        async with self._lock:
+            conn = self._get_conn()
+            rows = conn.execute(
+                """
+                SELECT file_id
+                FROM downloaded_version_files
+                WHERE model_type = ? AND version_id = ?
+                ORDER BY file_id ASC
+                """,
+                (normalized_type, normalized_version_id),
+            ).fetchall()
+        return [int(row["file_id"]) for row in rows]
 
     async def has_been_downloaded(self, model_type: str, version_id: int) -> bool:
         normalized_type = _normalize_model_type(model_type)

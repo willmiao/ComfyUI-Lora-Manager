@@ -1244,11 +1244,13 @@
       "downloaded": "Downloaded",
       "downloadedTooltip": "Previously downloaded, but it is not currently in your library.",
       "alreadyInLibrary": "Already in Library",
+      "partiallyDownloaded": "Partially downloaded",
       "autoOrganizedPath": "[Auto-organized by path template]",
       "fileSelection": {
         "title": "Select File Format",
         "files": "files",
-        "select": "Select File"
+        "select": "Select File",
+        "inLibrary": "In Library"
       },
       "errors": {
         "invalidUrl": "Invalid Civitai URL format",
@@ -1594,6 +1596,7 @@
         "actions": {
           "download": "Download",
           "downloadTooltip": "Download this version",
+          "downloadRemainingTooltip": "Download remaining files of this version",
           "downloadEarlyAccessTooltip": "Download this early access version from Civitai",
           "downloadPaidTooltip": "Download this paid version from Civitai",
           "downloadNotAllowedTooltip": "This version is only available for on-site generation on Civitai",
@@ -1942,6 +1945,7 @@
       "downloadPartialSuccess": "Downloaded {completed} of {total} LoRAs",
       "downloadPartialWithAccess": "Downloaded {completed} of {total} LoRAs. {accessFailures} failed due to access restrictions. Check your API key in settings or early access status.",
       "pleaseSelectVersion": "Please select a version",
+      "pleaseSelectFile": "Please select at least one file",
       "versionExists": "This version already exists in your library",
       "downloadCompleted": "Download completed successfully",
       "downloadSkippedByBaseModel": "Skipped download because base model {baseModel} is excluded",

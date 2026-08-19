@@ -976,6 +976,7 @@ class DownloadManager:
                                 version_info,
                                 record.get("model_version_id"),
                                 record.get("save_path") or record.get("file_path"),
+                                file_info=file_info,
                             )
                             await self._sync_downloaded_version(
                                 model_type,
@@ -1860,6 +1861,7 @@ class DownloadManager:
                     version_info,
                     model_version_id,
                     save_path,
+                    file_info=file_info,
                 )
                 await self._sync_downloaded_version(
                     model_type,
@@ -1902,6 +1904,7 @@ class DownloadManager:
         version_info: Dict[str, Any],
         fallback_version_id=None,
         file_path: str | None = None,
+        file_info: Dict[str, Any] | None = None,
     ) -> None:
         try:
             history_service = await ServiceRegistry.get_downloaded_version_history_service()
@@ -1927,6 +1930,15 @@ class DownloadManager:
         if version_id is None:
             version_id = fallback_version_id
 
+        # Per-file identity for multi-file versions (#1058)
+        file_id = None
+        file_name = None
+        if isinstance(file_info, dict):
+            file_id = file_info.get("id")
+            raw_file_name = file_info.get("name")
+            if isinstance(raw_file_name, str) and raw_file_name.strip():
+                file_name = raw_file_name.strip()
+
         try:
             await history_service.mark_downloaded(
                 model_type,
@@ -1934,6 +1946,8 @@ class DownloadManager:
                 model_id=int(cast(Any, resolved_model_id)) if resolved_model_id is not None else None,
                 source="download",
                 file_path=file_path,
+                file_id=file_id,
+                file_name=file_name,
             )
         except (TypeError, ValueError):
             logger.debug(

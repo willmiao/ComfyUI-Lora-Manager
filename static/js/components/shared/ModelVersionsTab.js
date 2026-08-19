@@ -573,46 +573,53 @@ function renderRow(version, options) {
     );
 
     const actions = [];
-    if (!version.isInLibrary) {
-        const canDownload = isDownloadAllowed(version);
-        const downloadIcon = isEarlyAccess ? '<i class="fas fa-bolt"></i> ' : '';
-        let downloadTitle;
-        if (!canDownload) {
-            downloadTitle = translate(
-                'modals.model.versions.actions.downloadNotAllowedTooltip',
-                {},
-                'This version is only available for on-site generation on Civitai'
-            );
-        } else if (isPaidPermanent(version)) {
-            downloadTitle = translate(
-                'modals.model.versions.actions.downloadPaidTooltip',
-                {},
-                'Download this paid version from Civitai'
-            );
-        } else if (isEarlyAccess) {
-            downloadTitle = translate(
-                'modals.model.versions.actions.downloadEarlyAccessTooltip',
-                {},
-                'Download this early access version from Civitai'
-            );
-        } else {
-            downloadTitle = translate(
-                'modals.model.versions.actions.downloadTooltip',
-                {},
-                'Download this version'
-            );
+    const canDownload = isDownloadAllowed(version);
+    const downloadIcon = isEarlyAccess ? '<i class="fas fa-bolt"></i> ' : '';
+    let downloadTitle;
+    if (!canDownload) {
+        downloadTitle = translate(
+            'modals.model.versions.actions.downloadNotAllowedTooltip',
+            {},
+            'This version is only available for on-site generation on Civitai'
+        );
+    } else if (version.isInLibrary) {
+        // In-library versions may still have undownloaded weight files; the
+        // download modal's file dialog decides what remains (#1058).
+        downloadTitle = translate(
+            'modals.model.versions.actions.downloadRemainingTooltip',
+            {},
+            'Download remaining files of this version'
+        );
+    } else if (isPaidPermanent(version)) {
+        downloadTitle = translate(
+            'modals.model.versions.actions.downloadPaidTooltip',
+            {},
+            'Download this paid version from Civitai'
+        );
+    } else if (isEarlyAccess) {
+        downloadTitle = translate(
+            'modals.model.versions.actions.downloadEarlyAccessTooltip',
+            {},
+            'Download this early access version from Civitai'
+        );
+    } else {
+        downloadTitle = translate(
+            'modals.model.versions.actions.downloadTooltip',
+            {},
+            'Download this version'
+        );
+    }
+    actions.push(buildActionButton(
+        downloadLabel,
+        canDownload ? 'version-action-primary' : 'version-action-disabled',
+        canDownload ? 'download' : '',
+        {
+            title: downloadTitle,
+            iconMarkup: downloadIcon,
+            disabled: !canDownload,
         }
-        actions.push(buildActionButton(
-            downloadLabel,
-            canDownload ? 'version-action-primary' : 'version-action-disabled',
-            canDownload ? 'download' : '',
-            {
-                title: downloadTitle,
-                iconMarkup: downloadIcon,
-                disabled: !canDownload,
-            }
-        ));
-    } else if (version.filePath) {
+    ));
+    if (version.isInLibrary && version.filePath) {
         actions.push(buildActionButton(
             deleteLabel,
             'version-action-danger',
@@ -1422,6 +1429,15 @@ export function initVersionsTab({
         button.disabled = true;
 
         try {
+            // In-library versions may still have undownloaded weight files
+            // (#1058). The tab payload has no per-file state, so open the
+            // download modal's file dialog, which refetches the full version
+            // payload and shows what remains.
+            if (version.isInLibrary) {
+                await downloadManager.openFileSelectionForVersion(modelType, modelId, versionId);
+                return;
+            }
+
             const pathInfo = await resolveDownloadPathFromCurrentVersion();
             const resolveTemplatePath = shouldResolveTemplatePath(version, pathInfo);
             const success = await downloadManager.downloadVersionWithDefaults(modelType, modelId, versionId, {

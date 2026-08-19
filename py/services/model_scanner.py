@@ -2446,6 +2446,39 @@ class ModelScanner:
             logger.error(f"Error checking model version existence: {e}")
             return False
 
+    async def get_files_for_version(self, model_version_id: int) -> List[Dict[str, Any]]:
+        """Get all local file entries for a specific model version (#1058).
+
+        A Civitai model version can have several weight files downloaded;
+        unlike the single-valued version_index this returns every entry.
+
+        Args:
+            model_version_id: Civitai model version ID
+
+        Returns:
+            List[Dict]: Cache entries (may be empty)
+        """
+        try:
+            normalized_id = int(model_version_id)
+        except (TypeError, ValueError):
+            return []
+
+        try:
+            cache = await self.get_cached_data()
+            if not cache:
+                return []
+
+            getter = getattr(cache, "get_files_by_version_id", None)
+            if getter is not None:
+                return getter(normalized_id)
+
+            # Fallback for cache implementations without the multi-file index
+            entry = cache.version_index.get(normalized_id)
+            return [entry] if entry is not None else []
+        except Exception as e:
+            logger.error(f"Error getting files for model version: {e}")
+            return []
+
     async def get_model_versions_by_id(self, model_id: int) -> List[Dict[str, Any]]:
         """Get all versions of a model by its ID
         

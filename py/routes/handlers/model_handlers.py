@@ -2189,6 +2189,19 @@ class ModelCivitaiHandler:
                 else:
                     version.pop("localPath", None)
 
+                # Per-file downloaded state so multi-file versions can show
+                # which individual files are already in the library (#1058)
+                local_entries: List[Any] = []
+                if version_id is not None and cache:
+                    files_getter = getattr(cache, "get_files_by_version_id", None)
+                    if files_getter is not None:
+                        local_entries = files_getter(version_id)
+                    elif cache_entry is not None:
+                        local_entries = [cache_entry]
+                version["downloadedFiles"] = self._match_downloaded_files(
+                    version, local_entries
+                )
+
                 model_file = (
                     self._find_model_file(version.get("files", []))
                     if isinstance(version.get("files"), Iterable)
@@ -2202,6 +2215,64 @@ class ModelCivitaiHandler:
                 "Error fetching %s model versions: %s", self._service.model_type, exc
             )
             return web.Response(status=500, text=str(exc))
+
+    @staticmethod
+    def _match_downloaded_files(
+        version: Mapping[str, Any], local_entries: List[Any]
+    ) -> List[Dict[str, Any]]:
+        """Map local library entries back to individual files of a version.
+
+        Matching follows rule D2 (#1058): SHA256 is authoritative when the
+        local entry carries one; otherwise fall back to extension-less file
+        name equality. Returns ``[{fileId, fileName, filePath}]``.
+        """
+        files = version.get("files")
+        if not isinstance(files, list) or not local_entries:
+            return []
+
+        by_hash: Dict[str, Mapping[str, Any]] = {}
+        by_name: Dict[str, Mapping[str, Any]] = {}
+        for file_info in files:
+            if not isinstance(file_info, Mapping):
+                continue
+            sha = str(
+                (file_info.get("hashes") or {}).get("SHA256") or ""
+            ).strip().lower()
+            if sha:
+                by_hash.setdefault(sha, file_info)
+            name = str(file_info.get("name") or "").strip()
+            if name:
+                by_name.setdefault(os.path.splitext(name)[0], file_info)
+
+        downloaded: List[Dict[str, Any]] = []
+        seen_keys: set = set()
+        for entry in local_entries:
+            if not isinstance(entry, Mapping):
+                continue
+            matched: Optional[Mapping[str, Any]] = None
+            local_hash = str(entry.get("sha256") or "").strip().lower()
+            if local_hash:
+                matched = by_hash.get(local_hash)
+            if matched is None:
+                local_name = str(entry.get("file_name") or "").strip()
+                if local_name:
+                    matched = by_name.get(local_name)
+            if matched is None:
+                continue
+
+            file_id = matched.get("id")
+            dedupe_key = file_id if file_id is not None else matched.get("name")
+            if dedupe_key in seen_keys:
+                continue
+            seen_keys.add(dedupe_key)
+            downloaded.append(
+                {
+                    "fileId": file_id,
+                    "fileName": matched.get("name"),
+                    "filePath": entry.get("file_path"),
+                }
+            )
+        return downloaded
 
     async def get_civitai_model_by_version(self, request: web.Request) -> web.Response:
         try:

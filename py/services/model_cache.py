@@ -35,6 +35,10 @@ class ModelCache:
     folders: List[str]
     version_index: Dict[int, Dict[str, Any]] = field(default_factory=dict)
     model_id_index: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
+    # Multi-valued companion to version_index: every local file entry of a
+    # CivitAI model version, so versions with several downloaded files stay
+    # consistent (#1058).
+    version_files_index: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
     name_display_mode: str = "model_name"
     _lock: Any = field(init=False, repr=False, default=None)
     # Cache for last sort: (sort_key, order, seed) -> sorted list
@@ -116,6 +120,7 @@ class ModelCache:
 
         self.version_index = {}
         self.model_id_index = {}
+        self.version_files_index = {}
         for item in self.raw_data:
             self.add_to_version_index(item)
 
@@ -131,6 +136,17 @@ class ModelCache:
             return
 
         self.version_index[version_id] = item
+
+        # Register in the multi-valued index, deduplicated by file_path (#1058)
+        files = self.version_files_index.setdefault(version_id, [])
+        for entry in files:
+            if entry is item or (
+                isinstance(entry, dict)
+                and entry.get('file_path') == item.get('file_path')
+            ):
+                break
+        else:
+            files.append(item)
 
         model_id = self._normalize_version_id(civitai_data.get('modelId'))
         if model_id is None:
@@ -159,12 +175,37 @@ class ModelCache:
         if version_id is None:
             return
 
+        # Drop only this file's entry from the multi-valued index (#1058)
+        files = self.version_files_index.get(version_id)
+        if files:
+            remaining = [
+                entry
+                for entry in files
+                if not (
+                    entry is item
+                    or (
+                        isinstance(entry, dict)
+                        and entry.get('file_path') == item.get('file_path')
+                    )
+                )
+            ]
+            if remaining:
+                self.version_files_index[version_id] = remaining
+            else:
+                self.version_files_index.pop(version_id, None)
+
+        # A surviving sibling file keeps the version present in the indexes
+        sibling = (self.version_files_index.get(version_id) or [None])[0]
+
         existing = self.version_index.get(version_id)
         if existing is item or (
             isinstance(existing, dict)
             and existing.get('file_path') == item.get('file_path')
         ):
-            self.version_index.pop(version_id, None)
+            if sibling is not None:
+                self.version_index[version_id] = sibling
+            else:
+                self.version_index.pop(version_id, None)
 
         model_id = self._normalize_version_id(civitai_data.get('modelId'))
         if model_id is None:
@@ -172,6 +213,20 @@ class ModelCache:
 
         versions = self.model_id_index.get(model_id)
         if not versions:
+            return
+
+        if sibling is not None:
+            # Update the descriptor to reflect the surviving sibling file
+            descriptor = self._build_version_descriptor(
+                sibling,
+                sibling.get('civitai') if isinstance(sibling, dict) else {},
+                version_id,
+            )
+            for index, existing_desc in enumerate(versions):
+                if existing_desc.get('versionId') == version_id:
+                    if descriptor is not None:
+                        versions[index] = descriptor
+                    break
             return
 
         filtered = [v for v in versions if v.get('versionId') != version_id]
@@ -205,6 +260,15 @@ class ModelCache:
 
         versions = self.model_id_index.get(normalized_id, [])
         return [dict(version) for version in versions]
+
+    def get_files_by_version_id(self, version_id: Any) -> List[Dict[str, Any]]:
+        """Return every local file entry for a CivitAI model version (#1058)."""
+
+        normalized_id = self._normalize_version_id(version_id)
+        if normalized_id is None:
+            return []
+
+        return list(self.version_files_index.get(normalized_id, []))
 
     async def resort(self):
         """Resort cached data according to last sort mode if set"""

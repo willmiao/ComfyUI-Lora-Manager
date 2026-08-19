@@ -25,6 +25,12 @@ export class DownloadManager {
         this.apiClient = null;
         this.useDefaultPath = false;
 
+        // Multi-file selection state: selectedFile stays the first selected
+        // file for backward compatibility with single-file flows (#1058).
+        this.selectedFile = null;
+        this.selectedFiles = [];
+        this._lastDownloadError = null;
+
         // Batch mode state
         this.batchModels = [];
         this.isBatchMode = false;
@@ -160,6 +166,8 @@ export class DownloadManager {
         this.modelVersionId = null;
         this.source = null;
         this.selectedFile = null;
+        this.selectedFiles = [];
+        this._lastDownloadError = null;
         this._isDiffusionModel = false;
 
         this.selectedFolder = '';
@@ -546,6 +554,64 @@ export class DownloadManager {
         await this.fetchVersionsForCurrentModel();
     }
 
+    /**
+     * Open the download modal directly on the file-selection step for a
+     * specific model version (#1058). Used by entry points (e.g.
+     * ModelVersionsTab) whose version payloads lack per-file downloaded
+     * state, so the full versions payload is fetched here first.
+     */
+    async openFileSelectionForVersion(modelType, modelId, versionId, { source = null } = {}) {
+        try {
+            this.apiClient = getModelApiClient(modelType);
+        } catch (error) {
+            this.apiClient = getModelApiClient();
+        }
+
+        this.showDownloadModal();
+
+        this.modelId = modelId ? modelId.toString() : null;
+        this.modelVersionId = versionId ? versionId.toString() : null;
+        this.source = source;
+
+        if (!this.modelId) {
+            return;
+        }
+
+        try {
+            this.loadingManager.showSimpleLoading(translate('modals.download.fetchingVersions'));
+            await this.retrieveVersionsForModel(this.modelId, this.source);
+        } catch (error) {
+            showToast('toast.downloads.loadError', { message: error.message }, 'error');
+            return;
+        } finally {
+            this.loadingManager.hide();
+        }
+
+        const version = this.versions.find(v => v.id.toString() === this.modelVersionId);
+        if (!version) {
+            console.warn('[download] openFileSelectionForVersion: version %s not found for model %s',
+                this.modelVersionId, this.modelId);
+            this.showVersionStep();
+            return;
+        }
+
+        const hasRemainingFiles = this._getWeightFiles(version).length > 1
+            && this._getRemainingFiles(version).length > 0;
+
+        if (hasRemainingFiles) {
+            this.showFileSelectionStep(version.id);
+            return;
+        }
+
+        // Nothing left to download for this version (single file or all
+        // files already in the library) — fall back to the version step.
+        if (version.existsLocally) {
+            showToast('toast.loras.versionExists', {}, 'info');
+        }
+        this.currentVersion = version;
+        this.showVersionStep();
+    }
+
     showVersionStep() {
         document.getElementById('urlStep').style.display = 'none';
         document.getElementById('versionStep').style.display = 'block';
@@ -670,9 +736,14 @@ export class DownloadManager {
         const nextButton = document.getElementById('nextFromVersion');
         if (!nextButton) return;
 
-        const existsLocally = this.currentVersion?.existsLocally;
+        const version = this.currentVersion;
+        const existsLocally = version?.existsLocally;
+        // A partially downloaded multi-file version still has downloadable
+        // files, so Next routes into the file dialog instead of blocking (#1058).
+        const hasRemainingFiles = this._getWeightFiles(version).length > 1
+            && this._getRemainingFiles(version).length > 0;
 
-        if (existsLocally) {
+        if (existsLocally && !hasRemainingFiles) {
             nextButton.disabled = true;
             nextButton.classList.add('disabled');
             nextButton.textContent = translate('modals.download.alreadyInLibrary');
@@ -683,12 +754,36 @@ export class DownloadManager {
         }
     }
 
+    _getWeightFiles(version) {
+        return (version?.files || []).filter(f => isModelWeightFile(f.type));
+    }
+
+    _getRemainingFiles(version) {
+        const downloadedIds = new Set(
+            (version?.downloadedFiles || []).map(f => String(f.fileId))
+        );
+        return this._getWeightFiles(version).filter(f => !downloadedIds.has(String(f.id)));
+    }
+
+    // Files of type UNet / Diffusion Model are routed to the diffusion_model
+    // root while regular files go to the model-type root, so a single
+    // multi-file selection session must stay within one routing group.
+    _getFileRoutingGroup(file) {
+        return (file.type === 'UNet' || file.type === 'Diffusion Model') ? 'diffusion' : 'model';
+    }
+
     showFileSelectionStep(versionId) {
         const version = this.versions.find(v => v.id.toString() === versionId.toString());
         if (!version) return;
 
         this.currentVersion = version;
-        const modelFiles = (version.files || []).filter(f => isModelWeightFile(f.type));
+        // Start each file-selection session with a clean selection
+        this.selectedFiles = [];
+        this.selectedFile = null;
+        const modelFiles = this._getWeightFiles(version);
+        const downloadedIds = new Set(
+            (version.downloadedFiles || []).map(f => String(f.fileId))
+        );
 
         document.getElementById('versionStep').style.display = 'none';
         document.getElementById('fileSelectionStep').style.display = 'block';
@@ -702,9 +797,12 @@ export class DownloadManager {
         container.innerHTML = modelFiles.map(file => {
             const meta = file.metadata || {};
             const sizeGB = file.sizeKB ? (file.sizeKB / (1024 * 1024)).toFixed(2) : '--';
-            const isSelected = this.selectedFile?.id === file.id;
+            const isDownloaded = downloadedIds.has(String(file.id));
 
             const tags = [];
+            if (isDownloaded) {
+                tags.push(`<span class="file-tag in-library">${translate('modals.download.fileSelection.inLibrary', {}, 'In Library')}</span>`);
+            }
             if (meta.size) tags.push(`<span class="file-tag size">${meta.size}</span>`);
             if (meta.format) tags.push(`<span class="file-tag format">${meta.format}</span>`);
             if (meta.fp) tags.push(`<span class="file-tag fp">${meta.fp}</span>`);
@@ -712,9 +810,9 @@ export class DownloadManager {
             const fileName = file.name || '';
 
             return `
-                <div class="file-option ${isSelected ? 'selected' : ''}" data-file-id="${file.id}">
+                <div class="file-option ${isDownloaded ? 'disabled' : ''}" data-file-id="${file.id}">
                     <div class="file-option-radio">
-                        <input type="radio" name="fileSelection" value="${file.id}" ${isSelected ? 'checked' : ''}>
+                        <input type="checkbox" name="fileSelection" value="${file.id}" ${isDownloaded ? 'disabled' : ''}>
                     </div>
                     <div class="file-option-info">
                         <div class="file-option-tags">
@@ -728,33 +826,80 @@ export class DownloadManager {
         }).join('');
 
         container.querySelectorAll('.file-option').forEach(el => {
-            el.addEventListener('click', () => {
-                container.querySelectorAll('.file-option').forEach(o => o.classList.remove('selected'));
-                el.classList.add('selected');
-                const radio = el.querySelector('input[type="radio"]');
-                if (radio) radio.checked = true;
+            el.addEventListener('click', (event) => {
+                // Already-downloaded files stay disabled regardless
+                if (el.classList.contains('disabled')) {
+                    event.preventDefault();
+                    return;
+                }
+                const checkbox = el.querySelector('input[type="checkbox"]');
+                if (!checkbox || checkbox.disabled) {
+                    event.preventDefault();
+                    return;
+                }
+                // Clicking the checkbox directly toggles natively; clicking
+                // anywhere else on the option toggles it programmatically.
+                if (event.target !== checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                }
+                this._syncFileSelectionState();
             });
         });
     }
 
-    confirmFileSelection() {
-        const selectedRadio = document.querySelector('#fileSelectionList input[type="radio"]:checked');
-        if (!selectedRadio) {
-            console.warn('[download] confirmFileSelection: no radio button checked');
-            return;
-        }
+    // Sync this.selectedFiles with the DOM checkboxes and enforce the
+    // mixed-type routing guard by disabling the other routing group.
+    _syncFileSelectionState() {
+        const container = document.getElementById('fileSelectionList');
+        if (!container || !this.currentVersion) return;
 
+        const checkedValues = new Set(
+            Array.from(container.querySelectorAll('input[type="checkbox"]:checked'))
+                .map(cb => cb.value)
+        );
+        const modelFiles = this._getWeightFiles(this.currentVersion);
+        this.selectedFiles = modelFiles.filter(f => checkedValues.has(f.id.toString()));
+        this.selectedFile = this.selectedFiles[0] || null;
+
+        const activeGroup = this.selectedFiles.length > 0
+            ? this._getFileRoutingGroup(this.selectedFiles[0])
+            : null;
+
+        container.querySelectorAll('.file-option').forEach(el => {
+            const checkbox = el.querySelector('input[type="checkbox"]');
+            if (!checkbox || el.classList.contains('disabled')) return;
+
+            const file = modelFiles.find(f => f.id.toString() === el.dataset.fileId);
+            const groupBlocked = activeGroup !== null
+                && file
+                && this._getFileRoutingGroup(file) !== activeGroup
+                && !checkbox.checked;
+
+            el.classList.toggle('selected', checkbox.checked);
+            el.classList.toggle('group-disabled', groupBlocked);
+            checkbox.disabled = groupBlocked;
+        });
+    }
+
+    confirmFileSelection() {
         const version = this.currentVersion;
         if (!version) {
             console.warn('[download] confirmFileSelection: no currentVersion set');
             return;
         }
 
-        const modelFiles = (version.files || []).filter(f => isModelWeightFile(f.type));
-        this.selectedFile = modelFiles.find(f => f.id.toString() === selectedRadio.value);
+        // Sync from the DOM first so programmatically checked boxes count too
+        this._syncFileSelectionState();
 
-        console.log('[download] confirmFileSelection: selected file id=%s, name="%s", type="%s", metadata=%o',
-            this.selectedFile?.id, this.selectedFile?.name, this.selectedFile?.type, this.selectedFile?.metadata);
+        if (this.selectedFiles.length === 0) {
+            console.warn('[download] confirmFileSelection: no file selected');
+            showToast('toast.loras.pleaseSelectFile', {}, 'error');
+            return;
+        }
+
+        console.log('[download] confirmFileSelection: %d file(s) selected — %o',
+            this.selectedFiles.length,
+            this.selectedFiles.map(f => ({ id: f.id, name: f.name, type: f.type })));
 
         document.getElementById('fileSelectionStep').style.display = 'none';
         document.getElementById('downloadLocationStep').style.display = 'block';
@@ -785,6 +930,13 @@ export class DownloadManager {
                 return;
             }
             if (this.currentVersion.existsLocally) {
+                // Multi-file versions with remaining undownloaded files route
+                // into the file dialog instead of being blocked outright (#1058).
+                if (this._getWeightFiles(this.currentVersion).length > 1
+                    && this._getRemainingFiles(this.currentVersion).length > 0) {
+                    this.showFileSelectionStep(this.currentVersion.id);
+                    return;
+                }
                 showToast('toast.loras.versionExists', {}, 'info');
                 return;
             }
@@ -919,6 +1071,9 @@ export class DownloadManager {
         source = null,
         fileParams = null,
         closeModal = false,
+        deferReload = false,
+        suppressSuccessToast = false,
+        suppressFailureSummary = false,
     }) {
         const config = this.apiClient?.apiConfig?.config;
 
@@ -927,7 +1082,8 @@ export class DownloadManager {
         }
 
         const displayName = versionName || `#${versionId}`;
-        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false };
+        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false, deferReload, suppressSuccessToast, suppressFailureSummary };
+        this._lastDownloadError = null;
         let ws = null;
         let updateProgress = () => { };
         let cancelled = false;
@@ -1010,7 +1166,9 @@ export class DownloadManager {
             if (response?.skipped) {
                 this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
                 updateProgress(100, 0, displayName);
-                showToast('toast.loras.downloadSkippedByBaseModel', { baseModel: response.base_model || 'Unknown' }, 'warning');
+                if (!suppressSuccessToast) {
+                    showToast('toast.loras.downloadSkippedByBaseModel', { baseModel: response.base_model || 'Unknown' }, 'warning');
+                }
                 if (closeModal) {
                     modalManager.closeModal('downloadModal');
                 }
@@ -1020,6 +1178,12 @@ export class DownloadManager {
             if (!response?.success) {
                 this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
                 const errorMessage = response?.error || 'Unknown error';
+                // When the caller aggregates failures itself (multi-file
+                // loop), just record the error and return (#1058).
+                if (suppressFailureSummary) {
+                    this._lastDownloadError = errorMessage;
+                    return false;
+                }
                 // A file-level "already in library" rejection is an expected
                 // outcome when browsing files of a partially downloaded
                 // version — surface it as a lightweight toast instead of the
@@ -1047,7 +1211,9 @@ export class DownloadManager {
                 return false;
             }
 
-            showToast('toast.loras.downloadCompleted', {}, 'success');
+            if (!suppressSuccessToast) {
+                showToast('toast.loras.downloadCompleted', {}, 'success');
+            }
 
             if (closeModal) {
                 modalManager.closeModal('downloadModal');
@@ -1058,22 +1224,24 @@ export class DownloadManager {
                 ws = null;
             }
 
-            const pageState = this.apiClient.getPageState();
+            if (!deferReload) {
+                const pageState = this.apiClient.getPageState();
 
-            if (!useDefaultPaths && targetFolder) {
-                pageState.activeFolder = targetFolder;
-                setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
+                if (!useDefaultPaths && targetFolder) {
+                    pageState.activeFolder = targetFolder;
+                    setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
 
-                document.querySelectorAll('.folder-tags .tag').forEach(tag => {
-                    const isActive = tag.dataset.folder === targetFolder;
-                    tag.classList.toggle('active', isActive);
-                    if (isActive && !tag.parentNode.classList.contains('collapsed')) {
-                        tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                    }
-                });
+                    document.querySelectorAll('.folder-tags .tag').forEach(tag => {
+                        const isActive = tag.dataset.folder === targetFolder;
+                        tag.classList.toggle('active', isActive);
+                        if (isActive && !tag.parentNode.classList.contains('collapsed')) {
+                            tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                        }
+                    });
+                }
+
+                await resetAndReload(true);
             }
-
-            await resetAndReload(true);
 
             return true;
         } catch (error) {
@@ -1081,6 +1249,10 @@ export class DownloadManager {
                 console.log('Download cancelled by user:', downloadId);
             } else {
                 console.error('Failed to download model version:', error);
+                if (suppressFailureSummary) {
+                    this._lastDownloadError = error?.message || 'Unknown error';
+                    return false;
+                }
                 showDownloadBatchSummary({
                     total: 1,
                     completed: 0,
@@ -1108,6 +1280,89 @@ export class DownloadManager {
             }
             this.loadingManager.hide();
         }
+    }
+
+    /**
+     * Download multiple selected files of the same version sequentially,
+     * reusing the location-step choices for every file. Per-file toasts,
+     * reloads and failure modals are suppressed; a single aggregated result
+     * is shown at the end (design decision D5, #1058).
+     */
+    async _downloadSelectedFilesSequentially({ modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot = false, files = null }) {
+        const filesToDownload = files || this.selectedFiles;
+        const totalFiles = filesToDownload.length;
+        const failedItems = [];
+        let completedDownloads = 0;
+
+        for (const file of filesToDownload) {
+            const fileParams = {
+                id: file.id,
+                name: file.name || null,
+                type: file.type || 'Model',
+                format: file.metadata?.format || null,
+                size: file.metadata?.size || null,
+                fp: file.metadata?.fp || null,
+            };
+
+            console.log('[download] multi-file loop: downloading file id=%s, name="%s" (%d/%d)',
+                fileParams.id, fileParams.name, completedDownloads + failedItems.length + 1, totalFiles);
+
+            const success = await this.executeDownloadWithProgress({
+                modelId: this.modelId,
+                versionId: this.currentVersion.id,
+                versionName: file.name || `${this.currentVersion.name} #${file.id}`,
+                modelRoot,
+                targetFolder,
+                useDefaultPaths,
+                useSaveDirAsRoot,
+                source: this.source,
+                fileParams,
+                closeModal: false,
+                deferReload: true,
+                suppressSuccessToast: true,
+                suppressFailureSummary: true,
+            });
+
+            if (success) {
+                completedDownloads++;
+            } else {
+                failedItems.push({
+                    item: {
+                        modelId: this.modelId,
+                        versionId: this.currentVersion.id,
+                        source: this.source,
+                        file,
+                        url: this._buildSingleItemUrl({
+                            modelId: this.modelId,
+                            versionId: this.currentVersion.id,
+                            source: this.source,
+                        }),
+                    },
+                    error: this._lastDownloadError || 'Unknown error',
+                    name: file.name || `#${file.id}`,
+                });
+            }
+        }
+
+        if (failedItems.length === 0) {
+            showToast('toast.loras.allDownloadSuccessful', { count: completedDownloads }, 'success');
+        } else {
+            showDownloadBatchSummary({
+                total: totalFiles,
+                completed: completedDownloads,
+                failedItems,
+                onRetry: () => this._downloadSelectedFilesSequentially({
+                    modelRoot,
+                    targetFolder,
+                    useDefaultPaths,
+                    useSaveDirAsRoot,
+                    files: failedItems.map(f => f.item.file),
+                }),
+            });
+        }
+
+        await resetAndReload(true);
+        return failedItems.length === 0;
     }
 
     async _downloadHfSingle({ modelRoot, targetFolder, useDefaultPaths, files = null }) {
@@ -1320,6 +1575,14 @@ export class DownloadManager {
                 ? (ver.modelSizeKB / 1024).toFixed(1)
                 : (ver?.files?.[0]?.sizeKB ? (ver.files[0].sizeKB / 1024).toFixed(1) : '?');
             const existsLocally = ver?.existsLocally;
+            // Multi-file versions that are only partially downloaded get a
+            // distinct hint instead of the plain in-library badge (#1058).
+            const isPartiallyDownloaded = existsLocally
+                && this._getWeightFiles(ver).length > 1
+                && this._getRemainingFiles(ver).length > 0;
+            const localBadgeLabel = isPartiallyDownloaded
+                ? translate('modals.download.partiallyDownloaded', {}, 'Partially downloaded')
+                : translate('modals.download.inLibrary');
             return `
                 <div class="batch-preview-item ${existsLocally ? 'batch-preview-local' : ''}" data-index="${index}">
                     <div class="batch-preview-thumbnail">
@@ -1330,7 +1593,7 @@ export class DownloadManager {
                         <div class="batch-preview-meta">
                             ${ver?.baseModel ? `<span>${ver.baseModel}</span>` : ''}
                             <span>${fileSize} MB</span>
-                            ${existsLocally ? `<span class="batch-preview-local-badge"><i class="fas fa-check"></i> ${translate('modals.download.inLibrary')}</span>` : ''}
+                            ${existsLocally ? `<span class="batch-preview-local-badge"><i class="fas fa-check"></i> ${localBadgeLabel}</span>` : ''}
                         </div>
                     </div>
                     ${item.versions.length > 1 ? `
@@ -1615,6 +1878,17 @@ export class DownloadManager {
             // Single-item download
             if (this.source === 'huggingface') {
                 return this._downloadHfSingle({
+                    modelRoot,
+                    targetFolder,
+                    useDefaultPaths,
+                });
+            }
+
+            // Multi-file selection: download all selected files sequentially,
+            // reusing the chosen location for every file (#1058).
+            if (this.selectedFiles.length > 1) {
+                modalManager.closeModal('downloadModal');
+                return this._downloadSelectedFilesSequentially({
                     modelRoot,
                     targetFolder,
                     useDefaultPaths,

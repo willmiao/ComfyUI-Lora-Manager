@@ -603,6 +603,51 @@
     cursor: pointer;
 }
 
+.file-option-radio input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: var(--lora-accent);
+    cursor: pointer;
+}
+
+/* Files already in the library are greyed out and not clickable */
+.file-option.disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.file-option.disabled:hover {
+    border-color: var(--border-color);
+    box-shadow: none;
+    transform: none;
+}
+
+.file-option.disabled input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+/* Options of the other routing group are temporarily disabled once a
+   selection is made (mixed-type multi-select is not allowed) */
+.file-option.group-disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.file-option.group-disabled:hover {
+    border-color: var(--border-color);
+    box-shadow: none;
+    transform: none;
+}
+
+.file-option.group-disabled input[type="checkbox"] {
+    cursor: not-allowed;
+}
+
+.file-tag.in-library {
+    background: oklch(var(--lora-accent) / 0.15);
+    color: var(--lora-accent);
+}
+
 .file-option-info {
     flex: 1;
     min-width: 0;

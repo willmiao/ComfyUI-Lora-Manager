@@ -2428,8 +2428,8 @@ class ModelLibraryHandler:
             embedding_scanner = await self._service_registry.get_embedding_scanner()
 
             found_type = None
-            file_path = None
             found_cache = None
+            entries: list = []
 
             for model_type, scanner in (
                 ("lora", lora_scanner),
@@ -2440,27 +2440,43 @@ class ModelLibraryHandler:
                 if cache and model_version_id in cache.version_index:
                     found_type = model_type
                     found_cache = cache
-                    entry = cache.version_index[model_version_id]
-                    file_path = entry.get("file_path")
+                    # A version can have several local files (#1058); collect
+                    # them all so the delete below covers every file.
+                    files_getter = getattr(cache, "get_files_by_version_id", None)
+                    if files_getter is not None:
+                        entries = files_getter(model_version_id)
+                    else:
+                        entries = [cache.version_index[model_version_id]]
                     break
 
-            if not file_path:
+            file_paths = [
+                entry.get("file_path")
+                for entry in entries
+                if isinstance(entry, dict) and entry.get("file_path")
+            ]
+
+            if not file_paths:
                 return web.json_response(
                     {"success": False, "error": "Model version not found in any scanner cache"},
                     status=404,
                 )
 
-            target_dir = os.path.dirname(file_path)
-            base_name = os.path.basename(file_path)
-            file_name, extension = os.path.splitext(base_name)
-            await delete_model_artifacts(target_dir, file_name, main_extension=extension)
+            for file_path in file_paths:
+                target_dir = os.path.dirname(file_path)
+                base_name = os.path.basename(file_path)
+                file_name, extension = os.path.splitext(base_name)
+                await delete_model_artifacts(target_dir, file_name, main_extension=extension)
 
             if found_cache:
+                removed_paths = set(file_paths)
                 found_cache.raw_data = [
                     item
                     for item in found_cache.raw_data
-                    if item.get("file_path") != file_path
+                    if item.get("file_path") not in removed_paths
                 ]
+                rebuild = getattr(found_cache, "rebuild_version_index", None)
+                if rebuild is not None:
+                    rebuild()
                 await found_cache.resort()
 
             scanner_map = {
@@ -2483,6 +2499,7 @@ class ModelLibraryHandler:
                     "success": True,
                     "modelType": found_type,
                     "modelVersionId": model_version_id,
+                    "deletedFiles": len(file_paths),
                 }
             )
         except Exception as exc:
