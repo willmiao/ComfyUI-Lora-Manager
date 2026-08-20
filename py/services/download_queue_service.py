@@ -12,6 +12,15 @@ from ..utils.cache_paths import get_cache_base_dir
 
 logger = logging.getLogger(__name__)
 
+# SQL fragment extracting the CivitAI file id from the JSON ``file_params``
+# column (#1058). ``json_valid`` guards against NULL and legacy/unparseable
+# values, yielding NULL for rows without a file identity; NULL keys group
+# together so such rows keep the old version-level dedup behavior.
+_FILE_ID_SQL = (
+    "CASE WHEN json_valid(file_params) "
+    "THEN json_extract(file_params, '$.id') END"
+)
+
 
 def _resolve_database_path() -> str:
     base_dir = get_cache_base_dir(create=True)
@@ -866,33 +875,44 @@ class DownloadQueueService:
         async with self._lock:
             conn = self._get_conn()
 
-            # 1. History: for each (model_id, model_version_id, status) triplet
-            #    keep only the row with the highest id (most recently inserted).
-            conn.execute("""
+            # 1. History: for each (model_id, model_version_id, file_id,
+            #    status) group keep only the row with the highest id (most
+            #    recently inserted). file_id comes from file_params (#1058)
+            #    so distinct files of the same version never collapse.
+            conn.execute(f"""
                 DELETE FROM download_history
                 WHERE id NOT IN (
                     SELECT MAX(id)
                     FROM download_history
-                    GROUP BY model_id, model_version_id, status
+                    GROUP BY model_id, model_version_id, status,
+                             {_FILE_ID_SQL}
                 )
             """)
             result["removed_history"] = conn.execute(
                 "SELECT changes()"
             ).fetchone()[0]
 
-            # 2. Cross-status dedup: for each (model_id, model_version_id),
-            #    keep only the entry with the highest-priority terminal status.
+            # 2. Cross-status dedup: for each (model_id, model_version_id,
+            #    file_id), keep only the entry with the highest-priority
+            #    terminal status.
             #    Priority: completed (3) > failed (2) > canceled (1).
-            #    This prevents the same model version from having both a
-            #    'failed' and a 'canceled' entry (or a 'completed' alongside
-            #    either) after the bug-created duplicates are removed.
-            conn.execute("""
+            #    This prevents the same file of a model version from having
+            #    both a 'failed' and a 'canceled' entry (or a 'completed'
+            #    alongside either) after the bug-created duplicates are
+            #    removed. ``IS`` matches NULL file ids against each other so
+            #    rows without file identity keep the old behavior.
+            conn.execute(f"""
                 DELETE FROM download_history
                 WHERE id NOT IN (
                     SELECT dh.id
-                    FROM download_history dh
+                    FROM (
+                        SELECT id, model_id, model_version_id, status,
+                               {_FILE_ID_SQL} AS file_id
+                        FROM download_history
+                    ) dh
                     INNER JOIN (
                         SELECT model_id, model_version_id,
+                               {_FILE_ID_SQL} AS file_id,
                                MAX(CASE status
                                    WHEN 'completed' THEN 3
                                    WHEN 'failed' THEN 2
@@ -900,17 +920,18 @@ class DownloadQueueService:
                                    ELSE 0
                                END) AS best_prio
                         FROM download_history
-                        GROUP BY model_id, model_version_id
+                        GROUP BY model_id, model_version_id, {_FILE_ID_SQL}
                     ) best
                     ON dh.model_id = best.model_id
                    AND dh.model_version_id = best.model_version_id
+                   AND dh.file_id IS best.file_id
                    AND CASE dh.status
                            WHEN 'completed' THEN 3
                            WHEN 'failed' THEN 2
                            WHEN 'canceled' THEN 1
                            ELSE 0
                        END = best.best_prio
-                    GROUP BY dh.model_id, dh.model_version_id
+                    GROUP BY dh.model_id, dh.model_version_id, dh.file_id
                     HAVING dh.id = MAX(dh.id)
                 )
             """)
@@ -918,15 +939,17 @@ class DownloadQueueService:
                 "SELECT changes()"
             ).fetchone()[0]
 
-            # 3. Queue: for each (model_id, model_version_id) keep only the
-            #    row with the latest added_at (most recently enqueued).
-            conn.execute("""
+            # 3. Queue: for each (model_id, model_version_id, file_id) keep
+            #    only the row with the latest added_at (most recently
+            #    enqueued). file_id comes from file_params (#1058) so
+            #    distinct files of the same version never collapse.
+            conn.execute(f"""
                 DELETE FROM download_queue
                 WHERE rowid NOT IN (
                     SELECT MAX(rowid)
                     FROM download_queue
                     WHERE status IN ('queued', 'downloading', 'paused', 'waiting')
-                    GROUP BY model_id, model_version_id
+                    GROUP BY model_id, model_version_id, {_FILE_ID_SQL}
                 )
                 AND status IN ('queued', 'downloading', 'paused', 'waiting')
             """)
