@@ -5,11 +5,11 @@
     border: none;
     padding: 8px 16px;
     font-size: 0.9em;
-    transform: translateX(-50%) translateY(20px);
+    transform: translateY(20px);
 }
 
 .toast.toast-copy.show {
-    transform: translateX(-50%) translateY(0);
+    transform: translateY(0);
 }
 
 /* Toast Notifications */
@@ -19,14 +19,15 @@
     right: 20px;
     left: auto;
     transform: translateX(120%);
-    min-width: 300px;
+    box-sizing: border-box;
+    min-width: 200px;
     max-width: 400px;
     background: var(--lora-surface);
     color: var(--text-color);
     padding: 12px 16px;
     border-radius: var(--border-radius-sm);
     box-shadow: var(--shadow-toast);
-    z-index: calc(var(--z-overlay) + 10);
+    z-index: var(--z-toast);
     opacity: 0;
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
                 opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -130,7 +131,6 @@
     .toast {
         width: calc(100% - 40px);
         max-width: none;
-        right: 20px;
     }
 }
 
@@ -166,16 +166,17 @@
     opacity: 1;
 }
 
-/* Toast Container for stacked notifications */
+/* Toast Container for stacked notifications (top-right, flush below the header) */
 .toast-container {
     position: fixed;
-    top: 0;
+    top: var(--header-height, 48px); /* Start right below the fixed header */
     right: 0;
-    z-index: calc(var(--z-overlay) + 10);
+    z-index: var(--z-toast);
     display: flex;
     flex-direction: column;
+    align-items: flex-end;
     gap: 10px;
-    padding: 20px;
+    padding: 8px 20px 0; /* Small breathing room below the header */
     pointer-events: none; /* Allow clicking through the container */
     width: 400px;
     max-width: 100%;
@@ -215,8 +216,7 @@
 /* Responsive adjustments */
 @media (max-width: 480px) {
     .toast-container {
-        width: 100%;
-        padding: 10px;
+        padding: 0 10px;
     }
     
     .toast {

@@ -4,7 +4,7 @@
   position: fixed;
   top: 0;
   z-index: var(--z-header);
-  height: 48px;
+  height: var(--header-height, 48px);
   /* Reduced height */
   width: 100%;
   box-shadow: var(--shadow-md);
