@@ -218,6 +218,10 @@ app.registerExtension({
             this.applyWidgetUpdate(event?.detail ?? {});
         });
 
+        api.addEventListener("lm_load_workflow", (event) => {
+            this.loadWorkflowFromMessage(event?.detail ?? {});
+        });
+
         window.addEventListener("lm_marker_changed", () => {
             this.refreshRegistry();
         });
@@ -412,6 +416,54 @@ app.registerExtension({
             }
         } catch (error) {
             console.error("LoRA Manager: error refreshing workflow registry", error);
+        }
+    },
+
+    /**
+     * Load a workflow received from the backend onto the ComfyUI canvas.
+     *
+     * The payload (`detail`) is expected to be:
+     *   { workflow: <workflow JSON>, name: <string>, recipe_id: <string> }
+     *
+     * Two formats are supported, detected by the presence of `class_type`
+     * entries (API/prompt format: { node_id: { class_type, inputs } }) versus
+     * the UI format ({ nodes: [...], links: [...] }).
+     *
+     * @param {Object} detail - message payload from the backend
+     */
+    async loadWorkflowFromMessage(detail) {
+        let workflow = detail?.workflow;
+        if (!workflow) {
+            console.warn("LoRA Manager: lm_load_workflow received without a workflow payload", detail);
+            return;
+        }
+
+        if (typeof workflow === "string") {
+            try {
+                workflow = JSON.parse(workflow);
+            } catch (error) {
+                console.warn("LoRA Manager: lm_load_workflow carried a non-JSON workflow string", error);
+                return;
+            }
+        }
+
+        // Mirror ComfyUI_frontend's isApiJson detection: API format maps every
+        // node id to an object with a string class_type; UI format has arrays
+        // of nodes/links instead.
+        const values = Object.values(workflow);
+        const isApiFormat = values.length > 0 && values.every((v) => v && typeof v.class_type === "string");
+
+        const workflowName = detail.name || "Recipe Workflow";
+
+        try {
+            if (isApiFormat) {
+                await app.loadApiJson(workflow, workflowName);
+            } else {
+                await app.loadGraphData(workflow, true, true, workflowName, { openSource: "file_button" });
+            }
+            this._log("workflow loaded from backend message (%s): %s", isApiFormat ? "api" : "graph", workflowName);
+        } catch (error) {
+            console.error("LoRA Manager: failed to load workflow from backend message", error);
         }
     },
 

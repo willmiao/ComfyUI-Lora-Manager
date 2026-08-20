@@ -4,7 +4,7 @@ import { isModelWeightFile } from '../utils/modelFileTypes.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
-import { fetchRecipeDetails, updateRecipeMetadata } from '../api/recipeApi.js';
+import { fetchRecipeDetails, updateRecipeMetadata, sendRecipeWorkflow } from '../api/recipeApi.js';
 import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { openMediaViewer } from './shared/MediaViewer.js';
@@ -300,7 +300,7 @@ class RecipeModal {
 
         this.syncGenerationParams(hydratedRecipe.gen_params);
         this.syncResourcesSection(hydratedRecipe);
-        this.syncSourceUrlAction();
+        this.syncHeaderActions();
 
         // Show the modal
         modalManager.showModal('recipeModal');
@@ -385,6 +385,10 @@ class RecipeModal {
                 nextRecipe.gen_params = preservedGenParams;
             }
 
+            if (fullRecipe.has_workflow !== undefined) {
+                nextRecipe.has_workflow = fullRecipe.has_workflow;
+            }
+
             if (fullRecipe.checkpoint !== undefined) {
                 nextRecipe.checkpoint = fullRecipe.checkpoint;
             } else {
@@ -441,7 +445,7 @@ class RecipeModal {
         } else {
             this.updateSourceUrlDisplay(this.currentRecipe.source_path || '');
         }
-        this.syncSourceUrlAction();
+        this.syncHeaderActions();
     }
 
     getPreviewMediaUrl(recipe = {}) {
@@ -509,7 +513,7 @@ class RecipeModal {
         }
     }
 
-    syncSourceUrlAction() {
+    syncHeaderActions() {
         const actionsContainer = document.getElementById('recipeHeaderActions');
         if (!actionsContainer) {
             return;
@@ -517,20 +521,56 @@ class RecipeModal {
 
         actionsContainer.querySelectorAll('.recipe-source-url-btn').forEach(btn => btn.remove());
 
+        if (this.currentRecipe?.has_workflow === true) {
+            const workflowBtn = document.createElement('button');
+            workflowBtn.className = 'recipe-source-url-btn';
+            workflowBtn.id = 'sendWorkflowBtn';
+            workflowBtn.title = 'Send Workflow to ComfyUI';
+            workflowBtn.innerHTML = '<i class="fas fa-project-diagram"></i> Send Workflow to ComfyUI';
+            workflowBtn.addEventListener('click', () => {
+                this.sendWorkflowToComfyUI();
+            });
+            actionsContainer.appendChild(workflowBtn);
+        }
+
         const sourcePath = this.currentRecipe?.source_path || '';
         const isValidUrl = sourcePath.startsWith('http://') || sourcePath.startsWith('https://');
-        if (!isValidUrl) {
+        if (isValidUrl) {
+            const btn = document.createElement('button');
+            btn.className = 'recipe-source-url-btn';
+            btn.title = sourcePath;
+            btn.innerHTML = '<i class="fas fa-globe"></i> Open Source URL';
+            btn.addEventListener('click', () => {
+                window.open(sourcePath, '_blank');
+            });
+            actionsContainer.appendChild(btn);
+        }
+    }
+
+    async sendWorkflowToComfyUI() {
+        if (!this.recipeId) {
             return;
         }
 
-        const btn = document.createElement('button');
-        btn.className = 'recipe-source-url-btn';
-        btn.title = sourcePath;
-        btn.innerHTML = '<i class="fas fa-globe"></i> Open Source URL';
-        btn.addEventListener('click', () => {
-            window.open(sourcePath, '_blank');
-        });
-        actionsContainer.appendChild(btn);
+        try {
+            const result = await sendRecipeWorkflow(this.recipeId);
+            if (result?.success) {
+                showToast('toast.recipes.workflowSent', {}, 'success', 'Workflow sent to ComfyUI');
+                return;
+            }
+
+            const error = result?.error || '';
+            if (error === 'Standalone Mode Active') {
+                showToast('toast.general.cannotInteractStandalone', {}, 'warning', 'Cannot interact with ComfyUI in standalone mode');
+            } else if (error === 'no_workflow') {
+                showToast('toast.recipes.workflowNoWorkflow', {}, 'warning', 'No embedded workflow found in this recipe');
+            } else {
+                showToast('toast.recipes.workflowSendFailed', { error }, 'error', `Failed to send workflow to ComfyUI: ${error}`);
+            }
+        } catch (error) {
+            console.error('Failed to send workflow to ComfyUI:', error);
+            showToast('toast.recipes.workflowSendFailed', { error: error.message }, 'error', `Failed to send workflow to ComfyUI: ${error.message}`);
+        }
     }
 
     syncTagsDisplay(tags) {
@@ -1153,7 +1193,7 @@ class RecipeModal {
                         // Update source URL in the UI
                         this.commitField('source_path');
                         this.updateSourceUrlDisplay(newSourceUrl, { forceInputSync: true });
-                        this.syncSourceUrlAction();
+                        this.syncHeaderActions();
 
                         // Update the current recipe object
                         this.currentRecipe.source_path = newSourceUrl;

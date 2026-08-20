@@ -90,6 +90,9 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "POST", "/api/lm/recipe/{recipe_id}/reimport", "reimport_recipe"
     ),
+    RouteDefinition(
+        "POST", "/api/lm/recipe/{recipe_id}/send-workflow", "send_recipe_workflow"
+    ),
 )
 
 

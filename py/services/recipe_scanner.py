@@ -13,6 +13,7 @@ import time
 from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Tuple, Union, cast
 from ..config import config
 from ..utils.constants import VALID_CHECKPOINT_SUB_TYPES, VALID_LORA_TYPES
+from ..utils.exif_utils import ExifUtils
 from ..utils.file_utils import calculate_autov3
 from ..utils.recipe_open_stats import RecipeOpenStats
 from .model_scanner import WEIGHT_FILE_EXTENSIONS
@@ -1729,6 +1730,23 @@ class RecipeScanner:
 
         return recipes, json_paths
 
+    @staticmethod
+    def _detect_has_workflow(image_path: Optional[str]) -> bool:
+        """Detect whether the recipe image embeds a ComfyUI workflow.
+
+        Reuses ``ExifUtils._load_structured_metadata`` so the metadata parsing
+        stays in one place. Any failure (missing/corrupt image, unsupported
+        format, unexpected exception) maps to ``False`` and never propagates —
+        recipe loading must remain resilient.
+        """
+        if not image_path or not os.path.exists(image_path):
+            return False
+        try:
+            metadata = ExifUtils._load_structured_metadata(image_path)
+            return bool(metadata.get("workflow"))
+        except Exception:
+            return False
+
     def _load_recipe_file_sync(self, recipe_path: str) -> Optional[Dict[str, Any]]:
         """Load a single recipe file synchronously.
 
@@ -1784,6 +1802,19 @@ class RecipeScanner:
                         json.dump(recipe_data, f, indent=4, ensure_ascii=False)
                 except Exception as e:
                     logger.warning(f"Failed to persist repair for {recipe_path}: {e}")
+
+            # Detect embedded ComfyUI workflow and persist when it changed
+            if "has_workflow" not in recipe_data:
+                has_workflow = self._detect_has_workflow(recipe_data.get("file_path"))
+                if has_workflow != recipe_data.get("has_workflow"):
+                    recipe_data["has_workflow"] = has_workflow
+                    try:
+                        with open(recipe_path, "w", encoding="utf-8") as f:
+                            json.dump(recipe_data, f, indent=4, ensure_ascii=False)
+                    except Exception as e:
+                        logger.warning(
+                            f"Failed to persist has_workflow for {recipe_path}: {e}"
+                        )
 
             # Track folder placement relative to recipes directory
             recipe_data["folder"] = recipe_data.get("folder") or self._calculate_folder(
@@ -2469,6 +2500,13 @@ class RecipeScanner:
 
             if path_updated:
                 self._write_recipe_file(recipe_path, recipe_data)
+
+            # Detect embedded ComfyUI workflow and persist when it changed
+            if "has_workflow" not in recipe_data:
+                has_workflow = self._detect_has_workflow(recipe_data.get("file_path"))
+                if has_workflow != recipe_data.get("has_workflow"):
+                    recipe_data["has_workflow"] = has_workflow
+                    self._write_recipe_file(recipe_path, recipe_data)
 
             # Track folder placement relative to recipes directory
             recipe_data["folder"] = recipe_data.get("folder") or self._calculate_folder(
@@ -3301,6 +3339,13 @@ class RecipeScanner:
 
         # Format the recipe with all needed information
         formatted_recipe = {**merged_recipe}
+
+        # Fallback for recipes saved before has_workflow existed: detect once
+        # on demand so the modal button works without a rescan.
+        if "has_workflow" not in formatted_recipe:
+            formatted_recipe["has_workflow"] = self._detect_has_workflow(
+                formatted_recipe.get("file_path")
+            )
 
         # Format file path to URL
         if "file_path" in formatted_recipe:

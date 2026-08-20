@@ -26,6 +26,7 @@ class DummyExifUtils:
     def __init__(self):
         self.appended = None
         self.optimized_calls = 0
+        self.workflow_value = None
 
     def optimize_image(self, image_data, target_width, format, quality, preserve_metadata):
         self.optimized_calls += 1
@@ -36,6 +37,14 @@ class DummyExifUtils:
 
     def extract_image_metadata(self, path):
         return {}
+
+    def _load_structured_metadata(self, image_path):
+        return {
+            "parameters": None,
+            "prompt": None,
+            "workflow": self.workflow_value,
+            "comment": None,
+        }
 
 
 @pytest.mark.asyncio
@@ -211,6 +220,84 @@ async def test_save_recipe_reports_duplicates(tmp_path):
     expected_image_path = os.path.normpath(result.payload["image_path"])
     assert stored["file_path"] == expected_image_path
     assert service._exif_utils.appended[0] == expected_image_path
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_records_has_workflow(tmp_path):
+    exif_utils = DummyExifUtils()
+    exif_utils.workflow_value = '{"nodes": []}'
+
+    class DummyCache:
+        def __init__(self):
+            self.raw_data = []
+
+        async def resort(self):
+            pass
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+            self._cache = DummyCache()
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            self._cache.raw_data.append(recipe_data)
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await service.save_recipe(
+        recipe_scanner=scanner,
+        image_bytes=b"image-bytes",
+        image_base64=None,
+        name="Workflow Recipe",
+        tags=[],
+        metadata={"base_model": "sd", "loras": []},
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["has_workflow"] is True
+    assert scanner._cache.raw_data[0]["has_workflow"] is True
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_records_no_workflow(tmp_path):
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await service.save_recipe(
+        recipe_scanner=scanner,
+        image_bytes=b"image-bytes",
+        image_base64=None,
+        name="Plain Recipe",
+        tags=[],
+        metadata={"base_model": "sd", "loras": []},
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["has_workflow"] is False
 
 
 @pytest.mark.asyncio

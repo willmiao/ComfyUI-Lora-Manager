@@ -58,6 +58,7 @@ class PersistentRecipeCache:
         "checkpoint_json",
         "gen_params_json",
         "tags_json",
+        "has_workflow",
     )
     _instances: Dict[str, "PersistentRecipeCache"] = {}
     _instance_lock = threading.Lock()
@@ -407,7 +408,8 @@ class PersistentRecipeCache:
                             loras_json TEXT,
                             checkpoint_json TEXT,
                             gen_params_json TEXT,
-                            tags_json TEXT
+                            tags_json TEXT,
+                            has_workflow INTEGER DEFAULT 0
                         );
 
                         CREATE INDEX IF NOT EXISTS idx_recipes_json_path ON recipes(json_path);
@@ -423,6 +425,13 @@ class PersistentRecipeCache:
                     try:
                         conn.execute(
                             "ALTER TABLE recipes ADD COLUMN source_path TEXT"
+                        )
+                    except Exception:
+                        pass  # column already exists
+                    # Migration: add has_workflow column to existing databases
+                    try:
+                        conn.execute(
+                            "ALTER TABLE recipes ADD COLUMN has_workflow INTEGER DEFAULT 0"
                         )
                     except Exception:
                         pass  # column already exists
@@ -488,6 +497,7 @@ class PersistentRecipeCache:
             checkpoint_json,
             gen_params_json,
             tags_json,
+            1 if recipe.get("has_workflow") else 0,
         )
 
     def _row_to_recipe(self, row: sqlite3.Row) -> Dict[str, Any]:
@@ -533,6 +543,7 @@ class PersistentRecipeCache:
             "favorite": bool(row["favorite"]),
             "repair_version": row["repair_version"] or 0,
             "preview_nsfw_level": row["preview_nsfw_level"] or 0,
+            "has_workflow": bool(row["has_workflow"]),
             "loras": loras,
             "gen_params": gen_params,
         }

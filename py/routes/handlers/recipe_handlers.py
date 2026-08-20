@@ -10,7 +10,7 @@ import asyncio
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Tuple
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Protocol, Tuple
 
 from aiohttp import web
 
@@ -45,6 +45,17 @@ EnsureDependenciesCallable = Callable[[], Awaitable[None]]
 RecipeScannerGetter = Callable[[], Any]
 CivitaiClientGetter = Callable[[], Any]
 
+
+class PromptServerProtocol(Protocol):
+    """Subset of PromptServer used by the recipe workflow handler."""
+
+    instance: "PromptServerProtocol"
+
+    def send_sync(
+        self, event: str, payload: dict[str, Any] | None = None, sid: str | None = None
+    ) -> None:  # pragma: no cover - protocol
+        ...
+
 # Cap concurrent preview-dimension reads across requests. With a cold LRU
 # cache one page can touch up to page_size image files; 16 balances SSD and
 # HDD throughput without starving the event loop.
@@ -73,6 +84,7 @@ class RecipeHandlerSet:
     analysis: "RecipeAnalysisHandler"
     sharing: "RecipeSharingHandler"
     batch_import: "BatchImportHandler"
+    workflow: "RecipeWorkflowHandler"
 
     def to_route_mapping(
         self,
@@ -128,6 +140,7 @@ class RecipeHandlerSet:
             "import_from_url": self.management.import_from_url,
             "create_from_example": self.management.create_from_example,
             "reimport_recipe": self.management.reimport_recipe,
+            "send_recipe_workflow": self.workflow.send_recipe_workflow,
         }
 
 
@@ -2752,6 +2765,91 @@ class RecipeSharingHandler:
             self._logger.error(
                 "Error downloading shared recipe: %s", exc, exc_info=True
             )
+            return web.json_response({"error": str(exc)}, status=500)
+
+
+class RecipeWorkflowHandler:
+    """Extract an embedded workflow from a recipe image and broadcast it."""
+
+    def __init__(
+        self,
+        *,
+        ensure_dependencies_ready: EnsureDependenciesCallable,
+        recipe_scanner_getter: RecipeScannerGetter,
+        prompt_server: type[PromptServerProtocol],
+        logger: Logger,
+    ) -> None:
+        self._ensure_dependencies_ready = ensure_dependencies_ready
+        self._recipe_scanner_getter = recipe_scanner_getter
+        self._prompt_server = prompt_server
+        self._logger = logger
+
+    async def send_recipe_workflow(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            recipe_id = request.match_info["recipe_id"]
+            recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
+            if not recipe:
+                return web.json_response({"error": "Recipe not found"}, status=404)
+
+            if os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1":
+                return web.json_response(
+                    {"error": "Standalone Mode Active"}, status=400
+                )
+
+            image_path = recipe.get("file_path")
+            if not image_path:
+                return web.json_response({"error": "no_workflow"}, status=404)
+
+            metadata = await asyncio.to_thread(
+                ExifUtils._load_structured_metadata, image_path
+            )
+            workflow_raw = metadata.get("workflow")
+            if not workflow_raw:
+                return web.json_response(
+                    {
+                        "error": "no_workflow",
+                        "message": "No embedded workflow found in recipe image",
+                    },
+                    status=404,
+                )
+
+            # _load_structured_metadata always yields workflow as a JSON string;
+            # the frontend extension expects a parsed object for loadGraphData.
+            try:
+                workflow = (
+                    json.loads(workflow_raw)
+                    if isinstance(workflow_raw, str)
+                    else workflow_raw
+                )
+            except (TypeError, ValueError):
+                self._logger.warning(
+                    "Recipe %s embeds a non-JSON workflow payload; skipping send",
+                    recipe_id,
+                )
+                return web.json_response(
+                    {
+                        "error": "no_workflow",
+                        "message": "Embedded workflow data is not valid JSON",
+                    },
+                    status=404,
+                )
+
+            self._prompt_server.instance.send_sync(
+                "lm_load_workflow",
+                {
+                    "workflow": workflow,
+                    "name": recipe.get("title") or "",
+                    "recipe_id": recipe_id,
+                },
+            )
+            return web.json_response({"success": True, "sent": True})
+        except Exception as exc:
+            self._logger.error("Error sending recipe workflow: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
 
 

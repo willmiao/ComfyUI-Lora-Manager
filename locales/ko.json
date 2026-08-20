@@ -856,6 +856,12 @@
             "sendCheckpoint": "ComfyUI로 보내기",
             "sendRecipe": "ComfyUI로 보내기"
         },
+        "workflow": {
+            "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
+            "sent": "[TODO: Translate] Workflow sent to ComfyUI",
+            "sendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI",
+            "noWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+        },
         "controls": {
             "import": {
                 "action": "가져오기",
@@ -2031,7 +2037,10 @@
             "reimportBulkComplete": "다시 가져오기 완료: {completed}개 성공, {failed}개 실패 (총 {total}개)",
             "reimportBulkFailed": "일부 레시피를 다시 가져오지 못했습니다",
             "noMissingLorasInSelection": "선택한 레시피에서 누락된 LoRA를 찾을 수 없습니다",
-            "noLoraRootConfigured": "LoRA 루트 디렉토리가 구성되지 않았습니다. 설정에서 기본 LoRA 루트를 설정하세요."
+            "noLoraRootConfigured": "LoRA 루트 디렉토리가 구성되지 않았습니다. 설정에서 기본 LoRA 루트를 설정하세요.",
+            "workflowSent": "[TODO: Translate] Workflow sent to ComfyUI",
+            "workflowSendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI: {error}",
+            "workflowNoWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
         },
         "models": {
             "noModelsSelected": "선택된 모델이 없습니다",

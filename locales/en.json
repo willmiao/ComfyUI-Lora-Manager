@@ -856,6 +856,12 @@
       "sendCheckpoint": "Send to ComfyUI",
       "sendRecipe": "Send to ComfyUI"
     },
+    "workflow": {
+      "sendWorkflow": "Send Workflow to ComfyUI",
+      "sent": "Workflow sent to ComfyUI",
+      "sendFailed": "Failed to send workflow to ComfyUI",
+      "noWorkflow": "No embedded workflow found in this recipe"
+    },
     "controls": {
       "import": {
         "action": "Import",
@@ -2031,7 +2037,10 @@
       "reimportBulkComplete": "Re-import complete: {completed} re-imported, {failed} failed (of {total})",
       "reimportBulkFailed": "Failed to re-import some recipes",
       "noMissingLorasInSelection": "No missing LoRAs found in selected recipes",
-      "noLoraRootConfigured": "No LoRA root directory configured. Please set a default LoRA root in settings."
+      "noLoraRootConfigured": "No LoRA root directory configured. Please set a default LoRA root in settings.",
+      "workflowSent": "Workflow sent to ComfyUI",
+      "workflowSendFailed": "Failed to send workflow to ComfyUI: {error}",
+      "workflowNoWorkflow": "No embedded workflow found in this recipe"
     },
     "models": {
       "noModelsSelected": "No models selected",
