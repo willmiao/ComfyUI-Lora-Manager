@@ -316,7 +316,7 @@ app.registerExtension({
         const ts = new Date().toISOString().slice(11, 23);
         let msg = format;
         for (const arg of args) {
-            msg = msg.replace(/%s/g, String(arg));
+            msg = msg.replace(/%s/, String(arg));
         }
         console.debug(`[LM:Registry ${ts}] ${msg}`);
     },
