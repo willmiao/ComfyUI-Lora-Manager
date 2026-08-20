@@ -211,6 +211,115 @@ describe("LoraManager.WorkflowRegistry", () => {
     });
   });
 
+  describe("loadWorkflowFromMessage", () => {
+    beforeEach(() => {
+      appMock.loadApiJson = vi.fn().mockResolvedValue(undefined);
+      appMock.loadGraphData = vi.fn().mockResolvedValue(undefined);
+    });
+
+    it("warns and returns when the message carries no workflow payload", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      await extension.loadWorkflowFromMessage({ name: "My Recipe" });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("without a workflow payload"),
+        expect.anything()
+      );
+      expect(appMock.loadApiJson).not.toHaveBeenCalled();
+      expect(appMock.loadGraphData).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("parses a string workflow before loading", async () => {
+      const workflow = { nodes: [], links: [] };
+
+      await extension.loadWorkflowFromMessage({
+        workflow: JSON.stringify(workflow),
+        name: "Parsed",
+      });
+
+      expect(appMock.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        true,
+        "Parsed",
+        { openSource: "file_button" }
+      );
+    });
+
+    it("warns and returns when the workflow string is not valid JSON", async () => {
+      const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+      await extension.loadWorkflowFromMessage({ workflow: "{not json" });
+
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining("non-JSON workflow string"),
+        expect.anything()
+      );
+      expect(appMock.loadApiJson).not.toHaveBeenCalled();
+      expect(appMock.loadGraphData).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it("loads API-format workflows via app.loadApiJson", async () => {
+      const workflow = {
+        "1": { class_type: "KSampler", inputs: {} },
+        "2": { class_type: "CLIPTextEncode", inputs: {} },
+      };
+
+      await extension.loadWorkflowFromMessage({ workflow, name: "API Recipe" });
+
+      expect(appMock.loadApiJson).toHaveBeenCalledWith(workflow, "API Recipe");
+      expect(appMock.loadGraphData).not.toHaveBeenCalled();
+    });
+
+    it("loads UI-format workflows via app.loadGraphData", async () => {
+      const workflow = { nodes: [{ id: 1 }], links: [] };
+
+      await extension.loadWorkflowFromMessage({ workflow, name: "UI Recipe" });
+
+      expect(appMock.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        true,
+        "UI Recipe",
+        { openSource: "file_button" }
+      );
+      expect(appMock.loadApiJson).not.toHaveBeenCalled();
+    });
+
+    it("defaults the workflow name to 'Recipe Workflow'", async () => {
+      const workflow = { nodes: [], links: [] };
+
+      await extension.loadWorkflowFromMessage({ workflow });
+
+      expect(appMock.loadGraphData).toHaveBeenCalledWith(
+        workflow,
+        true,
+        true,
+        "Recipe Workflow",
+        { openSource: "file_button" }
+      );
+    });
+
+    it("logs an error when loading the workflow throws", async () => {
+      const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const failure = new Error("load failed");
+      appMock.loadGraphData.mockRejectedValue(failure);
+
+      await extension.loadWorkflowFromMessage({
+        workflow: { nodes: [], links: [] },
+      });
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("failed to load workflow"),
+        failure
+      );
+      errorSpy.mockRestore();
+    });
+  });
+
   describe("setup link-change hooks", () => {
     it("hooks root events, existing subgraphs, and future subgraphs", () => {
       const subgraph = createSubgraph({ id: "sub-1", nodes: [] });
