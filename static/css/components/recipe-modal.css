@@ -104,13 +104,6 @@
     display: none;
 }
 
-/* Darker, blurred backdrop keeps the busy page behind the modal from bleeding through */
-#recipeModal {
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(6px);
-    -webkit-backdrop-filter: blur(6px);
-}
-
 #recipeModal .modal-content {
     display: flex;
     flex-direction: column;

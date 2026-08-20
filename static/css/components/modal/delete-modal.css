@@ -13,7 +13,10 @@
     left: 0;
     width: 100%;
     height: 100%;
+    /* Darker than --modal-backdrop-bg to stress destructive actions, but keeps the shared blur */
     background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
+    -webkit-backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
     z-index: var(--z-overlay);
 }
 

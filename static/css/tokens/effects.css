@@ -27,6 +27,9 @@
   --shadow-dialog: 0 10px 24px rgba(0, 0, 0, 0.25);
   --shadow-inset-top: 0 -2px 8px rgba(0, 0, 0, 0.1);
 
+  --modal-backdrop-bg: rgba(0, 0, 0, 0.5);
+  --modal-backdrop-blur: 6px;
+
   --transition-fast: 150ms ease;
   --transition-base: 200ms ease;
   --transition-slow: 300ms ease;

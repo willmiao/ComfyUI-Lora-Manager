@@ -6,7 +6,9 @@
     left: 0;
     width: 100%;
     height: calc(100% - var(--header-height, 48px)); /* Adjust height to exclude header */
-    background: rgba(0, 0, 0, 0.2);
+    background: var(--modal-backdrop-bg, rgba(0, 0, 0, 0.5));
+    backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
+    -webkit-backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
     z-index: var(--z-modal);
     overflow: auto; /* Change from hidden to auto to allow scrolling */
 }
