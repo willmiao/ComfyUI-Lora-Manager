@@ -8,20 +8,32 @@ export class ImageProcessor {
 
     handleFileUpload(event) {
         const file = event.target.files[0];
+        if (file) {
+            this.handleDroppedFile(file);
+        }
+    }
+
+    /**
+     * Shared entry for files coming from the file picker, drag & drop,
+     * or clipboard paste.
+     */
+    handleDroppedFile(file) {
         const errorElement = document.getElementById('uploadError');
-        
-        if (!file) return;
-        
+
         // Validate file type
         if (!file.type.match('image.*')) {
             errorElement.textContent = translate('recipes.controls.import.errors.selectImageFile', {}, 'Please select an image file');
             return;
         }
-        
+
         // Reset error
         errorElement.textContent = '';
         this.importManager.recipeImage = file;
-        
+        this.importManager.importMode = 'upload';
+
+        // Show the selected file name in the drop zone
+        this.importManager.updateSelectedFileName(file.name);
+
         // Auto-proceed to next step if file is selected
         this.importManager.uploadAndAnalyzeImage();
     }
@@ -30,19 +42,37 @@ export class ImageProcessor {
         const urlInput = document.getElementById('imageUrlInput');
         const errorElement = document.getElementById('importUrlError');
         const input = urlInput.value.trim();
-        
+
         // Validate input
         if (!input) {
             errorElement.textContent = translate('recipes.controls.import.errors.enterUrlOrPath', {}, 'Please enter a URL or file path');
             return;
         }
-        
+
+        // Front-end format validation before hitting the backend
+        if (input.startsWith('http://') || input.startsWith('https://')) {
+            try {
+                new URL(input);
+            } catch {
+                errorElement.textContent = translate('recipes.controls.import.errors.invalidUrl', {}, 'Please enter a valid URL');
+                return;
+            }
+        } else if (!/\.(png|jpe?g|webp|gif|bmp|avif|jxl|mp4|webm)$/i.test(input)) {
+            errorElement.textContent = translate('recipes.controls.import.errors.invalidInputFormat', {}, 'Please enter an image URL or a local image file path');
+            return;
+        }
+
         // Reset error
         errorElement.textContent = '';
-        
+        this.importManager.importMode = 'url';
+
+        // Put the fetch button into a loading state to prevent duplicate submits
+        const fetchBtn = document.getElementById('fetchImageBtn');
+        this._setFetchButtonLoading(fetchBtn, true);
+
         // Show loading indicator
         this.importManager.loadingManager.showSimpleLoading(translate('recipes.controls.import.processingInput', {}, 'Processing input...'));
-        
+
         try {
             // Check if it's a URL or a local file path
             if (input.startsWith('http://') || input.startsWith('https://')) {
@@ -55,7 +85,18 @@ export class ImageProcessor {
         } catch (error) {
             errorElement.textContent = error.message || 'Failed to process input';
         } finally {
+            this._setFetchButtonLoading(fetchBtn, false);
             this.importManager.loadingManager.hide();
+        }
+    }
+
+    _setFetchButtonLoading(button, isLoading) {
+        if (!button) return;
+        button.disabled = isLoading;
+        button.classList.toggle('loading', isLoading);
+        const icon = button.querySelector('i');
+        if (icon) {
+            icon.className = isLoading ? 'fas fa-spinner fa-spin' : 'fas fa-download';
         }
     }
 

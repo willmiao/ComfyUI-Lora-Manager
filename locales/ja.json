@@ -860,14 +860,12 @@
             "import": {
                 "action": "インポート",
                 "title": "画像またはURLからレシピをインポート",
-                "urlLocalPath": "URL / ローカルパス",
-                "uploadImage": "画像をアップロード",
-                "urlSectionDescription": "Civitai画像URLまたはローカルファイルパスを入力してレシピとしてインポートします。",
+                "dropZoneLabel": "画像をアップロード",
+                "dropZoneHint": "画像をここにドラッグ＆ドロップ、クリップボードから貼り付け、またはクリックして参照",
+                "orDivider": "または画像をドラッグ＆ドロップ / 貼り付け",
                 "imageUrlOrPath": "画像URLまたはファイルパス：",
                 "urlPlaceholder": "https://civitai.com/images/... または C:/path/to/image.png",
                 "fetchImage": "画像を取得",
-                "uploadSectionDescription": "LoRAメタデータを含む画像をアップロードしてレシピとしてインポートします。",
-                "selectImage": "画像を選択",
                 "recipeName": "レシピ名",
                 "recipeNamePlaceholder": "レシピ名を入力",
                 "tagsOptional": "タグ（任意）",
@@ -912,6 +910,8 @@
                 "errors": {
                     "selectImageFile": "画像ファイルを選択してください",
                     "enterUrlOrPath": "URLまたはファイルパスを入力してください",
+                    "invalidUrl": "有効なURLを入力してください",
+                    "invalidInputFormat": "画像のURLまたはローカルの画像ファイルパスを入力してください",
                     "selectLoraRoot": "LoRAルートディレクトリを選択してください"
                 }
             },

@@ -860,14 +860,12 @@
             "import": {
                 "action": "Импортировать",
                 "title": "Импортировать рецепт из изображения или URL",
-                "urlLocalPath": "URL / Локальный путь",
-                "uploadImage": "Загрузить изображение",
-                "urlSectionDescription": "Введите URL изображения Civitai или локальный путь к файлу для импорта в качестве рецепта.",
+                "dropZoneLabel": "Загрузить изображение",
+                "dropZoneHint": "Перетащите изображение сюда, вставьте из буфера обмена или нажмите для выбора",
+                "orDivider": "или перетащите / вставьте изображение",
                 "imageUrlOrPath": "URL изображения или путь к файлу:",
                 "urlPlaceholder": "https://civitai.com/images/... или C:/path/to/image.png",
                 "fetchImage": "Получить изображение",
-                "uploadSectionDescription": "Загрузите изображение с метаданными LoRA для импорта в качестве рецепта.",
-                "selectImage": "Выбрать изображение",
                 "recipeName": "Название рецепта",
                 "recipeNamePlaceholder": "Введите название рецепта",
                 "tagsOptional": "Теги (необязательно)",
@@ -912,6 +910,8 @@
                 "errors": {
                     "selectImageFile": "Пожалуйста, выберите файл изображения",
                     "enterUrlOrPath": "Пожалуйста, введите URL или путь к файлу",
+                    "invalidUrl": "Введите корректный URL",
+                    "invalidInputFormat": "Введите URL изображения или путь к локальному файлу изображения",
                     "selectLoraRoot": "Пожалуйста, выберите корневую папку LoRA"
                 }
             },

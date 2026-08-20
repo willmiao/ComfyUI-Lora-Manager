@@ -860,14 +860,12 @@
             "import": {
                 "action": "Importer",
                 "title": "Importer une recipe depuis une image ou une URL",
-                "urlLocalPath": "URL / Chemin local",
-                "uploadImage": "Téléverser une image",
-                "urlSectionDescription": "Saisissez une URL d'image Civitai ou un chemin de fichier local pour l'importer comme recipe.",
+                "dropZoneLabel": "Téléverser une image",
+                "dropZoneHint": "Glissez-déposez une image ici, collez-la depuis le presse-papiers ou cliquez pour parcourir",
+                "orDivider": "ou glissez-déposez / collez une image",
                 "imageUrlOrPath": "URL d'image ou chemin de fichier :",
                 "urlPlaceholder": "https://civitai.com/images/... ou C:/chemin/vers/image.png",
                 "fetchImage": "Récupérer l'image",
-                "uploadSectionDescription": "Téléversez une image avec des métadonnées LoRA pour l'importer comme recipe.",
-                "selectImage": "Sélectionner une image",
                 "recipeName": "Nom de la recipe",
                 "recipeNamePlaceholder": "Entrez le nom de la recipe",
                 "tagsOptional": "Tags (optionnel)",
@@ -912,6 +910,8 @@
                 "errors": {
                     "selectImageFile": "Veuillez sélectionner un fichier image",
                     "enterUrlOrPath": "Veuillez entrer une URL ou un chemin de fichier",
+                    "invalidUrl": "Veuillez saisir une URL valide",
+                    "invalidInputFormat": "Veuillez saisir l'URL d'une image ou un chemin de fichier local",
                     "selectLoraRoot": "Veuillez sélectionner un répertoire racine LoRA"
                 }
             },

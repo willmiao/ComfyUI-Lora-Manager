@@ -860,14 +860,12 @@
             "import": {
                 "action": "导入",
                 "title": "从图片或 URL 导入配方",
-                "urlLocalPath": "URL / 本地路径",
-                "uploadImage": "上传图片",
-                "urlSectionDescription": "输入来自 civitai.com 或 civitai.red 的 Civitai 图片 URL，或本地文件路径以导入为配方。",
+                "dropZoneLabel": "上传图片",
+                "dropZoneHint": "将图片拖拽到此处、从剪贴板粘贴，或点击浏览",
+                "orDivider": "或拖拽 / 粘贴图片",
                 "imageUrlOrPath": "图片 URL 或文件路径：",
                 "urlPlaceholder": "https://civitai.com/images/... 或 https://civitai.red/images/... 或 C:/path/to/image.png",
                 "fetchImage": "获取图片",
-                "uploadSectionDescription": "上传带有 LoRA 元数据的图片以导入为配方。",
-                "selectImage": "选择图片",
                 "recipeName": "配方名称",
                 "recipeNamePlaceholder": "输入配方名称",
                 "tagsOptional": "标签（可选）",
@@ -912,6 +910,8 @@
                 "errors": {
                     "selectImageFile": "请选择一个图像文件",
                     "enterUrlOrPath": "请输入 URL 或文件路径",
+                    "invalidUrl": "请输入有效的 URL",
+                    "invalidInputFormat": "请输入图片 URL 或本地图片文件路径",
                     "selectLoraRoot": "请选择 LoRA 根目录"
                 }
             },

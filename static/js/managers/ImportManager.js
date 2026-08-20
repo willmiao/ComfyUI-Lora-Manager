@@ -25,7 +25,7 @@ export class ImportManager {
         this.selectedFolder = '';
         this.downloadableLoRAs = [];
         this.recipeId = null;
-        this.importMode = 'url'; // Default mode: 'url' or 'upload'
+        this.importMode = null; // Set by input handlers: 'url' or 'upload'
         this.useDefaultPath = false;
         this.apiClient = null;
 
@@ -70,10 +70,8 @@ export class ImportManager {
             this.stepManager.removeInjectedStyles();
         });
 
-        // Verify visibility and focus on URL input
+        // Verify visibility and focus on the URL input (primary mode)
         setTimeout(() => {
-            // Ensure URL option is selected and focus on the input
-            this.toggleImportMode('url');
             const urlInput = document.getElementById('imageUrlInput');
             if (urlInput) {
                 urlInput.focus();
@@ -86,6 +84,62 @@ export class ImportManager {
         const useDefaultPathToggle = document.getElementById('importUseDefaultPath');
         if (useDefaultPathToggle) {
             useDefaultPathToggle.addEventListener('change', this.handleToggleDefaultPath);
+        }
+
+        const modal = document.getElementById('importModal');
+        const dropZone = document.getElementById('importDropZone');
+        const fileInput = document.getElementById('recipeImageUpload');
+        const urlInput = document.getElementById('imageUrlInput');
+
+        // Submit URL with Enter
+        if (urlInput) {
+            urlInput.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter') {
+                    event.preventDefault();
+                    this.handleUrlInput();
+                }
+            });
+        }
+
+        if (dropZone && fileInput) {
+            // Click or keyboard activation opens the file picker
+            dropZone.addEventListener('click', () => fileInput.click());
+            dropZone.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    fileInput.click();
+                }
+            });
+
+            // Drag & drop
+            dropZone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropZone.classList.add('drag-over');
+            });
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('drag-over');
+            });
+            dropZone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropZone.classList.remove('drag-over');
+                const file = event.dataTransfer?.files?.[0];
+                if (file) {
+                    this.imageProcessor.handleDroppedFile(file);
+                }
+            });
+        }
+
+        // Paste an image from clipboard while the modal is open
+        if (modal) {
+            modal.addEventListener('paste', (event) => {
+                if (this.stepManager.currentStep !== 'uploadStep') return;
+                const file = Array.from(event.clipboardData?.files || [])
+                    .find(f => f.type.startsWith('image/'));
+                if (file) {
+                    event.preventDefault();
+                    this.imageProcessor.handleDroppedFile(file);
+                }
+            });
         }
     }
 
@@ -128,9 +182,11 @@ export class ImportManager {
         this.downloadableLoRAs = [];
         this.selectedFolder = '';
 
-        // Reset import mode
-        this.importMode = 'url';
-        this.toggleImportMode('url');
+        // Import mode is set by the input handlers ('url' or 'upload')
+        this.importMode = null;
+
+        // Reset drop zone filename feedback
+        this.updateSelectedFileName(null);
 
         // Clear folder tree selection
         if (this.folderTreeManager) {
@@ -166,43 +222,24 @@ export class ImportManager {
         }
     }
 
-    toggleImportMode(mode) {
-        this.importMode = mode;
+    /**
+     * Show the selected file name in the drop zone, or restore the default
+     * hint text when called with null.
+     */
+    updateSelectedFileName(fileName) {
+        const nameEl = document.getElementById('selectedFileName');
+        const hintEl = document.getElementById('dropZonePrimaryText');
+        if (!nameEl || !hintEl) return;
 
-        // Update toggle buttons
-        const uploadBtn = document.querySelector('.toggle-btn[data-mode="upload"]');
-        const urlBtn = document.querySelector('.toggle-btn[data-mode="url"]');
-
-        if (uploadBtn && urlBtn) {
-            if (mode === 'upload') {
-                uploadBtn.classList.add('active');
-                urlBtn.classList.remove('active');
-            } else {
-                uploadBtn.classList.remove('active');
-                urlBtn.classList.add('active');
-            }
+        if (fileName) {
+            nameEl.textContent = fileName;
+            nameEl.style.display = 'block';
+            hintEl.style.display = 'none';
+        } else {
+            nameEl.textContent = '';
+            nameEl.style.display = 'none';
+            hintEl.style.display = '';
         }
-
-        // Show/hide appropriate sections
-        const uploadSection = document.getElementById('uploadSection');
-        const urlSection = document.getElementById('urlSection');
-
-        if (uploadSection && urlSection) {
-            if (mode === 'upload') {
-                uploadSection.style.display = 'block';
-                urlSection.style.display = 'none';
-            } else {
-                uploadSection.style.display = 'none';
-                urlSection.style.display = 'block';
-            }
-        }
-
-        // Clear error messages
-        const uploadError = document.getElementById('uploadError');
-        const importUrlError = document.getElementById('importUrlError');
-
-        if (uploadError) uploadError.textContent = '';
-        if (importUrlError) importUrlError.textContent = '';
     }
 
     handleImageUpload(event) {
@@ -344,6 +381,9 @@ export class ImportManager {
         // Reset URL input
         const urlInput = document.getElementById('imageUrlInput');
         if (urlInput) urlInput.value = '';
+
+        // Reset drop zone filename feedback
+        this.updateSelectedFileName(null);
 
         // Clear error messages
         const uploadError = document.getElementById('uploadError');

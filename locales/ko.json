@@ -860,14 +860,12 @@
             "import": {
                 "action": "가져오기",
                 "title": "이미지 또는 URL에서 레시피 가져오기",
-                "urlLocalPath": "URL / 로컬 경로",
-                "uploadImage": "이미지 업로드",
-                "urlSectionDescription": "Civitai 이미지 URL 또는 로컬 파일 경로를 입력하여 레시피로 가져옵니다.",
+                "dropZoneLabel": "이미지 업로드",
+                "dropZoneHint": "이미지를 여기에 끌어다 놓거나, 클립보드에서 붙여넣거나, 클릭하여 찾아보세요",
+                "orDivider": "또는 이미지를 끌어다 놓기 / 붙여넣기",
                 "imageUrlOrPath": "이미지 URL 또는 파일 경로:",
                 "urlPlaceholder": "https://civitai.com/images/... 또는 C:/path/to/image.png",
                 "fetchImage": "이미지 가져오기",
-                "uploadSectionDescription": "LoRA 메타데이터가 포함된 이미지를 업로드하여 레시피로 가져옵니다.",
-                "selectImage": "이미지 선택",
                 "recipeName": "레시피 이름",
                 "recipeNamePlaceholder": "레시피 이름을 입력하세요",
                 "tagsOptional": "태그 (선택사항)",
@@ -912,6 +910,8 @@
                 "errors": {
                     "selectImageFile": "이미지 파일을 선택해주세요",
                     "enterUrlOrPath": "URL 또는 파일 경로를 입력해주세요",
+                    "invalidUrl": "유효한 URL을 입력하세요",
+                    "invalidInputFormat": "이미지 URL 또는 로컬 이미지 파일 경로를 입력하세요",
                     "selectLoraRoot": "LoRA 루트 디렉토리를 선택해주세요"
                 }
             },

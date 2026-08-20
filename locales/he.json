@@ -860,14 +860,12 @@
             "import": {
                 "action": "ייבא",
                 "title": "ייבא מתכון מתמונה או כתובת URL",
-                "urlLocalPath": "URL / נתיב מקומי",
-                "uploadImage": "העלה תמונה",
-                "urlSectionDescription": "הזן כתובת URL של תמונה מ-Civitai או נתיב קובץ מקומי לייבוא כמתכון.",
+                "dropZoneLabel": "העלאת תמונה",
+                "dropZoneHint": "גררו ושחררו תמונה כאן, הדביקו מהלוח או לחצו לעיון",
+                "orDivider": "או גררו ושחררו / הדביקו תמונה",
                 "imageUrlOrPath": "URL של תמונה או נתיב קובץ:",
                 "urlPlaceholder": "https://civitai.com/images/... או C:/path/to/image.png",
                 "fetchImage": "אחזר תמונה",
-                "uploadSectionDescription": "העלה תמונה עם מטא-דאטה של LoRA לייבוא כמתכון.",
-                "selectImage": "בחר תמונה",
                 "recipeName": "שם המתכון",
                 "recipeNamePlaceholder": "הזן שם מתכון",
                 "tagsOptional": "תגיות (אופציונלי)",
@@ -912,6 +910,8 @@
                 "errors": {
                     "selectImageFile": "אנא בחר קובץ תמונה",
                     "enterUrlOrPath": "אנא הזן URL או נתיב קובץ",
+                    "invalidUrl": "נא להזין כתובת URL תקינה",
+                    "invalidInputFormat": "נא להזין כתובת URL של תמונה או נתיב קובץ מקומי",
                     "selectLoraRoot": "אנא בחר ספריית שורש של LoRA"
                 }
             },

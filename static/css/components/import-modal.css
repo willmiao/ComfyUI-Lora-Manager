@@ -77,41 +77,84 @@
     margin-bottom: var(--space-3);
 }
 
-/* File Input Styles */
-.file-input-wrapper {
-    position: relative;
-    margin-bottom: var(--space-1);
+.import-description {
+    margin-top: 0;
 }
 
-.file-input-wrapper input[type="file"] {
-    position: absolute;
-    width: 100%;
-    height: 100%;
-    opacity: 0;
-    cursor: pointer;
-    z-index: 2;
-}
-
-.file-input-button {
+/* Unified Drop Zone */
+.import-drop-zone {
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 10px 16px;
-    background: var(--lora-accent);
-    color: var(--lora-text);
-    border-radius: var(--border-radius-xs);
-    font-weight: 500;
+    gap: var(--space-1);
+    padding: var(--space-4) var(--space-3);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--border-radius-sm);
+    background: var(--bg-color);
+    color: var(--text-color);
+    text-align: center;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: border-color 0.2s, background-color 0.2s;
 }
 
-.file-input-button:hover {
-    background: oklch(from var(--lora-accent) l c h / 0.9);
+.import-drop-zone:hover,
+.import-drop-zone:focus-visible {
+    border-color: var(--lora-accent);
+    outline: none;
 }
 
-.file-input-wrapper:hover .file-input-button {
-    background: oklch(from var(--lora-accent) l c h / 0.9);
+.import-drop-zone.drag-over {
+    border-color: var(--lora-accent);
+    background: oklch(var(--lora-accent) / 0.08);
+}
+
+.drop-zone-icon {
+    font-size: 1.8em;
+    color: var(--lora-accent);
+}
+
+.drop-zone-primary {
+    margin: 0;
+    opacity: 0.8;
+}
+
+.drop-zone-filename {
+    margin: 0;
+    font-weight: 500;
+    word-break: break-all;
+}
+
+/* Divider between drop zone and URL input */
+.import-divider {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin: var(--space-3) 0;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-size: 0.9em;
+}
+
+.import-divider::before,
+.import-divider::after {
+    content: '';
+    flex: 1;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Loading state for the fetch button */
+#fetchImageBtn.loading {
+    opacity: 0.8;
+    cursor: wait;
+}
+
+/* Inputs sit flush against the scrollable step's content edge; an outset
+   outline (global offset: 2px) gets clipped by overflow-x. Draw the focus
+   outline inset instead so the full ring stays visible. */
+#importModal input:focus-visible,
+#importModal select:focus-visible {
+    outline-offset: -2px;
 }
 
 /* Recipe Details Layout */
