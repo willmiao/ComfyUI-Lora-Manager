@@ -1,3 +1,4 @@
+import { app } from "../../scripts/app.js";
 import { createToggle, createArrowButton, createDragHandle, updateEntrySelection, createExpandButton, updateExpandButtonState, createLockButton, updateLockButtonState } from "./loras_widget_components.js";
 import { 
   parseLoraValue, 
@@ -10,7 +11,9 @@ import {
   onLibraryChanged
 } from "./loras_widget_utils.js";
 import { initDrag, createContextMenu, initHeaderDrag, initReorderDrag, handleKeyboardNavigation } from "./loras_widget_events.js";
-import { forwardMiddleMouseToCanvas, forwardWheelToCanvas, enableListWheelScroll } from "./utils.js";
+import { forwardMiddleMouseToCanvas, forwardWheelToCanvas, enableListWheelScroll, updateDownstreamLoaders } from "./utils.js";
+import { applySelectionHighlight } from "./trigger_word_highlight.js";
+import { updateConnectedLoraInfoNodes } from "./lora_info.js";
 import { PreviewTooltip } from "./preview_tooltip.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 import { getStrengthStepPreference } from "./settings.js";
@@ -885,3 +888,50 @@ export function addLorasWidget(node, name, opts, callback) {
 
   return { minWidth: 400, minHeight: defaultHeight, widget };
 }
+
+// Node classes whose declared "loras" input (LORAS widget type) also applies
+// trigger-word selection highlighting on lora selection.
+const LORAS_WIDGET_HIGHLIGHT_NODE_CLASSES = new Set([
+  "Lora Loader (LoraManager)",
+  "Lora Stacker (LoraManager)",
+  "Create Hook LoRA (LoraManager)",
+]);
+
+app.registerExtension({
+  name: "LoraManager.LorasWidget",
+
+  getCustomWidgets() {
+    return {
+      // Synchronous factory for the declared "loras" input (LORAS type) used by
+      // Lora Loader / Lora Stacker / Create Hook LoRA / WanVideo Lora Select /
+      // Lora Randomizer nodes. ComfyUI calls widget constructors synchronously,
+      // so this must NOT be async.
+      LORAS(node) {
+        const comfyClass = node?.comfyClass;
+        const isRandomizerNode = comfyClass === "Lora Randomizer (LoraManager)";
+
+        const opts = { isRandomizerNode };
+
+        if (isRandomizerNode || comfyClass === "WanVideo Lora Select (LoraManager)") {
+          opts.onSelectionChange = (selection) => {
+            updateConnectedLoraInfoNodes(node, selection);
+          };
+        } else if (LORAS_WIDGET_HIGHLIGHT_NODE_CLASSES.has(comfyClass)) {
+          opts.onSelectionChange = (selection) => {
+            applySelectionHighlight(node, selection);
+            updateConnectedLoraInfoNodes(node, selection);
+          };
+        }
+
+        // The randomizer has no per-node JS extension; update downstream
+        // loaders directly from the widget callback. The other nodes assign
+        // their own widget.callback in their onNodeCreated handlers.
+        const callback = isRandomizerNode
+          ? () => updateDownstreamLoaders(node)
+          : null;
+
+        return addLorasWidget(node, "loras", opts, callback);
+      },
+    };
+  },
+});

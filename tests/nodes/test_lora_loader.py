@@ -197,5 +197,6 @@ def test_lora_loader_qwen_model_raises_clear_error_when_helper_import_fails(monk
         loader.load_loras(
             qwen_model,
             "",
+            [],
             lora_stack=[("stack_qwen.safetensors", 0.6, 0.1)],
         )

@@ -31,6 +31,7 @@ class WanVideoLoraSelectLM:
                     "placeholder": "Search LoRAs to add...",
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
                 }),
+                "loras": ("LORAS", {}),
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
@@ -44,7 +45,7 @@ class WanVideoLoraSelectLM:
     RETURN_NAMES = ("lora", "trigger_words", "active_loras")
     FUNCTION = "process_loras"
     
-    def process_loras(self, text, low_mem_load=False, merge_loras=True, **kwargs):
+    def process_loras(self, text, loras, low_mem_load=False, merge_loras=True, **kwargs):
         loras_list = []
         all_trigger_words = []
         active_loras = []
@@ -62,8 +63,8 @@ class WanVideoLoraSelectLM:
         selected_blocks = blocks.get("selected_blocks", {})
         layer_filter = blocks.get("layer_filter", "")
         
-        # Process loras from kwargs with support for both old and new formats
-        loras_from_widget = get_loras_list(kwargs)
+        # Process loras from the widget with support for both old and new formats
+        loras_from_widget = get_loras_list({"loras": loras})
         for lora in loras_from_widget:
             if not lora.get('active', False):
                 continue

@@ -4,13 +4,11 @@ const {
   APP_MODULE,
   API_MODULE,
   UTILS_MODULE,
-  LORAS_WIDGET_MODULE,
   LORA_LOADER_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL("../../../scripts/app.js", import.meta.url).pathname,
   API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
   UTILS_MODULE: new URL("../../../web/comfyui/utils.js", import.meta.url).pathname,
-  LORAS_WIDGET_MODULE: new URL("../../../web/comfyui/loras_widget.js", import.meta.url).pathname,
   LORA_LOADER_MODULE: new URL("../../../web/comfyui/lora_loader.js", import.meta.url).pathname,
 }));
 
@@ -59,12 +57,6 @@ vi.mock(UTILS_MODULE, () => ({
   LORA_PATTERN: /<lora:([^:]+):([-\d.]+)(?::([-\d.]+))?>/g,
 }));
 
-const addLorasWidget = vi.fn();
-
-vi.mock(LORAS_WIDGET_MODULE, () => ({
-  addLorasWidget,
-}));
-
 describe("Lora Loader trigger word updates", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -82,11 +74,6 @@ describe("Lora Loader trigger word updates", () => {
 
     getWidgetByName.mockClear();
     getWidgetSerializedValue.mockClear();
-
-    addLorasWidget.mockClear();
-    addLorasWidget.mockImplementation((_node, _name, _opts, callback) => ({
-      widget: { value: [], callback },
-    }));
   });
 
   it("refreshes trigger word toggles after LoRA syntax edits in the input widget", async () => {
@@ -113,9 +100,18 @@ describe("Lora Loader trigger word updates", () => {
       options: {},
     };
 
+    // Declared LORAS input widget, created by the LoraManager.LorasWidget
+    // extension and taken over by the loader's onNodeCreated.
+    const lorasWidget = {
+      name: "loras",
+      value: [],
+      options: {},
+      callback: null, // Will be set by onNodeCreated
+    };
+
     const node = {
       comfyClass: "Lora Loader (LoraManager)",
-      widgets: [metadataWidget, inputWidget],
+      widgets: [metadataWidget, inputWidget, lorasWidget],
       addInput: vi.fn(),
       graph: {},
     };
@@ -124,8 +120,9 @@ describe("Lora Loader trigger word updates", () => {
 
     // The widget is now the AUTOCOMPLETE_TEXT_LORAS type, created automatically by Vue widgets
     expect(node.inputWidget).toBe(inputWidget);
-    expect(node.lorasWidget).toBeDefined();
+    expect(node.lorasWidget).toBe(lorasWidget);
     expect(getWidgetByName).toHaveBeenCalledWith(node, "text");
+    expect(typeof lorasWidget.callback).toBe("function");
 
     // The callback should have been set up by onNodeCreated
     const inputCallback = inputWidget.callback;

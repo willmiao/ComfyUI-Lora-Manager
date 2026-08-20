@@ -16070,7 +16070,6 @@ function createAutocompleteTextWidgetInstanceId() {
   autocompleteTextWidgetInstanceId += 1;
   return autocompleteTextWidgetInstanceId;
 }
-let addLorasWidgetCache = null;
 function createLoraPoolWidget(node) {
   const container = document.createElement("div");
   container.id = `lora-pool-widget-${node.id}`;
@@ -16682,81 +16681,6 @@ app$1.registerExtension({
       // @ts-ignore
       CYCLER_CONFIG(node) {
         return createLoraCyclerWidget(node);
-      },
-      // @ts-ignore
-      async LORAS(node) {
-        if (!addLorasWidgetCache) {
-          const module = await import(
-            /* @vite-ignore */
-            "../loras_widget.js"
-          );
-          addLorasWidgetCache = module.addLorasWidget;
-        }
-        const isRandomizerNode = node.comfyClass === "Lora Randomizer (LoraManager)";
-        const callback = isRandomizerNode ? () => {
-          updateDownstreamLoaders(node);
-        } : null;
-        const opts = {
-          isRandomizerNode
-        };
-        if (isRandomizerNode) {
-          opts.onSelectionChange = async (selection) => {
-            var _a2, _b, _c, _d, _e2;
-            if (!(selection == null ? void 0 : selection.name) || !(selection == null ? void 0 : selection.active)) return;
-            const infoNodes = [];
-            if (node.outputs) {
-              for (const output of node.outputs) {
-                if (!((_a2 = output == null ? void 0 : output.links) == null ? void 0 : _a2.length)) continue;
-                for (const linkId of output.links) {
-                  const links = (_b = node.graph) == null ? void 0 : _b.links;
-                  if (!links) continue;
-                  const link = Array.isArray(links) ? links[linkId] : (_c = links.get) == null ? void 0 : _c.call(links, linkId);
-                  if (!link) continue;
-                  const targetNode = (_e2 = (_d = node.graph) == null ? void 0 : _d.getNodeById) == null ? void 0 : _e2.call(_d, link.target_id);
-                  if ((targetNode == null ? void 0 : targetNode.comfyClass) === "Lora Info (LoraManager)") {
-                    infoNodes.push(targetNode);
-                  }
-                }
-              }
-            }
-            if (infoNodes.length === 0) return;
-            for (const infoNode of infoNodes) {
-              infoNode.__loraInfoReqId = (infoNode.__loraInfoReqId || 0) + 1;
-            }
-            const reqIdSnapshot = /* @__PURE__ */ new Map();
-            for (const infoNode of infoNodes) {
-              reqIdSnapshot.set(infoNode, infoNode.__loraInfoReqId);
-            }
-            let infoData;
-            try {
-              const response = await api$1.fetchApi(
-                `/lm/loras/get-notes?name=${encodeURIComponent(selection.name)}`,
-                { method: "GET" }
-              );
-              if (response == null ? void 0 : response.ok) {
-                const data = await response.json();
-                infoData = {
-                  name: selection.name,
-                  notes: (data == null ? void 0 : data.notes) || "",
-                  filePath: (data == null ? void 0 : data.file_path) || ""
-                };
-              } else {
-                infoData = { name: selection.name, notes: "[Error loading notes]", filePath: "" };
-              }
-            } catch {
-              infoData = { name: selection.name, notes: "[Error loading notes]", filePath: "" };
-            }
-            for (const infoNode of infoNodes) {
-              if (infoNode.__loraInfoReqId !== reqIdSnapshot.get(infoNode)) {
-                continue;
-              }
-              if (typeof infoNode._setLoraInfo === "function") {
-                infoNode._setLoraInfo(infoData);
-              }
-            }
-          };
-        }
-        return addLorasWidgetCache(node, "loras", opts, callback);
       },
       // Autocomplete text widget for LoRAs (used by Lora Loader, Lora Stacker, WanVideo Lora Select)
       // @ts-ignore

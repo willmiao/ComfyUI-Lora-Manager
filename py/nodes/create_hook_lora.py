@@ -39,6 +39,7 @@ class CreateHookLoraLM:
                         ),
                     },
                 ),
+                "loras": ("LORAS", {}),
             },
             "optional": FlexibleOptionalInputType(any_type),
         }
@@ -52,7 +53,7 @@ class CreateHookLoraLM:
     RETURN_NAMES = ("HOOKS", "trigger_words", "active_loras")
     FUNCTION = "create_hook"
 
-    def create_hook(self, text: str, **kwargs):
+    def create_hook(self, text: str, loras, **kwargs):
         """Create a HookGroup from the selected LoRAs, chained with prev_hooks.
 
         Each active LoRA from the widget is loaded and wrapped in a WeightHook
@@ -73,7 +74,7 @@ class CreateHookLoraLM:
         all_trigger_words: list[str] = []
         active_loras: list[tuple[str, float, float]] = []
 
-        for lora in get_loras_list(kwargs):
+        for lora in get_loras_list({"loras": loras}):
             if not lora.get("active", False):
                 continue
 

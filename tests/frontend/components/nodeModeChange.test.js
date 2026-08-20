@@ -4,14 +4,12 @@ const {
   APP_MODULE,
   API_MODULE,
   UTILS_MODULE,
-  LORAS_WIDGET_MODULE,
   LORA_LOADER_MODULE,
   LORA_STACKER_MODULE,
 } = vi.hoisted(() => ({
   APP_MODULE: new URL("../../../scripts/app.js", import.meta.url).pathname,
   API_MODULE: new URL("../../../scripts/api.js", import.meta.url).pathname,
   UTILS_MODULE: new URL("../../../web/comfyui/utils.js", import.meta.url).pathname,
-  LORAS_WIDGET_MODULE: new URL("../../../web/comfyui/loras_widget.js", import.meta.url).pathname,
   LORA_LOADER_MODULE: new URL("../../../web/comfyui/lora_loader.js", import.meta.url).pathname,
   LORA_STACKER_MODULE: new URL("../../../web/comfyui/lora_stacker.js", import.meta.url).pathname,
 }));
@@ -80,12 +78,6 @@ vi.mock(UTILS_MODULE, async (importOriginal) => {
   };
 });
 
-const addLorasWidget = vi.fn();
-
-vi.mock(LORAS_WIDGET_MODULE, () => ({
-  addLorasWidget,
-}));
-
 describe("Node mode change handling", () => {
   beforeEach(() => {
     vi.resetModules();
@@ -109,11 +101,6 @@ describe("Node mode change handling", () => {
 
     getWidgetByName.mockClear();
     getWidgetSerializedValue.mockClear();
-
-    addLorasWidget.mockClear();
-    addLorasWidget.mockImplementation((_node, _name, _opts, callback) => ({
-      widget: { value: [], callback },
-    }));
   });
 
   describe("Lora Stacker mode change handling", () => {
@@ -221,6 +208,13 @@ describe("Node mode change handling", () => {
             value: "",
             options: {},
             callback: null, // Will be set by onNodeCreated
+          },
+          {
+            // Declared LORAS input widget, taken over by onNodeCreated
+            name: "loras",
+            value: [],
+            options: {},
+            callback: null,
           },
         ],
         addInput: vi.fn(),
