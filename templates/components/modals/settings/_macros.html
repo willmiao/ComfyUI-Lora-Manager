@@ -1,0 +1,69 @@
+{# Shared building blocks for the settings modal sections. #}
+{# Usage: {% import 'components/modals/settings/_macros.html' as sm with context %} #}
+{# `with context` is required so macros can call the `t()` translation function. #}
+
+{% macro setting_toggle(id, key, label, help='') %}
+<div class="setting-item">
+    <div class="setting-row">
+        <div class="setting-info">
+            <label for="{{ id }}">
+                {{ t(label) }}
+                {% if help %}<i class="fas fa-info-circle info-icon" data-tooltip="{{ t(help) }}"></i>{% endif %}
+            </label>
+        </div>
+        <div class="setting-control">
+            <label class="toggle-switch">
+                <input type="checkbox" id="{{ id }}" onchange="settingsManager.saveToggleSetting('{{ id }}', '{{ key }}')">
+                <span class="toggle-slider"></span>
+            </label>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro setting_select(id, key, label, options, help='') %}
+<div class="setting-item">
+    <div class="setting-row">
+        <div class="setting-info">
+            <label for="{{ id }}">
+                {{ t(label) }}
+                {% if help %}<i class="fas fa-info-circle info-icon" data-tooltip="{{ t(help) }}"></i>{% endif %}
+            </label>
+        </div>
+        <div class="setting-control select-control">
+            <select id="{{ id }}" onchange="settingsManager.saveSelectSetting('{{ id }}', '{{ key }}')">
+                {% for value, option_label in options %}
+                <option value="{{ value }}">{{ t(option_label) }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro setting_input(id, key, label, placeholder, help='') %}
+<div class="setting-item">
+    <div class="setting-row">
+        <div class="setting-info">
+            <label for="{{ id }}">
+                {{ t(label) }}
+                {% if help %}<i class="fas fa-info-circle info-icon" data-tooltip="{{ t(help) }}"></i>{% endif %}
+            </label>
+        </div>
+        <div class="setting-control">
+            <div class="text-input-wrapper">
+                <input type="text" id="{{ id }}"
+                       placeholder="{{ t(placeholder) }}"
+                       onblur="settingsManager.saveInputSetting('{{ id }}', '{{ key }}')"
+                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+            </div>
+        </div>
+    </div>
+</div>
+{% endmacro %}
+
+{% macro subsection_header(title) %}
+<div class="settings-subsection-header">
+    <h4>{{ t(title) }}</h4>
+</div>
+{% endmacro %}

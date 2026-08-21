@@ -1,0 +1,482 @@
+{% import 'components/modals/settings/_macros.html' as sm with context %}
+{% set template_preset_options = [
+    ('', 'settings.downloadPathTemplates.templateOptions.flatStructure'),
+    ('{base_model}', 'settings.downloadPathTemplates.templateOptions.byBaseModel'),
+    ('{author}', 'settings.downloadPathTemplates.templateOptions.byAuthor'),
+    ('{first_tag}', 'settings.downloadPathTemplates.templateOptions.byFirstTag'),
+    ('{base_model}/{first_tag}', 'settings.downloadPathTemplates.templateOptions.baseModelFirstTag'),
+    ('{base_model}/{author}', 'settings.downloadPathTemplates.templateOptions.baseModelAuthor'),
+    ('{author}/{first_tag}', 'settings.downloadPathTemplates.templateOptions.authorFirstTag'),
+    ('{base_model}/{author}/{first_tag}', 'settings.downloadPathTemplates.templateOptions.baseModelAuthorFirstTag'),
+    ('custom', 'settings.downloadPathTemplates.templateOptions.customTemplate'),
+] %}
+<!-- Section 3: Library -->
+<div id="section-library" class="settings-section" data-section="library">
+    <!-- Folder Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.folderSettings') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="librarySelect">
+                    {{ t('settings.folderSettings.activeLibrary') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.activeLibraryHelp') }}"></i>
+                </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="librarySelect" onchange="settingsManager.handleLibraryChange()">
+                        <option value="">{{ t('settings.folderSettings.loadingLibraries') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_select('defaultLoraRoot', 'default_lora_root', 'settings.folderSettings.defaultLoraRoot', [], 'settings.folderSettings.defaultLoraRootHelp') }}
+
+        {{ sm.setting_select('defaultCheckpointRoot', 'default_checkpoint_root', 'settings.folderSettings.defaultCheckpointRoot', [], 'settings.folderSettings.defaultCheckpointRootHelp') }}
+
+        {{ sm.setting_select('defaultUnetRoot', 'default_unet_root', 'settings.folderSettings.defaultUnetRoot', [], 'settings.folderSettings.defaultUnetRootHelp') }}
+
+        {{ sm.setting_select('defaultEmbeddingRoot', 'default_embedding_root', 'settings.folderSettings.defaultEmbeddingRoot', [], 'settings.folderSettings.defaultEmbeddingRootHelp') }}
+    </div>
+
+    <!-- Recipe Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.recipeSettings') }}
+        {{ sm.setting_input('recipesPath', 'recipes_path', 'settings.folderSettings.recipesPath', 'settings.folderSettings.recipesPathPlaceholder', 'settings.folderSettings.recipesPathHelp') }}
+    </div>
+
+    <!-- Extra Folder Paths -->
+    <div class="settings-subsection">
+        <div class="settings-subsection-header">
+            <h4>
+                {{ t('settings.extraFolderPaths.title') }}
+                <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.extraFolderPaths.restartRequired') }}"></i>
+            </h4>
+        </div>
+        <div class="setting-item">
+            <div class="input-help">
+                {{ t('settings.extraFolderPaths.description') }}
+            </div>
+        </div>
+
+        <!-- LoRA Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.lora') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('loras')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-loras">
+            </div>
+        </div>
+
+        <!-- Checkpoint Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.checkpoint') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('checkpoints')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-checkpoints">
+            </div>
+        </div>
+
+        <!-- Diffusion Model (Unet) Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.unet') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('unet')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-unet">
+            </div>
+        </div>
+
+        <!-- Embedding Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.extraFolderPaths.modelTypes.embedding') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addExtraFolderPathRow('embeddings')">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('common.actions.add') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="extraFolderPaths-embeddings">
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Path Templates -->
+    <div class="settings-subsection">
+        <div class="settings-subsection-header">
+            <h4>
+                {{ t('settings.downloadPathTemplates.title') }}
+                <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadPathTemplates.help') }}"></i>
+            </h4>
+        </div>
+        <div class="setting-item">
+            <div class="input-help">
+                <div class="placeholder-info">
+                    <strong>{{ t('settings.downloadPathTemplates.availablePlaceholders') }}</strong>
+                    <span class="placeholder-tag">{base_model}</span>
+                    <span class="placeholder-tag">{author}</span>
+                    <span class="placeholder-tag">{first_tag}</span>
+                    <span class="placeholder-tag">{model_name}</span>
+                    <span class="placeholder-tag">{version_name}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="loraTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.lora') }}</label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="loraTemplatePreset" onchange="settingsManager.updateTemplatePreset('lora', this.value)">
+                        {% for value, option_label in template_preset_options %}
+                        <option value="{{ value }}">{{ t(option_label) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="template-custom-row" id="loraCustomRow" style="display: none;">
+                <input type="text" id="loraCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                <div class="template-validation" id="loraValidation"></div>
+            </div>
+            <div class="template-preview" id="loraPreview"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="checkpointTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.checkpoint') }}</label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="checkpointTemplatePreset" onchange="settingsManager.updateTemplatePreset('checkpoint', this.value)">
+                        {% for value, option_label in template_preset_options %}
+                        <option value="{{ value }}">{{ t(option_label) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="template-custom-row" id="checkpointCustomRow" style="display: none;">
+                <input type="text" id="checkpointCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                <div class="template-validation" id="checkpointValidation"></div>
+            </div>
+            <div class="template-preview" id="checkpointPreview"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="embeddingTemplatePreset">{{ t('settings.downloadPathTemplates.modelTypes.embedding') }}</label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="embeddingTemplatePreset" onchange="settingsManager.updateTemplatePreset('embedding', this.value)">
+                        {% for value, option_label in template_preset_options %}
+                        <option value="{{ value }}">{{ t(option_label) }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+            <div class="template-custom-row" id="embeddingCustomRow" style="display: none;">
+                <input type="text" id="embeddingCustomTemplate" class="template-custom-input" placeholder="{{ t('settings.downloadPathTemplates.customTemplatePlaceholder') }}" />
+                <div class="template-validation" id="embeddingValidation"></div>
+            </div>
+            <div class="template-preview" id="embeddingPreview"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.downloadPathTemplates.baseModelPathMappings') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadPathTemplates.baseModelPathMappingsHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addMappingRow()">
+                        <i class="fas fa-plus"></i>
+                        <span>{{ t('settings.downloadPathTemplates.addMapping') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="mappings-container">
+                <div id="baseModelMappingsContainer">
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_toggle('skipPreviouslyDownloadedModelVersions', 'skip_previously_downloaded_model_versions', 'settings.skipPreviouslyDownloadedModelVersions.label', 'settings.skipPreviouslyDownloadedModelVersions.help') }}
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="downloadSkipBaseModelsToggle">
+                        {{ t('settings.downloadSkipBaseModels.label') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadSkipBaseModels.help') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button
+                        type="button"
+                        id="downloadSkipBaseModelsToggle"
+                        class="secondary-btn base-model-skip-toggle"
+                        aria-expanded="false"
+                    >
+                        <span id="downloadSkipBaseModelsSummary">{{ t('settings.downloadSkipBaseModels.summary.none') }}</span>
+                        <span class="base-model-skip-toggle-label">{{ t('settings.downloadSkipBaseModels.actions.edit') }}</span>
+                    </button>
+                </div>
+            </div>
+            <div id="downloadSkipBaseModelsPanel" class="base-model-skip-panel" hidden>
+                <div class="base-model-skip-toolbar">
+                    <input
+                        type="text"
+                        id="downloadSkipBaseModelsSearch"
+                        class="base-model-skip-search"
+                        placeholder="{{ t('settings.downloadSkipBaseModels.searchPlaceholder') }}"
+                    />
+                    <button type="button" class="text-btn base-model-skip-clear" id="downloadSkipBaseModelsClear">
+                        {{ t('settings.downloadSkipBaseModels.actions.clear') }}
+                    </button>
+                </div>
+                <div id="downloadSkipBaseModelsContainer" class="base-model-skip-list"></div>
+                <div id="downloadSkipBaseModelsEmpty" class="base-model-skip-empty" hidden>
+                    {{ t('settings.downloadSkipBaseModels.empty') }}
+                </div>
+            </div>
+            <div class="settings-input-error-message" id="downloadSkipBaseModelsError"></div>
+        </div>
+
+        <!-- Priority Tags -->
+        <div class="setting-item priority-tags-item">
+            <div class="setting-row priority-tags-header-row">
+                <div class="setting-info priority-tags-header">
+                    <label>
+                        {{ t('settings.priorityTags.title') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.priorityTags.description') }}"></i>
+                    </label>
+                    <a class="settings-action-link priority-tags-help-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Priority-Tags-Configuration-Guide" target="_blank" rel="noopener" aria-label="{{ t('settings.priorityTags.helpLinkLabel') }}" title="{{ t('settings.priorityTags.helpLinkLabel') }}">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </a>
+                </div>
+            </div>
+            <div class="priority-tags-tabs">
+                <input type="radio" id="priority-tags-tab-lora" name="priority-tags-tab" class="priority-tags-tab-input" checked>
+                <input type="radio" id="priority-tags-tab-checkpoint" name="priority-tags-tab" class="priority-tags-tab-input">
+                <input type="radio" id="priority-tags-tab-embedding" name="priority-tags-tab" class="priority-tags-tab-input">
+
+                <div class="priority-tags-tablist">
+                    <label class="priority-tags-tab-label" for="priority-tags-tab-lora" id="priority-tags-tab-lora-label">{{ t('settings.priorityTags.modelTypes.lora') }}</label>
+                    <label class="priority-tags-tab-label" for="priority-tags-tab-checkpoint" id="priority-tags-tab-checkpoint-label">{{ t('settings.priorityTags.modelTypes.checkpoint') }}</label>
+                    <label class="priority-tags-tab-label" for="priority-tags-tab-embedding" id="priority-tags-tab-embedding-label">{{ t('settings.priorityTags.modelTypes.embedding') }}</label>
+                </div>
+
+                <div class="priority-tags-panels">
+                    <div class="priority-tags-panel" id="priority-tags-panel-lora">
+                        <textarea id="loraPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                        <div class="settings-input-error-message" id="loraPriorityTagsError"></div>
+                    </div>
+                    <div class="priority-tags-panel" id="priority-tags-panel-checkpoint">
+                        <textarea id="checkpointPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                        <div class="settings-input-error-message" id="checkpointPriorityTagsError"></div>
+                    </div>
+                    <div class="priority-tags-panel" id="priority-tags-panel-embedding">
+                        <textarea id="embeddingPriorityTagsInput" class="priority-tags-input" placeholder="{{ t('settings.priorityTags.placeholder') }}"></textarea>
+                        <div class="settings-input-error-message" id="embeddingPriorityTagsError"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Scope -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.versionScope') }}
+        {{ sm.setting_select('versionGrouping', 'version_grouping', 'settings.versionGrouping.label', [
+            ('same_base', 'settings.versionGrouping.options.sameBase'),
+            ('any', 'settings.versionGrouping.options.any'),
+        ], 'settings.versionGrouping.help') }}
+        {{ sm.setting_toggle('hideEarlyAccessUpdates', 'hide_early_access_updates', 'settings.hideEarlyAccessUpdates.label', 'settings.hideEarlyAccessUpdates.help') }}
+        {{ sm.setting_toggle('hidePaidUpdates', 'hide_paid_updates', 'settings.hidePaidUpdates.label', 'settings.hidePaidUpdates.help') }}
+    </div>
+
+    <!-- Example Images -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.exampleImages') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesPath">{{ t('settings.exampleImages.downloadLocation') }} <i class="fas fa-sync-alt restart-required-icon" title="{{ t('settings.exampleImages.restartRequired') }}"></i></label>
+                </div>
+                <div class="setting-control path-control">
+                    <input type="text" id="exampleImagesPath" placeholder="{{ t('settings.exampleImages.downloadLocationPlaceholder') }}" />
+                    <button id="exampleImagesDownloadBtn" class="primary-btn">
+                        <i class="fas fa-download"></i> <span id="exampleDownloadBtnText">{{ t('settings.exampleImages.download') }}</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_toggle('autoDownloadExampleImages', 'auto_download_example_images', 'settings.exampleImages.autoDownload', 'settings.exampleImages.autoDownloadHelp') }}
+
+        {{ sm.setting_toggle('optimizeExampleImages', 'optimize_example_images', 'settings.exampleImages.optimizeImages', 'settings.exampleImages.optimizeImagesHelp') }}
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesOpenMode">
+                        {{ t('settings.exampleImages.openMode') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.openModeHelp') }}"></i>
+                        <a class="settings-action-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Remote-Open-for-Example-Images" target="_blank" rel="noopener" title="{{ t('settings.exampleImages.openModeWikiLink') }}">
+                            <i class="fas fa-question-circle" aria-hidden="true"></i>
+                        </a>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="exampleImagesOpenMode" onchange="settingsManager.handleExampleImagesOpenModeChange()">
+                        <option value="system">{{ t('settings.exampleImages.openModeOptions.system') }}</option>
+                        <option value="clipboard">{{ t('settings.exampleImages.openModeOptions.clipboard') }}</option>
+                        <option value="uri_template">{{ t('settings.exampleImages.openModeOptions.uriTemplate') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="exampleImagesLocalRootSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesLocalRoot">
+                        {{ t('settings.exampleImages.localRoot') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.localRootHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control path-control">
+                    <input
+                        type="text"
+                        id="exampleImagesLocalRoot"
+                        placeholder="{{ t('settings.exampleImages.localRootPlaceholder') }}"
+                        onchange="settingsManager.saveInputSetting('exampleImagesLocalRoot', 'example_images_local_root')" />
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="exampleImagesUriTemplateSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="exampleImagesOpenUriTemplate">
+                        {{ t('settings.exampleImages.uriTemplate') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.exampleImages.uriTemplateHelp') }} {{ t('settings.exampleImages.uriTemplatePlaceholders') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control path-control">
+                    <input
+                        type="text"
+                        id="exampleImagesOpenUriTemplate"
+                        placeholder="{{ t('settings.exampleImages.uriTemplatePlaceholder') }}"
+                        onchange="settingsManager.saveInputSetting('exampleImagesOpenUriTemplate', 'example_images_open_uri_template')" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auto-organize -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.autoOrganize') }}
+
+        <!-- Auto-organize Exclusions -->
+        <div class="setting-item auto-organize-exclusions-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="autoOrganizeExclusions">
+                        {{ t('settings.autoOrganizeExclusions.label') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.autoOrganizeExclusions.help') }}"></i>
+                    </label>
+                </div>
+            </div>
+            <textarea id="autoOrganizeExclusions" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.autoOrganizeExclusions.placeholder') }}"></textarea>
+            <div class="settings-input-error-message" id="autoOrganizeExclusionsError"></div>
+        </div>
+    </div>
+
+    <!-- Metadata -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.metadata') }}
+
+        <!-- Metadata Refresh Skip Paths -->
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="metadataRefreshSkipPaths">
+                        {{ t('settings.metadataRefreshSkipPaths.label') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataRefreshSkipPaths.help') }}"></i>
+                    </label>
+                </div>
+            </div>
+            <textarea id="metadataRefreshSkipPaths" class="priority-tags-input auto-organize-exclusions-input" placeholder="{{ t('settings.metadataRefreshSkipPaths.placeholder') }}"></textarea>
+            <div class="settings-input-error-message" id="metadataRefreshSkipPathsError"></div>
+        </div>
+
+        <!-- CivArchive API provider toggle -->
+        {{ sm.setting_toggle('enableCivarchiveApi', 'enable_civarchive_api', 'settings.metadataArchive.enableCivarchiveApi', 'settings.metadataArchive.enableCivarchiveApiHelp') }}
+
+        <!-- Metadata Archive DB -->
+        {{ sm.setting_toggle('enableMetadataArchive', 'enable_metadata_archive_db', 'settings.metadataArchive.enableArchiveDb', 'settings.metadataArchive.enableArchiveDbHelp') }}
+
+        <div class="setting-item">
+            <div class="metadata-archive-status" id="metadataArchiveStatus">
+                <!-- Status will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.metadataArchive.management') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.metadataArchive.managementHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="downloadMetadataArchiveBtn" class="primary-btn" onclick="settingsManager.downloadMetadataArchive()">
+                        {{ t('settings.metadataArchive.downloadButton') }}
+                    </button>
+                    <button type="button" id="removeMetadataArchiveBtn" class="danger-btn" onclick="settingsManager.removeMetadataArchive()" style="margin-left: 10px;">
+                        {{ t('settings.metadataArchive.removeButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metadata provider fallback order -->
+        {{ sm.setting_select('metadataProviderOrder', 'metadata_provider_order', 'settings.metadataArchive.providerOrder', [
+            ('civitai_archive_sqlite', 'settings.metadataArchive.providerOrderCivitaiArchiveSqlite'),
+            ('civitai_sqlite_archive', 'settings.metadataArchive.providerOrderCivitaiSqliteArchive'),
+        ], 'settings.metadataArchive.providerOrderHelp') }}
+    </div>
+</div>

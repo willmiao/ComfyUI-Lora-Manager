@@ -1,0 +1,127 @@
+{% import 'components/modals/settings/_macros.html' as sm with context %}
+<!-- Section 2: Interface -->
+<div id="section-interface" class="settings-section" data-section="interface">
+    <!-- Content Filtering -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.contentFiltering') }}
+        {{ sm.setting_toggle('blurMatureContent', 'blur_mature_content', 'settings.contentFiltering.blurNsfwContent', 'settings.contentFiltering.blurNsfwContentHelp') }}
+        {{ sm.setting_toggle('showOnlySFW', 'show_only_sfw', 'settings.contentFiltering.showOnlySfw', 'settings.contentFiltering.showOnlySfwHelp') }}
+        {{ sm.setting_select('matureBlurLevel', 'mature_blur_level', 'settings.contentFiltering.matureBlurThreshold', [
+            ('PG13', 'settings.contentFiltering.matureBlurThresholdOptions.pg13'),
+            ('R', 'settings.contentFiltering.matureBlurThresholdOptions.r'),
+            ('X', 'settings.contentFiltering.matureBlurThresholdOptions.x'),
+            ('XXX', 'settings.contentFiltering.matureBlurThresholdOptions.xxx'),
+        ], 'settings.contentFiltering.matureBlurThresholdHelp') }}
+    </div>
+
+    <!-- Video Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.videoSettings') }}
+        {{ sm.setting_toggle('autoplayOnHover', 'autoplay_on_hover', 'settings.videoSettings.autoplayOnHover', 'settings.videoSettings.autoplayOnHoverHelp') }}
+    </div>
+
+    <!-- Layout Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.layoutSettings') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="displayDensity">
+                    {{ t('settings.layoutSettings.displayDensity') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.displayDensityHelp') }}"></i>
+                </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="displayDensity" onchange="settingsManager.saveSelectSetting('displayDensity', 'display_density')">
+                        <option value="default">{{ t('settings.layoutSettings.displayDensityOptions.default') }}</option>
+                        <option value="medium">{{ t('settings.layoutSettings.displayDensityOptions.medium') }}</option>
+                        <option value="compact">{{ t('settings.layoutSettings.displayDensityOptions.compact') }}</option>
+                    </select>
+                </div>
+            </div>
+            <div class="input-help"><ul class="list-description">
+                    <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.default') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.default') }}</li>
+                    <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.medium') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.medium') }}</li>
+                    <li><strong>{{ t('settings.layoutSettings.displayDensityOptions.compact') }}:</strong> {{ t('settings.layoutSettings.displayDensityDetails.compact') }}</li>
+                </ul>
+                <span class="warning-text">{{ t('settings.layoutSettings.displayDensityWarning') }}</span>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label id="recipesLayoutLabel">
+                    {{ t('settings.layoutSettings.recipesLayout') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.recipesLayoutHelp') }}"></i>
+                </label>
+                </div>
+                <div class="setting-control layout-options-control">
+                    <div id="recipesLayoutOptions" class="layout-options" role="radiogroup" aria-label="{{ t('settings.layoutSettings.recipesLayout') }}" aria-labelledby="recipesLayoutLabel">
+                        <button type="button" class="layout-option" data-recipes-layout="grid" onclick="settingsManager.saveRecipesLayout('grid')" role="radio" aria-checked="true">
+                            <span class="layout-option-preview layout-preview-grid" aria-hidden="true"><span></span><span></span><span></span><span></span></span>
+                            <span class="layout-option-label">{{ t('settings.layoutSettings.recipesLayoutOptions.grid') }}</span>
+                        </button>
+                        <button type="button" class="layout-option" data-recipes-layout="masonry" onclick="settingsManager.saveRecipesLayout('masonry')" role="radio" aria-checked="false">
+                            <span class="layout-option-preview layout-preview-masonry" aria-hidden="true"><span></span><span></span><span></span></span>
+                            <span class="layout-option-label">{{ t('settings.layoutSettings.recipesLayoutOptions.masonry') }}</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_select('modelNameDisplay', 'model_name_display', 'settings.layoutSettings.modelNameDisplay', [
+            ('model_name', 'settings.layoutSettings.modelNameDisplayOptions.modelName'),
+            ('file_name', 'settings.layoutSettings.modelNameDisplayOptions.fileName'),
+        ], 'settings.layoutSettings.modelNameDisplayHelp') }}
+
+        <!-- Group by model toggle -->
+        {{ sm.setting_toggle('groupByModel', 'group_by_model', 'settings.layoutSettings.groupByModel', 'settings.layoutSettings.groupByModelHelp') }}
+
+        {{ sm.setting_select('cardInfoDisplay', 'card_info_display', 'settings.layoutSettings.cardInfoDisplay', [
+            ('always', 'settings.layoutSettings.cardInfoDisplayOptions.always'),
+            ('hover', 'settings.layoutSettings.cardInfoDisplayOptions.hover'),
+        ], 'settings.layoutSettings.cardInfoDisplayHelp') }}
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="cardBlurAmount">
+                    {{ t('settings.layoutSettings.cardBlurAmount') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.layoutSettings.cardBlurAmountHelp') }}"></i>
+                </label>
+                </div>
+                <div class="setting-control range-control">
+                    <input type="range" id="cardBlurAmount" min="0" max="20" value="8" step="1"
+                           oninput="var pct = (this.value / 20) * 100; this.style.setProperty('--range-fill', pct + '%'); document.getElementById('cardBlurAmountValue').textContent = this.value + 'px'"
+                           onchange="settingsManager.saveRangeSetting('cardBlurAmount', 'cardBlurAmountValue', 'card_blur_amount')">
+                    <span id="cardBlurAmountValue" class="range-value">8px</span>
+                </div>
+            </div>
+        </div>
+
+        {{ sm.setting_toggle('showVersionOnCard', 'show_version_on_card', 'settings.layoutSettings.showVersionOnCard', 'settings.layoutSettings.showVersionOnCardHelp') }}
+
+        {{ sm.setting_select('modelCardFooterAction', 'model_card_footer_action', 'settings.layoutSettings.modelCardFooterAction', [
+            ('example_images', 'settings.layoutSettings.modelCardFooterActionOptions.exampleImages'),
+            ('replace_preview', 'settings.layoutSettings.modelCardFooterActionOptions.replacePreview'),
+        ], 'settings.layoutSettings.modelCardFooterActionHelp') }}
+    </div>
+
+    <!-- License Icons -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.licenseIcons') }}
+        {{ sm.setting_toggle('useNewLicenseIcons', 'use_new_license_icons', 'settings.licenseIcons.useNewStyle', 'settings.licenseIcons.useNewStyleHelp') }}
+    </div>
+
+    <!-- Miscellaneous -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.misc') }}
+        {{ sm.setting_select('loraSyntaxFormat', 'lora_syntax_format', 'settings.misc.loraSyntaxFormat', [
+            ('full', 'settings.misc.loraSyntaxFormatOptions.full'),
+            ('legacy', 'settings.misc.loraSyntaxFormatOptions.legacy'),
+        ], 'settings.misc.loraSyntaxFormatHelp') }}
+        {{ sm.setting_toggle('includeTriggerWords', 'include_trigger_words', 'settings.misc.includeTriggerWords', 'settings.misc.includeTriggerWordsHelp') }}
+    </div>
+</div>

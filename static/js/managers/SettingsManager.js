@@ -904,6 +904,9 @@ export class SettingsManager {
         // Helper to update model Combobox presets from catalog / Ollama API
         const llmModelInput = document.getElementById('llmModel');
         this._llmModelCombobox = null;
+        if (llmModelInput) {
+            llmModelInput.value = state.global.settings.llm_model || '';
+        }
         if (llmModelInput && typeof Combobox !== 'undefined') {
             const currentProvider = llmProviderSelect ? llmProviderSelect.value : 'openai';
             const fallbackModels = currentProvider === 'ollama' ? [] : (this._providerModels[currentProvider] || []);

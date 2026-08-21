@@ -1,0 +1,326 @@
+{% import 'components/modals/settings/_macros.html' as sm with context %}
+<!-- Section 1: General -->
+<div id="section-general" class="settings-section active" data-section="general">
+    <!-- Language -->
+    <div class="setting-item">
+        <div class="setting-row">
+            <div class="setting-info">
+                <label for="languageSelect">
+                    {{ t('common.language.select') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('common.language.select_help') }}"></i>
+                </label>
+            </div>
+            <div class="setting-control select-control">
+                <select id="languageSelect" onchange="settingsManager.saveLanguageSetting()">
+                    <option value="en">{{ t('common.language.english') }}</option>
+                    <option value="zh-CN">{{ t('common.language.chinese_simplified') }}</option>
+                    <option value="zh-TW">{{ t('common.language.chinese_traditional') }}</option>
+                    <option value="ru">{{ t('common.language.russian') }}</option>
+                    <option value="de">{{ t('common.language.german') }}</option>
+                    <option value="ja">{{ t('common.language.japanese') }}</option>
+                    <option value="ko">{{ t('common.language.korean') }}</option>
+                    <option value="fr">{{ t('common.language.french') }}</option>
+                    <option value="es">{{ t('common.language.spanish') }}</option>
+                    <option value="he">{{ t('common.language.Hebrew') }}</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Storage Location -->
+    {{ sm.setting_toggle('usePortableSettings', 'use_portable_settings', 'settings.storage.locationLabel', 'settings.storage.locationHelp') }}
+
+    <!-- API Configuration -->
+    <div class="setting-item api-key-item">
+        <div class="setting-row">
+            <div class="setting-info">
+                <label>{{ t('settings.civitaiApiKey') }}</label>
+                <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.civitaiApiKeyHelp') }}"></i>
+            </div>
+            <div class="setting-control">
+                <!-- Status display (shown when not editing) -->
+                <div id="civitaiApiKeyStatus" class="api-key-status">
+                    <span id="civitaiApiKeyStatusText" class="api-key-status-text api-key-status--unconfigured">
+                        <i class="fas fa-times-circle text-error"></i>
+                        {{ t('settings.civitaiApiKeyNotConfigured') }}
+                    </span>
+                    <button type="button" class="secondary-btn" id="civitaiApiKeyActionBtn" onclick="settingsManager.editApiKey()">
+                        {{ t('settings.civitaiApiKeySet') }}
+                    </button>
+                </div>
+                <!-- Inline edit view (shown when editing) -->
+                <div id="civitaiApiKeyEdit" class="api-key-edit is-hidden">
+                    <div class="api-key-input">
+                        <input type="text"
+                            id="civitaiApiKey"
+                            class="api-key-masked"
+                            placeholder="{{ t('settings.civitaiApiKeyPlaceholder') }}"
+                            autocomplete="off"
+                            data-mask="css" />
+                        <button type="button" class="toggle-visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="primary-btn" onclick="settingsManager.saveApiKey()">{{ t('common.actions.save') }}</button>
+                    <button type="button" class="secondary-btn" onclick="settingsManager.cancelEditApiKey()">{{ t('common.actions.cancel') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{ sm.setting_select('civitaiHost', 'civitai_host', 'settings.civitaiHost.label', [
+        ('civitai.com', 'settings.civitaiHost.options.com'),
+        ('civitai.red', 'settings.civitaiHost.options.red'),
+    ], 'settings.civitaiHost.help') }}
+
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.downloads') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="downloadBackend">{{ t('settings.downloadBackend.label') }}</label>
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.downloadBackend.help') }}"></i>
+                    <a class="settings-action-link" href="https://github.com/willmiao/ComfyUI-Lora-Manager/wiki/Aria2-Download-Backend-(Experimental)" target="_blank" rel="noopener" aria-label="{{ t('settings.aria2HelpLink') }}" title="{{ t('settings.aria2HelpLink') }}">
+                        <i class="fas fa-question-circle" aria-hidden="true"></i>
+                    </a>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="downloadBackend" onchange="settingsManager.saveSelectSetting('downloadBackend', 'download_backend')">
+                        <option value="python">{{ t('settings.downloadBackend.options.python') }}</option>
+                        <option value="aria2">{{ t('settings.downloadBackend.options.aria2') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="setting-item" id="aria2PathSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="aria2cPath">{{ t('settings.aria2cPath.label') }}</label>
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aria2cPath.help') }}"></i>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input type="text"
+                               id="aria2cPath"
+                               placeholder="{{ t('settings.aria2cPath.placeholder') }}"
+                               onblur="settingsManager.saveInputSetting('aria2cPath', 'aria2c_path')"
+                               onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Provider Configuration (BYOK) -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.aiProvider.title') }}
+        {{ sm.setting_select('llmProvider', 'llm_provider', 'settings.aiProvider.provider', [
+            ('openai', 'settings.aiProvider.providerOptions.openai'),
+            ('ollama', 'settings.aiProvider.providerOptions.ollama'),
+            ('deepseek', 'settings.aiProvider.providerOptions.deepseek'),
+            ('groq', 'settings.aiProvider.providerOptions.groq'),
+            ('openrouter', 'settings.aiProvider.providerOptions.openrouter'),
+            ('google', 'settings.aiProvider.providerOptions.google'),
+            ('opencode-go', 'settings.aiProvider.providerOptions.opencode-go'),
+            ('custom', 'settings.aiProvider.providerOptions.custom'),
+        ], 'settings.aiProvider.providerHelp') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="llmApiBase">{{ t('settings.aiProvider.apiBase') }}</label>
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.apiBaseHelp') }}"></i>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper lm-combobox-container">
+                        <input type="text" id="llmApiBase"
+                               class="lm-combobox-input"
+                               placeholder="{{ t('settings.aiProvider.apiBasePlaceholder') }}"
+                               autocomplete="off"
+                               onblur="settingsManager.saveInputSetting('llmApiBase', 'llm_api_base')"
+                               onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="setting-item api-key-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>{{ t('settings.aiProvider.apiKey') }}</label>
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.apiKeyHelp') }}"></i>
+                </div>
+                <div class="setting-control">
+                    <div id="llmApiKeyStatus" class="api-key-status">
+                        <span id="llmApiKeyStatusText" class="api-key-status-text api-key-status--unconfigured">
+                            <i class="fas fa-times-circle text-error"></i>
+                            {{ t('settings.aiProvider.apiKeyNotSet') }}
+                        </span>
+                        <button type="button" class="secondary-btn" id="llmApiKeyActionBtn" onclick="settingsManager.editApiKey('llm_api_key', 'llmApiKey')">
+                            {{ t('settings.aiProvider.apiKeySet') }}
+                        </button>
+                    </div>
+                    <div id="llmApiKeyEdit" class="api-key-edit is-hidden">
+                        <div class="api-key-input">
+                            <input type="text"
+                                id="llmApiKey"
+                                class="api-key-masked"
+                                placeholder="{{ t('settings.aiProvider.apiKeyPlaceholder') }}"
+                                autocomplete="off"
+                                data-mask="css" />
+                            <button type="button" class="toggle-visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                        <button type="button" class="primary-btn" onclick="settingsManager.saveApiKey('llm_api_key', 'llmApiKey')">{{ t('common.actions.save') }}</button>
+                        <button type="button" class="secondary-btn" onclick="settingsManager.cancelEditApiKey(true, 'llmApiKey')">{{ t('common.actions.cancel') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="llmModel">{{ t('settings.aiProvider.model') }}</label>
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.aiProvider.modelHelp') }}"></i>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper lm-combobox-container">
+                        <input type="text" id="llmModel"
+                               class="lm-combobox-input"
+                               placeholder="{{ t('settings.aiProvider.modelPlaceholder') }}"
+                               autocomplete="off"
+                               onblur="settingsManager.saveInputSetting('llmModel', 'llm_model')"
+                               onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Backup -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.backup') }}
+        <div class="settings-help-text subtle">
+            {{ t('settings.backup.scopeHelp') }}
+        </div>
+        {{ sm.setting_toggle('backupAutoEnabled', 'backup_auto_enabled', 'settings.backup.autoEnabled', 'settings.backup.autoEnabledHelp') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="backupRetentionCount">
+                        {{ t('settings.backup.retention') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.backup.retentionHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input
+                            type="number"
+                            id="backupRetentionCount"
+                            min="1"
+                            step="1"
+                            onblur="settingsManager.saveInputSetting('backupRetentionCount', 'backup_retention_count')"
+                            onkeydown="if(event.key === 'Enter') { this.blur(); }"
+                        />
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.backup.management') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.backup.managementHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="secondary-btn" onclick="settingsManager.exportBackup()">
+                        {{ t('settings.backup.exportButton') }}
+                    </button>
+                    <button type="button" class="secondary-btn" onclick="settingsManager.triggerBackupImport()" style="margin-left: 10px;">
+                        {{ t('settings.backup.importButton') }}
+                    </button>
+                    <input
+                        type="file"
+                        id="backupImportInput"
+                        accept=".zip,application/zip"
+                        style="display: none;"
+                        onchange="settingsManager.handleBackupImportFile(this)"
+                    />
+                </div>
+            </div>
+        </div>
+        <div class="setting-item">
+            <details class="backup-location-details">
+                <summary>{{ t('settings.backup.locationSummary') }}</summary>
+                <div class="backup-location-panel">
+                    <code id="backupLocationPath" class="backup-location-path"></code>
+                    <button type="button" class="secondary-btn" id="backupOpenLocationBtn">
+                        {{ t('settings.backup.openFolderButton') }}
+                    </button>
+                </div>
+            </details>
+        </div>
+        <div class="setting-item">
+            <div class="backup-status" id="backupStatus">
+                <!-- Status will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Proxy Settings -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.proxySettings') }}
+        {{ sm.setting_toggle('proxyEnabled', 'proxy_enabled', 'settings.proxySettings.enableProxy', 'settings.proxySettings.enableProxyHelp') }}
+
+        <div id="proxySettingsGroup" class="proxy-settings-group" style="display: none;">
+            <div class="setting-item">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <label for="proxyType">
+                    {{ t('settings.proxySettings.proxyType') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyTypeHelp') }}"></i>
+                </label>
+                    </div>
+                    <div class="setting-control select-control">
+                        <select id="proxyType" onchange="settingsManager.saveSelectSetting('proxyType', 'proxy_type')">
+                            <option value="http">HTTP</option>
+                            <option value="https">HTTPS</option>
+                            <option value="socks4">SOCKS4</option>
+                            <option value="socks5">SOCKS5</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            {{ sm.setting_input('proxyHost', 'proxy_host', 'settings.proxySettings.proxyHost', 'settings.proxySettings.proxyHostPlaceholder', 'settings.proxySettings.proxyHostHelp') }}
+
+            {{ sm.setting_input('proxyPort', 'proxy_port', 'settings.proxySettings.proxyPort', 'settings.proxySettings.proxyPortPlaceholder', 'settings.proxySettings.proxyPortHelp') }}
+
+            {{ sm.setting_input('proxyUsername', 'proxy_username', 'settings.proxySettings.proxyUsername', 'settings.proxySettings.proxyUsernamePlaceholder', 'settings.proxySettings.proxyUsernameHelp') }}
+
+            <div class="setting-item">
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <label for="proxyPassword">
+                    {{ t('settings.proxySettings.proxyPassword') }}
+                    <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.proxySettings.proxyPasswordHelp') }}"></i>
+                </label>
+                    </div>
+                    <div class="setting-control">
+                        <div class="api-key-input">
+                            <input type="password" id="proxyPassword"
+                                   placeholder="{{ t('settings.proxySettings.proxyPasswordPlaceholder') }}"
+                                   autocomplete="new-password"
+                                   onblur="settingsManager.saveInputSetting('proxyPassword', 'proxy_password')"
+                                   onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                            <button class="toggle-visibility">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
