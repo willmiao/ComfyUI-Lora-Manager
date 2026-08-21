@@ -722,6 +722,8 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   menu.className = 'lm-lora-context-menu';
   menu.style.left = `${x}px`;
   menu.style.top = `${y}px`;
+  // Render off-screen until measured so we can adjust for viewport edges
+  menu.style.visibility = 'hidden';
 
   // View on Civitai option with globe icon
   const viewOnCivitaiOption = createMenuItem(
@@ -977,6 +979,21 @@ export function createContextMenu(x, y, loraName, widget, previewTooltip, render
   menu.appendChild(saveOption);
   
   document.body.appendChild(menu);
+
+  // Flip/clamp position so the menu stays fully inside the viewport
+  const VIEWPORT_MARGIN = 8;
+  const menuRect = menu.getBoundingClientRect();
+  let menuLeft = x;
+  let menuTop = y;
+  if (menuLeft + menuRect.width > window.innerWidth - VIEWPORT_MARGIN) {
+    menuLeft = Math.max(VIEWPORT_MARGIN, window.innerWidth - menuRect.width - VIEWPORT_MARGIN);
+  }
+  if (menuTop + menuRect.height > window.innerHeight - VIEWPORT_MARGIN) {
+    menuTop = Math.max(VIEWPORT_MARGIN, window.innerHeight - menuRect.height - VIEWPORT_MARGIN);
+  }
+  menu.style.left = `${menuLeft}px`;
+  menu.style.top = `${menuTop}px`;
+  menu.style.visibility = '';
 
   // Close menu when clicking outside
   const closeMenu = (e) => {
