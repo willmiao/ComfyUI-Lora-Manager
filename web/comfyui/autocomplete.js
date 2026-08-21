@@ -2893,14 +2893,14 @@ class AutoComplete {
             summary: command.feedbackSummary || (enabled ? 'Autocomplete Enabled' : 'Autocomplete Disabled'),
             detail: command.feedbackDetail || (enabled
                 ? 'Tag autocomplete is now ON. Type to see suggestions.'
-                : 'Tag autocomplete is now OFF. Use /ac to re-enable.'),
+                : 'Tag autocomplete is now OFF. Use /autocomplete to re-enable.'),
             life: 3000
         });
     }
 
     /**
      * Clear the current command token from input
-     * Preserves leading spaces after delimiters (e.g., "1girl, /ac" -> "1girl, ")
+     * Preserves leading spaces after delimiters (e.g., "1girl, /emb" -> "1girl, ")
      */
     _clearCurrentToken() {
         const currentValue = this.inputElement.value;
@@ -2909,7 +2909,7 @@ class AutoComplete {
         const lastSegment = activeRange.rawText;
         
         // Find the command start position, preserving leading spaces
-        // lastSegment includes leading spaces (e.g., " /ac"), find where command actually starts
+        // lastSegment includes leading spaces (e.g., " /emb"), find where command actually starts
         const commandMatch = lastSegment.match(/^(\s*)(\/\w+)/);
         if (commandMatch) {
             // commandMatch[1] is leading spaces, commandMatch[2] is the command
