@@ -1595,7 +1595,7 @@ class RecipeModal {
         let headerAction = '';
         if (existsLocally && localPath) {
             headerAction = `
-                <button class="resource-action compact checkpoint-send">
+                <button class="resource-action primary compact checkpoint-send">
                     <i class="fas fa-paper-plane"></i>
                     <span>${translate('recipes.actions.sendCheckpoint', {}, 'Send to ComfyUI')}</span>
                 </button>
