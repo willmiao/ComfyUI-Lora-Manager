@@ -272,3 +272,28 @@ async def test_download_file_retries_redirected_url_when_range_not_honored(tmp_p
     assert _session(downloader).requests[0]["headers"]["Range"] == "bytes=3-"
     assert _session(downloader).requests[1]["url"] == redirected_url
     assert _session(downloader).requests[1]["headers"]["Range"] == "bytes=3-"
+
+
+@pytest.mark.asyncio
+async def test_disable_netrc_auth_ignores_netrc_file(tmp_path, monkeypatch):
+    """netrc entries must not be auto-applied as BasicAuth.
+
+    Regression test for "Cannot combine AUTHORIZATION header with AUTH
+    argument or credentials encoded in URL": with trust_env=True aiohttp
+    loads credentials from netrc files, which conflict with the explicit
+    Authorization: Bearer header used for CivitAI requests.
+    """
+    import aiohttp
+
+    from py.services.downloader import _disable_netrc_auth
+
+    netrc_file = tmp_path / ".netrc"
+    netrc_file.write_text("machine civitai.red\nlogin user\npassword pass\n")
+    monkeypatch.setenv("NETRC", str(netrc_file))
+
+    async with aiohttp.ClientSession(trust_env=True) as session:
+        # Premise: a plain session would pick up the netrc credentials.
+        assert session._get_netrc_auth("civitai.red") is not None
+
+        _disable_netrc_auth(session)
+        assert session._get_netrc_auth("civitai.red") is None

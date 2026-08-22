@@ -156,6 +156,25 @@ class DownloadStalledError(Exception):
     """Raised when download progress stalls beyond the configured timeout."""
 
 
+def _disable_netrc_auth(session: aiohttp.ClientSession) -> None:
+    """Prevent the session from loading credentials from netrc files.
+
+    ``trust_env=True`` is kept so system-level proxies still work, but aiohttp
+    would also auto-apply netrc entries (e.g. ``machine civitai.red``) as
+    BasicAuth. aiohttp refuses to combine those with the explicit
+    ``Authorization: Bearer`` header set for CivitAI requests, raising
+    "Cannot combine AUTHORIZATION header with AUTH argument or credentials
+    encoded in URL" before the request is even sent. Subclassing ClientSession
+    is discouraged by aiohttp (emits a DeprecationWarning), so the private
+    hook is patched on the instance instead.
+    """
+
+    def _no_netrc_auth(*args: Any, **kwargs: Any) -> Optional[aiohttp.BasicAuth]:
+        return None
+
+    setattr(session, "_get_netrc_auth", _no_netrc_auth)
+
+
 class Downloader:
     """Unified downloader for all HTTP/HTTPS downloads in the application."""
 
@@ -370,6 +389,7 @@ class Downloader:
             trust_env=not app_proxy_active,
             timeout=timeout,
         )
+        _disable_netrc_auth(self._session)
 
         # Store proxy URL for per-request use. Stays None for SOCKS because the
         # ProxyConnector already tunnels everything; passing proxy= for SOCKS
