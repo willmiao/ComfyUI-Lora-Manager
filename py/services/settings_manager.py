@@ -68,6 +68,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "enable_metadata_archive_db": False,
     "enable_civarchive_api": True,
     "metadata_provider_order": "civitai_archive_sqlite",
+    "civitai_name_fallback": True,
     "proxy_enabled": False,
     "proxy_host": "",
     "proxy_port": "",

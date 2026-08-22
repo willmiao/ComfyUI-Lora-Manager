@@ -163,6 +163,19 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
         
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
         return await self.client.get_model_by_hash(model_hash)
+
+    async def get_model_by_name(
+        self,
+        model_name: str,
+        *,
+        model_types: Sequence[str] | None = None,
+        limit: int = 5,
+    ) -> Tuple[Optional[Dict], Optional[str]]:
+        """Look up a model by name via the CivitAI search endpoint."""
+        search = getattr(self.client, "get_model_by_name", None)
+        if search is None:
+            return None, "Name search not supported by provider"
+        return await search(model_name, model_types=model_types, limit=limit)
         
     async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         return await self.client.get_model_versions(model_id)
@@ -504,6 +517,40 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
             except Exception as e:
                 logger.debug("Provider %s failed for get_model_by_hash: %s", label, e)
+                continue
+        return None, "Model not found"
+
+    async def get_model_by_name(
+        self,
+        model_name: str,
+        *,
+        model_types: Sequence[str] | None = None,
+        limit: int = 5,
+    ) -> Tuple[Optional[Dict], Optional[str]]:
+        """Delegate name-based lookup to the first provider that supports it."""
+        for provider, label in self._iter_providers():
+            search = getattr(provider, "get_model_by_name", None)
+            if search is None:
+                continue
+            try:
+                result, error = await self._call_with_rate_limit(
+                    label,
+                    search,
+                    model_name,
+                    model_types=model_types,
+                    limit=limit,
+                )
+                if result:
+                    return result, error
+            except RateLimitError as exc:
+                logger.warning(
+                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    label,
+                    exc.retry_after or 0,
+                )
+                continue
+            except Exception as e:
+                logger.debug("Provider %s failed for get_model_by_name: %s", label, e)
                 continue
         return None, "Model not found"
 
