@@ -222,6 +222,7 @@
         "modelname": "Model Name",
         "tags": "Tags",
         "creator": "Creator",
+        "hash": "Hash",
         "title": "Recipe Title",
         "loraName": "LoRA Filename",
         "loraModel": "LoRA Model Name",
@@ -1433,7 +1434,8 @@
         "viewCreatorProfile": "View Creator Profile",
         "openFileLocation": "Open File Location",
         "sendToWorkflow": "Send to ComfyUI",
-        "sendToWorkflowText": "Send to ComfyUI"
+        "sendToWorkflowText": "Send to ComfyUI",
+        "copyHash": "Copy hash"
       },
       "openFileLocation": {
         "success": "File location opened successfully",
@@ -1450,6 +1452,7 @@
         "location": "Location",
         "baseModel": "Base Model",
         "size": "Size",
+        "hashes": "Hashes",
         "unknown": "Unknown",
         "usageTips": "Usage Tips",
         "additionalNotes": "Additional Notes",

@@ -49,7 +49,10 @@ class I18nManager {
         }
         
         try {
-            const response = await fetch(`/locales/${normalizedLocale}.json`);
+            // 'no-cache' forces revalidation (cheap 304 via ETag) so locale
+            // edits are picked up on a plain reload instead of serving a
+            // stale cached copy.
+            const response = await fetch(`/locales/${normalizedLocale}.json`, { cache: 'no-cache' });
             if (!response.ok) {
                 throw new Error(`HTTP error! status: ${response.status}`);
             }

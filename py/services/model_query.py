@@ -432,6 +432,7 @@ class SearchStrategy:
         "tags": False,
         "recursive": True,
         "creator": False,
+        "hash": False,
     }
 
     def __init__(
@@ -494,7 +495,27 @@ class SearchStrategy:
                     results.append(item)
                     continue
 
+            # Hash search is always exact (never fuzzy): match the full
+            # sha256, its autov2 prefix (first 10 chars), or the autov3 hash.
+            if options.get("hash", False):
+                hash_query = search_lower.strip()
+                if hash_query and self._matches_hash(item, hash_query):
+                    results.append(item)
+                    continue
+
         return results
+
+    def _matches_hash(self, item: Dict[str, Any], hash_query: str) -> bool:
+        """Exact-match the normalized query against the item's known hashes."""
+        sha256 = item.get("sha256")
+        sha256_lower = sha256.lower() if isinstance(sha256, str) else ""
+        if sha256_lower and hash_query in (sha256_lower, sha256_lower[:10]):
+            return True
+        # autov3 is None when unchecked and "" when checked but unavailable
+        autov3 = item.get("autov3")
+        if isinstance(autov3, str) and autov3 and hash_query == autov3.lower():
+            return True
+        return False
 
     def _matches(
         self, candidate: str, search_term: str, search_lower: str, fuzzy: bool

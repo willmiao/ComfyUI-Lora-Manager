@@ -222,6 +222,7 @@
                 "modelname": "模型名称",
                 "tags": "标签",
                 "creator": "创作者",
+                "hash": "哈希",
                 "title": "配方标题",
                 "loraName": "LoRA 文件名",
                 "loraModel": "LoRA 模型名称",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "查看创作者主页",
                 "openFileLocation": "打开文件位置",
                 "sendToWorkflow": "发送到 ComfyUI",
-                "sendToWorkflowText": "发送到 ComfyUI"
+                "sendToWorkflowText": "发送到 ComfyUI",
+                "copyHash": "复制哈希值"
             },
             "openFileLocation": {
                 "success": "文件位置已成功打开",
@@ -1450,6 +1452,7 @@
                 "location": "位置",
                 "baseModel": "基础模型",
                 "size": "大小",
+                "hashes": "哈希值",
                 "unknown": "未知",
                 "usageTips": "使用提示",
                 "additionalNotes": "附加备注",

@@ -222,6 +222,7 @@
                 "modelname": "モデル名",
                 "tags": "タグ",
                 "creator": "作成者",
+                "hash": "ハッシュ",
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
                 "loraModel": "LoRAモデル名",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "作成者プロフィールを表示",
                 "openFileLocation": "ファイルの場所を開く",
                 "sendToWorkflow": "ComfyUI に送信",
-                "sendToWorkflowText": "ComfyUI に送信"
+                "sendToWorkflowText": "ComfyUI に送信",
+                "copyHash": "ハッシュをコピー"
             },
             "openFileLocation": {
                 "success": "ファイルの場所を正常に開きました",
@@ -1450,6 +1452,7 @@
                 "location": "場所",
                 "baseModel": "ベースモデル",
                 "size": "サイズ",
+                "hashes": "ハッシュ",
                 "unknown": "不明",
                 "usageTips": "使用のヒント",
                 "additionalNotes": "追加メモ",

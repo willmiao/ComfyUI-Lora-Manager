@@ -364,6 +364,7 @@ class ModelListingHandler:
             == "true",
             "tags": request.query.get("search_tags", "false").lower() == "true",
             "creator": request.query.get("search_creator", "false").lower() == "true",
+            "hash": request.query.get("search_hash", "false").lower() == "true",
             "recursive": request.query.get("recursive", "true").lower() == "true",
         }
 

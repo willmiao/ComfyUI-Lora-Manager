@@ -316,6 +316,7 @@ async function showModelModalFromCard(card, modelType) {
     // Create model metadata object
     const modelMeta = {
         sha256: card.dataset.sha256,
+        autov3: card.dataset.autov3 || '',
         preview_url: getCardPreviewUrl(card),
         file_path: card.dataset.filepath,
         model_name: card.dataset.name,
@@ -406,6 +407,7 @@ function showExampleAccessModal(card, modelType) {
             // Get the model data from card dataset (works for both lora and checkpoint)
             const modelMeta = {
                 sha256: card.dataset.sha256,
+                autov3: card.dataset.autov3 || '',
                 preview_url: getCardPreviewUrl(card),
                 file_path: card.dataset.filepath,
                 model_name: card.dataset.name,
@@ -460,6 +462,7 @@ export function createModelCard(model, modelType) {
     // below, which ignore internal card drags via MODEL_CARD_DRAG_MIME_TYPE.
     card.draggable = true;
     card.dataset.sha256 = model.sha256;
+    card.dataset.autov3 = model.autov3 || '';
     card.dataset.filepath = model.file_path;
     card.dataset.name = model.model_name;
     card.dataset.file_name = model.file_name;

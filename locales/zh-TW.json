@@ -222,6 +222,7 @@
                 "modelname": "模型名稱",
                 "tags": "標籤",
                 "creator": "創作者",
+                "hash": "雜湊",
                 "title": "配方標題",
                 "loraName": "LoRA 檔案名稱",
                 "loraModel": "LoRA 模型名稱",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "查看創作者個人檔案",
                 "openFileLocation": "開啟檔案位置",
                 "sendToWorkflow": "傳送到 ComfyUI",
-                "sendToWorkflowText": "傳送到 ComfyUI"
+                "sendToWorkflowText": "傳送到 ComfyUI",
+                "copyHash": "複製雜湊值"
             },
             "openFileLocation": {
                 "success": "檔案位置已成功開啟",
@@ -1450,6 +1452,7 @@
                 "location": "位置",
                 "baseModel": "基礎模型",
                 "size": "大小",
+                "hashes": "雜湊值",
                 "unknown": "未知",
                 "usageTips": "使用提示",
                 "additionalNotes": "附加備註",

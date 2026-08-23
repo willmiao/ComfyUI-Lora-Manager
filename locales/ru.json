@@ -222,6 +222,7 @@
                 "modelname": "Название модели",
                 "tags": "Теги",
                 "creator": "Автор",
+                "hash": "Хэш",
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "Посмотреть профиль создателя",
                 "openFileLocation": "Открыть расположение файла",
                 "sendToWorkflow": "Отправить в ComfyUI",
-                "sendToWorkflowText": "Отправить в ComfyUI"
+                "sendToWorkflowText": "Отправить в ComfyUI",
+                "copyHash": "Копировать хэш"
             },
             "openFileLocation": {
                 "success": "Расположение файла успешно открыто",
@@ -1450,6 +1452,7 @@
                 "location": "Расположение",
                 "baseModel": "Базовая модель",
                 "size": "Размер",
+                "hashes": "Хэши",
                 "unknown": "Неизвестно",
                 "usageTips": "Советы по использованию",
                 "additionalNotes": "Дополнительные заметки",

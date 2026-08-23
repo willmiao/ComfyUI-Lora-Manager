@@ -1337,6 +1337,9 @@ export class BaseModelApiClient {
                 if (pageState.searchOptions.creator !== undefined) {
                     params.append('search_creator', pageState.searchOptions.creator.toString());
                 }
+                if (pageState.searchOptions.hash !== undefined) {
+                    params.append('search_hash', pageState.searchOptions.hash.toString());
+                }
             }
         }
 

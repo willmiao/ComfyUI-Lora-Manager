@@ -222,6 +222,7 @@
                 "modelname": "모델명",
                 "tags": "태그",
                 "creator": "제작자",
+                "hash": "해시",
                 "title": "레시피 제목",
                 "loraName": "LoRA 파일명",
                 "loraModel": "LoRA 모델명",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "제작자 프로필 보기",
                 "openFileLocation": "파일 위치 열기",
                 "sendToWorkflow": "ComfyUI로 보내기",
-                "sendToWorkflowText": "ComfyUI로 보내기"
+                "sendToWorkflowText": "ComfyUI로 보내기",
+                "copyHash": "해시 복사"
             },
             "openFileLocation": {
                 "success": "파일 위치가 성공적으로 열렸습니다",
@@ -1450,6 +1452,7 @@
                 "location": "위치",
                 "baseModel": "베이스 모델",
                 "size": "크기",
+                "hashes": "해시",
                 "unknown": "알 수 없음",
                 "usageTips": "사용 팁",
                 "additionalNotes": "추가 메모",

@@ -1,4 +1,4 @@
-import { showToast, openCivitai, sendLoraToWorkflow, sendEmbeddingToWorkflow, sendModelPathToWorkflow, buildLoraSyntax } from '../../utils/uiHelpers.js';
+import { showToast, openCivitai, sendLoraToWorkflow, sendEmbeddingToWorkflow, sendModelPathToWorkflow, buildLoraSyntax, copyToClipboard } from '../../utils/uiHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import {
@@ -351,6 +351,39 @@ export async function showModelModal(model, modelType) {
     };
     const escapedFilePathAttr = escapeAttribute(modelWithFullData.file_path || '');
     const escapedFolderPath = escapeHtml((modelWithFullData.file_path || '').replace(/[^/]+$/, '') || 'N/A');
+    // De-emphasized hash display: a borderless full-width footnote line below
+    // the info grid — sha256 middle-truncated (first 10 + last 6), autov3 in
+    // full (12 chars); the full value is copied via data-hash.
+    const modelSha256 = modelWithFullData.sha256 || '';
+    const modelAutov3 = modelWithFullData.autov3 || '';
+    const truncatedSha256 = modelSha256.length > 16
+        ? `${modelSha256.slice(0, 10)}\u2026${modelSha256.slice(-6)}`
+        : modelSha256;
+    const copyHashTitle = translate('modals.model.actions.copyHash', {}, 'Copy hash');
+    const hashEntries = [];
+    if (modelSha256) {
+        hashEntries.push(`
+            <span class="hash-entry">
+                <span class="hash-kind">SHA256</span>
+                <span class="model-hash-value" title="${escapeAttribute(modelSha256)}">${escapeHtml(truncatedSha256)}</span>
+                <button class="hash-copy-btn" data-action="copy-hash" data-hash="${escapeAttribute(modelSha256)}" title="${copyHashTitle}">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </span>`);
+    }
+    if (modelAutov3) {
+        hashEntries.push(`
+            <span class="hash-entry">
+                <span class="hash-kind">AutoV3</span>
+                <span class="model-hash-value" title="${escapeAttribute(modelAutov3)}">${escapeHtml(modelAutov3)}</span>
+                <button class="hash-copy-btn" data-action="copy-hash" data-hash="${escapeAttribute(modelAutov3)}" title="${copyHashTitle}">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </span>`);
+    }
+    const hashesMarkup = modelSha256 && hashEntries.length ? `
+                        <div class="hash-footnote" aria-label="${translate('modals.model.metadata.hashes', {}, 'Hashes')}">${hashEntries.join('<span class="hash-sep">·</span>')}
+                        </div>` : '';
     const useNewIcons = state.global.settings.use_new_license_icons !== false;
     const licenseIcons = useNewIcons
         ? renderNewLicenseIcons(modelWithFullData)
@@ -613,6 +646,7 @@ export async function showModelModal(model, modelType) {
                                 <span>${formatFileSize(modelWithFullData.file_size)}</span>
                             </div>
                         </div>
+                        ${hashesMarkup}
                         ${typeSpecificContent}
                         <div class="info-item notes">
                             <div class="notes-header">
@@ -909,6 +943,11 @@ function setupEventHandlers(filePath, modelType) {
                 break;
             case 'send-to-workflow':
                 handleSendToWorkflow(target, modelType);
+                break;
+            case 'copy-hash':
+                if (target.dataset.hash) {
+                    copyToClipboard(target.dataset.hash, 'Hash copied to clipboard');
+                }
                 break;
         }
     }

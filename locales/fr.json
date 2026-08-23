@@ -222,6 +222,7 @@
                 "modelname": "Nom du modèle",
                 "tags": "Tags",
                 "creator": "Créateur",
+                "hash": "Hash",
                 "title": "Titre de la recipe",
                 "loraName": "Nom de fichier LoRA",
                 "loraModel": "Nom du modèle LoRA",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "Voir le profil du créateur",
                 "openFileLocation": "Ouvrir l'emplacement du fichier",
                 "sendToWorkflow": "Envoyer vers ComfyUI",
-                "sendToWorkflowText": "Envoyer vers ComfyUI"
+                "sendToWorkflowText": "Envoyer vers ComfyUI",
+                "copyHash": "Copier le hash"
             },
             "openFileLocation": {
                 "success": "Emplacement du fichier ouvert avec succès",
@@ -1450,6 +1452,7 @@
                 "location": "Emplacement",
                 "baseModel": "Modèle de base",
                 "size": "Taille",
+                "hashes": "Hashes",
                 "unknown": "Inconnu",
                 "usageTips": "Conseils d'utilisation",
                 "additionalNotes": "Notes supplémentaires",

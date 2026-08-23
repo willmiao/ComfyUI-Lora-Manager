@@ -216,6 +216,62 @@
     justify-content: space-between;
 }
 
+/* Hashes footnote — borderless full-width muted line; reads as a footnote
+   to the file info grid rather than a peer field */
+.hash-footnote {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    padding: 0 var(--space-1);
+    color: var(--text-color);
+}
+
+.hash-footnote .hash-entry {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+}
+
+.hash-footnote .hash-kind {
+    font-size: 0.7em;
+    opacity: 0.5;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+}
+
+.hash-footnote .model-hash-value {
+    font-family: monospace;
+    font-size: 0.8em;
+    opacity: 0.6;
+    white-space: nowrap;
+}
+
+.hash-footnote .hash-sep {
+    opacity: 0.3;
+    font-size: 0.8em;
+}
+
+.hash-footnote .hash-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0 2px;
+    border: none;
+    background: none;
+    color: var(--text-color);
+    opacity: 0.35;
+    font-size: 0.7em;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.hash-footnote .hash-copy-btn:hover {
+    opacity: 0.9;
+}
+
 /* Toggle button — icon only, inline with the label */
 .notes-toggle-btn {
     display: none;  /* shown by JS when content exceeds threshold */

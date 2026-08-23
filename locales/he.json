@@ -222,6 +222,7 @@
                 "modelname": "שם מודל",
                 "tags": "תגיות",
                 "creator": "יוצר",
+                "hash": "האש",
                 "title": "כותרת מתכון",
                 "loraName": "שם קובץ LoRA",
                 "loraModel": "שם מודל LoRA",
@@ -1433,7 +1434,8 @@
                 "viewCreatorProfile": "הצג פרופיל יוצר",
                 "openFileLocation": "פתח מיקום קובץ",
                 "sendToWorkflow": "שלח ל-ComfyUI",
-                "sendToWorkflowText": "שלח ל-ComfyUI"
+                "sendToWorkflowText": "שלח ל-ComfyUI",
+                "copyHash": "העתק האש"
             },
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",
@@ -1450,6 +1452,7 @@
                 "location": "מיקום",
                 "baseModel": "מודל בסיס",
                 "size": "גודל",
+                "hashes": "האשים",
                 "unknown": "לא ידוע",
                 "usageTips": "טיפים לשימוש",
                 "additionalNotes": "הערות נוספות",
