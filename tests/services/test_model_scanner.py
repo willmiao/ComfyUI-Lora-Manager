@@ -1210,3 +1210,111 @@ async def test_bulk_delete_cancelled_after_one_staged_batch_present(
     assert not first.exists()
     # The second file was never touched.
     assert second.exists()
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_enumerates_empty_directories_live(tmp_path: Path):
+    _create_files(tmp_path)
+    (tmp_path / "empty").mkdir()
+    (tmp_path / "empty" / "nested_empty").mkdir()
+    (tmp_path / ".hidden").mkdir()
+    (tmp_path / "visible" / ".hidden_child").mkdir(parents=True)
+    (tmp_path / PENDING_DELETE_DIR_NAME).mkdir()
+
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    all_folders = await scanner.get_all_folders()
+
+    # cache.folders stays models-only
+    assert sorted(cache.folders) == ["", "nested"]
+
+    # Live enumeration includes empty directories and stays a superset
+    assert set(cache.folders) <= set(all_folders)
+    assert "empty" in all_folders
+    assert "empty/nested_empty" in all_folders
+    assert "visible" in all_folders
+
+    # Hidden directories (any segment starting with '.') are excluded
+    assert not any(
+        segment.startswith(".")
+        for folder in all_folders
+        for segment in folder.split("/")
+    )
+    # The pending-delete staging dir is excluded
+    assert PENDING_DELETE_DIR_NAME not in all_folders
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_uses_ttl_cache(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    walk_calls = {"n": 0}
+    real_walk = os.walk
+
+    def counting_walk(*args, **kwargs):
+        walk_calls["n"] += 1
+        return real_walk(*args, **kwargs)
+
+    monkeypatch.setattr(model_scanner.os, "walk", counting_walk)
+
+    first = await scanner.get_all_folders()
+    assert walk_calls["n"] == 1
+
+    # Second call within the TTL reuses the cached result without re-walking
+    second = await scanner.get_all_folders()
+    assert walk_calls["n"] == 1
+    assert second == first
+
+    # After the TTL expires the roots are walked again
+    real_monotonic = time.monotonic
+    monkeypatch.setattr(
+        model_scanner.time,
+        "monotonic",
+        lambda: real_monotonic() + model_scanner.ALL_FOLDERS_CACHE_TTL_SECONDS + 1,
+    )
+    third = await scanner.get_all_folders()
+    assert walk_calls["n"] == 2
+    assert third == first
+
+
+@pytest.mark.asyncio
+async def test_get_all_folders_invalidated_after_move(tmp_path: Path):
+    first, _, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    await scanner._initialize_cache()
+
+    cached = await scanner.get_all_folders()
+    assert scanner._all_folders_ttl_cache is not None
+    assert "new/deep" not in cached
+
+    # Simulate a move: target directories exist on disk (created by
+    # os.makedirs in move_model) and the cache entry is relocated.
+    (tmp_path / "new" / "deep").mkdir(parents=True)
+    original = _normalize_path(first)
+    new_path = _normalize_path(tmp_path / "new" / "deep" / "one.txt")
+    moved_metadata = {
+        "file_path": new_path,
+        "file_name": "one",
+        "model_name": "one",
+        "sha256": "hash-one",
+        "tags": ["alpha"],
+        "size": 1,
+        "modified": 1.0,
+    }
+
+    await scanner.update_single_model_cache(original, new_path, moved_metadata)
+
+    # The TTL cache was invalidated by the move
+    assert scanner._all_folders_ttl_cache is None
+
+    all_folders = await scanner.get_all_folders()
+    cache = await scanner.get_cached_data()
+    assert sorted(cache.folders) == ["nested", "new/deep"]
+    assert "new" in all_folders
+    assert "new/deep" in all_folders
+    assert set(cache.folders) <= set(all_folders)

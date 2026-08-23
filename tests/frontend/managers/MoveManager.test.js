@@ -92,6 +92,12 @@ describe('MoveManager', () => {
         expect(moveManager.folderTreeManager.getSelectedPath()).toBe('');
     });
 
+    it('should fetch the folder tree including empty directories', async () => {
+        await moveManager.initializeFolderTree();
+
+        expect(mockApiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith({ includeEmpty: true });
+    });
+
     it('should ignore manual folder selection when useDefaultPath is true', async () => {
         // Setup state
         moveManager.useDefaultPath = true;

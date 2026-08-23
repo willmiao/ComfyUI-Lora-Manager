@@ -1206,9 +1206,13 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchUnifiedFolderTree() {
+    async fetchUnifiedFolderTree(options = {}) {
         try {
-            const response = await fetch(this.apiConfig.endpoints.unifiedFolderTree);
+            const { includeEmpty = false } = options;
+            const url = includeEmpty
+                ? `${this.apiConfig.endpoints.unifiedFolderTree}?include_empty=1`
+                : this.apiConfig.endpoints.unifiedFolderTree;
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to fetch unified folder tree`);
             }

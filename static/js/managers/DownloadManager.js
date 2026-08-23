@@ -2134,8 +2134,9 @@ export class DownloadManager {
 
     async initializeFolderTree() {
         try {
-            // Fetch unified folder tree
-            const treeData = await this.apiClient.fetchUnifiedFolderTree();
+            // Fetch unified folder tree, including empty directories so they
+            // can be selected as download destinations
+            const treeData = await this.apiClient.fetchUnifiedFolderTree({ includeEmpty: true });
 
             if (treeData.success) {
                 // Load tree data into folder tree manager

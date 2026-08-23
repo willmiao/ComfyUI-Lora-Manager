@@ -972,14 +972,25 @@ class BaseModelService(ABC):
         )
         return {k: data[k] for k in fields if k in data}
 
-    async def get_folder_tree(self, model_root: str) -> Dict[str, Any]:
+    async def _get_tree_folders(self, cache, include_empty: bool) -> List[str]:
+        """Return the folder list backing folder tree responses.
+
+        With ``include_empty`` the directories are enumerated live from the
+        filesystem (including empty ones) via the scanner; otherwise the
+        models-only ``cache.folders`` list is used unchanged.
+        """
+        if include_empty:
+            return await self.scanner.get_all_folders()
+        return cache.folders
+
+    async def get_folder_tree(self, model_root: str, include_empty: bool = False) -> Dict[str, Any]:
         """Get hierarchical folder tree for a specific model root"""
         cache = await self.scanner.get_cached_data()
 
         # Build tree structure from folders
         tree = {}
 
-        for folder in cache.folders:
+        for folder in await self._get_tree_folders(cache, include_empty):
             # Check if this folder belongs to the specified model root
             folder_belongs_to_root = False
             for root in self.scanner.get_model_roots():
@@ -1001,7 +1012,7 @@ class BaseModelService(ABC):
 
         return tree
 
-    async def get_unified_folder_tree(self) -> Dict[str, Any]:
+    async def get_unified_folder_tree(self, include_empty: bool = False) -> Dict[str, Any]:
         """Get unified folder tree across all model roots"""
         cache = await self.scanner.get_cached_data()
 
@@ -1011,7 +1022,7 @@ class BaseModelService(ABC):
         # Get all model roots for path normalization
         model_roots = self.scanner.get_model_roots()
 
-        for folder in cache.folders:
+        for folder in await self._get_tree_folders(cache, include_empty):
             if not folder:  # Skip empty folders
                 continue
 

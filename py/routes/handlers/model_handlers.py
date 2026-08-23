@@ -1030,6 +1030,11 @@ class ModelQueryHandler:
         self._service = service
         self._logger = logger
 
+    @staticmethod
+    def _parse_include_empty(request: web.Request) -> bool:
+        """Parse the include_empty query flag (``1``/``true``)."""
+        return request.query.get("include_empty", "").lower() in ("1", "true")
+
     async def get_top_tags(self, request: web.Request) -> web.Response:
         try:
             limit = int(request.query.get("limit", "20"))
@@ -1124,8 +1129,14 @@ class ModelQueryHandler:
 
     async def get_folders(self, request: web.Request) -> web.Response:
         try:
-            cache = await self._service.scanner.get_cached_data()
-            return web.json_response({"folders": cache.folders})
+            include_empty = self._parse_include_empty(request)
+            if include_empty:
+                # Live enumeration includes empty OS-created directories.
+                folders = await self._service.scanner.get_all_folders()
+            else:
+                cache = await self._service.scanner.get_cached_data()
+                folders = cache.folders
+            return web.json_response({"folders": folders})
         except Exception as exc:
             self._logger.error("Error getting folders: %s", exc)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
@@ -1150,7 +1161,9 @@ class ModelQueryHandler:
                     {"success": False, "error": "model_root parameter is required"},
                     status=400,
                 )
-            folder_tree = await self._service.get_folder_tree(model_root)
+            folder_tree = await self._service.get_folder_tree(
+                model_root, include_empty=self._parse_include_empty(request)
+            )
             return web.json_response({"success": True, "tree": folder_tree})
         except Exception as exc:
             self._logger.error("Error getting folder tree: %s", exc)
@@ -1158,7 +1171,9 @@ class ModelQueryHandler:
 
     async def get_unified_folder_tree(self, request: web.Request) -> web.Response:
         try:
-            unified_tree = await self._service.get_unified_folder_tree()
+            unified_tree = await self._service.get_unified_folder_tree(
+                include_empty=self._parse_include_empty(request)
+            )
             return web.json_response({"success": True, "tree": unified_tree})
         except Exception as exc:
             self._logger.error("Error getting unified folder tree: %s", exc)

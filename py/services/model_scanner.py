@@ -5,7 +5,7 @@ import asyncio
 import time
 import shutil
 from dataclasses import dataclass
-from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Type, Union, cast
+from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type, Union, cast
 
 from ..utils.models import BaseModelMetadata, autov3_from_civitai_files
 from ..config import config
@@ -55,6 +55,16 @@ def _is_excluded_dir(name: str) -> bool:
     appear in the library as ghost model entries.
     """
     return name == PENDING_DELETE_DIR_NAME
+
+
+def _is_hidden_relative_path(rel_path: str) -> bool:
+    """Return True when any segment of a relative path is a hidden directory."""
+    return any(part.startswith(".") for part in rel_path.replace(os.sep, "/").split("/"))
+
+
+# TTL (seconds) for the get_all_folders() live-walk cache, so rapid repeated
+# requests (modal open + autocomplete) do not re-walk the model roots.
+ALL_FOLDERS_CACHE_TTL_SECONDS = 5.0
 
 
 def _is_pending_delete_path(path: str) -> bool:
@@ -126,6 +136,8 @@ class ModelScanner:
         self._name_display_mode = self._resolve_name_display_mode()
         self._cancel_requested = False  # Flag for cancellation
         self._autov3_backfill_scheduled = False  # One-time AutoV3 backfill trigger per process
+        # Short-lived cache for get_all_folders(): (timestamp, folders) or None
+        self._all_folders_ttl_cache: Optional[Tuple[float, List[str]]] = None
         try:
             loop = asyncio.get_running_loop()
         except RuntimeError:
@@ -165,6 +177,7 @@ class ModelScanner:
         self._excluded_models = []
         self._is_initializing = False
         self._name_display_mode = self._resolve_name_display_mode()
+        self.invalidate_all_folders_cache()
         self.bump_cache_version()
 
         try:
@@ -897,12 +910,12 @@ class ModelScanner:
             new_files = []
             visited_real_paths = set()
             discovered_real_files = set()
-            
+
             # Scan all model roots
             for root_path in self.get_model_roots():
                 if not os.path.exists(root_path):
                     continue
-                
+
                 # Recursively scan directory
                 for root, dirnames, files in os.walk(root_path, followlinks=True):
                     dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
@@ -910,7 +923,7 @@ class ModelScanner:
                     if real_root in visited_real_paths:
                         continue
                     visited_real_paths.add(real_root)
-                    
+
                     for file in files:
                         ext = os.path.splitext(file)[1].lower()
                         if ext in self.file_extensions:
@@ -955,7 +968,7 @@ class ModelScanner:
                     if self.is_cancelled():
                         logger.info(f"{self.model_type.capitalize()} Scanner: Reconcile scan cancelled")
                         return
-            
+
             # Process new files in batches
             total_added = 0
             if new_files:
@@ -1114,6 +1127,56 @@ class ModelScanner:
     def get_model_roots(self) -> List[str]:
         """Get model root directories"""
         raise NotImplementedError("Subclasses must implement get_model_roots")
+
+    async def get_all_folders(self) -> List[str]:
+        """Enumerate every directory under the model roots, live from disk.
+
+        Unlike the models-only ``cache.folders``, this includes empty
+        directories, so it stays accurate even when the in-memory cache was
+        hydrated from a persisted snapshot without a filesystem walk. Hidden
+        directories (any segment starting with '.') and the pending-delete
+        staging dir are excluded. The result is unioned with the model-derived
+        folders so it is always a superset of ``cache.folders``, and cached
+        for ``ALL_FOLDERS_CACHE_TTL_SECONDS`` to avoid repeated walks.
+        """
+        now = time.monotonic()
+        if self._all_folders_ttl_cache is not None:
+            cached_at, cached_folders = self._all_folders_ttl_cache
+            if now - cached_at < ALL_FOLDERS_CACHE_TTL_SECONDS:
+                return cached_folders
+
+        discovered: Set[str] = set()
+        visited_real_paths: Set[str] = set()
+
+        for root_path in self.get_model_roots():
+            if not os.path.exists(root_path):
+                continue
+
+            for root, dirnames, _files in os.walk(root_path, followlinks=True):
+                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
+                # realpath is used only for symlink dedup, never for the
+                # recorded path (business paths stay unresolved).
+                real_root = os.path.realpath(root)
+                if real_root in visited_real_paths:
+                    continue
+                visited_real_paths.add(real_root)
+
+                rel_dir = os.path.relpath(os.path.abspath(root), os.path.abspath(root_path))
+                rel_dir = rel_dir.replace(os.path.sep, "/")
+                if rel_dir != "." and not _is_hidden_relative_path(rel_dir):
+                    discovered.add(rel_dir)
+
+        folders = set(discovered)
+        if self._cache is not None:
+            folders |= {item.get('folder', '') for item in self._cache.raw_data}
+
+        result = sorted(folders, key=lambda x: x.lower())
+        self._all_folders_ttl_cache = (now, result)
+        return result
+
+    def invalidate_all_folders_cache(self) -> None:
+        """Drop the cached get_all_folders() result (e.g. after a move)."""
+        self._all_folders_ttl_cache = None
     
     async def _create_default_metadata(self, file_path: str) -> Optional[BaseModelMetadata]:
         """Get model file info and metadata (extensible for different model types)"""
@@ -1772,6 +1835,10 @@ class ModelScanner:
         cache.rebuild_version_index()
 
         await cache.resort()
+
+        # A move may have created new directories; drop the cached live-walk
+        # result so the next include_empty request sees them.
+        self.invalidate_all_folders_cache()
 
         if cache_modified:
             await self._persist_current_cache()

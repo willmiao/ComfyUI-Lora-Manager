@@ -1394,3 +1394,71 @@ class TestApplyHashFilters:
         result = await service._apply_hash_filters(data, {})
 
         assert result == data
+
+
+class FolderTreeCache:
+    def __init__(self, folders):
+        self.folders = list(folders)
+
+
+class FolderTreeScanner:
+    def __init__(self, cache, all_folders=None):
+        self._cache = cache
+        self._all_folders = list(all_folders) if all_folders is not None else None
+
+    async def get_cached_data(self, *_, **__):
+        return self._cache
+
+    async def get_all_folders(self):
+        if self._all_folders is None:
+            raise AssertionError("get_all_folders should not be called")
+        return list(self._all_folders)
+
+    def get_model_roots(self):
+        return ["/models/loras"]
+
+
+def _make_folder_tree_service(folders, all_folders=None):
+    cache = FolderTreeCache(folders)
+    scanner = FolderTreeScanner(cache, all_folders)
+    settings = StubSettings({})
+    return DummyService(
+        model_type="stub",
+        scanner=scanner,
+        metadata_class=BaseModelMetadata,
+        cache_repository=ModelCacheRepository(scanner),
+        filter_set=ModelFilterSet(settings),
+        search_strategy=SearchStrategy(),
+        settings_provider=settings,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_defaults_to_models_only_folders():
+    service = _make_folder_tree_service(["a/b"])
+
+    tree = await service.get_unified_folder_tree()
+
+    assert tree == {"a": {"b": {}}}
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_include_empty_uses_live_enumeration():
+    service = _make_folder_tree_service(["a/b"], ["a/b", "empty", "empty/dir"])
+
+    tree = await service.get_unified_folder_tree(include_empty=True)
+
+    assert tree == {"a": {"b": {}}, "empty": {"dir": {}}}
+
+
+@pytest.mark.asyncio
+async def test_get_folder_tree_include_empty_uses_live_enumeration():
+    service = _make_folder_tree_service(["a/b"], ["a/b", "empty"])
+
+    default_tree = await service.get_folder_tree("/models/loras")
+    include_empty_tree = await service.get_folder_tree(
+        "/models/loras", include_empty=True
+    )
+
+    assert default_tree == {"a": {"b": {}}}
+    assert include_empty_tree == {"a": {"b": {}}, "empty": {}}

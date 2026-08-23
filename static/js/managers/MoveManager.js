@@ -200,8 +200,9 @@ class MoveManager {
     async initializeFolderTree() {
         try {
             const apiClient = this._getApiClient();
-            // Fetch unified folder tree
-            const treeData = await apiClient.fetchUnifiedFolderTree();
+            // Fetch unified folder tree, including empty directories so they
+            // can be selected as move targets
+            const treeData = await apiClient.fetchUnifiedFolderTree({ includeEmpty: true });
 
             if (treeData.success) {
                 // Load tree data into folder tree manager

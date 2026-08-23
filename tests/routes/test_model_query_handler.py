@@ -97,3 +97,102 @@ async def test_model_query_handler_search_tags_clamps_negative_limit():
     )
 
     assert service.received_limit == 20
+
+
+class DummyFolderCache:
+    def __init__(self, folders):
+        self.folders = list(folders)
+
+
+class DummyFolderService:
+    """Minimal service stub for the folders/tree endpoints."""
+
+    def __init__(self, folders, all_folders):
+        self.scanner = SimpleNamespace()
+        cache = DummyFolderCache(folders)
+
+        async def get_cached_data(*_, **__):
+            return cache
+
+        async def get_all_folders():
+            return list(all_folders)
+
+        self.scanner.get_cached_data = get_cached_data
+        self.scanner.get_all_folders = get_all_folders
+        self.received_include_empty = None
+
+    async def get_folder_tree(self, model_root, include_empty=False):
+        self.received_include_empty = include_empty
+        return {"tree": "per-root"}
+
+    async def get_unified_folder_tree(self, include_empty=False):
+        self.received_include_empty = include_empty
+        return {"tree": "unified"}
+
+
+@pytest.mark.asyncio
+async def test_get_folders_defaults_to_models_only_folders():
+    service = DummyFolderService(["a"], ["a", "empty"])
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.get_folders(
+        SimpleNamespace(query={})  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    assert payload["folders"] == ["a"]
+
+
+@pytest.mark.asyncio
+async def test_get_folders_include_empty_returns_all_folders():
+    service = DummyFolderService(["a"], ["a", "empty"])
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.get_folders(
+        SimpleNamespace(query={"include_empty": "1"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    assert payload["folders"] == ["a", "empty"]
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_threads_include_empty():
+    service = DummyFolderService(["a"], ["a", "empty"])
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.get_unified_folder_tree(
+        SimpleNamespace(query={"include_empty": "1"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert service.received_include_empty is True
+
+
+@pytest.mark.asyncio
+async def test_get_unified_folder_tree_defaults_include_empty_false():
+    service = DummyFolderService(["a"], ["a", "empty"])
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.get_unified_folder_tree(
+        SimpleNamespace(query={})  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert service.received_include_empty is False
+
+
+@pytest.mark.asyncio
+async def test_get_folder_tree_threads_include_empty():
+    service = DummyFolderService(["a"], ["a", "empty"])
+    handler = ModelQueryHandler(service=service, logger=logging.getLogger(__name__))
+
+    response = await handler.get_folder_tree(
+        SimpleNamespace(query={"model_root": "/models/loras", "include_empty": "true"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert service.received_include_empty is True
