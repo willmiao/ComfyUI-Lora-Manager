@@ -16,6 +16,7 @@ from py.routes.handlers.misc_handlers import (
     BackupHandler,
     DoctorHandler,
     FileSystemHandler,
+    HealthCheckHandler,
     LoraCodeHandler,
     ModelLibraryHandler,
     NodeRegistry,
@@ -2010,3 +2011,54 @@ async def test_resolve_filename_conflicts_handles_scanner_error_gracefully():
 
     assert payload["success"] is True
     assert payload["count"] == 0
+
+
+async def test_get_init_status_reports_complete_when_all_scanners_ready():
+    async def ready_scanner():
+        return SimpleNamespace(_cache=object(), is_initializing=lambda: False)
+
+    handler = HealthCheckHandler(
+        scanner_getters={
+            "lora": ready_scanner,
+            "recipe": ready_scanner,
+        }
+    )
+
+    response = await handler.get_init_status(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["status"] == "complete"
+    assert payload["progress"] == 100
+    assert "pageType" not in payload
+
+
+async def test_get_init_status_reports_pending_scanners():
+    async def ready_scanner():
+        return SimpleNamespace(_cache=object(), is_initializing=lambda: False)
+
+    async def initializing_scanner():
+        return SimpleNamespace(_cache=object(), is_initializing=lambda: True)
+
+    async def no_cache_scanner():
+        return SimpleNamespace(_cache=None, is_initializing=lambda: False)
+
+    async def failing_scanner():
+        raise RuntimeError("scanner unavailable")
+
+    handler = HealthCheckHandler(
+        scanner_getters={
+            "lora": ready_scanner,
+            "checkpoint": initializing_scanner,
+            "embedding": no_cache_scanner,
+            "recipe": failing_scanner,
+        }
+    )
+
+    response = await handler.get_init_status(FakeRequest(method="GET"))  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["status"] == "initializing"
+    assert "checkpoint" in payload["details"]
+    assert "embedding" in payload["details"]
+    assert "recipe" in payload["details"]
+    assert "lora" not in payload["details"]

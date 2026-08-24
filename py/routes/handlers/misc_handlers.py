@@ -649,8 +649,59 @@ class NodeRegistry:
 
 
 class HealthCheckHandler:
+    def __init__(
+        self,
+        scanner_getters: Mapping[str, Callable[[], Awaitable[Any]]] | None = None,
+    ) -> None:
+        self._scanner_getters = scanner_getters or {
+            "lora": ServiceRegistry.get_lora_scanner,
+            "checkpoint": ServiceRegistry.get_checkpoint_scanner,
+            "embedding": ServiceRegistry.get_embedding_scanner,
+            "recipe": ServiceRegistry.get_recipe_scanner,
+        }
+
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
+
+    async def get_init_status(self, request: web.Request) -> web.Response:
+        """Report aggregate scanner initialization status.
+
+        Used by the initialization page's polling fallback when the
+        /ws/init-progress WebSocket is unavailable. Omits pageType so every
+        page accepts the update and only reloads once all scanners are done.
+        """
+        pending: list[str] = []
+        for name, getter in self._scanner_getters.items():
+            try:
+                scanner = await getter()
+            except Exception:
+                pending.append(name)
+                continue
+            cache_ready = getattr(scanner, "_cache", None) is not None
+            is_initializing = getattr(scanner, "is_initializing", None)
+            busy = (
+                is_initializing()
+                if callable(is_initializing)
+                else bool(getattr(scanner, "_is_initializing", False))
+            )
+            if busy or not cache_ready:
+                pending.append(name)
+
+        if pending:
+            return web.json_response(
+                {
+                    "status": "initializing",
+                    "stage": "processing",
+                    "details": "Initializing: " + ", ".join(pending),
+                }
+            )
+        return web.json_response(
+            {
+                "status": "complete",
+                "progress": 100,
+                "details": "Initialization complete",
+            }
+        )
 
 
 class SupportersHandler:
@@ -3859,6 +3910,7 @@ class MiscHandlerSet:
     ) -> Mapping[str, Callable[[web.Request], Awaitable[web.StreamResponse]]]:
         return {
             "health_check": self.health.health_check,
+            "get_init_status": self.health.get_init_status,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
