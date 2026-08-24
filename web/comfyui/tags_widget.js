@@ -439,6 +439,12 @@ function renderGroupEditor(widget, tagData, index) {
     return;
   }
 
+  // Preserve the scroll position across re-renders: toggling a child tag
+  // rebuilds the whole panel, and a fresh panel would otherwise jump back
+  // to the top.
+  const previousScrollTop = state.panelEl ? state.panelEl.scrollTop : 0;
+  const previousScrollLeft = state.panelEl ? state.panelEl.scrollLeft : 0;
+
   if (state.panelEl) {
     state.panelEl.remove();
   }
@@ -551,6 +557,8 @@ function renderGroupEditor(widget, tagData, index) {
   state.lastAnchorRect = getRectSnapshot(state.anchorEl);
   attachGroupEditorCloseHandlers(widget);
   positionGroupEditor(widget);
+  panel.scrollTop = previousScrollTop;
+  panel.scrollLeft = previousScrollLeft;
   startGroupEditorTracking(widget);
 }
 
