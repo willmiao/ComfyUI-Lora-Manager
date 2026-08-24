@@ -260,7 +260,11 @@
             "any": "N'importe quel",
             "all": "Tous",
             "tagLogicAny": "Correspondre à n'importe quel tag (OU)",
-            "tagLogicAll": "Correspondre à tous les tags (ET)"
+            "tagLogicAll": "Correspondre à tous les tags (ET)",
+            "loraAvailability": "Disponibilité des LoRAs",
+            "availabilityReady": "Prêts à l'emploi",
+            "availabilityMissing": "Avec LoRAs manquants",
+            "availabilityDeleted": "Avec LoRAs supprimés"
         },
         "theme": {
             "toggle": "Basculer le thème",

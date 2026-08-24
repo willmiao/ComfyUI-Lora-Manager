@@ -260,7 +260,11 @@
       "any": "Any",
       "all": "All",
       "tagLogicAny": "Match any tag (OR)",
-      "tagLogicAll": "Match all tags (AND)"
+      "tagLogicAll": "Match all tags (AND)",
+      "loraAvailability": "Lora Availability",
+      "availabilityReady": "Ready to use",
+      "availabilityMissing": "Has missing",
+      "availabilityDeleted": "Has deleted"
     },
     "theme": {
       "toggle": "Toggle theme",

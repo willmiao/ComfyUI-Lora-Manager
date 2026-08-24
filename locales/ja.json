@@ -260,7 +260,11 @@
             "any": "いずれか",
             "all": "すべて",
             "tagLogicAny": "いずれかのタグに一致 (OR)",
-            "tagLogicAll": "すべてのタグに一致 (AND)"
+            "tagLogicAll": "すべてのタグに一致 (AND)",
+            "loraAvailability": "LoRA の利用状況",
+            "availabilityReady": "使用可能",
+            "availabilityMissing": "不足 LoRA あり",
+            "availabilityDeleted": "削除済み LoRA あり"
         },
         "theme": {
             "toggle": "テーマの切り替え",

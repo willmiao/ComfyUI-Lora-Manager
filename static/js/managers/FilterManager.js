@@ -7,6 +7,10 @@ import { MODEL_TYPE_DISPLAY_NAMES } from '../utils/constants.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { FilterPresetManager, EMPTY_WILDCARD_MARKER } from './FilterPresetManager.js';
 
+// LoRA availability statuses available on the recipes page. No statuses
+// selected (the default) means no filtering.
+const LORA_AVAILABILITY_STATUSES = ['ready', 'missing', 'deleted'];
+
 export class FilterManager {
     constructor(options = {}) {
         this.options = {
@@ -72,6 +76,11 @@ export class FilterManager {
         // Add click handlers for license filter tags if supported on this page
         if (this.shouldShowLicenseFilters()) {
             this.initializeLicenseFilters();
+        }
+
+        // Add click handlers for LoRA availability tags (recipes page only)
+        if (this.shouldShowLoraAvailabilityFilter()) {
+            this.initializeLoraAvailabilityFilters();
         }
 
         // Initialize tag logic toggle
@@ -421,6 +430,42 @@ export class FilterManager {
         });
     }
 
+    initializeLoraAvailabilityFilters() {
+        const availabilityTags = document.querySelectorAll('.lora-availability-tag');
+        availabilityTags.forEach(tag => {
+            tag.addEventListener('click', async () => {
+                const status = tag.dataset.availability;
+                const selected = this.filters.loraAvailability || [];
+
+                if (selected.includes(status)) {
+                    this.filters.loraAvailability = selected.filter(value => value !== status);
+                    tag.classList.remove('active');
+                } else {
+                    this.filters.loraAvailability = [...selected, status];
+                    tag.classList.add('active');
+                }
+
+                this.updateActiveFiltersCount();
+                await this.applyFilters(false);
+            });
+        });
+
+        // Update selections based on stored filters
+        this.updateLoraAvailabilitySelections();
+    }
+
+    updateLoraAvailabilitySelections() {
+        const availabilityTags = document.querySelectorAll('.lora-availability-tag');
+        const selected = this.filters.loraAvailability || [];
+        availabilityTags.forEach(tag => {
+            if (selected.includes(tag.dataset.availability)) {
+                tag.classList.add('active');
+            } else {
+                tag.classList.remove('active');
+            }
+        });
+    }
+
     createBaseModelTags() {
         const baseModelTagsContainer = document.getElementById('baseModelTags');
         if (!baseModelTagsContainer) return;
@@ -681,6 +726,11 @@ export class FilterManager {
         }
         this.updateModelTypeSelections();
 
+        // Update LoRA availability tags if visible on this page
+        if (this.shouldShowLoraAvailabilityFilter()) {
+            this.updateLoraAvailabilitySelections();
+        }
+
         const autoTagEls = document.querySelectorAll('.auto-tag-filter');
         autoTagEls.forEach(el => {
             const tag = el.dataset.autoTag;
@@ -708,7 +758,9 @@ export class FilterManager {
         const modelTypeFilterCount = this.filters.modelTypes.length;
         // Exclude EMPTY_WILDCARD_MARKER from base model count
         const baseModelCount = this.filters.baseModel.filter(m => m !== EMPTY_WILDCARD_MARKER).length;
-        const totalActiveFilters = baseModelCount + tagFilterCount + autoTagFilterCount + licenseFilterCount + modelTypeFilterCount;
+        // Active when at least one availability status is deselected
+        const loraAvailabilityCount = this.filters.loraAvailability?.length ?? 0;
+        const totalActiveFilters = baseModelCount + tagFilterCount + autoTagFilterCount + licenseFilterCount + modelTypeFilterCount + loraAvailabilityCount;
 
         if (this.activeFiltersCount) {
             if (totalActiveFilters > 0) {
@@ -805,6 +857,7 @@ export class FilterManager {
             autoTags: {},
             license: {},
             modelTypes: [],
+            loraAvailability: [],
             tagLogic: 'any'
         });
 
@@ -891,12 +944,14 @@ export class FilterManager {
         const modelTypeCount = this.filters.modelTypes.length;
         // Exclude EMPTY_WILDCARD_MARKER from base model count
         const baseModelCount = this.filters.baseModel.filter(m => m !== EMPTY_WILDCARD_MARKER).length;
+        const loraAvailabilityCount = this.filters.loraAvailability?.length ?? 0;
         return (
             baseModelCount > 0 ||
             tagCount > 0 ||
             autoTagCount > 0 ||
             licenseCount > 0 ||
-            modelTypeCount > 0
+            modelTypeCount > 0 ||
+            loraAvailabilityCount > 0
         );
     }
 
@@ -909,12 +964,40 @@ export class FilterManager {
             autoTags: this.normalizeTagFilters(source.autoTags),
             license: this.shouldShowLicenseFilters() ? this.normalizeLicenseFilters(source.license) : {},
             modelTypes: this.normalizeModelTypeFilters(source.modelTypes),
+            loraAvailability: this.normalizeLoraAvailabilityFilters(source.loraAvailability),
             tagLogic: source.tagLogic || 'any'
         };
     }
 
     shouldShowLicenseFilters() {
         return this.currentPage !== 'recipes';
+    }
+
+    shouldShowLoraAvailabilityFilter() {
+        return this.currentPage === 'recipes';
+    }
+
+    normalizeLoraAvailabilityFilters(loraAvailability) {
+        // Default to no statuses selected (= no filtering)
+        if (!Array.isArray(loraAvailability)) {
+            return [];
+        }
+
+        const seen = new Set();
+        return loraAvailability.reduce((acc, status) => {
+            if (typeof status !== 'string') {
+                return acc;
+            }
+
+            const normalized = status.trim().toLowerCase();
+            if (!LORA_AVAILABILITY_STATUSES.includes(normalized) || seen.has(normalized)) {
+                return acc;
+            }
+
+            seen.add(normalized);
+            acc.push(normalized);
+            return acc;
+        }, []);
     }
 
     normalizeTagFilters(tagFilters) {
@@ -994,6 +1077,7 @@ export class FilterManager {
             autoTags: { ...(this.filters.autoTags || {}) },
             license: { ...(this.filters.license || {}) },
             modelTypes: [...(this.filters.modelTypes || [])],
+            loraAvailability: [...(this.filters.loraAvailability || [])],
             tagLogic: this.filters.tagLogic || 'any',
             search: pageState?.filters?.search ?? ''
         };

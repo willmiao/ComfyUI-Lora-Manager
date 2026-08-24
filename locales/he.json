@@ -260,7 +260,11 @@
             "any": "כלשהו",
             "all": "כל התגים",
             "tagLogicAny": "התאם כל תג (או)",
-            "tagLogicAll": "התאם את כל התגים (וגם)"
+            "tagLogicAll": "התאם את כל התגים (וגם)",
+            "loraAvailability": "זמינות LoRA",
+            "availabilityReady": "מוכנים לשימוש",
+            "availabilityMissing": "עם LoRAs חסרים",
+            "availabilityDeleted": "עם LoRAs שנמחקו"
         },
         "theme": {
             "toggle": "החלף ערכת נושא",

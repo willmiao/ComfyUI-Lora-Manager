@@ -39,6 +39,9 @@ logger = logging.getLogger(__name__)
 # explicitly to "diffusion_model" (mirrors Oracle R2-F1).
 _CHECKPOINT_MODEL_TYPE_ALIASES = {"diffusionmodel": "diffusion_model"}
 
+# Valid LoRA availability statuses for the recipe listing filter.
+_VALID_LORA_AVAILABILITY_STATUSES = frozenset({"ready", "missing", "deleted"})
+
 
 class RecipeScanner:
     """Service for scanning and managing recipe images"""
@@ -2994,6 +2997,43 @@ class RecipeScanner:
 
         return lora
 
+    def _compute_availability_statuses(self, recipe: Dict[str, Any]) -> Set[str]:
+        """Compute the LoRA availability status set for a recipe.
+
+        Returns ``{"ready"}`` when every non-excluded LoRA resolves to the
+        local library (recipes without LoRAs count as ready); otherwise a
+        subset of ``{"missing", "deleted"}``. Uses the same inLibrary
+        resolution as ``_enrich_lora_entry`` (hash index with modelVersionId
+        fallback) but performs only in-memory lookups.
+        """
+
+        statuses: Set[str] = set()
+        for lora in recipe.get("loras") or []:
+            if not isinstance(lora, dict) or lora.get("exclude"):
+                continue
+
+            in_library = False
+            if self._lora_scanner:
+                hash_value = (lora.get("hash") or "").lower()
+                if hash_value:
+                    in_library = self._lora_scanner.has_hash(hash_value)
+                elif lora.get("modelVersionId") is not None:
+                    in_library = (
+                        self._get_lora_from_version_index(lora.get("modelVersionId"))
+                        is not None
+                    )
+
+            if in_library:
+                continue
+            if lora.get("isDeleted"):
+                statuses.add("deleted")
+            else:
+                statuses.add("missing")
+
+        if not statuses:
+            statuses.add("ready")
+        return statuses
+
     def _normalize_preview_url(self, preview_url: Optional[str]) -> Optional[str]:
         """Return a preview URL that is reachable from the browser."""
 
@@ -3259,6 +3299,22 @@ class RecipeScanner:
                             item
                             for item in filtered_data
                             if not matches_exclude(item.get("tags"))
+                        ]
+
+                # Filter by LoRA availability status
+                availability = filters.get("lora_availability")
+                if availability:
+                    selected = {
+                        status
+                        for status in availability
+                        if status in _VALID_LORA_AVAILABILITY_STATUSES
+                    }
+                    # Selecting every status (or none) means no filtering.
+                    if 0 < len(selected) < len(_VALID_LORA_AVAILABILITY_STATUSES):
+                        filtered_data = [
+                            item
+                            for item in filtered_data
+                            if self._compute_availability_statuses(item) & selected
                         ]
 
         # Apply sorting if not already handled by pre-sorted cache

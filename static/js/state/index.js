@@ -148,6 +148,7 @@ export const state = {
                 tags: {},
                 license: {},
                 modelTypes: [],
+                loraAvailability: [],
                 search: ''
             },
             pageSize: 20,

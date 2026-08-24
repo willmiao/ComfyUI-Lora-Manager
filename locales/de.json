@@ -260,7 +260,11 @@
             "any": "Beliebig",
             "all": "Alle",
             "tagLogicAny": "Jedes Tag abgleichen (ODER)",
-            "tagLogicAll": "Alle Tags abgleichen (UND)"
+            "tagLogicAll": "Alle Tags abgleichen (UND)",
+            "loraAvailability": "LoRA-Verfügbarkeit",
+            "availabilityReady": "Einsatzbereit",
+            "availabilityMissing": "Mit fehlenden LoRAs",
+            "availabilityDeleted": "Mit gelöschten LoRAs"
         },
         "theme": {
             "toggle": "Theme wechseln",

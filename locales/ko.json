@@ -260,7 +260,11 @@
             "any": "아무",
             "all": "모두",
             "tagLogicAny": "모든 태그 일치 (OR)",
-            "tagLogicAll": "모든 태그 일치 (AND)"
+            "tagLogicAll": "모든 태그 일치 (AND)",
+            "loraAvailability": "LoRA 가용성",
+            "availabilityReady": "바로 사용 가능",
+            "availabilityMissing": "누락된 LoRA 있음",
+            "availabilityDeleted": "삭제된 LoRA 있음"
         },
         "theme": {
             "toggle": "테마 토글",

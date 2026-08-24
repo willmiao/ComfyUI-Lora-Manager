@@ -260,7 +260,11 @@
             "any": "任一",
             "all": "全部",
             "tagLogicAny": "符合任一票籤 (或)",
-            "tagLogicAll": "符合所有標籤 (與)"
+            "tagLogicAll": "符合所有標籤 (與)",
+            "loraAvailability": "LoRA 可用性",
+            "availabilityReady": "可直接使用",
+            "availabilityMissing": "包含缺少的 LoRA",
+            "availabilityDeleted": "包含已刪除的 LoRA"
         },
         "theme": {
             "toggle": "切換主題",

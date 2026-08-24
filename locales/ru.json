@@ -260,7 +260,11 @@
             "any": "Любой",
             "all": "Все",
             "tagLogicAny": "Совпадение с любым тегом (ИЛИ)",
-            "tagLogicAll": "Совпадение со всеми тегами (И)"
+            "tagLogicAll": "Совпадение со всеми тегами (И)",
+            "loraAvailability": "Доступность LoRAs",
+            "availabilityReady": "Готовы к использованию",
+            "availabilityMissing": "Есть отсутствующие",
+            "availabilityDeleted": "Есть удалённые"
         },
         "theme": {
             "toggle": "Переключить тему",

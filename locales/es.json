@@ -260,7 +260,11 @@
             "any": "Cualquiera",
             "all": "Todos",
             "tagLogicAny": "Coincidir con cualquier etiqueta (O)",
-            "tagLogicAll": "Coincidir con todas las etiquetas (Y)"
+            "tagLogicAll": "Coincidir con todas las etiquetas (Y)",
+            "loraAvailability": "Disponibilidad de LoRAs",
+            "availabilityReady": "Listos para usar",
+            "availabilityMissing": "Con LoRAs faltantes",
+            "availabilityDeleted": "Con LoRAs eliminados"
         },
         "theme": {
             "toggle": "Cambiar tema",

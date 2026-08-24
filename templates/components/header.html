@@ -264,6 +264,22 @@
       {{ t('header.filter.noTagMatches') }}
     </div>
   </div>
+  {% if current_page == 'recipes' %}
+  <div class="filter-section">
+    <h4>{{ t('header.filter.loraAvailability') }}</h4>
+    <div class="filter-tags" id="loraAvailabilityTags">
+      <div class="filter-tag lora-availability-tag" data-availability="ready">
+        {{ t('header.filter.availabilityReady') }}
+      </div>
+      <div class="filter-tag lora-availability-tag" data-availability="missing">
+        {{ t('header.filter.availabilityMissing') }}
+      </div>
+      <div class="filter-tag lora-availability-tag" data-availability="deleted">
+        {{ t('header.filter.availabilityDeleted') }}
+      </div>
+    </div>
+  </div>
+  {% endif %}
   {% if current_page == 'loras' or current_page == 'checkpoints' %}
   <div class="filter-section">
     <h4>{{ t('header.filter.modelTypes') }}</h4>

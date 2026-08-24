@@ -174,6 +174,11 @@ export async function fetchRecipesPage(page = 1, pageSize = 100) {
                     }
                 });
             }
+
+            // Add LoRA availability filter (no statuses selected = no filtering)
+            if (pageState.filters?.loraAvailability && pageState.filters.loraAvailability.length > 0) {
+                params.append('lora_availability', pageState.filters.loraAvailability.join(','));
+            }
         }
 
         // Fetch recipes

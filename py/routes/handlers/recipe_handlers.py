@@ -274,6 +274,14 @@ class RecipeListingHandler:
             if tag_filters:
                 filters["tags"] = tag_filters
 
+            lora_availability = {
+                status.strip()
+                for status in request.query.get("lora_availability", "").split(",")
+                if status.strip() in ("ready", "missing", "deleted")
+            }
+            if lora_availability:
+                filters["lora_availability"] = lora_availability
+
             lora_hash = request.query.get("lora_hash")
             checkpoint_hash = request.query.get("checkpoint_hash")
 

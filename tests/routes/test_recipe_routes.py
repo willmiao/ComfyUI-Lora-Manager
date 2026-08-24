@@ -632,6 +632,43 @@ async def test_list_recipes_passes_checkpoint_hash_filter(
         assert harness.scanner.last_paginated_params["checkpoint_hash"] == "ckpt123"
 
 
+async def test_list_recipes_passes_lora_availability_filter(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get(
+            "/api/lm/recipes?lora_availability=missing,deleted"
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["items"] == []
+        assert harness.scanner.last_paginated_params is not None
+        filters = harness.scanner.last_paginated_params["filters"]
+        assert filters["lora_availability"] == {"missing", "deleted"}
+
+
+async def test_list_recipes_ignores_invalid_lora_availability_values(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        # Valid values are kept, invalid ones dropped
+        response = await harness.client.get(
+            "/api/lm/recipes?lora_availability=bogus,ready"
+        )
+        assert response.status == 200
+        assert harness.scanner.last_paginated_params is not None
+        filters = harness.scanner.last_paginated_params["filters"]
+        assert filters["lora_availability"] == {"ready"}
+
+        # No valid values at all -> no availability filter
+        response = await harness.client.get("/api/lm/recipes?lora_availability=bogus")
+        assert response.status == 200
+        assert harness.scanner.last_paginated_params is not None
+        filters = harness.scanner.last_paginated_params["filters"]
+        assert "lora_availability" not in filters
+
+
 async def test_get_recipes_for_checkpoint(monkeypatch, tmp_path: Path) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
         harness.scanner.checkpoint_lookup["abc123"] = [

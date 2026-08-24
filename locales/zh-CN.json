@@ -260,7 +260,11 @@
             "any": "任一",
             "all": "全部",
             "tagLogicAny": "匹配任一标签 (或)",
-            "tagLogicAll": "匹配所有标签 (与)"
+            "tagLogicAll": "匹配所有标签 (与)",
+            "loraAvailability": "LoRA 可用性",
+            "availabilityReady": "可直接使用",
+            "availabilityMissing": "包含缺失 LoRA",
+            "availabilityDeleted": "包含已删除 LoRA"
         },
         "theme": {
             "toggle": "切换主题",
