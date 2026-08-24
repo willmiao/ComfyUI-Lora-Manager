@@ -442,10 +442,12 @@ export async function showModelModal(model, modelType) {
     if (creatorActionsMarkup) {
         headerActionItems.push(creatorActionsMarkup);
     }
+    if (licenseIcons) {
+        headerActionItems.push(indentMarkup(licenseIcons.trim(), 20));
+    }
 
-    // Destructive action docks immediately left of the license icons so the
-    // icons keep their original rightmost position; the delete button's
-    // auto margin right-anchors the whole cluster.
+    // Destructive action stays last (rightmost). The license icons' auto
+    // margin right-anchors the [license][delete] cluster as one group.
     const deleteModelTitle = translate('modals.model.actions.deleteModelWithShortcut', {}, 'Delete model (Del)');
     const deleteModelButton = `
         <button class="modal-delete-btn" data-action="delete-model" title="${deleteModelTitle}" aria-label="${deleteModelTitle}">
@@ -453,10 +455,6 @@ export async function showModelModal(model, modelType) {
         </button>
     `.trim();
     headerActionItems.push(indentMarkup(deleteModelButton, 20));
-
-    if (licenseIcons) {
-        headerActionItems.push(indentMarkup(licenseIcons.trim(), 20));
-    }
 
     const headerActionsMarkup = headerActionItems.length
         ? [
