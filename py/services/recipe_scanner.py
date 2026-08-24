@@ -1404,6 +1404,11 @@ class RecipeScanner:
 
     async def initialize_in_background(self) -> None:
         """Initialize cache in background using thread pool"""
+        # Mark as initializing before any await so concurrent callers can
+        # wait on this task instead of observing the placeholder empty cache
+        # (the LoRA scanner wait below can take a while at startup).
+        self._is_initializing = True
+        self._initialization_task = asyncio.current_task()
         try:
             await self._wait_for_lora_scanner()
 
@@ -1417,39 +1422,34 @@ class RecipeScanner:
                     folder_tree={},
                 )
 
-            # Mark as initializing to prevent concurrent initializations
-            self._is_initializing = True
-            self._initialization_task = asyncio.current_task()
+            # Start timer
+            start_time = time.time()
 
-            try:
-                # Start timer
-                start_time = time.time()
+            # Use thread pool to execute CPU-intensive operations
+            loop = asyncio.get_event_loop()
+            cache = await loop.run_in_executor(
+                None,  # Use default thread pool
+                self._initialize_recipe_cache_sync,  # Run synchronous version in thread
+            )
+            if cache is not None:
+                self._cache = cache
 
-                # Use thread pool to execute CPU-intensive operations
-                loop = asyncio.get_event_loop()
-                cache = await loop.run_in_executor(
-                    None,  # Use default thread pool
-                    self._initialize_recipe_cache_sync,  # Run synchronous version in thread
-                )
-                if cache is not None:
-                    self._cache = cache
-
-                # Calculate elapsed time and log it
-                elapsed_time = time.time() - start_time
-                recipe_count = (
-                    len(cache.raw_data) if cache and hasattr(cache, "raw_data") else 0
-                )
-                logger.info(
-                    f"Recipe cache initialized in {elapsed_time:.2f} seconds. Found {recipe_count} recipes"
-                )
-                self._schedule_post_scan_enrichment()
-                # Schedule FTS index build in background (non-blocking)
-                self._schedule_fts_index_build()
-            finally:
-                # Mark initialization as complete regardless of outcome
-                self._is_initializing = False
+            # Calculate elapsed time and log it
+            elapsed_time = time.time() - start_time
+            recipe_count = (
+                len(cache.raw_data) if cache and hasattr(cache, "raw_data") else 0
+            )
+            logger.info(
+                f"Recipe cache initialized in {elapsed_time:.2f} seconds. Found {recipe_count} recipes"
+            )
+            self._schedule_post_scan_enrichment()
+            # Schedule FTS index build in background (non-blocking)
+            self._schedule_fts_index_build()
         except Exception as e:
             logger.error(f"Recipe Scanner: Error initializing cache in background: {e}")
+        finally:
+            # Mark initialization as complete regardless of outcome
+            self._is_initializing = False
 
     def _initialize_recipe_cache_sync(self):
         """Synchronous version of recipe cache initialization for thread pool execution.
@@ -2254,20 +2254,27 @@ class RecipeScanner:
 
     async def get_cached_data(self, force_refresh: bool = False) -> RecipeCache:
         """Get cached recipe data, refresh if needed"""
+        # If a background initialization is in progress, wait for it to
+        # complete so callers never observe the placeholder empty cache.
+        initialization_task = self._initialization_task
+        if (
+            self._is_initializing
+            and not force_refresh
+            and initialization_task is not None
+            and initialization_task is not asyncio.current_task()
+            and not initialization_task.done()
+        ):
+            try:
+                await initialization_task
+            except Exception:
+                # Initialization failures are logged by the task itself; fall
+                # through and return whatever cache state we have.
+                pass
+
         # If cache is already initialized and no refresh is needed, return it immediately
         if self._cache is not None and not force_refresh:
             self._update_folder_metadata()
             return cast(RecipeCache, self._cache)
-
-        # If another initialization is already in progress, wait for it to complete
-        if self._is_initializing and not force_refresh:
-            return self._cache or RecipeCache(
-                raw_data=[],
-                sorted_by_name=[],
-                sorted_by_date=[],
-                folders=[],
-                folder_tree={},
-            )
 
         # If force refresh is requested, re-scan in a thread pool to avoid
         # blocking the event loop (which is shared with ComfyUI).
