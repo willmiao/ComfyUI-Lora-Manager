@@ -857,6 +857,11 @@
             "sendCheckpoint": "שלח ל-ComfyUI",
             "sendRecipe": "שלח ל-ComfyUI"
         },
+        "navigation": {
+            "label": "ניווט מתכונים",
+            "previousWithShortcut": "המתכון הקודם (←)",
+            "nextWithShortcut": "המתכון הבא (→)"
+        },
         "workflow": {
             "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
             "sent": "[TODO: Translate] Workflow sent to ComfyUI",
@@ -1988,6 +1993,8 @@
             "createMissingData": "חסרים נתונים נדרשים ליצירת המתכון",
             "created": "המתכון נוצר בהצלחה",
             "noMissingLoras": "אין LoRAs חסרים להורדה",
+            "noPreviousRecipe": "אין מתכון קודם זמין",
+            "noNextRecipe": "אין מתכון נוסף זמין",
             "missingLorasInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",
             "preparingForDownloadFailed": "שגיאה בהכנת LoRAs להורדה",
             "enterLoraName": "אנא הזן שם LoRA או תחביר",

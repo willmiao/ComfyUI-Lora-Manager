@@ -857,6 +857,11 @@
             "sendCheckpoint": "Отправить в ComfyUI",
             "sendRecipe": "Отправить в ComfyUI"
         },
+        "navigation": {
+            "label": "Навигация по рецептам",
+            "previousWithShortcut": "Предыдущий рецепт (←)",
+            "nextWithShortcut": "Следующий рецепт (→)"
+        },
         "workflow": {
             "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
             "sent": "[TODO: Translate] Workflow sent to ComfyUI",
@@ -1988,6 +1993,8 @@
             "createMissingData": "Отсутствуют необходимые данные для создания рецепта",
             "created": "Рецепт успешно создан",
             "noMissingLoras": "Нет отсутствующих LoRAs для загрузки",
+            "noPreviousRecipe": "Предыдущий рецепт отсутствует",
+            "noNextRecipe": "Следующий рецепт отсутствует",
             "missingLorasInfoFailed": "Не удалось получить информацию для отсутствующих LoRAs",
             "preparingForDownloadFailed": "Ошибка подготовки LoRAs для загрузки",
             "enterLoraName": "Пожалуйста, введите название LoRA или синтаксис",

@@ -857,6 +857,11 @@
       "sendCheckpoint": "Send to ComfyUI",
       "sendRecipe": "Send to ComfyUI"
     },
+    "navigation": {
+      "label": "Recipe navigation",
+      "previousWithShortcut": "Previous recipe (\u2190)",
+      "nextWithShortcut": "Next recipe (\u2192)"
+    },
     "workflow": {
       "sendWorkflow": "Send Workflow to ComfyUI",
       "sent": "Workflow sent to ComfyUI",
@@ -1988,6 +1993,8 @@
       "createMissingData": "Missing required data to create recipe",
       "created": "Recipe created successfully",
       "noMissingLoras": "No missing LoRAs to download",
+      "noPreviousRecipe": "No previous recipe available",
+      "noNextRecipe": "No next recipe available",
       "missingLorasInfoFailed": "Failed to get information for missing LoRAs",
       "preparingForDownloadFailed": "Error preparing LoRAs for download",
       "enterLoraName": "Please enter a LoRA name or syntax",

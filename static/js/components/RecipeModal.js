@@ -55,6 +55,8 @@ class RecipeModal {
     constructor() {
         this.promptEditorState = {};
         this.recipeHydrationRequestId = 0;
+        this.navigationKeyHandler = null;
+        this.navigationInProgress = false;
         this.resetLocalEditState();
         this.init();
     }
@@ -120,6 +122,7 @@ class RecipeModal {
         this.setupCopyButtons();
         this.setupStripLoraToggle();
         this.setupPromptEditors();
+        this.setupNavigationControls();
         // Set up tooltip positioning handlers after DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             this.setupTooltipPositioning();
@@ -162,6 +165,104 @@ class RecipeModal {
                 }
             });
         });
+    }
+
+    setupNavigationControls() {
+        const prevBtn = document.getElementById('recipeNavPrevBtn');
+        const nextBtn = document.getElementById('recipeNavNextBtn');
+
+        if (prevBtn) {
+            prevBtn.addEventListener('click', () => this.handleDirectionalNavigation('prev'));
+        }
+        if (nextBtn) {
+            nextBtn.addEventListener('click', () => this.handleDirectionalNavigation('next'));
+        }
+        this.updateNavigationControls();
+    }
+
+    shouldIgnoreNavigationKey(event) {
+        const target = event.target;
+        if (!target) return false;
+        const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+        return target.isContentEditable || ['input', 'textarea', 'select', 'button'].includes(tagName);
+    }
+
+    updateNavigationControls() {
+        const modalElement = document.getElementById('recipeModal');
+        if (!modalElement) return;
+
+        const prevBtn = modalElement.querySelector('#recipeNavPrevBtn');
+        const nextBtn = modalElement.querySelector('#recipeNavNextBtn');
+        if (!prevBtn || !nextBtn) return;
+
+        const scroller = state.virtualScroller;
+        if (!scroller || typeof scroller.getNavigationState !== 'function') {
+            prevBtn.disabled = true;
+            nextBtn.disabled = true;
+            return;
+        }
+
+        const { hasPrev, hasNext } = scroller.getNavigationState(this.listFilePath || this.filePath || '');
+        prevBtn.disabled = this.navigationInProgress || !hasPrev;
+        nextBtn.disabled = this.navigationInProgress || !hasNext;
+    }
+
+    cleanupNavigationShortcuts() {
+        if (this.navigationKeyHandler) {
+            document.removeEventListener('keydown', this.navigationKeyHandler);
+            this.navigationKeyHandler = null;
+        }
+        this.navigationInProgress = false;
+    }
+
+    setupNavigationShortcuts() {
+        const modalElement = document.getElementById('recipeModal');
+        if (!modalElement) return;
+
+        this.cleanupNavigationShortcuts();
+
+        this.navigationKeyHandler = (event) => {
+            if (this.shouldIgnoreNavigationKey(event)) return;
+
+            if (event.key === 'ArrowLeft') {
+                event.preventDefault();
+                this.handleDirectionalNavigation('prev');
+            } else if (event.key === 'ArrowRight') {
+                event.preventDefault();
+                this.handleDirectionalNavigation('next');
+            }
+        };
+
+        document.addEventListener('keydown', this.navigationKeyHandler);
+    }
+
+    async handleDirectionalNavigation(direction) {
+        if (this.navigationInProgress) return;
+
+        const scroller = state.virtualScroller;
+        const filePath = this.listFilePath || this.filePath || '';
+
+        if (!filePath || !scroller || typeof scroller.getAdjacentItemByFilePath !== 'function') {
+            return;
+        }
+
+        this.navigationInProgress = true;
+        this.updateNavigationControls();
+
+        try {
+            const adjacent = await scroller.getAdjacentItemByFilePath(filePath, direction);
+            if (!adjacent || !adjacent.item) {
+                const toastKey = direction === 'prev' ? 'toast.recipes.noPreviousRecipe' : 'toast.recipes.noNextRecipe';
+                const toastFallback = direction === 'prev' ? 'No previous recipe available' : 'No next recipe available';
+                showToast(toastKey, {}, 'info', toastFallback);
+                return;
+            }
+
+            this.showRecipeDetails(adjacent.item);
+        } finally {
+            this.navigationInProgress = false;
+            this.updateNavigationControls();
+        }
     }
 
     // Add tooltip positioning handler to ensure correct positioning of fixed tooltips
@@ -303,7 +404,9 @@ class RecipeModal {
         this.syncHeaderActions();
 
         // Show the modal
-        modalManager.showModal('recipeModal');
+        modalManager.showModal('recipeModal', null, null, () => this.cleanupNavigationShortcuts());
+        this.updateNavigationControls();
+        this.setupNavigationShortcuts();
 
         if (this.recipeId) {
             // Fire-and-forget: record this open for the "Recently Opened"

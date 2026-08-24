@@ -3,7 +3,17 @@
         <button class="close" onclick="modalManager.closeModal('recipeModal')">&times;</button>
         
         <header class="recipe-modal-header">
-            <h2 id="recipeModalTitle">Recipe Details</h2>
+            <div class="recipe-modal-header-row">
+                <h2 id="recipeModalTitle">Recipe Details</h2>
+                <div class="modal-nav-controls" role="group" aria-label="{{ t('recipes.navigation.label') }}">
+                    <button class="modal-nav-btn" id="recipeNavPrevBtn" title="{{ t('recipes.navigation.previousWithShortcut') }}" aria-label="{{ t('recipes.navigation.previousWithShortcut') }}" disabled>
+                        <i class="fas fa-chevron-left" aria-hidden="true"></i>
+                    </button>
+                    <button class="modal-nav-btn" id="recipeNavNextBtn" title="{{ t('recipes.navigation.nextWithShortcut') }}" aria-label="{{ t('recipes.navigation.nextWithShortcut') }}" disabled>
+                        <i class="fas fa-chevron-right" aria-hidden="true"></i>
+                    </button>
+                </div>
+            </div>
             <!-- Header Actions: Send button is static; source URL button is appended dynamically in RecipeModal.js -->
             <div class="recipe-header-actions" id="recipeHeaderActions">
                 <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">

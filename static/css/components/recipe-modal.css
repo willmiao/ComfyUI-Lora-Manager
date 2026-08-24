@@ -9,6 +9,21 @@
     position: relative;
 }
 
+/* Header row: title + nav controls. Padding reserves space for the
+   absolutely positioned nav buttons (see .modal-nav-controls in lora-modal.css). */
+.recipe-modal-header-row {
+    box-sizing: border-box;
+    width: 100%;
+    position: relative;
+    padding-right: 152px;
+}
+
+/* 56px right offset keeps the nav buttons clear of the close (x) button,
+   which is absolutely positioned at the modal-content top-right corner. */
+.recipe-modal-header-row .modal-nav-controls {
+    right: 56px;
+}
+
 #recipeTagsContainer {
     width: 100%;
 }

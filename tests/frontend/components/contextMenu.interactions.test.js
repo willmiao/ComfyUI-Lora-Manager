@@ -330,7 +330,7 @@ describe('Interaction-level regression coverage', () => {
     await new Promise((resolve) => setTimeout(resolve, 60));
     await flushAsyncTasks();
 
-    expect(modalManagerMock.showModal).toHaveBeenCalledWith('recipeModal');
+    expect(modalManagerMock.showModal).toHaveBeenCalledWith('recipeModal', null, null, expect.any(Function));
 
     const editIcon = document.querySelector('#recipeModalTitle .edit-icon');
     editIcon.dispatchEvent(new Event('click', { bubbles: true }));

@@ -857,6 +857,11 @@
             "sendCheckpoint": "傳送到 ComfyUI",
             "sendRecipe": "傳送到 ComfyUI"
         },
+        "navigation": {
+            "label": "配方導覽",
+            "previousWithShortcut": "上一個配方（←）",
+            "nextWithShortcut": "下一個配方（→）"
+        },
         "workflow": {
             "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
             "sent": "[TODO: Translate] Workflow sent to ComfyUI",
@@ -1988,6 +1993,8 @@
             "createMissingData": "缺少建立配方所需的資料",
             "created": "配方建立成功",
             "noMissingLoras": "無缺少的 LoRA 可下載",
+            "noPreviousRecipe": "沒有上一個配方",
+            "noNextRecipe": "沒有下一個配方",
             "missingLorasInfoFailed": "取得缺少 LoRA 資訊失敗",
             "preparingForDownloadFailed": "準備下載 LoRA 時發生錯誤",
             "enterLoraName": "請輸入 LoRA 名稱或語法",
