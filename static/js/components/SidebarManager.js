@@ -1841,6 +1841,16 @@ export class SidebarManager {
                     this.pageControls.pageState.activeFolder = '';
                 }
                 setStorageItem(`${this.pageType}_activeFolder`, '');
+                // When the reset happens after initialization (e.g. via
+                // refresh() after a drag move emptied the folder), reload the
+                // listing so the grid shows the root contents instead of
+                // staying empty. Skipped during initialize() — the first load
+                // picks up the cleared filter on its own.
+                if (this.isInitialized && typeof this.pageControls?.resetAndReload === 'function') {
+                    this.pageControls.resetAndReload().catch((error) => {
+                        console.error('Failed to reload after resetting folder selection:', error);
+                    });
+                }
             } else {
                 this.selectedPath = activeFolder;
             }
