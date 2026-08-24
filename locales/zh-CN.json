@@ -864,10 +864,10 @@
             "nextWithShortcut": "下一个配方（→）"
         },
         "workflow": {
-            "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
-            "sent": "[TODO: Translate] Workflow sent to ComfyUI",
-            "sendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI",
-            "noWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+            "sendWorkflow": "发送工作流到 ComfyUI",
+            "sent": "工作流已发送到 ComfyUI",
+            "sendFailed": "发送工作流到 ComfyUI 失败",
+            "noWorkflow": "此配方中未找到内嵌工作流"
         },
         "controls": {
             "import": {
@@ -2050,9 +2050,9 @@
             "reimportBulkFailed": "重新导入某些配方失败",
             "noMissingLorasInSelection": "在选定的配方中未找到缺失的 LoRAs",
             "noLoraRootConfigured": "未配置 LoRA 根目录。请在设置中设置默认的 LoRA 根目录。",
-            "workflowSent": "[TODO: Translate] Workflow sent to ComfyUI",
-            "workflowSendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI: {error}",
-            "workflowNoWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+            "workflowSent": "工作流已发送到 ComfyUI",
+            "workflowSendFailed": "发送工作流到 ComfyUI 失败: {error}",
+            "workflowNoWorkflow": "此配方中未找到内嵌工作流"
         },
         "models": {
             "noModelsSelected": "未选中模型",

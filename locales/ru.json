@@ -864,10 +864,10 @@
             "nextWithShortcut": "Следующий рецепт (→)"
         },
         "workflow": {
-            "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
-            "sent": "[TODO: Translate] Workflow sent to ComfyUI",
-            "sendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI",
-            "noWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+            "sendWorkflow": "Отправить workflow в ComfyUI",
+            "sent": "Workflow отправлен в ComfyUI",
+            "sendFailed": "Не удалось отправить workflow в ComfyUI",
+            "noWorkflow": "В этом рецепте не найден встроенный workflow"
         },
         "controls": {
             "import": {
@@ -2050,9 +2050,9 @@
             "reimportBulkFailed": "Не удалось переимпортировать некоторые рецепты",
             "noMissingLorasInSelection": "В выбранных рецептах не найдены отсутствующие LoRAs",
             "noLoraRootConfigured": "Корневой каталог LoRA не настроен. Пожалуйста, установите корневой каталог LoRA по умолчанию в настройках.",
-            "workflowSent": "[TODO: Translate] Workflow sent to ComfyUI",
-            "workflowSendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI: {error}",
-            "workflowNoWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+            "workflowSent": "Workflow отправлен в ComfyUI",
+            "workflowSendFailed": "Не удалось отправить workflow в ComfyUI: {error}",
+            "workflowNoWorkflow": "В этом рецепте не найден встроенный workflow"
         },
         "models": {
             "noModelsSelected": "Модели не выбраны",

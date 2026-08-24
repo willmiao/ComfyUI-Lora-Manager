@@ -864,10 +864,10 @@
             "nextWithShortcut": "次のレシピ（→）"
         },
         "workflow": {
-            "sendWorkflow": "[TODO: Translate] Send Workflow to ComfyUI",
-            "sent": "[TODO: Translate] Workflow sent to ComfyUI",
-            "sendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI",
-            "noWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+            "sendWorkflow": "ワークフローをComfyUIへ送信",
+            "sent": "ワークフローをComfyUIへ送信しました",
+            "sendFailed": "ワークフローをComfyUIへ送信できませんでした",
+            "noWorkflow": "このレシピに埋め込まれたワークフローが見つかりません"
         },
         "controls": {
             "import": {
@@ -2050,9 +2050,9 @@
             "reimportBulkFailed": "一部のレシピの再インポートに失敗しました",
             "noMissingLorasInSelection": "選択したレシピに不足している LoRA が見つかりませんでした",
             "noLoraRootConfigured": "LoRA ルートディレクトリが設定されていません。設定でデフォルトの LoRA ルートを設定してください。",
-            "workflowSent": "[TODO: Translate] Workflow sent to ComfyUI",
-            "workflowSendFailed": "[TODO: Translate] Failed to send workflow to ComfyUI: {error}",
-            "workflowNoWorkflow": "[TODO: Translate] No embedded workflow found in this recipe"
+            "workflowSent": "ワークフローをComfyUIへ送信しました",
+            "workflowSendFailed": "ワークフローをComfyUIへ送信できませんでした: {error}",
+            "workflowNoWorkflow": "このレシピに埋め込まれたワークフローが見つかりません"
         },
         "models": {
             "noModelsSelected": "モデルが選択されていません",
