@@ -35,6 +35,9 @@ class StubLoraScanner:
 
 @pytest.fixture
 def recipe_scanner(tmp_path, monkeypatch):
+    # RecipeScanner is a singleton; reset it so this fixture never receives
+    # an instance carrying another test module's stub scanner.
+    RecipeScanner._instance = None
     monkeypatch.setattr(config, "loras_roots", [str(tmp_path)])
     lora_scanner = StubLoraScanner(
         hashes={"aaa111"},
@@ -80,7 +83,8 @@ def recipe_scanner(tmp_path, monkeypatch):
         sorted_by_date=recipes,
         sorted_by_name=recipes,
     )
-    return scanner
+    yield scanner
+    RecipeScanner._instance = None
 
 
 async def _fetch_ids(scanner, filters=None):
