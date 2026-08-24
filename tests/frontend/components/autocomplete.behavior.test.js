@@ -2032,4 +2032,122 @@ describe('AutoComplete widget interactions', () => {
     expect(calledUrl).toContain('folder=Flux.1+D%2Fstyle');
     expect(calledUrl).toContain('recursive=true');
   });
+
+  describe('discoverability hints', () => {
+    beforeEach(() => {
+      localStorage.clear();
+    });
+
+    const typeSlashCommand = async () => {
+      const input = document.createElement('textarea');
+      input.value = '/';
+      input.selectionStart = 1;
+      document.body.append(input);
+
+      caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+
+      const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+      const autoComplete = new AutoComplete(input, 'prompt', { showPreview: false, minChars: 1 });
+
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      return autoComplete;
+    };
+
+    it('shows the current autocomplete state below the slash command list', async () => {
+      const autoComplete = await typeSlashCommand();
+
+      const footer = autoComplete.dropdown.querySelector('.lm-autocomplete-command-footer');
+      expect(footer).not.toBeNull();
+      expect(footer.textContent).toContain('/noautocomplete to disable');
+    });
+
+    it('shows how to re-enable autocomplete in the footer when it is off', async () => {
+      settingGetMock.mockImplementation((key) => {
+        if (key === 'loramanager.prompt_tag_autocomplete') {
+          return false;
+        }
+        return undefined;
+      });
+
+      const autoComplete = await typeSlashCommand();
+
+      const footer = autoComplete.dropdown.querySelector('.lm-autocomplete-command-footer');
+      expect(footer).not.toBeNull();
+      expect(footer.textContent).toContain('/autocomplete to enable');
+    });
+
+    it('stays silent when typing with tag autocomplete disabled', async () => {
+      settingGetMock.mockImplementation((key) => {
+        if (key === 'loramanager.prompt_tag_autocomplete') {
+          return false;
+        }
+        if (key === 'loramanager.autocomplete_accept_key') {
+          return 'both';
+        }
+        return undefined;
+      });
+
+      const input = document.createElement('textarea');
+      input.value = 'hello';
+      input.selectionStart = 5;
+      document.body.append(input);
+
+      caretHelperInstance.getBeforeCursor.mockReturnValue('hello');
+
+      const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+      const autoComplete = new AutoComplete(input, 'prompt', { showPreview: false, minChars: 1 });
+
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+
+      expect(autoComplete.isVisible).toBe(false);
+      expect(fetchApiMock).not.toHaveBeenCalled();
+    });
+
+    it('shows a dismissible first-run hint on tag suggestions and remembers dismissal', async () => {
+      vi.useFakeTimers();
+
+      fetchApiMock.mockResolvedValue({
+        json: () => Promise.resolve({
+          success: true,
+          words: [{ tag_name: '1girl', category: 4, post_count: 500000 }],
+        }),
+      });
+
+      caretHelperInstance.getBeforeCursor.mockReturnValue('1gi');
+
+      const triggerSearch = async () => {
+        const input = document.createElement('textarea');
+        input.value = '1gi';
+        input.selectionStart = 3;
+        document.body.append(input);
+
+        const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+        const autoComplete = new AutoComplete(input, 'prompt', {
+          debounceDelay: 0,
+          showPreview: false,
+          minChars: 1,
+        });
+
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        await vi.runAllTimersAsync();
+        await Promise.resolve();
+        return autoComplete;
+      };
+
+      const autoComplete = await triggerSearch();
+
+      const hint = autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint');
+      expect(hint).not.toBeNull();
+      expect(hint.textContent).toContain('/noautocomplete');
+
+      hint.querySelector('button').click();
+
+      expect(autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
+      expect(localStorage.getItem('lm:autocomplete-disable-tip-dismissed')).toBe('1');
+
+      // A fresh instance no longer shows the hint once dismissed
+      const autoComplete2 = await triggerSearch();
+      expect(autoComplete2.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
+    });
+  });
 });

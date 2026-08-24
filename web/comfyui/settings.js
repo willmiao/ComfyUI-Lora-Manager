@@ -172,6 +172,26 @@ const getPromptTagAutocompletePreference = (() => {
     };
 })();
 
+/**
+ * Persist a LoRA Manager setting through ComfyUI's setting API.
+ * Returns true when the setting was written successfully.
+ */
+const setLoraManagerSettingValue = async (settingId, value) => {
+    const settingManager = app?.extensionManager?.setting;
+    if (settingManager && typeof settingManager.set === "function") {
+        await settingManager.set(settingId, value);
+        return true;
+    }
+
+    const setting = app?.ui?.settings?.settingsById?.[settingId];
+    if (setting) {
+        app.ui.settings.setSettingValue(settingId, value);
+        return true;
+    }
+
+    return false;
+};
+
 const getAutocompleteAppendCommaPreference = (() => {
     let settingsUnavailableLogged = false;
 
@@ -422,7 +442,7 @@ app.registerExtension({
             name: "Enable Tag Autocomplete in Prompt Nodes",
             type: "boolean",
             defaultValue: PROMPT_TAG_AUTOCOMPLETE_DEFAULT,
-            tooltip: "When enabled, typing will trigger tag autocomplete suggestions. Commands (e.g., /character, /artist) always work regardless of this setting.",
+            tooltip: "When enabled, typing in a Prompt (LoraManager) node triggers tag autocomplete suggestions. You can also toggle it by typing /autocomplete or /noautocomplete in the node, or from the node's right-click menu. Slash commands (e.g., /character, /artist) always work regardless of this setting.",
             category: ["LoRA Manager", "Autocomplete", "Prompt"],
         },
         {
@@ -576,6 +596,7 @@ app.registerExtension({
 // ============================================================================
 
 export {
+    PROMPT_TAG_AUTOCOMPLETE_SETTING_ID,
     getWheelSensitivity,
     getAutoPathCorrectionPreference,
     getAutocompleteAppendCommaPreference,
@@ -587,4 +608,5 @@ export {
     getNewTabTemplatePreference,
     getStrengthStepPreference,
     getLoraActiveFiltersAutocompletePreference,
+    setLoraManagerSettingValue,
 };

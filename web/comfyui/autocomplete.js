@@ -17,8 +17,12 @@ import {
     getLoraActiveFiltersAutocompletePreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
+    setLoraManagerSettingValue,
 } from "./settings.js";
 import { showToast } from "./utils.js";
+
+// localStorage key for the one-time "how to disable" hint in the dropdown
+const FIRST_RUN_HINT_DISMISSED_KEY = 'lm:autocomplete-disable-tip-dismissed';
 
 // Command definitions for category filtering
 const TAG_COMMANDS = {
@@ -37,14 +41,14 @@ const TAG_COMMANDS = {
         type: 'toggle_setting',
         settingId: 'loramanager.prompt_tag_autocomplete',
         value: true,
-        label: 'Autocomplete: ON',
+        label: 'Turn autocomplete ON',
         condition: () => !getPromptTagAutocompletePreference()
     },
     '/noautocomplete': {
         type: 'toggle_setting',
         settingId: 'loramanager.prompt_tag_autocomplete',
         value: false,
-        label: 'Autocomplete: OFF',
+        label: 'Turn autocomplete OFF',
         condition: () => getPromptTagAutocompletePreference()
     },
 };
@@ -55,7 +59,7 @@ const LORAS_COMMANDS = {
         type: 'toggle_setting',
         settingId: 'loramanager.lora_active_filters_autocomplete',
         value: true,
-        label: 'Active Filters: ON',
+        label: 'Turn active filters search ON',
         feedbackSummary: 'Active Filters Search: ON',
         feedbackDetail: 'LoRA autocomplete now searches within the active filters of the LoRA Manager page.',
         condition: () => !getLoraActiveFiltersAutocompletePreference()
@@ -64,7 +68,7 @@ const LORAS_COMMANDS = {
         type: 'toggle_setting',
         settingId: 'loramanager.lora_active_filters_autocomplete',
         value: false,
-        label: 'Active Filters: OFF',
+        label: 'Turn active filters search OFF',
         feedbackSummary: 'Active Filters Search: OFF',
         feedbackDetail: 'LoRA autocomplete searches the full library again.',
         condition: () => getLoraActiveFiltersAutocompletePreference()
@@ -72,8 +76,7 @@ const LORAS_COMMANDS = {
 };
 
 // Category display information
-const CATEGORY_INFO = {
-    0: { bg: 'rgba(0, 155, 230, 0.2)', text: '#4bb4ff', label: 'General' },
+const CATEGORY_INFO = {    0: { bg: 'rgba(0, 155, 230, 0.2)', text: '#4bb4ff', label: 'General' },
     1: { bg: 'rgba(255, 138, 139, 0.2)', text: '#ffc3c3', label: 'Artist' },
     3: { bg: 'rgba(199, 151, 255, 0.2)', text: '#ddc9fb', label: 'Copyright' },
     4: { bg: 'rgba(53, 198, 74, 0.2)', text: '#93e49a', label: 'Character' },
@@ -471,6 +474,10 @@ class AutoComplete {
         this.searchType = null;
         this.suppressAutocompleteOnce = false;
 
+        // Discoverability hints state
+        this.commandListFooter = null;   // State hint shown below the slash command list
+        this.firstRunHint = null;        // One-time "how to disable" bar inside the dropdown
+
         // Virtual scrolling state
         this.virtualScrollOffset = 0;
         this.hasMoreItems = true;
@@ -829,7 +836,9 @@ class AutoComplete {
                     searchTerm = rawSearchTerm;
                     this.searchType = 'custom_words';
                 } else {
-                    // No command and setting disabled - no autocomplete for direct typing
+                    // No command and setting disabled - no autocomplete for direct typing.
+                    // Re-enable discovery is covered by the command-list footer,
+                    // the node context menu and the settings tooltip.
                     this.hide();
                     return;
                 }
@@ -1707,10 +1716,129 @@ class AutoComplete {
                 this.selectItem(0);
             }
         }
-        
+
+        // State hint below the command list (e.g. how to toggle autocomplete)
+        this._renderCommandListFooter();
+
         // Update virtual scroll height for virtual scrolling mode
         if (this.contentContainer) {
             this.updateVirtualScrollHeight();
+        }
+    }
+
+    /**
+     * Render a state hint below the slash command list so the autocomplete
+     * toggle commands explain themselves. Only applies to prompt nodes.
+     */
+    _renderCommandListFooter() {
+        this._removeCommandListFooter();
+
+        if (this.modelType !== 'prompt') {
+            return;
+        }
+
+        const enabled = getPromptTagAutocompletePreference();
+        const footer = document.createElement('div');
+        footer.className = 'lm-autocomplete-command-footer';
+        footer.textContent = enabled
+            ? 'Tag autocomplete is ON — /noautocomplete to disable'
+            : 'Tag autocomplete is OFF — /autocomplete to enable';
+        footer.style.cssText = `
+            padding: 6px 12px;
+            font-size: 11px;
+            color: rgba(226, 232, 240, 0.5);
+            border-top: 1px solid rgba(226, 232, 240, 0.1);
+            white-space: nowrap;
+        `;
+        // Keep focus in the textarea when the hint is clicked
+        footer.addEventListener('mousedown', (e) => e.preventDefault());
+
+        this.dropdown.appendChild(footer);
+        this.commandListFooter = footer;
+    }
+
+    _removeCommandListFooter() {
+        if (this.commandListFooter) {
+            this.commandListFooter.remove();
+            this.commandListFooter = null;
+        }
+    }
+
+    /**
+     * Show a one-time, dismissible hint inside the dropdown telling users how
+     * to disable tag autocomplete. Dismissal is persisted in localStorage.
+     */
+    _maybeShowFirstRunHint() {
+        if (this.firstRunHint) {
+            return;
+        }
+        if (this.modelType !== 'prompt'
+            || this.showingCommands
+            || this.searchType !== 'custom_words'
+            || this.activeCommand) {
+            return;
+        }
+
+        let dismissed = false;
+        try {
+            dismissed = localStorage.getItem(FIRST_RUN_HINT_DISMISSED_KEY) === '1';
+        } catch (e) {
+            // localStorage unavailable - fall through and show the hint
+        }
+        if (dismissed) {
+            return;
+        }
+
+        const hint = document.createElement('div');
+        hint.className = 'lm-autocomplete-first-run-hint';
+        hint.style.cssText = `
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            padding: 6px 12px;
+            font-size: 11px;
+            color: rgba(226, 232, 240, 0.6);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.1);
+        `;
+
+        const text = document.createElement('span');
+        text.textContent = 'Tip: type /noautocomplete to turn off these suggestions';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = '×';
+        closeBtn.title = 'Dismiss';
+        closeBtn.style.cssText = `
+            background: none;
+            border: none;
+            color: rgba(226, 232, 240, 0.5);
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0 2px;
+        `;
+        closeBtn.addEventListener('click', () => {
+            try {
+                localStorage.setItem(FIRST_RUN_HINT_DISMISSED_KEY, '1');
+            } catch (e) {
+            }
+            this._removeFirstRunHint();
+        });
+
+        hint.appendChild(text);
+        hint.appendChild(closeBtn);
+        // Keep focus in the textarea when interacting with the hint
+        hint.addEventListener('mousedown', (e) => e.preventDefault());
+
+        this.dropdown.insertBefore(hint, this.dropdown.firstChild);
+        this.firstRunHint = hint;
+    }
+
+    _removeFirstRunHint() {
+        if (this.firstRunHint) {
+            this.firstRunHint.remove();
+            this.firstRunHint = null;
         }
     }
 
@@ -1744,6 +1872,9 @@ class AutoComplete {
     render() {
         this.selectedIndex = -1;
         this.hasManualSelection = false;
+
+        // Command-list state hints do not belong to regular search results
+        this._removeCommandListFooter();
 
         // Reset virtual scroll state
         this.virtualScrollOffset = 0;
@@ -2447,6 +2578,7 @@ class AutoComplete {
             return;
         }
 
+        this._maybeShowFirstRunHint();
         // For virtual scrolling, render items first so positionAtCursor can measure width correctly
         if (this.options.enableVirtualScroll && this.contentContainer) {
             this.dropdown.style.display = 'block';
@@ -2515,6 +2647,10 @@ class AutoComplete {
         this.selectedIndex = -1;
         this.hasManualSelection = false;
         this.showingCommands = false;
+
+        // Remove discoverability hints attached to the dropdown
+        this._removeCommandListFooter();
+        this._removeFirstRunHint();
         
         // Clear items to prevent stale data from being displayed
         // when autocomplete is shown again
@@ -2854,20 +2990,12 @@ class AutoComplete {
         const { settingId, value } = command;
 
         try {
-            // Use ComfyUI's setting API to update global setting
-            const settingManager = app?.extensionManager?.setting;
-            if (settingManager && typeof settingManager.set === 'function') {
-                await settingManager.set(settingId, value);
+            const success = await setLoraManagerSettingValue(settingId, value);
+            if (success) {
                 this._showToggleFeedback(command, value);
                 this._clearCurrentToken();
             } else {
-                // Fallback: use legacy settings API
-                const setting = app.ui.settings.settingsById?.[settingId];
-                if (setting) {
-                    app.ui.settings.setSettingValue(settingId, value);
-                    this._showToggleFeedback(command, value);
-                    this._clearCurrentToken();
-                }
+                throw new Error('settings API unavailable');
             }
         } catch (error) {
             console.error('[Lora Manager] Failed to toggle setting:', error);
@@ -2893,7 +3021,7 @@ class AutoComplete {
             summary: command.feedbackSummary || (enabled ? 'Autocomplete Enabled' : 'Autocomplete Disabled'),
             detail: command.feedbackDetail || (enabled
                 ? 'Tag autocomplete is now ON. Type to see suggestions.'
-                : 'Tag autocomplete is now OFF. Use /autocomplete to re-enable.'),
+                : 'Tag autocomplete is now OFF. Use /autocomplete or the node right-click menu to re-enable.'),
             life: 3000
         });
     }

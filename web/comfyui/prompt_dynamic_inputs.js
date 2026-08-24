@@ -1,4 +1,10 @@
 import { app } from "../../scripts/app.js";
+import {
+    PROMPT_TAG_AUTOCOMPLETE_SETTING_ID,
+    getPromptTagAutocompletePreference,
+    setLoraManagerSettingValue,
+} from "./settings.js";
+import { showToast } from "./utils.js";
 
 /**
  * Extension for PromptLM node to support dynamic trigger_words inputs.
@@ -92,6 +98,48 @@ app.registerExtension({
             }
 
             return onConnectionsChange?.apply?.(this, arguments);
+        };
+
+        // Expose the tag autocomplete toggle in the node's right-click menu so
+        // users can discover the switch where the behavior actually happens,
+        // instead of only via slash commands or the global settings dialog.
+        const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+        nodeType.prototype.getExtraMenuOptions = function(_, options) {
+            getExtraMenuOptions?.apply?.(this, arguments);
+
+            options.push(null);
+
+            const autocompleteEnabled = getPromptTagAutocompletePreference();
+            options.push({
+                content: autocompleteEnabled
+                    ? "Tag Autocomplete: ON (/noautocomplete to disable)"
+                    : "Tag Autocomplete: OFF (/autocomplete to enable)",
+                callback: async () => {
+                    const newValue = !autocompleteEnabled;
+                    try {
+                        const success = await setLoraManagerSettingValue(PROMPT_TAG_AUTOCOMPLETE_SETTING_ID, newValue);
+                        if (!success) {
+                            throw new Error("settings API unavailable");
+                        }
+                        showToast({
+                            severity: newValue ? 'success' : 'secondary',
+                            summary: newValue ? 'Autocomplete Enabled' : 'Autocomplete Disabled',
+                            detail: newValue
+                                ? 'Tag autocomplete is now ON. Type to see suggestions.'
+                                : 'Tag autocomplete is now OFF. Type /autocomplete in the prompt field to re-enable.',
+                            life: 3000
+                        });
+                    } catch (error) {
+                        console.error('[Lora Manager] Failed to toggle setting:', error);
+                        showToast({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: 'Failed to toggle autocomplete setting',
+                            life: 3000
+                        });
+                    }
+                }
+            });
         };
     },
 
