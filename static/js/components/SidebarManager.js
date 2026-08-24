@@ -16,6 +16,7 @@ export class SidebarManager {
         this.pageControls = null;
         this.pageType = null;
         this.treeData = {};
+        this.folderTreeLoaded = false;
         this.selectedPath = '';
         this.expandedNodes = new Set();
         this.apiClient = null;
@@ -1171,11 +1172,30 @@ export class SidebarManager {
                 const response = await this.apiClient.fetchModelFolders();
                 this.foldersList = response.folders || [];
             }
+            this.folderTreeLoaded = true;
             this.renderFolderDisplay();
         } catch (error) {
+            this.folderTreeLoaded = false;
             console.error('Failed to load folder data:', error);
             this.renderEmptyState();
         }
+    }
+
+    folderExistsInTree(path) {
+        if (!path) return true;
+
+        if (this.displayMode === 'tree') {
+            let node = this.treeData;
+            for (const segment of path.split('/')) {
+                if (!node || typeof node !== 'object' || !(segment in node)) {
+                    return false;
+                }
+                node = node[segment];
+            }
+            return true;
+        }
+
+        return this.foldersList.includes(path);
     }
 
     renderFolderDisplay() {
@@ -1809,7 +1829,21 @@ export class SidebarManager {
     restoreSelectedFolder() {
         const activeFolder = getStorageItem(`${this.pageType}_activeFolder`);
         if (activeFolder && typeof activeFolder === 'string') {
-            this.selectedPath = activeFolder;
+            // Fall back to the root when the persisted folder no longer
+            // exists in the freshly loaded tree (e.g. it was moved or
+            // deleted); otherwise the grid stays empty with a phantom
+            // breadcrumb. Skip validation when the tree failed to load so a
+            // transient API error doesn't wipe the saved location.
+            if (this.folderTreeLoaded && !this.folderExistsInTree(activeFolder)) {
+                console.warn(`Persisted folder "${activeFolder}" not found in folder tree, falling back to root`);
+                this.selectedPath = '';
+                if (this.pageControls?.pageState) {
+                    this.pageControls.pageState.activeFolder = '';
+                }
+                setStorageItem(`${this.pageType}_activeFolder`, '');
+            } else {
+                this.selectedPath = activeFolder;
+            }
             this.updateTreeSelection();
             this.updateBreadcrumbs();
             this.updateSidebarHeader();
