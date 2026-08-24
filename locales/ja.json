@@ -1616,7 +1616,7 @@
                 "actions": {
                     "download": "ダウンロード",
                     "downloadTooltip": "このバージョンをダウンロード",
-                    "downloadRemainingTooltip": "このバージョンの残りのファイルをダウンロード",
+                    "downloadChooseFilesTooltip": "ダウンロードするファイルを選択",
                     "downloadEarlyAccessTooltip": "Civitai からこの早期アクセス版をダウンロード",
                     "downloadPaidTooltip": "Civitai からこの有料バージョンをダウンロード",
                     "downloadNotAllowedTooltip": "このバージョンはCivitaiサイト内でのみ利用可能で、ダウンロードはできません",

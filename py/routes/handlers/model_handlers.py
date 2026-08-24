@@ -3120,6 +3120,9 @@ class ModelUpdateHandler:
             "paidAccess": paid_access_payload,
             "filePath": context.get("file_path"),
             "fileName": context.get("file_name"),
+            # Weight-file variant count (None when unknown); lets the UI hide
+            # the download affordance for single-file in-library versions.
+            "fileCount": getattr(version, "file_count", None),
         }
 
     async def _build_version_context(

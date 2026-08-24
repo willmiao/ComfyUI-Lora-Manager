@@ -18,6 +18,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional, Sequence
 from .errors import RateLimitError, ResourceNotFoundError
 from .settings_manager import get_settings_manager
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
 
@@ -77,6 +78,10 @@ class ModelVersionRecord:
     usage_control: Optional[str] = None  # "Download", "Generation", "InternalGeneration"
     paid_access: Optional[str] = None  # JSON string of the CivitAI paidAccess DTO
     is_paid: bool = False  # True when paidAccess.permanent is True (permanent paid gate)
+    # Number of downloadable weight files for the version (None when unknown,
+    # e.g. records persisted before this field existed or locally-synthesized
+    # entries). Mirrors the frontend isModelWeightFile() filter.
+    file_count: Optional[int] = None
 
 
 @dataclass
@@ -273,6 +278,7 @@ class ModelUpdateService:
             usage_control TEXT,
             paid_access TEXT,
             is_paid INTEGER NOT NULL DEFAULT 0,
+            file_count INTEGER,
             PRIMARY KEY (model_id, version_id),
             FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
         );
@@ -520,6 +526,10 @@ class ModelUpdateService:
                 "ALTER TABLE model_update_versions "
                 "ADD COLUMN is_paid INTEGER NOT NULL DEFAULT 0"
             ),
+            "file_count": (
+                "ALTER TABLE model_update_versions "
+                "ADD COLUMN file_count INTEGER"
+            ),
         }
 
         for column, statement in migrations.items():
@@ -623,6 +633,7 @@ class ModelUpdateService:
                 is_early_access INTEGER NOT NULL DEFAULT 0,
                 paid_access TEXT,
                 is_paid INTEGER NOT NULL DEFAULT 0,
+                file_count INTEGER,
                 PRIMARY KEY (model_id, version_id),
                 FOREIGN KEY(model_id) REFERENCES model_update_status(model_id) ON DELETE CASCADE
             )
@@ -644,6 +655,7 @@ class ModelUpdateService:
             "is_early_access",
             "paid_access",
             "is_paid",
+            "file_count",
         ]
         defaults = {
             "sort_index": "0",
@@ -658,6 +670,7 @@ class ModelUpdateService:
             "is_early_access": "0",
             "paid_access": "NULL",
             "is_paid": "0",
+            "file_count": "NULL",
         }
 
         select_parts = []
@@ -1504,6 +1517,7 @@ class ModelUpdateService:
         )
         ignore_map = {version.version_id: version.should_ignore for version in existing.versions} if existing else {}
         preview_map = {version.version_id: version.preview_url for version in existing.versions} if existing else {}
+        file_count_map = {version.version_id: version.file_count for version in existing.versions} if existing else {}
         sort_map = {version.version_id: version.sort_index for version in existing.versions} if existing else {}
         existing_map = {version.version_id: version for version in existing.versions} if existing else {}
 
@@ -1528,6 +1542,11 @@ class ModelUpdateService:
                     usage_control=remote_version.usage_control,
                     paid_access=remote_version.paid_access,
                     is_paid=remote_version.is_paid,
+                    file_count=(
+                        remote_version.file_count
+                        if remote_version.file_count is not None
+                        else file_count_map.get(version_id)
+                    ),
                 )
             )
 
@@ -1620,6 +1639,7 @@ class ModelUpdateService:
         base_model = _normalize_string(entry.get("baseModel"))
         released_at = _normalize_string(entry.get("publishedAt") or entry.get("createdAt"))
         size_bytes = self._extract_size_bytes(entry.get("files"))
+        file_count = self._extract_file_count(entry.get("files"))
         preview_url = self._extract_preview_url(entry.get("images"))
         early_access_ends_at = _normalize_string(entry.get("earlyAccessEndsAt"))
 
@@ -1655,6 +1675,7 @@ class ModelUpdateService:
             usage_control=usage_control,
             paid_access=paid_access_json,
             is_paid=is_paid,
+            file_count=file_count,
         )
 
     @staticmethod
@@ -1682,6 +1703,25 @@ class ModelUpdateService:
         if not permanent and ends_at is None:
             return None
         return {"permanent": permanent, "endsAt": ends_at}
+
+    @staticmethod
+    def _extract_file_count(files) -> Optional[int]:
+        """Count downloadable weight files in a version entry's ``files`` list.
+
+        Returns None when the payload carries no files array (unknown), so
+        callers can distinguish "no weight files" from "no data".
+        """
+
+        if not isinstance(files, list):
+            return None
+        count = 0
+        for entry in files:
+            if not isinstance(entry, Mapping):
+                continue
+            entry_type = entry.get("type")
+            if isinstance(entry_type, str) and entry_type in MODEL_WEIGHT_FILE_TYPES:
+                count += 1
+        return count
 
     def _extract_size_bytes(self, files) -> Optional[int]:
         if not isinstance(files, Iterable):
@@ -1795,7 +1835,7 @@ class ModelUpdateService:
                     f"""
                     SELECT model_id, version_id, sort_index, name, base_model, released_at,
                            size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
-                           is_early_access, usage_control, paid_access, is_paid
+                           is_early_access, usage_control, paid_access, is_paid, file_count
                     FROM model_update_versions
                     WHERE model_id IN ({placeholders})
                     ORDER BY model_id ASC, sort_index ASC, version_id ASC
@@ -1826,6 +1866,7 @@ class ModelUpdateService:
                     usage_control=row["usage_control"],
                     paid_access=row["paid_access"],
                     is_paid=bool(row["is_paid"]),
+                    file_count=_normalize_int(row["file_count"]),
                 )
             )
 
@@ -1888,8 +1929,8 @@ class ModelUpdateService:
                     INSERT INTO model_update_versions (
                         version_id, model_id, sort_index, name, base_model, released_at,
                         size_bytes, preview_url, is_in_library, should_ignore, early_access_ends_at,
-                        is_early_access, usage_control, paid_access, is_paid
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        is_early_access, usage_control, paid_access, is_paid, file_count
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     """,
                     (
                         version.version_id,
@@ -1907,6 +1948,7 @@ class ModelUpdateService:
                         version.usage_control,
                         paid_access_value,
                         1 if version.is_paid else 0,
+                        version.file_count,
                     ),
                 )
             conn.commit()

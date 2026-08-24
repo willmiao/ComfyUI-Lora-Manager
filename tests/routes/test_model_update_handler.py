@@ -693,3 +693,21 @@ async def test_enrich_early_access_details_skips_permanent_paid(monkeypatch):
     enriched_map = {v.version_id: v for v in enriched.versions}
     assert enriched_map[200].early_access_ends_at == "2099-01-01T00:00:00.000Z"
     assert enriched_map[100].early_access_ends_at is None
+
+
+def test_serialize_version_includes_file_count():
+    version = ModelVersionRecord(
+        version_id=11, name="v11", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=True, should_ignore=False, file_count=2,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["fileCount"] == 2
+
+
+def test_serialize_version_file_count_defaults_to_none():
+    version = ModelVersionRecord(
+        version_id=12, name="v12", base_model=None, released_at=None, size_bytes=None,
+        preview_url=None, is_in_library=False, should_ignore=False,
+    )
+    serialized = ModelUpdateHandler._serialize_version(version, None)
+    assert serialized["fileCount"] is None

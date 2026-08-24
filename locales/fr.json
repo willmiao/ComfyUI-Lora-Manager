@@ -1616,7 +1616,7 @@
                 "actions": {
                     "download": "Télécharger",
                     "downloadTooltip": "Télécharger cette version",
-                    "downloadRemainingTooltip": "Télécharger les fichiers restants de cette version",
+                    "downloadChooseFilesTooltip": "Choisir les fichiers à télécharger",
                     "downloadEarlyAccessTooltip": "Télécharger cette version en accès anticipé depuis Civitai",
                     "downloadPaidTooltip": "Télécharger cette version payante depuis Civitai",
                     "downloadNotAllowedTooltip": "Cette version n'est disponible que pour la génération sur le site Civitai",

@@ -798,3 +798,126 @@ def test_build_record_from_remote_preserves_paid_fields(tmp_path):
     rebuilt = record.versions[0]
     assert rebuilt.paid_access == '{"permanent": true, "endsAt": null}'
     assert rebuilt.is_paid is True
+
+
+def test_extract_file_count_counts_weight_files(tmp_path):
+    """file_count counts only weight-type files; a missing files array stays
+    None (unknown) so the UI can distinguish it from "no weight files"."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    response = {
+        "modelVersions": [
+            {
+                "id": 42,
+                "files": [
+                    {"sizeKB": 100, "type": "Model", "primary": True},
+                    {"sizeKB": 10, "type": "Training Data"},
+                    {"sizeKB": 50, "type": "Pruned Model"},
+                ],
+                "images": [],
+            },
+            {"id": 43, "images": []},
+            {"id": 44, "files": [], "images": []},
+        ]
+    }
+
+    versions = service._extract_versions(response)
+    assert versions is not None
+    assert versions[0].file_count == 2
+    assert versions[1].file_count is None
+    assert versions[2].file_count == 0
+
+
+@pytest.mark.asyncio
+async def test_refresh_persists_file_count(tmp_path):
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path), ttl_seconds=3600)
+    raw_data = [{"civitai": {"modelId": 1, "id": 11}}]
+    scanner = DummyScanner(raw_data)
+    provider = DummyProvider(
+        {
+            "modelVersions": [
+                {
+                    "id": 11,
+                    "name": "v1",
+                    "baseModel": "SD15",
+                    "files": [
+                        {"sizeKB": 1024, "type": "Model", "primary": True},
+                        {"sizeKB": 2048, "type": "Model"},
+                        {"sizeKB": 128, "type": "Training Data"},
+                    ],
+                    "images": [],
+                }
+            ]
+        }
+    )
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    record = await service.get_record("lora", 1)
+
+    assert record is not None
+    assert record.versions[0].file_count == 2
+
+
+def test_build_record_from_remote_preserves_file_count(tmp_path):
+    """A remote payload without files data must not clobber the previously
+    persisted file_count; a populated payload wins."""
+    db_path = tmp_path / "updates.sqlite"
+    service = ModelUpdateService(str(db_path))
+
+    existing = make_record(
+        ModelVersionRecord(
+            version_id=7,
+            name="v7",
+            base_model=None,
+            released_at=None,
+            size_bytes=None,
+            preview_url=None,
+            is_in_library=True,
+            should_ignore=False,
+            file_count=3,
+        )
+    )
+    remote_without_count = ModelVersionRecord(
+        version_id=7,
+        name="v7",
+        base_model=None,
+        released_at=None,
+        size_bytes=None,
+        preview_url=None,
+        is_in_library=False,
+        should_ignore=False,
+        file_count=None,
+    )
+
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[7],
+        remote_versions=[remote_without_count],
+        existing=existing,
+        timestamp=1.0,
+    )
+    assert record.versions[0].file_count == 3
+
+    remote_with_count = ModelVersionRecord(
+        version_id=7,
+        name="v7",
+        base_model=None,
+        released_at=None,
+        size_bytes=None,
+        preview_url=None,
+        is_in_library=False,
+        should_ignore=False,
+        file_count=1,
+    )
+    record = service._build_record_from_remote(
+        model_type="lora",
+        model_id=999,
+        local_versions=[7],
+        remote_versions=[remote_with_count],
+        existing=existing,
+        timestamp=2.0,
+    )
+    assert record.versions[0].file_count == 1

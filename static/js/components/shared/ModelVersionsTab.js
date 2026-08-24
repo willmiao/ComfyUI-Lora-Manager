@@ -575,50 +575,60 @@ function renderRow(version, options) {
     const actions = [];
     const canDownload = isDownloadAllowed(version);
     const downloadIcon = isEarlyAccess ? '<i class="fas fa-bolt"></i> ' : '';
-    let downloadTitle;
-    if (!canDownload) {
-        downloadTitle = translate(
-            'modals.model.versions.actions.downloadNotAllowedTooltip',
-            {},
-            'This version is only available for on-site generation on Civitai'
-        );
-    } else if (version.isInLibrary) {
-        // In-library versions may still have undownloaded weight files; the
-        // download modal's file dialog decides what remains (#1058).
-        downloadTitle = translate(
-            'modals.model.versions.actions.downloadRemainingTooltip',
-            {},
-            'Download remaining files of this version'
-        );
-    } else if (isPaidPermanent(version)) {
-        downloadTitle = translate(
-            'modals.model.versions.actions.downloadPaidTooltip',
-            {},
-            'Download this paid version from Civitai'
-        );
-    } else if (isEarlyAccess) {
-        downloadTitle = translate(
-            'modals.model.versions.actions.downloadEarlyAccessTooltip',
-            {},
-            'Download this early access version from Civitai'
-        );
-    } else {
-        downloadTitle = translate(
-            'modals.model.versions.actions.downloadTooltip',
-            {},
-            'Download this version'
-        );
-    }
-    actions.push(buildActionButton(
-        downloadLabel,
-        canDownload ? 'version-action-primary' : 'version-action-disabled',
-        canDownload ? 'download' : '',
-        {
-            title: downloadTitle,
-            iconMarkup: downloadIcon,
-            disabled: !canDownload,
+    // The Download button always fetches the default (primary) file, keeping
+    // the single-file experience for users who don't care about variants.
+    // In-library versions hide it: their default file already exists locally,
+    // and multi-file versions use the "N files" badge below for the remaining
+    // variants instead (#1058). fileCount is null for records persisted before
+    // the field existed; default to the single-file behavior in that case.
+    const fileCount = typeof version.fileCount === 'number' ? version.fileCount : null;
+    const showDownload = !version.isInLibrary;
+    if (showDownload) {
+        let downloadTitle;
+        if (!canDownload) {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadNotAllowedTooltip',
+                {},
+                'This version is only available for on-site generation on Civitai'
+            );
+        } else if (isPaidPermanent(version)) {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadPaidTooltip',
+                {},
+                'Download this paid version from Civitai'
+            );
+        } else if (isEarlyAccess) {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadEarlyAccessTooltip',
+                {},
+                'Download this early access version from Civitai'
+            );
+        } else {
+            downloadTitle = translate(
+                'modals.model.versions.actions.downloadTooltip',
+                {},
+                'Download this version'
+            );
         }
-    ));
+        actions.push(buildActionButton(
+            downloadLabel,
+            canDownload ? 'version-action-primary' : 'version-action-disabled',
+            canDownload ? 'download' : '',
+            {
+                title: downloadTitle,
+                iconMarkup: downloadIcon,
+                disabled: !canDownload,
+            }
+        ));
+    }
+
+    // Multi-file versions get an explicit entry into the download modal's
+    // file-selection step, mirroring the version step's file badge (#1058).
+    const fileSelectionBadge = fileCount !== null && fileCount > 1
+        ? `<button type="button" class="file-select-badge" data-version-files title="${escapeHtml(translate('modals.model.versions.actions.downloadChooseFilesTooltip', {}, 'Choose which files to download'))}">
+             <i class="fas fa-th-list"></i> ${fileCount} ${escapeHtml(translate('modals.download.fileSelection.files', {}, 'files'))} <i class="fas fa-chevron-right badge-arrow"></i>
+           </button>`
+        : '';
     if (version.isInLibrary && version.filePath) {
         actions.push(buildActionButton(
             deleteLabel,
@@ -696,6 +706,7 @@ function renderRow(version, options) {
                 <div class="version-badges">${badges.join('')}</div>
                 <div class="version-meta">
                     ${buildMetaMarkup(version, { showEarlyAccess: true })}
+                    ${fileSelectionBadge}
                 </div>
             </div>
             <div class="version-actions">
@@ -1429,15 +1440,9 @@ export function initVersionsTab({
         button.disabled = true;
 
         try {
-            // In-library versions may still have undownloaded weight files
-            // (#1058). The tab payload has no per-file state, so open the
-            // download modal's file dialog, which refetches the full version
-            // payload and shows what remains.
-            if (version.isInLibrary) {
-                await downloadManager.openFileSelectionForVersion(modelType, modelId, versionId);
-                return;
-            }
-
+            // The Download button only renders for versions not in the library
+            // and always fetches the default (primary) file. Multi-file
+            // variants are reached through the "N files" badge instead.
             const pathInfo = await resolveDownloadPathFromCurrentVersion();
             const resolveTemplatePath = shouldResolveTemplatePath(version, pathInfo);
             const success = await downloadManager.downloadVersionWithDefaults(modelType, modelId, versionId, {
@@ -1513,6 +1518,21 @@ export function initVersionsTab({
                 default:
                     break;
             }
+            return;
+        }
+
+        // File-selection badge: enter the download modal's file step directly.
+        // Must run before the row-click navigation below (rows are clickable).
+        const filesBadge = event.target.closest('[data-version-files]');
+        if (filesBadge) {
+            event.preventDefault();
+            event.stopPropagation();
+            const row = filesBadge.closest('.model-version-row');
+            if (!row) {
+                return;
+            }
+            const versionId = Number(row.dataset.versionId);
+            await downloadManager.openFileSelectionForVersion(modelType, modelId, versionId);
             return;
         }
 

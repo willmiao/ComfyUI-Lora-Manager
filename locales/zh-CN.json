@@ -1616,7 +1616,7 @@
                 "actions": {
                     "download": "下载",
                     "downloadTooltip": "下载此版本",
-                    "downloadRemainingTooltip": "下载此版本的剩余文件",
+                    "downloadChooseFilesTooltip": "选择要下载的文件",
                     "downloadEarlyAccessTooltip": "从 Civitai 下载此抢先体验版本",
                     "downloadPaidTooltip": "从 Civitai 下载此付费版本",
                     "downloadNotAllowedTooltip": "此版本仅在 Civitai 站内可用，无法下载",

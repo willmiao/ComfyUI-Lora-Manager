@@ -514,6 +514,7 @@
     background: oklch(var(--lora-accent) / 0.18);
     color: var(--lora-accent);
     font-size: inherit;
+    font-family: inherit;
     font-weight: 600;
     cursor: pointer;
     transition: var(--transition-base);

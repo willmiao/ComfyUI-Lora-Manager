@@ -1616,7 +1616,7 @@
                 "actions": {
                     "download": "הורדה",
                     "downloadTooltip": "הורד את הגרסה הזו",
-                    "downloadRemainingTooltip": "הורד את הקבצים הנותרים של גרסה זו",
+                    "downloadChooseFilesTooltip": "בחר אילו קבצים להוריד",
                     "downloadEarlyAccessTooltip": "הורד את גרסת ה-Early Access הזו מ-Civitai",
                     "downloadPaidTooltip": "הורד את הגרסה בתשלום הזו מ-Civitai",
                     "downloadNotAllowedTooltip": "גרסה זו זמינה רק ליצירה באתר Civitai",
