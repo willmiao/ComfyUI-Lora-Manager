@@ -52,7 +52,11 @@ class InitializationManager {
     detectPageType() {
         // Get the current page type from URL or data attribute
         const path = window.location.pathname;
-        if (path.includes('/checkpoints')) {
+        // The recipes page lives at /loras/recipes, so it must be matched
+        // before the generic '/loras' check.
+        if (path.includes('/recipes')) {
+            this.pageType = 'recipes';
+        } else if (path.includes('/checkpoints')) {
             this.pageType = 'checkpoints';
         } else if (path.includes('/loras')) {
             this.pageType = 'loras';
@@ -216,7 +220,8 @@ class InitializationManager {
             const scannerTypeToPageType = {
                 'lora': 'loras',
                 'checkpoint': 'checkpoints',
-                'embedding': 'embeddings'
+                'embedding': 'embeddings',
+                'recipe': 'recipes'
             };
             
             if (scannerTypeToPageType[data.scanner_type] !== this.pageType) {

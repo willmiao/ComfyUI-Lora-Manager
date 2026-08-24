@@ -19,6 +19,7 @@ from ..utils.recipe_open_stats import RecipeOpenStats
 from .model_scanner import WEIGHT_FILE_EXTENSIONS
 from .recipe_cache import RecipeCache
 from .recipes.errors import RecipeNotFoundError, RecipePersistenceError
+from .websocket_manager import ws_manager
 from natsort import natsorted
 import sys
 import re
@@ -480,6 +481,10 @@ class RecipeScanner:
             if value:
                 return str(value)
         return "unknown"
+
+    def is_initializing(self) -> bool:
+        """Check if the scanner is currently initializing"""
+        return self._is_initializing
 
     def on_library_changed(self) -> None:
         """Reset cached state when the active library changes."""
@@ -1410,6 +1415,14 @@ class RecipeScanner:
         self._is_initializing = True
         self._initialization_task = asyncio.current_task()
         try:
+            await ws_manager.broadcast_init_progress({
+                'stage': 'loading_cache',
+                'progress': 0,
+                'details': 'Loading recipe cache...',
+                'scanner_type': 'recipe',
+                'pageType': 'recipes',
+            })
+
             await self._wait_for_lora_scanner()
 
             # Set initial empty cache to avoid None reference errors
@@ -1442,11 +1455,38 @@ class RecipeScanner:
             logger.info(
                 f"Recipe cache initialized in {elapsed_time:.2f} seconds. Found {recipe_count} recipes"
             )
+            await ws_manager.broadcast_init_progress({
+                'stage': 'finalizing',
+                'progress': 100,
+                'status': 'complete',
+                'details': f'Found {recipe_count} recipes.',
+                'scanner_type': 'recipe',
+                'pageType': 'recipes',
+            })
             self._schedule_post_scan_enrichment()
             # Schedule FTS index build in background (non-blocking)
             self._schedule_fts_index_build()
         except Exception as e:
             logger.error(f"Recipe Scanner: Error initializing cache in background: {e}")
+            # Ensure the cache is never None so the page stops showing the
+            # initialization screen, and let waiting clients reload into the
+            # regular (possibly empty) view instead of stalling.
+            if self._cache is None:
+                self._cache = RecipeCache(
+                    raw_data=[],
+                    sorted_by_name=[],
+                    sorted_by_date=[],
+                    folders=[],
+                    folder_tree={},
+                )
+            await ws_manager.broadcast_init_progress({
+                'stage': 'finalizing',
+                'progress': 100,
+                'status': 'complete',
+                'details': 'Recipe cache initialization failed.',
+                'scanner_type': 'recipe',
+                'pageType': 'recipes',
+            })
         finally:
             # Mark initialization as complete regardless of outcome
             self._is_initializing = False
