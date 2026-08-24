@@ -19,6 +19,9 @@
                 <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
                     <i class="fas fa-paper-plane"></i> <span>{{ t('recipes.actions.sendRecipe') }}</span>
                 </button>
+                <button class="modal-delete-btn" id="deleteRecipeBtn" title="{{ t('recipes.actions.deleteRecipeWithShortcut') }}" aria-label="{{ t('recipes.actions.deleteRecipeWithShortcut') }}">
+                    <i class="fas fa-trash" aria-hidden="true"></i>
+                </button>
             </div>
             <!-- Recipe Tags Container (rendered by renderCompactTags) -->
             <div id="recipeTagsContainer"></div>

@@ -339,124 +339,11 @@ class RecipeCard {
     }
 
     showDeleteConfirmation() {
-        try {
-            // Get recipe ID
-            const recipeId = this.recipe.id;
-            const filePath = this.recipe.file_path;
-            if (!recipeId) {
-                showToast('toast.recipes.cannotDelete', {}, 'error');
-                return;
-            }
-
-            // Create delete modal content
-            const previewUrl = this.recipe.file_url || '/loras_static/images/no-preview.png';
-            const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
-
-            const deleteModalContent = `
-                <div class="modal-content delete-modal-content">
-                    <h2>Delete Recipe</h2>
-                    <p class="delete-message">Are you sure you want to delete this recipe?</p>
-                    <div class="delete-model-info">
-                        <div class="delete-preview">
-                            ${isVideo ?
-                    `<video src="${previewUrl}" controls muted loop playsinline style="max-width: 100%;"></video>` :
-                `<img src="${previewUrl}" alt="${this.recipe.title}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
-                }
-                        </div>
-                        <div class="delete-info">
-                            <h3>${this.recipe.title}</h3>
-                            <p>${translate('modals.deleteRecipe.recoverableWarning')}</p>
-                        </div>
-                    </div>
-                    <p class="delete-note">Note: Deleting this recipe will not affect the LoRA files used in it.</p>
-                    <div class="modal-actions">
-                        <button class="cancel-btn" onclick="closeDeleteModal()">Cancel</button>
-                        <button class="delete-btn" onclick="confirmDelete()">Delete</button>
-                    </div>
-                </div>
-            `;
-
-            // Show the modal with custom content and setup callbacks
-            modalManager.showModal('deleteModal', deleteModalContent, () => {
-                // This is the onClose callback
-                const deleteModal = document.getElementById('deleteModal');
-                const deleteBtn = deleteModal.querySelector('.delete-btn');
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.disabled = false;
-            });
-
-            // Set up the delete and cancel buttons with proper event handlers
-            const deleteModal = document.getElementById('deleteModal');
-            const cancelBtn = deleteModal.querySelector('.cancel-btn');
-            const deleteBtn = deleteModal.querySelector('.delete-btn');
-
-            // Store recipe ID in the modal for the delete confirmation handler
-            deleteModal.dataset.recipeId = recipeId;
-            deleteModal.dataset.filePath = filePath;
-
-            // Update button event handlers
-            cancelBtn.onclick = () => modalManager.closeModal('deleteModal');
-            deleteBtn.onclick = () => this.confirmDeleteRecipe();
-
-        } catch (error) {
-            console.error('Error showing delete confirmation:', error);
-            showToast('toast.recipes.deleteConfirmationError', {}, 'error');
-        }
+        showRecipeDeleteConfirmation(this.recipe);
     }
 
     confirmDeleteRecipe() {
-        const deleteModal = document.getElementById('deleteModal');
-        const recipeId = deleteModal.dataset.recipeId;
-
-        if (!recipeId) {
-            showToast('toast.recipes.cannotDelete', {}, 'error');
-            modalManager.closeModal('deleteModal');
-            return;
-        }
-
-        // Show loading state
-        const deleteBtn = deleteModal.querySelector('.delete-btn');
-        const originalText = deleteBtn.textContent;
-        deleteBtn.textContent = 'Deleting...';
-        deleteBtn.disabled = true;
-
-        // Call API to delete the recipe
-        fetch(`/api/lm/recipe/${recipeId}`, {
-            method: 'DELETE',
-            headers: {
-                'Content-Type': 'application/json'
-            }
-        })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Failed to delete recipe');
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (data.batch_id) {
-                    // Staged delete: offer undo instead of the plain success toast
-                    const batchId = data.batch_id;
-                    showActionToast('toast.undo.deleted', { name: this.recipe.title }, 'success', {
-                        actionText: translate('toast.undo.action'),
-                        onAction: () => handleUndoDelete(batchId, () => window.recipeManager.loadRecipes(true)),
-                    });
-                } else {
-                    showToast('toast.recipes.deletedSuccessfully', {}, 'success');
-                }
-
-                state.virtualScroller.removeItemByFilePath(deleteModal.dataset.filePath);
-
-                modalManager.closeModal('deleteModal');
-            })
-            .catch(error => {
-                console.error('Error deleting recipe:', error);
-                showToast('toast.recipes.deleteFailed', { message: error.message }, 'error');
-
-                // Reset button state
-                deleteBtn.textContent = originalText;
-                deleteBtn.disabled = false;
-            });
+        confirmRecipeDelete(this.recipe);
     }
 
     shareRecipe() {
@@ -505,6 +392,136 @@ class RecipeCard {
             showToast('toast.recipes.sharePreparationError', {}, 'error');
         }
     }
+}
+
+/**
+ * Show the delete confirmation modal for a recipe. Shared by RecipeCard and
+ * RecipeModal so the flow stays identical regardless of where it starts.
+ * @param {Object} recipe - The recipe to delete
+ */
+export function showRecipeDeleteConfirmation(recipe) {
+    try {
+        // Get recipe ID
+        const recipeId = recipe.id;
+        const filePath = recipe.file_path;
+        if (!recipeId) {
+            showToast('toast.recipes.cannotDelete', {}, 'error');
+            return;
+        }
+
+        // Create delete modal content
+        const previewUrl = recipe.file_url || '/loras_static/images/no-preview.png';
+        const isVideo = previewUrl.endsWith('.mp4') || previewUrl.endsWith('.webm');
+
+        const deleteModalContent = `
+            <div class="modal-content delete-modal-content">
+                <h2>Delete Recipe</h2>
+                <p class="delete-message">Are you sure you want to delete this recipe?</p>
+                <div class="delete-model-info">
+                    <div class="delete-preview">
+                        ${isVideo ?
+                `<video src="${previewUrl}" controls muted loop playsinline style="max-width: 100%;"></video>` :
+            `<img src="${previewUrl}" alt="${recipe.title}" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`
+            }
+                    </div>
+                    <div class="delete-info">
+                        <h3>${recipe.title}</h3>
+                        <p>${translate('modals.deleteRecipe.recoverableWarning')}</p>
+                    </div>
+                </div>
+                <p class="delete-note">Note: Deleting this recipe will not affect the LoRA files used in it.</p>
+                <div class="modal-actions">
+                    <button class="cancel-btn" onclick="closeDeleteModal()">Cancel</button>
+                    <button class="delete-btn" onclick="confirmDelete()">Delete</button>
+                </div>
+            </div>
+        `;
+
+        // Show the modal with custom content and setup callbacks
+        modalManager.showModal('deleteModal', deleteModalContent, () => {
+            // This is the onClose callback
+            const deleteModal = document.getElementById('deleteModal');
+            const deleteBtn = deleteModal.querySelector('.delete-btn');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.disabled = false;
+        });
+
+        // Set up the delete and cancel buttons with proper event handlers
+        const deleteModal = document.getElementById('deleteModal');
+        const cancelBtn = deleteModal.querySelector('.cancel-btn');
+        const deleteBtn = deleteModal.querySelector('.delete-btn');
+
+        // Store recipe ID in the modal for the delete confirmation handler
+        deleteModal.dataset.recipeId = recipeId;
+        deleteModal.dataset.filePath = filePath;
+
+        // Update button event handlers
+        cancelBtn.onclick = () => modalManager.closeModal('deleteModal');
+        deleteBtn.onclick = () => confirmRecipeDelete(recipe);
+
+    } catch (error) {
+        console.error('Error showing delete confirmation:', error);
+        showToast('toast.recipes.deleteConfirmationError', {}, 'error');
+    }
+}
+
+/**
+ * Execute the recipe deletion after the user confirms in the delete modal.
+ * @param {Object} recipe - The recipe being deleted (used for toast messaging)
+ */
+function confirmRecipeDelete(recipe) {
+    const deleteModal = document.getElementById('deleteModal');
+    const recipeId = deleteModal.dataset.recipeId;
+
+    if (!recipeId) {
+        showToast('toast.recipes.cannotDelete', {}, 'error');
+        modalManager.closeModal('deleteModal');
+        return;
+    }
+
+    // Show loading state
+    const deleteBtn = deleteModal.querySelector('.delete-btn');
+    const originalText = deleteBtn.textContent;
+    deleteBtn.textContent = 'Deleting...';
+    deleteBtn.disabled = true;
+
+    // Call API to delete the recipe
+    fetch(`/api/lm/recipe/${recipeId}`, {
+        method: 'DELETE',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to delete recipe');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.batch_id) {
+                // Staged delete: offer undo instead of the plain success toast
+                const batchId = data.batch_id;
+                showActionToast('toast.undo.deleted', { name: recipe.title }, 'success', {
+                    actionText: translate('toast.undo.action'),
+                    onAction: () => handleUndoDelete(batchId, () => window.recipeManager.loadRecipes(true)),
+                });
+            } else {
+                showToast('toast.recipes.deletedSuccessfully', {}, 'success');
+            }
+
+            state.virtualScroller.removeItemByFilePath(deleteModal.dataset.filePath);
+
+            modalManager.closeModal('deleteModal');
+        })
+        .catch(error => {
+            console.error('Error deleting recipe:', error);
+            showToast('toast.recipes.deleteFailed', { message: error.message }, 'error');
+
+            // Reset button state
+            deleteBtn.textContent = originalText;
+            deleteBtn.disabled = false;
+        });
 }
 
 export { RecipeCard };

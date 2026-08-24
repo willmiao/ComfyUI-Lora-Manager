@@ -68,13 +68,39 @@
     font-size: 14px;
 }
 
-.modal-header-actions .license-restrictions {
+/* Destructive modal action: ghost icon button pushed to the far right of the
+   header actions row, revealing the danger color only on hover/focus. Shared
+   by the model modal and the recipe modal. */
+.modal-delete-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
     margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease, background-color 0.2s ease;
 }
 
-.modal-header-actions .license-permissions {
-    margin-left: auto;
+.modal-delete-btn:hover,
+.modal-delete-btn:focus-visible {
+    color: var(--lora-error);
+    border-color: var(--lora-error);
+    background: oklch(from var(--lora-error) l c h / 0.08);
 }
+
+.modal-delete-btn i {
+    font-size: 14px;
+}
+
+/* License icons no longer carry their own auto margin: the delete button's
+   margin-left: auto right-anchors the [delete][license] cluster, keeping the
+   icons flush against the right edge as before the delete button existed. */
 
 .license-restrictions {
     display: flex;

@@ -855,7 +855,8 @@
     "title": "LoRA Recipes",
     "actions": {
       "sendCheckpoint": "Send to ComfyUI",
-      "sendRecipe": "Send to ComfyUI"
+      "sendRecipe": "Send to ComfyUI",
+      "deleteRecipeWithShortcut": "Delete recipe (Del)"
     },
     "navigation": {
       "label": "Recipe navigation",
@@ -1440,7 +1441,8 @@
         "openFileLocation": "Open File Location",
         "sendToWorkflow": "Send to ComfyUI",
         "sendToWorkflowText": "Send to ComfyUI",
-        "copyHash": "Copy hash"
+        "copyHash": "Copy hash",
+        "deleteModelWithShortcut": "Delete model (Del)"
       },
       "openFileLocation": {
         "success": "File location opened successfully",

@@ -20,6 +20,7 @@ import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { initVersionsTab } from './ModelVersionsTab.js';
 import { loadRecipesForModel } from './RecipeTab.js';
 import { translate } from '../../utils/i18nHelpers.js';
+import { showDeleteModal } from '../../utils/modalUtils.js';
 import { state } from '../../state/index.js';
 
 function getModalFilePath(fallback = '') {
@@ -441,9 +442,22 @@ export async function showModelModal(model, modelType) {
     if (creatorActionsMarkup) {
         headerActionItems.push(creatorActionsMarkup);
     }
+
+    // Destructive action docks immediately left of the license icons so the
+    // icons keep their original rightmost position; the delete button's
+    // auto margin right-anchors the whole cluster.
+    const deleteModelTitle = translate('modals.model.actions.deleteModelWithShortcut', {}, 'Delete model (Del)');
+    const deleteModelButton = `
+        <button class="modal-delete-btn" data-action="delete-model" title="${deleteModelTitle}" aria-label="${deleteModelTitle}">
+            <i class="fas fa-trash" aria-hidden="true"></i>
+        </button>
+    `.trim();
+    headerActionItems.push(indentMarkup(deleteModelButton, 20));
+
     if (licenseIcons) {
         headerActionItems.push(indentMarkup(licenseIcons.trim(), 20));
     }
+
     const headerActionsMarkup = headerActionItems.length
         ? [
             '                <div class="modal-header-actions">',
@@ -944,6 +958,9 @@ function setupEventHandlers(filePath, modelType) {
             case 'send-to-workflow':
                 handleSendToWorkflow(target, modelType);
                 break;
+            case 'delete-model':
+                handleDeleteModel();
+                break;
             case 'copy-hash':
                 if (target.dataset.hash) {
                     copyToClipboard(target.dataset.hash, 'Hash copied to clipboard');
@@ -1218,10 +1235,24 @@ function setupNavigationShortcuts(modelType) {
         } else if (event.key === 'ArrowRight') {
             event.preventDefault();
             handleDirectionalNavigation('next', navigationModelType);
+        } else if (event.key === 'Delete') {
+            event.preventDefault();
+            handleDeleteModel();
         }
     };
 
     document.addEventListener('keydown', navigationKeyHandler);
+}
+
+/**
+ * Open the shared delete confirmation for the model currently shown in the
+ * modal. Showing the delete modal replaces this modal (ModalManager only
+ * keeps one modal open), which also unregisters these shortcuts.
+ */
+function handleDeleteModel() {
+    const filePath = getModalFilePath();
+    if (!filePath) return;
+    showDeleteModal(filePath);
 }
 
 async function handleDirectionalNavigation(direction, modelType) {

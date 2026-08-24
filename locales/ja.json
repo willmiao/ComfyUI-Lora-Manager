@@ -855,7 +855,8 @@
         "title": "LoRAレシピ",
         "actions": {
             "sendCheckpoint": "ComfyUIへ送信",
-            "sendRecipe": "ComfyUIへ送信"
+            "sendRecipe": "ComfyUIへ送信",
+            "deleteRecipeWithShortcut": "レシピを削除（Del）"
         },
         "navigation": {
             "label": "レシピナビゲーション",
@@ -1440,7 +1441,8 @@
                 "openFileLocation": "ファイルの場所を開く",
                 "sendToWorkflow": "ComfyUI に送信",
                 "sendToWorkflowText": "ComfyUI に送信",
-                "copyHash": "ハッシュをコピー"
+                "copyHash": "ハッシュをコピー",
+                "deleteModelWithShortcut": "モデルを削除（Del）"
             },
             "openFileLocation": {
                 "success": "ファイルの場所を正常に開きました",

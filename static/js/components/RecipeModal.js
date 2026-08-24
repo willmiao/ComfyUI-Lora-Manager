@@ -8,6 +8,7 @@ import { fetchRecipeDetails, updateRecipeMetadata, sendRecipeWorkflow } from '..
 import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { openMediaViewer } from './shared/MediaViewer.js';
+import { showRecipeDeleteConfirmation } from './RecipeCard.js';
 import { renderCompactTags, setupTagTooltip } from './shared/utils.js';
 import { setupTagEditMode } from './shared/ModelTags.js';
 
@@ -123,6 +124,7 @@ class RecipeModal {
         this.setupStripLoraToggle();
         this.setupPromptEditors();
         this.setupNavigationControls();
+        this.setupDeleteControl();
         // Set up tooltip positioning handlers after DOM is ready
         document.addEventListener('DOMContentLoaded', () => {
             this.setupTooltipPositioning();
@@ -180,6 +182,18 @@ class RecipeModal {
         this.updateNavigationControls();
     }
 
+    setupDeleteControl() {
+        const deleteBtn = document.getElementById('deleteRecipeBtn');
+        if (deleteBtn) {
+            deleteBtn.addEventListener('click', () => this.handleDeleteRecipe());
+        }
+    }
+
+    handleDeleteRecipe() {
+        if (!this.currentRecipe) return;
+        showRecipeDeleteConfirmation(this.currentRecipe);
+    }
+
     shouldIgnoreNavigationKey(event) {
         const target = event.target;
         if (!target) return false;
@@ -230,6 +244,9 @@ class RecipeModal {
             } else if (event.key === 'ArrowRight') {
                 event.preventDefault();
                 this.handleDirectionalNavigation('next');
+            } else if (event.key === 'Delete') {
+                event.preventDefault();
+                this.handleDeleteRecipe();
             }
         };
 
@@ -624,6 +641,10 @@ class RecipeModal {
 
         actionsContainer.querySelectorAll('.recipe-source-url-btn').forEach(btn => btn.remove());
 
+        // Keep the delete button as the last (rightmost) header action;
+        // insertBefore with null falls back to appendChild if it is missing.
+        const deleteBtn = document.getElementById('deleteRecipeBtn');
+
         if (this.currentRecipe?.has_workflow === true) {
             const workflowBtn = document.createElement('button');
             workflowBtn.className = 'recipe-source-url-btn';
@@ -633,7 +654,7 @@ class RecipeModal {
             workflowBtn.addEventListener('click', () => {
                 this.sendWorkflowToComfyUI();
             });
-            actionsContainer.appendChild(workflowBtn);
+            actionsContainer.insertBefore(workflowBtn, deleteBtn);
         }
 
         const sourcePath = this.currentRecipe?.source_path || '';
@@ -646,7 +667,7 @@ class RecipeModal {
             btn.addEventListener('click', () => {
                 window.open(sourcePath, '_blank');
             });
-            actionsContainer.appendChild(btn);
+            actionsContainer.insertBefore(btn, deleteBtn);
         }
     }
 

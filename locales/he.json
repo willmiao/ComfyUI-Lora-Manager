@@ -855,7 +855,8 @@
         "title": "מתכוני LoRA",
         "actions": {
             "sendCheckpoint": "שלח ל-ComfyUI",
-            "sendRecipe": "שלח ל-ComfyUI"
+            "sendRecipe": "שלח ל-ComfyUI",
+            "deleteRecipeWithShortcut": "מחק מתכון (Del)"
         },
         "navigation": {
             "label": "ניווט מתכונים",
@@ -1440,7 +1441,8 @@
                 "openFileLocation": "פתח מיקום קובץ",
                 "sendToWorkflow": "שלח ל-ComfyUI",
                 "sendToWorkflowText": "שלח ל-ComfyUI",
-                "copyHash": "העתק האש"
+                "copyHash": "העתק האש",
+                "deleteModelWithShortcut": "מחק מודל (Del)"
             },
             "openFileLocation": {
                 "success": "מיקום הקובץ נפתח בהצלחה",

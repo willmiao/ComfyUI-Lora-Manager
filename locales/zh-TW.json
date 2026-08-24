@@ -855,7 +855,8 @@
         "title": "LoRA 配方",
         "actions": {
             "sendCheckpoint": "傳送到 ComfyUI",
-            "sendRecipe": "傳送到 ComfyUI"
+            "sendRecipe": "傳送到 ComfyUI",
+            "deleteRecipeWithShortcut": "刪除配方（Del）"
         },
         "navigation": {
             "label": "配方導覽",
@@ -1440,7 +1441,8 @@
                 "openFileLocation": "開啟檔案位置",
                 "sendToWorkflow": "傳送到 ComfyUI",
                 "sendToWorkflowText": "傳送到 ComfyUI",
-                "copyHash": "複製雜湊值"
+                "copyHash": "複製雜湊值",
+                "deleteModelWithShortcut": "刪除模型（Del）"
             },
             "openFileLocation": {
                 "success": "檔案位置已成功開啟",

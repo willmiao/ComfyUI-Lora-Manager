@@ -855,7 +855,8 @@
         "title": "LoRA 레시피",
         "actions": {
             "sendCheckpoint": "ComfyUI로 보내기",
-            "sendRecipe": "ComfyUI로 보내기"
+            "sendRecipe": "ComfyUI로 보내기",
+            "deleteRecipeWithShortcut": "레시피 삭제(Del)"
         },
         "navigation": {
             "label": "레시피 탐색",
@@ -1440,7 +1441,8 @@
                 "openFileLocation": "파일 위치 열기",
                 "sendToWorkflow": "ComfyUI로 보내기",
                 "sendToWorkflowText": "ComfyUI로 보내기",
-                "copyHash": "해시 복사"
+                "copyHash": "해시 복사",
+                "deleteModelWithShortcut": "모델 삭제(Del)"
             },
             "openFileLocation": {
                 "success": "파일 위치가 성공적으로 열렸습니다",
