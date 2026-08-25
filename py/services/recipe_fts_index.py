@@ -7,13 +7,14 @@ enabling sub-100ms search times even with 20k+ recipes.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import os
 import re
 import sqlite3
 import threading
 import time
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 
@@ -165,6 +166,7 @@ class RecipeFTSIndex:
                     batch_size = 500
                     total = len(recipes)
                     inserted = 0
+                    indexed_ids: Set[str] = set()
 
                     for i in range(0, total, batch_size):
                         batch = recipes[i:i + batch_size]
@@ -179,6 +181,7 @@ class RecipeFTSIndex:
                             row = self._prepare_fts_row(recipe)
                             rows.append(row)
                             inserted += 1
+                            indexed_ids.add(recipe_id)
 
                         if rows:
                             # Insert into FTS table
@@ -213,7 +216,11 @@ class RecipeFTSIndex:
                     )
                     conn.execute(
                         "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
-                        ('recipe_count', str(inserted))
+                        (self._COUNT_METADATA_KEY, str(inserted))
+                    )
+                    conn.execute(
+                        "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                        (self._FINGERPRINT_METADATA_KEY, self._compute_ids_fingerprint(indexed_ids))
                     )
 
                     conn.commit()
@@ -288,6 +295,12 @@ class RecipeFTSIndex:
             with self._lock:
                 conn = self._connect()
                 try:
+                    # Check existence via the rowid mapping (fast PK lookup)
+                    existed = conn.execute(
+                        "SELECT 1 FROM recipe_rowid WHERE recipe_id = ?",
+                        (recipe_id,)
+                    ).fetchone() is not None
+
                     # Remove existing entry if present
                     self._remove_recipe_locked(conn, recipe_id)
 
@@ -311,6 +324,10 @@ class RecipeFTSIndex:
                             "INSERT OR REPLACE INTO recipe_rowid (recipe_id, fts_rowid) VALUES (?, ?)",
                             (recipe_id, result[0])
                         )
+
+                    # Keep validation metadata in sync (only a new id changes it)
+                    if not existed:
+                        self._update_mutation_metadata_locked(conn, recipe_id, delta=1)
 
                     conn.commit()
                     return True
@@ -339,7 +356,13 @@ class RecipeFTSIndex:
             with self._lock:
                 conn = self._connect()
                 try:
+                    existed = conn.execute(
+                        "SELECT 1 FROM recipe_rowid WHERE recipe_id = ?",
+                        (recipe_id,)
+                    ).fetchone() is not None
                     self._remove_recipe_locked(conn, recipe_id)
+                    if existed:
+                        self._update_mutation_metadata_locked(conn, recipe_id, delta=-1)
                     conn.commit()
                     return True
                 finally:
@@ -371,6 +394,15 @@ class RecipeFTSIndex:
                 try:
                     conn.execute("DELETE FROM recipe_fts")
                     conn.execute("DELETE FROM recipe_rowid")
+                    # Reset validation metadata to the empty index state
+                    conn.execute(
+                        "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                        (self._COUNT_METADATA_KEY, '0')
+                    )
+                    conn.execute(
+                        "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                        (self._FINGERPRINT_METADATA_KEY, self._compute_ids_fingerprint(set()))
+                    )
                     conn.commit()
                     self._ready.clear()
                     return True
@@ -427,10 +459,12 @@ class RecipeFTSIndex:
         """Check if the FTS index matches the expected recipes.
 
         This method validates whether the existing FTS index can be reused
-        without a full rebuild. It checks:
-        1. The index has been initialized
-        2. The count matches
-        3. The recipe IDs match
+        without a full rebuild. It compares the expected count and recipe ID
+        fingerprint against metadata recorded when the index was (re)built,
+        so it does not scan the FTS content table. Indexes built by older
+        versions lack this metadata; for those the validation falls back to
+        a one-time scan of the content table and records the metadata so
+        subsequent startups are cheap.
 
         Args:
             recipe_count: Expected number of recipes.
@@ -446,7 +480,28 @@ class RecipeFTSIndex:
             return False
 
         try:
+            metadata = self._read_validation_metadata()
+            if metadata is not None:
+                stored_count, stored_fingerprint = metadata
+                if stored_count != recipe_count:
+                    logger.debug(
+                        "FTS index count mismatch: indexed=%d, expected=%d",
+                        stored_count, recipe_count
+                    )
+                    return False
+
+                if stored_fingerprint != self._compute_ids_fingerprint(recipe_ids):
+                    logger.debug("FTS index recipe ID fingerprint mismatch")
+                    return False
+
+                return True
+
+            # Legacy fallback: no stored metadata, scan the content table once
+            # and persist the metadata so later validations are cheap.
             indexed_count = self.get_indexed_count()
+            indexed_ids = self.get_indexed_recipe_ids()
+            self._store_validation_metadata(indexed_count, indexed_ids)
+
             if indexed_count != recipe_count:
                 logger.debug(
                     "FTS index count mismatch: indexed=%d, expected=%d",
@@ -454,7 +509,6 @@ class RecipeFTSIndex:
                 )
                 return False
 
-            indexed_ids = self.get_indexed_recipe_ids()
             if indexed_ids != recipe_ids:
                 missing = recipe_ids - indexed_ids
                 extra = indexed_ids - recipe_ids
@@ -470,6 +524,112 @@ class RecipeFTSIndex:
             return False
 
     # Internal helpers
+
+    _FINGERPRINT_METADATA_KEY = 'recipe_ids_fingerprint'
+    _COUNT_METADATA_KEY = 'recipe_count'
+
+    @staticmethod
+    def _fingerprint_recipe_id(recipe_id: str) -> int:
+        """Return a stable 64-bit fingerprint contribution for a recipe ID."""
+        digest = hashlib.sha256(recipe_id.encode("utf-8")).digest()
+        return int.from_bytes(digest[:8], "big")
+
+    @classmethod
+    def _compute_ids_fingerprint(cls, recipe_ids: Set[str]) -> str:
+        """Order-independent fingerprint of a recipe ID set (XOR of per-id hashes)."""
+        fingerprint = 0
+        for recipe_id in recipe_ids:
+            fingerprint ^= cls._fingerprint_recipe_id(str(recipe_id))
+        return f"{fingerprint:016x}"
+
+    def _read_validation_metadata(self) -> Optional[Tuple[int, str]]:
+        """Return stored (recipe count, ID fingerprint), or None if absent."""
+        try:
+            with self._lock:
+                conn = self._connect(readonly=True)
+                try:
+                    rows = conn.execute(
+                        "SELECT key, value FROM fts_metadata WHERE key IN (?, ?)",
+                        (self._COUNT_METADATA_KEY, self._FINGERPRINT_METADATA_KEY)
+                    ).fetchall()
+                    values = {row[0]: row[1] for row in rows}
+                    fingerprint = values.get(self._FINGERPRINT_METADATA_KEY)
+                    if fingerprint is None:
+                        return None
+                    try:
+                        count = int(values.get(self._COUNT_METADATA_KEY) or 0)
+                    except (TypeError, ValueError):
+                        return None
+                    return count, fingerprint
+                finally:
+                    conn.close()
+        except FileNotFoundError:
+            return None
+        except Exception as exc:
+            logger.debug("Failed to read FTS validation metadata: %s", exc)
+            return None
+
+    def _store_validation_metadata(self, recipe_count: int, recipe_ids: Set[str]) -> None:
+        """Persist recipe count and ID fingerprint for cheap future validation."""
+        try:
+            with self._lock:
+                conn = self._connect()
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                        (self._COUNT_METADATA_KEY, str(recipe_count))
+                    )
+                    conn.execute(
+                        "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                        (self._FINGERPRINT_METADATA_KEY, self._compute_ids_fingerprint(recipe_ids))
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+        except Exception as exc:
+            logger.debug("Failed to store FTS validation metadata: %s", exc)
+
+    def _update_mutation_metadata_locked(
+        self,
+        conn: sqlite3.Connection,
+        recipe_id: str,
+        delta: int,
+    ) -> None:
+        """Incrementally maintain validation metadata after add/remove.
+
+        Caller must hold the lock. The fingerprint is only updated when it
+        already exists; without it, validation falls back to a one-time scan
+        that records fresh metadata.
+        """
+        fingerprint_row = conn.execute(
+            "SELECT value FROM fts_metadata WHERE key = ?",
+            (self._FINGERPRINT_METADATA_KEY,)
+        ).fetchone()
+        if fingerprint_row and fingerprint_row[0]:
+            try:
+                fingerprint = int(fingerprint_row[0], 16)
+            except ValueError:
+                fingerprint = None
+            if fingerprint is not None:
+                fingerprint ^= self._fingerprint_recipe_id(recipe_id)
+                conn.execute(
+                    "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                    (self._FINGERPRINT_METADATA_KEY, f"{fingerprint & 0xFFFFFFFFFFFFFFFF:016x}")
+                )
+
+        count_row = conn.execute(
+            "SELECT value FROM fts_metadata WHERE key = ?",
+            (self._COUNT_METADATA_KEY,)
+        ).fetchone()
+        if count_row:
+            try:
+                count = max(0, int(count_row[0] or 0) + delta)
+            except (TypeError, ValueError):
+                return
+            conn.execute(
+                "INSERT OR REPLACE INTO fts_metadata (key, value) VALUES (?, ?)",
+                (self._COUNT_METADATA_KEY, str(count))
+            )
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
         """Create a database connection."""

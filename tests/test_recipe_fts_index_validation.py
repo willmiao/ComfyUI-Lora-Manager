@@ -181,3 +181,88 @@ class TestFTSIndexValidation:
         # Search should still work
         results = fts.search("anime")
         assert "recipe-001" in results
+
+    @staticmethod
+    def _forbid_content_scan(monkeypatch):
+        """Fail the test if validation falls back to scanning the FTS content table."""
+
+        def _raise(*args, **kwargs):
+            raise AssertionError("validate_index scanned the FTS content table")
+
+        monkeypatch.setattr(RecipeFTSIndex, "get_indexed_count", _raise)
+        monkeypatch.setattr(RecipeFTSIndex, "get_indexed_recipe_ids", _raise)
+
+    def test_validate_index_with_metadata_does_not_scan(
+        self, temp_db_path, sample_recipes, monkeypatch
+    ):
+        """Validation must rely on stored metadata, not content-table scans."""
+        fts = RecipeFTSIndex(db_path=temp_db_path)
+        fts.build_index(sample_recipes)
+
+        self._forbid_content_scan(monkeypatch)
+
+        result = fts.validate_index(3, {"recipe-001", "recipe-002", "recipe-003"})
+        assert result is True
+
+        # Mismatches are also detected from metadata alone
+        result = fts.validate_index(4, {"recipe-001", "recipe-002", "recipe-003"})
+        assert result is False
+        result = fts.validate_index(3, {"recipe-001", "recipe-002", "recipe-999"})
+        assert result is False
+
+    def test_validate_index_legacy_fallback_writes_metadata(
+        self, temp_db_path, sample_recipes, monkeypatch
+    ):
+        """Indexes built by older versions validate via a one-time scan, then metadata."""
+        import sqlite3
+
+        fts = RecipeFTSIndex(db_path=temp_db_path)
+        fts.build_index(sample_recipes)
+
+        # Simulate a legacy index: drop the fingerprint metadata
+        conn = sqlite3.connect(temp_db_path)
+        try:
+            conn.execute(
+                "DELETE FROM fts_metadata WHERE key = ?",
+                (RecipeFTSIndex._FINGERPRINT_METADATA_KEY,)
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+        # Fallback validation scans once and succeeds
+        result = fts.validate_index(3, {"recipe-001", "recipe-002", "recipe-003"})
+        assert result is True
+
+        # Metadata was written, so the next validation needs no scan
+        self._forbid_content_scan(monkeypatch)
+        result = fts.validate_index(3, {"recipe-001", "recipe-002", "recipe-003"})
+        assert result is True
+
+    def test_validate_index_metadata_tracks_incremental_mutations(
+        self, temp_db_path, sample_recipes, monkeypatch
+    ):
+        """add_recipe/remove_recipe keep the validation metadata in sync."""
+        fts = RecipeFTSIndex(db_path=temp_db_path)
+        fts.build_index(sample_recipes[:2])
+
+        fts.add_recipe(sample_recipes[2])
+        fts.remove_recipe("recipe-001")
+
+        self._forbid_content_scan(monkeypatch)
+
+        result = fts.validate_index(2, {"recipe-002", "recipe-003"})
+        assert result is True
+
+    def test_validate_index_after_clear_uses_metadata(
+        self, temp_db_path, sample_recipes, monkeypatch
+    ):
+        """clear() resets the validation metadata to the empty index state."""
+        fts = RecipeFTSIndex(db_path=temp_db_path)
+        fts.build_index(sample_recipes)
+        fts.clear()
+
+        self._forbid_content_scan(monkeypatch)
+
+        assert fts.validate_index(0, set()) is True
+        assert fts.validate_index(3, {"recipe-001", "recipe-002", "recipe-003"}) is False
