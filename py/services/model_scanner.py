@@ -535,16 +535,21 @@ class ModelScanner:
             self._is_initializing = False
     
     async def _load_persisted_cache(self, page_type: str) -> bool:
-        """Attempt to hydrate the in-memory cache from the SQLite snapshot."""
+        """Attempt to hydrate the in-memory cache from the SQLite snapshot.
+
+        The SQLite read and the per-model rebuild (entry adjustment, tag
+        counting, validation/repair, hash index reconstruction) run in the
+        default executor so the event loop stays responsive; only applying
+        the result to shared cache state happens on the loop.
+        """
         if not getattr(self, '_persistent_cache', None):
             return False
 
         loop = asyncio.get_event_loop()
         try:
-            persisted = await loop.run_in_executor(
+            rebuilt = await loop.run_in_executor(
                 None,
-                self._persistent_cache.load_cache,
-                self.model_type
+                self._rebuild_persisted_cache
             )
         except FileNotFoundError:
             return False
@@ -552,47 +557,14 @@ class ModelScanner:
             logger.debug("%s Scanner: Could not load persisted cache: %s", self.model_type.capitalize(), exc)
             return False
 
-        if not persisted or not persisted.raw_data:
+        if rebuilt is None:
             return False
 
-        hash_index = ModelHashIndex()
-        for sha_value, path in persisted.hash_rows:
-            if sha_value and path:
-                hash_index.add_entry(sha_value.lower(), path)
-
-        # Rebuild the AutoV3 index from the persisted autov3_index rows. These
-        # cover every known autov3 -> path mapping regardless of whether a
-        # sha256 row also exists for the same file.
-        for autov3_value, path in persisted.autov3_hash_rows:
-            if autov3_value and path:
-                hash_index.add_autov3(autov3_value.lower(), path)
-
-        tags_count: Dict[str, int] = {}
-        adjusted_raw_data: List[Dict[str, Any]] = []
-        for item in persisted.raw_data:
-            adjusted_item = self.adjust_cached_entry(dict(item))
-            adjusted_raw_data.append(adjusted_item)
-
-            for tag in adjusted_item.get('tags') or []:
-                tags_count[tag] = tags_count.get(tag, 0) + 1
-
-        # Validate cache entries and check health.
-        # Always use the validated/repaired entries — even when there are no
-        # invalid entries, auto_repair may have filled in missing optional
-        # fields (model_name, file_name, folder) with safe defaults on a copied
-        # working_entry.  Without this unconditional replacement the repaired
-        # copies are discarded and None values propagate to format_response.
-        # See issue #730.
-        valid_entries, invalid_entries = CacheEntryValidator.validate_batch(
-            adjusted_raw_data, auto_repair=True
-        )
-
-        # Always use the validated entries (repaired copies)
-        adjusted_raw_data = valid_entries
+        scan_result, invalid_entries = rebuilt
 
         if invalid_entries:
             monitor = CacheHealthMonitor()
-            report = monitor.check_health(adjusted_raw_data, auto_repair=True)
+            report = monitor.check_health(scan_result.raw_data, auto_repair=True)
 
             if report.status != CacheHealthStatus.HEALTHY:
                 # Broadcast health warning to frontend
@@ -602,31 +574,22 @@ class ModelScanner:
                     f"{report.invalid_entries} invalid entries, {report.repaired_entries} repaired"
                 )
 
-            # Use only valid entries
-            adjusted_raw_data = valid_entries
-
             # Rebuild tags count from valid entries only
             tags_count = {}
-            for item in adjusted_raw_data:
+            for item in scan_result.raw_data:
                 for tag in item.get('tags') or []:
                     tags_count[tag] = tags_count.get(tag, 0) + 1
+            scan_result.tags_count = tags_count
 
             # Remove invalid entries from hash index
             for invalid_entry in invalid_entries:
                 file_path = CacheEntryValidator.get_file_path_safe(invalid_entry)
                 sha256 = CacheEntryValidator.get_sha256_safe(invalid_entry)
                 if file_path:
-                    hash_index.remove_by_path(file_path, sha256)
-
-        scan_result = CacheBuildResult(
-            raw_data=adjusted_raw_data,
-            hash_index=hash_index,
-            tags_count=tags_count,
-            excluded_models=list(persisted.excluded_models)
-        )
+                    scan_result.hash_index.remove_by_path(file_path, sha256)
 
         await self._apply_scan_result(scan_result)
-        await self._sync_download_history(adjusted_raw_data, source='scan')
+        await self._sync_download_history(scan_result.raw_data, source='scan')
 
         await ws_manager.broadcast_init_progress({
             'stage': 'loading_cache',
@@ -650,6 +613,63 @@ class ModelScanner:
                 loop.create_task(self._run_autov3_backfill())
 
         return True
+
+    def _rebuild_persisted_cache(self) -> Optional[Tuple[CacheBuildResult, List[Dict[str, Any]]]]:
+        """Load the SQLite snapshot and rebuild a ready-to-apply scan result.
+
+        Runs entirely in a worker thread: it must not touch ``self._cache``,
+        the websocket manager, or any asyncio primitives. Returns ``None``
+        when no usable snapshot exists, otherwise a tuple of the scan result
+        (built from validated/repaired entries) and the invalid entries.
+        """
+        persisted = self._persistent_cache.load_cache(self.model_type)
+
+        if not persisted or not persisted.raw_data:
+            return None
+
+        hash_index = ModelHashIndex()
+        for sha_value, path in persisted.hash_rows:
+            if sha_value and path:
+                hash_index.add_entry(sha_value.lower(), path)
+
+        # Rebuild the AutoV3 index from the persisted autov3_index rows. These
+        # cover every known autov3 -> path mapping regardless of whether a
+        # sha256 row also exists for the same file.
+        for autov3_value, path in persisted.autov3_hash_rows:
+            if autov3_value and path:
+                hash_index.add_autov3(autov3_value.lower(), path)
+
+        tags_count: Dict[str, int] = {}
+        adjusted_raw_data: List[Dict[str, Any]] = []
+        for item in persisted.raw_data:
+            # load_cache builds a fresh dict per row, and validate_batch below
+            # works on its own per-entry copy when auto_repair=True, so no
+            # additional dict copy is needed here.
+            adjusted_item = self.adjust_cached_entry(item)
+            adjusted_raw_data.append(adjusted_item)
+
+            for tag in adjusted_item.get('tags') or []:
+                tags_count[tag] = tags_count.get(tag, 0) + 1
+
+        # Validate cache entries and check health.
+        # Always use the validated/repaired entries — even when there are no
+        # invalid entries, auto_repair may have filled in missing optional
+        # fields (model_name, file_name, folder) with safe defaults on a copied
+        # working_entry.  Without this unconditional replacement the repaired
+        # copies are discarded and None values propagate to format_response.
+        # See issue #730.
+        valid_entries, invalid_entries = CacheEntryValidator.validate_batch(
+            adjusted_raw_data, auto_repair=True
+        )
+
+        # Always use the validated entries (repaired copies)
+        scan_result = CacheBuildResult(
+            raw_data=valid_entries,
+            hash_index=hash_index,
+            tags_count=tags_count,
+            excluded_models=list(persisted.excluded_models)
+        )
+        return scan_result, invalid_entries
 
     async def _run_autov3_backfill(self) -> None:
         """Backfill autov3 for entries loaded from the persisted cache that lack it."""
@@ -1392,8 +1412,8 @@ class ModelScanner:
         else:
             self._cache.raw_data = list(scan_result.raw_data)
 
-        self._cache.rebuild_version_index()
-
+        # resort() rebuilds folders and the version index on every path, so a
+        # separate rebuild_version_index() call here would be redundant.
         await self._cache.resort()
 
         self._log_duplicate_filename_summary()

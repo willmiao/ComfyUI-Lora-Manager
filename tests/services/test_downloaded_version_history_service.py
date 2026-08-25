@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import threading
+
 import pytest
 
 from py.services.downloaded_version_history_service import (
@@ -68,6 +70,37 @@ async def test_download_history_bulk_lookup(tmp_path: Path) -> None:
         5: {501, 502},
         6: {601},
     }
+
+
+@pytest.mark.asyncio
+async def test_mark_downloaded_bulk_writes_off_event_loop(
+    tmp_path: Path, monkeypatch
+) -> None:
+    """The executemany upsert + commit must not run on the event loop thread."""
+    db_path = tmp_path / "download-history.sqlite"
+    service = DownloadedVersionHistoryService(
+        str(db_path),
+        settings_manager=DummySettings(),
+    )
+
+    loop_thread = threading.get_ident()
+    write_threads: list[int] = []
+    original_write = service._mark_downloaded_bulk_sync
+
+    def tracking_write(payload):
+        write_threads.append(threading.get_ident())
+        return original_write(payload)
+
+    monkeypatch.setattr(service, "_mark_downloaded_bulk_sync", tracking_write)
+
+    await service.mark_downloaded_bulk(
+        "lora",
+        [{"model_id": 7, "version_id": 701, "file_path": "/m/x.safetensors"}],
+        source="scan",
+    )
+
+    assert write_threads and write_threads[0] != loop_thread
+    assert await service.has_been_downloaded("lora", 701) is True
 
 
 @pytest.mark.asyncio

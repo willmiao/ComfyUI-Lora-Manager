@@ -4,6 +4,7 @@ import asyncio
 import json
 import os
 import sqlite3
+import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -389,6 +390,74 @@ async def test_load_persisted_cache_populates_cache(tmp_path: Path, monkeypatch)
     assert scanner._tags_count == {'alpha': 1}
     assert ws_stub.payloads[-1]['stage'] == 'loading_cache'
     assert ws_stub.payloads[-1]['progress'] == 1
+
+
+@pytest.mark.asyncio
+async def test_load_persisted_cache_rebuilds_off_event_loop(tmp_path: Path, monkeypatch):
+    """The SQLite read and per-model rebuild must not run on the event loop."""
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = tmp_path / 'cache.sqlite'
+    store = PersistentModelCache(db_path=str(db_path))
+
+    file_path = tmp_path / 'one.txt'
+    file_path.write_text('one', encoding='utf-8')
+    normalized = _normalize_path(file_path)
+
+    raw_model = {
+        'file_path': normalized,
+        'file_name': 'one',
+        'model_name': 'one',
+        'folder': '',
+        'size': 3,
+        'modified': 123.0,
+        'sha256': 'hash-one',
+        'base_model': 'test',
+        'preview_url': '',
+        'preview_nsfw_level': 0,
+        'from_civitai': True,
+        'favorite': False,
+        'notes': '',
+        'usage_tips': '',
+        'exclude': False,
+        'db_checked': False,
+        'last_checked_at': 0.0,
+        'tags': ['alpha'],
+        'civitai': {'id': 11, 'modelId': 22, 'name': 'ver', 'trainedWords': ['abc']},
+    }
+
+    store.save_cache('dummy', [raw_model], {'hash-one': [normalized]}, [])
+
+    monkeypatch.setattr(model_scanner, 'get_persistent_cache', lambda: store)
+
+    scanner = DummyScanner(tmp_path)
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, 'ws_manager', ws_stub)
+
+    loop_thread = threading.get_ident()
+    worker_threads: List[int] = []
+
+    original_load_cache = store.load_cache
+    def tracking_load_cache(model_type):
+        worker_threads.append(threading.get_ident())
+        return original_load_cache(model_type)
+    monkeypatch.setattr(store, 'load_cache', tracking_load_cache)
+
+    original_adjust = scanner.adjust_cached_entry
+    def tracking_adjust(entry):
+        worker_threads.append(threading.get_ident())
+        return original_adjust(entry)
+    monkeypatch.setattr(scanner, 'adjust_cached_entry', tracking_adjust)
+
+    loaded = await scanner._load_persisted_cache('dummy')
+    assert loaded is True
+
+    # Both the SQLite read and the per-entry adjustment ran off the loop
+    assert len(worker_threads) == 2
+    assert all(tid != loop_thread for tid in worker_threads)
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 1
+    assert cache.raw_data[0]['file_path'] == normalized
 
 
 @pytest.mark.asyncio
