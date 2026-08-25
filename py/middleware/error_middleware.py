@@ -46,6 +46,16 @@ async def api_json_error(
         if request.path.startswith("/api/lm/previews") and exc.status == 404:
             logger_method = logger.debug
 
+        # Download-progress 404 is routine too: in-memory tracking is removed
+        # once a download finishes/fails, so the extension's final polls 404.
+        # The extension relies on the 404 status itself (failure detection),
+        # so only the log level is lowered.
+        if (
+            request.path.startswith("/api/lm/download-progress/")
+            and exc.status == 404
+        ):
+            logger_method = logger.debug
+
         logger_method(
             "API %s %s returned HTTP %d: %s",
             request.method,

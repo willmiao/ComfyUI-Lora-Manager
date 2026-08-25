@@ -1998,9 +1998,11 @@ class ModelDownloadHandler:
                 item_id=item_id, download_id=download_id
             )
             if item is None:
+                # Missing or non-retryable history entry is a business
+                # outcome, not a routing error: 200 lets the extension's
+                # apiFetch 404-fallback and error middleware stay quiet.
                 return web.json_response(
-                    {"success": False, "error": "History item not found or not retryable"},
-                    status=404,
+                    {"success": False, "error": "History item not found or not retryable"}
                 )
             return web.json_response({"success": True, "item": item})
         except Exception as exc:
@@ -2051,8 +2053,12 @@ class ModelDownloadHandler:
                 completed_at=completed_at,
             )
             if item is None:
+                # A missing queue item (already completed, or never queued) is
+                # a normal business outcome, not a routing error. Return 200
+                # so the browser extension's apiFetch 404-fallback and the
+                # error middleware stay quiet.
                 return web.json_response(
-                    {"success": False, "error": "Download not found in queue"}, status=404
+                    {"success": False, "error": "Download not found in queue"}
                 )
             return web.json_response({"success": True, "item": item})
         except Exception as exc:
@@ -2094,9 +2100,10 @@ class ModelDownloadHandler:
             service = await DownloadQueueService.get_instance()
             updated = await service.update_status(download_id, status)
             if not updated:
+                # Same rationale as complete_download_in_queue: a missing
+                # queue item is a business outcome, not a routing error.
                 return web.json_response(
-                    {"success": False, "error": "Download not found in queue"},
-                    status=404,
+                    {"success": False, "error": "Download not found in queue"}
                 )
             return web.json_response({"success": True})
         except Exception as exc:
