@@ -13,7 +13,7 @@ import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
 import uuid
-from typing import Any, Dict, List, Optional, Set, Tuple, cast
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
 from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import (
@@ -1100,6 +1100,11 @@ class DownloadManager:
 
                 save_path = self._resolve_save_path_from_persisted_record(record)
                 if save_path is None:
+                    # No resolvable target path (e.g. a queued download whose
+                    # paths were never resolved before shutdown): the record
+                    # can never be restored, so drop it instead of letting it
+                    # accumulate in the state store forever.
+                    await self._aria2_state_store.remove(download_id)
                     continue
 
                 if (
@@ -2896,6 +2901,64 @@ class DownloadManager:
                 del self._active_downloads[download_id]
             # Preserve aria2 state store entry so the partial download
             # info survives restarts and can be resumed later
+
+    async def discard_cleared_downloads(self, download_ids: Iterable[str]) -> int:
+        """Stop in-memory tracking for downloads cleared from the queue.
+
+        Cancels asyncio tasks, removes live aria2 transfers and drops the
+        persisted aria2 state so cleared downloads cannot keep polling the
+        daemon or be resurrected as ghost entries on the next restart.
+        Partial files on disk are preserved; unlike ``cancel_download`` no
+        files are deleted.
+
+        Returns the number of downloads that had any in-memory or persisted
+        tracking removed.
+        """
+        discarded = 0
+        aria2_downloader = None
+
+        for download_id in download_ids:
+            task = self._download_tasks.get(download_id)
+            info = self._active_downloads.get(download_id)
+            persisted = await self._aria2_state_store.get(download_id)
+            if task is None and info is None and persisted is None:
+                continue
+
+            discarded += 1
+
+            if task is not None:
+                task.cancel()
+
+            pause_control = self._pause_events.pop(download_id, None)
+            if pause_control is not None:
+                pause_control.resume()
+
+            if task is not None:
+                try:
+                    await asyncio.wait_for(asyncio.shield(task), timeout=2.0)
+                except (asyncio.CancelledError, asyncio.TimeoutError):
+                    pass
+
+            self._download_tasks.pop(download_id, None)
+            self._active_downloads.pop(download_id, None)
+
+            backend = (info or persisted or {}).get("transfer_backend") or "python"
+            if backend == "aria2":
+                if aria2_downloader is None:
+                    aria2_downloader = await get_aria2_downloader()
+                if await aria2_downloader.has_transfer(download_id):
+                    try:
+                        await aria2_downloader.cancel_download(download_id)
+                    except Exception as exc:
+                        logger.warning(
+                            "Failed to remove aria2 transfer for cleared download %s: %s",
+                            download_id,
+                            exc,
+                        )
+
+            await self._aria2_state_store.remove(download_id)
+
+        return discarded
 
     async def pause_download(self, download_id: str) -> Dict[str, Any]:
         """Pause an active download without losing progress."""

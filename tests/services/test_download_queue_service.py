@@ -495,3 +495,29 @@ async def test_dedup_history_collapses_same_file_and_legacy_rows(tmp_path: Path)
     history = await svc.get_history()
     remaining = {item["download_id"] for item in history["items"]}
     assert remaining == {"dl-x2", "dl-y2"}
+
+
+# ---------------------------------------------------------------------------
+# clear_queue
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_clear_queue_returns_deleted_ids(tmp_path: Path) -> None:
+    """clear_queue reports the download_ids it removed so callers can tear
+    down any in-memory tracking for them."""
+    svc = _make_service(tmp_path)
+    await svc.add_to_queue(download_id="dl-1", model_id=1)
+    await svc.add_to_queue(download_id="dl-2", model_id=2)
+    await svc.add_to_queue(download_id="dl-3", model_id=3)
+    await svc.update_status("dl-3", "downloading")
+
+    cleared = await svc.clear_queue(status_filter="queued")
+    assert sorted(cleared) == ["dl-1", "dl-2"]
+
+    remaining = await svc.get_queue()
+    assert [row["download_id"] for row in remaining] == ["dl-3"]
+
+    cleared_all = await svc.clear_queue()
+    assert cleared_all == ["dl-3"]
+    assert await svc.get_queue() == []

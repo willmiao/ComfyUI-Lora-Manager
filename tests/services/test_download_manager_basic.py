@@ -2003,3 +2003,98 @@ def test_resolve_target_file_returns_none_for_no_match():
     assert DownloadManager._resolve_target_file(files, {"id": 9999}) is None
     assert DownloadManager._resolve_target_file(files, None) is None
     assert DownloadManager._resolve_target_file(files, {}) is None
+
+
+@pytest.mark.asyncio
+async def test_restore_drops_unrestorable_persisted_records(monkeypatch, tmp_path):
+    """Records without any resolvable target path can never be restored;
+    the restore sweep must delete them instead of skipping them forever."""
+    manager = DownloadManager()
+
+    await manager._aria2_state_store.upsert(
+        "download-orphan",
+        {
+            "download_id": "download-orphan",
+            "transfer_backend": "aria2",
+            "status": "failed",
+            # no save_path / file_path / resume_context
+        },
+    )
+
+    class DummyAria2Downloader:
+        async def get_status_by_gid(self, gid):
+            return None
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_aria2_downloader",
+        AsyncMock(return_value=DummyAria2Downloader()),
+    )
+
+    downloads = await manager.get_active_downloads()
+
+    assert downloads["downloads"] == []
+    assert await manager._aria2_state_store.get("download-orphan") is None
+
+
+@pytest.mark.asyncio
+async def test_discard_cleared_downloads_stops_tracking_and_preserves_files(
+    monkeypatch, tmp_path
+):
+    manager = DownloadManager()
+
+    save_path = tmp_path / "file.safetensors"
+    save_path.write_text("partial")
+    control_path = tmp_path / "file.safetensors.aria2"
+    control_path.write_text("control")
+
+    async def _pending():
+        await asyncio.sleep(3600)
+
+    task = asyncio.create_task(_pending())
+    manager._download_tasks["download-1"] = task
+    manager._pause_events["download-1"] = download_manager.DownloadStreamControl()
+    manager._active_downloads["download-1"] = {
+        "status": "downloading",
+        "transfer_backend": "aria2",
+        "file_path": str(save_path),
+    }
+    await manager._aria2_state_store.upsert(
+        "download-1",
+        {
+            "download_id": "download-1",
+            "transfer_backend": "aria2",
+            "status": "downloading",
+            "save_path": str(save_path),
+            "gid": "gid-1",
+        },
+    )
+
+    cancelled = []
+
+    class DummyAria2Downloader:
+        async def has_transfer(self, download_id):
+            return True
+
+        async def cancel_download(self, download_id):
+            cancelled.append(download_id)
+            return {"success": True}
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_aria2_downloader",
+        AsyncMock(return_value=DummyAria2Downloader()),
+    )
+
+    discarded = await manager.discard_cleared_downloads(["download-1", "unknown-id"])
+
+    assert discarded == 1
+    assert cancelled == ["download-1"]
+    assert task.cancelled()
+    assert "download-1" not in manager._download_tasks
+    assert "download-1" not in manager._active_downloads
+    assert "download-1" not in manager._pause_events
+    assert await manager._aria2_state_store.get("download-1") is None
+    # Partial files are preserved for a future resume from disk.
+    assert save_path.exists()
+    assert control_path.exists()

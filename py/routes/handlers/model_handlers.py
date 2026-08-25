@@ -1904,8 +1904,18 @@ class ModelDownloadHandler:
         try:
             status_filter = request.query.get("status") or None
             service = await DownloadQueueService.get_instance()
-            cleared = await service.clear_queue(status_filter=status_filter)
-            return web.json_response({"success": True, "cleared": cleared})
+            cleared_ids = await service.clear_queue(status_filter=status_filter)
+            # Clearing the queue rows alone would orphan any in-memory tasks
+            # and persisted aria2 state for those downloads, leaving them
+            # polling the daemon invisibly.  Tear that tracking down too.
+            try:
+                await self._download_coordinator.discard_cleared_downloads(cleared_ids)
+            except Exception:
+                self._logger.warning(
+                    "Failed to discard in-memory state for cleared downloads",
+                    exc_info=True,
+                )
+            return web.json_response({"success": True, "cleared": len(cleared_ids)})
         except Exception as exc:
             self._logger.error(
                 "Error clearing download queue: %s", exc, exc_info=True

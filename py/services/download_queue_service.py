@@ -6,7 +6,7 @@ import logging
 import os
 import sqlite3
 import time
-from typing import Any, Optional
+from typing import Any, List, Optional
 
 from ..utils.cache_paths import get_cache_base_dir
 
@@ -390,23 +390,31 @@ class DownloadQueueService:
             conn.commit()
         return True
 
-    async def clear_queue(self, status_filter: Optional[str] = None) -> int:
+    async def clear_queue(self, status_filter: Optional[str] = None) -> List[str]:
         """Remove items from the queue.
 
         When *status_filter* is provided only items with that status are
-        deleted.  Returns the number of deleted rows.
+        deleted.  Returns the ``download_id`` values of the deleted rows so
+        callers can also tear down any in-memory tracking for them.
         """
         async with self._lock:
             conn = self._get_conn()
             if status_filter is not None:
-                cursor = conn.execute(
+                rows = conn.execute(
+                    "SELECT download_id FROM download_queue WHERE status = ?",
+                    (status_filter,),
+                ).fetchall()
+                conn.execute(
                     "DELETE FROM download_queue WHERE status = ?",
                     (status_filter,),
                 )
             else:
-                cursor = conn.execute("DELETE FROM download_queue")
+                rows = conn.execute(
+                    "SELECT download_id FROM download_queue"
+                ).fetchall()
+                conn.execute("DELETE FROM download_queue")
             conn.commit()
-        return cursor.rowcount
+        return [row["download_id"] for row in rows]
 
     async def complete_download(
         self,

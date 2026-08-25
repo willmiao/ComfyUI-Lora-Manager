@@ -57,7 +57,7 @@ async def test_download_file_polls_until_complete(tmp_path, monkeypatch):
         ]
     )
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         rpc_calls.append((method, params))
         if method == "aria2.addUri":
             return "gid-1"
@@ -139,7 +139,7 @@ async def test_download_file_keeps_auth_headers_when_civitai_does_not_redirect(
         ]
     )
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         rpc_calls.append((method, params))
         if method == "aria2.addUri":
             return "gid-1"
@@ -178,7 +178,7 @@ async def test_pause_resume_cancel_forward_to_rpc(monkeypatch):
 
     calls = []
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         calls.append((method, params))
         return "gid-1"
 
@@ -232,7 +232,7 @@ async def test_download_file_reuses_existing_transfer_without_add_uri(
         ]
     )
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         rpc_calls.append((method, params))
         if method == "aria2.tellStatus":
             return next(statuses)
@@ -265,7 +265,7 @@ async def test_download_file_recovers_when_transfer_lost_mid_poll(
     add_uri_count = {"n": 0}
     poll_count = {"n": 0}
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         if method == "aria2.addUri":
             add_uri_count["n"] += 1
             return "gid-1" if add_uri_count["n"] == 1 else "gid-2"
@@ -317,7 +317,7 @@ async def test_download_file_recovers_when_rpc_fails_mid_poll(tmp_path, monkeypa
     add_uri_count = {"n": 0}
     poll_count = {"n": 0}
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         if method == "aria2.addUri":
             add_uri_count["n"] += 1
             return "gid-1" if add_uri_count["n"] == 1 else "gid-2"
@@ -366,7 +366,7 @@ async def test_download_file_fails_after_recovery_attempts_exhausted(
     save_path = tmp_path / "downloads" / "model.safetensors"
     add_uri_count = {"n": 0}
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         if method == "aria2.addUri":
             add_uri_count["n"] += 1
             return f"gid-{add_uri_count['n']}"
@@ -402,7 +402,7 @@ async def test_download_file_concurrent_same_id_schedules_once(tmp_path, monkeyp
     add_uri_count = {"n": 0}
     poll_count = {"n": 0}
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         if method == "aria2.addUri":
             add_uri_count["n"] += 1
             return "gid-1"
@@ -458,7 +458,7 @@ async def test_download_file_cleanup_preserves_newer_registration(tmp_path, monk
     save_path = tmp_path / "downloads" / "model.safetensors"
     poll_count = {"n": 0}
 
-    async def fake_rpc_call(method, params):
+    async def fake_rpc_call(method, params, **_kwargs):
         if method == "aria2.addUri":
             return "gid-1"
         if method == "aria2.tellStatus":
@@ -808,3 +808,121 @@ def test_stderr_error_report_prunes_expired_entries():
 
     assert old_line not in downloader._stderr_error_report
     assert new_line in downloader._stderr_error_report
+
+
+@pytest.mark.asyncio
+async def test_get_status_returns_none_without_retry_when_gid_not_found(monkeypatch):
+    """A forgotten GID is permanent: no retry attempts on a dead GID."""
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gone-gid", save_path="/tmp/model.safetensors"
+    )
+
+    calls = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        calls.append(method)
+        raise Aria2Error("GID gone-gid is not found")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    assert await downloader._get_status_with_retry("download-1") is None
+    assert calls == ["aria2.tellStatus"]
+
+
+@pytest.mark.asyncio
+async def test_get_status_still_raises_on_transient_rpc_error(monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path="/tmp/model.safetensors"
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        raise Aria2Error("connection reset")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    with pytest.raises(Aria2Error, match="Failed to query aria2 download status"):
+        await downloader._get_status_with_retry("download-1")
+
+
+@pytest.mark.asyncio
+async def test_cancel_download_pops_transfer_on_success(monkeypatch):
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gid-1", save_path="/tmp/model.safetensors"
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        return "gid-1"
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    result = await downloader.cancel_download("download-1")
+
+    assert result["success"] is True
+    assert "download-1" not in downloader._transfers
+
+
+@pytest.mark.asyncio
+async def test_cancel_download_tolerates_missing_gid(monkeypatch):
+    """Cancelling a transfer the daemon already forgot still succeeds."""
+    downloader = Aria2Downloader()
+    downloader._transfers["download-1"] = Aria2Transfer(
+        gid="gone-gid", save_path="/tmp/model.safetensors"
+    )
+    await downloader._state_store.upsert(
+        "download-1", {"gid": "gone-gid", "status": "downloading"}
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        raise Aria2Error("GID gone-gid is not found")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    result = await downloader.cancel_download("download-1")
+
+    assert result["success"] is True
+    assert "download-1" not in downloader._transfers
+    assert await downloader._state_store.get("download-1") is None
+
+
+@pytest.mark.asyncio
+async def test_rpc_call_suppresses_error_log_when_log_errors_false(
+    monkeypatch, caplog
+):
+    """Probing calls must not spam ERROR for an expected failure."""
+
+    class FakeResponse:
+        status = 400
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, *exc):
+            return False
+
+        async def text(self):
+            return '{"jsonrpc": "2.0", "error": {"code": 1, "message": "GID x is not found"}}'
+
+    class FakeSession:
+        closed = False
+
+        def post(self, *args, **kwargs):
+            return FakeResponse()
+
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+    monkeypatch.setattr(downloader, "_get_rpc_session", AsyncMock(return_value=FakeSession()))
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.aria2_downloader"):
+        with pytest.raises(Aria2Error, match="not found"):
+            await downloader._rpc_call("aria2.tellStatus", ["x"], log_errors=False)
+
+    error_records = [r for r in caplog.records if r.levelno == logging.ERROR]
+    debug_records = [r for r in caplog.records if r.levelno == logging.DEBUG]
+    assert error_records == []
+    assert any("GID x is not found" in r.message for r in debug_records)

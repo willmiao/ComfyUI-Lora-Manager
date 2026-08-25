@@ -217,8 +217,9 @@ class Aria2Downloader:
         """Call get_status with retry for transient RPC failures.
 
         Only retries on :exc:`Aria2Error` (RPC-level failure).  Returns
-        ``None`` immediately when the download_id is not tracked (a missing
-        transfer is not a transient condition, so retrying is pointless).
+        ``None`` immediately when the transfer is not tracked or its GID is
+        gone from the daemon (a missing transfer is not a transient
+        condition, so retrying is pointless).
 
         A single failed RPC call should not immediately fail the download,
         because aria2 may be temporarily busy (e.g. finalizing multiple
@@ -332,7 +333,13 @@ class Aria2Downloader:
         return transfer
 
     async def get_status(self, download_id: str) -> Optional[Dict[str, Any]]:
-        """Return the raw aria2 status payload for a known download."""
+        """Return the raw aria2 status payload for a known download.
+
+        Returns ``None`` when the download_id is not tracked or the daemon no
+        longer knows the transfer's GID (daemon restart / forceRemove).  A
+        forgotten GID is permanent, not transient, so the caller's recovery
+        path handles it instead of burning retry attempts on a dead GID.
+        """
 
         transfer = self._transfers.get(download_id)
         if transfer is None:
@@ -348,8 +355,17 @@ class Aria2Downloader:
             "files",
         ]
         try:
-            status = await self._rpc_call("aria2.tellStatus", [transfer.gid, keys])
+            status = await self._rpc_call(
+                "aria2.tellStatus", [transfer.gid, keys], log_errors=False
+            )
         except Exception as exc:
+            if "not found" in str(exc).lower():
+                logger.debug(
+                    "aria2 GID %s for download %s is gone; treating as lost transfer",
+                    transfer.gid,
+                    download_id,
+                )
+                return None
             raise Aria2Error(f"Failed to query aria2 download status: {exc}") from exc
 
         if isinstance(status, dict):
@@ -367,7 +383,9 @@ class Aria2Downloader:
             "files",
         ]
         try:
-            status = await self._rpc_call("aria2.tellStatus", [gid, keys])
+            status = await self._rpc_call(
+                "aria2.tellStatus", [gid, keys], log_errors=False
+            )
         except Exception as exc:
             message = str(exc)
             if "cannot be found" in message.lower() or "not found" in message.lower():
@@ -434,8 +452,19 @@ class Aria2Downloader:
         try:
             await self._rpc_call("aria2.forceRemove", [transfer.gid])
         except Exception as exc:
-            return {"success": False, "error": str(exc)}
+            if "not found" not in str(exc).lower():
+                return {"success": False, "error": str(exc)}
+            # The daemon already forgot this GID (restart / prior removal),
+            # so the transfer is effectively cancelled.
+            logger.debug(
+                "aria2 GID %s for download %s already gone during cancel",
+                transfer.gid,
+                download_id,
+            )
 
+        # Drop the in-memory entry as well so a concurrent poll loop does
+        # not mistake the removal for a lost transfer and re-register it.
+        self._transfers.pop(download_id, None)
         await self._state_store.remove(download_id)
         return {"success": True, "message": "Download cancelled successfully"}
 
@@ -725,7 +754,9 @@ class Aria2Downloader:
 
         return isinstance(result, dict)
 
-    async def _rpc_call(self, method: str, params: list[Any]) -> Any:
+    async def _rpc_call(
+        self, method: str, params: list[Any], *, log_errors: bool = True
+    ) -> Any:
         if not self._rpc_url:
             raise Aria2Error("aria2 RPC endpoint is not initialized")
 
@@ -756,7 +787,10 @@ class Aria2Downloader:
             error = body["error"] or {}
             code = error.get("code") if isinstance(error, dict) else None
             message = error.get("message") if isinstance(error, dict) else str(error)
-            logger.error(
+            # Probing calls (e.g. tellStatus for a GID the daemon may have
+            # forgotten) pass log_errors=False: an expected "not found" must
+            # not spam the log at ERROR level.
+            (logger.error if log_errors else logger.debug)(
                 "aria2 RPC %s failed with HTTP %s, code=%s, message=%s",
                 method,
                 response.status,
@@ -771,7 +805,7 @@ class Aria2Downloader:
             raise Aria2Error(status_message or "Unknown aria2 RPC error")
 
         if response.status != 200:
-            logger.error(
+            (logger.error if log_errors else logger.debug)(
                 "aria2 RPC %s returned unexpected HTTP status %s without error payload: %s",
                 method,
                 response.status,
