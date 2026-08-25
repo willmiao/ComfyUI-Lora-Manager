@@ -16,6 +16,7 @@ import errno
 import json
 import os
 import shutil
+import threading
 import time
 from collections.abc import Iterator
 from pathlib import Path
@@ -1681,6 +1682,33 @@ async def test_reg_g_reconciliation_finds_external_batches(
     assert (fresh_dir / "new.safetensors").exists()
     assert "ext-expired" not in service._known_batch_dirs
     assert service._known_batch_dirs.get("ext-fresh") == str(fresh_dir)
+
+
+# (g2) reconciliation runs the filesystem walk off the event loop so a large
+#      or slow library cannot block startup
+async def test_reg_g2_reconciliation_walk_runs_in_worker_thread(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "loras"
+    root.mkdir()
+    (root / PENDING_DELETE_DIR_NAME).mkdir()
+    await _register_model_root(monkeypatch, lora_roots=[root])
+
+    loop_thread = threading.get_ident()
+    walk_threads: List[int] = []
+    real_walk = os.walk
+
+    def _recording_walk(*args: Any, **kwargs: Any):
+        walk_threads.append(threading.get_ident())
+        return real_walk(*args, **kwargs)
+
+    monkeypatch.setattr(os, "walk", _recording_walk)
+
+    service = await PendingDeleteService.get_instance()
+    await service._reconcile_scan_roots()
+
+    assert walk_threads, "reconciliation never walked the model roots"
+    assert all(thread_id != loop_thread for thread_id in walk_threads)
 
 
 # (h) _find_batch_dir with cleared registry locates + registers (restart sim)

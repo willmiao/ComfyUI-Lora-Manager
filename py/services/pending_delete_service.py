@@ -500,10 +500,36 @@ class PendingDeleteService:
         QUARANTINE them (preserving the pre-registry sweep semantics). The
         walk only descends into dirs literally named ``.lm-pending-delete``,
         so false positives are structurally limited.
+
+        The filesystem walk itself runs in a worker thread so a large or slow
+        library cannot block the event loop at startup; only the (rare) batch
+        registration awaits run on the loop.
+        """
+        roots = await self._get_all_model_roots()
+        loop = asyncio.get_event_loop()
+        staging_parents = await loop.run_in_executor(
+            None,  # Use default thread pool
+            self._collect_staging_parents,  # Run the tree walk off the loop
+            roots,
+        )
+        for staging_parent in staging_parents:
+            await self._register_batch_candidates(staging_parent)
+
+    def _collect_staging_parents(self, roots: Sequence[str]) -> List[str]:
+        """Walk every model root and return its staging-parent dirs.
+
+        Pure synchronous filesystem discovery with no awaits: walks with
+        ``followlinks=True, topdown=True``, prunes symlink cycles via a
+        per-root ``visited`` realpath set (realpath is used ONLY for this
+        dedup set - the returned paths are the unresolved business paths),
+        filters out :func:`_is_excluded_dir` dirs, and collects every dir
+        named ``.lm-pending-delete`` (including the case where a model root
+        itself is one). Results are returned in walk order.
         """
         from .model_scanner import _is_excluded_dir
 
-        for root in await self._get_all_model_roots():
+        staging_parents: List[str] = []
+        for root in roots:
             if not os.path.isdir(root):
                 continue
             visited: Set[str] = set()
@@ -518,21 +544,20 @@ class PendingDeleteService:
                 visited.add(real_dir)
                 if os.path.basename(dirpath) == PENDING_DELETE_DIR_NAME:
                     # The current dir IS a staging parent (reachable only when
-                    # a model root itself is one): register its batches.
-                    await self._register_batch_candidates(dirpath)
+                    # a model root itself is one): collect its batches.
+                    staging_parents.append(dirpath)
                     dirnames[:] = []
                     continue
                 next_dirs: List[str] = []
                 for name in dirnames:
                     if name == PENDING_DELETE_DIR_NAME:
-                        await self._register_batch_candidates(
-                            os.path.join(dirpath, name)
-                        )
+                        staging_parents.append(os.path.join(dirpath, name))
                     elif _is_excluded_dir(name):
                         continue
                     else:
                         next_dirs.append(name)
                 dirnames[:] = next_dirs
+        return staging_parents
 
     async def _register_batch_candidates(self, staging_parent: str) -> None:
         """Register every non-orphaned batch subdir of a staging parent."""
