@@ -1547,7 +1547,7 @@ class RecipeScanner:
                     self._cache.raw_data = recipes
                     self._update_folder_metadata(self._cache)
                     self._sort_cache_sync()
-                    # Backfill source_path from JSON files if missing (schema migration)
+                    # Backfill source_path from JSON files if missing (one-shot schema migration)
                     if self._backfill_source_path_if_needed(recipes, json_paths):
                         self._cache.image_id_map = self._build_image_id_map()
                         self._persistent_cache.save_cache(
@@ -1574,7 +1574,7 @@ class RecipeScanner:
                     self._cache.raw_data = recipes
                     self._update_folder_metadata(self._cache)
                     self._sort_cache_sync()
-                    # Backfill source_path from JSON files if missing (schema migration)
+                    # Backfill source_path from JSON files if missing (one-shot schema migration)
                     self._backfill_source_path_if_needed(recipes, json_paths)
                     self._cache.image_id_map = self._build_image_id_map()
                     # Persist updated cache
@@ -1711,6 +1711,9 @@ class RecipeScanner:
 
         return recipes, changed, json_paths
 
+    # Metadata key recording that the one-shot source_path backfill has run.
+    _SOURCE_PATH_BACKFILL_MARKER = "source_path_backfilled"
+
     def _backfill_source_path_if_needed(
         self,
         recipes: List[Dict[str, Any]],
@@ -1718,8 +1721,21 @@ class RecipeScanner:
     ) -> bool:
         """Backfill source_path from recipe JSON files if missing from cache.
 
+        This is a one-shot schema migration: once it has run, a completion
+        marker is stored in the persistent cache metadata and later startups
+        skip it entirely. Recipes without a source_path in their JSON file
+        would otherwise be re-read and re-parsed on every startup. New or
+        changed recipe files still get source_path from the normal parse path
+        during reconciliation.
+
         Returns True if any recipes were updated (caller should persist cache).
         """
+        cache = self._persistent_cache
+        if (
+            cache is not None
+            and cache.get_metadata_value(self._SOURCE_PATH_BACKFILL_MARKER) == "1"
+        ):
+            return False
         updated = False
         for recipe in recipes:
             if recipe.get("source_path"):
@@ -1737,6 +1753,8 @@ class RecipeScanner:
                     updated = True
             except Exception:
                 pass
+        if cache is not None:
+            cache.set_metadata_value(self._SOURCE_PATH_BACKFILL_MARKER, "1")
         return updated
 
     def _full_directory_scan_sync(

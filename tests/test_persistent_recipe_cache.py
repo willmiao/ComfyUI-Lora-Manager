@@ -552,6 +552,27 @@ class TestPersistentRecipeCache:
         assert loaded is not None
         assert loaded.image_id_map == {"222": "new-only"}
 
+    def test_metadata_value_roundtrip(self, temp_db_path):
+        """set_metadata_value/get_metadata_value store and replace values."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        assert cache.get_metadata_value("source_path_backfilled") is None
+
+        cache.set_metadata_value("source_path_backfilled", "1")
+        assert cache.get_metadata_value("source_path_backfilled") == "1"
+
+        cache.set_metadata_value("source_path_backfilled", "2")
+        assert cache.get_metadata_value("source_path_backfilled") == "2"
+
+    def test_metadata_value_survives_save_cache(self, temp_db_path, sample_recipes):
+        """A full save_cache must not drop unrelated cache_metadata entries."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        cache.set_metadata_value("source_path_backfilled", "1")
+        cache.save_cache(sample_recipes)
+
+        assert cache.get_metadata_value("source_path_backfilled") == "1"
+
 
 class TestHasWorkflowColumn:
     """has_workflow column persistence (plan 3.1)."""

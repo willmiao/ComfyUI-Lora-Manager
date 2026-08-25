@@ -333,6 +333,44 @@ class PersistentRecipeCache:
         except Exception as exc:
             logger.debug("Failed to persist image_id_map: %s", exc)
 
+    def get_metadata_value(self, key: str) -> Optional[str]:
+        """Return a value from cache_metadata, or None if missing."""
+        if not self.is_enabled() or not self._schema_initialized:
+            return None
+
+        try:
+            with self._db_lock:
+                conn = self._connect(readonly=True)
+                try:
+                    row = conn.execute(
+                        "SELECT value FROM cache_metadata WHERE key = ?",
+                        (key,),
+                    ).fetchone()
+                    return row["value"] if row else None
+                finally:
+                    conn.close()
+        except Exception:
+            return None
+
+    def set_metadata_value(self, key: str, value: str) -> None:
+        """Store a value in cache_metadata without rewriting the full cache."""
+        if not self.is_enabled() or not self._schema_initialized:
+            return
+
+        try:
+            with self._db_lock:
+                conn = self._connect()
+                try:
+                    conn.execute(
+                        "INSERT OR REPLACE INTO cache_metadata (key, value) VALUES (?, ?)",
+                        (key, value),
+                    )
+                    conn.commit()
+                finally:
+                    conn.close()
+        except Exception as exc:
+            logger.debug("Failed to persist cache metadata %s: %s", key, exc)
+
     def get_indexed_recipe_ids(self) -> Set[str]:
         """Return all recipe IDs in the cache.
 
