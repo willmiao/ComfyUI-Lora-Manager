@@ -2654,10 +2654,20 @@ class ModelUpdateHandler:
             except Exception:
                 pass
 
+        same_base_scope = self._uses_same_base_update_scope()
+
         serialized_records = []
         for record in records.values():
             has_update_fn = getattr(record, "has_update", None)
-            if callable(has_update_fn) and has_update_fn(
+            if not callable(has_update_fn):
+                continue
+            scoped_fn = (
+                getattr(record, "has_update_for_local_bases", None)
+                if same_base_scope
+                else None
+            )
+            qualifies_fn = scoped_fn if callable(scoped_fn) else has_update_fn
+            if qualifies_fn(
                 hide_early_access=hide_early_access,
                 hide_paid=hide_paid,
             ):
@@ -2669,6 +2679,26 @@ class ModelUpdateHandler:
                 "records": serialized_records,
             }
         )
+
+    def _uses_same_base_update_scope(self) -> bool:
+        """Return True when update reporting must honor same-base scoping.
+
+        Mirrors ``BaseModelService._annotate_update_flags``: the Updates filter
+        evaluates updates per local base model when ``version_grouping`` is
+        ``same_base`` (its default). The refresh summary counts with the same
+        scope so the "Found N update(s)" toast matches what the filter
+        displays. See issue #1083.
+        """
+
+        if self._settings is None:
+            return True
+        try:
+            strategy_value = self._settings.get("version_grouping")
+        except Exception:
+            return True
+        if isinstance(strategy_value, str) and strategy_value.strip():
+            return strategy_value.strip().lower() == "same_base"
+        return True
 
     async def set_model_update_ignore(self, request: web.Request) -> web.Response:
         payload = await self._read_json(request)

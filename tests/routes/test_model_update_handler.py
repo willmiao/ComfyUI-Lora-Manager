@@ -234,15 +234,25 @@ async def test_refresh_model_updates_filters_records_without_updates():
         model_id=1,
         versions=[
             ModelVersionRecord(
+                version_id=8,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
                 version_id=10,
                 name="v1",
-                base_model=None,
+                base_model="Pony",
                 released_at=None,
                 size_bytes=None,
                 preview_url=None,
                 is_in_library=False,
                 should_ignore=False,
-            )
+            ),
         ],
         last_checked_at=None,
         should_ignore_model=False,
@@ -307,6 +317,250 @@ async def test_refresh_model_updates_filters_records_without_updates():
     assert call["force_refresh"] is False
     assert call["provider"] is not None
     assert call["target_model_ids"] is None
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_same_base_scope_excludes_cross_base_updates():
+    """Issue #1083: with version_grouping=same_base (the default), a newer
+    remote version targeting another base model must not be counted, matching
+    what the Updates filter displays."""
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    cross_base_only = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=5,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=20,
+                name="v2",
+                base_model="Flux.1",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+    update_service = DummyUpdateService({1: cross_base_only})
+
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return object()
+
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=SimpleNamespace(get=lambda *_: False),
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    assert response.status == 200
+
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["success"] is True
+    assert payload["records"] == []
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_any_grouping_counts_cross_base_updates():
+    """With version_grouping=any the unscoped predicate applies, so a newer
+    remote version on any base model is counted."""
+    cache = SimpleNamespace(version_index={})
+    service = DummyService(cache)
+
+    cross_base_only = ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=5,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=20,
+                name="v2",
+                base_model="Flux.1",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+    update_service = DummyUpdateService({1: cross_base_only})
+
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return object()
+
+    settings = SimpleNamespace(
+        get=lambda key, default=None: (
+            "any" if key == "version_grouping" else default
+        )
+    )
+    handler = ModelUpdateHandler(
+        service=service,
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=settings,
+        logger=logging.getLogger(__name__),
+    )
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    assert response.status == 200
+
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["success"] is True
+    assert [record["modelId"] for record in payload["records"]] == [1]
+
+
+def _make_cross_base_only_record() -> ModelUpdateRecord:
+    return ModelUpdateRecord(
+        model_type="lora",
+        model_id=1,
+        versions=[
+            ModelVersionRecord(
+                version_id=5,
+                name="v0",
+                base_model="Pony",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=True,
+                should_ignore=False,
+            ),
+            ModelVersionRecord(
+                version_id=20,
+                name="v2",
+                base_model="Flux.1",
+                released_at=None,
+                size_bytes=None,
+                preview_url=None,
+                is_in_library=False,
+                should_ignore=False,
+            ),
+        ],
+        last_checked_at=None,
+        should_ignore_model=False,
+    )
+
+
+def _base_handler(update_service, settings_service):
+    async def metadata_selector(name):
+        assert name == "civitai_api"
+        return object()
+
+    return ModelUpdateHandler(
+        service=DummyService(SimpleNamespace(version_index={})),
+        update_service=update_service,
+        metadata_provider_selector=metadata_selector,
+        settings_service=settings_service,
+        logger=logging.getLogger(__name__),
+    )
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_explicit_same_base_setting_excludes_cross_base():
+    """The literal "same_base" string (any casing/whitespace) selects the
+    scoped predicate, mirroring BaseModelService's strategy parsing."""
+    update_service = DummyUpdateService({1: _make_cross_base_only_record()})
+    settings = SimpleNamespace(
+        get=lambda key, default=None: (
+            " Same_Base " if key == "version_grouping" else default
+        )
+    )
+    handler = _base_handler(update_service, settings)
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["records"] == []
+
+
+@pytest.mark.asyncio
+async def test_refresh_model_updates_falls_back_without_scoped_predicate():
+    """A record type without has_update_for_local_bases (pre-change callers /
+    fakes) still counts via the unscoped predicate under same_base scope."""
+    legacy_record = _make_cross_base_only_record()
+    legacy_record.__dict__["has_update_for_local_bases"] = None
+
+    update_service = DummyUpdateService({1: legacy_record})
+    handler = _base_handler(update_service, SimpleNamespace(get=lambda *_: False))
+
+    class DummyRequest:
+        can_read_body = True
+        query = {}
+
+        async def json(self):
+            return {}
+
+    response = await handler.refresh_model_updates(
+        DummyRequest()  # pyright: ignore[reportArgumentType]
+    )
+    text = response.text
+    assert text is not None
+    payload = json.loads(text)
+    assert payload["success"] is True
+    assert [record["modelId"] for record in payload["records"]] == [1]
 
 
 @pytest.mark.asyncio
