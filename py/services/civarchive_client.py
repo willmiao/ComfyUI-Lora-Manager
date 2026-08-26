@@ -7,6 +7,7 @@ import logging
 import asyncio
 from copy import deepcopy
 from typing import Any, Optional, Dict, Tuple, List, cast
+from .connectivity_guard import is_expected_offline_error
 from .model_metadata_provider import CivArchiveModelMetadataProvider, ModelMetadataProviderManager
 from .downloader import get_downloader
 from .errors import RateLimitError
@@ -46,7 +47,11 @@ class CivArchiveClient:
         """Call CivArchive API and return JSON payload"""
         success, payload = await self._make_request(path, params=params)
         if not success:
-            error = payload if isinstance(payload, str) else "Request failed"
+            # Normalize empty-string failure payloads (e.g. a throttled
+            # connection dropped without a message) so callers never see a
+            # falsy error alongside a None payload — that combination used to
+            # crash downstream None.get() calls.
+            error = payload if isinstance(payload, str) and payload else "Request failed"
             return None, error
         if not isinstance(payload, dict):
             return None, "Invalid response structure"
@@ -298,6 +303,8 @@ class CivArchiveClient:
 
     async def _resolve_version_from_files(self, payload: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Fallback to fetch version data when only file metadata is available"""
+        if not isinstance(payload, dict):
+            return None
         data = self._normalize_payload(payload)
         files = data.get("files") or payload.get("files") or []
         if not isinstance(files, list):
@@ -332,10 +339,13 @@ class CivArchiveClient:
         """Find model by SHA256 hash value using CivArchive API"""
         try:
             payload, error = await self._request_json(f"/sha256/{model_hash.lower()}")
-            if error:
-                if "not found" in error.lower():
+            # Treat a missing payload as an error even when the error string is
+            # falsy; passing None into the split/transform helpers below used to
+            # crash with "'NoneType' object has no attribute 'get'".
+            if error is not None or payload is None:
+                if error and "not found" in error.lower():
                     return None, "Model not found"
-                return None, error
+                return None, error or "Request failed"
 
             context, version_data, fallback_files = self._split_context(cast(Dict[str, Any], payload))
             transformed = self._transform_version(context, version_data, fallback_files)
@@ -352,7 +362,14 @@ class CivArchiveClient:
         except RateLimitError:
             raise
         except Exception as e:
-            logger.error(f"Error fetching CivArchive model by hash {model_hash[:10]}: {e}")
+            if is_expected_offline_error(str(e)):
+                logger.debug(
+                    "Skipping CivArchive model by hash %s while offline: %s",
+                    model_hash[:10],
+                    e,
+                )
+            else:
+                logger.error(f"Error fetching CivArchive model by hash {model_hash[:10]}: {e}")
             return None, str(e)
 
     async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
@@ -362,7 +379,14 @@ class CivArchiveClient:
             if error or payload is None:
                 if error and "not found" in error.lower():
                     return None
-                logger.error(f"Error fetching CivArchive model versions for {model_id}: {error}")
+                if is_expected_offline_error(error):
+                    logger.debug(
+                        "Skipping CivArchive model versions fetch for %s while offline: %s",
+                        model_id,
+                        error,
+                    )
+                else:
+                    logger.error(f"Error fetching CivArchive model versions for {model_id}: {error}")
                 return None
 
             data = self._normalize_payload(payload)
@@ -426,7 +450,19 @@ class CivArchiveClient:
             if error or payload is None:
                 if error and "not found" in error.lower():
                     return None
-                logger.error(f"Error fetching CivArchive model version via API {model_id}/{version_id}: {error}")
+                # The connectivity guard short-circuits requests during its
+                # offline cooldown; that is an expected, transient state, so
+                # log it as DEBUG instead of spamming one ERROR per request
+                # (batch imports can hit this thousands of times).
+                if is_expected_offline_error(error):
+                    logger.debug(
+                        "Skipping CivArchive model version fetch %s/%s while offline: %s",
+                        model_id,
+                        version_id,
+                        error,
+                    )
+                else:
+                    logger.error(f"Error fetching CivArchive model version via API {model_id}/{version_id}: {error}")
                 return None
 
             context, version_data, fallback_files = self._split_context(payload)

@@ -277,3 +277,72 @@ async def test_parse_metadata_without_extra_metadata(monkeypatch):
     assert "error" not in result
     assert result["loras"] == []
     assert result["checkpoint"]["id"] == "456"
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_with_list_ckpt_name(monkeypatch):
+    """ckpt_name serialized as a single-element list must not crash re.search."""
+    checkpoint_info = {
+        "id": 456,
+        "modelId": 123,
+        "model": {"name": "Checkpoint", "type": "checkpoint"},
+        "name": "v1",
+        "baseModel": "SDXL 1.0",
+    }
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                assert version_id == "456"
+                return checkpoint_info, None
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.comfy.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    metadata_json = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": ["urn:air:sdxl:checkpoint:civitai:123@456"]},
+        }
+    }
+
+    result = await ComfyMetadataParser().parse_metadata(json.dumps(metadata_json))
+
+    assert "error" not in result
+    assert result["checkpoint"] is not None
+    assert int(result["checkpoint"]["id"]) == 456
+    assert int(result["checkpoint"]["modelId"]) == 123
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_with_none_ckpt_name(monkeypatch):
+    """Missing (None) ckpt_name must not crash re.search with a TypeError."""
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_version_info(self, version_id):
+                raise AssertionError("Checkpoint lookup must be skipped")
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.comfy.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    metadata_json = {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": None},
+        }
+    }
+
+    result = await ComfyMetadataParser().parse_metadata(json.dumps(metadata_json))
+
+    assert "error" not in result
+    assert result["checkpoint"] is None
+    assert result["loras"] == []

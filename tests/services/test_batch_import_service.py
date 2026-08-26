@@ -154,6 +154,65 @@ class TestAdaptiveConcurrencyController:
         controller.record_result(duration=5.0, success=True)
         assert controller.current_concurrency == 3
 
+    @pytest.mark.asyncio
+    async def test_get_semaphore_returns_shared_instance(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        # Every item of a batch must receive the same semaphore so the
+        # concurrency bound is actually enforced batch-wide.
+        first = controller.get_semaphore()
+        second = controller.get_semaphore()
+        assert first is second
+
+    @pytest.mark.asyncio
+    async def test_shared_semaphore_limits_concurrent_tasks(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        semaphore = controller.get_semaphore()
+        active = 0
+        peak = 0
+
+        async def worker():
+            nonlocal active, peak
+            async with semaphore:
+                active += 1
+                peak = max(peak, active)
+                await asyncio.sleep(0.05)
+                active -= 1
+
+        await asyncio.gather(*[worker() for _ in range(10)])
+        assert peak == 3
+
+    @pytest.mark.asyncio
+    async def test_apply_concurrency_increases_capacity(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        semaphore = controller.get_semaphore()
+        controller.record_result(duration=0.5, success=True)  # 3 -> 4
+        await controller.apply_concurrency()
+
+        acquired = await asyncio.gather(
+            *[asyncio.wait_for(semaphore.acquire(), timeout=0.2) for _ in range(4)]
+        )
+        assert all(acquired)
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(semaphore.acquire(), timeout=0.05)
+        for _ in range(4):
+            semaphore.release()
+
+    @pytest.mark.asyncio
+    async def test_apply_concurrency_decreases_capacity(self):
+        controller = AdaptiveConcurrencyController(initial_concurrency=3)
+        semaphore = controller.get_semaphore()
+        controller.record_result(duration=1.0, success=False)  # 3 -> 2
+        await controller.apply_concurrency()
+
+        acquired = await asyncio.gather(
+            *[asyncio.wait_for(semaphore.acquire(), timeout=0.2) for _ in range(2)]
+        )
+        assert all(acquired)
+        with pytest.raises(asyncio.TimeoutError):
+            await asyncio.wait_for(semaphore.acquire(), timeout=0.05)
+        for _ in range(2):
+            semaphore.release()
+
 
 class TestBatchImportProgress:
     def test_to_dict(self):

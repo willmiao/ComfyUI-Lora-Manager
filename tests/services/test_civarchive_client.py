@@ -1,4 +1,5 @@
 import copy
+import logging
 from typing import Any, Dict
 from unittest.mock import AsyncMock
 
@@ -257,3 +258,49 @@ async def test_get_model_by_hash_propagates_rate_limit(downloader):
 
     assert exc_info.value.retry_after == 5
     assert exc_info.value.provider == "civarchive_api"
+
+
+async def test_get_model_by_hash_empty_error_payload(downloader):
+    """An empty-string failure payload must surface as a proper error.
+
+    Regression test: (None, "") used to fall through the falsy-error check and
+    crash in _resolve_version_from_files with "'NoneType' object has no
+    attribute 'get'".
+    """
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        return False, ""
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    result, error = await client.get_model_by_hash("empty-error")
+
+    assert result is None
+    assert error == "Request failed"
+
+
+async def test_get_model_version_offline_cooldown_logged_as_debug(downloader, caplog):
+    """Cooldown short-circuits must not spam an ERROR per request."""
+
+    async def fake_make_request(method, url, use_auth=False, **kwargs):
+        return False, "offline_cooldown"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivArchiveClient.get_instance()
+
+    with caplog.at_level(logging.DEBUG, logger="py.services.civarchive_client"):
+        result = await client.get_model_version(model_id=1, version_id=123)
+
+    assert result is None
+    module_records = [r for r in caplog.records if r.name == "py.services.civarchive_client"]
+    assert not any(
+        r.levelno >= logging.ERROR and "Error fetching CivArchive model version" in r.getMessage()
+        for r in module_records
+    )
+    assert any(
+        r.levelno == logging.DEBUG and "while offline" in r.getMessage()
+        for r in module_records
+    )

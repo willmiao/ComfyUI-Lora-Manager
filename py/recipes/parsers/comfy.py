@@ -40,24 +40,34 @@ class ComfyMetadataParser(RecipeMetadataParser):
                 checkpoint_node = next(iter(checkpoint_nodes.values()))
                 if 'inputs' in checkpoint_node and 'ckpt_name' in checkpoint_node['inputs']:
                     checkpoint_name = checkpoint_node['inputs']['ckpt_name']
-                    checkpoint_match = re.search(r'civitai:(\d+)@(\d+)', checkpoint_name)
-                    if checkpoint_match:
-                        checkpoint_id = checkpoint_match.group(1)
-                        checkpoint_version_id = checkpoint_match.group(2)
-                        checkpoint = {
-                            'id': checkpoint_version_id,
-                            'modelId': checkpoint_id,
-                            'name': f"Checkpoint {checkpoint_id}",
-                            'version': '',
-                            'type': 'checkpoint'
-                        }
-                        if metadata_provider:
-                            try:
-                                civitai_info_tuple = await metadata_provider.get_model_version_info(checkpoint_version_id)
-                                civitai_info, _ = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
-                                checkpoint = await self.populate_checkpoint_from_civitai(checkpoint, civitai_info)
-                            except Exception as e:
-                                logger.error(f"Error fetching Civitai info for checkpoint: {e}")
+                    # Some ComfyUI workflows serialize ckpt_name as a
+                    # single-element list (e.g. ["model.safetensors"]) or leave
+                    # the value unset (None). Neither is a string, so skip the
+                    # CivitAI-URN lookup instead of crashing re.search with a
+                    # TypeError that fails the whole image import.
+                    if isinstance(checkpoint_name, list):
+                        checkpoint_name = (
+                            checkpoint_name[0] if checkpoint_name else None
+                        )
+                    if isinstance(checkpoint_name, str):
+                        checkpoint_match = re.search(r'civitai:(\d+)@(\d+)', checkpoint_name)
+                        if checkpoint_match:
+                            checkpoint_id = checkpoint_match.group(1)
+                            checkpoint_version_id = checkpoint_match.group(2)
+                            checkpoint = {
+                                'id': checkpoint_version_id,
+                                'modelId': checkpoint_id,
+                                'name': f"Checkpoint {checkpoint_id}",
+                                'version': '',
+                                'type': 'checkpoint'
+                            }
+                            if metadata_provider:
+                                try:
+                                    civitai_info_tuple = await metadata_provider.get_model_version_info(checkpoint_version_id)
+                                    civitai_info, _ = civitai_info_tuple if isinstance(civitai_info_tuple, tuple) else (civitai_info_tuple, None)
+                                    checkpoint = await self.populate_checkpoint_from_civitai(checkpoint, civitai_info)
+                                except Exception as e:
+                                    logger.error(f"Error fetching Civitai info for checkpoint: {e}")
 
             recipe_base_model = checkpoint.get('baseModel') if checkpoint else None
             loras = []

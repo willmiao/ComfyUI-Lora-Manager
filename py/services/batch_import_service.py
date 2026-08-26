@@ -118,6 +118,10 @@ class AdaptiveConcurrencyController:
         self._task_durations: List[float] = []
         self._recent_errors = 0
         self._recent_successes = 0
+        # Batch-wide shared semaphore; created lazily on first use so the
+        # controller can also be constructed outside a running event loop.
+        self._semaphore: Optional[asyncio.Semaphore] = None
+        self._semaphore_capacity = initial_concurrency
 
     def record_result(self, duration: float, success: bool) -> None:
         self._task_durations.append(duration)
@@ -146,7 +150,37 @@ class AdaptiveConcurrencyController:
         self._recent_successes = 0
 
     def get_semaphore(self) -> asyncio.Semaphore:
-        return asyncio.Semaphore(self.current_concurrency)
+        """Return the batch-wide shared semaphore.
+
+        The same semaphore instance is returned for every item of a batch so
+        the configured concurrency bounds are actually enforced. Previously a
+        fresh semaphore was created per call, letting every item run
+        concurrently and hammering remote metadata providers without any
+        limit.
+        """
+        if self._semaphore is None:
+            self._semaphore = asyncio.Semaphore(self.current_concurrency)
+            self._semaphore_capacity = self.current_concurrency
+        return self._semaphore
+
+    async def apply_concurrency(self) -> None:
+        """Synchronize the shared semaphore capacity with ``current_concurrency``.
+
+        Call after ``record_result`` (once per completed item). Growing the
+        capacity is immediate (release). Shrinking requires acquiring a permit
+        and holding it, which is best-effort while other tasks are still
+        running — the capacity converges on subsequent calls.
+        """
+        semaphore = self.get_semaphore()
+        while self._semaphore_capacity < self.current_concurrency:
+            semaphore.release()
+            self._semaphore_capacity += 1
+        while self._semaphore_capacity > self.current_concurrency:
+            try:
+                await asyncio.wait_for(semaphore.acquire(), timeout=0.01)
+            except (asyncio.TimeoutError, asyncio.CancelledError):
+                break
+            self._semaphore_capacity -= 1
 
 
 class BatchImportService:
@@ -394,6 +428,9 @@ class BatchImportService:
                 self._concurrency_controller.record_result(
                     duration, result.get("success", False)
                 )
+                # Keep the shared batch semaphore in sync with the adaptively
+                # adjusted concurrency so the bounds actually take effect.
+                await self._concurrency_controller.apply_concurrency()
 
                 if result.get("success"):
                     item.status = ImportStatus.SUCCESS
@@ -416,6 +453,7 @@ class BatchImportService:
                 item.duration = time.time() - start_time
                 progress.failed += 1
                 self._concurrency_controller.record_result(item.duration, False)
+                await self._concurrency_controller.apply_concurrency()
 
             progress.completed += 1
             self._logger.info(
