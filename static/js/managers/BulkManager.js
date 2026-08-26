@@ -26,6 +26,10 @@ export class BulkManager {
         this.marqueeElement = null;
         this.initialSelectedModels = new Set();
 
+        // Shift+click range anchor: last plain-clicked filepath. Set in
+        // toggleCardSelection, cleared in clearSelection.
+        this.bulkAnchorFilepath = null;
+
         // Drag detection properties
         this.dragThreshold = 5; // Pixels to move before considering it a drag
         this.dragDelayMs = 100; // Minimum hold time before a drag is treated as a marquee
@@ -351,6 +355,7 @@ export class BulkManager {
             card.classList.remove('selected');
         });
         state.selectedModels.clear();
+        this.bulkAnchorFilepath = null;
 
         // Update context menu header if visible
         if (this.bulkContextMenu) {
@@ -358,8 +363,12 @@ export class BulkManager {
         }
     }
 
-    toggleCardSelection(card) {
+    toggleCardSelection(card, extendSelection = false) {
         const filepath = card.dataset.filepath;
+
+        if (extendSelection && this.selectRangeFromAnchor(filepath)) {
+            return;
+        }
 
         if (card.classList.contains('selected')) {
             card.classList.remove('selected');
@@ -372,10 +381,76 @@ export class BulkManager {
             this.updateMetadataCacheFromCard(filepath, card);
         }
 
+        this.bulkAnchorFilepath = filepath;
+
         // Update context menu header if visible
         if (this.bulkContextMenu) {
             this.bulkContextMenu.updateSelectedCountHeader();
         }
+    }
+
+    /**
+     * Select exactly the items between the shift anchor and the target
+     * (inclusive), following list order. Explorer-style range semantics:
+     * selections outside the new range are dropped, and consecutive shifts
+     * re-derive the range from the same anchor. Returns false when there is
+     * no usable anchor so the caller can fall back to a single-card toggle.
+     */
+    selectRangeFromAnchor(targetFilepath) {
+        const scroller = state.virtualScroller;
+        if (!scroller || !scroller.items || !this.bulkAnchorFilepath) {
+            return false;
+        }
+
+        const anchorIndex = scroller.findIndexByFilePath(this.bulkAnchorFilepath);
+        const targetIndex = scroller.findIndexByFilePath(targetFilepath);
+        if (anchorIndex === -1 || targetIndex === -1) {
+            return false;
+        }
+
+        const startIndex = Math.min(anchorIndex, targetIndex);
+        const endIndex = Math.max(anchorIndex, targetIndex);
+        const metadataCache = this.getMetadataCache();
+        const rangePaths = new Set();
+
+        for (let i = startIndex; i <= endIndex; i++) {
+            const item = scroller.items[i];
+            if (!item || !item.file_path) {
+                continue;
+            }
+
+            rangePaths.add(item.file_path);
+
+            if (!metadataCache.has(item.file_path)) {
+                const modelId = this.parseModelId(item?.civitai?.modelId);
+                metadataCache.set(item.file_path, {
+                    fileName: item.file_name,
+                    folder: item.folder || '',
+                    usageTips: item.usage_tips || '{}',
+                    modelName: item.name || item.file_name,
+                    ...(modelId !== null ? { modelId } : {})
+                });
+            }
+
+            state.selectedModels.add(item.file_path);
+        }
+
+        for (const filepath of [...state.selectedModels]) {
+            if (!rangePaths.has(filepath)) {
+                state.selectedModels.delete(filepath);
+            }
+        }
+        this.applySelectionState();
+
+        if (this.bulkContextMenu) {
+            this.bulkContextMenu.updateSelectedCountHeader();
+        }
+
+        if (this.isStripVisible) {
+            this.updateThumbnailStrip();
+        }
+
+        return true;
     }
 
     getMetadataCache() {

@@ -240,9 +240,12 @@ class RecipeCard {
 
         // Recipe card click event - only attach if not in duplicates mode
         if (!isDuplicatesMode) {
-            card.addEventListener('click', () => {
+            card.addEventListener('click', (e) => {
                 if (state.bulkMode) {
-                    bulkManager.toggleCardSelection(card);
+                    if (e.shiftKey) {
+                        e.preventDefault();
+                    }
+                    bulkManager.toggleCardSelection(card, e.shiftKey);
                     return;
                 }
                 this.clickHandler(this.recipe);

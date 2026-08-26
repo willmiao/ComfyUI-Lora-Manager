@@ -108,7 +108,10 @@ function handleModelCardEvent_internal(event, modelType) {
     }
 
     // If no specific element was clicked, handle the card click (show modal or toggle selection)
-    handleCardClick(card, modelType);
+    if (state.bulkMode && event.shiftKey) {
+        event.preventDefault(); // keep shift+click from extending a text selection
+    }
+    handleCardClick(card, modelType, event.shiftKey);
     return false; // Continue with other handlers (e.g., bulk selection)
 }
 
@@ -288,12 +291,12 @@ function handleViewLocalVersionsFromCard(card, modelType) {
     }
 }
 
-function handleCardClick(card, modelType) {
+function handleCardClick(card, modelType, extendSelection = false) {
     const pageState = getCurrentPageState();
 
     if (state.bulkMode) {
         // Toggle selection using the bulk manager
-        bulkManager.toggleCardSelection(card);
+        bulkManager.toggleCardSelection(card, extendSelection);
     } else if (pageState && pageState.duplicatesMode) {
         // In duplicates mode, don't open modal when clicking cards
         return;
