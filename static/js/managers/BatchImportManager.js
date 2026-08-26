@@ -423,18 +423,31 @@ export class BatchImportManager {
      * Handle progress update from WebSocket or polling
      */
     handleProgressUpdate(progress) {
+        const prev = this.progress;
         this.progress = progress;
         this.updateProgressUI(progress);
 
-        // Console visibility for background progress: while the modal is
-        // closed (or open), the console shows what the import is doing.
-        console.log(
-            `[BatchImport] Progress ${Math.round(progress.progress_percent || 0)}% ` +
-            `(${progress.completed}/${progress.total}) ` +
-            `status=${progress.status} ` +
-            `success=${progress.success} failed=${progress.failed} skipped=${progress.skipped} ` +
-            `item=${progress.current_item || '-'}`
-        );
+        // Only log when something actually changed (and on the first update),
+        // so per-second polling does not spam the console with identical lines.
+        const changed =
+            !prev ||
+            prev.total !== progress.total ||
+            prev.completed !== progress.completed ||
+            prev.success !== progress.success ||
+            prev.failed !== progress.failed ||
+            prev.skipped !== progress.skipped ||
+            prev.status !== progress.status ||
+            prev.current_item !== progress.current_item;
+
+        if (changed) {
+            console.log(
+                `[BatchImport] Progress ${Math.round(progress.progress_percent || 0)}% ` +
+                `(${progress.completed}/${progress.total}) ` +
+                `status=${progress.status} ` +
+                `success=${progress.success} failed=${progress.failed} skipped=${progress.skipped} ` +
+                `item=${progress.current_item || '-'}`
+            );
+        }
         
         // Check if import is complete
         if (progress.status === 'completed' || progress.status === 'cancelled' || 

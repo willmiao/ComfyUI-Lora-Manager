@@ -192,13 +192,14 @@ describe('BatchImportManager reopen behavior (#1084)', () => {
 
     await startImportViaUrls(['https://civitai.com/images/1']);
 
-    // force a polled progress update
+    batchImportManager.handleProgressUpdate(RUNNING_PROGRESS);
+    // A second poll tick with identical data must not log again (#1084).
     batchImportManager.handleProgressUpdate(RUNNING_PROGRESS);
     batchImportManager.handleProgressUpdate(COMPLETED_PROGRESS);
 
     const messages = logSpy.mock.calls.map((call) => String(call[0]));
     expect(messages.some((m) => m.includes('[BatchImport] Import started, operation_id=op-123'))).toBe(true);
-    expect(messages.some((m) => m.includes('[BatchImport] Progress 50%'))).toBe(true);
+    expect(messages.filter((m) => m.includes('[BatchImport] Progress 50%')).length).toBe(1);
     expect(messages.some((m) => m.includes('[BatchImport] Import finished: status=completed'))).toBe(true);
 
     logSpy.mockRestore();
