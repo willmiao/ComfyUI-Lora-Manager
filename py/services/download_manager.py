@@ -2,6 +2,7 @@
 # Lazy (function-local) imports still count as static edges in basedpyright's
 # reportImportCycles, so the ServiceRegistry singleton pattern necessarily forms
 # import cycles. Breaking them would require an architectural refactor.
+import contextlib
 import copy
 import json
 import logging
@@ -12,6 +13,7 @@ import shutil
 import zipfile
 from concurrent.futures import ThreadPoolExecutor
 from collections import OrderedDict
+from dataclasses import dataclass, field
 import uuid
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
 from urllib.parse import urlparse
@@ -53,6 +55,12 @@ CIVITAI_DOWNLOAD_URL_PREFIXES = (
 NON_DOWNLOADABLE_PRIMARY_TYPES = ("Config", "Archive", "Workflow", "Training Data")
 
 
+@dataclass
+class _PathSlot:
+    lock: asyncio.Lock = field(default_factory=asyncio.Lock)
+    refs: int = 0
+
+
 class DownloadManager:
     _instance = None
     _lock = asyncio.Lock()
@@ -82,6 +90,11 @@ class DownloadManager:
         self._aria2_state_store = Aria2TransferStateStore()
         self._restored_persisted_downloads = False
         self._restore_lock = asyncio.Lock()
+        # Refcounted per-target-path locks: two downloads resolving to the
+        # same save_path (e.g. model versions sharing one filename) must not
+        # overlap, or one task's failure cleanup can delete the other's file.
+        self._path_slot_guard: asyncio.Lock = asyncio.Lock()
+        self._path_slots: dict[str, _PathSlot] = {}
 
     @staticmethod
     def _get_model_download_backend() -> str:
@@ -2132,7 +2145,56 @@ class DownloadManager:
 
         return formatted_path
 
+    @contextlib.asynccontextmanager
+    async def _exclusive_target_slot(self, target_key: str):
+        async with self._path_slot_guard:
+            slot = self._path_slots.get(target_key)
+            if slot is None:
+                slot = _PathSlot()
+                self._path_slots[target_key] = slot
+            slot.refs += 1
+        try:
+            async with slot.lock:
+                yield
+        finally:
+            async with self._path_slot_guard:
+                slot.refs -= 1
+                if slot.refs <= 0:
+                    _ = self._path_slots.pop(target_key, None)
+
+    def _target_slot_key(self, save_dir: str, metadata) -> str:
+        return os.path.abspath(
+            os.path.join(save_dir, os.path.basename(metadata.file_path))
+        )
+
     async def _execute_download(
+        self,
+        download_urls: List[str],
+        save_dir: str,
+        metadata,
+        version_info: Dict[str, Any],
+        relative_path: str,
+        progress_callback=None,
+        model_type: str = "lora",
+        download_id: str | None = None,
+        transfer_backend: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Execute the download serialized against other downloads targeting the same path."""
+        target_key = self._target_slot_key(save_dir, metadata)
+        async with self._exclusive_target_slot(target_key):
+            return await self._execute_download_pipeline(
+                download_urls=download_urls,
+                save_dir=save_dir,
+                metadata=metadata,
+                version_info=version_info,
+                relative_path=relative_path,
+                progress_callback=progress_callback,
+                model_type=model_type,
+                download_id=download_id,
+                transfer_backend=transfer_backend,
+            )
+
+    async def _execute_download_pipeline(
         self,
         download_urls: List[str],
         save_dir: str,
