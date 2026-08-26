@@ -963,6 +963,7 @@
       }
     },
     "duplicates": {
+      "finding": "Scanning for duplicate recipes...",
       "found": "Found {count} duplicate groups",
       "noGroups": "No duplicate groups found with the current matching basis",
       "keepLatest": "Keep Latest Versions",

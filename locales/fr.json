@@ -963,6 +963,7 @@
             }
         },
         "duplicates": {
+            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
             "found": "Trouvé {count} groupes de doublons",
             "noGroups": "Aucun groupe de doublons trouvé avec le critère de correspondance actuel",
             "keepLatest": "Garder les dernières versions",

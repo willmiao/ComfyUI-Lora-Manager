@@ -963,6 +963,7 @@
             }
         },
         "duplicates": {
+            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
             "found": "发现 {count} 个重复组",
             "noGroups": "按当前判重依据未找到重复组",
             "keepLatest": "保留最新版本",

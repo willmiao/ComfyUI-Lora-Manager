@@ -12,6 +12,7 @@ export class DuplicatesManager {
         this.duplicateGroups = [];
         this.inDuplicateMode = false;
         this.selectedForDeletion = new Set();
+        this._isFindingDuplicates = false;
         this._initPromptMatchToggle();
         this._initHelpTooltip();
     }
@@ -87,6 +88,19 @@ export class DuplicatesManager {
     }
 
     async findDuplicates() {
+        // Guard against re-entry: the scan can take a while on large
+        // libraries, and repeated clicks would pile up identical requests
+        // on the backend.
+        if (this._isFindingDuplicates) {
+            return false;
+        }
+        this._isFindingDuplicates = true;
+        const triggerButton = document.querySelector('[data-action="find-duplicates"]');
+        if (triggerButton) {
+            triggerButton.disabled = true;
+            triggerButton.classList.add('loading');
+        }
+        state.loadingManager?.showSimpleLoading(translate('recipes.duplicates.finding'));
         try {
             const includePrompt = this._getPromptMatchPreference();
             const endpoint = includePrompt
@@ -96,14 +110,14 @@ export class DuplicatesManager {
             if (!response.ok) {
                 throw new Error('Failed to find duplicates');
             }
-            
+
             const data = await response.json();
             if (!data.success) {
                 throw new Error(data.error || 'Unknown error finding duplicates');
             }
-            
+
             this.duplicateGroups = data.duplicate_groups || [];
-            
+
             if (this.duplicateGroups.length === 0) {
                 showToast('toast.duplicates.noDuplicatesFound', { type: 'recipes' }, 'info');
                 // Keep (or enter) the duplicates view when the user is tuning
@@ -115,13 +129,20 @@ export class DuplicatesManager {
                 this.enterDuplicateMode();
                 return true;
             }
-            
+
             this.enterDuplicateMode();
             return true;
         } catch (error) {
             console.error('Error finding duplicates:', error);
             showToast('toast.duplicates.findFailed', { message: error.message }, 'error');
             return false;
+        } finally {
+            this._isFindingDuplicates = false;
+            if (triggerButton) {
+                triggerButton.disabled = false;
+                triggerButton.classList.remove('loading');
+            }
+            state.loadingManager?.hide();
         }
     }
     

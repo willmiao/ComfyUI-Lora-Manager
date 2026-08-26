@@ -963,6 +963,7 @@
             }
         },
         "duplicates": {
+            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
             "found": "נמצאו {count} קבוצות כפולות",
             "noGroups": "לא נמצאו קבוצות כפולות לפי קריטריון ההתאמה הנוכחי",
             "keepLatest": "שמור גרסאות אחרונות",

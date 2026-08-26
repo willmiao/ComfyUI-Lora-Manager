@@ -963,6 +963,7 @@
             }
         },
         "duplicates": {
+            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
             "found": "{count} 個の重複グループが見つかりました",
             "noGroups": "現在の一致基準では重複グループが見つかりませんでした",
             "keepLatest": "最新バージョンを保持",

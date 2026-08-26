@@ -963,6 +963,7 @@
             }
         },
         "duplicates": {
+            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
             "found": "Se encontraron {count} grupos de duplicados",
             "noGroups": "No se encontraron grupos de duplicados con el criterio de coincidencia actual",
             "keepLatest": "Mantener versiones más recientes",

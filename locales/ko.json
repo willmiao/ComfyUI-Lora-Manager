@@ -963,6 +963,7 @@
             }
         },
         "duplicates": {
+            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
             "found": "{count}개의 중복 그룹 발견",
             "noGroups": "현재 일치 기준으로 중복 그룹을 찾을 수 없습니다",
             "keepLatest": "최신 버전 유지",

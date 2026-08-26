@@ -618,16 +618,31 @@ class RecipeQueryHandler:
                 include_prompt=include_prompt
             )
             url_groups = await recipe_scanner.find_duplicate_recipes_by_source()
+
+            # Assemble the response directly from the cached recipe summaries.
+            # Resolving each id via get_recipe_by_id would re-read every recipe
+            # JSON from disk — thousands of blocking reads on the event loop
+            # for large libraries — while all required fields already live in
+            # the cache.
+            cache = await recipe_scanner.get_cached_data()
+            recipes_by_id = {
+                str(recipe.get("id", "")): recipe for recipe in cache.raw_data
+            }
+
             response_data = []
 
-            for fingerprint, recipe_ids in fingerprint_groups.items():
-                if len(recipe_ids) <= 1:
-                    continue
+            def append_groups(
+                groups: Dict[str, List[Any]], group_type: str
+            ) -> None:
+                for group_key, recipe_ids in groups.items():
+                    if len(recipe_ids) <= 1:
+                        continue
 
-                recipes = []
-                for recipe_id in recipe_ids:
-                    recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
-                    if recipe:
+                    recipes = []
+                    for recipe_id in recipe_ids:
+                        recipe = recipes_by_id.get(str(recipe_id))
+                        if recipe is None:
+                            continue
                         recipes.append(
                             {
                                 "id": recipe.get("id"),
@@ -642,55 +657,23 @@ class RecipeQueryHandler:
                             }
                         )
 
-                if len(recipes) >= 2:
-                    recipes.sort(
-                        key=lambda entry: entry.get("modified", 0), reverse=True
-                    )
-                    response_data.append(
-                        {
-                            "type": "fingerprint",
-                            "key": f"g-{len(response_data) + 1}",
-                            "fingerprint": fingerprint,
-                            "count": len(recipes),
-                            "recipes": recipes,
-                        }
-                    )
-
-            for url, recipe_ids in url_groups.items():
-                if len(recipe_ids) <= 1:
-                    continue
-
-                recipes = []
-                for recipe_id in recipe_ids:
-                    recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
-                    if recipe:
-                        recipes.append(
+                    if len(recipes) >= 2:
+                        recipes.sort(
+                            key=lambda entry: entry.get("modified") or 0,
+                            reverse=True,
+                        )
+                        response_data.append(
                             {
-                                "id": recipe.get("id"),
-                                "title": recipe.get("title"),
-                                "file_url": recipe.get("file_url")
-                                or self._format_recipe_file_url(
-                                    recipe.get("file_path", "")
-                                ),
-                                "modified": recipe.get("modified"),
-                                "created_date": recipe.get("created_date"),
-                                "lora_count": len(recipe.get("loras", [])),
+                                "type": group_type,
+                                "key": f"g-{len(response_data) + 1}",
+                                "fingerprint": group_key,
+                                "count": len(recipes),
+                                "recipes": recipes,
                             }
                         )
 
-                if len(recipes) >= 2:
-                    recipes.sort(
-                        key=lambda entry: entry.get("modified", 0), reverse=True
-                    )
-                    response_data.append(
-                        {
-                            "type": "source_path",
-                            "key": f"g-{len(response_data) + 1}",
-                            "fingerprint": url,
-                            "count": len(recipes),
-                            "recipes": recipes,
-                        }
-                    )
+            append_groups(fingerprint_groups, "fingerprint")
+            append_groups(url_groups, "source_path")
 
             response_data.sort(key=lambda entry: entry["count"], reverse=True)
             return web.json_response(

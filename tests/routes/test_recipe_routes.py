@@ -2003,10 +2003,10 @@ async def test_find_duplicates_defaults_to_fingerprint_only(
     monkeypatch, tmp_path: Path
 ) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
-        harness.scanner.recipes = {
-            "r1": {"id": "r1", "title": "One", "modified": 100},
-            "r2": {"id": "r2", "title": "Two", "modified": 200},
-        }
+        harness.scanner.cached_raw = [
+            {"id": "r1", "title": "One", "modified": 100},
+            {"id": "r2", "title": "Two", "modified": 200},
+        ]
         harness.scanner.duplicate_groups_override = {"abc:0.8": ["r1", "r2"]}
         harness.scanner.duplicate_source_groups_override = {}
 
@@ -2028,12 +2028,12 @@ async def test_find_duplicates_forwards_include_prompt_and_assigns_unique_keys(
     monkeypatch, tmp_path: Path
 ) -> None:
     async with recipe_harness(monkeypatch, tmp_path) as harness:
-        harness.scanner.recipes = {
-            "r1": {"id": "r1", "title": "One", "modified": 100},
-            "r2": {"id": "r2", "title": "Two", "modified": 200},
-            "r3": {"id": "r3", "title": "Three", "modified": 300},
-            "r4": {"id": "r4", "title": "Four", "modified": 400},
-        }
+        harness.scanner.cached_raw = [
+            {"id": "r1", "title": "One", "modified": 100},
+            {"id": "r2", "title": "Two", "modified": 200},
+            {"id": "r3", "title": "Three", "modified": 300},
+            {"id": "r4", "title": "Four", "modified": 400},
+        ]
         harness.scanner.duplicate_groups_override = {"abc:0.8\x1fa girl": ["r1", "r2"]}
         harness.scanner.duplicate_source_groups_override = {
             "civitai.com/images/9": ["r3", "r4"]
