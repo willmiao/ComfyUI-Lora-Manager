@@ -543,8 +543,9 @@ export function createModelCard(model, modelType) {
         card.classList.add('excluded-model');
     }
 
-    // Apply selection state if in bulk mode and this card is in the selected set (LoRA only)
-    if (modelType === MODEL_TYPES.LORA && state.bulkMode && state.selectedLoras.has(model.file_path)) {
+    // state.selectedModels resolves to the active page's set (selectedLoras
+    // included) - do not narrow this back to selectedLoras/LORA-only.
+    if (state.bulkMode && state.selectedModels.has(model.file_path)) {
         card.classList.add('selected');
     }
 

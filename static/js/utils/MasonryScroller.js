@@ -544,6 +544,12 @@ export class MasonryScroller {
             modelCard.style.minWidth = '0';
         }
 
+        // Scroll recycling rebuilds cards from scratch, dropping `.selected`
+        // even though the filepath is still selected in state.
+        if (state.bulkMode && modelCard && state.selectedModels.has(modelCard.dataset.filepath)) {
+            modelCard.classList.add('selected');
+        }
+
         return element;
     }
 

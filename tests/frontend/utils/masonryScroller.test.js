@@ -75,7 +75,10 @@ describe('MasonryScroller', () => {
     while (liveScrollers.length > 0) {
       liveScrollers.pop().dispose();
     }
-    getCurrentPageState().duplicatesMode = false;
+    const pageState = getCurrentPageState();
+    pageState.duplicatesMode = false;
+    pageState.bulkMode = false;
+    pageState.selectedModels.clear();
   });
 
   function track(setup) {
@@ -233,6 +236,94 @@ describe('MasonryScroller', () => {
     expect(rendered.length).toBe(1);
     expect(rendered[0].style.maxWidth).toBe('none');
     expect(rendered[0].style.minWidth).toBe('0');
+  });
+
+  // Root-is-.model-card stub with data-filepath; the .card-preview child is
+  // required by updateSingleItem's update indicator.
+  function createRecipeStyleCreateItemFn() {
+    return (item) => {
+      const el = document.createElement('div');
+      el.className = 'model-card';
+      el.dataset.filepath = item.file_path;
+      const preview = document.createElement('div');
+      preview.className = 'card-preview';
+      el.appendChild(preview);
+      return el;
+    };
+  }
+
+  it('restores .selected on recreated cards after scroll recycling in bulk mode', () => {
+    const items = makeItems(Array.from({ length: 6 }, () => ({ width: 100, height: 100 })));
+    const pageState = getCurrentPageState();
+    const { scroller, grid, wrapper } = track(createScroller({
+      items,
+      viewportHeight: 300,
+      createItemFn: createRecipeStyleCreateItemFn(),
+    }));
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.renderItems();
+    expect(grid.querySelectorAll('.virtual-scroll-item').length).toBeGreaterThan(0);
+
+    pageState.bulkMode = true;
+    pageState.selectedModels.add('/recipes/item-0.png');
+    pageState.selectedModels.add('/recipes/item-1.png');
+
+    wrapper.scrollTop = 100000;
+    scroller.renderItems();
+    expect(grid.querySelectorAll('.virtual-scroll-item').length).toBe(0);
+
+    wrapper.scrollTop = 0;
+    scroller.renderItems();
+
+    const selectedPaths = [...grid.querySelectorAll('.model-card.selected')]
+      .map((card) => card.dataset.filepath)
+      .sort();
+    expect(selectedPaths).toEqual(['/recipes/item-0.png', '/recipes/item-1.png']);
+  });
+
+  it('does not mark recreated cards as selected when bulk mode is off', () => {
+    const items = makeItems([{ width: 100, height: 100 }]);
+    const pageState = getCurrentPageState();
+    const { scroller, grid, wrapper } = track(createScroller({
+      items,
+      viewportHeight: 3000,
+      createItemFn: createRecipeStyleCreateItemFn(),
+    }));
+
+    pageState.selectedModels.add('/recipes/item-0.png');
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.renderItems();
+
+    expect(grid.querySelectorAll('.model-card.selected').length).toBe(0);
+  });
+
+  it('updateSingleItem keeps the selected class on the rebuilt card', () => {
+    const items = makeItems([{ width: 100, height: 100 }, { width: 100, height: 100 }]);
+    const pageState = getCurrentPageState();
+    const { scroller, grid, wrapper } = track(createScroller({
+      items,
+      viewportHeight: 3000,
+      createItemFn: createRecipeStyleCreateItemFn(),
+    }));
+
+    pageState.bulkMode = true;
+    pageState.selectedModels.add('/recipes/item-1.png');
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.renderItems();
+
+    const result = scroller.updateSingleItem('/recipes/item-1.png', { title: 'Updated title' });
+    expect(result).toBe(true);
+
+    const updatedCard = grid.querySelector('.virtual-scroll-item.updated');
+    expect(updatedCard).not.toBeNull();
+    expect(updatedCard.classList.contains('selected')).toBe(true);
+    expect(updatedCard.dataset.filepath).toBe('/recipes/item-1.png');
   });
 
   it('triggers loadMoreItems when scrolled to the bottom', async () => {
@@ -635,5 +726,70 @@ describe('MasonryScroller', () => {
     expect(scroller.getNavigationState('/recipes/missing.png').index).toBe(-1);
     expect(scroller.findIndexByFilePath('/recipes/item-1.png')).toBe(1);
     expect(scroller.findIndexByFilePath('')).toBe(-1);
+  });
+});
+
+describe('VirtualScroller selection restore', () => {
+  beforeEach(() => {
+    setCurrentPageType('recipes');
+    getCurrentPageState().duplicatesMode = false;
+  });
+
+  afterEach(() => {
+    const pageState = getCurrentPageState();
+    pageState.duplicatesMode = false;
+    pageState.bulkMode = false;
+    pageState.selectedModels.clear();
+  });
+
+  function createVirtualScroller({ items, viewportHeight = 600 }) {
+    const wrapper = document.createElement('div');
+    Object.defineProperty(wrapper, 'clientWidth', { value: CONTAINER_WIDTH, configurable: true });
+    Object.defineProperty(wrapper, 'clientHeight', { value: viewportHeight, configurable: true });
+
+    const grid = document.createElement('div');
+    wrapper.appendChild(grid);
+    document.body.appendChild(wrapper);
+
+    const scroller = new VirtualScroller({
+      gridElement: grid,
+      containerElement: wrapper,
+      scrollContainer: wrapper,
+      createItemFn: (item) => {
+        const el = document.createElement('div');
+        el.className = 'model-card';
+        el.dataset.filepath = item.file_path;
+        return el;
+      },
+      fetchItemsFn: vi.fn(async () => ({ items, totalItems: items.length, hasMore: false })),
+    });
+
+    return { scroller, grid, wrapper };
+  }
+
+  it('restores .selected on cards recreated after scrolling away and back', () => {
+    const items = makeItems(Array.from({ length: 6 }, () => ({ width: 100, height: 100 })));
+    const pageState = getCurrentPageState();
+    const { scroller, grid, wrapper } = createVirtualScroller({ items, viewportHeight: 600 });
+
+    scroller.refreshWithData(items, items.length, false);
+    wrapper.scrollTop = 0;
+    scroller.renderItems();
+
+    pageState.bulkMode = true;
+    pageState.selectedModels.add('/recipes/item-0.png');
+    pageState.selectedModels.add('/recipes/item-2.png');
+
+    wrapper.scrollTop = 1000000;
+    scroller.renderItems();
+    expect(grid.querySelectorAll('.virtual-scroll-item').length).toBe(0);
+
+    wrapper.scrollTop = 0;
+    scroller.renderItems();
+
+    const selectedPaths = [...grid.querySelectorAll('.model-card.selected')]
+      .map((card) => card.dataset.filepath)
+      .sort();
+    expect(selectedPaths).toEqual(['/recipes/item-0.png', '/recipes/item-2.png']);
   });
 });
