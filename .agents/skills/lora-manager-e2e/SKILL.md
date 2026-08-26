@@ -11,13 +11,14 @@ This skill provides workflows and utilities for end-to-end testing of LoRa Manag
 
 - **`{PORT}`**: The server port. The default candidate is `8188`, but **`8188` is commonly occupied by a live ComfyUI process** and MUST NOT be assumed to be free. Always check availability first (see [Port Selection](#port-selection)) and use a free port (e.g. `8199`) for the E2E run. Substitute the actual port for every `{PORT}` in the commands below.
 - **`<repo-root>`**: The repository/worktree root. Always run commands from the repo or worktree root; never assume a specific absolute path (paths such as `/home/<user>/...` differ per machine). The E2E scripts resolve the project root themselves, but fixture/settings paths are relative to `<repo-root>`.
+- **`<settings-dir>`**: The sandboxed explicit settings directory passed via `--settings-path` (see [SANDBOX](#sandbox-mandatory)); substitute the actual path (e.g. `/tmp/opencode/<plan>-e2e/settings`) for every `{PATH}` in commands below that target the sandbox config.
 
 ## SANDBOX (MANDATORY)
 
 > **Read this section before running anything.** Every E2E run MUST target a throwaway sandbox, never the real user data. A fresh subagent that skips this section WILL permanently mutate real user recipes.
 
-1. **Portable settings**: create `<repo-root>/settings.json` (gitignored) with `"use_portable_settings": true` plus sandboxed `folder_paths` (lora/checkpoint roots) and `recipes_path`. This keeps the configuration inside the repo instead of the real user config dir (`~/.config/ComfyUI-LoRA-Manager/settings.json`).
-2. **Sandboxed paths**: point `folder_paths` / `recipes_path` / `example_images_path` at disposable dirs — e.g. under `/tmp/opencode/<plan-name>-e2e/` (or worktree-local dirs). NEVER point the E2E at the real library (`~/models/...`), real recipe dir, or real settings.
+1. **Explicit settings directory (preferred)**: launch the standalone server with `--settings-path <sandbox>/settings` (or set `LORA_MANAGER_SETTINGS_DIR`). This pins ALL runtime data — `settings.json`, `cache/`, `wildcards/`, `backups/`, `logs/`, `stats/` — under that directory, independent of portable mode and of the real user config dir. **Do NOT** write `<repo-root>/settings.json` for sandboxing: the repo folder is usually the real ComfyUI plugin folder, and a portable `settings.json` there is read by the real instance — exactly the conflict this E2E must avoid.
+2. **Sandboxed paths**: point `folder_paths` / `recipes_path` / `example_images_path` at disposable dirs under the sandbox — e.g. `<sandbox>/models/loras`, `<sandbox>/recipes`. NEVER point the E2E at the real library (`~/models/...`), real recipe dir, or real settings.
 3. **Never touch the real config**: the real user config at `~/.config/ComfyUI-LoRA-Manager/settings.json` and the real recipe dir must remain byte-identical before and after the run.
 4. **Record real-data protection proof** before starting and after finishing:
    ```bash
@@ -27,13 +28,14 @@ This skill provides workflows and utilities for end-to-end testing of LoRa Manag
    find ~/models/recipes -name '*.recipe.json' -newermt "$(date -Iseconds)" | head   # expect empty after run
    # AFTER: record again, then diff the two snapshots. Any change = the run leaked into real data.
    ```
-   Also confirm `<repo-root>/git status` stays clean for `settings.json`/`cache/` (both are gitignored).
+   Also confirm `<repo-root>/git status` stays clean (`settings.json`/`cache/` are gitignored and must not be created by the run).
 
-### Portable Settings Example
+### Sandbox Settings (via `--settings-path`)
+
+Write this file as `<sandbox>/settings/settings.json` — `<settings-dir>` in the commands below:
 
 ```json
 {
-  "use_portable_settings": true,
   "folder_paths": {
     "loras": ["/tmp/opencode/<plan>-e2e/models/loras"],
     "checkpoints": ["/tmp/opencode/<plan>-e2e/models/checkpoints"],
@@ -45,7 +47,7 @@ This skill provides workflows and utilities for end-to-end testing of LoRa Manag
 }
 ```
 
-The scanner computes and persists model hashes during the library scan, so the sandbox model dirs just need the model files + `.metadata.json` sidecars (see [Fixture + Fresh-State Guidance](#fixture--fresh-state-guidance)).
+The scanner computes and persists model hashes during the library scan, so the sandbox model dirs just need the model files + `.metadata.json` sidecars (see [Fixture + Fresh-State Guidance](#fixture--fresh-state-guidance)). With `--settings-path`, all derived data lands under `<settings-dir>` (`cache/`, `backups/`, `logs/`, `stats/`, `wildcards/`), and NO `cache/` appears in `<repo-root>`.
 
 ## Time Budgets & Abort Guidance
 
@@ -90,9 +92,10 @@ ss -tlnp | grep ':8188' || echo "8188 is free"
 
 ```bash
 cd <repo-root>                       # ALWAYS run from the repo/worktree root
+mkdir -p /tmp/opencode/<plan>-e2e/settings
 mkdir -p /tmp/opencode/<plan>-e2e/models/{loras,checkpoints}
 mkdir -p /tmp/opencode/<plan>-e2e/{recipes,example_images,recipes-before}
-# write <repo-root>/settings.json per the portable-settings example above
+# write <sandbox>/settings/settings.json per the sandbox-settings example above
 # record real-data protection proof (see SANDBOX section)
 ```
 
@@ -106,16 +109,18 @@ If `{PORT}` is occupied by an unrelated process, pick a free one and use it ever
 
 ### 3. Start LoRa Manager Standalone (detached)
 
-The standalone server **dies with the shell unless launched fully detached** — a plain background `&` from the bash tool is killed when the tool call returns. Launch via the helper script:
+The standalone server **dies with the shell unless launched fully detached** — a plain background `&` from the bash tool is killed when the tool call returns. Launch via the helper script (note `--settings-path`):
 
 ```bash
-python .agents/skills/lora-manager-e2e/scripts/start_server.py --port {PORT} --wait --timeout 30 --detach
+python .agents/skills/lora-manager-e2e/scripts/start_server.py \
+  --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings \
+  --wait --timeout 30 --detach
 ```
 
 Or manually (equivalent detached form):
 
 ```bash
-setsid nohup python standalone.py --port {PORT} --host 127.0.0.1 < /dev/null \
+setsid nohup python standalone.py --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings --host 127.0.0.1 < /dev/null \
   >> /tmp/opencode/<plan>-e2e/server.log 2>&1 &
 echo "started"   # record the printed/pidfile PID for cleanup
 ```
@@ -169,7 +174,9 @@ snapshot = take_snapshot()
 # Stop current server (if running), start with new configuration.
 # --restart only kills the E2E server this script started before (via its pidfile);
 # it refuses to blindly kill unrelated processes on the port.
-python .agents/skills/lora-manager-e2e/scripts/start_server.py --port {PORT} --restart --wait --detach
+python .agents/skills/lora-manager-e2e/scripts/start_server.py \
+  --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings \
+  --restart --wait --detach
 
 # Wait and refresh browser
 navigate_page(type="reload", ignoreCache=True)
@@ -250,17 +257,21 @@ Each entry point (global / per-recipe / selection-bulk) must start from the same
 ```bash
 # 1. Reset fixtures to the before-state snapshot (copy back from recipes-before/)
 cp /tmp/opencode/<plan>-e2e/recipes-before/*.recipe.json /tmp/opencode/<plan>-e2e/recipes/
-# 2. Clear the recipe/FTS caches so the stale in-memory/library state is gone
-rm -f <repo-root>/cache/recipe/*.sqlite
-rm -rf <repo-root>/cache/fts/*
+# 2. Clear the recipe/FTS caches so the stale in-memory/library state is gone.
+#    With --settings-path these live under the sandbox settings dir, NOT <repo-root>/cache.
+rm -f /tmp/opencode/<plan>-e2e/settings/cache/recipe/*.sqlite
+rm -rf /tmp/opencode/<plan>-e2e/settings/cache/fts/*
 # 3. Restart the server (fresh process, fresh scan)
-python .agents/skills/lora-manager-e2e/scripts/start_server.py --port {PORT} --restart --wait --timeout 30 --detach
+python .agents/skills/lora-manager-e2e/scripts/start_server.py \
+  --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings \
+  --restart --wait --timeout 30 --detach
 # 4. Re-verify server listening + reload the browser page
 ```
 
 ## Server Lifecycle
 
-- **Detached launch is mandatory**: the standalone server dies with the shell unless launched via `setsid` (or the helper script's `--detach`). Use `setsid nohup python standalone.py --port {PORT} --host 127.0.0.1 ... < /dev/null &`.
+- **Detached launch is mandatory**: the standalone server dies with the shell unless launched via `setsid` (or the helper script's `--detach`). Use `setsid nohup python standalone.py --port {PORT} --settings-path <sandbox>/settings --host 127.0.0.1 ... < /dev/null &`.
+- **Always pass `--settings-path`** pointing at the sandbox settings dir — this is what keeps the run fully sandboxed (see [SANDBOX](#sandbox-mandatory)).
 - **Verify with `ss -tlnp`** after every (re)start; do not proceed on a blind "server starting" message.
 - **Never kill pre-existing processes** — only kill the E2E server PID you started (`start_server.py --restart` kills only PIDs it manages via its pidfile). The live ComfyUI or a stale QA Chrome must never be killed as part of cleanup unless explicitly identified as such (see Chrome troubleshooting).
 - **Record your PID for cleanup**: note the PID printed/pidfile, and stop exactly that PID at the end (`kill <PID>`, then confirm with `ss -tlnp` that `{PORT}` is released).
@@ -306,11 +317,12 @@ Testing the rematch-cancel path E2E requires a run long enough to cancel mid-fli
 Starts or restarts the LoRa Manager standalone server for E2E testing.
 
 ```bash
-python scripts/start_server.py [--port PORT] [--restart] [--wait] [--timeout SECONDS] [--detach]
+python scripts/start_server.py [--port PORT] [--settings-path DIR] [--restart] [--wait] [--timeout SECONDS] [--detach]
 ```
 
 Options:
 - `--port`: Server port (default: 8188). The script exits early with a clear message if the port is already in use by an unrelated process.
+- `--settings-path`: Explicit sandbox settings directory passed through to `standalone.py` (equivalent to `LORA_MANAGER_SETTINGS_DIR`). Creates the directory if needed and refuses to start if the path exists as a file. **Use this for every sandboxed E2E run.**
 - `--restart`: Kill the E2E server this script previously managed (tracked via `/tmp/lora-manager-e2e-server-{PORT}.pid`) before starting. If unrelated processes still hold the port after that, the script reports them and aborts instead of killing them.
 - `--wait`: Wait for the server to be ready before exiting.
 - `--timeout`: Readiness wait timeout in seconds (default: 30).
@@ -369,5 +381,5 @@ results = performance_stop_trace()
 Always ensure proper cleanup after tests:
 1. Stop the standalone server: `kill <recorded-pid>` (only the PID you started), then confirm `ss -tlnp | grep ':{PORT}'` is empty.
 2. Close browser pages (keep at least one open).
-3. Remove the sandbox: `rm -rf /tmp/opencode/<plan>-e2e` and `<repo-root>/settings.json` + `<repo-root>/cache` (both gitignored).
+3. Remove the sandbox: `rm -rf /tmp/opencode/<plan>-e2e`. Verify `<repo-root>` has NOT gained a `settings.json` or `cache/` (with `--settings-path` they never appear there).
 4. Re-run the real-data protection check from the SANDBOX section and record the result in your evidence.

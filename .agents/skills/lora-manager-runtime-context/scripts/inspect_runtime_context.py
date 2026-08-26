@@ -14,6 +14,7 @@ from typing import Any
 
 SECRET_PATTERN = re.compile(r"(key|token|secret|password|auth|credential)", re.IGNORECASE)
 APP_NAME = "ComfyUI-LoRA-Manager"
+SETTINGS_DIR_ENV = "LORA_MANAGER_SETTINGS_DIR"
 CACHE_SQLITE = {
     "model": ("model", "{library}.sqlite"),
     "recipe": ("recipe", "{library}.sqlite"),
@@ -30,6 +31,15 @@ CACHE_JSON = {
 
 def main() -> int:
     parser = argparse.ArgumentParser(description="Inspect LoRA Manager runtime state read-only.")
+    parser.add_argument(
+        "--settings-path",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help="Explicit settings directory (same as LORA_MANAGER_SETTINGS_DIR / "
+        "standalone --settings-path). Overrides portable mode and the default "
+        "user config dir.",
+    )
     subparsers = parser.add_subparsers(dest="command", required=True)
 
     subparsers.add_parser("summary", help="Print redacted settings and resolved paths.")
@@ -44,6 +54,8 @@ def main() -> int:
     sqlite_parser.add_argument("--limit", type=int, default=3, help="Rows to sample from each user table.")
 
     args = parser.parse_args()
+    if args.settings_path:
+        os.environ[SETTINGS_DIR_ENV] = args.settings_path
     context = build_context()
 
     if args.command == "summary":
@@ -78,6 +90,11 @@ def build_context() -> dict[str, Any]:
 
 
 def resolve_settings_path() -> Path:
+    # Explicit override: LORA_MANAGER_SETTINGS_DIR env or --settings-path.
+    explicit = os.environ.get(SETTINGS_DIR_ENV)
+    if explicit:
+        return Path(explicit).expanduser() / "settings.json"
+
     repo_root = find_repo_root()
     portable = repo_root / "settings.json"
     if portable.exists():

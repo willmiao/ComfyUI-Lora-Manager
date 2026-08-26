@@ -211,6 +211,17 @@ def main() -> int:
         help="Launch the server fully detached (setsid-style) so it survives shell "
         "death. REQUIRED for E2E: a plain background process dies with the shell",
     )
+    parser.add_argument(
+        "--settings-path",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help="Explicit settings directory passed to standalone.py (--settings-path, "
+        "equivalent to LORA_MANAGER_SETTINGS_DIR). settings.json, cache/, "
+        "wildcards/, backups/, logs/, stats/ all live under this directory instead "
+        "of the project root or the user config dir. Recommended for sandboxed E2E "
+        "so the real instance and the repo stay untouched",
+    )
 
     args = parser.parse_args()
 
@@ -283,6 +294,16 @@ def main() -> int:
         "--port",
         str(args.port),
     ]
+    if args.settings_path:
+        settings_dir = os.path.abspath(os.path.expanduser(args.settings_path))
+        if os.path.exists(settings_dir) and not os.path.isdir(settings_dir):
+            print(
+                f"ERROR: --settings-path '{settings_dir}' exists but is not a directory."
+            )
+            return 2
+        os.makedirs(settings_dir, exist_ok=True)
+        cmd.extend(["--settings-path", settings_dir])
+        print(f"Settings directory: {settings_dir}")
 
     if args.detach:
         # Fully detached launch: new session (setsid), no controlling terminal,

@@ -13,6 +13,15 @@ from platformdirs import user_config_dir
 
 APP_NAME = "ComfyUI-LoRA-Manager"
 _LM_PORTABLE_ENV = "LORA_MANAGER_PORTABLE"
+
+# Explicit settings-directory override. Setting this (env var, or standalone's
+# ``--settings-path`` which publishes it) pins the settings location: settings.json,
+# cache/, wildcards/, backups/, logs/, stats/ all resolve under this directory,
+# bypassing portable mode and the platform user config dir. Useful for sandboxed
+# development/E2E runs that must not touch the real user data or the project root.
+SETTINGS_DIR_ENV = "LORA_MANAGER_SETTINGS_DIR"
+_settings_dir_override: Optional[str] = None
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -20,6 +29,51 @@ def get_project_root() -> str:
     """Return the root directory of the project repository."""
 
     return os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+
+
+def _normalize_settings_dir(path: str) -> str:
+    """Expand ``~`` and absolutize a user-supplied settings directory."""
+
+    return os.path.abspath(os.path.expanduser(path))
+
+
+def set_settings_dir_override(path: Optional[str]) -> Optional[str]:
+    """Set or clear the programmatic settings-directory override.
+
+    Args:
+        path: Absolute/relative directory to pin, or ``None`` to clear the
+            override. ``~`` is expanded and the path absolutized.
+
+    Returns:
+        The previous override value (``None`` when none was active).
+    """
+
+    global _settings_dir_override
+    previous = _settings_dir_override
+    _settings_dir_override = (
+        _normalize_settings_dir(path) if path else None
+    )
+    return previous
+
+
+def get_settings_dir_override() -> Optional[str]:
+    """Return the active explicit settings-directory override, if any.
+
+    The ``LORA_MANAGER_SETTINGS_DIR`` environment variable takes precedence over
+    the programmatic override so that standalone's ``--settings-path`` (which
+    publishes itself through the environment) wins over embedded callers.
+    """
+
+    env_path = os.environ.get(SETTINGS_DIR_ENV)
+    if env_path:
+        return _normalize_settings_dir(env_path)
+    return _settings_dir_override
+
+
+def is_settings_dir_pinned() -> bool:
+    """Return ``True`` when an explicit settings-directory override is active."""
+
+    return get_settings_dir_override() is not None
 
 
 def get_legacy_settings_path() -> str:
@@ -31,6 +85,11 @@ def get_legacy_settings_path() -> str:
 def get_settings_dir(create: bool = True) -> str:
     """Return the user configuration directory for the application.
 
+    An explicit override (``LORA_MANAGER_SETTINGS_DIR`` or
+    :func:`set_settings_dir_override`) takes precedence. Otherwise the portable
+    project-root ``settings.json`` is used when enabled, falling back to the
+    platform-specific user configuration directory.
+
     Args:
         create: Whether to create the directory if it does not already exist.
 
@@ -38,11 +97,15 @@ def get_settings_dir(create: bool = True) -> str:
         The absolute path to the user configuration directory.
     """
 
-    legacy_path = get_legacy_settings_path()
-    if _should_use_portable_settings(legacy_path, _LOGGER):
-        config_dir = os.path.dirname(legacy_path)
+    override = get_settings_dir_override()
+    if override:
+        config_dir = override
     else:
-        config_dir = user_config_dir(APP_NAME, appauthor=False)
+        legacy_path = get_legacy_settings_path()
+        if _should_use_portable_settings(legacy_path, _LOGGER):
+            config_dir = os.path.dirname(legacy_path)
+        else:
+            config_dir = user_config_dir(APP_NAME, appauthor=False)
 
     if create and config_dir:
         os.makedirs(config_dir, exist_ok=True)
@@ -58,9 +121,14 @@ def get_settings_file_path(create_dir: bool = True) -> str:
 def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
     """Ensure the settings file resides in the user configuration directory.
 
-    If a legacy ``settings.json`` is detected in the project root it is migrated to
-    the platform-specific user configuration folder. The caller receives the path
-    to the settings file irrespective of whether a migration was needed.
+    An explicit override (``LORA_MANAGER_SETTINGS_DIR`` or
+    :func:`set_settings_dir_override`) pins the settings file to
+    ``<override>/settings.json`` and skips legacy migration entirely.
+
+    Otherwise, if a legacy ``settings.json`` is detected in the project root it is
+    migrated to the platform-specific user configuration folder. The caller
+    receives the path to the settings file irrespective of whether a migration was
+    needed.
 
     Args:
         logger: Optional logger used for migration messages. Falls back to a
@@ -71,6 +139,12 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
     """
 
     logger = logger or _LOGGER
+
+    override = get_settings_dir_override()
+    if override:
+        os.makedirs(override, exist_ok=True)
+        return os.path.join(override, "settings.json")
+
     legacy_path = get_legacy_settings_path()
 
     if _should_use_portable_settings(legacy_path, logger):

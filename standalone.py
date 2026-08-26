@@ -8,10 +8,34 @@ from typing import Any, cast
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from py.middleware.cache_middleware import cache_control
 from py.middleware.error_middleware import api_json_error
-from py.utils.settings_paths import ensure_settings_file
+from py.utils.settings_paths import SETTINGS_DIR_ENV, ensure_settings_file
 
 # Set environment variable to indicate standalone mode
 os.environ["LORA_MANAGER_STANDALONE"] = "1"
+
+
+def _apply_settings_dir_from_argv(argv=None):
+    """Apply ``--settings-path`` from argv before any settings resolution runs.
+
+    Standalone resolves the settings location at import time (session logging and
+    the settings manager run before ``main()`` parses arguments), so pre-scan
+    argv and publish the explicit directory through ``LORA_MANAGER_SETTINGS_DIR``,
+    which ``py.utils.settings_paths`` honors in both standalone and plugin modes.
+
+    Args:
+        argv: Argument list to scan; defaults to ``sys.argv[1:]``.
+    """
+    args = list(sys.argv[1:] if argv is None else argv)
+    for index, arg in enumerate(args):
+        if arg == "--settings-path" and index + 1 < len(args):
+            os.environ[SETTINGS_DIR_ENV] = args[index + 1]
+            return
+        if arg.startswith("--settings-path="):
+            os.environ[SETTINGS_DIR_ENV] = arg.split("=", 1)[1]
+            return
+
+
+_apply_settings_dir_from_argv()
 
 
 # Create mock modules for py/nodes directory - add this before any other imports
@@ -396,6 +420,16 @@ def parse_args():
     # parser.add_argument("--checkpoints", type=str, nargs="+",
     #                     help="Additional paths to checkpoint model directories (optional if settings.json has paths)")
     parser.add_argument(
+        "--settings-path",
+        type=str,
+        default=None,
+        metavar="DIR",
+        help="Explicit settings directory: settings.json, cache/, wildcards/, "
+        "backups/, logs/, stats/ all live under this directory. Overrides portable "
+        "mode and the default user config dir. Equivalent to the "
+        "LORA_MANAGER_SETTINGS_DIR environment variable.",
+    )
+    parser.add_argument(
         "--log-level",
         type=str,
         default="INFO",
@@ -413,6 +447,18 @@ def parse_args():
 async def main():
     """Main entry point for standalone mode"""
     args = parse_args()
+
+    # Normalize and validate the explicit settings directory (the pre-import
+    # argv scan already applied it; re-derive so --settings-path wins over any
+    # pre-existing LORA_MANAGER_SETTINGS_DIR and is canonicalized the same way).
+    if args.settings_path:
+        settings_dir = os.path.abspath(os.path.expanduser(args.settings_path))
+        if os.path.exists(settings_dir) and not os.path.isdir(settings_dir):
+            logger.error(
+                "--settings-path '%s' exists but is not a directory.", settings_dir
+            )
+            return
+        os.environ[SETTINGS_DIR_ENV] = settings_dir
 
     # Set log level (verbose flag overrides to DEBUG)
     log_level = "DEBUG" if args.verbose else args.log_level

@@ -293,6 +293,36 @@ def test_switching_back_to_user_config_moves_subdirectories(tmp_path, monkeypatc
     ) == "project_wildcard"
 
 
+def test_portable_switch_ignored_when_settings_dir_pinned(tmp_path, monkeypatch):
+    """An explicit settings dir (--settings-path) must never trigger the
+    portable-mode directory migration between project root and user config."""
+    project_root, user_dir, user_settings = _setup_storage_paths(tmp_path, monkeypatch)
+    _populate_settings_dir(user_dir)
+
+    custom_dir = tmp_path / "custom_settings"
+    custom_dir.mkdir()
+    monkeypatch.setattr(
+        "py.services.settings_manager.ensure_settings_file",
+        lambda logger=None: str(custom_dir / "settings.json"),
+    )
+    settings_paths.set_settings_dir_override(str(custom_dir))
+    try:
+        manager = SettingsManager()
+        manager.settings_file = str(custom_dir / "settings.json")
+
+        manager.set("use_portable_settings", True)
+
+        # Settings file stays pinned; no directories are migrated anywhere and
+        # the settings file is not mirrored to the user config dir.
+        assert manager.settings_file == str(custom_dir / "settings.json")
+        assert not (project_root / "cache").exists()
+        assert not (project_root / "backups").exists()
+        assert not (project_root / "settings.json").exists()
+        assert not user_settings.exists()
+    finally:
+        settings_paths.set_settings_dir_override(None)
+
+
 def test_download_path_template_parses_json_string(manager):
     templates = {"lora": "{author}", "checkpoint": "{author}", "embedding": "{author}"}
     manager.settings["download_path_templates"] = json.dumps(templates)

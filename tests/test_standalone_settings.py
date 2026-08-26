@@ -1,5 +1,7 @@
 import importlib
 import json
+import os
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -112,3 +114,44 @@ def test_validate_settings_logs_warnings(tmp_path, monkeypatch, caplog):
 
     messages = [record.message for record in caplog.records]
     assert any("Standalone mode is using fallback configuration values." in message for message in messages)
+
+
+@pytest.mark.no_settings_dir_isolation
+def test_explicit_settings_dir_env_used_by_manager(tmp_path, monkeypatch):
+    """LORA_MANAGER_SETTINGS_DIR pins the settings file for the manager."""
+    custom_dir = tmp_path / "custom"
+    monkeypatch.setenv("LORA_MANAGER_SETTINGS_DIR", str(custom_dir))
+    reset_settings_manager()
+
+    manager = get_settings_manager()
+
+    assert settings_paths.is_settings_dir_pinned()
+    assert Path(manager.settings_file) == custom_dir / "settings.json"
+    assert settings_paths.get_settings_dir() == str(custom_dir)
+
+
+def test_apply_settings_dir_from_argv():
+    """standalone's argv pre-scan publishes --settings-path into the env."""
+    import standalone
+
+    # The helper writes to os.environ directly; manage the variable manually so
+    # monkeypatch's undo stack cannot restore a stale value after the test.
+    previous = os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+    try:
+        standalone._apply_settings_dir_from_argv(
+            ["--port", "8199", "--settings-path", "/tmp/xyz-e2e-settings"]
+        )
+        assert os.environ["LORA_MANAGER_SETTINGS_DIR"] == "/tmp/xyz-e2e-settings"
+
+        os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+        standalone._apply_settings_dir_from_argv(["--settings-path=/tmp/abc-e2e"])
+        assert os.environ["LORA_MANAGER_SETTINGS_DIR"] == "/tmp/abc-e2e"
+
+        os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+        standalone._apply_settings_dir_from_argv(["--port", "8199"])
+        assert "LORA_MANAGER_SETTINGS_DIR" not in os.environ
+    finally:
+        if previous is None:
+            os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
+        else:
+            os.environ["LORA_MANAGER_SETTINGS_DIR"] = previous
