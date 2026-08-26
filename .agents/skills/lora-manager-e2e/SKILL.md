@@ -1,6 +1,6 @@
 ---
 name: lora-manager-e2e
-description: End-to-end testing and validation for LoRa Manager features. Use when performing automated E2E validation of LoRa Manager standalone mode in a SANDBOXED, disposable configuration: check the port, start/restart the standalone server on a free port, use Chrome DevTools MCP to interact with the web UI (http://127.0.0.1:{PORT}/loras), and verify frontend-to-backend functionality. Covers workflow validation, UI interaction testing, and integration testing between the standalone Python backend and the browser frontend. Trigger keywords: E2E, standalone, Chrome DevTools MCP, lora-manager-e2e, sandbox.
+description: "End-to-end testing and validation for LoRa Manager features. Use when performing automated E2E validation of LoRa Manager standalone mode in a SANDBOXED, disposable configuration: check the port, start/restart the standalone server on a free port, use Chrome DevTools MCP to interact with the web UI (http://127.0.0.1:{PORT}/loras), and verify frontend-to-backend functionality. Covers workflow validation, UI interaction testing, and integration testing between the standalone Python backend and the browser frontend. Trigger keywords: E2E, standalone, Chrome DevTools MCP, lora-manager-e2e, sandbox."
 ---
 
 # LoRa Manager E2E Testing
