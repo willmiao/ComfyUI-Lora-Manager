@@ -17,17 +17,77 @@ export class BatchImportManager {
         this.progress = null;
         this.results = null;
         this.isCancelled = false;
+        this.isImporting = false;
     }
 
     /**
-     * Show the batch import modal
+     * Show the batch import modal.
+     *
+     * If an import is still running in the background (e.g. the modal was
+     * closed mid-run with the X button or a backdrop click), reopen it in the
+     * progress/results view instead of resetting to a fresh form, so the modal
+     * never becomes unusable while an operation is in flight.
      */
     showModal() {
         if (!this.initialized) {
             this.initialize();
         }
-        this.resetState();
-        modalManager.showModal('batchImportModal');
+
+        if (this.isImporting && this.operationId) {
+            console.log(
+                `[BatchImport] Reopening modal while operation ${this.operationId} is still active; restoring its view.`
+            );
+            this.resumeRunningImportView();
+        } else if (this.results && this.operationId) {
+            // A previous operation finished while the modal was closed —
+            // restore its results view instead of discarding them.
+            console.log(
+                `[BatchImport] Reopening modal after operation ${this.operationId} finished; showing results.`
+            );
+            this.showStep('batchResultsStep');
+            this.updateResultsUI(this.results);
+        } else {
+            this.resetState();
+            console.log('[BatchImport] Opening batch import modal.');
+        }
+
+        modalManager.showModal('batchImportModal', null, () => this.handleModalClosed());
+    }
+
+    /**
+     * Restore the progress (or results) view for an operation that is still
+     * running in the background after the modal was closed.
+     */
+    resumeRunningImportView() {
+        // Operation completed while the modal was closed — show results
+        if (this.results) {
+            this.showStep('batchResultsStep');
+            this.updateResultsUI(this.results);
+            return;
+        }
+
+        // Still running — restore the progress step and re-attach live updates
+        this.showStep('batchProgressStep');
+        this.updateProgressUI(this.progress || {});
+        if (!this.wsConnection && !this.pollingInterval) {
+            this.connectWebSocket();
+            this.startPolling();
+        }
+    }
+
+    /**
+     * Called whenever the modal is closed (X button, backdrop click, cancel,
+     * closeAndReset). Logs whether an operation is still running so users can
+     * tell from the console that work continues in the background.
+     */
+    handleModalClosed() {
+        if (this.isImporting && this.operationId) {
+            console.log(
+                `[BatchImport] Modal closed while import ${this.operationId} is still running; it keeps running in the background. Reopen the modal to watch its progress.`
+            );
+        } else {
+            console.log('[BatchImport] Modal closed (no active import).');
+        }
     }
 
     /**
@@ -57,6 +117,7 @@ export class BatchImportManager {
         this.progress = null;
         this.results = null;
         this.isCancelled = false;
+        this.isImporting = false;
 
         // Reset UI
         this.showStep('batchInputStep');
@@ -172,6 +233,10 @@ export class BatchImportManager {
             return;
         }
 
+        console.log(
+            `[BatchImport] Starting import: mode=${data.mode}, items=${data.items ? data.items.length : 'directory'}, tags=${data.tags.length}`
+        );
+
         try {
             // Show progress step
             this.showStep('batchProgressStep');
@@ -182,6 +247,8 @@ export class BatchImportManager {
             if (response.success) {
                 this.operationId = response.operation_id;
                 this.isCancelled = false;
+                this.isImporting = true;
+                console.log(`[BatchImport] Import started, operation_id=${this.operationId}`);
                 
                 // Connect to WebSocket for real-time updates
                 this.connectWebSocket();
@@ -189,6 +256,7 @@ export class BatchImportManager {
                 // Start polling as fallback
                 this.startPolling();
             } else {
+                console.warn(`[BatchImport] Failed to start import: ${response.error}`);
                 showToast('toast.recipes.batchImportFailed', { message: response.error }, 'error');
                 this.showStep('batchInputStep');
             }
@@ -357,6 +425,16 @@ export class BatchImportManager {
     handleProgressUpdate(progress) {
         this.progress = progress;
         this.updateProgressUI(progress);
+
+        // Console visibility for background progress: while the modal is
+        // closed (or open), the console shows what the import is doing.
+        console.log(
+            `[BatchImport] Progress ${Math.round(progress.progress_percent || 0)}% ` +
+            `(${progress.completed}/${progress.total}) ` +
+            `status=${progress.status} ` +
+            `success=${progress.success} failed=${progress.failed} skipped=${progress.skipped} ` +
+            `item=${progress.current_item || '-'}`
+        );
         
         // Check if import is complete
         if (progress.status === 'completed' || progress.status === 'cancelled' || 
@@ -431,7 +509,12 @@ export class BatchImportManager {
      */
     importComplete(progress) {
         this.cleanupConnections();
+        this.isImporting = false;
         this.results = progress;
+        console.log(
+            `[BatchImport] Import finished: status=${progress.status} ` +
+            `total=${progress.total} success=${progress.success} failed=${progress.failed} skipped=${progress.skipped}`
+        );
         
         // Refresh recipes list to show newly imported recipes
         if (window.recipeManager && typeof window.recipeManager.loadRecipes === 'function') {
@@ -559,6 +642,7 @@ export class BatchImportManager {
         if (!this.operationId) return;
         
         this.isCancelled = true;
+        console.log(`[BatchImport] Cancelling import ${this.operationId}...`);
         
         try {
             const response = await fetch('/api/lm/recipes/batch-import/cancel', {
@@ -572,8 +656,10 @@ export class BatchImportManager {
             const data = await response.json();
             
             if (data.success) {
+                console.log(`[BatchImport] Cancel request accepted for ${this.operationId}`);
                 showToast('toast.recipes.batchImportCancelling', {}, 'info');
             } else {
+                console.warn(`[BatchImport] Cancel request failed: ${data.error}`);
                 showToast('toast.recipes.batchImportCancelFailed', { message: data.error }, 'error');
             }
         } catch (error) {
@@ -586,6 +672,7 @@ export class BatchImportManager {
      * Close modal and reset state
      */
     closeAndReset() {
+        console.log('[BatchImport] Closing modal and resetting state.');
         this.cleanupConnections();
         this.resetState();
         modalManager.closeModal('batchImportModal');
@@ -595,6 +682,7 @@ export class BatchImportManager {
      * Start a new import (from results step)
      */
     startNewImport() {
+        console.log('[BatchImport] Starting a new import from the results view.');
         this.resetState();
         this.showStep('batchInputStep');
     }
@@ -789,6 +877,14 @@ export class BatchImportManager {
      * Clean up WebSocket and polling connections
      */
     cleanupConnections() {
+        const hasWs = this.wsConnection && (
+            this.wsConnection.readyState === WebSocket.OPEN ||
+            this.wsConnection.readyState === WebSocket.CONNECTING
+        );
+        if (hasWs || this.pollingInterval) {
+            console.log('[BatchImport] Cleaning up live connections (WebSocket/polling).');
+        }
+
         if (this.wsConnection) {
             if (this.wsConnection.readyState === WebSocket.OPEN || 
                 this.wsConnection.readyState === WebSocket.CONNECTING) {

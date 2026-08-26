@@ -19,6 +19,10 @@ export class DownloadManager {
             return;
         }
 
+        console.log(
+            `[RecipeImport] Saving recipe "${this.importManager.recipeName}" (download-only=${isDownloadOnly}, skipDownload=${skipDownload})`
+        );
+
         try {
             // Show progress indicator
             const loadingMessage = skipDownload 
@@ -102,6 +106,7 @@ export class DownloadManager {
                 if (!result.success) {
                     // Handle save error
                     console.error("Failed to save recipe:", result.error);
+                    console.log('[RecipeImport] Save failed; closing import modal.');
                     showToast('toast.recipes.recipeSaveFailed', { error: result.error }, 'error');
                     // Close modal
                     modalManager.closeModal('importModal');
@@ -112,6 +117,7 @@ export class DownloadManager {
             // Check if we need to download LoRAs (skip if skipDownload is true)
             let failedDownloads = 0;
             if (!skipDownload && this.importManager.downloadableLoRAs && this.importManager.downloadableLoRAs.length > 0) {
+                console.log(`[RecipeImport] Downloading ${this.importManager.downloadableLoRAs.length} missing LoRA(s)...`);
                 await this.downloadMissingLoras();
             }
 
@@ -127,6 +133,7 @@ export class DownloadManager {
             }
 
             modalManager.closeModal('importModal');
+            console.log(`[RecipeImport] Recipe "${this.importManager.recipeName}" saved successfully.`);
 
             if (isDownloadOnly && state.virtualScroller) {
                 const recipeId = this.importManager.recipeId;

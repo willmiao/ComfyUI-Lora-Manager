@@ -66,9 +66,14 @@ export class ImportManager {
 
         // Show modal
         modalManager.showModal('importModal', null, () => {
+            console.log('[RecipeImport] Import modal closed.');
             this.cleanupFolderBrowser();
             this.stepManager.removeInjectedStyles();
         });
+
+        console.log(
+            `[RecipeImport] Import modal opened (${recipeData ? 'download-missing-loras mode' : 'new import'}).`
+        );
 
         // Verify visibility and focus on the URL input (primary mode)
         setTimeout(() => {

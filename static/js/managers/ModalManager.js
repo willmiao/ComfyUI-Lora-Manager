@@ -146,7 +146,13 @@ export class ModalManager {
             });
         }
 
-        // Add batchImportModal registration
+        // Add batchImportModal registration.
+        // Deliberately no closeOnOutsideClick: batch import is a stateful,
+        // multi-step workflow (input -> progress -> results) that runs a
+        // long-lived background operation. A stray backdrop click would
+        // dismiss the modal while the import keeps running, leaving users
+        // unable to tell what is still happening (issue #1084). Close is
+        // available via the explicit X button / Cancel instead.
         const batchImportModal = document.getElementById('batchImportModal');
         if (batchImportModal) {
             this.registerModal('batchImportModal', {
@@ -154,8 +160,7 @@ export class ModalManager {
                 onClose: () => {
                     this.getModal('batchImportModal').element.style.display = 'none';
                     document.body.classList.remove('modal-open');
-                },
-                closeOnOutsideClick: true
+                }
             });
         }
 

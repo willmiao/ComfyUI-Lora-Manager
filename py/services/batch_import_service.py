@@ -184,6 +184,7 @@ class BatchImportService:
     def cancel_import(self, operation_id: str) -> bool:
         if operation_id in self._active_operations:
             self._cancellation_flags[operation_id] = True
+            self._logger.info("Cancel requested for batch import operation %s", operation_id)
             return True
         return False
 
@@ -273,6 +274,14 @@ class BatchImportService:
         self._active_operations[operation_id] = progress
         self._cancellation_flags[operation_id] = False
 
+        self._logger.info(
+            "Starting batch import operation %s: %d item(s) (%d URL(s), %d local path(s))",
+            operation_id,
+            len(import_items),
+            sum(1 for it in import_items if it.item_type == ImportItemType.URL),
+            sum(1 for it in import_items if it.item_type == ImportItemType.LOCAL_PATH),
+        )
+
         asyncio.create_task(
             self._run_batch_import(
                 operation_id=operation_id,
@@ -295,6 +304,12 @@ class BatchImportService:
         skip_duplicates: bool = False,
     ) -> str:
         image_paths = await self._discover_images(directory, recursive)
+        self._logger.info(
+            "Batch import directory scan: %d image(s) discovered in %s (recursive=%s)",
+            len(image_paths),
+            directory,
+            recursive,
+        )
 
         items = [{"source": path, "type": "local_path"} for path in image_paths]
 
@@ -403,6 +418,19 @@ class BatchImportService:
                 self._concurrency_controller.record_result(item.duration, False)
 
             progress.completed += 1
+            self._logger.info(
+                "Batch import %s: item %d/%d status=%s source=%s%s",
+                operation_id,
+                progress.completed,
+                progress.total,
+                item.status.value,
+                (
+                    os.path.basename(item.source)
+                    if item.item_type == ImportItemType.LOCAL_PATH
+                    else item.source[:50]
+                ),
+                (f" error={item.error_message}" if item.error_message else ""),
+            )
             await self._broadcast_progress(progress)
 
         tasks = [process_item(item) for item in progress.items]
@@ -415,6 +443,15 @@ class BatchImportService:
 
         progress.finished_at = time.time()
         progress.current_item = ""
+        self._logger.info(
+            "Batch import %s finished: status=%s total=%d success=%d failed=%d skipped=%d",
+            operation_id,
+            progress.status,
+            progress.total,
+            progress.success,
+            progress.failed,
+            progress.skipped,
+        )
         await self._broadcast_progress(progress)
 
         await asyncio.sleep(5)
@@ -595,3 +632,6 @@ class BatchImportService:
     def _cleanup_operation(self, operation_id: str) -> None:
         if operation_id in self._cancellation_flags:
             del self._cancellation_flags[operation_id]
+        if operation_id in self._active_operations:
+            del self._active_operations[operation_id]
+            self._logger.info("Batch import operation %s cleaned up", operation_id)

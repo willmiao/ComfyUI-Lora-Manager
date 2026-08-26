@@ -30,6 +30,7 @@ export class ImageProcessor {
         errorElement.textContent = '';
         this.importManager.recipeImage = file;
         this.importManager.importMode = 'upload';
+        console.log(`[RecipeImport] Recipe image selected: ${file.name}`);
 
         // Show the selected file name in the drop zone
         this.importManager.updateSelectedFileName(file.name);
@@ -65,6 +66,10 @@ export class ImageProcessor {
         // Reset error
         errorElement.textContent = '';
         this.importManager.importMode = 'url';
+
+        console.log(
+            `[RecipeImport] Analyzing recipe input (${input.startsWith('http://') || input.startsWith('https://') ? 'remote URL' : 'local path'}): ${input.slice(0, 80)}`
+        );
 
         // Put the fetch button into a loading state to prevent duplicate submits
         const fetchBtn = document.getElementById('fetchImageBtn');
@@ -144,6 +149,9 @@ export class ImageProcessor {
             this.importManager.importAsNew = false;
             
             // Proceed to recipe details step
+            console.log(
+                `[RecipeImport] Analysis complete: ${this.importManager.recipeData.loras.length} LoRA(s) found, ${this.importManager.missingLoras.length} missing locally.`
+            );
             this.importManager.showRecipeDetailsStep();
             
         } catch (error) {
@@ -196,6 +204,9 @@ export class ImageProcessor {
             this.importManager.importAsNew = false;
             
             // Proceed to recipe details step
+            console.log(
+                `[RecipeImport] Analysis complete: ${this.importManager.recipeData.loras.length} LoRA(s) found, ${this.importManager.missingLoras.length} missing locally.`
+            );
             this.importManager.showRecipeDetailsStep();
             
         } catch (error) {
@@ -251,6 +262,9 @@ export class ImageProcessor {
             this.importManager.importAsNew = false;
             
             // Proceed to recipe details step
+            console.log(
+                `[RecipeImport] Analysis complete: ${this.importManager.recipeData.loras.length} LoRA(s) found, ${this.importManager.missingLoras.length} missing locally.`
+            );
             this.importManager.showRecipeDetailsStep();
             
         } catch (error) {
