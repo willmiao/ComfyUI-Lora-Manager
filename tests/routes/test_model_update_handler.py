@@ -3,11 +3,16 @@ import json
 import logging
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock
 
 import pytest
 
 from py.config import config
-from py.routes.handlers.model_handlers import ModelCivitaiHandler, ModelUpdateHandler
+from py.routes.handlers.model_handlers import (
+    ModelCivitaiHandler,
+    ModelManagementHandler,
+    ModelUpdateHandler,
+)
 from py.services.service_registry import ServiceRegistry
 from py.utils.metadata_manager import MetadataManager
 from py.services.model_update_service import ModelUpdateRecord, ModelVersionRecord
@@ -965,3 +970,110 @@ def test_serialize_version_file_count_defaults_to_none():
     )
     serialized = ModelUpdateHandler._serialize_version(version, None)
     assert serialized["fileCount"] is None
+
+
+def _build_relink_handler(metadata_sync):
+    service = SimpleNamespace(
+        scanner=SimpleNamespace(update_single_model_cache=AsyncMock())
+    )
+    return ModelManagementHandler(
+        service=service,
+        logger=logging.getLogger(__name__),
+        metadata_sync=metadata_sync,
+        preview_service=SimpleNamespace(),
+        tag_update_service=SimpleNamespace(),
+        lifecycle_service=SimpleNamespace(),
+    )
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_rejects_unsupported_source():
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={}),
+        relink_metadata=AsyncMock(),
+    )
+    handler = _build_relink_handler(metadata_sync)
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": "456",
+                "source": "huggingface",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 400
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "Unsupported relink source" in payload["error"]
+    metadata_sync.relink_metadata.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_passes_provider_name_for_civarchive_source():
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={"model_name": "Local"}),
+        relink_metadata=AsyncMock(
+            return_value={"model_name": "Archived", "sha256": "abc"}
+        ),
+    )
+    handler = _build_relink_handler(metadata_sync)
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": "456",
+                "source": "civarchive",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert "CivArchive" in payload["message"]
+    metadata_sync.relink_metadata.assert_awaited_once_with(
+        file_path="/tmp/model.safetensors",
+        metadata={"model_name": "Local"},
+        model_id=123,
+        model_version_id=456,
+        provider_name="civarchive_api",
+    )
+
+
+@pytest.mark.asyncio
+async def test_relink_civitai_surfaces_provider_unavailable_without_500():
+    metadata_sync = SimpleNamespace(
+        load_local_metadata=AsyncMock(return_value={}),
+        relink_metadata=AsyncMock(
+            side_effect=ValueError(
+                "CivitArchive is not available or not enabled. "
+                "Enable the CivitArchive API in settings to relink via CivArchive."
+            )
+        ),
+    )
+    handler = _build_relink_handler(metadata_sync)
+
+    request = SimpleNamespace(
+        json=AsyncMock(
+            return_value={
+                "file_path": "/tmp/model.safetensors",
+                "model_id": "123",
+                "model_version_id": None,
+                "source": "civarchive",
+            }
+        )
+    )
+
+    response = await handler.relink_civitai(request)
+    assert response.status == 400
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "CivitArchive" in payload["error"]

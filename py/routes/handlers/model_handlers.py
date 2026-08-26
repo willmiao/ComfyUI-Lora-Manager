@@ -634,6 +634,16 @@ class ModelManagementHandler:
             file_path = data.get("file_path")
             model_id = data.get("model_id")
             model_version_id = data.get("model_version_id")
+            source = data.get("source")
+
+            if source not in (None, "", "civarchive"):
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": f"Unsupported relink source: {source}",
+                    },
+                    status=400,
+                )
 
             if not file_path or model_id is None:
                 return web.json_response(
@@ -649,20 +659,33 @@ class ModelManagementHandler:
                 metadata_path
             )
 
+            relink_kwargs = {
+                "file_path": file_path,
+                "metadata": local_metadata,
+                "model_id": int(model_id),
+                "model_version_id": int(model_version_id) if model_version_id else None,
+            }
+            if source == "civarchive":
+                relink_kwargs["provider_name"] = "civarchive_api"
+
             updated_metadata = await self._metadata_sync.relink_metadata(
-                file_path=file_path,
-                metadata=local_metadata,
-                model_id=int(model_id),
-                model_version_id=int(model_version_id) if model_version_id else None,
+                **relink_kwargs
             )
 
             await self._service.scanner.update_single_model_cache(
                 file_path, file_path, updated_metadata
             )
 
-            message = f"Model successfully re-linked to Civitai model {model_id}" + (
-                f" version {model_version_id}" if model_version_id else ""
-            )
+            if source == "civarchive":
+                message = (
+                    f"Model successfully re-linked to CivArchive model {model_id}"
+                    + (f" version {model_version_id}" if model_version_id else "")
+                )
+            else:
+                message = (
+                    f"Model successfully re-linked to Civitai model {model_id}"
+                    + (f" version {model_version_id}" if model_version_id else "")
+                )
             return web.json_response(
                 {
                     "success": True,
@@ -670,6 +693,8 @@ class ModelManagementHandler:
                     "hash": updated_metadata.get("sha256", ""),
                 }
             )
+        except ValueError as exc:
+            return web.json_response({"success": False, "error": str(exc)}, status=400)
         except Exception as exc:
             if is_expected_offline_error(str(exc)):
                 return web.json_response(

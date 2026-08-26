@@ -963,7 +963,7 @@
             }
         },
         "duplicates": {
-            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
+            "finding": "중복 레시피를 스캔하는 중...",
             "found": "{count}개의 중복 그룹 발견",
             "noGroups": "현재 일치 기준으로 중복 그룹을 찾을 수 없습니다",
             "keepLatest": "최신 버전 유지",
@@ -1422,13 +1422,14 @@
             },
             "proceedText": "원하는 작업이 확실한 경우에만 진행하세요.",
             "urlLabel": "Civitai 모델 URL:",
-            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "모든 Civitai 모델 URL을 붙여넣으세요. 지원되는 형식:",
-                "format1": "https://civitai.com/models/649516",
-                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
-                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
-                "note": "참고: modelVersionId가 제공되지 않으면 최신 버전이 사용됩니다."
+                "title": "Civitai 또는 CivitArchive 모델 URL을 붙여넣으세요. 지원되는 형식:",
+                "format1": "https://civitai.com/models/12345",
+                "format2": "https://civitai.com/models/12345?modelVersionId=67890",
+                "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+                "note": "참고: modelVersionId가 제공되지 않으면 최신 버전이 사용됩니다.",
+                "format4": "https://civarchive.com/models/12345 (CivitArchive)"
             },
             "confirmAction": "다시 연결 확인"
         },
@@ -2225,6 +2226,7 @@
             "relinkFailed": "오류: {message}",
             "linkHfSuccess": "모델이 HuggingFace에 연결되었습니다",
             "linkHfFailed": "오류: {message}",
+            "linkCivArchSuccess": "모델이 CivitArchive을 통해 성공적으로 다시 연결되었습니다",
             "fetchMetadataFirst": "먼저 CivitAI에서 메타데이터를 가져와주세요",
             "noCivitaiInfo": "사용 가능한 CivitAI 정보가 없습니다",
             "missingHash": "모델 해시를 사용할 수 없습니다"

@@ -963,7 +963,7 @@
             }
         },
         "duplicates": {
-            "finding": "[TODO: Translate] Scanning for duplicate recipes...",
+            "finding": "Buscando recetas duplicadas...",
             "found": "Se encontraron {count} grupos de duplicados",
             "noGroups": "No se encontraron grupos de duplicados con el criterio de coincidencia actual",
             "keepLatest": "Mantener versiones más recientes",
@@ -1422,13 +1422,14 @@
             },
             "proceedText": "Solo procede si estás seguro de que esto es lo que quieres.",
             "urlLabel": "URL del modelo de Civitai:",
-            "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "Pega cualquier URL de modelo de Civitai. Formatos soportados:",
-                "format1": "https://civitai.com/models/649516",
-                "format2": "https://civitai.com/models/649516?modelVersionId=726676",
-                "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
-                "note": "Nota: Si no se proporciona modelVersionId, se usará la versión más reciente."
+                "title": "Pega cualquier URL de modelo de Civitai o CivitArchive. Formatos soportados:",
+                "format1": "https://civitai.com/models/12345",
+                "format2": "https://civitai.com/models/12345?modelVersionId=67890",
+                "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+                "note": "Nota: Si no se proporciona modelVersionId, se usará la versión más reciente.",
+                "format4": "https://civarchive.com/models/12345 (CivitArchive)"
             },
             "confirmAction": "Confirmar re-vinculación"
         },
@@ -2225,6 +2226,7 @@
             "relinkFailed": "Error: {message}",
             "linkHfSuccess": "Modelo vinculado a HuggingFace exitosamente",
             "linkHfFailed": "Error: {message}",
+            "linkCivArchSuccess": "Modelo re-vinculado exitosamente mediante CivitArchive",
             "fetchMetadataFirst": "Por favor obtén metadatos de CivitAI primero",
             "noCivitaiInfo": "No hay información de CivitAI disponible",
             "missingHash": "Hash del modelo no disponible"

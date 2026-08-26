@@ -207,6 +207,47 @@ export function extractCivitaiModelUrlParts(url) {
     }
 }
 
+const CIVITARCHIVE_PAGE_HOSTS = new Set([
+    'civitaiarchive.com',
+    'civarchive.com',
+]);
+
+/**
+ * Classify a relink URL by its hosting source and extract ids.
+ * CivitArchive mirrors the Civitai id namespace, so both sources resolve to
+ * the same {modelId, modelVersionId} shape; only `source` differs.
+ */
+export function classifyModelRelinkUrl(url) {
+    if (!url || typeof url !== 'string') {
+        return { source: null, modelId: null, modelVersionId: null };
+    }
+
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(url.trim());
+    } catch (e) {
+        return { source: null, modelId: null, modelVersionId: null };
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return { source: null, modelId: null, modelVersionId: null };
+    }
+
+    const hostname = parsedUrl.hostname.toLowerCase().replace(/^www\./, '');
+    const pathMatch = parsedUrl.pathname.match(/\/models\/(\d+)/);
+    const modelId = pathMatch ? pathMatch[1] : null;
+    const modelVersionId = parsedUrl.searchParams.get('modelVersionId');
+
+    if (SUPPORTED_CIVITAI_PAGE_HOSTS.has(hostname)) {
+        return { source: 'civitai', modelId, modelVersionId };
+    }
+    if (CIVITARCHIVE_PAGE_HOSTS.has(hostname) && modelId) {
+        return { source: 'civarchive', modelId, modelVersionId };
+    }
+
+    return { source: null, modelId: null, modelVersionId: null };
+}
+
 export function extractCivitaiImageId(url) {
     if (!url) {
         return null;

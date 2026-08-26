@@ -2504,4 +2504,172 @@ describe('Interaction-level regression coverage', () => {
 
     delete stateStub.currentPageType;
   });
+
+  it('opens the relink modal from the relink-civitai menu action', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu">
+        <div class="context-menu-item has-submenu" data-has-submenu="link-model">
+          <div class="context-submenu">
+            <div class="context-menu-item" data-action="relink-civitai"></div>
+          </div>
+        </div>
+      </div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+    const showModalSpy = vi.spyOn(contextMenu, 'showRelinkCivitaiModal').mockImplementation(() => {});
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    document.querySelector('[data-action="relink-civitai"]').dispatchEvent(new Event('click', { bubbles: true }));
+
+    expect(showModalSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects an unsupported relink URL with an inline error and no fetch', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://example.com/models/123456';
+    await contextMenu._boundRelinkHandler();
+
+    expect(document.getElementById('civitaiModelUrlError').textContent)
+      .toBe('Invalid URL format. Expected: https://civitai.com/models/{modelId} or https://civarchive.com/models/{modelId}');
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(modalManagerMock.closeModal).not.toHaveBeenCalled();
+  });
+
+  it('posts a valid CivitArchive URL to the relink endpoint with the civarchive source', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    }));
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civarchive.com/models/123456?modelVersionId=789012';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(modalManagerMock.closeModal).toHaveBeenCalledWith('relinkCivitaiModal');
+    expect(loadingManagerStub.showSimpleLoading).toHaveBeenCalledWith('Re-linking via CivitArchive...');
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/loras/relink-civitai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_path: '/models/test.safetensors',
+        model_id: '123456',
+        model_version_id: '789012',
+        source: 'civarchive',
+      }),
+    });
+    expect(showToastMock).toHaveBeenCalledWith('toast.contextMenu.linkCivArchSuccess', {}, 'success');
+    expect(resetAndReloadMock).toHaveBeenCalledTimes(1);
+    expect(loadingManagerStub.hide).toHaveBeenCalled();
+  });
+
+  it('posts a Civitai URL without a source key so backend defaults apply', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+      <div id="relinkCivitaiModal" class="modal">
+        <input type="text" id="civitaiModelUrl" />
+        <div class="input-error" id="civitaiModelUrlError"></div>
+        <button class="confirm-btn" id="confirmRelinkBtn"></button>
+      </div>
+    `;
+
+    global.fetch = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({ success: true }),
+    }));
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    const card = document.createElement('div');
+    card.className = 'model-card';
+    card.dataset.filepath = '/models/test.safetensors';
+    document.body.appendChild(card);
+
+    contextMenu.showMenu(100, 100, card);
+    contextMenu.showRelinkCivitaiModal();
+
+    document.getElementById('civitaiModelUrl').value = 'https://civitai.com/models/65423?modelVersionId=777';
+    await contextMenu._boundRelinkHandler();
+    await flushAsyncTasks();
+
+    expect(global.fetch).toHaveBeenCalledWith('/api/lm/loras/relink-civitai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_path: '/models/test.safetensors',
+        model_id: '65423',
+        model_version_id: '777',
+      }),
+    });
+    expect(showToastMock).toHaveBeenCalledWith('toast.contextMenu.relinkSuccess', {}, 'success');
+  });
+
+  it('derives relink endpoint prefixes for all model types', async () => {
+    document.body.innerHTML = `
+      <div id="loraContextMenu" class="context-menu"></div>
+    `;
+
+    const { LoraContextMenu } = await import('../../../static/js/components/ContextMenu/LoraContextMenu.js');
+    const contextMenu = new LoraContextMenu();
+
+    contextMenu.modelType = 'lora';
+    expect(contextMenu.getModelTypePrefix()).toBe('loras');
+    contextMenu.modelType = 'checkpoint';
+    expect(contextMenu.getModelTypePrefix()).toBe('checkpoints');
+    contextMenu.modelType = 'embedding';
+    expect(contextMenu.getModelTypePrefix()).toBe('embeddings');
+    contextMenu.modelType = 'unknown';
+    expect(contextMenu.getModelTypePrefix()).toBe('loras');
+  });
 });

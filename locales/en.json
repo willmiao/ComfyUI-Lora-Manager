@@ -864,8 +864,8 @@
     },
     "navigation": {
       "label": "Recipe navigation",
-      "previousWithShortcut": "Previous recipe (\u2190)",
-      "nextWithShortcut": "Next recipe (\u2192)"
+      "previousWithShortcut": "Previous recipe (←)",
+      "nextWithShortcut": "Next recipe (→)"
     },
     "workflow": {
       "sendWorkflow": "Send Workflow to ComfyUI",
@@ -1422,13 +1422,14 @@
       },
       "proceedText": "Only proceed if you're sure this is what you want.",
       "urlLabel": "Civitai Model URL:",
-      "urlPlaceholder": "https://civitai.com/models/649516/model-name?modelVersionId=726676 or https://civitai.red/models/649516/model-name?modelVersionId=726676",
+      "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 or https://civitai.red/models/12345/model-name?modelVersionId=67890",
       "helpText": {
-        "title": "Paste any Civitai model URL from civitai.com or civitai.red. Supported formats:",
-        "format1": "https://civitai.com/models/649516",
-        "format2": "https://civitai.com/models/649516?modelVersionId=726676",
-        "format3": "https://civitai.com/models/649516/model-name?modelVersionId=726676",
-        "note": "Note: If no modelVersionId is provided, the latest version will be used."
+        "title": "Paste any Civitai or CivitArchive model URL. Supported formats:",
+        "format1": "https://civitai.com/models/12345",
+        "format2": "https://civitai.com/models/12345?modelVersionId=67890",
+        "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+        "note": "Note: If no modelVersionId is provided, the latest version will be used.",
+        "format4": "https://civarchive.com/models/12345 (CivitArchive)"
       },
       "confirmAction": "Confirm Re-link"
     },
@@ -2225,6 +2226,7 @@
       "relinkFailed": "Error: {message}",
       "linkHfSuccess": "Model successfully linked to HuggingFace",
       "linkHfFailed": "Error: {message}",
+      "linkCivArchSuccess": "Model successfully re-linked via CivitArchive",
       "fetchMetadataFirst": "Please fetch metadata from CivitAI first",
       "noCivitaiInfo": "No CivitAI information available",
       "missingHash": "Model hash not available"

@@ -11,6 +11,7 @@ import {
     getThumbnailUrl,
     extractCivitaiImageId,
     extractCivitaiModelUrlParts,
+    classifyModelRelinkUrl,
     isCivitaiUrl,
     isSupportedCivitaiPageHost,
     OptimizationMode
@@ -303,6 +304,50 @@ describe('civitaiUtils', () => {
 
         it('rejects image-like URLs from unsupported hosts', () => {
             expect(extractCivitaiImageId('https://example.com/images/126920345')).toBe(null);
+        });
+    });
+
+    describe('classifyModelRelinkUrl', () => {
+        it('classifies civitai.com model URLs', () => {
+            expect(
+                classifyModelRelinkUrl('https://civitai.com/models/649516/name?modelVersionId=726676')
+            ).toEqual({ source: 'civitai', modelId: '649516', modelVersionId: '726676' });
+        });
+
+        it('classifies civitai.red model URLs without a version id', () => {
+            expect(
+                classifyModelRelinkUrl('https://civitai.red/models/65423/')
+            ).toEqual({ source: 'civitai', modelId: '65423', modelVersionId: null });
+        });
+
+        it('classifies civarchive and civitaiarchive model URLs', () => {
+            expect(
+                classifyModelRelinkUrl('https://civarchive.com/models/1746460')
+            ).toEqual({ source: 'civarchive', modelId: '1746460', modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl('http://www.civitaiarchive.com/models/42?modelVersionId=43')
+            ).toEqual({ source: 'civarchive', modelId: '42', modelVersionId: '43' });
+        });
+
+        it('rejects archive hosts when the path has no numeric model id', () => {
+            expect(
+                classifyModelRelinkUrl('https://civarchive.com/images/123')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+        });
+
+        it('rejects unsupported hosts and malformed input', () => {
+            expect(
+                classifyModelRelinkUrl('https://example.com/models/65423')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl('not a url')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl('')
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
+            expect(
+                classifyModelRelinkUrl(null)
+            ).toEqual({ source: null, modelId: null, modelVersionId: null });
         });
     });
 });
