@@ -188,6 +188,12 @@ class _FakeSession:
         assert self._responses, "unexpected extra request"
         return self._responses.pop(0)
 
+    def get(self, url, headers=None, **kwargs):
+        return self.request("GET", url, headers=headers, **kwargs)
+
+    def head(self, url, headers=None, **kwargs):
+        return self.request("HEAD", url, headers=headers, **kwargs)
+
     async def close(self):
         return None
 
@@ -310,7 +316,13 @@ def _stub_provider(*, result=None, error=None, exc: Exception | None = None):
     return SimpleNamespace(get_model_by_hash=call)
 
 
-async def test_fallback_does_not_fail_over_to_network_provider_on_429():
+async def test_fallback_does_not_fail_over_to_network_provider_on_429(monkeypatch):
+    # The stub error is not gate_handled, so the retry helper would sleep
+    # retry_after between attempts; patch it out (the helper's own behavior
+    # is covered by the double-wait tests below).
+    monkeypatch.setattr(
+        "py.services.model_metadata_provider.asyncio.sleep", AsyncMock()
+    )
     civitai = _stub_provider(exc=RateLimitError("limited", retry_after=30))
     civarchive = _stub_provider(result={"id": 1}, error=None)
     sqlite = _stub_provider(result=None, error="not in archive")
@@ -398,3 +410,54 @@ async def test_retry_helper_keeps_legacy_retry_for_ungated_errors():
         await helper.run("civitai_api", failing)
 
     assert calls == 2  # legacy retry behavior unchanged
+
+
+# ----------------------------------------------------------------------
+# Download-path 429 registration (Phase 2)
+
+
+class _FakeDownloadResponse(_FakeResponse):
+    async def read(self):
+        return b"data"
+
+
+async def test_download_to_memory_429_registers_cooldown(monkeypatch):
+    _patch_gate_settings(
+        monkeypatch,
+        rate_limit_gate_enabled=True,
+        rate_limit_min_interval_seconds=0.0,
+    )
+    downloader = _build_downloader(
+        [_FakeDownloadResponse(429, headers={"Retry-After": "120"})]
+    )
+
+    success, error, _ = await downloader.download_to_memory(
+        "https://api.example.com/preview.png"
+    )
+
+    assert success is False
+    assert "Rate limited" in error
+    coordinator = await RateLimitCoordinator.get_instance()
+    remaining = coordinator.remaining_seconds("api.example.com")
+    assert 110.0 < remaining <= 120.0
+
+
+async def test_get_response_headers_429_registers_cooldown(monkeypatch):
+    _patch_gate_settings(
+        monkeypatch,
+        rate_limit_gate_enabled=True,
+        rate_limit_min_interval_seconds=0.0,
+    )
+    downloader = _build_downloader(
+        [_FakeResponse(429, headers={"Retry-After": "60"})]
+    )
+
+    success, error = await downloader.get_response_headers(
+        "https://api.example.com/model/file.safetensors"
+    )
+
+    assert success is False
+    assert "rate limited" in error.lower()
+    coordinator = await RateLimitCoordinator.get_instance()
+    remaining = coordinator.remaining_seconds("api.example.com")
+    assert 50.0 < remaining <= 60.0

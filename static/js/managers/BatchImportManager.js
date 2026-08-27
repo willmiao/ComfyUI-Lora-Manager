@@ -427,6 +427,12 @@ export class BatchImportManager {
         this.progress = progress;
         this.updateProgressUI(progress);
 
+        // Surface vendor rate limiting once per import (#1085): requests are
+        // being paced and some items may be skipped rather than failed.
+        if (progress.rate_limited && !(prev && prev.rate_limited)) {
+            showToast('toast.recipes.batchImportRateLimited', {}, 'warning');
+        }
+
         // Only log when something actually changed (and on the first update),
         // so per-second polling does not spam the console with identical lines.
         const changed =
@@ -495,7 +501,9 @@ export class BatchImportManager {
         const statusText = document.getElementById('batchStatusText');
         if (statusText) {
             if (progress.status === 'running') {
-                statusText.textContent = translate('recipes.batchImport.importing', {}, 'Importing...');
+                statusText.textContent = progress.rate_limited
+                    ? translate('recipes.batchImport.rateLimitedSlowdown', {}, 'Rate limited — slowing down...')
+                    : translate('recipes.batchImport.importing', {}, 'Importing...');
             } else if (progress.status === 'completed') {
                 statusText.textContent = translate('recipes.batchImport.completed', {}, 'Import completed');
             } else if (progress.status === 'cancelled') {

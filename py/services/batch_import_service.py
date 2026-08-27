@@ -71,6 +71,9 @@ class BatchImportProgress:
     tags: List[str] = field(default_factory=list)
     skip_no_metadata: bool = False
     skip_duplicates: bool = False
+    # Set once any item is skipped due to vendor rate limiting (#1085); lets
+    # the UI surface a "slowing down / try again later" hint.
+    rate_limited: bool = False
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -82,6 +85,7 @@ class BatchImportProgress:
             "skipped": self.skipped,
             "current_item": self.current_item,
             "status": self.status,
+            "rate_limited": self.rate_limited,
             "started_at": self.started_at,
             "finished_at": self.finished_at,
             "progress_percent": round((self.completed / self.total) * 100, 1)
@@ -383,6 +387,13 @@ class BatchImportService:
         ext = os.path.splitext(filename)[1].lower()
         return ext in self.SUPPORTED_EXTENSIONS
 
+    @staticmethod
+    def _is_rate_limit_error(error: Optional[str]) -> bool:
+        """Return True when an error payload represents vendor rate limiting."""
+        if not error:
+            return False
+        return "rate limit" in error.lower()
+
     async def _run_batch_import(
         self,
         *,
@@ -441,6 +452,17 @@ class BatchImportService:
                     item.status = ImportStatus.SKIPPED
                     item.error_message = result.get("error")
                     progress.skipped += 1
+                elif self._is_rate_limit_error(result.get("error")):
+                    # Vendor rate limit is a transient, external condition —
+                    # do not pollute the failure count with it (#1085). The
+                    # import can simply be re-run later.
+                    item.status = ImportStatus.SKIPPED
+                    item.error_message = (
+                        f"Rate limited by metadata provider; "
+                        f"re-run the import later ({result.get('error')})"
+                    )
+                    progress.skipped += 1
+                    progress.rate_limited = True
                 else:
                     item.status = ImportStatus.FAILED
                     item.error_message = result.get("error")
@@ -448,10 +470,19 @@ class BatchImportService:
 
             except Exception as e:
                 self._logger.error(f"Error importing {item.source}: {e}")
-                item.status = ImportStatus.FAILED
-                item.error_message = str(e)
                 item.duration = time.time() - start_time
-                progress.failed += 1
+                if self._is_rate_limit_error(str(e)):
+                    item.status = ImportStatus.SKIPPED
+                    item.error_message = (
+                        f"Rate limited by metadata provider; "
+                        f"re-run the import later ({e})"
+                    )
+                    progress.skipped += 1
+                    progress.rate_limited = True
+                else:
+                    item.status = ImportStatus.FAILED
+                    item.error_message = str(e)
+                    progress.failed += 1
                 self._concurrency_controller.record_result(item.duration, False)
                 await self._concurrency_controller.apply_concurrency()
 

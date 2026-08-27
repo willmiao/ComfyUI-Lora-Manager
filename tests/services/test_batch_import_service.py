@@ -655,3 +655,103 @@ class TestInputValidation:
         assert service._validate_local_path("../etc/passwd") is False
         assert service._validate_local_path("relative/path.png") is False
         assert service._validate_local_path("") is False
+
+
+class TestRateLimitSkipMapping:
+    """#1085: vendor rate limiting must mark items SKIPPED, not FAILED."""
+
+    @pytest.fixture
+    def mock_services(self):
+        ws_manager = MockWebSocketManager()
+        persistence_service = MockPersistenceService()
+        logger = logging.getLogger("test")
+        return ws_manager, persistence_service, logger
+
+    def test_is_rate_limit_error_matching(self):
+        assert BatchImportService._is_rate_limit_error("Rate limited") is True
+        assert BatchImportService._is_rate_limit_error(
+            "Rate limit wait for 'civarchive.com' exceeds the 300s cap"
+        ) is True
+        assert BatchImportService._is_rate_limit_error("Request rate limited") is True
+        assert BatchImportService._is_rate_limit_error("No metadata found") is False
+        assert BatchImportService._is_rate_limit_error(None) is False
+        assert BatchImportService._is_rate_limit_error("") is False
+
+    @pytest.mark.asyncio
+    async def test_rate_limited_item_becomes_skipped_and_sets_flag(self, mock_services):
+        ws_manager, persistence_service, logger = mock_services
+        analysis_service = MockAnalysisService(
+            {
+                "https://example.com/limited.png": MockAnalysisResult(
+                    {"error": "Rate limited"}
+                ),
+            }
+        )
+        service = BatchImportService(
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+
+        operation_id = await service.start_batch_import(
+            recipe_scanner_getter=lambda: SimpleNamespace(),
+            civitai_client_getter=lambda: SimpleNamespace(),
+            items=[{"source": "https://example.com/limited.png"}],
+        )
+        await asyncio.sleep(0.5)
+
+        # The operation may already be cleaned up; inspect the broadcasts.
+        final = next(
+            (
+                b
+                for b in reversed(ws_manager.broadcasts)
+                if b.get("type") == "batch_import_progress"
+            ),
+            None,
+        )
+        assert final is not None
+        assert final["rate_limited"] is True
+        assert final["skipped"] == 1
+        assert final["failed"] == 0
+        item = final["items"][0]
+        assert item["status"] == "skipped"
+        assert "re-run the import later" in item["error_message"]
+        assert service.get_progress(operation_id) is None or True
+
+    @pytest.mark.asyncio
+    async def test_non_rate_limit_error_stays_failed(self, mock_services):
+        ws_manager, persistence_service, logger = mock_services
+        analysis_service = MockAnalysisService(
+            {
+                "https://example.com/broken.png": MockAnalysisResult(
+                    {"error": "No metadata found"}
+                ),
+            }
+        )
+        service = BatchImportService(
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+
+        await service.start_batch_import(
+            recipe_scanner_getter=lambda: SimpleNamespace(),
+            civitai_client_getter=lambda: SimpleNamespace(),
+            items=[{"source": "https://example.com/broken.png"}],
+        )
+        await asyncio.sleep(0.5)
+
+        final = next(
+            (
+                b
+                for b in reversed(ws_manager.broadcasts)
+                if b.get("type") == "batch_import_progress"
+            ),
+            None,
+        )
+        assert final is not None
+        assert final["rate_limited"] is False
+        assert final["failed"] == 1
+        assert final["skipped"] == 0

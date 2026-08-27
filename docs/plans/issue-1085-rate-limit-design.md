@@ -2,10 +2,14 @@
 
 **Issue:** [#1085 — Large Recipe Ingest Appears to not abide by vendor rate limits, possibly a few other errors?](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1085)
 **Status:** v2 — reviewed; decisions recorded in §10. **Phase 1 implemented**
-(2026-08-27): coordinator + downloader gate + Fix C failover semantics +
-helper double-wait fix + settings; full regression 2385 passed. Changes vs v1:
-Fix C moved to Phase 1, helper double-wait resolved in Phase 1, gate/guard
-ordering specified, WebSocket slowdown hint confirmed in scope (Phase 2).
+(2026-08-27, commit `c2a2048c`): coordinator + downloader gate + Fix C
+failover semantics + helper double-wait fix + settings. **Phase 2
+implemented** (2026-08-27): batch-import rate-limit failures map to
+`SKIPPED` + `rate_limited` WebSocket flag + UI slowdown hint (toast + status
+text, i18n keys synced); `download_to_memory` / `get_response_headers` /
+`download_file` register 429 cooldowns. Changes vs v1: Fix C moved to
+Phase 1, helper double-wait resolved in Phase 1, gate/guard ordering
+specified.
 **Scope:** HTTP API traffic to CivitAI (`civitai.red`) and CivArchive (`civarchive.com`) from metadata fetching (bulk refresh, metadata sync, recipe analysis/enrichment, usage-control lookups). Large binary downloads (model files / preview images via `download_file`) are out of scope for *pacing* (they are already single-connection transfers) but their 429 responses should still be *registered*.
 
 > Context: a first batch of fixes for this issue was already committed as

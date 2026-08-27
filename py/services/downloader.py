@@ -596,6 +596,21 @@ class Downloader:
                             False,
                             "File not found - the download link may be invalid or expired.",
                         )
+                    elif response.status == 429:
+                        # Register the vendor's cooldown so API calls through
+                        # make_request queue behind it (#1085). The download
+                        # itself fails as before; retry policy stays with the
+                        # caller (download manager).
+                        retry_after = self._extract_retry_after(response.headers)
+                        coordinator = await RateLimitCoordinator.get_instance()
+                        if coordinator.enabled:
+                            coordinator.register_rate_limit(
+                                self._guard_destination(url), retry_after
+                            )
+                        logger.warning(
+                            f"Rate limited (429) for {url}, retry_after={retry_after}"
+                        )
+                        return False, f"Download rate limited (429), retry after {retry_after}s"
                     else:
                         logger.error(
                             f"Download failed for {url} with status {response.status}"
@@ -973,6 +988,11 @@ class Downloader:
                 elif response.status == 429:
                     raw_retry_after = response.headers.get("Retry-After")
                     retry_after = _parse_retry_after(raw_retry_after or "")
+                    # Register the vendor's cooldown so API calls through
+                    # make_request queue behind it (#1085).
+                    coordinator = await RateLimitCoordinator.get_instance()
+                    if coordinator.enabled:
+                        coordinator.register_rate_limit(destination, retry_after)
                     if raw_retry_after:
                         logger.warning(
                             "Rate limited (429) for %s, Retry-After: %ss", url, retry_after
@@ -1042,6 +1062,14 @@ class Downloader:
                 if response.status == 200:
                     guard.register_success(destination)
                     return True, dict(response.headers)
+                elif response.status == 429:
+                    # Register the vendor's cooldown so API calls through
+                    # make_request queue behind it (#1085).
+                    retry_after = self._extract_retry_after(response.headers)
+                    coordinator = await RateLimitCoordinator.get_instance()
+                    if coordinator.enabled:
+                        coordinator.register_rate_limit(destination, retry_after)
+                    return False, f"Head request rate limited (429), retry after {retry_after}s"
                 else:
                     return False, f"Head request failed with status {response.status}"
 
