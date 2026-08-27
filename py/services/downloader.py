@@ -32,6 +32,7 @@ from .connectivity_guard import (
     ConnectivityGuard,
 )
 from .errors import RateLimitError
+from .rate_limit_coordinator import RateLimitCoordinator
 
 logger = logging.getLogger(__name__)
 
@@ -1074,74 +1075,113 @@ class Downloader:
 
         Returns:
             Tuple[bool, Union[Dict, str]]: (success, response data or error message)
+
+        When the rate-limit gate is enabled (``rate_limit_gate_enabled``),
+        requests are paced per destination and 429 responses are honored by
+        waiting out the ``Retry-After`` window (bounded by
+        ``rate_limit_max_wait_seconds``) before re-sending. A ``RateLimitError``
+        returned after gate involvement is marked with ``gate_handled = True``
+        so downstream retry helpers do not wait a second time.
         """
         guard = await ConnectivityGuard.get_instance()
         destination = self._guard_destination(url)
+        # Fail fast on transport-level outages before pacing: there is no
+        # point waiting out a vendor cooldown while the network is down.
         if guard.should_block_request(destination):
             return False, OFFLINE_COOLDOWN_ERROR
 
-        try:
-            session = await self.session
-            # Debug log for proxy mode at request time
-            if self.proxy_url:
-                logger.debug(f"[make_request] Using app-level proxy: {self.proxy_url}")
-            else:
-                logger.debug(
-                    "[make_request] Using system-level proxy (trust_env) if configured."
-                )
+        coordinator = await RateLimitCoordinator.get_instance()
+        gate_enabled = coordinator.enabled
+        # Safety bound on the wait-and-resend loop; each 429 normally exits
+        # via the wait cap in wait_for_slot, this covers pathological 429s
+        # with tiny Retry-After values.
+        max_resend_attempts = 5
+        attempt = 0
 
-            # Prepare headers
-            headers = self._get_auth_headers(use_auth)
-            if custom_headers:
-                headers.update(custom_headers)
+        while True:
+            if gate_enabled:
+                try:
+                    await coordinator.wait_for_slot(destination)
+                except RateLimitError as exc:
+                    exc.gate_handled = True
+                    return False, exc
 
-            # Add proxy to kwargs if not already present
-            if "proxy" not in kwargs:
-                kwargs["proxy"] = self.proxy_url
-
-            async with session.request(
-                method, url, headers=headers, **kwargs
-            ) as response:
-                if response.status == 200:
-                    guard.register_success(destination)
-                    # Try to parse as JSON, fall back to text
-                    try:
-                        data = await response.json()
-                        return True, data
-                    except:
-                        text = await response.text()
-                        return True, text
-                elif response.status == 401:
-                    return False, "Unauthorized access - invalid or missing API key"
-                elif response.status == 403:
-                    return False, "Access forbidden"
-                elif response.status == 404:
-                    return False, "Resource not found"
-                elif response.status == 429:
-                    retry_after = self._extract_retry_after(response.headers)
-                    error_msg = "Request rate limited"
-                    logger.warning(
-                        "Rate limit encountered for %s %s; retry_after=%s",
-                        method,
-                        url,
-                        retry_after,
-                    )
-                    return False, RateLimitError(
-                        error_msg,
-                        retry_after=retry_after,
-                    )
+            try:
+                session = await self.session
+                # Debug log for proxy mode at request time
+                if self.proxy_url:
+                    logger.debug(f"[make_request] Using app-level proxy: {self.proxy_url}")
                 else:
-                    return False, f"Request failed with status {response.status}"
+                    logger.debug(
+                        "[make_request] Using system-level proxy (trust_env) if configured."
+                    )
 
-        except Exception as e:
-            if guard.is_network_unreachable_error(e):
-                guard.register_network_failure(e, destination)
-                if guard.should_block_request(destination):
-                    return False, OFFLINE_COOLDOWN_ERROR
-                logger.debug("Network unavailable for %s %s: %s", method, url, e)
+                # Prepare headers
+                headers = self._get_auth_headers(use_auth)
+                if custom_headers:
+                    headers.update(custom_headers)
+
+                # Add proxy to kwargs if not already present
+                if "proxy" not in kwargs:
+                    kwargs["proxy"] = self.proxy_url
+
+                async with session.request(
+                    method, url, headers=headers, **kwargs
+                ) as response:
+                    if response.status == 200:
+                        guard.register_success(destination)
+                        if gate_enabled:
+                            coordinator.register_success(destination)
+                        # Try to parse as JSON, fall back to text
+                        try:
+                            data = await response.json()
+                            return True, data
+                        except:
+                            text = await response.text()
+                            return True, text
+                    elif response.status == 401:
+                        return False, "Unauthorized access - invalid or missing API key"
+                    elif response.status == 403:
+                        return False, "Access forbidden"
+                    elif response.status == 404:
+                        return False, "Resource not found"
+                    elif response.status == 429:
+                        retry_after = self._extract_retry_after(response.headers)
+                        error_msg = "Request rate limited"
+                        if not gate_enabled:
+                            logger.warning(
+                                "Rate limit encountered for %s %s; retry_after=%s",
+                                method,
+                                url,
+                                retry_after,
+                            )
+                            return False, RateLimitError(
+                                error_msg,
+                                retry_after=retry_after,
+                            )
+                        # The coordinator logs the cooldown notice (INFO once
+                        # per window, DEBUG on extension).
+                        coordinator.register_rate_limit(destination, retry_after)
+                        attempt += 1
+                        if attempt >= max_resend_attempts:
+                            error = RateLimitError(error_msg, retry_after=retry_after)
+                            error.gate_handled = True
+                            return False, error
+                        # Loop back: wait_for_slot blocks until the cooldown
+                        # elapses (or raises once the wait exceeds the cap).
+                        continue
+                    else:
+                        return False, f"Request failed with status {response.status}"
+
+            except Exception as e:
+                if guard.is_network_unreachable_error(e):
+                    guard.register_network_failure(e, destination)
+                    if guard.should_block_request(destination):
+                        return False, OFFLINE_COOLDOWN_ERROR
+                    logger.debug("Network unavailable for %s %s: %s", method, url, e)
+                    return False, str(e)
+                logger.error(f"Error making {method} request to {url}: {e}")
                 return False, str(e)
-            logger.error(f"Error making {method} request to {url}: {e}")
-            return False, str(e)
 
     async def close(self):
         """Close the HTTP session"""

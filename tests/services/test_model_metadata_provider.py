@@ -101,7 +101,9 @@ async def test_fallback_retries_same_provider_on_rate_limit(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_fallback_continues_to_next_provider_on_rate_limit(monkeypatch):
-    """After exhausting retries on primary, fallback should continue to secondary."""
+    """#1085: a rate-limited network provider no longer fails over to another
+    network provider (that just spreads the flood); local providers such as
+    sqlite remain as a last resort."""
     sleep_mock = AsyncMock()
     monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
     monkeypatch.setattr(provider_module.random, "uniform", lambda *_: 0.0)
@@ -114,13 +116,26 @@ async def test_fallback_continues_to_next_provider_on_rate_limit(monkeypatch):
         rate_limit_retry_limit=2,
     )
 
-    # After Change A: no longer raises; falls through to secondary
+    result, error = await fallback.get_model_by_hash("abc")
+
+    # Secondary is a network provider: it must NOT be consulted after the 429.
+    assert result is None
+    assert error == "Rate limited"
+    assert primary.calls == 2          # retry_limit exhausted on primary
+    assert secondary.calls == 0        # no network failover
+
+    # A local sqlite provider behind the rate-limited one is still allowed.
+    sqlite = TrackingProvider()
+    fallback = FallbackMetadataProvider(
+        [("primary", AlwaysRateLimitedProvider()), ("sqlite", sqlite)],
+        rate_limit_retry_limit=2,
+    )
+
     result, error = await fallback.get_model_by_hash("abc")
 
     assert error is None
     assert result == {"id": "secondary"}
-    assert primary.calls == 2          # retry_limit exhausted on primary
-    assert secondary.calls == 1        # secondary IS called now
+    assert sqlite.calls == 1
 
 
 @pytest.mark.asyncio

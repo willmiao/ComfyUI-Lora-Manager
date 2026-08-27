@@ -245,16 +245,23 @@ class MetadataSyncService:
             civitai_api_not_found = False
             any_rate_limited = False
 
+            skip_network_providers = False
             for provider_name, provider in provider_attempts:
+                if skip_network_providers and provider_name != "sqlite":
+                    # A network provider was already rate-limited; failing
+                    # over to another network provider just spreads the flood
+                    # (#1085). The local sqlite archive stays as last resort.
+                    continue
                 try:
                     civitai_metadata_candidate, error = await provider.get_model_by_hash(sha256)
                 except RateLimitError as exc:
                     logger.warning(
-                        "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                        "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                         provider_name or provider.__class__.__name__,
                         exc.retry_after or 0,
                     )
                     any_rate_limited = True
+                    skip_network_providers = True
                     continue
                 except Exception as exc:  # pragma: no cover - defensive logging
                     logger.error("Provider %s failed for hash %s: %s", provider_name, sha256, exc)

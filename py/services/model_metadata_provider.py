@@ -66,6 +66,14 @@ class _RateLimitRetryHelper:
             except RateLimitError as exc:
                 attempt += 1
 
+                # The downloader's rate-limit gate already applied the wait
+                # policy for this request (waited out the vendor window or
+                # deliberately refused because it exceeds the cap). Sleeping
+                # again here would double the wait — just propagate.
+                if getattr(exc, "gate_handled", False):
+                    exc.provider = exc.provider or label
+                    raise
+
                 # Determine effective retry limit based on rate-limit magnitude
                 effective_retry_limit = self._retry_limit  # default: 3
                 if exc.retry_after is not None and exc.retry_after >= 120.0:
@@ -100,6 +108,12 @@ class _RateLimitRetryHelper:
             base_delay += random.uniform(-jitter_span, jitter_span)
 
         return min(self._max_delay, max(0.0, base_delay))
+
+
+# Labels of providers that are free to consult even while a network provider
+# is rate-limited (local lookups, no vendor cost).
+_LOCAL_PROVIDER_LABELS = frozenset({"sqlite"})
+
 
 class ModelMetadataProvider(ABC):
     """Base abstract class for all model metadata providers"""
@@ -451,7 +465,14 @@ class SQLiteModelMetadataProvider(ModelMetadataProvider):
             return None
         
 class FallbackMetadataProvider(ModelMetadataProvider):
-    """Try providers in order, return first successful result."""
+    """Try providers in order, return first successful result.
+
+    Rate-limit policy (#1085): once a *network* provider raises
+    ``RateLimitError``, the chain stops consulting further network providers —
+    failing over would just spread the flood to the next vendor. Local-only
+    providers (see ``_LOCAL_PROVIDER_LABELS``) are still allowed as a last
+    resort because they cost the vendor nothing.
+    """
 
     def __init__(
         self,
@@ -486,7 +507,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         )
 
     async def get_model_by_hash(self, model_hash: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result, error = await self._call_with_rate_limit(
                     label,
@@ -496,8 +520,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result, error
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -505,11 +530,18 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             except Exception as e:
                 logger.debug("Provider %s failed for get_model_by_hash: %s", label, e)
                 continue
+        if rate_limited:
+            # Distinct from "Model not found": callers must not mistake a
+            # rate-limited lookup for a confirmed deletion.
+            return None, "Rate limited"
         return None, "Model not found"
 
     async def get_model_versions(self, model_id: str) -> Optional[Dict[str, Any]]:
         not_found_confirmed = False
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -519,8 +551,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -539,7 +572,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None
 
     async def get_model_version(self, model_id: Optional[int] = None, version_id: Optional[int] = None) -> Optional[Dict[str, Any]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -550,8 +586,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -562,7 +599,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None
 
     async def get_model_version_info(self, version_id: str) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result, error = await self._call_with_rate_limit(
                     label,
@@ -572,8 +612,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result:
                     return result, error
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -581,12 +622,17 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             except Exception as e:
                 logger.debug("Provider %s failed for get_model_version_info: %s", label, e)
                 continue
+        if rate_limited:
+            return None, "Rate limited"
         return None, "No provider could retrieve the data"
 
     async def get_model_versions_by_hashes(
         self, hashes: List[str]
     ) -> Optional[List[Dict[str, Any]]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -598,8 +644,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
             except NotImplementedError:
                 continue
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )
@@ -614,7 +661,10 @@ class FallbackMetadataProvider(ModelMetadataProvider):
         return None
 
     async def get_user_models(self, username: str, cursor: Optional[str] = None) -> Optional[Dict[str, Any]]:
+        rate_limited = False
         for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
             try:
                 result = await self._call_with_rate_limit(
                     label,
@@ -625,8 +675,9 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 if result is not None:
                     return result
             except RateLimitError as exc:
+                rate_limited = True
                 logger.warning(
-                    "Provider %s is rate-limited (retry_after=%.0fs); skipping to next provider",
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
                     label,
                     exc.retry_after or 0,
                 )

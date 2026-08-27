@@ -812,3 +812,56 @@ async def test_fetch_and_update_model_does_not_overwrite_api_metadata_with_archi
     
     helpers.metadata_manager.save_metadata.assert_awaited()
     update_cache.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_update_model_keeps_sqlite_last_resort_after_civarchive_rate_limit(tmp_path):
+    """A CivArchive 429 must not block the local sqlite last resort (#1085)."""
+    civarchive_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(
+            side_effect=RateLimitError("limited", retry_after=30)
+        ),
+        get_model_version=AsyncMock(),
+    )
+    sqlite_payload = {
+        "source": "archive_db",
+        "model": {"name": "Recovered", "description": "", "tags": []},
+        "images": [],
+        "baseModel": "sdxl",
+    }
+    sqlite_provider = SimpleNamespace(
+        get_model_by_hash=AsyncMock(return_value=(sqlite_payload, None)),
+        get_model_version=AsyncMock(),
+    )
+
+    async def select_provider(name: str):
+        if name == "civarchive_api":
+            return civarchive_provider
+        if name == "sqlite":
+            return sqlite_provider
+        raise AssertionError(f"unexpected provider request: {name}")
+
+    helpers = build_service(
+        settings_values={"enable_metadata_archive_db": True},
+        provider_selector=AsyncMock(side_effect=select_provider),
+    )
+
+    model_path = tmp_path / "model.safetensors"
+    model_data = {
+        "civitai_deleted": True,
+        "db_checked": False,
+        "file_path": str(model_path),
+    }
+    update_cache = AsyncMock()
+
+    ok, error = await helpers.service.fetch_and_update_model(
+        sha256="cafe",
+        file_path=str(model_path),
+        model_data=model_data,
+        update_cache_func=update_cache,
+    )
+
+    assert ok and error is None
+    civarchive_provider.get_model_by_hash.assert_awaited_once()
+    sqlite_provider.get_model_by_hash.assert_awaited_once()
+    assert model_data["metadata_source"] == "archive_db"

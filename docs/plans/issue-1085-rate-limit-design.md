@@ -1,7 +1,11 @@
 # Plan: Global Rate-Limit Abidance for Recipe Ingest & Metadata Fetching
 
 **Issue:** [#1085 — Large Recipe Ingest Appears to not abide by vendor rate limits, possibly a few other errors?](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1085)
-**Status:** v1 — awaiting review
+**Status:** v2 — reviewed; decisions recorded in §10. **Phase 1 implemented**
+(2026-08-27): coordinator + downloader gate + Fix C failover semantics +
+helper double-wait fix + settings; full regression 2385 passed. Changes vs v1:
+Fix C moved to Phase 1, helper double-wait resolved in Phase 1, gate/guard
+ordering specified, WebSocket slowdown hint confirmed in scope (Phase 2).
 **Scope:** HTTP API traffic to CivitAI (`civitai.red`) and CivArchive (`civarchive.com`) from metadata fetching (bulk refresh, metadata sync, recipe analysis/enrichment, usage-control lookups). Large binary downloads (model files / preview images via `download_file`) are out of scope for *pacing* (they are already single-connection transfers) but their 429 responses should still be *registered*.
 
 > Context: a first batch of fixes for this issue was already committed as
@@ -187,12 +191,15 @@ API:
 
 Enforcement points:
 
-1. **`Downloader.make_request`** (`downloader.py:1102-1132`): before
-   `session.request`, `await coordinator.wait_for_slot(destination)`. On 429:
-   `coordinator.register_rate_limit(...)`, then *wait for the gate and
-   re-send* (loop, bounded by `rate_limit_max_wait_seconds`, default 300;
-   `retry_after ≥ cap` ⇒ fail immediately). After the loop, return the
-   `RateLimitError` to the caller (unchanged contract). 200 path calls
+1. **`Downloader.make_request`** (`downloader.py:1102-1132`): ordering inside
+   the method is **connectivity-guard fail-fast first** (offline short-circuit
+   costs nothing to check), **then** `await coordinator.wait_for_slot(destination)`
+   before `session.request`. On 429: `coordinator.register_rate_limit(...)`,
+   then *wait for the gate and re-send* (loop, bounded by
+   `rate_limit_max_wait_seconds`, default 300; `retry_after ≥ cap` ⇒ fail
+   immediately). After the loop, return the `RateLimitError` to the caller
+   (unchanged contract) **with `exc.gate_handled = True` set** so downstream
+   retry helpers know the wait already happened. 200 path calls
    `register_success`.
 2. **`Downloader.download_to_memory` / `get_response_headers`** (phase 2):
    register 429s (so API calls queue); waiting only in `make_request`
@@ -211,10 +218,12 @@ Enforcement points:
    `"rate limited (retry_after=…s); re-run the import later"` instead of
    `FAILED`, and surface a `rate_limited` flag in the WebSocket progress
    broadcast.
-6. **`_RateLimitRetryHelper` retries** (`model_metadata_provider.py`): with the
-   gate at the downloader, the helper's `retry_after` sleeps become mostly
-   redundant; demote/simplify in phase 2 (keep the wiring so a
-   `RateLimitError` still propagates cleanly).
+6. **`_RateLimitRetryHelper` retries** (`model_metadata_provider.py`):
+   **Phase 1** — when the raised `RateLimitError` carries `gate_handled = True`
+   (set by the downloader after honoring the gate), the helper skips its own
+   `retry_after` sleep and re-raises immediately, eliminating the double wait.
+   The wiring stays so a `RateLimitError` still propagates cleanly; full
+   demotion/removal can follow once the gate proves out.
 
 Settings (`settings.json`, schema extension in `SettingsManager`):
 
@@ -230,7 +239,7 @@ Settings (`settings.json`, schema extension in `SettingsManager`):
 |---|---|
 | `py/services/rate_limit_coordinator.py` (new) | coordinator singleton + per-destination state + tests seam |
 | `py/services/downloader.py` | gate pre-check + 429 register/wait/retry loop + `register_success`; log the 429 notice at INFO once per cooldown, then DEBUG |
-| `py/services/model_metadata_provider.py` | `FallbackMetadataProvider`: stop network failover on `RateLimitError`; helper simplification |
+| `py/services/model_metadata_provider.py` | `FallbackMetadataProvider`: stop network failover on `RateLimitError`; helper skips its sleep when the error is marked `gate_handled` |
 | `py/services/metadata_sync_service.py` | `fetch_and_update_model`: same failover semantics; keep sqlite last resort |
 | `py/services/batch_import_service.py` | (phase 2) rate-limit failures → `SKIPPED` + `rate_limited` progress flag |
 | `py/services/settings_manager.py` | new settings keys + defaults |
@@ -245,18 +254,24 @@ Settings (`settings.json`, schema extension in `SettingsManager`):
   up to the wait cap — UI actions that call the API (e.g. a model-details
   fetch) may take longer during cooldowns. Mitigation: bounded cap + INFO log
   + the existing async request handling already tolerates slow responses.
-  Open question: should interactive (non-batch) requests skip the wait and
-  fail fast instead? (recommend: same wait — simpler, and cooldowns are short)
+  **Decided (§10): interactive requests take the same bounded wait** — one
+  behavior, no call-source plumbing; cooldowns are usually short.
+- **Gate waits occupy batch slots**: with the 1–5 batch semaphore, all slots
+  can park on a gate simultaneously, freezing visible progress for up to one
+  wait cap per wave. Bounded and acceptable; the phase-2 `SKIPPED` mapping +
+  WebSocket `rate_limited` flag (both confirmed in scope, §10) make the stall
+  visible and recoverable.
 - **Rate limit reality check**: CivitAI anonymous vs keyed limits, and whether
   `civitai.red` differs, is unverified. Default pacing `0.75 s/req` is a
   conservative guess (R6). Open question for maintainer: preferred default
   and whether an API-keyed ceiling should be higher.
 - **Long CivArchive windows**: `Retry-After ~1500 s` observed in code
-  comments. A 300 s default cap means such lookups fail rather than wait.
-  Open question: raise the default cap, or accept failure+skip semantics?
-- **Double waiting**: `_RateLimitRetryHelper` + gate could stack waits; the
-  phase-2 simplification removes the helper's own sleeps for requests that go
-  through the downloader.
+  comments. **Decided (§10): keep the 300 s default cap** — such lookups
+  fail/skip rather than park a request path for 25 minutes; batch import maps
+  them to `SKIPPED` (phase 2) so the user can re-run later.
+- **Double waiting**: `_RateLimitRetryHelper` + gate could stack waits.
+  **Resolved in Phase 1**: the downloader marks gate-honored errors with
+  `gate_handled = True` and the helper skips its own sleep for those.
 - **Downloads**: `download_file` 429s return an error to download managers
   unchanged (already handled); only *registration* is proposed, so future
   API calls queue behind a large `Retry-After` from a download burst.
@@ -289,22 +304,30 @@ Settings (`settings.json`, schema extension in `SettingsManager`):
 
 ## 9. Implementation Phases
 
-- **Phase 1 (this plan, after review):** `RateLimitCoordinator` +
-  `Downloader.make_request` integration (pre-check pacing + 429
-  register/wait/retry loop + cap) + settings + coordinator/downloader tests.
-- **Phase 2:** failover semantics (`FallbackMetadataProvider`,
-  `fetch_and_update_model`), helper simplification, batch-import
-  `SKIPPED`-on-rate-limit + progress flag, `download_to_memory`/HEAD 429
-  registration, provider/sync/batch tests.
+- **Phase 1 (this plan, reviewed):** `RateLimitCoordinator` +
+  `Downloader.make_request` integration (guard fail-fast → gate pre-check
+  pacing → 429 register/wait/retry loop with cap → `gate_handled` marking) +
+  settings + **Fix C failover semantics** (`FallbackMetadataProvider`,
+  `fetch_and_update_model` — moved up from phase 2: smallest diff, kills the
+  CivArchive flood immediately, independent of coordinator correctness) +
+  `_RateLimitRetryHelper` double-wait fix + coordinator/downloader/provider/
+  sync tests.
+- **Phase 2:** batch-import `SKIPPED`-on-rate-limit + `rate_limited` WebSocket
+  progress flag + slowdown hint (confirmed, §10),
+  `download_to_memory`/HEAD 429 registration, batch tests.
 - **Phase 3:** full regression + docs + commit referencing `(#1085)`.
 
-## 10. Review Checklist
+## 10. Review Checklist — Decisions (2026-08-27)
 
-- [ ] Default pacing interval acceptable (`0.75 s`)? Prefer higher/lower?
-- [ ] Wait cap `300 s` acceptable, or should long-window CivArchive lookups
-      wait longer?
-- [ ] OK that interactive API calls also wait (bounded) instead of failing
-      fast?
-- [ ] Keep sqlite as last resort behind a network rate limit?
-- [ ] Add a UI hint ("rate limited — slowing down") surfaced via WebSocket,
-      or is INFO logging enough?
+- [x] Default pacing interval `0.75 s` — **accepted** as conservative default;
+      tunable via `rate_limit_min_interval_seconds`. Revisit if CivitAI
+      publishes keyed/anonymous ceilings.
+- [x] Wait cap `300 s` — **accepted**; long-window CivArchive lookups fail →
+      batch import marks them `SKIPPED` with a rate-limit reason (phase 2).
+- [x] Interactive API calls also wait (bounded) — **yes**, same behavior for
+      all callers.
+- [x] Keep sqlite as last resort behind a network rate limit — **yes**
+      (local-only, no vendor cost).
+- [x] UI hint — **yes**: WebSocket `rate_limited` flag + "rate limited —
+      slowing down" hint in batch-import progress (phase 2); INFO logging
+      regardless.
