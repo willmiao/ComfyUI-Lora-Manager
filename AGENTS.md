@@ -224,10 +224,3 @@ The system runs in two modes:
   Any path passed to `os.remove`/`os.rename`/`shutil.move` or validated by a
   containment check MUST use the business path (i.e. `os.path.abspath`, not
   `realpath`).
-
-## Git / Commit Messages
-
-- Follow the style of recent repository commits when writing commit messages
-- Prefer the repo's existing `feat(...)`, `fix(...)`, `chore:` style where applicable
-- If the user has provided a GitHub issue link or issue ID for the task, mention that issue in the commit message, for example `(#871)`
-- When unrelated local changes exist, stage and commit only the files relevant to the requested task
