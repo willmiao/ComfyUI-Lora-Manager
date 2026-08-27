@@ -671,23 +671,32 @@ body.hide-card-version .hl-badge {
     user-select: none;
 }
 
+/* Compact LoRA status pill: state icon + available/total fraction (e.g. "2/3").
+   The icon switches by state (warning/check/layers) so status never relies on
+   color alone; the tooltip spells out the full details. */
 .lora-count {
     display: flex;
     align-items: center;
     gap: 4px;
-    background: rgba(255, 255, 255, 0.2);
-    padding: 2px 8px;
-    border-radius: var(--border-radius-xs);
+    flex-shrink: 0;
+    /* Pin to the bottom-right corner of the footer, matching how model card
+       footer .card-actions behave when the title wraps to multiple lines */
+    align-self: flex-end;
     font-size: 0.85em;
-    position: relative;
+    padding: 2px 8px;
+    background: rgba(255, 255, 255, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    border-radius: var(--border-radius-xs);
 }
 
 .lora-count.ready {
     background: rgba(46, 204, 113, 0.3);
+    border-color: rgba(46, 204, 113, 0.6);
 }
 
 .lora-count.missing {
-    background: rgba(231, 76, 60, 0.3);
+    background: rgba(231, 76, 60, 0.35);
+    border-color: rgba(231, 76, 60, 0.65);
 }
 
 .placeholder-message {

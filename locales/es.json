@@ -873,6 +873,18 @@
             "sendFailed": "Error al enviar el workflow a ComfyUI",
             "noWorkflow": "No se encontró ningún workflow integrado en esta receta"
         },
+        "status": {
+            "ready": "Listo para usar",
+            "missingCount": "{count} faltante(s)",
+            "deletedCount": "{count} eliminado(s)",
+            "downloadMissing": "Descargar {count} LoRAs faltantes",
+            "downloadMissingTooltip": "Haz clic para descargar los LoRAs faltantes"
+        },
+        "loraStatus": {
+            "none": "No hay LoRAs en esta receta",
+            "allAvailable": "Todos los LoRAs disponibles - Listo para usar",
+            "missing": "Faltan {missing} de {total} LoRAs"
+        },
         "controls": {
             "import": {
                 "action": "Importar",
@@ -1033,8 +1045,8 @@
             "start": "Start Import",
             "startImport": "Start Import",
             "importing": "Importing...",
-            "rateLimitedSlowdown": "[TODO: Translate] Rate limited — slowing down...",
-            "rateLimitedHint": "[TODO: Translate] Some items were skipped due to metadata provider rate limits. Re-run the import later to retry them.",
+            "rateLimitedSlowdown": "Límite de velocidad — ralentizando…",
+            "rateLimitedHint": "Algunos elementos se omitieron debido a los límites de velocidad del proveedor de metadatos. Vuelve a ejecutar la importación más tarde para reintentarlos.",
             "progress": "Progress",
             "total": "Total",
             "success": "Success",
@@ -2040,7 +2052,7 @@
             "batchImportCancelFailed": "Failed to cancel batch import: {message}",
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
-            "batchImportRateLimited": "[TODO: Translate] Metadata provider rate limit reached — requests are being slowed and some items may be skipped. You can re-run the import later.",
+            "batchImportRateLimited": "Se alcanzó el límite de velocidad del proveedor de metadatos — las solicitudes se están ralentizando y algunos elementos pueden omitirse. Puedes volver a ejecutar la importación más tarde.",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "No se han seleccionado recetas",

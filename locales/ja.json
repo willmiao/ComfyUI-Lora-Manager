@@ -873,6 +873,18 @@
             "sendFailed": "ワークフローをComfyUIへ送信できませんでした",
             "noWorkflow": "このレシピに埋め込まれたワークフローが見つかりません"
         },
+        "status": {
+            "ready": "使用可能",
+            "missingCount": "{count} 件不足",
+            "deletedCount": "{count} 件削除済み",
+            "downloadMissing": "不足している {count} 件のLoRAをダウンロード",
+            "downloadMissingTooltip": "クリックして不足しているLoRAをダウンロード"
+        },
+        "loraStatus": {
+            "none": "このレシピにはLoRAがありません",
+            "allAvailable": "すべてのLoRAが利用可能 - 使用可能",
+            "missing": "{total} 件中 {missing} 件のLoRAが不足"
+        },
         "controls": {
             "import": {
                 "action": "インポート",
@@ -1033,8 +1045,8 @@
             "start": "Start Import",
             "startImport": "Start Import",
             "importing": "Importing...",
-            "rateLimitedSlowdown": "[TODO: Translate] Rate limited — slowing down...",
-            "rateLimitedHint": "[TODO: Translate] Some items were skipped due to metadata provider rate limits. Re-run the import later to retry them.",
+            "rateLimitedSlowdown": "レート制限 — 速度を落としています…",
+            "rateLimitedHint": "メタデータプロバイダーのレート制限により、一部のアイテムがスキップされました。後でインポートを再実行すると再試行できます。",
             "progress": "Progress",
             "total": "Total",
             "success": "Success",
@@ -2040,7 +2052,7 @@
             "batchImportCancelFailed": "Failed to cancel batch import: {message}",
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
-            "batchImportRateLimited": "[TODO: Translate] Metadata provider rate limit reached — requests are being slowed and some items may be skipped. You can re-run the import later.",
+            "batchImportRateLimited": "メタデータプロバイダーのレート制限に達しました — リクエストが低速化され、一部のアイテムがスキップされる可能性があります。後でインポートを再実行できます。",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "レシピが選択されていません",

@@ -873,6 +873,18 @@
       "sendFailed": "Failed to send workflow to ComfyUI",
       "noWorkflow": "No embedded workflow found in this recipe"
     },
+    "status": {
+      "ready": "Ready to use",
+      "missingCount": "{count} missing",
+      "deletedCount": "{count} deleted",
+      "downloadMissing": "Download {count} missing LoRAs",
+      "downloadMissingTooltip": "Click to download missing LoRAs"
+    },
+    "loraStatus": {
+      "none": "No LoRAs in this recipe",
+      "allAvailable": "All LoRAs available - Ready to use",
+      "missing": "{missing} of {total} LoRAs missing"
+    },
     "controls": {
       "import": {
         "action": "Import",

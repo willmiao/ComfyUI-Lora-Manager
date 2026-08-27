@@ -45,6 +45,13 @@ class RecipeCard {
         const missingLorasCount = loras.filter(lora => !lora.inLibrary && !lora.isDeleted).length;
         const allLorasAvailable = missingLorasCount === 0 && lorasCount > 0;
 
+        // Compact status pill: state icon + available/total fraction.
+        // Icon switches by state so status never relies on color alone.
+        const availableLorasCount = lorasCount - missingLorasCount;
+        const loraCountStateClass = missingLorasCount > 0 ? 'missing' : (allLorasAvailable ? 'ready' : '');
+        const loraCountIcon = missingLorasCount > 0 ? 'fa-exclamation-triangle' : (allLorasAvailable ? 'fa-check' : 'fa-layer-group');
+        const loraCountLabel = lorasCount > 0 ? `${availableLorasCount}/${lorasCount}` : `${lorasCount}`;
+
         // Ensure file_url exists, fallback to API URL if needed
         let previewUrl = this.recipe.file_url;
         if (!previewUrl) {
@@ -128,9 +135,8 @@ class RecipeCard {
                         <span class="model-name">${this.recipe.title}</span>
                     </div>
                     ${!isDuplicatesMode ? `
-                    <div class="lora-count ${allLorasAvailable ? 'ready' : (lorasCount > 0 ? 'missing' : '')}" 
-                         title="${this.getLoraStatusTitle(lorasCount, missingLorasCount)}">
-                        <i class="fas fa-layer-group"></i> ${lorasCount}
+                    <div class="lora-count ${loraCountStateClass}" title="${this.getLoraStatusTitle(lorasCount, missingLorasCount)}">
+                        <i class="fas ${loraCountIcon}" aria-hidden="true"></i> ${loraCountLabel}
                     </div>
                     ` : ''}
                 </div>
@@ -149,9 +155,17 @@ class RecipeCard {
     }
 
     getLoraStatusTitle(totalCount, missingCount) {
-        if (totalCount === 0) return "No LoRAs in this recipe";
-        if (missingCount === 0) return "All LoRAs available - Ready to use";
-        return `${missingCount} of ${totalCount} LoRAs missing`;
+        if (totalCount === 0) {
+            return translate('recipes.loraStatus.none', {}, 'No LoRAs in this recipe');
+        }
+        if (missingCount === 0) {
+            return translate('recipes.loraStatus.allAvailable', {}, 'All LoRAs available - Ready to use');
+        }
+        return translate(
+            'recipes.loraStatus.missing',
+            { missing: missingCount, total: totalCount },
+            `${missingCount} of ${totalCount} LoRAs missing`
+        );
     }
 
     async toggleFavorite(card) {

@@ -37,8 +37,7 @@ export class RecipeContextMenu extends BaseContextMenu {
 
         if (recipeId && missingLorasItem) {
             // Check if this card has missing LoRAs
-            const loraCountElement = card.querySelector('.lora-count');
-            const hasMissingLoras = loraCountElement && loraCountElement.classList.contains('missing');
+            const hasMissingLoras = Boolean(card.querySelector('.lora-count.missing'));
 
             // Show/hide the download missing LoRAs option based on missing status
             if (hasMissingLoras) {

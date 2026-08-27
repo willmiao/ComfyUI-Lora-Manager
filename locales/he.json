@@ -873,6 +873,18 @@
             "sendFailed": "שליחת ה-workflow ל-ComfyUI נכשלה",
             "noWorkflow": "לא נמצא workflow מוטבע במתכון זה"
         },
+        "status": {
+            "ready": "מוכן לשימוש",
+            "missingCount": "{count} חסרים",
+            "deletedCount": "{count} נמחקו",
+            "downloadMissing": "הורד {count} LoRAs חסרים",
+            "downloadMissingTooltip": "לחץ כדי להוריד LoRAs חסרים"
+        },
+        "loraStatus": {
+            "none": "אין LoRAs במתכון הזה",
+            "allAvailable": "כל ה-LoRAs זמינים - מוכן לשימוש",
+            "missing": "{missing} מתוך {total} LoRAs חסרים"
+        },
         "controls": {
             "import": {
                 "action": "ייבא",
@@ -1033,8 +1045,8 @@
             "start": "Start Import",
             "startImport": "Start Import",
             "importing": "Importing...",
-            "rateLimitedSlowdown": "[TODO: Translate] Rate limited — slowing down...",
-            "rateLimitedHint": "[TODO: Translate] Some items were skipped due to metadata provider rate limits. Re-run the import later to retry them.",
+            "rateLimitedSlowdown": "הגבלת קצב — מאט…",
+            "rateLimitedHint": "חלק מהפריטים דולגו עקב הגבלות קצב של ספק המטא-נתונים. הפעל שוב את הייבוא מאוחר יותר כדי לנסות שוב.",
             "progress": "Progress",
             "total": "Total",
             "success": "Success",
@@ -2040,7 +2052,7 @@
             "batchImportCancelFailed": "Failed to cancel batch import: {message}",
             "batchImportNoUrls": "Please enter at least one URL or file path",
             "batchImportNoDirectory": "Please enter a directory path",
-            "batchImportRateLimited": "[TODO: Translate] Metadata provider rate limit reached — requests are being slowed and some items may be skipped. You can re-run the import later.",
+            "batchImportRateLimited": "הושגה הגבלת הקצב של ספק המטא-נתונים — הבקשות מאטות וחלק מהפריטים עשויים להידלג. תוכל להפעיל שוב את הייבוא מאוחר יותר.",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
             "noRecipesSelected": "לא נבחרו מתכונים",

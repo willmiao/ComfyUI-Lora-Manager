@@ -299,21 +299,6 @@ class RecipeModal {
                     tooltip.style.left = (badgeRect.right - tooltip.offsetWidth) + 'px';
                 }
             }
-
-            // Add tooltip positioning for missing badge
-            if (event.target.closest('.recipe-status.missing')) {
-                const badge = event.target.closest('.recipe-status.missing');
-                const tooltip = badge.querySelector('.missing-tooltip');
-
-                if (tooltip) {
-                    // Get badge position
-                    const badgeRect = badge.getBoundingClientRect();
-
-                    // Position the tooltip
-                    tooltip.style.top = (badgeRect.bottom + 4) + 'px';
-                    tooltip.style.left = (badgeRect.left) + 'px';
-                }
-            }
         }, true);
     }
 
@@ -872,29 +857,33 @@ class RecipeModal {
             let statusHTML = '';
             if (totalCount > 0) {
                 if (allLorasAvailable && deletedLorasCount === 0) {
-                    statusHTML = `<div class="recipe-status ready"><i class="fas fa-check-circle"></i> Ready to use</div>`;
+                    statusHTML = `<div class="recipe-status ready"><i class="fas fa-check-circle" aria-hidden="true"></i> ${translate('recipes.status.ready', {}, 'Ready to use')}</div>`;
                 } else if (missingLorasCount > 0) {
-                    statusHTML = `<div class="recipe-status missing">
-                        <i class="fas fa-exclamation-triangle"></i> ${missingLorasCount} missing
-                        <div class="missing-tooltip">Click to download missing LoRAs</div>
-                    </div>`;
+                    // Rendered as a real button so the affordance is visible without
+                    // hover and the control is keyboard/screen-reader accessible.
+                    // Leading download icon: the red tint + "missing" text already
+                    // encode the state, so the icon's job is to hint the action.
+                    statusHTML = `<button type="button" class="recipe-status missing clickable"
+                        title="${translate('recipes.status.downloadMissingTooltip', {}, 'Click to download missing LoRAs')}"
+                        aria-label="${translate('recipes.status.downloadMissing', { count: missingLorasCount }, `Download ${missingLorasCount} missing LoRAs`)}">
+                        <i class="fas fa-download" aria-hidden="true"></i> ${translate('recipes.status.missingCount', { count: missingLorasCount }, `${missingLorasCount} missing`)}
+                    </button>`;
                 } else if (deletedLorasCount > 0 && missingLorasCount === 0) {
-                    statusHTML = `<div class="recipe-status partial"><i class="fas fa-info-circle"></i> ${deletedLorasCount} deleted</div>`;
+                    statusHTML = `<div class="recipe-status partial"><i class="fas fa-info-circle" aria-hidden="true"></i> ${translate('recipes.status.deletedCount', { count: deletedLorasCount }, `${deletedLorasCount} deleted`)}</div>`;
                 }
             }
 
             lorasCountElement.innerHTML = `<i class="fas fa-layer-group"></i> ${totalCount} ${totalCount === 1 ? 'LoRA' : 'LoRAs'} ${statusHTML}`;
 
+            const missingStatus = lorasCountElement.querySelector('.recipe-status.missing');
+            if (missingStatus && missingLorasCount > 0) {
+                missingStatus.addEventListener('click', () => this.showDownloadMissingLorasModal());
+            }
+
             setTimeout(() => {
                 const viewRecipeLorasBtn = document.getElementById('viewRecipeLorasBtn');
                 if (viewRecipeLorasBtn) {
                     viewRecipeLorasBtn.addEventListener('click', () => this.navigateToLorasPage());
-                }
-
-                const missingStatus = document.querySelector('.recipe-status.missing');
-                if (missingStatus && missingLorasCount > 0) {
-                    missingStatus.classList.add('clickable');
-                    missingStatus.addEventListener('click', () => this.showDownloadMissingLorasModal());
                 }
             }, 100);
         }
