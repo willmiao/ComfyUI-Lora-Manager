@@ -87,6 +87,10 @@ export const BASE_MODELS = {
     UNKNOWN: "Other"
 };
 
+// Window event dispatched after dynamic base models are (re)loaded from the API.
+// Pickers listen for it to refresh their option lists when data arrives late.
+export const BASE_MODELS_UPDATED_EVENT = 'lora-manager:base-models-updated';
+
 // Custom dataTransfer MIME type tagging internal model-card drags (move-to-folder).
 // Preview-drop handlers use it to ignore drags that did not come from the OS file system.
 export const MODEL_CARD_DRAG_MIME_TYPE = 'application/x-lora-manager-model-card';

@@ -49,34 +49,113 @@
     -ms-user-select: none;
 }
 
-/* Remove bulk base model modal specific styles - now using shared components */
-/* Use shared metadata editing styles instead */
+/* ── Bulk base model modal — dedicated inline-list layout ───────────────
+   Unlike the single-model modal (overlay dropdown), the bulk modal renders
+   the option list inline so it never covers the footer buttons and only the
+   list itself scrolls. Dropdown internals reuse the shared .base-model-*
+   styles from lora-modal.css. */
 
-/* Override for bulk base model select to ensure proper width */
-.bulk-base-model-select {
+#bulkBaseModelModal .modal-content {
+    width: min(720px, calc(100vw - 2rem));
+    height: min(640px, calc(100vh - var(--header-height, 48px) - 5.5rem));
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#bulkBaseModelModal .modal-header {
+    flex-shrink: 0;
+}
+
+#bulkBaseModelModal .modal-body {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+#bulkBaseModelModal .bulk-add-tags-info {
+    flex-shrink: 0;
+}
+
+#bulkBaseModelModal .bulk-base-model-label {
+    flex-shrink: 0;
+    display: block;
+    font-weight: 500;
+    margin-bottom: var(--space-1);
+    color: var(--text-color);
+}
+
+.bulk-base-model-picker {
     width: 100%;
-    max-width: 100%;
-    padding: 6px 10px;
+}
+
+#bulkBaseModelModal .bulk-base-model-picker {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#bulkBaseModelModal .bulk-base-model-picker .base-model-search-wrapper {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    z-index: auto;
+}
+
+#bulkBaseModelModal .base-model-search-input-wrapper {
+    flex-shrink: 0;
+}
+
+/* Inline list instead of overlay dropdown */
+#bulkBaseModelModal .base-model-dropdown {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    overflow-y: auto;
+    margin-top: var(--space-1);
+    border: 1px solid var(--lora-border);
     border-radius: var(--border-radius-xs);
-    border: 1px solid var(--border-color);
-    background-color: var(--lora-surface);
-    color: var(--text-color);
-    font-size: 0.95em;
-    height: 32px;
+    box-shadow: none;
+    z-index: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: var(--lora-border) transparent;
 }
 
-.bulk-base-model-select:focus {
-    border-color: var(--lora-accent);
-    outline: none;
+#bulkBaseModelModal .base-model-dropdown::-webkit-scrollbar {
+    width: 8px;
 }
 
-/* Dark theme support for bulk base model select */
-[data-theme="dark"] .bulk-base-model-select {
-    background-color: rgba(30, 30, 30, 0.9);
-    color: var(--text-color);
+#bulkBaseModelModal .base-model-dropdown::-webkit-scrollbar-thumb {
+    background: var(--lora-border);
+    border-radius: 4px;
 }
 
-[data-theme="dark"] .bulk-base-model-select option {
-    background-color: #2d2d2d;
-    color: var(--text-color);
+#bulkBaseModelModal .base-model-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+/* The shared dropdown header uses opacity for its muted look, which makes the
+   sticky background translucent — scrolled items bleed through. Keep the
+   muted text color but restore a fully opaque background (bulk scope only). */
+#bulkBaseModelModal .base-model-dropdown-header {
+    opacity: 1;
+    color: var(--text-muted, var(--text-color));
+}
+
+#bulkBaseModelModal .bulk-base-model-footer {
+    flex-shrink: 0;
+    padding-top: var(--space-2);
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--lora-border);
 }

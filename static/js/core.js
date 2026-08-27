@@ -20,7 +20,7 @@ import { BulkContextMenu } from './components/ContextMenu/BulkContextMenu.js';
 import { createPageContextMenu, createGlobalContextMenu } from './components/ContextMenu/index.js';
 import { initializeEventManagement } from './utils/eventManagementInit.js';
 import { civitaiBaseModelApi } from './api/civitaiBaseModelApi.js';
-import { setDynamicBaseModels } from './utils/constants.js';
+import { setDynamicBaseModels, BASE_MODELS_UPDATED_EVENT } from './utils/constants.js';
 
 // Core application class
 export class AppCore {
@@ -134,6 +134,7 @@ export class AppCore {
             const result = await civitaiBaseModelApi.getBaseModels();
             if (result && result.models) {
                 setDynamicBaseModels(result.models, result.last_updated);
+                window.dispatchEvent(new CustomEvent(BASE_MODELS_UPDATED_EVENT));
                 console.log(`AppCore: Loaded ${result.merged_count} base models (${result.hardcoded_count} hardcoded + ${result.remote_count} remote)`);
             }
         } catch (error) {

@@ -6,7 +6,7 @@ import { modalManager } from './ModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { RecipeSidebarApiClient, updateRecipeMetadata, extractRecipeId } from '../api/recipeApi.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
-import { BASE_MODEL_CATEGORIES } from '../utils/constants.js';
+import { createBaseModelPicker, inferBaseModelsFromFilepaths } from '../components/shared/BaseModelPicker.js';
 import { getPriorityTagSuggestions } from '../utils/priorityTagHelpers.js';
 import { eventManager } from '../utils/EventManager.js';
 import { translate } from '../utils/i18nHelpers.js';
@@ -29,6 +29,10 @@ export class BulkManager {
         // Shift+click range anchor: last plain-clicked filepath. Set in
         // toggleCardSelection, cleared in clearSelection.
         this.bulkAnchorFilepath = null;
+
+        // Bulk base model picker state
+        this.bulkBaseModelPicker = null;
+        this.bulkBaseModelValue = '';
 
         // Drag detection properties
         this.dragThreshold = 5; // Pixels to move before considering it a drag
@@ -1830,47 +1834,35 @@ export class BulkManager {
      * Initialize bulk base model interface
      */
     initializeBulkBaseModelInterface() {
-        const select = document.getElementById('bulkBaseModelSelect');
-        if (!select) return;
+        const container = document.getElementById('bulkBaseModelPicker');
+        if (!container) return;
 
-        // Clear existing options
-        select.innerHTML = '';
+        // Reset any previous picker instance
+        this.cleanupBulkBaseModelModal();
+        container.innerHTML = '';
 
-        // Add placeholder option
-        const placeholderOption = document.createElement('option');
-        placeholderOption.value = '';
-        placeholderOption.textContent = 'Select a base model...';
-        placeholderOption.disabled = true;
-        placeholderOption.selected = true;
-        select.appendChild(placeholderOption);
-
-        // Create option groups for better organization
-        Object.entries(BASE_MODEL_CATEGORIES).forEach(([category, models]) => {
-            const optgroup = document.createElement('optgroup');
-            optgroup.label = category;
-
-            models.forEach(model => {
-                const option = document.createElement('option');
-                option.value = model;
-                option.textContent = model;
-                optgroup.appendChild(option);
-            });
-
-            select.appendChild(optgroup);
+        const suggestions = inferBaseModelsFromFilepaths(Array.from(state.selectedModels));
+        this.bulkBaseModelValue = '';
+        this.bulkBaseModelPicker = createBaseModelPicker({
+            suggestions,
+            mode: 'change',
+            onChange: (value) => {
+                this.bulkBaseModelValue = value;
+            },
         });
+        container.appendChild(this.bulkBaseModelPicker.element);
+        this.bulkBaseModelPicker.element.querySelector('.base-model-search-input')?.focus();
     }
 
     /**
      * Save bulk base model changes
      */
     async saveBulkBaseModel() {
-        const select = document.getElementById('bulkBaseModelSelect');
-        if (!select || !select.value) {
+        const newBaseModel = (this.bulkBaseModelValue || this.bulkBaseModelPicker?.getValue() || '').trim();
+        if (!newBaseModel) {
             showToast('toast.models.baseModelNotSelected', {}, 'warning');
             return;
         }
-
-        const newBaseModel = select.value;
         const selectedCount = state.selectedModels.size;
 
         if (selectedCount === 0) {
@@ -1938,9 +1930,14 @@ export class BulkManager {
      * Cleanup bulk base model modal
      */
     cleanupBulkBaseModelModal() {
-        const select = document.getElementById('bulkBaseModelSelect');
-        if (select) {
-            select.innerHTML = '';
+        if (this.bulkBaseModelPicker) {
+            this.bulkBaseModelPicker.destroy();
+            this.bulkBaseModelPicker = null;
+        }
+        this.bulkBaseModelValue = '';
+        const container = document.getElementById('bulkBaseModelPicker');
+        if (container) {
+            container.innerHTML = '';
         }
     }
 
