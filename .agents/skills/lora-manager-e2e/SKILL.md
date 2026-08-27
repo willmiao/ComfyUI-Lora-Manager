@@ -1,385 +1,146 @@
 ---
 name: lora-manager-e2e
-description: "End-to-end testing and validation for LoRa Manager features. Use when performing automated E2E validation of LoRa Manager standalone mode in a SANDBOXED, disposable configuration: check the port, start/restart the standalone server on a free port, use Chrome DevTools MCP to interact with the web UI (http://127.0.0.1:{PORT}/loras), and verify frontend-to-backend functionality. Covers workflow validation, UI interaction testing, and integration testing between the standalone Python backend and the browser frontend. Trigger keywords: E2E, standalone, Chrome DevTools MCP, lora-manager-e2e, sandbox."
+description: "End-to-end testing and validation for LoRa Manager features. Use ONLY for sandboxed E2E validation of LoRa Manager standalone mode: start the standalone server on a free port with --settings-path, drive the web UI (http://127.0.0.1:{PORT}/loras) via Chrome DevTools MCP, and verify frontend-to-backend integration. NOT for UI behavior checks that unit tests (Vitest/jsdom) can cover. Trigger keywords: E2E, standalone, Chrome DevTools MCP, lora-manager-e2e, sandbox."
 ---
 
 # LoRa Manager E2E Testing
 
-This skill provides workflows and utilities for end-to-end testing of LoRa Manager using Chrome DevTools MCP.
+End-to-end testing of LoRa Manager standalone mode using Chrome DevTools MCP.
 
-## Conventions Used in This Document
+## When to Use — and When NOT To
 
-- **`{PORT}`**: The server port. The default candidate is `8188`, but **`8188` is commonly occupied by a live ComfyUI process** and MUST NOT be assumed to be free. Always check availability first (see [Port Selection](#port-selection)) and use a free port (e.g. `8199`) for the E2E run. Substitute the actual port for every `{PORT}` in the commands below.
-- **`<repo-root>`**: The repository/worktree root. Always run commands from the repo or worktree root; never assume a specific absolute path (paths such as `/home/<user>/...` differ per machine). The E2E scripts resolve the project root themselves, but fixture/settings paths are relative to `<repo-root>`.
-- **`<settings-dir>`**: The sandboxed explicit settings directory passed via `--settings-path` (see [SANDBOX](#sandbox-mandatory)); substitute the actual path (e.g. `/tmp/opencode/<plan>-e2e/settings`) for every `{PATH}` in commands below that target the sandbox config.
+E2E runs are slow and token-heavy. Reach for them only when the question genuinely
+spans server + browser (routing, scan persistence, websocket updates, EXIF writes).
+
+- **Default to unit/component tests first**: `npm run test:js` (Vitest/jsdom) covers
+  DOM rendering, modal behavior, event handling and API-client calls deterministically
+  in seconds. Backend logic goes through `pytest`. A UI-behavior question answered by
+  jsdom MUST NOT be escalated to E2E.
+- **Use E2E only when** the behavior cannot be observed without a live server and a
+  real browser, e.g. template rendering through the aiohttp server, scanner → SQLite
+  persistence → API → DOM round-trips, or real EXIF/image writes.
+- If you start an E2E and realize a unit test would answer the question, stop and
+  switch.
+
+**Browser driver is fixed: Chrome DevTools MCP.** Do not substitute kimi-webbridge —
+it operates on the user's real browser (real tabs, real sessions, synthetic
+`isTrusted=false` events), which breaks the isolation this skill requires and lacks
+the console/network inspection E2E debugging relies on. kimi-webbridge is for
+interactive browsing with the user's real login sessions, not for sandboxed E2E.
+
+## Conventions
+
+- **`{PORT}`**: default candidate `8188`, but it is **commonly occupied by a live
+  ComfyUI** — always check first (`ss -tlnp | grep ':{PORT}'`) and use a free port
+  (e.g. `8199`). Substitute the chosen port everywhere below. Never kill a process
+  you did not start for this E2E.
+- **`<repo-root>`**: the repository/worktree root; run all commands from there.
+- **`<sandbox>`**: a throwaway dir, e.g. `/tmp/opencode/<plan>-e2e`.
 
 ## SANDBOX (MANDATORY)
 
-> **Read this section before running anything.** Every E2E run MUST target a throwaway sandbox, never the real user data. A fresh subagent that skips this section WILL permanently mutate real user recipes.
+> Every E2E run MUST target a throwaway sandbox, never real user data.
 
-1. **Explicit settings directory (preferred)**: launch the standalone server with `--settings-path <sandbox>/settings` (or set `LORA_MANAGER_SETTINGS_DIR`). This pins ALL runtime data — `settings.json`, `cache/`, `wildcards/`, `backups/`, `logs/`, `stats/` — under that directory, independent of portable mode and of the real user config dir. **Do NOT** write `<repo-root>/settings.json` for sandboxing: the repo folder is usually the real ComfyUI plugin folder, and a portable `settings.json` there is read by the real instance — exactly the conflict this E2E must avoid.
-2. **Sandboxed paths**: point `folder_paths` / `recipes_path` / `example_images_path` at disposable dirs under the sandbox — e.g. `<sandbox>/models/loras`, `<sandbox>/recipes`. NEVER point the E2E at the real library (`~/models/...`), real recipe dir, or real settings.
-3. **Never touch the real config**: the real user config at `~/.config/ComfyUI-LoRA-Manager/settings.json` and the real recipe dir must remain byte-identical before and after the run.
-4. **Record real-data protection proof** before starting and after finishing:
-   ```bash
-   # BEFORE: snapshot real config + recipe library state
-   sha256sum ~/.config/ComfyUI-LoRA-Manager/settings.json > /tmp/opencode/<plan>-e2e/settings.before.sha256
-   ls ~/models/recipes/*.recipe.json 2>/dev/null | wc -l > /tmp/opencode/<plan>-e2e/recipes-count.before.txt
-   find ~/models/recipes -name '*.recipe.json' -newermt "$(date -Iseconds)" | head   # expect empty after run
-   # AFTER: record again, then diff the two snapshots. Any change = the run leaked into real data.
+1. **Explicit settings directory**: always launch with `--settings-path <sandbox>/settings`.
+   This pins ALL runtime data (`settings.json`, `cache/`, `backups/`, `logs/`, `stats/`,
+   `wildcards/`) under the sandbox. **Never** create `<repo-root>/settings.json` — the repo
+   folder is usually the real ComfyUI plugin folder and a portable settings file there is
+   read by the real instance.
+2. **Sandboxed library paths**: point `folder_paths` / `recipes_path` /
+   `example_images_path` at disposable dirs under `<sandbox>` — never the real library,
+   real recipe dir, or real settings:
+
+   ```json
+   {
+     "folder_paths": {
+       "loras": ["<sandbox>/models/loras"],
+       "checkpoints": ["<sandbox>/models/checkpoints"],
+       "unet": ["<sandbox>/models/checkpoints"],
+       "diffusers": []
+     },
+     "recipes_path": "<sandbox>/recipes",
+     "example_images_path": "<sandbox>/example_images"
+   }
    ```
-   Also confirm `<repo-root>/git status` stays clean (`settings.json`/`cache/` are gitignored and must not be created by the run).
 
-### Sandbox Settings (via `--settings-path`)
+3. **Real-data protection proof**: before starting and after finishing, snapshot the real
+   config and recipe library and confirm they are byte-identical; also confirm
+   `<repo-root>` gained no `settings.json` or `cache/`:
 
-Write this file as `<sandbox>/settings/settings.json` — `<settings-dir>` in the commands below:
+   ```bash
+   sha256sum ~/.config/ComfyUI-LoRA-Manager/settings.json > <sandbox>/settings.before.sha256
+   ls ~/models/recipes/*.recipe.json 2>/dev/null | wc -l > <sandbox>/recipes-count.before.txt
+   # AFTER the run: record again and diff. Any change = the run leaked into real data.
+   ```
 
-```json
-{
-  "folder_paths": {
-    "loras": ["/tmp/opencode/<plan>-e2e/models/loras"],
-    "checkpoints": ["/tmp/opencode/<plan>-e2e/models/checkpoints"],
-    "unet": ["/tmp/opencode/<plan>-e2e/models/checkpoints"],
-    "diffusers": []
-  },
-  "recipes_path": "/tmp/opencode/<plan>-e2e/recipes",
-  "example_images_path": "/tmp/opencode/<plan>-e2e/example_images"
-}
-```
-
-The scanner computes and persists model hashes during the library scan, so the sandbox model dirs just need the model files + `.metadata.json` sidecars (see [Fixture + Fresh-State Guidance](#fixture--fresh-state-guidance)). With `--settings-path`, all derived data lands under `<settings-dir>` (`cache/`, `backups/`, `logs/`, `stats/`, `wildcards/`), and NO `cache/` appears in `<repo-root>`.
-
-## Time Budgets & Abort Guidance
-
-A fresh subagent should complete a sandboxed standalone E2E **in well under 30 minutes**. Budget each phase:
-
-| Phase | Expected duration | Abort if |
-| --- | --- | --- |
-| Port check + sandbox setup | < 2 min | — |
-| Server start (detached) + readiness | < 30 s | > 60 s (2x) → stop |
-| Chrome DevTools MCP connect | < 1 min | > 2 min → stop |
-| Per entry-point run (after fixtures ready) | < 5 min | > 10 min (2x) → stop |
-| Fixture reset + cache clear between runs | < 1 min | > 2 min → stop |
-
-**Abort rule**: if a phase exceeds ~2x its budget, OR any single tool call fails/retries 3+ times in a row, **STOP**. Do not loop or retry blindly. Report `BLOCKED` with: the phase, the last observed state (server PID + `ss -tlnp` output, page snapshot, last API response), and the suspected cause. Record the partial state as evidence; a clean BLOCKED report is more valuable than an hour of retries.
-
-## Prerequisites
-
-- LoRa Manager project cloned and dependencies installed (`pip install -r requirements.txt`) — run everything from `<repo-root>`
-- Chrome browser available for debugging
-- Chrome DevTools MCP connected
-- `ss` (or `lsof`/`netstat`) available for port checks: `ss -tlnp`
-
-## Port Selection
-
-`8188` is only the *default candidate*. Verify it is actually free before every run:
+## Quick Start
 
 ```bash
-# Is anything listening on 8188?
-ss -tlnp | grep ':8188' || echo "8188 is free"
-```
-
-- If a process holds `8188` (e.g. a live ComfyUI — pid 6575 on this machine), pick a different free port, e.g. `8199`:
-  ```bash
-  ss -tlnp | grep ':8199' || echo "8199 is free"
-  ```
-- **Never** kill a process you did not start for this E2E. The live ComfyUI is off-limits. Pick a free port instead.
-- Use your chosen port for **all** subsequent commands (server, Chrome launch, browser URLs).
-
-## Quick Start Workflow (sandboxed)
-
-### 1. Prepare the sandbox
-
-```bash
-cd <repo-root>                       # ALWAYS run from the repo/worktree root
-mkdir -p /tmp/opencode/<plan>-e2e/settings
-mkdir -p /tmp/opencode/<plan>-e2e/models/{loras,checkpoints}
-mkdir -p /tmp/opencode/<plan>-e2e/{recipes,example_images,recipes-before}
-# write <sandbox>/settings/settings.json per the sandbox-settings example above
-# record real-data protection proof (see SANDBOX section)
-```
-
-### 2. Check port availability
-
-```bash
+cd <repo-root>
+# 1. Sandbox
+mkdir -p <sandbox>/settings <sandbox>/models/{loras,checkpoints} <sandbox>/{recipes,example_images}
+#    write <sandbox>/settings/settings.json per the SANDBOX example
+# 2. Port
 ss -tlnp | grep ':{PORT}' || echo "port {PORT} is free"
-```
-
-If `{PORT}` is occupied by an unrelated process, pick a free one and use it everywhere below. When in doubt use `8199`.
-
-### 3. Start LoRa Manager Standalone (detached)
-
-The standalone server **dies with the shell unless launched fully detached** — a plain background `&` from the bash tool is killed when the tool call returns. Launch via the helper script (note `--settings-path`):
-
-```bash
+# 3. Server — MUST be fully detached (a plain background & dies with the shell);
+#    the helper enforces this and manages its own pidfile
 python .agents/skills/lora-manager-e2e/scripts/start_server.py \
-  --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings \
-  --wait --timeout 30 --detach
-```
-
-Or manually (equivalent detached form):
-
-```bash
-setsid nohup python standalone.py --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings --host 127.0.0.1 < /dev/null \
-  >> /tmp/opencode/<plan>-e2e/server.log 2>&1 &
-echo "started"   # record the printed/pidfile PID for cleanup
-```
-
-Verify it is listening **before** proceeding (readiness poll is not a substitute for this):
-
-```bash
-ss -tlnp | grep ':{PORT}'
-```
-
-Record the server PID for cleanup: the helper script writes it to `/tmp/lora-manager-e2e-server-{PORT}.pid`; a manual `setsid` launch has no pidfile, so capture it explicitly (e.g. from `ss -tlnp`).
-
-### 4. Open Chrome Debug Mode
-
-```bash
-# Chrome with remote debugging on port 9222 (note the {PORT} URL)
+  --port {PORT} --settings-path <sandbox>/settings --wait --timeout 30 --detach
+ss -tlnp | grep ':{PORT}'   # verify listening BEFORE proceeding
+# 4. Chrome with remote debugging, then connect Chrome DevTools MCP (verify via list_pages)
 google-chrome --remote-debugging-port=9222 --user-data-dir=/tmp/chrome-lora-manager http://127.0.0.1:{PORT}/loras
 ```
 
-### 5. Connect Chrome DevTools MCP
+Then drive the UI with the MCP tools (`take_snapshot`, `click`, `fill`, `fill_form`,
+`evaluate_script`, `wait_for`, `list_network_requests`, `list_console_messages`) —
+see [references/mcp-cheatsheet.md](references/mcp-cheatsheet.md) for patterns.
 
-Ensure the MCP server is connected to Chrome at `http://localhost:9222`. Verify with `list_pages` — if it fails with "browser is already running", see [Chrome DevTools MCP Troubleshooting](#chrome-devtools-mcp-troubleshooting).
+Server restart after config/fixture changes:
 
-### 6. Navigate and Interact
-
-Use Chrome DevTools MCP tools to:
-- Take snapshots: `take_snapshot`
-- Click elements: `click`
-- Fill forms: `fill` or `fill_form`
-- Evaluate scripts: `evaluate_script`
-- Wait for elements: `wait_for`
-
-## Common E2E Test Patterns
-
-### Pattern: Full Page Load Verification
-
-```python
-# Navigate to LoRA list page
-navigate_page(type="url", url="http://127.0.0.1:{PORT}/loras")
-
-# Wait for page to load
-wait_for(text="LoRAs", timeout=10000)
-
-# Take snapshot to verify UI state
-snapshot = take_snapshot()
-```
-
-### Pattern: Restart Server for Configuration Changes
-
-```python
-# Stop current server (if running), start with new configuration.
-# --restart only kills the E2E server this script started before (via its pidfile);
-# it refuses to blindly kill unrelated processes on the port.
+```bash
 python .agents/skills/lora-manager-e2e/scripts/start_server.py \
-  --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings \
-  --restart --wait --detach
-
-# Wait and refresh browser
-navigate_page(type="reload", ignoreCache=True)
-wait_for(text="LoRAs", timeout=15000)
+  --port {PORT} --settings-path <sandbox>/settings --restart --wait --detach
+# then reload the browser page (ignoreCache=True)
 ```
 
-### Pattern: Verify Backend API via Frontend
+`--restart` only kills the E2E server the script itself started (via its pidfile) and
+aborts instead of killing unrelated processes on the port.
 
-```python
-# Execute script in browser to call backend API
-result = evaluate_script(function="""
-async () => {
-  const response = await fetch('/loras/api/list');
-  const data = await response.json();
-  return { count: data.length, firstItem: data[0]?.name };
-}
-""")
-```
+## Abort Rule
 
-### Pattern: Form Submission Flow
+A sandboxed E2E should finish in well under 30 minutes. If any phase exceeds ~2x its
+expected duration (server readiness > 60 s, MCP connect > 2 min, a single scenario >
+10 min), or any single tool call fails 3+ times in a row, **STOP** — do not retry
+blindly. Report `BLOCKED` with the phase, last observed state (server PID,
+`ss -tlnp` output, page snapshot, last API response) and suspected cause. A clean
+BLOCKED report beats an hour of retries.
 
-```python
-# Fill a form (e.g., search or filter)
-fill_form(elements=[
-    {"uid": "search-input", "value": "character"},
-])
+## Troubleshooting
 
-# Click submit button
-click(uid="search-button")
-
-# Wait for results
-wait_for(text="Results", timeout=5000)
-
-# Verify results via snapshot
-snapshot = take_snapshot()
-```
-
-### Pattern: Modal Dialog Interaction
-
-```python
-# Open modal (e.g., add LoRA)
-click(uid="add-lora-button")
-
-# Wait for modal to appear
-wait_for(text="Add LoRA", timeout=3000)
-
-# Fill modal form
-fill_form(elements=[
-    {"uid": "lora-name", "value": "Test LoRA"},
-    {"uid": "lora-path", "value": "/path/to/lora.safetensors"},
-])
-
-# Submit
-click(uid="modal-submit-button")
-
-# Wait for success message or close
-wait_for(text="Success", timeout=5000)
-```
-
-## Fixture + Fresh-State Guidance
-
-For rematch/repair E2E runs, seed the **sandboxed** `recipes_path` with hand-written fixture recipes. Rules (validated by the task-8 E2E):
-
-1. **Filename constraint**: each file MUST be named `f"{id}.recipe.json"` **and** the in-JSON `id` field MUST equal the filename. Discovery accepts any `*.recipe.json`, but persistence resolves the path via `get_recipe_json_path` and `_save_recipe_persistently` returns `False` on a mismatch → the fixture would be counted as an error.
-   - `recipe-a.recipe.json` → in-JSON `"id": "recipe-a"`
-2. **File format**: mirror an existing recipe JSON — top-level `id`, `file_path`, `title`, `loras`, `fingerprint`, `gen_params`; lora entries per the persistence conventions (`hash`, `file_name`, `modelVersionId`, `isDeleted`, ...).
-3. **Companion image**: each recipe needs an image (e.g. a `.webp` generated with PIL) referenced by `file_path`, used for EXIF verification (`ExifUtils.append_recipe_metadata` writes a `"Recipe metadata: ..."` marker; a freshly generated `.webp` with no marker is the clean "untouched" control).
-4. **autov3 three-state contract**: for L3 (autov3-only, renamed-file) fixtures the local model's `.metadata.json` sidecar MUST have the `autov3` key **ABSENT** (the "unchecked" state), NOT `""` — `""` is the TERMINAL "checked but unavailable" state that L3 deliberately skips. The scanner computes + persists `autov3` from the file header during the normal library scan (`model_scanner.py` `_process_model_file`), so the live L3 match resolves through the local autov3/hash cache; the computed-autov3 branch for unchecked items is covered by the unit suite.
-5. **Fixture design for a rematch run** (mirrors the task-8 E2E):
-   - `recipe-a`: lora entry `isDeleted=True`, `hash` = 12-char autov3 computed from the local model (`calculate_autov3`, `py/utils/file_utils.py`), whose local model file was RENAMED after the recipe was written so `file_name` differs (proves L3 match without filename).
-   - `recipe-b`: parser-convention checkpoint entry (uses `id`, no `modelVersionId`) matching a local checkpoint via L2 — the local checkpoint's `.metadata.json` MUST carry civitai version data with that `id` so `version_index` contains it (L2 cannot match otherwise).
-   - `recipe-c`: healthy recipe (no deleted entries) → must remain untouched.
-
-### Fresh state between entry-point runs
-
-Each entry point (global / per-recipe / selection-bulk) must start from the same deleted state. Between runs:
-
-```bash
-# 1. Reset fixtures to the before-state snapshot (copy back from recipes-before/)
-cp /tmp/opencode/<plan>-e2e/recipes-before/*.recipe.json /tmp/opencode/<plan>-e2e/recipes/
-# 2. Clear the recipe/FTS caches so the stale in-memory/library state is gone.
-#    With --settings-path these live under the sandbox settings dir, NOT <repo-root>/cache.
-rm -f /tmp/opencode/<plan>-e2e/settings/cache/recipe/*.sqlite
-rm -rf /tmp/opencode/<plan>-e2e/settings/cache/fts/*
-# 3. Restart the server (fresh process, fresh scan)
-python .agents/skills/lora-manager-e2e/scripts/start_server.py \
-  --port {PORT} --settings-path /tmp/opencode/<plan>-e2e/settings \
-  --restart --wait --timeout 30 --detach
-# 4. Re-verify server listening + reload the browser page
-```
-
-## Server Lifecycle
-
-- **Detached launch is mandatory**: the standalone server dies with the shell unless launched via `setsid` (or the helper script's `--detach`). Use `setsid nohup python standalone.py --port {PORT} --settings-path <sandbox>/settings --host 127.0.0.1 ... < /dev/null &`.
-- **Always pass `--settings-path`** pointing at the sandbox settings dir — this is what keeps the run fully sandboxed (see [SANDBOX](#sandbox-mandatory)).
-- **Verify with `ss -tlnp`** after every (re)start; do not proceed on a blind "server starting" message.
-- **Never kill pre-existing processes** — only kill the E2E server PID you started (`start_server.py --restart` kills only PIDs it manages via its pidfile). The live ComfyUI or a stale QA Chrome must never be killed as part of cleanup unless explicitly identified as such (see Chrome troubleshooting).
-- **Record your PID for cleanup**: note the PID printed/pidfile, and stop exactly that PID at the end (`kill <PID>`, then confirm with `ss -tlnp` that `{PORT}` is released).
-
-## Chrome DevTools MCP Troubleshooting
-
-### Stale profile lock ("browser is already running" / `list_pages` fails)
-
-A Chrome profile can be held by a stale Chrome from a prior MCP session, which makes `list_pages` fail with "browser is already running":
-
-1. Identify the stale Chrome — it owns the profile dir in `--user-data-dir` (e.g. `~/.config/chrome-dev-profile`). Find its process:
-   ```bash
-   ps -ef | grep -i '[c]hrome.*user-data-dir'
-   ```
-2. Confirm it is a QA Chrome from a completed task (its parent is an old MCP/browser process, it is NOT the live ComfyUI server, and it is NOT your current MCP instance).
-3. Kill ONLY that stale Chrome:
-   ```bash
-   kill <stale-chrome-pid>
-   ```
-   Never kill the live server or unrelated processes.
-4. Retry `list_pages`. The current MCP will spawn a fresh browser.
-
-### Screenshot-write restrictions
-
-The chrome-devtools MCP may refuse to write into paths outside its configured workspace roots (e.g. the worktree `.omo/evidence/...` canonicalizing to an unmapped path). Workaround:
-
-```bash
-# 1. Save the screenshot to /tmp via the MCP
-#    take_screenshot(filePath="/tmp/<plan>-e2e/recipe-b-after.png", format="png")
-# 2. Copy it into the evidence dir from the shell
-mkdir -p <repo-root>/.omo/evidence/screenshots
-cp /tmp/<plan>-e2e/recipe-b-after.png <repo-root>/.omo/evidence/screenshots/
-```
-
-## Cancellation Testing (KNOWN GAP)
-
-Testing the rematch-cancel path E2E requires a run long enough to cancel mid-flight. A tiny 3-recipe fixture set completes in **seconds** — too fast to reliably cancel. The cancel path is currently **unit-covered only** (`rematch_all_recipes` cancellation tests); do not block an E2E run on cancel-path verification. If you must attempt it, you would need an artificially large/deferred fixture set to create a cancellable window — treat this as a research task, not part of the standard E2E.
-
-## Available Scripts
-
-### scripts/start_server.py
-
-Starts or restarts the LoRa Manager standalone server for E2E testing.
-
-```bash
-python scripts/start_server.py [--port PORT] [--settings-path DIR] [--restart] [--wait] [--timeout SECONDS] [--detach]
-```
-
-Options:
-- `--port`: Server port (default: 8188). The script exits early with a clear message if the port is already in use by an unrelated process.
-- `--settings-path`: Explicit sandbox settings directory passed through to `standalone.py` (equivalent to `LORA_MANAGER_SETTINGS_DIR`). Creates the directory if needed and refuses to start if the path exists as a file. **Use this for every sandboxed E2E run.**
-- `--restart`: Kill the E2E server this script previously managed (tracked via `/tmp/lora-manager-e2e-server-{PORT}.pid`) before starting. If unrelated processes still hold the port after that, the script reports them and aborts instead of killing them.
-- `--wait`: Wait for the server to be ready before exiting.
-- `--timeout`: Readiness wait timeout in seconds (default: 30).
-- `--detach`: Launch the server fully detached (`setsid`-style, survives shell death — REQUIRED for E2E). Default off: a normal background process that dies with the shell.
-
-### scripts/wait_for_server.py
-
-Polls the server until ready or timeout.
-
-```bash
-python scripts/wait_for_server.py [--port PORT] [--timeout SECONDS]
-```
-
-## Test Scenarios Reference
-
-See [references/test-scenarios.md](references/test-scenarios.md) for detailed test scenarios including:
-- LoRA list display and filtering
-- Model metadata editing
-- Recipe creation and management
-- Settings configuration
-- Import/export functionality
-
-## Network Request Verification
-
-Use `list_network_requests` and `get_network_request` to verify API calls:
-
-```python
-# List recent XHR/fetch requests
-requests = list_network_requests(resourceTypes=["xhr", "fetch"])
-
-# Get details of specific request
-details = get_network_request(reqid=123)
-```
-
-## Console Message Monitoring
-
-```python
-# Check for errors or warnings
-messages = list_console_messages(types=["error", "warn"])
-```
-
-## Performance Testing
-
-```python
-# Start performance trace
-performance_start_trace(reload=True, autoStop=False)
-
-# Perform actions...
-
-# Stop and analyze
-results = performance_stop_trace()
-```
+- **"browser is already running" / `list_pages` fails**: a stale Chrome holds the
+  profile dir. Find it (`ps -ef | grep -i '[c]hrome.*user-data-dir'`), confirm it is a
+  leftover QA Chrome (not the live ComfyUI, not your current MCP browser), kill only
+  that PID, then retry `list_pages`.
+- **MCP refuses to write screenshots into the worktree**: save to `/tmp` via
+  `take_screenshot(filePath="/tmp/...")` and copy into the evidence dir from the shell.
 
 ## Cleanup
 
-Always ensure proper cleanup after tests:
-1. Stop the standalone server: `kill <recorded-pid>` (only the PID you started), then confirm `ss -tlnp | grep ':{PORT}'` is empty.
+1. Stop the standalone server: `kill <recorded-pid>` (only the PID you started), then
+   confirm `ss -tlnp | grep ':{PORT}'` is empty.
 2. Close browser pages (keep at least one open).
-3. Remove the sandbox: `rm -rf /tmp/opencode/<plan>-e2e`. Verify `<repo-root>` has NOT gained a `settings.json` or `cache/` (with `--settings-path` they never appear there).
-4. Re-run the real-data protection check from the SANDBOX section and record the result in your evidence.
+3. `rm -rf <sandbox>`; verify `<repo-root>` gained no `settings.json` or `cache/`.
+4. Re-run the real-data protection check from the SANDBOX section and record the result.
+
+## References & Scripts
+
+- [references/mcp-cheatsheet.md](references/mcp-cheatsheet.md) — Chrome DevTools MCP
+  command patterns (navigation, waiting, snapshots, forms, network, console, performance).
+- [references/test-scenarios.md](references/test-scenarios.md) — detailed test scenarios
+  (list display, metadata editing, recipes, settings, import/export).
+- [references/recipe-rematch-fixtures.md](references/recipe-rematch-fixtures.md) —
+  fixture format, fresh-state reset and known gaps for recipe rematch/repair E2E runs.
+- `scripts/start_server.py` — start/restart the standalone server
+  (`--port --settings-path --restart --wait --timeout --detach`); refuses to touch
+  unrelated processes on the port.
+- `scripts/wait_for_server.py` — poll readiness (`--port --timeout`).
