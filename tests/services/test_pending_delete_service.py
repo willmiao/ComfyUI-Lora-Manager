@@ -1,9 +1,10 @@
 """Tests for :mod:`py.services.pending_delete_service`.
 
 Covers the staging service contract: stage (model + recipe), undo (with
-partial-undo retry and occupied-path protection), merge (with rollback and a
-fresh purge timer), purge (expired-only, quarantine of malformed batches,
-per-file lock tolerance) and the scanner exclusion of the staging directory.
+partial-undo retry and occupied-path protection), merge (manifest-only: no
+file moves, cross-root safe, with a fresh purge timer), purge (expired-only,
+quarantine of malformed batches, per-file lock tolerance) and the scanner
+exclusion of the staging directory.
 
 Deterministic time control: no real sleeps - tests rewrite ``expires_at`` in
 the manifest or monkeypatch time functions instead.
@@ -539,9 +540,12 @@ async def test_j_stale_timer_purge_batch_noop(tmp_path: Path, monkeypatch) -> No
 
 
 # ---------------------------------------------------------------------------
-# (k) MERGE -> single manifest, re-anchored expiry, all files under winner
+# (k) MERGE -> single manifest, re-anchored expiry, staged files stay in
+#     their OWN batch dirs (manifest-only merge: no moves, no IO, no EXDEV)
 # ---------------------------------------------------------------------------
-async def test_k_merge_produces_single_manifest_and_moves_all_files(tmp_path: Path, monkeypatch) -> None:
+async def test_k_merge_is_manifest_only_and_leaves_files_in_place(
+    tmp_path: Path, monkeypatch,
+) -> None:
     root = tmp_path / "loras"
     root.mkdir()
     _spy_purge_timers(monkeypatch)
@@ -582,20 +586,23 @@ async def test_k_merge_produces_single_manifest_and_moves_all_files(tmp_path: Pa
     assert manifest["batch_id"] == bid_a
     assert len(manifest["entries"]) == 3
     assert before_merge + PENDING_DELETE_TTL_SECONDS - 2 <= manifest["expires_at"] <= before_merge + PENDING_DELETE_TTL_SECONDS + 2
+    assert manifest["merged_sources"] == [str(loser_dir)]
 
+    # Entry staged paths were NOT rewritten: every file keeps living in its
+    # own batch dir, byte-identical.
     staged_paths = [entry["staged"] for entry in manifest["entries"]]
     assert len(staged_paths) == 3
-    for staged in staged_paths:
-        assert str(staged).startswith(str(winner_dir))
-        assert os.path.exists(staged)
-
-    # Byte-compare: no file dropped.
+    assert all(os.path.exists(staged) for staged in staged_paths)
     assert (winner_dir / "alpha.safetensors").read_bytes() == b"alpha-data"
     assert (winner_dir / "alpha.metadata.json").read_bytes() == b"alpha-meta"
-    assert (winner_dir / "beta.safetensors").read_bytes() == b"beta-data"
+    assert not (winner_dir / "beta.safetensors").exists()
+    assert (loser_dir / "beta.safetensors").read_bytes() == b"beta-data"
 
-    # Loser batch dir removed (after being empty).
-    assert not loser_dir.exists()
+    # The loser dir is retained as physical storage and stamped merged_into so
+    # its own timer / sweep / direct undo no-op.
+    assert loser_dir.is_dir()
+    loser_manifest = json.loads((loser_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert loser_manifest["merged_into"] == bid_a
 
 
 # ---------------------------------------------------------------------------
@@ -669,28 +676,32 @@ async def test_k3_merge_then_purge_empties_and_removes_winner_dir(tmp_path: Path
     assert not winner_dir.exists()
     assert not (root / "alpha.safetensors").exists()
     assert not (root / "beta.safetensors").exists()
+    # The loser storage dir is cleaned up with the merged batch.
+    assert not (root / PENDING_DELETE_DIR_NAME / bid_b).exists()
 
 
 # ---------------------------------------------------------------------------
-# (l) MERGE MOVE FAILURE -> rollback, all batches intact, sequential undo works
+# (l) CROSS-ROOT MERGE (the real-world EXDEV case) -> manifest-only merge
+#     succeeds, files stay in their own roots, ONE undo restores everything
 # ---------------------------------------------------------------------------
-async def test_l_merge_move_failure_rolls_back(tmp_path: Path, monkeypatch) -> None:
-    root = tmp_path / "loras"
-    root.mkdir()
+async def test_l_cross_root_merge_succeeds_without_moving_files(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    root_a = tmp_path / "loras_a"
+    root_a.mkdir()
+    root_b = tmp_path / "loras_b"
+    root_b.mkdir()
     _spy_purge_timers(monkeypatch)
 
     service = await PendingDeleteService.get_instance()
-    a1 = root / "alpha.safetensors"
-    a1.write_bytes(b"alpha-data")
-    bid_a = await _stage_simple(service, root, "alpha")
-    # Loser has TWO files so a move fails after the first was already moved.
-    b1 = root / "beta.safetensors"
+    bid_a = await _stage_simple(service, root_a, "alpha")
+    b1 = root_b / "beta.safetensors"
     b1.write_bytes(b"beta-data")
-    b2 = root / "beta.metadata.json"
+    b2 = root_b / "beta.metadata.json"
     b2.write_bytes(b"beta-meta")
     bid_b = await service.stage_model_delete(
-        scanner=ScannerForStage([root]),
-        target_dir=str(root),
+        scanner=ScannerForStage([root_b]),
+        target_dir=str(root_b),
         file_name="beta",
         main_extension=".safetensors",
         original_file_path=str(b1),
@@ -698,77 +709,60 @@ async def test_l_merge_move_failure_rolls_back(tmp_path: Path, monkeypatch) -> N
     )
     assert bid_b is not None
 
-    real_rename = os.rename
-    calls = {"n": 0}
-    fail_next = {"enabled": True}
+    # The batches live under DIFFERENT roots (a real os.rename would raise
+    # EXDEV here); the manifest-only merge must not move a single byte.
+    assert await service.merge_batches([bid_a, bid_b]) == bid_a
 
-    def flaky_rename(src: str, dst: str) -> None:
-        calls["n"] += 1
-        if fail_next["enabled"] and calls["n"] == 2:
-            raise OSError("simulated move failure")
-        return real_rename(src, dst)
-
-    monkeypatch.setattr("py.services.pending_delete_service.os.rename", flaky_rename)
-
-    result = await service.merge_batches([bid_a, bid_b])
-    assert result is None
-
-    # Already-moved file moved back; both batch dirs + manifests + files intact.
-    winner_dir = root / PENDING_DELETE_DIR_NAME / bid_a
-    loser_dir = root / PENDING_DELETE_DIR_NAME / bid_b
-    assert winner_dir.is_dir()
-    assert loser_dir.is_dir()
-    assert (winner_dir / "manifest.json").exists()
-    assert (loser_dir / "manifest.json").exists()
+    loser_dir = root_b / PENDING_DELETE_DIR_NAME / bid_b
     assert (loser_dir / "beta.safetensors").read_bytes() == b"beta-data"
     assert (loser_dir / "beta.metadata.json").read_bytes() == b"beta-meta"
-    assert (winner_dir / "alpha.safetensors").read_bytes() == b"alpha-data"
+    assert not (root_b / "beta.safetensors").exists()
 
-    # Sequential undo of each constituent batch restores every file.
-    fail_next["enabled"] = False
+    # ONE undo of the merged batch restores files living in both roots.
     await service.undo(bid_a)
-    await service.undo(bid_b)
-    assert a1.read_bytes() == b"alpha-data"
-    assert b1.read_bytes() == b"beta-data"
-    assert b2.read_bytes() == b"beta-meta"
+    assert (root_a / "alpha.safetensors").read_bytes() == b"alpha-data"
+    assert (root_b / "beta.safetensors").read_bytes() == b"beta-data"
+    assert (root_b / "beta.metadata.json").read_bytes() == b"beta-meta"
+    assert not (root_a / PENDING_DELETE_DIR_NAME / bid_a).exists()
+    assert not (root_b / PENDING_DELETE_DIR_NAME / bid_b).exists()
 
 
 # ---------------------------------------------------------------------------
-# (l2) MERGE SAME-BASENAME COLLISION -> abort + rollback, never overwrite
+# (l2) SAME-BASENAME MERGE -> files never move, so identical basenames cannot
+#      collide; ONE undo restores each file to its own folder
 # ---------------------------------------------------------------------------
-async def test_l2_merge_basename_collision_aborts_without_dropping_files(
-    tmp_path: Path, monkeypatch
+async def test_l2_merge_same_basename_keeps_both_files(
+    tmp_path: Path, monkeypatch,
 ) -> None:
     root = tmp_path / "loras"
     root.mkdir()
-    _spy_purge_timers(monkeypatch)
-
-    service = await PendingDeleteService.get_instance()
     sub_a = root / "a"
     sub_a.mkdir()
     sub_b = root / "b"
     sub_b.mkdir()
+    _spy_purge_timers(monkeypatch)
+
+    service = await PendingDeleteService.get_instance()
     # Two distinct files that share the same basename after staging.
     bid_a = await _stage_simple(service, sub_a, "model")
     bid_b = await _stage_simple(service, sub_b, "model")
 
-    result = await service.merge_batches([bid_a, bid_b])
-    assert result is None
+    # Manifest-only merge never moves files, so the identical basenames cannot
+    # overwrite each other - the merge succeeds into ONE undoable batch.
+    assert await service.merge_batches([bid_a, bid_b]) == bid_a
 
-    # No file dropped: both staged files exist in their own batch dirs.
+    # Both staged files still exist in their own batch dirs, byte-identical.
     a_dir = sub_a / PENDING_DELETE_DIR_NAME / bid_a
     b_dir = sub_b / PENDING_DELETE_DIR_NAME / bid_b
     assert (a_dir / "model.safetensors").read_bytes() == b"model-data"
     assert (b_dir / "model.safetensors").read_bytes() == b"model-data"
-    assert a_dir.is_dir() and b_dir.is_dir()
-    assert (a_dir / "manifest.json").exists()
-    assert (b_dir / "manifest.json").exists()
 
-    # Sequential undo of each constituent batch restores every original.
+    # One undo restores every original, each into its own folder.
     await service.undo(bid_a)
-    await service.undo(bid_b)
     assert (sub_a / "model.safetensors").read_bytes() == b"model-data"
     assert (sub_b / "model.safetensors").read_bytes() == b"model-data"
+    assert not a_dir.exists()
+    assert not b_dir.exists()
 
 
 # ---------------------------------------------------------------------------
@@ -1576,7 +1570,8 @@ async def test_reg_d_quarantine_removes_registry_entry(tmp_path: Path) -> None:
     assert (batch_dir.with_name(f"{batch_id}.orphaned")).is_dir()
 
 
-# (e) merge success: winner present + losers removed; EXDEV-abort: unchanged
+# (e) merge success: winner present + losers forgotten; unresolvable-winner
+#     abort: registry unchanged
 async def test_reg_e_merge_registry_lifecycle(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1595,13 +1590,18 @@ async def test_reg_e_merge_registry_lifecycle(
     assert bid_b not in service._known_batch_dirs
     assert bid_c in service._known_batch_dirs
 
-    # EXDEV-abort: registry untouched.
-    def exdev_rename(src: str, dst: str) -> None:
-        raise OSError(errno.EXDEV, "Invalid cross-device link", src, dst)
+    # Merge with an unresolvable winner: registry untouched (the caller
+    # falls back to the batch_ids array contract).
+    real_find = service._find_batch_dir
 
-    monkeypatch.setattr("py.services.pending_delete_service.os.rename", exdev_rename)
+    async def _unresolvable(batch_id: str) -> Optional[str]:
+        if batch_id == bid_c:
+            return None
+        return await real_find(batch_id)
+
+    monkeypatch.setattr(service, "_find_batch_dir", _unresolvable)
     before = dict(service._known_batch_dirs)
-    assert await service.merge_batches([bid_a, bid_c]) is None
+    assert await service.merge_batches([bid_c]) is None
     assert dict(service._known_batch_dirs) == before
 
 
@@ -2267,41 +2267,34 @@ async def test_symlink4_folder_deleted_edge_forgets_stale_registry(
     assert not batch_dir.exists()
 
 
-# (e) MERGE EXDEV-ABORT: a cross-volume merge abort leaves the registry
-#     untouched AND the constituent batches individually undoable - sequential
-#     undo after the abort restores every file. (The merge-success winner/loser
-#     registry half is covered by test_reg_e; this adds the post-abort undo
-#     proof.)
-async def test_symlink5_merge_exdev_abort_registry_unchanged_then_sequential_undo(
+# (e) CROSS-VOLUME MERGE (the real-world EXDEV case): the manifest-only
+#     merge succeeds across staging roots, the loser leaves the registry, and
+#     ONE undo of the merged batch restores every file - no sequential
+#     per-batch undo needed.
+async def test_symlink5_cross_volume_merge_then_one_undo_restores_everything(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root = tmp_path / "loras"
-    root.mkdir()
+    root_a = tmp_path / "vol_a"
+    root_a.mkdir()
+    root_b = tmp_path / "vol_b"
+    root_b.mkdir()
     _spy_purge_timers(monkeypatch)
     service = await PendingDeleteService.get_instance()
-    bid_a = await _stage_simple(service, root, "alpha")
-    bid_b = await _stage_simple(service, root, "beta")
+    bid_a = await _stage_simple(service, root_a, "alpha")
+    bid_b = await _stage_simple(service, root_b, "beta")
     assert set(service._known_batch_dirs) == {bid_a, bid_b}
 
-    real_rename = os.rename
-    fail_next = {"enabled": True}
+    # Files live on different roots (an os.rename across them would EXDEV);
+    # the manifest-only merge succeeds and the loser leaves the registry.
+    assert await service.merge_batches([bid_a, bid_b]) == bid_a
+    assert bid_a in service._known_batch_dirs
+    assert bid_b not in service._known_batch_dirs
 
-    def exdev_rename(src: str, dst: str) -> None:
-        if fail_next["enabled"]:
-            raise OSError(errno.EXDEV, "Invalid cross-device link", src, dst)
-        return real_rename(src, dst)
-
-    monkeypatch.setattr("py.services.pending_delete_service.os.rename", exdev_rename)
-
-    before = dict(service._known_batch_dirs)
-    assert await service.merge_batches([bid_a, bid_b]) is None
-    assert dict(service._known_batch_dirs) == before
-
-    # Sequential undo of the constituents after the abort restores everything.
-    fail_next["enabled"] = False
+    # One undo of the merged batch restores files living on both "volumes".
     await service.undo(bid_a)
-    await service.undo(bid_b)
-    assert (root / "alpha.safetensors").read_bytes() == b"alpha-data"
-    assert (root / "beta.safetensors").read_bytes() == b"beta-data"
-    staging = root / PENDING_DELETE_DIR_NAME
+    assert (root_a / "alpha.safetensors").read_bytes() == b"alpha-data"
+    assert (root_b / "beta.safetensors").read_bytes() == b"beta-data"
+    assert not (root_a / PENDING_DELETE_DIR_NAME / bid_a).exists()
+    assert not (root_b / PENDING_DELETE_DIR_NAME / bid_b).exists()
+    staging = root_a / PENDING_DELETE_DIR_NAME
     assert not staging.exists() or not any(staging.iterdir())

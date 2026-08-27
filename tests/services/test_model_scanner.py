@@ -1124,7 +1124,7 @@ async def test_bulk_delete_stages_two_files_into_single_batch(tmp_path: Path):
     assert result["total_deleted"] == 2
     assert result["cache_updated"] is True
 
-    # ONE batch id, no batch_ids array, and both files staged in its dir.
+    # ONE batch id, no batch_ids array - the merge succeeded.
     assert "batch_id" in result
     assert "batch_ids" not in result
     batch_id = result["batch_id"]
@@ -1132,15 +1132,28 @@ async def test_bulk_delete_stages_two_files_into_single_batch(tmp_path: Path):
     staging = root / PENDING_DELETE_DIR_NAME
     batch_dir = staging / batch_id
     assert batch_dir.is_dir()
-    assert (batch_dir / "one.txt").read_bytes() == b"one"
-    assert (batch_dir / "two.txt").read_bytes() == b"two"
+    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
+    assert sorted(os.path.basename(e["staged"]) for e in manifest["entries"]) == [
+        "one.txt",
+        "two.txt",
+    ]
 
-    # Loser batch dirs are removed by the merge - exactly one batch remains.
+    # Manifest-only merge: each staged file physically remains in its OWN
+    # batch dir (one.txt in the winner, two.txt in the loser storage dir) -
+    # no file was moved, so no cross-volume IO ever happens.
+    assert (batch_dir / "one.txt").read_bytes() == b"one"
     batch_dirs = [d.name for d in staging.iterdir() if d.is_dir()]
-    assert batch_dirs == [batch_id]
+    assert len(batch_dirs) == 2
+    assert batch_id in batch_dirs
+    staged_files = {
+        f.name
+        for bid in batch_dirs
+        for f in (staging / bid).iterdir()
+        if f.is_file() and f.name != "manifest.json"
+    }
+    assert staged_files == {"one.txt", "two.txt"}
 
     # The manifest carries the winner's cache snapshot for later undo.
-    manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["model_snapshot"]["file_path"] == str(first)
 
     # Originals gone; cache entries removed.
@@ -1171,17 +1184,19 @@ async def test_bulk_delete_merged_manifest_reanchors_expiry(tmp_path: Path):
     # expires_at >= staging completion time + TTL (re-anchor assertion).
     assert manifest["expires_at"] >= after + PENDING_DELETE_TTL_SECONDS - 2
     assert manifest["expires_at"] >= before + PENDING_DELETE_TTL_SECONDS
-    # Both files are entries of the merged manifest.
+    # Both files are entries of the merged manifest; manifest-only merge means
+    # each staged file stays where staging put it (still on disk, in its own
+    # batch dir).
     assert len(manifest["entries"]) == 2
+    assert all(os.path.exists(entry["staged"]) for entry in manifest["entries"])
     assert (batch_dir / "one.txt").exists()
-    assert (batch_dir / "two.txt").exists()
 
 
 @pytest.mark.asyncio
 async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
     tmp_path: Path, monkeypatch
 ):
-    """Merge move failure -> batch_ids array of the intact constituent batches."""
+    """Merge unresolvable -> batch_ids array of the intact constituent batches."""
     root = tmp_path / "loras"
     root.mkdir()
     first = root / "one.txt"
@@ -1190,24 +1205,17 @@ async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
     second.write_text("two", encoding="utf-8")
     scanner = _make_bulk_scanner(root, [first, second])
 
-    real_rename = os.rename
-    fail_next = {"enabled": True}
+    # Simulate a merge that cannot resolve the winner batch (the only real
+    # merge failure mode since the merge no longer moves files): the caller
+    # must fall back to returning the constituent batch_ids array.
+    from py.services.pending_delete_service import get_pending_delete_service
 
-    def flaky_merge_rename(src: str, dst: str) -> None:
-        # Fail only when moving between batch dirs (merge), never during
-        # staging (src is then the original path, outside .lm-pending-delete).
-        if (
-            fail_next["enabled"]
-            and PENDING_DELETE_DIR_NAME in src
-            and PENDING_DELETE_DIR_NAME in dst
-        ):
-            fail_next["enabled"] = False
-            raise OSError("simulated merge failure")
-        return real_rename(src, dst)
+    service = await get_pending_delete_service()
 
-    monkeypatch.setattr(
-        "py.services.pending_delete_service.os.rename", flaky_merge_rename
-    )
+    async def _merge_unresolvable(_ids) -> None:
+        return None
+
+    monkeypatch.setattr(service, "merge_batches", _merge_unresolvable)
 
     result = await scanner.bulk_delete_models([str(first), str(second)])
 

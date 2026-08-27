@@ -2501,8 +2501,8 @@ class ModelScanner:
                     })
             
             # Merge every staged per-file batch into ONE undoable batch. On a
-            # merge failure (cross-volume EXDEV etc.) the response falls back
-            # to the constituent batch_ids array so the frontend can undo them
+            # merge failure (defensive) the response falls back to the
+            # constituent batch_ids array so the frontend can undo them
             # sequentially.
             batch_field: Dict[str, Any] = {}
             if batch_ids:

@@ -223,8 +223,9 @@ async def test_delete_recipe_skips_missing_preview_image(tmp_path: Path) -> None
 
 
 # ---------------------------------------------------------------------------
-# (4) bulk_delete with 2 ids -> single batch_id, one batch dir with both
-#     recipes, re-anchored expires_at in the merged manifest
+# (4) bulk_delete with 2 ids -> single batch_id, merged manifest holds all
+#     recipes, re-anchored expires_at; manifest-only merge: each staged copy
+#     stays in ITS OWN batch dir (loser dir retained as storage)
 # ---------------------------------------------------------------------------
 async def test_bulk_delete_merges_into_single_batch(tmp_path: Path) -> None:
     scanner = RecipeScannerStub(tmp_path)
@@ -245,12 +246,17 @@ async def test_bulk_delete_merges_into_single_batch(tmp_path: Path) -> None:
     batch_id = result.payload["batch_id"]
     assert batch_id is not None
     assert "batch_ids" not in result.payload
-    assert len(_batch_dirs()) == 1, "loser batch dir must be removed after merge"
+    # Manifest-only merge: the winner batch dir plus the loser storage dir
+    # (stamped merged_into) both remain.
+    assert len(_batch_dirs()) == 2
 
     batch_dir = _staging_parent() / batch_id
     manifest = json.loads((batch_dir / "manifest.json").read_text(encoding="utf-8"))
     assert manifest["batch_id"] == batch_id
     assert len(manifest["entries"]) == 4
+    loser_dir = _staging_parent() / next(
+        d for d in _batch_dirs() if d.name != batch_id
+    )
 
     # Re-anchored expires_at: now + TTL at merge time (not the earlier of the
     # two staged expiries). Loose window avoids any timing flakiness.
@@ -260,14 +266,27 @@ async def test_bulk_delete_merges_into_single_batch(tmp_path: Path) -> None:
         <= int(time.time()) + PENDING_DELETE_TTL_SECONDS + 2
     )
 
-    # Both recipes' files live under ONE batch dir, byte-identical to originals.
+    # Both recipes' staged copies live under their OWN batch dirs, byte-
+    # identical to the originals - no file was ever moved.
+    winner_files = {
+        f.name
+        for f in batch_dir.iterdir()
+        if f.is_file() and f.name != "manifest.json"
+    }
+    loser_files = {
+        f.name
+        for f in loser_dir.iterdir()
+        if f.is_file() and f.name != "manifest.json"
+    }
+    assert winner_files == {"ra.recipe.json", "ra.webp"}
+    assert loser_files == {"rb.recipe.json", "rb.webp"}
     assert (batch_dir / "ra.recipe.json").read_bytes() == json_a_bytes
     assert (batch_dir / "ra.webp").read_bytes() == image_a_bytes
-    assert (batch_dir / "rb.recipe.json").read_bytes() == json_b_bytes
-    assert (batch_dir / "rb.webp").read_bytes() == image_b_bytes
+    assert (loser_dir / "rb.recipe.json").read_bytes() == json_b_bytes
+    assert (loser_dir / "rb.webp").read_bytes() == image_b_bytes
+    assert manifest.get("merged_sources") == [str(loser_dir)]
 
     # Originals removed; both snapshots present.
-    # Originals removed; merged manifest holds the winner's recipe snapshot.
     assert not json_a.exists()
     assert not json_b.exists()
     assert manifest["recipe_snapshot"] in (data_a, data_b)
@@ -288,10 +307,17 @@ async def test_bulk_delete_merge_failure_falls_back_to_batch_ids(
     scanner.register_recipe("ra", json_a)
     scanner.register_recipe("rb", json_b)
 
-    def failing_rename(src: str, dst: str) -> None:
-        raise OSError("simulated merge move failure")
+    # Simulate a merge that cannot resolve the winner batch (the only real
+    # failure mode since the merge no longer moves files): the caller must
+    # fall back to the constituent batch_ids array.
+    from py.services.pending_delete_service import get_pending_delete_service
 
-    monkeypatch.setattr("py.services.pending_delete_service.os.rename", failing_rename)
+    service = await get_pending_delete_service()
+
+    async def _merge_unresolvable(_ids) -> None:
+        return None
+
+    monkeypatch.setattr(service, "merge_batches", _merge_unresolvable)
 
     result = await _make_service().bulk_delete(
         recipe_scanner=scanner, recipe_ids=["ra", "rb"]

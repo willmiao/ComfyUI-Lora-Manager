@@ -533,7 +533,7 @@ class RecipePersistenceService:
                 # Merge succeeded: one undo action covers the whole bulk.
                 payload["batch_id"] = merged_batch_id
             else:
-                # Merge failure (e.g. cross-volume move): expose the constituent
+                # Merge unresolvable (defensive): expose the constituent
                 # batches so the caller can undo them one at a time.
                 payload["batch_ids"] = batch_ids
         else:
