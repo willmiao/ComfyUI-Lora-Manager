@@ -1426,6 +1426,32 @@ export function initVersionsTab({
         }
     }
 
+    /**
+     * True when the downloaded version is the newest version in the model's
+     * remote version set, i.e. the one whose install flips the backend
+     * update-available flag off. Unknown version sets fall back to "latest"
+     * so the post-download in-place reconciliation still runs by default.
+     * (#1078)
+     */
+    function versionIsLatestAvailable(version) {
+        if (!controller.record || !Array.isArray(controller.record.versions)) {
+            return true;
+        }
+        const versions = controller.record.versions;
+        if (versions.length === 0) {
+            return true;
+        }
+        const target = Number(version?.versionId);
+        if (!Number.isFinite(target)) {
+            return true;
+        }
+        const maxId = versions.reduce(
+            (max, v) => Math.max(max, Number(v?.versionId) || 0),
+            0
+        );
+        return target >= maxId;
+    }
+
     async function handleDownloadVersion(button, versionId) {
         if (!controller.record) {
             return;
@@ -1451,6 +1477,7 @@ export function initVersionsTab({
                 targetFolder: resolveTemplatePath ? '' : (pathInfo?.targetFolder || ''),
                 useDefaultPaths: resolveTemplatePath ? true : null,
                 useSaveDirAsRoot: resolveTemplatePath,
+                isLatestVersion: versionIsLatestAvailable(version),
             });
 
             if (success) {

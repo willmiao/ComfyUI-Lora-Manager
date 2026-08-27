@@ -1077,6 +1077,7 @@ export class DownloadManager {
         deferReload = false,
         suppressSuccessToast = false,
         suppressFailureSummary = false,
+        isLatestVersion = null,
     }) {
         const config = this.apiClient?.apiConfig?.config;
 
@@ -1085,7 +1086,7 @@ export class DownloadManager {
         }
 
         const displayName = versionName || `#${versionId}`;
-        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false, deferReload, suppressSuccessToast, suppressFailureSummary };
+        const retryParams = { modelId, versionId, versionName, modelRoot, targetFolder, useDefaultPaths, useSaveDirAsRoot, source, fileParams, closeModal: false, deferReload, suppressSuccessToast, suppressFailureSummary, isLatestVersion };
         this._lastDownloadError = null;
         let ws = null;
         let updateProgress = () => { };
@@ -1228,22 +1229,16 @@ export class DownloadManager {
             }
 
             if (!deferReload) {
-                const pageState = this.apiClient.getPageState();
-
-                if (!useDefaultPaths && targetFolder) {
-                    pageState.activeFolder = targetFolder;
-                    setStorageItem(`${this.apiClient.modelType}_activeFolder`, targetFolder);
-
-                    document.querySelectorAll('.folder-tags .tag').forEach(tag => {
-                        const isActive = tag.dataset.folder === targetFolder;
-                        tag.classList.toggle('active', isActive);
-                        if (isActive && !tag.parentNode.classList.contains('collapsed')) {
-                            tag.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-                        }
-                    });
-                }
-
-                await resetAndReload(true);
+                // In-place view update instead of a full page reload: the
+                // download only flips the update flag for one model, so we
+                // reconcile its cards without resetting the listing, the
+                // scroll position or the sidebar's active folder (#1078).
+                // The legacy code hijacked `pageState.activeFolder` here
+                // whenever a custom target folder was used.
+                await this._reconcileViewAfterDownload({
+                    modelId,
+                    isLatestVersion: isLatestVersion ?? this._isDownloadingLatestVersion(versionId),
+                });
             }
 
             return true;
@@ -1283,6 +1278,175 @@ export class DownloadManager {
             }
             this.loadingManager.hide();
         }
+    }
+
+    /**
+     * Reconcile the current model listing after a successful download,
+     * without resetting the whole page (#1078).
+     *
+     * The legacy behaviour re-loaded page 1 and scrolled to the top after
+     * every download, and hijacked the sidebar's active folder whenever a
+     * custom target folder was used. In-place reconciliation only touches
+     * the cards that can change as a result of the download:
+     *
+     * - Updates view: once the newest eligible version is installed the
+     *   model no longer qualifies, so its cards are removed from the list
+     *   (the update flag is model-level, so every visible card of the
+     *   model disappears at once).
+     * - Normal listing: the card stays; only the update flag is cleared.
+     * - The model is not in the current view (different folder / filter /
+     *   window): nothing changes, which also covers brand-new models whose
+     *   card did not exist before.
+     *
+     * The sidebar folder tree is refreshed separately so folder counts
+     * stay accurate without touching the model listing or scroll position.
+     *
+     * @param {object} opts
+     * @param {string|number} opts.modelId CivitAI model id of the downloaded model.
+     * @param {boolean} [opts.isLatestVersion=true] True when the downloaded
+     *   version is the newest known remote version, so the update flag can
+     *   be cleared. When false (user deliberately picked an older version)
+     *   the list is left untouched.
+     * @param {boolean} [opts.refreshSidebar=true] Whether to refresh the
+     *   sidebar folder tree afterwards (batch callers batch this into a
+     *   single refresh).
+     * @returns {Promise<boolean>} True when an in-place update was applied.
+     */
+    async _reconcileViewAfterDownload({ modelId, isLatestVersion = true, refreshSidebar = true } = {}) {
+        const scroller = state?.virtualScroller;
+        const items = Array.isArray(scroller?.items) ? scroller.items : [];
+
+        // No virtual scroller (page without one, not on a listing page,
+        // recipes duplicates mode, ...) — fall back to the legacy reload.
+        if (!scroller || items.length === 0 || typeof scroller.removeMultipleItemsByFilePath !== 'function') {
+            await resetAndReload(true);
+            return false;
+        }
+
+        if (modelId == null) {
+            // No CivitAI identity (e.g. HF downloads) — nothing to reconcile.
+            await this._refreshSidebarAfterReconcile(refreshSidebar);
+            return false;
+        }
+
+        const key = String(modelId);
+        const matches = items.filter(item => {
+            const civitai = item?.civitai;
+            return civitai != null && String(civitai.modelId) === key;
+        });
+
+        if (matches.length === 0) {
+            // Downloaded model is not visible in the current view — keep the
+            // listing untouched, only refresh folder counts.
+            await this._refreshSidebarAfterReconcile(refreshSidebar);
+            return false;
+        }
+
+        const pageState = this.apiClient?.getPageState ? this.apiClient.getPageState() : null;
+        const updatesView = pageState?.showUpdateAvailableOnly === true;
+
+        if (updatesView && isLatestVersion) {
+            const paths = matches.map(match => match.file_path).filter(Boolean);
+            if (paths.length > 0) {
+                scroller.removeMultipleItemsByFilePath(paths);
+            }
+        } else if (!updatesView && isLatestVersion) {
+            for (const match of matches) {
+                if (match.file_path) {
+                    scroller.updateSingleItem(match.file_path, { update_available: false });
+                }
+            }
+        }
+        // isLatestVersion === false: deliberately downloading an older
+        // version keeps the update flag — nothing changes in the list.
+
+        await this._refreshSidebarAfterReconcile(refreshSidebar);
+        return true;
+    }
+
+    /**
+     * Reconcile the listing after a batch download. CivitAI models are
+     * matched card-by-card via `_reconcileViewAfterDownload`; HF
+     * downloads (no CivitAI identity to match) keep the legacy reload.
+     */
+    async _reconcileBatchViewAfterDownload(completedCivitaiItems = [], hfCompletedCount = 0) {
+        if (hfCompletedCount > 0) {
+            await resetAndReload(true);
+            return;
+        }
+        const scroller = state?.virtualScroller;
+        if (!scroller || !Array.isArray(scroller.items)) {
+            await resetAndReload(true);
+            return;
+        }
+        const seen = new Set();
+        for (const item of completedCivitaiItems) {
+            const modelId = item?.modelId;
+            if (modelId == null || seen.has(String(modelId))) {
+                continue;
+            }
+            seen.add(String(modelId));
+            await this._reconcileViewAfterDownload({
+                modelId,
+                isLatestVersion: this._isVersionLatest(item.selectedVersion?.id, item.versions),
+                refreshSidebar: false,
+            });
+        }
+        await this._refreshSidebarAfterReconcile(true);
+    }
+
+    /**
+     * Refresh the sidebar folder tree (counts only — never the model
+     * listing). Lazy import keeps SidebarManager out of DownloadManager's
+     * load graph (it transitively imports BulkManager and friends).
+     */
+    async _refreshSidebarAfterReconcile(shouldRefresh) {
+        if (shouldRefresh === false) {
+            return;
+        }
+        try {
+            const { sidebarManager } = await import('../components/SidebarManager.js');
+            if (sidebarManager && typeof sidebarManager.refresh === 'function') {
+                await sidebarManager.refresh();
+            }
+        } catch (error) {
+            console.debug('Failed to refresh sidebar after download:', error);
+        }
+    }
+
+    /**
+     * True when `versionId` is the newest known remote version of the
+     * versions list. Unknown/missing lists are treated as "latest" so the
+     * common download-the-update flow reconciles by default; callers that
+     * know the remote version set pass an explicit flag instead.
+     */
+    _isVersionLatest(versionId, versions) {
+        if (!Array.isArray(versions) || versions.length === 0) {
+            return true;
+        }
+        let maxId = null;
+        for (const version of versions) {
+            const id = Number(version?.id ?? version?.versionId);
+            if (!Number.isFinite(id)) {
+                continue;
+            }
+            if (maxId === null || id > maxId) {
+                maxId = id;
+            }
+        }
+        if (maxId === null) {
+            return true;
+        }
+        const target = Number(versionId);
+        if (!Number.isFinite(target)) {
+            return true;
+        }
+        return target >= maxId;
+    }
+
+    /** True when the currently selected version is the newest remote one. */
+    _isDownloadingLatestVersion(versionId) {
+        return this._isVersionLatest(versionId, this.versions);
     }
 
     /**
@@ -1364,7 +1528,15 @@ export class DownloadManager {
             });
         }
 
-        await resetAndReload(true);
+        // Full success: reconcile the model's cards in place. On partial
+        // failure keep the listing untouched so the still-outdated version
+        // flags survive until the user retries the remaining files.
+        if (failedItems.length === 0) {
+            await this._reconcileViewAfterDownload({
+                modelId: this.modelId,
+                isLatestVersion: this._isDownloadingLatestVersion(this.currentVersion?.id),
+            });
+        }
         return failedItems.length === 0;
     }
 
@@ -1961,6 +2133,11 @@ export class DownloadManager {
         let failedDownloads = 0;
         let cancelled = false;
         const failedItems = [];
+        // Successful CivitAI items are reconciled in place afterwards
+        // (their cards can be matched by model id); HF items keep the
+        // legacy full reload because they have no CivitAI identity (#1078).
+        const completedCivitaiItems = [];
+        let hfCompletedCount = 0;
 
         loadingManager.showCancelButton(async () => {
             if (cancelled) return;
@@ -2065,6 +2242,11 @@ export class DownloadManager {
                 } else {
                     completedDownloads++;
                     updateProgress(100, completedDownloads, '');
+                    if (isHf) {
+                        hfCompletedCount++;
+                    } else {
+                        completedCivitaiItems.push(item);
+                    }
                 }
             } catch (err) {
                 if (!cancelled) {
@@ -2095,7 +2277,7 @@ export class DownloadManager {
             });
         }
 
-        await resetAndReload(true);
+        await this._reconcileBatchViewAfterDownload(completedCivitaiItems, hfCompletedCount);
     }
 
     async downloadVersionWithDefaults(modelType, modelId, versionId, { 
@@ -2104,7 +2286,8 @@ export class DownloadManager {
         modelRoot = '',
         targetFolder = '',
         useDefaultPaths = null,
-        useSaveDirAsRoot = false
+        useSaveDirAsRoot = false,
+        isLatestVersion = null,
     } = {}) {
         console.warn('[download] downloadVersionWithDefaults: NO fileParams will be sent — backend will always use primary file. '
             + 'modelType=%s, modelId=%s, versionId=%s, versionName="%s"',
@@ -2129,6 +2312,7 @@ export class DownloadManager {
             useSaveDirAsRoot,
             source,
             closeModal: false,
+            isLatestVersion,
         });
     }
 
