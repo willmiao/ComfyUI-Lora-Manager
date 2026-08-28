@@ -885,6 +885,22 @@
             "allAvailable": "כל ה-LoRAs זמינים - מוכן לשימוש",
             "missing": "{missing} מתוך {total} LoRAs חסרים"
         },
+        "resources": {
+            "inLibrary": "בספרייה",
+            "notInLibrary": "לא בספרייה",
+            "deleted": "נמחק",
+            "inLibraryTooltip": "מודל זה קיים בספרייה המקומית שלך",
+            "notInLibraryTooltip": "מודל זה לא נמצא בספרייה שלך",
+            "deletedTooltip": "LoRA זה נמחק מהמקור ואינו זמין יותר להורדה",
+            "download": "הורדה",
+            "downloadLoraTooltip": "הורד את ה-LoRA הזה",
+            "preparingDownload": "מכין את ההורדה…",
+            "reconnect": "חבר מחדש",
+            "reconnectTooltip": "חבר מחדש עם LoRA מקומי",
+            "viewOnCivitai": "הצג ב-Civitai",
+            "openLoraDetails": "הצג את {name} בספריית ה-LoRA",
+            "openCheckpointDetails": "הצג את {name} בספריית המודלים"
+        },
         "controls": {
             "import": {
                 "action": "ייבא",
@@ -2029,6 +2045,8 @@
             "missingCheckpointPath": "נתיב ה-checkpoint אינו זמין",
             "missingCheckpointInfo": "חסרים פרטי checkpoint",
             "downloadCheckpointFailed": "הורדת checkpoint נכשלה: {message}",
+            "missingLoraDownloadInfo": "חסר מידע הורדה עבור LoRA זה",
+            "downloadLoraFailed": "הורדת ה-LoRA נכשלה: {message}",
             "cannotDelete": "לא ניתן למחוק מתכון: חסר מזהה מתכון",
             "deleteConfirmationError": "שגיאה בהצגת אישור המחיקה",
             "deletedSuccessfully": "המתכון נמחק בהצלחה",

@@ -885,6 +885,22 @@
             "allAvailable": "すべてのLoRAが利用可能 - 使用可能",
             "missing": "{total} 件中 {missing} 件のLoRAが不足"
         },
+        "resources": {
+            "inLibrary": "ライブラリ内",
+            "notInLibrary": "ライブラリ外",
+            "deleted": "削除済み",
+            "inLibraryTooltip": "このモデルはローカルライブラリに存在します",
+            "notInLibraryTooltip": "このモデルはライブラリにありません",
+            "deletedTooltip": "この LoRA は配信元から削除されたため、ダウンロードできません",
+            "download": "ダウンロード",
+            "downloadLoraTooltip": "この LoRA をダウンロード",
+            "preparingDownload": "ダウンロードを準備中…",
+            "reconnect": "再接続",
+            "reconnectTooltip": "ローカルの LoRA と再接続",
+            "viewOnCivitai": "Civitai で表示",
+            "openLoraDetails": "LoRA ライブラリで {name} を表示",
+            "openCheckpointDetails": "モデルライブラリで {name} を表示"
+        },
         "controls": {
             "import": {
                 "action": "インポート",
@@ -2029,6 +2045,8 @@
             "missingCheckpointPath": "チェックポイントのパスがありません",
             "missingCheckpointInfo": "チェックポイント情報が不足しています",
             "downloadCheckpointFailed": "チェックポイントのダウンロードに失敗しました: {message}",
+            "missingLoraDownloadInfo": "この LoRA のダウンロード情報がありません",
+            "downloadLoraFailed": "LoRA のダウンロードに失敗しました: {message}",
             "cannotDelete": "レシピを削除できません：レシピIDがありません",
             "deleteConfirmationError": "削除確認の表示中にエラーが発生しました",
             "deletedSuccessfully": "レシピが正常に削除されました",

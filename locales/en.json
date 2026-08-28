@@ -885,6 +885,22 @@
       "allAvailable": "All LoRAs available - Ready to use",
       "missing": "{missing} of {total} LoRAs missing"
     },
+    "resources": {
+      "inLibrary": "In Library",
+      "notInLibrary": "Not in Library",
+      "deleted": "Deleted",
+      "inLibraryTooltip": "This model exists in your local library",
+      "notInLibraryTooltip": "This model is not in your library",
+      "deletedTooltip": "This LoRA was deleted from the source and is no longer available for download",
+      "download": "Download",
+      "downloadLoraTooltip": "Download this LoRA",
+      "preparingDownload": "Preparing download...",
+      "reconnect": "Reconnect",
+      "reconnectTooltip": "Reconnect with a local LoRA",
+      "viewOnCivitai": "View on Civitai",
+      "openLoraDetails": "View {name} in the LoRA library",
+      "openCheckpointDetails": "View {name} in the model library"
+    },
     "controls": {
       "import": {
         "action": "Import",
@@ -2029,6 +2045,8 @@
       "missingCheckpointPath": "Checkpoint path not available",
       "missingCheckpointInfo": "Missing checkpoint information",
       "downloadCheckpointFailed": "Failed to download checkpoint: {message}",
+      "missingLoraDownloadInfo": "Missing download information for this LoRA",
+      "downloadLoraFailed": "Failed to download LoRA: {message}",
       "cannotDelete": "Cannot delete recipe: Missing recipe ID",
       "deleteConfirmationError": "Error showing delete confirmation",
       "deletedSuccessfully": "Recipe deleted successfully",

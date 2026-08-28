@@ -700,14 +700,26 @@
     will-change: transform;
     /* Create a new containing block for absolutely positioned descendants */
     transform: translateZ(0);
-    cursor: pointer; /* Make it clear the item is clickable */
+    /* Rows are not clickable by default; only in-library rows navigate */
+    cursor: default;
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 
-.recipe-lora-item:hover {
+/* Click affordance (pointer + hover lift) is reserved for rows that
+   actually navigate: in-library items open the local detail view. */
+.recipe-lora-item.exists-locally {
+    cursor: pointer;
+}
+
+.recipe-lora-item.exists-locally:hover {
     transform: translateY(-1px);
     box-shadow: var(--shadow-header);
     border-color: var(--lora-accent);
+}
+
+.recipe-lora-item.exists-locally:focus-visible {
+    outline: 2px solid var(--lora-accent);
+    outline-offset: 2px;
 }
 
 .recipe-lora-item.exists-locally {
@@ -716,10 +728,14 @@
 }
 
 .recipe-lora-item.checkpoint-item {
-    cursor: pointer;
+    cursor: default;
     padding-top: 8px;
     padding-bottom: 8px;
-    align-items: center;
+    align-items: flex-start;
+}
+
+.recipe-lora-item.checkpoint-item.exists-locally {
+    cursor: pointer;
 }
 
 .recipe-lora-item.missing-locally {
@@ -776,12 +792,24 @@
     transform: translateZ(0);
 }
 
+.recipe-lora-title {
+    display: flex;
+    /* Top-align so the inline Civitai link stays glued to the FIRST line
+       even when a long model name wraps to two lines. */
+    align-items: flex-start;
+    gap: 6px;
+    flex: 1;
+    min-width: 0; /* Allow the clamped title to shrink next to the badge */
+}
+
 .recipe-lora-content h4 {
     margin: 0;
     font-size: 1em;
     color: var(--text-color);
-    flex: 1;
-    max-width: calc(100% - 120px); /* Make room for the badge */
+    /* Shrink (for the 2-line clamp) but don't grow: the inline Civitai link
+       should sit right after the name, not pushed to the far edge. */
+    flex: 0 1 auto;
+    min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     display: -webkit-box;
@@ -838,16 +866,6 @@
     backface-visibility: hidden;
 }
 
-/* Ensure local-path tooltip is properly positioned and won't move during scroll */
-.recipe-lora-header .local-badge .local-path {
-    z-index: 3;
-    top: calc(100% + 4px); /* Position tooltip below the badge */
-    right: -4px; /* Align with the badge */
-    max-width: 250px;
-    /* Force hardware acceleration for Chrome */
-    transform: translateZ(0);
-}
-
 .missing-badge {
     display: inline-flex;
     align-items: center;
@@ -885,39 +903,8 @@
     font-size: 0.9em;
 }
 
-/* Add reconnect functionality styles */
-.deleted-badge.reconnectable {
-    position: relative;
-    cursor: pointer;
-    transition: background-color 0.2s ease;
-}
-
-.deleted-badge.reconnectable:hover {
-    background-color: var(--lora-accent);
-}
-
-.deleted-badge .reconnect-tooltip {
-    position: absolute;
-    display: none;
-    background-color: var(--card-bg);
-    color: var(--text-color);
-    padding: 8px 12px;
-    border-radius: var(--border-radius-xs);
-    border: 1px solid var(--border-color);
-    box-shadow: var(--shadow-header);
-    z-index: var(--z-overlay);
-    width: max-content;
-    max-width: 200px;
-    font-size: 0.85rem;
-    font-weight: normal;
-    top: calc(100% + 5px);
-    left: 0;
-    margin-left: -100px;
-}
-
-.deleted-badge.reconnectable:hover .reconnect-tooltip {
-    display: block;
-}
+/* Deleted badge is a pure status indicator; the reconnect action lives on
+   an explicit ghost button in the item's action row. */
 
 /* LoRA reconnect container */
 .lora-reconnect-container {
@@ -1131,11 +1118,10 @@
     align-items: center;
     justify-content: flex-end;
     flex-shrink: 0;
-    min-width: 110px;
     z-index: 2;
 }
 
-/* Update the local-badge and missing-badge to be positioned within the badge-container */
+/* Badges are pure status indicators; actions live in .recipe-lora-actions */
 .badge-container .local-badge, 
 .badge-container .missing-badge,
 .badge-container .deleted-badge {
@@ -1143,14 +1129,25 @@
     transform: none; /* Remove the transform */
 }
 
-/* Ensure the tooltip is still properly positioned */
-.badge-container .local-badge .local-path {
-    position: fixed; /* Keep as fixed for Chrome */
-    z-index: 100;
+/* Tonal (soft) status badges: a tinted fill + colored text reads calmer
+   than solid blocks when several rows stack, and matches the tonal
+   "N missing" summary pill above the list. */
+.badge-container .local-badge {
+    background: oklch(var(--lora-accent) / 0.12);
+    color: var(--lora-accent);
+    border: 1px solid oklch(var(--lora-accent) / 0.35);
 }
 
-.badge-container .resource-action {
-    margin-left: auto;
+.badge-container .missing-badge {
+    background: oklch(var(--lora-error) / 0.14);
+    color: var(--lora-error);
+    border: 1px solid oklch(var(--lora-error) / 0.35);
+}
+
+.badge-container .deleted-badge {
+    background: rgba(127, 127, 127, 0.15);
+    color: var(--text-muted);
+    border: 1px solid rgba(127, 127, 127, 0.35);
 }
 
 /* Missing LoRAs status is a real button: the affordance must be visible at
@@ -1184,11 +1181,11 @@
     margin-bottom: 2px;
 }
 
-.recipe-checkpoint-meta .checkpoint-type {
-    background: var(--lora-surface);
-    padding: 2px 8px;
-    border-radius: var(--border-radius-xs);
-    color: var(--text-color);
+/* Checkpoint type is low-information text (the entry's position above the
+   divider already implies "checkpoint"), so it renders as plain muted text
+   instead of a chip competing with the base-model chip. */
+.recipe-checkpoint-meta .checkpoint-type-text {
+    color: var(--text-muted);
 }
 
 .recipe-resource-actions {
@@ -1231,4 +1228,59 @@
 
 .resource-action.primary:hover {
     background: color-mix(in oklch, var(--lora-accent), black 10%);
+}
+
+/* Ghost variant: secondary remediation actions (e.g. Reconnect), matching
+   the ghost action pattern used in the versions tab. */
+.resource-action.ghost {
+    background: transparent;
+    color: var(--lora-accent);
+    border-color: oklch(var(--lora-accent) / 0.4);
+}
+
+.resource-action.ghost:hover {
+    background: oklch(var(--lora-accent) / 0.1);
+    border-color: var(--lora-accent);
+}
+
+/* Per-item action row: remediation lives next to the status badge that
+   surfaced the problem (download / reconnect / external link). Right-aligned
+   so the reading order stays: name → status → meta → actions. */
+.recipe-lora-actions {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+/* External-link affordance, mirroring .version-civitai-link in the
+   versions tab: leaving the app is always an explicit, signposted action. */
+.recipe-civitai-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 999px;
+    color: var(--text-muted);
+    text-decoration: none;
+    flex: 0 0 auto;
+    transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease;
+}
+
+.recipe-civitai-link:hover,
+.recipe-civitai-link:focus-visible {
+    color: var(--lora-accent);
+    background: color-mix(in oklch, var(--lora-accent) 12%, transparent);
+    transform: translateY(-1px);
+    outline: none;
+}
+
+/* In titles, size the icon box to the first line box (1em * 1.3 line-height)
+   so it aligns with the first line of both short and wrapped names. */
+.recipe-lora-title .recipe-civitai-link {
+    width: 20px;
+    height: calc(1em * 1.3);
 }

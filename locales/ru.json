@@ -885,6 +885,22 @@
             "allAvailable": "Все LoRAs доступны - Готово к использованию",
             "missing": "Отсутствует {missing} из {total} LoRAs"
         },
+        "resources": {
+            "inLibrary": "В библиотеке",
+            "notInLibrary": "Не в библиотеке",
+            "deleted": "Удалено",
+            "inLibraryTooltip": "Эта модель есть в вашей локальной библиотеке",
+            "notInLibraryTooltip": "Этой модели нет в вашей библиотеке",
+            "deletedTooltip": "Этот LoRA был удалён из источника и больше недоступен для скачивания",
+            "download": "Скачать",
+            "downloadLoraTooltip": "Скачать этот LoRA",
+            "preparingDownload": "Подготовка к скачиванию…",
+            "reconnect": "Переподключить",
+            "reconnectTooltip": "Переподключить к локальному LoRA",
+            "viewOnCivitai": "Открыть на Civitai",
+            "openLoraDetails": "Открыть {name} в библиотеке LoRA",
+            "openCheckpointDetails": "Открыть {name} в библиотеке моделей"
+        },
         "controls": {
             "import": {
                 "action": "Импортировать",
@@ -2029,6 +2045,8 @@
             "missingCheckpointPath": "Путь к чекпойнту недоступен",
             "missingCheckpointInfo": "Отсутствуют данные о чекпойнте",
             "downloadCheckpointFailed": "Не удалось скачать чекпойнт: {message}",
+            "missingLoraDownloadInfo": "Нет информации для скачивания этого LoRA",
+            "downloadLoraFailed": "Не удалось скачать LoRA: {message}",
             "cannotDelete": "Невозможно удалить рецепт: отсутствует ID рецепта",
             "deleteConfirmationError": "Ошибка отображения подтверждения удаления",
             "deletedSuccessfully": "Рецепт успешно удален",

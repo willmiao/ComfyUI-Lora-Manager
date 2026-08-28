@@ -1,10 +1,11 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, openCivitaiByMetadata, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow } from '../utils/uiHelpers.js';
 import { isModelWeightFile } from '../utils/modelFileTypes.js';
+import { buildCivitaiUrl } from '../utils/civitaiUtils.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
-import { fetchRecipeDetails, updateRecipeMetadata, sendRecipeWorkflow } from '../api/recipeApi.js';
+import { fetchRecipeDetails, updateRecipeMetadata, sendRecipeWorkflow, extractRecipeId } from '../api/recipeApi.js';
 import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { openMediaViewer } from './shared/MediaViewer.js';
@@ -51,6 +52,18 @@ const PARAM_DISPLAY_NAMES = {
     clip_skip: 'Clip Skip',
     denoising_strength: 'Denoising Strength',
 };
+
+function escapeHtml(value) {
+    if (value == null) {
+        return '';
+    }
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 class RecipeModal {
     constructor() {
@@ -125,10 +138,6 @@ class RecipeModal {
         this.setupPromptEditors();
         this.setupNavigationControls();
         this.setupDeleteControl();
-        // Set up tooltip positioning handlers after DOM is ready
-        document.addEventListener('DOMContentLoaded', () => {
-            this.setupTooltipPositioning();
-        });
 
         // Set up document click handler to close edit fields
         document.addEventListener('click', (event) => {
@@ -162,7 +171,7 @@ class RecipeModal {
             reconnectContainers.forEach(container => {
                 if (container.classList.contains('active') &&
                     !container.contains(event.target) &&
-                    !event.target.closest('.deleted-badge.reconnectable')) {
+                    !event.target.closest('.lora-reconnect')) {
                     this.hideReconnectInput(container);
                 }
             });
@@ -280,26 +289,6 @@ class RecipeModal {
             this.navigationInProgress = false;
             this.updateNavigationControls();
         }
-    }
-
-    // Add tooltip positioning handler to ensure correct positioning of fixed tooltips
-    setupTooltipPositioning() {
-        document.addEventListener('mouseover', (event) => {
-            // Check if we're hovering over a local-badge
-            if (event.target.closest('.local-badge')) {
-                const badge = event.target.closest('.local-badge');
-                const tooltip = badge.querySelector('.local-path');
-
-                if (tooltip) {
-                    // Get badge position
-                    const badgeRect = badge.getBoundingClientRect();
-
-                    // Position the tooltip
-                    tooltip.style.top = (badgeRect.bottom + 4) + 'px';
-                    tooltip.style.left = (badgeRect.right - tooltip.offsetWidth) + 'px';
-                }
-            }
-        }, true);
     }
 
     showRecipeDetails(recipe) {
@@ -892,27 +881,38 @@ class RecipeModal {
             lorasListElement.innerHTML = loras.map(lora => {
                 const existsLocally = lora.inLibrary;
                 const isDeleted = lora.isDeleted;
-                const localPath = lora.localPath || '';
+                const loraIndex = loras.indexOf(lora);
 
-                let localStatus;
+                // Status badges are pure indicators (consistent with the
+                // versions-tab pattern): they never carry click behavior,
+                // only a tooltip. Remediation lives in the action row below.
+                let statusBadge;
                 if (existsLocally) {
-                    localStatus = `
-                        <div class="local-badge">
-                            <i class="fas fa-check"></i> In Library
-                            <div class="local-path">${localPath}</div>
+                    statusBadge = `
+                        <div class="local-badge" title="${escapeHtml(translate('recipes.resources.inLibraryTooltip', {}, 'This model exists in your local library'))}">
+                            <i class="fas fa-check" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.inLibrary', {}, 'In Library'))}
                         </div>`;
                 } else if (isDeleted) {
-                    localStatus = `
-                        <div class="deleted-badge reconnectable" data-lora-index="${loras.indexOf(lora)}">
-                            <span class="badge-text"><i class="fas fa-trash-alt"></i> Deleted</span>
-                            <div class="reconnect-tooltip">Click to reconnect with a local LoRA</div>
+                    statusBadge = `
+                        <div class="deleted-badge" title="${escapeHtml(translate('recipes.resources.deletedTooltip', {}, 'This LoRA was deleted from the source and is no longer available for download'))}">
+                            <i class="fas fa-trash-alt" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.deleted', {}, 'Deleted'))}
                         </div>`;
                 } else {
-                    localStatus = `
-                        <div class="missing-badge">
-                            <i class="fas fa-exclamation-triangle"></i> Not in Library
+                    statusBadge = `
+                        <div class="missing-badge" title="${escapeHtml(translate('recipes.resources.notInLibraryTooltip', {}, 'This model is not in your library'))}">
+                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.notInLibrary', {}, 'Not in Library'))}
                         </div>`;
                 }
+
+                const actionsRow = this.renderLoraItemActions(lora, loraIndex, { existsLocally, isDeleted });
+
+                // The Civitai link belongs to the model name (it answers
+                // "what is this"), so it sits inline in the title — the same
+                // pattern the versions tab uses — never in the action row.
+                // Skipped for deleted models: their source page is gone.
+                const titleLink = isDeleted
+                    ? ''
+                    : this.renderCivitaiLink(this.getResourceCivitaiUrl(lora));
 
                 const isPreviewVideo = lora.preview_url && lora.preview_url.toLowerCase().endsWith('.mp4');
                 const previewMedia = isPreviewVideo ?
@@ -930,22 +930,33 @@ class RecipeModal {
                     loraItemClass += ' missing-locally';
                 }
 
+                // Only in-library items are row-navigable (they open the local
+                // LoRA detail); make that affordance keyboard-accessible.
+                const rowA11yAttributes = existsLocally
+                    ? ` role="button" tabindex="0" aria-label="${escapeHtml(translate('recipes.resources.openLoraDetails', { name: lora.modelName }, `View ${lora.modelName} in the LoRA library`))}"`
+                    : '';
+
                 return `
-                    <div class="${loraItemClass}" data-lora-index="${loras.indexOf(lora)}">
+                    <div class="${loraItemClass}" data-lora-index="${loraIndex}"${rowA11yAttributes}>
                         <div class="recipe-lora-thumbnail">
                             ${previewMedia}
                         </div>
                         <div class="recipe-lora-content">
                             <div class="recipe-lora-header">
-                                <h4>${lora.modelName}</h4>
-                                <div class="badge-container">${localStatus}</div>
+                                <div class="recipe-lora-title">
+                                    <h4>${lora.modelName}</h4>
+                                    ${titleLink}
+                                </div>
+                                <div class="badge-container">${statusBadge}</div>
                             </div>
                             <div class="recipe-lora-info">
                                 ${lora.modelVersionName ? `<div class="recipe-lora-version">${lora.modelVersionName}</div>` : ''}
                                 <div class="recipe-lora-weight">Weight: ${lora.strength || 1.0}</div>
                                 ${lora.baseModel ? `<div class="base-model">${lora.baseModel}</div>` : ''}
                             </div>
-                            <div class="lora-reconnect-container" data-lora-index="${loras.indexOf(lora)}">
+                            ${actionsRow}
+                            ${isDeleted ? `
+                            <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
                                 <div class="reconnect-instructions">
                                     <p>Enter LoRA Syntax or Name to Reconnect:</p>
                                     <small>Example: <code>&lt;lora:Boris_Vallejo_BV_flux_D:1&gt;</code> or just <code>Boris_Vallejo_BV_flux_D</code></small>
@@ -957,7 +968,7 @@ class RecipeModal {
                                         <button class="reconnect-confirm-btn">Reconnect</button>
                                     </div>
                                 </div>
-                            </div>
+                            </div>` : ''}
                         </div>
                     </div>
                 `;
@@ -965,6 +976,7 @@ class RecipeModal {
 
             setTimeout(() => {
                 this.setupReconnectButtons();
+                this.setupLoraItemActions();
                 this.setupLoraItemsClickable();
             }, 100);
 
@@ -1578,25 +1590,10 @@ class RecipeModal {
         }
     }
 
-    // New methods for reconnecting LoRAs
+    // Wire the reconnect form controls. The entry point is the explicit
+    // "Reconnect" ghost button rendered for deleted LoRAs (see
+    // setupLoraItemActions), keeping badges as pure status indicators.
     setupReconnectButtons() {
-        // Add event listeners to all deleted badges
-        const deletedBadges = document.querySelectorAll('.deleted-badge.reconnectable');
-        deletedBadges.forEach(badge => {
-            badge.addEventListener('mouseenter', () => {
-                badge.querySelector('.badge-text').innerHTML = 'Reconnect';
-            });
-
-            badge.addEventListener('mouseleave', () => {
-                badge.querySelector('.badge-text').innerHTML = '<i class="fas fa-trash-alt"></i> Deleted';
-            });
-
-            badge.addEventListener('click', (e) => {
-                const loraIndex = badge.getAttribute('data-lora-index');
-                this.showReconnectInput(loraIndex);
-            });
-        });
-
         // Add event listeners to reconnect cancel buttons
         const cancelButtons = document.querySelectorAll('.reconnect-cancel-btn');
         cancelButtons.forEach(button => {
@@ -1734,49 +1731,67 @@ class RecipeModal {
             </video>
         ` : `<img src="${previewUrl}" alt="Checkpoint preview" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`;
 
+        // Status badge: pure indicator with a tooltip, mirroring the LoRA
+        // items and the versions-tab badge pattern. The header carries only
+        // the badge; every action lives in the bottom action row.
         const badge = existsLocally ? `
-            <div class="local-badge">
-                <i class="fas fa-check"></i> In Library
-                <div class="local-path">${localPath}</div>
+            <div class="local-badge" title="${escapeHtml(translate('recipes.resources.inLibraryTooltip', {}, 'This model exists in your local library'))}">
+                <i class="fas fa-check" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.inLibrary', {}, 'In Library'))}
             </div>
         ` : `
-            <div class="missing-badge">
-                <i class="fas fa-exclamation-triangle"></i> Not in Library
+            <div class="missing-badge" title="${escapeHtml(translate('recipes.resources.notInLibraryTooltip', {}, 'This model is not in your library'))}">
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.notInLibrary', {}, 'Not in Library'))}
             </div>
         `;
 
-        let headerAction = '';
+        const actions = [];
         if (existsLocally && localPath) {
-            headerAction = `
+            actions.push(`
                 <button class="resource-action primary compact checkpoint-send">
                     <i class="fas fa-paper-plane"></i>
                     <span>${translate('recipes.actions.sendCheckpoint', {}, 'Send to ComfyUI')}</span>
                 </button>
-            `;
-        } else if (this.canDownloadCheckpoint(checkpoint)) {
-            headerAction = `
+            `);
+        } else if (!existsLocally && this.canDownloadCheckpoint(checkpoint)) {
+            actions.push(`
                 <button class="resource-action primary compact checkpoint-download">
                     <i class="fas fa-download"></i>
                     <span>${translate('modals.model.versions.actions.download', {}, 'Download')}</span>
                 </button>
-            `;
+            `);
         }
+        const actionsMarkup = actions.filter(Boolean).join('');
+        const actionsRow = actionsMarkup
+            ? `<div class="recipe-lora-actions">${actionsMarkup}</div>`
+            : '';
+
+        // Civitai link lives inline with the title, same as LoRA items.
+        const titleLink = this.renderCivitaiLink(this.getResourceCivitaiUrl(checkpoint));
+
+        // Only in-library checkpoints are row-navigable; make it keyboard-accessible.
+        const rowA11yAttributes = existsLocally
+            ? ` role="button" tabindex="0" aria-label="${escapeHtml(translate('recipes.resources.openCheckpointDetails', { name: checkpointName }, `View ${checkpointName} in the model library`))}"`
+            : '';
 
         return `
-            <div class="recipe-lora-item checkpoint-item ${existsLocally ? 'exists-locally' : 'missing-locally'}">
+            <div class="recipe-lora-item checkpoint-item ${existsLocally ? 'exists-locally' : 'missing-locally'}"${rowA11yAttributes}>
                 <div class="recipe-lora-thumbnail">
                     ${previewMedia}
                 </div>
                 <div class="recipe-lora-content">
                     <div class="recipe-lora-header">
-                        <h4>${checkpointName}</h4>
-                        <div class="badge-container">${headerAction}</div>
+                        <div class="recipe-lora-title">
+                            <h4>${checkpointName}</h4>
+                            ${titleLink}
+                        </div>
+                        <div class="badge-container">${badge}</div>
                     </div>
                     <div class="recipe-lora-info recipe-checkpoint-meta">
                         ${versionLabel ? `<div class="recipe-lora-version">${versionLabel}</div>` : ''}
                         ${baseModel ? `<div class="base-model">${baseModel}</div>` : ''}
-                        ${modelTypeLabel ? `<div class="checkpoint-type">${modelTypeLabel}</div>` : ''}
+                        ${modelTypeLabel ? `<span class="checkpoint-type-text">${modelTypeLabel}</span>` : ''}
                     </div>
+                    ${actionsRow}
                 </div>
             </div>
         `;
@@ -1801,11 +1816,26 @@ class RecipeModal {
     }
 
     setupCheckpointNavigation(container, checkpoint) {
+        // Only in-library checkpoints navigate (to the local detail view).
+        // Missing checkpoints expose explicit Download / Civitai-link
+        // controls instead, so a row click never has two different outcomes.
+        if (!checkpoint.inLibrary) {
+            return;
+        }
         const checkpointItem = container.querySelector('.checkpoint-item');
         if (!checkpointItem) return;
 
-        checkpointItem.addEventListener('click', () => {
+        checkpointItem.addEventListener('click', (e) => {
+            if (e.target.closest('.resource-action') || e.target.closest('.recipe-civitai-link')) {
+                return;
+            }
             this.navigateToCheckpointPage(checkpoint);
+        });
+        checkpointItem.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this.navigateToCheckpointPage(checkpoint);
+            }
         });
     }
 
@@ -1878,7 +1908,7 @@ class RecipeModal {
         }
 
         try {
-            await downloadManager.downloadVersionWithDefaults(
+            const success = await downloadManager.downloadVersionWithDefaults(
                 MODEL_TYPES.CHECKPOINT,
                 modelId,
                 versionId,
@@ -1887,6 +1917,9 @@ class RecipeModal {
                     source: 'recipe-modal',
                 }
             );
+            if (success) {
+                await this.refreshResourcesAfterDownload();
+            }
         } catch (error) {
             console.error('Error downloading checkpoint:', error);
             showToast('toast.recipes.downloadCheckpointFailed', { message: error.message }, 'error');
@@ -1897,18 +1930,247 @@ class RecipeModal {
         }
     }
 
-    navigateToCheckpointPage(checkpoint) {
-        if (!checkpoint.inLibrary) {
-            const modelId = checkpoint.modelId || checkpoint.modelID || checkpoint.model_id;
-            const versionId = checkpoint.id || checkpoint.modelVersionId;
-            const modelName = checkpoint.name || checkpoint.modelName || checkpoint.file_name;
+    getResourceCivitaiUrl(resource) {
+        if (!resource) {
+            return null;
+        }
+        const modelId = resource.modelId || resource.modelID || resource.model_id || null;
+        const versionId = resource.id || resource.modelVersionId || null;
+        const modelName = resource.modelName || resource.name || resource.file_name || null;
+        return buildCivitaiUrl({
+            modelId,
+            versionId,
+            modelName,
+            host: state?.global?.settings?.civitai_host,
+        });
+    }
 
-            if (modelId || versionId || modelName) {
-                openCivitaiByMetadata(modelId, versionId, modelName);
-                return;
+    canDownloadLora(lora) {
+        if (!lora) return false;
+        const modelId = lora.modelId || lora.modelID || lora.model_id;
+        const versionId = lora.id || lora.modelVersionId;
+        // Direct download needs both identifiers; a hash alone is enough
+        // because downloadRecipeLora resolves it to a version on demand —
+        // the same fallback the bulk "download missing" flow uses.
+        return !!((modelId && versionId) || lora.hash);
+    }
+
+    renderCivitaiLink(url) {
+        if (!url) {
+            return '';
+        }
+        const tooltip = translate('recipes.resources.viewOnCivitai', {}, 'View on Civitai');
+        return `
+            <a
+                class="recipe-civitai-link"
+                href="${escapeHtml(url)}"
+                target="_blank"
+                rel="noopener noreferrer"
+                title="${escapeHtml(tooltip)}"
+                aria-label="${escapeHtml(tooltip)}"
+            >
+                <i class="fas fa-arrow-up-right-from-square" aria-hidden="true"></i>
+            </a>
+        `;
+    }
+
+    renderLoraItemActions(lora, loraIndex, { existsLocally, isDeleted }) {
+        // In-library LoRAs need no remediation: the badge and the local path
+        // already tell the full story.
+        if (existsLocally) {
+            return '';
+        }
+
+        const controls = [];
+        if (isDeleted) {
+            const reconnectLabel = translate('recipes.resources.reconnect', {}, 'Reconnect');
+            const reconnectTooltip = translate('recipes.resources.reconnectTooltip', {}, 'Reconnect with a local LoRA');
+            controls.push(`
+                <button type="button" class="resource-action ghost compact lora-reconnect" data-lora-index="${loraIndex}"
+                    title="${escapeHtml(reconnectTooltip)}" aria-label="${escapeHtml(reconnectTooltip)}">
+                    <i class="fas fa-link" aria-hidden="true"></i>
+                    <span>${escapeHtml(reconnectLabel)}</span>
+                </button>
+            `);
+        } else {
+            if (this.canDownloadLora(lora)) {
+                const downloadLabel = translate('recipes.resources.download', {}, 'Download');
+                const downloadTooltip = translate('recipes.resources.downloadLoraTooltip', {}, 'Download this LoRA');
+                controls.push(`
+                    <button type="button" class="resource-action primary compact lora-download" data-lora-index="${loraIndex}"
+                        title="${escapeHtml(downloadTooltip)}" aria-label="${escapeHtml(downloadTooltip)}">
+                        <i class="fas fa-download" aria-hidden="true"></i>
+                        <span>${escapeHtml(downloadLabel)}</span>
+                    </button>
+                `);
             }
         }
 
+        const markup = controls.filter(Boolean).join('');
+        if (!markup) {
+            return '';
+        }
+        return `<div class="recipe-lora-actions">${markup}</div>`;
+    }
+
+    setupLoraItemActions() {
+        const lorasListElement = document.getElementById('recipeLorasList');
+        if (!lorasListElement) {
+            return;
+        }
+
+        // Deferred wiring can run again after a hydration re-render while the
+        // latest DOM is already in place; a data flag prevents stacking
+        // duplicate handlers (which would fire the download twice).
+        lorasListElement.querySelectorAll('.lora-download').forEach(button => {
+            if (button.dataset.wired === 'true') {
+                return;
+            }
+            button.dataset.wired = 'true';
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const loraIndex = parseInt(button.dataset.loraIndex, 10);
+                const lora = this.currentRecipe?.loras?.[loraIndex];
+                if (lora) {
+                    this.downloadRecipeLora(lora, button);
+                }
+            });
+        });
+
+        lorasListElement.querySelectorAll('.lora-reconnect').forEach(button => {
+            if (button.dataset.wired === 'true') {
+                return;
+            }
+            button.dataset.wired = 'true';
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showReconnectInput(button.dataset.loraIndex);
+            });
+        });
+    }
+
+    /**
+     * Resolve the Civitai model/version identifiers needed for download.
+     * Recipe LoRAs parsed from PNG metadata often carry only a hash; resolve
+     * it through the same endpoint the bulk "download missing" flow uses.
+     */
+    async resolveLoraDownloadIdentifiers(lora) {
+        let modelId = lora.modelId || lora.modelID || lora.model_id;
+        let versionId = lora.id || lora.modelVersionId;
+        let versionName = lora.modelVersionName || lora.modelName || lora.name || 'LoRA';
+
+        if (modelId && versionId) {
+            return { modelId, versionId, versionName };
+        }
+
+        if (!lora.hash) {
+            return null;
+        }
+
+        const response = await fetch(`/api/lm/loras/civitai/model/hash/${lora.hash}`);
+        const versionInfo = await response.json();
+        if (versionInfo?.error) {
+            return null;
+        }
+
+        modelId = versionInfo.modelId || versionInfo.model?.id;
+        versionId = versionInfo.id;
+        versionName = versionInfo.name || versionName;
+
+        return modelId && versionId ? { modelId, versionId, versionName } : null;
+    }
+
+    /**
+     * A completed download flips inLibrary flags server-side; re-fetch the
+     * recipe and reconcile both this modal's resources section and the
+     * recipe card on the listing page (mirrors the bulk download flow in
+     * BulkMissingLoraDownloadManager).
+     */
+    async refreshResourcesAfterDownload() {
+        try {
+            const recipeId =
+                this.recipeId ||
+                extractRecipeId(this.listFilePath || this.currentRecipe?.file_path);
+            if (!recipeId) {
+                return;
+            }
+            const updated = await fetchRecipeDetails(recipeId);
+            if (!updated) {
+                return;
+            }
+            this.currentRecipe.loras = updated.loras ?? this.currentRecipe.loras;
+            this.currentRecipe.checkpoint = updated.checkpoint ?? this.currentRecipe.checkpoint;
+            this.syncResourcesSection(this.currentRecipe);
+            if (state.virtualScroller) {
+                state.virtualScroller.updateSingleItem(
+                    this.listFilePath || this.currentRecipe.file_path,
+                    updated
+                );
+            }
+        } catch (error) {
+            console.warn('Failed to refresh recipe resources after download:', error);
+        }
+    }
+
+    async downloadRecipeLora(lora, button) {
+        if (!this.canDownloadLora(lora)) {
+            showToast('toast.recipes.missingLoraDownloadInfo', {}, 'error');
+            return;
+        }
+
+        if (button) {
+            button.disabled = true;
+        }
+
+        // Hash-only LoRAs need a network round trip to resolve identifiers
+        // before the progress UI can appear; show immediate feedback so the
+        // click never feels dead.
+        const hasDirectIds = !!(
+            (lora.modelId || lora.modelID || lora.model_id) &&
+            (lora.id || lora.modelVersionId)
+        );
+        if (!hasDirectIds) {
+            state.loadingManager.showSimpleLoading(
+                translate('recipes.resources.preparingDownload', {}, 'Preparing download...')
+            );
+        }
+
+        try {
+            const identifiers = await this.resolveLoraDownloadIdentifiers(lora);
+            if (!hasDirectIds) {
+                state.loadingManager.hide();
+            }
+            if (!identifiers) {
+                showToast('toast.recipes.missingLoraDownloadInfo', {}, 'error');
+                return;
+            }
+
+            const success = await downloadManager.downloadVersionWithDefaults(
+                MODEL_TYPES.LORA,
+                identifiers.modelId,
+                identifiers.versionId,
+                {
+                    versionName: identifiers.versionName,
+                    source: 'recipe-modal',
+                }
+            );
+            if (success) {
+                await this.refreshResourcesAfterDownload();
+            }
+        } catch (error) {
+            if (!hasDirectIds) {
+                state.loadingManager.hide();
+            }
+            console.error('Error downloading LoRA:', error);
+            showToast('toast.recipes.downloadLoraFailed', { message: error.message }, 'error');
+        } finally {
+            if (button) {
+                button.disabled = false;
+            }
+        }
+    }
+
+    navigateToCheckpointPage(checkpoint) {
         const checkpointHash = this._getCheckpointHash(checkpoint);
 
         if (!checkpointHash) {
@@ -1956,17 +2218,6 @@ class RecipeModal {
             // If a specific LoRA index is provided, navigate to view just that one LoRA
             const lora = this.currentRecipe.loras[specificLoraIndex];
 
-            if (lora && !lora.inLibrary) {
-                const modelId = lora.modelId || lora.modelID || lora.model_id;
-                const versionId = lora.id || lora.modelVersionId;
-                const modelName = lora.modelName || lora.name || lora.file_name;
-
-                if (modelId || versionId || modelName) {
-                    openCivitaiByMetadata(modelId, versionId, modelName);
-                    return;
-                }
-            }
-
             if (lora && lora.hash) {
                 // Set session storage to open the LoRA modal directly
                 setSessionItem('recipe_to_lora_filterLoraHash', lora.hash.toLowerCase());
@@ -1991,23 +2242,36 @@ class RecipeModal {
         window.location.href = '/loras';
     }
 
-    // New method to make LoRA items clickable
+    // Only in-library LoRA items are row-navigable: the row opens the local
+    // LoRA detail. Missing/deleted rows expose explicit action buttons
+    // instead (download / reconnect / Civitai link), so a single gesture
+    // never produces two different outcomes.
     setupLoraItemsClickable() {
-        const loraItems = document.querySelectorAll('.recipe-lora-item:not(.checkpoint-item)');
+        const loraItems = document.querySelectorAll('.recipe-lora-item.exists-locally:not(.checkpoint-item)');
         loraItems.forEach(item => {
+            // Guard against duplicate wiring from deferred re-runs (see
+            // setupLoraItemActions).
+            if (item.dataset.navigationWired === 'true') {
+                return;
+            }
+            item.dataset.navigationWired = 'true';
+
             // Get the lora index from the data attribute
             const loraIndex = parseInt(item.dataset.loraIndex);
 
             item.addEventListener('click', (e) => {
-                // If the click is on the reconnect container or badge, don't navigate
-                if (e.target.closest('.lora-reconnect-container') ||
-                    e.target.closest('.deleted-badge') ||
-                    e.target.closest('.reconnect-tooltip')) {
+                // The inline Civitai link inside the title keeps its own
+                // navigation; don't let it trigger the row navigation.
+                if (e.target.closest('.recipe-civitai-link')) {
                     return;
                 }
-
-                // Navigate to the LoRAs page with the specific LoRA index
                 this.navigateToLorasPage(loraIndex);
+            });
+            item.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    this.navigateToLorasPage(loraIndex);
+                }
             });
         });
     }

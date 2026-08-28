@@ -885,6 +885,22 @@
             "allAvailable": "Tous les LoRAs sont disponibles - Prêt à l'emploi",
             "missing": "{missing} LoRA(s) manquant(s) sur {total}"
         },
+        "resources": {
+            "inLibrary": "Dans la bibliothèque",
+            "notInLibrary": "Pas dans la bibliothèque",
+            "deleted": "Supprimé",
+            "inLibraryTooltip": "Ce modèle existe dans votre bibliothèque locale",
+            "notInLibraryTooltip": "Ce modèle n'est pas dans votre bibliothèque",
+            "deletedTooltip": "Ce LoRA a été supprimé de la source et ne peut plus être téléchargé",
+            "download": "Télécharger",
+            "downloadLoraTooltip": "Télécharger ce LoRA",
+            "preparingDownload": "Préparation du téléchargement…",
+            "reconnect": "Reconnecter",
+            "reconnectTooltip": "Reconnecter avec un LoRA local",
+            "viewOnCivitai": "Voir sur Civitai",
+            "openLoraDetails": "Voir {name} dans la bibliothèque LoRA",
+            "openCheckpointDetails": "Voir {name} dans la bibliothèque de modèles"
+        },
         "controls": {
             "import": {
                 "action": "Importer",
@@ -2029,6 +2045,8 @@
             "missingCheckpointPath": "Chemin du checkpoint indisponible",
             "missingCheckpointInfo": "Informations sur le checkpoint manquantes",
             "downloadCheckpointFailed": "Échec du téléchargement du checkpoint : {message}",
+            "missingLoraDownloadInfo": "Informations de téléchargement manquantes pour ce LoRA",
+            "downloadLoraFailed": "Échec du téléchargement du LoRA : {message}",
             "cannotDelete": "Impossible de supprimer la recipe : ID de recipe manquant",
             "deleteConfirmationError": "Erreur lors de l'affichage de la confirmation de suppression",
             "deletedSuccessfully": "Recipe supprimée avec succès",

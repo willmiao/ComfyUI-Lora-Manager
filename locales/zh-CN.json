@@ -885,6 +885,22 @@
             "allAvailable": "所有 LoRA 均已就绪 - 可直接使用",
             "missing": "{total} 个 LoRA 中缺失 {missing} 个"
         },
+        "resources": {
+            "inLibrary": "在库中",
+            "notInLibrary": "不在库中",
+            "deleted": "已删除",
+            "inLibraryTooltip": "该模型已存在于本地库中",
+            "notInLibraryTooltip": "该模型不在你的本地库中",
+            "deletedTooltip": "该 LoRA 已从来源站删除，无法下载",
+            "download": "下载",
+            "downloadLoraTooltip": "下载此 LoRA",
+            "preparingDownload": "正在准备下载…",
+            "reconnect": "重新关联",
+            "reconnectTooltip": "与本地 LoRA 重新关联",
+            "viewOnCivitai": "在 Civitai 上查看",
+            "openLoraDetails": "在 LoRA 库中查看 {name}",
+            "openCheckpointDetails": "在模型库中查看 {name}"
+        },
         "controls": {
             "import": {
                 "action": "导入",
@@ -2029,6 +2045,8 @@
             "missingCheckpointPath": "缺少检查点路径",
             "missingCheckpointInfo": "缺少检查点信息",
             "downloadCheckpointFailed": "下载检查点失败：{message}",
+            "missingLoraDownloadInfo": "缺少此 LoRA 的下载信息",
+            "downloadLoraFailed": "下载 LoRA 失败：{message}",
             "cannotDelete": "无法删除配方：缺少配方 ID",
             "deleteConfirmationError": "显示删除确认出错",
             "deletedSuccessfully": "配方删除成功",

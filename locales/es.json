@@ -885,6 +885,22 @@
             "allAvailable": "Todos los LoRAs disponibles - Listo para usar",
             "missing": "Faltan {missing} de {total} LoRAs"
         },
+        "resources": {
+            "inLibrary": "En la biblioteca",
+            "notInLibrary": "No en la biblioteca",
+            "deleted": "Eliminado",
+            "inLibraryTooltip": "Este modelo existe en tu biblioteca local",
+            "notInLibraryTooltip": "Este modelo no está en tu biblioteca",
+            "deletedTooltip": "Este LoRA fue eliminado de la fuente y ya no se puede descargar",
+            "download": "Descargar",
+            "downloadLoraTooltip": "Descargar este LoRA",
+            "preparingDownload": "Preparando descarga…",
+            "reconnect": "Reconectar",
+            "reconnectTooltip": "Reconectar con un LoRA local",
+            "viewOnCivitai": "Ver en Civitai",
+            "openLoraDetails": "Ver {name} en la biblioteca de LoRAs",
+            "openCheckpointDetails": "Ver {name} en la biblioteca de modelos"
+        },
         "controls": {
             "import": {
                 "action": "Importar",
@@ -2029,6 +2045,8 @@
             "missingCheckpointPath": "Ruta del checkpoint no disponible",
             "missingCheckpointInfo": "Falta información del checkpoint",
             "downloadCheckpointFailed": "Error al descargar el checkpoint: {message}",
+            "missingLoraDownloadInfo": "Falta la información de descarga de este LoRA",
+            "downloadLoraFailed": "Error al descargar el LoRA: {message}",
             "cannotDelete": "No se puede eliminar receta: Falta ID de receta",
             "deleteConfirmationError": "Error mostrando confirmación de eliminación",
             "deletedSuccessfully": "Receta eliminada exitosamente",
