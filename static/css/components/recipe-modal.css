@@ -1179,6 +1179,19 @@
     border: 1px solid oklch(var(--lora-warning) / 0.35);
 }
 
+/* Pin the recipe status-badge family (missing / deleted / invalid-hash) to its
+   compact size. import-modal.css defines unscoped .missing-badge/.deleted-badge
+   and is loaded AFTER this file, so without this higher-specificity rule its
+   padding/font-size would clobber recipe modal's, leaving invalid-hash-badge
+   (which has no import counterpart) at a different size. local-badge
+   intentionally keeps the global shared.css size. */
+#recipeModal .badge-container .missing-badge,
+#recipeModal .badge-container .deleted-badge,
+#recipeModal .badge-container .invalid-hash-badge {
+    padding: 3px 6px;
+    font-size: 0.75em;
+}
+
 /* Missing LoRAs status is a real button: the affordance must be visible at
    rest (persistent border), not only on hover. */
 .recipe-status.missing.clickable {

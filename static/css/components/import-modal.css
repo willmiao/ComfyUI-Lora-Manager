@@ -669,25 +669,6 @@
     /* Hide the old style */
 }
 
-/* Update deleted badge to be more prominent */
-.deleted-badge {
-    display: inline-flex;
-    align-items: center;
-    background: var(--lora-warning);
-    color: white;
-    padding: 4px 8px;
-    border-radius: var(--border-radius-xs);
-    font-size: 0.8em;
-    font-weight: 500;
-    white-space: nowrap;
-    flex-shrink: 0;
-}
-
-.deleted-badge i {
-    margin-right: 4px;
-    font-size: 0.9em;
-}
-
 /* Error message styling */
 .error-message {
     color: var(--lora-error);
