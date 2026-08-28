@@ -167,6 +167,77 @@ async def test_parse_metadata_merges_lora_hashes_over_empty_hashes_json(monkeypa
 
 
 @pytest.mark.asyncio
+async def test_parse_metadata_lora_hashes_override_conflicting_hashes_json(monkeypatch):
+    """When Hashes JSON carries a non-empty but stale hash and the Lora
+    hashes text field carries the real 12-char AutoV3 hash, the Lora hashes
+    value must win: CivitAI is queried with it and the entry is resolved
+    instead of being poisoned by the stale hash."""
+    lora_version_info = {
+        "id": 359072,
+        "modelId": 320224,
+        "model": {"name": "Daphne Blake Cosplay (Scooby Doo)", "type": "LORA"},
+        "name": "v1.0",
+        "images": [{"url": "https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/original=true"}],
+        "baseModel": "SD 1.5",
+        "downloadUrl": "https://civitai.com/api/download/models/359072",
+        "files": [
+            {
+                "type": "Model",
+                "primary": True,
+                "sizeKB": 1024,
+                "name": "Daphne Blake Cosplay_v1.safetensors",
+                "hashes": {"SHA256": "533317d3f7d269f9f504bdc432514774d3ada3738ebd80f3f1a37ff848e88276"},
+            }
+        ],
+    }
+
+    queried_hashes = []
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                queried_hashes.append(model_hash)
+                if model_hash == "e67ebd5e315f":
+                    return lora_version_info, None
+                return None, "Model not found"
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = AutomaticMetadataParser()
+
+    metadata_text = (
+        "woman, natural blonde hair, ice blue eyes, <lora:Daphne Blake Cosplay_v1:1> "
+        "daphne blake cosplay, upper body\n"
+        "Negative prompt: low quality\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 4140408634, "
+        "Size: 512x768, Model hash: 3c8530cb22, Model: cyberrealistic_v33, "
+        'Lora hashes: "Daphne Blake Cosplay_v1: e67ebd5e315f", '
+        'Hashes: {"lora:Daphne Blake Cosplay_v1": "a2a12bfa01"}'
+    )
+
+    result = await parser.parse_metadata(metadata_text)
+
+    assert "e67ebd5e315f" in queried_hashes, (
+        f"CivitAI must be queried with the Lora hashes value, got {queried_hashes}"
+    )
+    assert "a2a12bfa01" not in queried_hashes, (
+        "the stale Hashes JSON value must never be used for CivitAI lookup"
+    )
+    loras = result.get("loras", [])
+    assert len(loras) == 1
+    lora = loras[0]
+    assert lora["hash"] == "533317d3f7d269f9f504bdc432514774d3ada3738ebd80f3f1a37ff848e88276"
+    assert lora["id"] == 359072
+    assert lora["modelId"] == 320224
+    assert lora.get("isDeleted") in (None, False)
+
+
+@pytest.mark.asyncio
 async def test_parse_metadata_resolves_local_lora_with_empty_hash(monkeypatch):
     async def fake_metadata_provider():
         class Provider:

@@ -18,7 +18,11 @@ from ..utils.file_utils import calculate_autov3
 from ..utils.recipe_open_stats import RecipeOpenStats
 from .model_scanner import WEIGHT_FILE_EXTENSIONS
 from .recipe_cache import RecipeCache
-from .recipes.errors import RecipeNotFoundError, RecipePersistenceError
+from .recipes.errors import (
+    RecipeNotFoundError,
+    RecipePersistenceError,
+    RecipeValidationError,
+)
 from .websocket_manager import ws_manager
 from natsort import natsorted
 import sys
@@ -241,11 +245,23 @@ class RecipeScanner:
             return cache
 
     def _is_rematch_candidate(self, entry: dict[str, Any]) -> bool:
-        """Return True when a recipe entry is eligible for local re-matching."""
+        """Return True when a recipe entry is eligible for local re-matching.
+
+        An entry counts as unresolved when its identity is known to be
+        broken (``isDeleted`` or ``hashInvalid``) or when it is missing
+        identity fields (``hash``/``file_name``). A healthy entry whose
+        hash is simply not present in the local library is NOT a candidate:
+        it may be a recipe imported without downloading the model yet, and
+        its CivitAI-valid hash must never be overwritten by the imprecise
+        filename fallback.
+        """
         if not isinstance(entry, dict):
             return False
         unresolved = (
-            entry.get("isDeleted") or not entry.get("hash") or not entry.get("file_name")
+            entry.get("isDeleted")
+            or entry.get("hashInvalid")
+            or not entry.get("hash")
+            or not entry.get("file_name")
         )
         has_identifier = (
             entry.get("hash")
@@ -1262,6 +1278,7 @@ class RecipeScanner:
     ) -> None:
         """Write back a matched local model to a lora recipe entry."""
         entry["isDeleted"] = False
+        entry["hashInvalid"] = False
 
         # Only truthy hashes are written — pending/failed items carry an empty
         # sha256 and an unconditional write would wipe a valid stored hash.
@@ -3661,6 +3678,7 @@ class RecipeScanner:
 
             lora_entry = loras[lora_index]
             lora_entry["isDeleted"] = False
+            lora_entry["hashInvalid"] = False
             lora_entry["exclude"] = False
             lora_entry["file_name"] = target_name
 
@@ -3710,6 +3728,57 @@ class RecipeScanner:
                 updated_lora["localPath"] = target_lora["file_path"]
 
         updated_lora = self._enrich_lora_entry(updated_lora)
+        return recipe_data, updated_lora
+
+    async def set_lora_entry_hash_invalid(
+        self,
+        recipe_id: str,
+        lora_index: int,
+        hash_invalid: bool,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Set the ``hashInvalid`` flag on a specific LoRA entry.
+
+        ``hashInvalid`` records that the entry's hash could not be resolved
+        on CivitAI (e.g. a download attempt returned "Model not found").
+        Marking it makes the entry an unresolved rematch candidate without
+        touching its stored hash/file_name.
+
+        Returns:
+            The updated recipe data and the refreshed LoRA metadata.
+        """
+        recipe_json_path = await self.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
+            raise RecipeNotFoundError("Recipe not found")
+
+        async with self._mutation_lock:
+            with open(recipe_json_path, "r", encoding="utf-8") as file_obj:
+                recipe_data = json.load(file_obj)
+
+            loras = recipe_data.get("loras", [])
+            if lora_index >= len(loras):
+                raise RecipeNotFoundError("LoRA index out of range in recipe")
+
+            lora_entry = loras[lora_index]
+            if not isinstance(lora_entry, dict):
+                raise RecipeValidationError("LoRA entry is not a dict")
+
+            lora_entry["hashInvalid"] = bool(hash_invalid)
+            recipe_data["modified"] = time.time()
+
+            with open(recipe_json_path, "w", encoding="utf-8") as file_obj:
+                json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
+
+        cache = await self.get_cached_data()
+        replaced = await cache.replace_recipe(recipe_id, recipe_data, resort=False)
+        if not replaced:
+            await cache.add_recipe(recipe_data, resort=False)
+        self._schedule_resort()
+
+        if self._persistent_cache:
+            self._persistent_cache.update_recipe(recipe_data, recipe_json_path)
+            self._json_path_map[recipe_id] = recipe_json_path
+
+        updated_lora = self._enrich_lora_entry(dict(lora_entry))
         return recipe_data, updated_lora
 
     async def get_recipes_for_lora(self, lora_hash: str) -> List[Dict[str, Any]]:

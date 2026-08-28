@@ -850,7 +850,8 @@
 }
 
 .local-badge, 
-.missing-badge {
+.missing-badge,
+.invalid-hash-badge {
     position: absolute;
     right: 0;
     top: 0;
@@ -861,7 +862,8 @@
 
 /* Specific styles for recipe modal badges - update z-index */
 .recipe-lora-header .local-badge,
-.recipe-lora-header .missing-badge {
+.recipe-lora-header .missing-badge,
+.recipe-lora-header .invalid-hash-badge {
     z-index: 2; /* Ensure the badge is above other elements */
     backface-visibility: hidden;
 }
@@ -899,6 +901,26 @@
 }
 
 .deleted-badge i {
+    margin-right: 4px;
+    font-size: 0.9em;
+}
+
+/* Unresolvable-hash badge: the entry has identity fields, but its hash is
+   not registered on CivitAI (stale or invalid). */
+.invalid-hash-badge {
+    display: inline-flex;
+    align-items: center;
+    background: var(--lora-warning);
+    color: white;
+    padding: 3px 6px;
+    border-radius: var(--border-radius-xs);
+    font-size: 0.75em;
+    font-weight: 500;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.invalid-hash-badge i {
     margin-right: 4px;
     font-size: 0.9em;
 }
@@ -1124,7 +1146,8 @@
 /* Badges are pure status indicators; actions live in .recipe-lora-actions */
 .badge-container .local-badge, 
 .badge-container .missing-badge,
-.badge-container .deleted-badge {
+.badge-container .deleted-badge,
+.badge-container .invalid-hash-badge {
     position: static; /* Override absolute positioning */
     transform: none; /* Remove the transform */
 }
@@ -1148,6 +1171,12 @@
     background: rgba(127, 127, 127, 0.15);
     color: var(--text-muted);
     border: 1px solid rgba(127, 127, 127, 0.35);
+}
+
+.badge-container .invalid-hash-badge {
+    background: oklch(var(--lora-warning) / 0.14);
+    color: var(--lora-warning);
+    border: 1px solid oklch(var(--lora-warning) / 0.35);
 }
 
 /* Missing LoRAs status is a real button: the affordance must be visible at

@@ -142,6 +142,14 @@ const hashOnlyLora = {
   hash: 'deadbeefcafe',
 };
 
+const hashInvalidLora = {
+  name: 'invalid-hash-lora',
+  modelName: 'Invalid Hash LoRA',
+  inLibrary: false,
+  hash: 'a2a12bfa01',
+  hashInvalid: true,
+};
+
 const recipeWithResources = {
   id: 'recipe-resources',
   file_path: '/recipes/resources.json',
@@ -157,6 +165,7 @@ const recipeWithResources = {
     { name: 'present-lora', modelName: 'Present LoRA', inLibrary: true, hash: 'ABC123' },
     missingLora,
     { name: 'deleted-lora', modelName: 'Deleted LoRA', inLibrary: false, isDeleted: true },
+    hashInvalidLora,
     { name: 'mystery-lora', modelName: 'Mystery LoRA', inLibrary: false },
     hashOnlyLora,
   ],
@@ -321,11 +330,67 @@ describe('RecipeModal resource item interactions', () => {
     expect(container.classList.contains('active')).toBe(true);
   });
 
+  it('renders hash-invalid LoRAs with a dedicated badge and reconnect instead of download', async () => {
+    const recipeModal = await createRecipeModal();
+    recipeModal.showRecipeDetails(recipeWithResources);
+    await flushWiring();
+
+    const invalidItem = document.querySelector('[data-lora-index="3"]');
+    const badge = invalidItem.querySelector('.invalid-hash-badge');
+    expect(badge).not.toBeNull();
+    expect(badge.title).toContain('cannot be resolved on CivitAI');
+    expect(badge.textContent).toContain('Unresolvable Hash');
+
+    expect(invalidItem.querySelector('.lora-download')).toBeNull();
+    expect(invalidItem.querySelector('.lora-reconnect')).not.toBeNull();
+  });
+
+  it('marks the entry hash-invalid when hash resolution returns Model not found', async () => {
+    const recipeModal = await createRecipeModal();
+    const requests = [];
+    // Deep copy so the mark step mutating loras[5].hashInvalid does not
+    // leak into the shared fixture used by later tests.
+    const isolatedRecipe = JSON.parse(JSON.stringify(recipeWithResources));
+    fetchRecipeDetailsMock.mockResolvedValue(isolatedRecipe);
+    global.fetch = vi.fn(async (url, options) => {
+      requests.push({ url: String(url), options });
+      const urlStr = String(url);
+      if (urlStr.includes('/civitai/model/hash/')) {
+        return { ok: false, json: async () => ({ success: false, error: 'Model not found' }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    recipeModal.showRecipeDetails(isolatedRecipe);
+    await flushWiring();
+
+    const hashItem = document.querySelector('[data-lora-index="5"]');
+    const downloadButton = hashItem.querySelector('.lora-download');
+    downloadButton.click();
+
+    await vi.waitFor(() => {
+      expect(
+        requests.some(r => r.url.includes('/recipe/lora/mark-hash-invalid'))
+      ).toBe(true);
+    });
+
+    const markRequest = requests.find(r => r.url.includes('/mark-hash-invalid'));
+    expect(JSON.parse(markRequest.options.body)).toEqual({
+      recipe_id: 'recipe-resources',
+      lora_index: 5,
+    });
+    expect(showToastMock).toHaveBeenCalledWith(
+      'toast.recipes.hashNotFoundOnCivitai',
+      {},
+      'error'
+    );
+    expect(downloadVersionWithDefaultsMock).not.toHaveBeenCalled();
+  });
+
   it('renders no action row when neither identifiers nor hash are available', async () => {
     const recipeModal = await createRecipeModal();
     recipeModal.showRecipeDetails(recipeWithResources);
 
-    const mysteryItem = document.querySelector('[data-lora-index="3"]');
+    const mysteryItem = document.querySelector('[data-lora-index="4"]');
     expect(mysteryItem.querySelector('.lora-download')).toBeNull();
     // No actions at all -> no empty action row taking vertical space
     expect(mysteryItem.querySelector('.recipe-lora-actions')).toBeNull();
@@ -348,7 +413,7 @@ describe('RecipeModal resource item interactions', () => {
     recipeModal.showRecipeDetails(recipeWithResources);
     await flushWiring();
 
-    const hashItem = document.querySelector('[data-lora-index="4"]');
+    const hashItem = document.querySelector('[data-lora-index="5"]');
     const downloadButton = hashItem.querySelector('.lora-download');
     expect(downloadButton).not.toBeNull();
 

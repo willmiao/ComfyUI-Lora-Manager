@@ -897,6 +897,11 @@ class RecipeModal {
                         <div class="deleted-badge" title="${escapeHtml(translate('recipes.resources.deletedTooltip', {}, 'This LoRA was deleted from the source and is no longer available for download'))}">
                             <i class="fas fa-trash-alt" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.deleted', {}, 'Deleted'))}
                         </div>`;
+                } else if (lora.hashInvalid) {
+                    statusBadge = `
+                        <div class="invalid-hash-badge" title="${escapeHtml(translate('recipes.resources.hashInvalidTooltip', {}, 'This LoRA hash cannot be resolved on CivitAI - the model may have been updated'))}">
+                            <i class="fas fa-question-circle" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.hashInvalid', {}, 'Unresolvable Hash'))}
+                        </div>`;
                 } else {
                     statusBadge = `
                         <div class="missing-badge" title="${escapeHtml(translate('recipes.resources.notInLibraryTooltip', {}, 'This model is not in your library'))}">
@@ -1982,7 +1987,7 @@ class RecipeModal {
         }
 
         const controls = [];
-        if (isDeleted) {
+        if (isDeleted || lora.hashInvalid) {
             const reconnectLabel = translate('recipes.resources.reconnect', {}, 'Reconnect');
             const reconnectTooltip = translate('recipes.resources.reconnectTooltip', {}, 'Reconnect with a local LoRA');
             controls.push(`
@@ -2032,7 +2037,7 @@ class RecipeModal {
                 const loraIndex = parseInt(button.dataset.loraIndex, 10);
                 const lora = this.currentRecipe?.loras?.[loraIndex];
                 if (lora) {
-                    this.downloadRecipeLora(lora, button);
+                    this.downloadRecipeLora(lora, button, loraIndex);
                 }
             });
         });
@@ -2112,7 +2117,7 @@ class RecipeModal {
         }
     }
 
-    async downloadRecipeLora(lora, button) {
+    async downloadRecipeLora(lora, button, loraIndex) {
         if (!this.canDownloadLora(lora)) {
             showToast('toast.recipes.missingLoraDownloadInfo', {}, 'error');
             return;
@@ -2141,7 +2146,12 @@ class RecipeModal {
                 state.loadingManager.hide();
             }
             if (!identifiers) {
-                showToast('toast.recipes.missingLoraDownloadInfo', {}, 'error');
+                if (!hasDirectIds && lora.hash) {
+                    await this.markLoraHashInvalid(loraIndex);
+                    showToast('toast.recipes.hashNotFoundOnCivitai', {}, 'error');
+                } else {
+                    showToast('toast.recipes.missingLoraDownloadInfo', {}, 'error');
+                }
                 return;
             }
 
@@ -2167,6 +2177,33 @@ class RecipeModal {
             if (button) {
                 button.disabled = false;
             }
+        }
+    }
+
+    async markLoraHashInvalid(loraIndex) {
+        const recipeId =
+            this.recipeId ||
+            extractRecipeId(this.listFilePath || this.currentRecipe?.file_path);
+        if (!recipeId) {
+            return;
+        }
+        try {
+            await fetch('/api/lm/recipe/lora/mark-hash-invalid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipe_id: recipeId,
+                    lora_index: loraIndex,
+                }),
+            });
+            if (this.currentRecipe?.loras?.[loraIndex]) {
+                this.currentRecipe.loras[loraIndex].hashInvalid = true;
+                this.syncResourcesSection(this.currentRecipe);
+            }
+        } catch (error) {
+            console.warn('Failed to mark LoRA hash invalid:', error);
         }
     }
 

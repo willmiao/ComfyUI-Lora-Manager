@@ -115,6 +115,27 @@ class CivitaiApiMetadataParser(RecipeMetadataParser):
                 ):
                     metadata = inner_meta
 
+            # Civitai's image API meta parser mangles the A1111 "Lora hashes"
+            # text field into a quote-wrapped dict entry:
+            #   '"Daphne Blake Cosplay_v1": "e67ebd5e315f"'
+            # The 12-char AutoV3 it carries is more reliable than the stale
+            # 10-char AutoV2 value in the "hashes" dict, so recover it and
+            # let it override the conflicting entry.
+            if isinstance(metadata, dict):
+                for key, hash_value in list(metadata.items()):
+                    if (
+                        isinstance(key, str)
+                        and key.startswith('"')
+                        and isinstance(hash_value, str)
+                        and hash_value.endswith('"')
+                    ):
+                        clean_name = key.strip('"').strip()
+                        clean_hash = hash_value.strip('"').strip()
+                        if clean_name and clean_hash:
+                            hashes_dict = metadata.get("hashes")
+                            if isinstance(hashes_dict, dict):
+                                hashes_dict[f"lora:{clean_name}"] = clean_hash
+
             # Initialize result structure
             result: Dict[str, Any] = {
                 "base_model": None,

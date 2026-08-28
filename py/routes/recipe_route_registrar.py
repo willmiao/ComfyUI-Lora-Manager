@@ -49,6 +49,9 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition("POST", "/api/lm/recipe/move", "move_recipe"),
     RouteDefinition("POST", "/api/lm/recipes/move-bulk", "move_recipes_bulk"),
     RouteDefinition("POST", "/api/lm/recipe/lora/reconnect", "reconnect_lora"),
+    RouteDefinition(
+        "POST", "/api/lm/recipe/lora/mark-hash-invalid", "mark_lora_hash_invalid"
+    ),
     RouteDefinition("GET", "/api/lm/recipes/find-duplicates", "find_duplicates"),
     RouteDefinition("POST", "/api/lm/recipes/bulk-delete", "bulk_delete"),
     RouteDefinition(

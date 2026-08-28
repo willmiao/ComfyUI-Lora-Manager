@@ -146,15 +146,13 @@ class AutomaticMetadataParser(RecipeMetadataParser):
                                     # Initialize hashes dict if it doesn't exist
                                     if "hashes" not in metadata:
                                         metadata["hashes"] = {}
-                                    # Add as lora type in the same format as
-                                    # regular hashes.  Only override an
-                                    # existing entry if its value is empty
-                                    # (Lora hashes is the more reliable
-                                    # source when Hashes JSON has blanks).
+                                    # Lora hashes carries the 12-char AutoV3
+                                    # hash (resolvable on CivitAI and the local
+                                    # autov3 index); the Hashes JSON value is
+                                    # only the 10-char AutoV2 prefix, so on
+                                    # conflict the Lora hashes value wins.
                                     key = f"lora:{lora_name}"
-                                    existing = metadata["hashes"].get(key, "")
-                                    if not existing:
-                                        metadata["hashes"][key] = lora_hash
+                                    metadata["hashes"][key] = lora_hash
 
                             # Remove lora hashes from params section
                             params_section = params_section.replace(lora_hashes_match.group(0), '')

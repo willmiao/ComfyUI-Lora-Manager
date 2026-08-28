@@ -331,6 +331,49 @@ async def test_update_lora_entry_updates_cache_and_file(tmp_path: Path, recipe_s
     assert cached_recipe["fingerprint"] == expected_fingerprint
 
 
+async def test_set_lora_entry_hash_invalid_persists_flag(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "hash-invalid-1"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Hash invalid",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {
+                "file_name": "Daphne Blake Cosplay_v1",
+                "strength": 1.0,
+                "hash": "a2a12bfa01",
+            },
+        ],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    updated_recipe, updated_lora = await scanner.set_lora_entry_hash_invalid(
+        recipe_id, 0, True
+    )
+
+    assert updated_lora["hashInvalid"] is True
+    assert updated_recipe["loras"][0]["hashInvalid"] is True
+    with recipe_path.open("r", encoding="utf-8") as file_obj:
+        persisted = json.load(file_obj)
+    assert persisted["loras"][0]["hashInvalid"] is True
+    assert persisted["loras"][0]["hash"] == "a2a12bfa01"
+
+    cache = await scanner.get_cached_data()
+    cached_recipe = next(item for item in cache.raw_data if item["id"] == recipe_id)
+    assert cached_recipe["loras"][0]["hashInvalid"] is True
+
+    _, cleared_lora = await scanner.set_lora_entry_hash_invalid(recipe_id, 0, False)
+    assert cleared_lora["hashInvalid"] is False
+
+
 @pytest.mark.asyncio
 async def test_load_recipe_rewrites_missing_image_path(tmp_path: Path, recipe_scanner):
     scanner, _ = recipe_scanner
@@ -2210,6 +2253,24 @@ async def test_is_rematch_candidate_rejects_non_dict(tmp_path: Path):
     scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
     malformed: Any = "garbage"
     assert not scanner._is_rematch_candidate(malformed)
+
+
+async def test_is_rematch_candidate_hash_invalid_passes(tmp_path: Path):
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert scanner._is_rematch_candidate(
+        {"hash": "abc", "file_name": "m.safetensors", "hashInvalid": True}
+    )
+
+
+async def test_is_rematch_candidate_healthy_not_in_library_rejected(tmp_path: Path):
+    # A healthy entry whose hash is simply absent from the local library
+    # (recipe imported without downloading the model) must not become a
+    # candidate: its CivitAI-valid hash would be at risk of being
+    # overwritten by the imprecise filename fallback.
+    scanner, _, _ = _make_rematch_scanner([], [], tmp_path)
+    assert not scanner._is_rematch_candidate(
+        {"hash": "abc", "file_name": "m.safetensors", "hashInvalid": False}
+    )
 
 
 # _match_rematch_entry — L1 hash-cache lookup

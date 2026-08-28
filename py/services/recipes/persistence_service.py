@@ -470,6 +470,36 @@ class RecipePersistenceService:
             }
         )
 
+    async def mark_lora_hash_invalid(
+        self,
+        *,
+        recipe_scanner,
+        recipe_id: str,
+        lora_index: int,
+        hash_invalid: bool = True,
+    ) -> PersistenceResult:
+        """Mark a recipe LoRA entry's hash as unresolvable on CivitAI.
+
+        Called when a download attempt by hash returned "Model not found".
+        The flag makes the entry an unresolved rematch candidate without
+        altering its stored hash/file_name.
+        """
+
+        recipe_data, updated_lora = await recipe_scanner.set_lora_entry_hash_invalid(
+            recipe_id,
+            lora_index,
+            hash_invalid=hash_invalid,
+        )
+
+        return PersistenceResult(
+            {
+                "success": True,
+                "recipe_id": recipe_id,
+                "hash_invalid": bool(hash_invalid),
+                "updated_lora": updated_lora,
+            }
+        )
+
     async def bulk_delete(
         self,
         *,
@@ -793,6 +823,7 @@ class RecipePersistenceService:
             "modelName": lora.get("name", ""),
             "modelVersionName": lora.get("version", ""),
             "isDeleted": lora.get("isDeleted", False),
+            "hashInvalid": lora.get("hashInvalid", False),
             "exclude": lora.get("exclude", False),
         }
 

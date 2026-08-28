@@ -113,6 +113,7 @@ class RecipeHandlerSet:
             "update_recipe": self.management.update_recipe,
             "record_recipe_open": self.management.record_recipe_open,
             "reconnect_lora": self.management.reconnect_lora,
+            "mark_lora_hash_invalid": self.management.mark_lora_hash_invalid,
             "find_duplicates": self.query.find_duplicates,
             "move_recipes_bulk": self.management.move_recipes_bulk,
             "bulk_delete": self.management.bulk_delete,
@@ -1592,6 +1593,35 @@ class RecipeManagementHandler:
             self._logger.error("Error reconnecting LoRA: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
 
+    async def mark_lora_hash_invalid(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            data = await request.json()
+            for field in ("recipe_id", "lora_index"):
+                if field not in data:
+                    raise RecipeValidationError(f"Missing required field: {field}")
+
+            result = await self._persistence_service.mark_lora_hash_invalid(
+                recipe_scanner=recipe_scanner,
+                recipe_id=data["recipe_id"],
+                lora_index=int(data["lora_index"]),
+                hash_invalid=bool(data.get("hash_invalid", True)),
+            )
+            return web.json_response(result.payload, status=result.status)
+        except RecipeValidationError as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error(
+                "Error marking LoRA hash invalid: %s", exc, exc_info=True
+            )
+            return web.json_response({"error": str(exc)}, status=500)
+
     async def bulk_delete(self, request: web.Request) -> web.Response:
         try:
             await self._ensure_dependencies_ready()
@@ -2183,14 +2213,21 @@ class RecipeManagementHandler:
             civitai_base_model = civitai_parsed.get("base_model")
             if civitai_base_model and not metadata.get("base_model"):
                 metadata["base_model"] = civitai_base_model
-        elif parsed_embedded:
-            parsed_loras = parsed_embedded.get("loras")
-            if parsed_loras and not metadata.get("loras"):
-                metadata["loras"] = parsed_loras
-            parsed_model = parsed_embedded.get("model")
-            if parsed_model and not metadata.get("checkpoint"):
-                metadata["checkpoint"] = parsed_model
-            if parsed_embedded.get("base_model") and not metadata.get("base_model"):
+
+        # EXIF fills whatever the API-only parse left open — when the image
+        # API meta is null (only modelVersionIds present) the API parse
+        # yields a checkpoint but no LoRAs, while the image EXIF carries the
+        # full resource list.
+        if parsed_embedded:
+            if not metadata.get("loras"):
+                parsed_loras = parsed_embedded.get("loras")
+                if parsed_loras:
+                    metadata["loras"] = parsed_loras
+            if not metadata.get("checkpoint"):
+                parsed_model = parsed_embedded.get("model")
+                if parsed_model:
+                    metadata["checkpoint"] = parsed_model
+            if not metadata.get("base_model") and parsed_embedded.get("base_model"):
                 metadata["base_model"] = parsed_embedded["base_model"]
 
         civitai_client = self._civitai_client_getter()

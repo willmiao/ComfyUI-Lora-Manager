@@ -270,6 +270,22 @@ class RecipeAnalysisService:
                 if merged_gp:
                     result.payload["gen_params"] = merged_gp
 
+                # The API-only parse (meta=null with only modelVersionIds)
+                # yields a checkpoint but no LoRAs; the image EXIF carries the
+                # full resource list. Fill the gaps the API parse left open.
+                if not result.payload.get("loras"):
+                    exif_loras = exif_parsed_result.get("loras") or []
+                    if exif_loras:
+                        result.payload["loras"] = exif_loras
+                if not result.payload.get("checkpoint") and not result.payload.get("model"):
+                    exif_checkpoint = exif_parsed_result.get("model") or exif_parsed_result.get(
+                        "checkpoint"
+                    )
+                    if exif_checkpoint:
+                        result.payload["checkpoint"] = exif_checkpoint
+                if not result.payload.get("base_model") and exif_parsed_result.get("base_model"):
+                    result.payload["base_model"] = exif_parsed_result["base_model"]
+
             if civitai_image_id and image_info and not result.payload.get("error"):
                 # Use the metadata dict we built (may contain modelVersionIds
                 # and browsingLevel from the API root level).  Do NOT pass
