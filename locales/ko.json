@@ -896,7 +896,7 @@
             "hashInvalidTooltip": "이 LoRA 해시는 CivitAI에서 해석할 수 없습니다 - 모델이 업데이트되었을 수 있습니다",
             "download": "다운로드",
             "downloadLoraTooltip": "이 LoRA 다운로드",
-            "preparingDownload": "다운로드 준비 중…",
+            "preparingDownload": "다운로드 준비 중...",
             "reconnect": "다시 연결",
             "reconnectTooltip": "로컬 LoRA와 다시 연결",
             "viewOnCivitai": "CivitAI에서 보기",
@@ -1504,7 +1504,7 @@
                 "notesHint": "Enter로 저장, Shift+Enter로 줄바꿈",
                 "addNotesPlaceholder": "메모를 여기에 추가하세요...",
                 "aboutThisVersion": "이 버전에 대해",
-                "baseModelSearchPlaceholder": "베이스 모델 검색…",
+                "baseModelSearchPlaceholder": "베이스 모델 검색...",
                 "baseModelSuggested": "추천",
                 "baseModelNoMatch": "일치하는 베이스 모델 없음"
             },

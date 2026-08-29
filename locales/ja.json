@@ -160,7 +160,7 @@
         },
         "checkModelUpdates": {
             "label": "アップデートを確認",
-            "loading": "{type} のアップデートを確認中…",
+            "loading": "{type} のアップデートを確認中...",
             "success": "{type} のアップデートが {count} 件見つかりました",
             "none": "すべての {type} は最新です",
             "error": "{type} のアップデート確認に失敗しました: {message}"
@@ -896,7 +896,7 @@
             "hashInvalidTooltip": "このLoRAハッシュはCivitAIで解決できません - モデルが更新された可能性があります",
             "download": "ダウンロード",
             "downloadLoraTooltip": "この LoRA をダウンロード",
-            "preparingDownload": "ダウンロードを準備中…",
+            "preparingDownload": "ダウンロードを準備中...",
             "reconnect": "再接続",
             "reconnectTooltip": "ローカルの LoRA と再接続",
             "viewOnCivitai": "CivitAI で表示",
@@ -1504,7 +1504,7 @@
                 "notesHint": "Enterで保存、Shift+Enterで改行",
                 "addNotesPlaceholder": "メモをここに追加...",
                 "aboutThisVersion": "このバージョンについて",
-                "baseModelSearchPlaceholder": "ベースモデルを検索…",
+                "baseModelSearchPlaceholder": "ベースモデルを検索...",
                 "baseModelSuggested": "おすすめ",
                 "baseModelNoMatch": "該当するベースモデルがありません"
             },
