@@ -72,6 +72,11 @@ python scripts/sync_translation_keys.py
 
 Locale files are in `locales/` (en, zh-CN, zh-TW, ja, ko, fr, de, es, ru, he).
 
+**Before translating anything, read `docs/i18n-translation-guidelines.md`** — it defines the
+term conventions (e.g. "Recipe" stays untranslated in French, 配方 in Chinese; model-type and
+brand names are never translated), per-locale preferred renderings, placeholder rules, and
+the known confusion hot-spots.
+
 ## Code Style
 
 ### Python
