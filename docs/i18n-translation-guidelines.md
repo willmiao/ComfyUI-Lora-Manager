@@ -9,6 +9,11 @@ same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 
+> **Status (2026-08 sweep):** a full audit was executed and the terminology, placeholder,
+> stale-text, and untranslated-block fixes described in §2–§6 were applied across all locales
+> (commits `3c3ac49f` … `fd1227d3`). The tables below are now the **normative target state**,
+> not a to-do list — future edits should preserve these renderings and only add what is new.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -217,99 +222,101 @@ and must be normalized. `en` = keep the English word as-is.
 
 ## 3. Cross-cutting confusion hot-spots (must-fix list)
 
-Ordered by impact. Key paths refer to the current broken values documented in §2.
+All items below were **resolved** in the 2026-08 sweep — treat them as a regression
+watch-list: do not reintroduce these renderings.
 
 1. **Checkpoint rendered as a literal security/road checkpoint** — fr, es, ru, he, zh-CN,
-   zh-TW all have 4–6 keys in the `statistics.*` domain that must revert to "Checkpoint".
-   This is the single most misleading pattern in the codebase.
-2. **"recipe" variants that break the one-noun rule** — fr "recette" (keep Recipe), zh
-   食谱/食譜 (use 配方), de/ja/ru leftover English "Recipe".
-3. **ko `header.filter.tagLogicAny`** — inverted semantics + identical to `tagLogicAll`.
-4. **ja `modals.model.versions.actions.viewLocalTooltip`** = "近日対応予定" ("coming soon") —
-   stale string from an old version of the key; the button actually shows local versions.
-5. **Stale help texts that no longer describe the current `en.json` source** (the
-   en string changed, the translation is from an older wording):
-   - `settings.downloadSkipBaseModels.help` — es/ko/ja/ru describe "applies to all download
-     flows / only supported base models can be selected", source says "versions using the
-     selected base models will be skipped"
-   - `settings.aiProvider.providerHelp` / `apiBaseHelp` — ru/es/fr hard-code provider names
-     or invent "leave empty" instructions not in source
-   - `settings.hideEarlyAccessUpdates.help` — fr/ja are truncated fragments of the current
-     source sentence
-6. **en.json source bugs** (fix in `en.json` first, then re-sync + retranslate):
-   - "Civitai" (50×) vs "CivitAI" (11×) casing split — pick the official "CivitAI" and propagate
-   - `modals.relinkCivitai.helpText.format4` — "CivitArchive" typo → "CivArchive"
-   - `zh-CN recipes.controls.import.downloadLocationPreview` — remove the invented `{path}`
+   zh-TW all had 4–6 keys in the `statistics.*` domain reading as "control point"; reverted
+   to "Checkpoint".
+2. **"recipe" variants that break the one-noun rule** — fr "recette" → "Recipe", zh
+   食谱/食譜 → 配方, de/ja/ru leftover English "Recipe" translated.
+3. **ko `header.filter.tagLogicAny`** — was inverted ("모든 태그 일치 (OR)") and identical
+   to `tagLogicAll`; now "어느 하나의 태그와 일치 (OR)".
+4. **ja `modals.model.versions.actions.viewLocalTooltip`** — was the stale "近日対応予定"
+   ("coming soon"); all 9 locales now describe the actual action.
+5. **Stale help texts** — `settings.downloadSkipBaseModels.help`,
+   `settings.aiProvider.apiBaseHelp`, `settings.hideEarlyAccessUpdates.help` retranslated
+   in all locales to the current `en.json` wording.
+6. **en.json source bugs** (fixed in source, then mirrored):
+   - "Civitai" → "CivitAI" brand casing (values only; key names `relinkCivitai` etc. keep
+     their lowercase form and must not be renamed)
+   - `modals.relinkCivitai.helpText.format4` "CivitArchive" typo → "CivArchive"
+   - `zh-CN recipes.controls.import.downloadLocationPreview` invented `{path}` removed
 
 ---
 
 ## 4. Placeholder contract deviations (current)
 
-`{...}` token sets differ from `en.json` in these keys (callers pass the full param set, so
-they render today, but they violate the contract and would break if the caller changes):
+`{...}` token sets must match `en.json` per key. All deviations found in the 2026-08 sweep
+were fixed, with one *intentional* exception:
 
-| Locale | Key | Deviation |
-|---|---|---|
-| zh-CN | `modals.checkUpdates.title`, `.message` | `{typePlural}` → `{type}` — restore `{typePlural}` |
-| zh-TW | `modals.checkUpdates.title`, `.message` | same |
-| ja | `modals.checkUpdates.title`, `.message` | same |
-| ko | `modals.checkUpdates.title`, `.message` | same |
-| zh-CN | `recipes.controls.import.downloadLocationPreview` | **adds** `{path}` the source lacks (renders literally) — remove |
-| zh-TW | `toast.settings.mappingsUpdated` | drops `{plural}` (`({count} 個對應)`) — acceptable (no plural morphology) but keep source token if possible |
-| zh-TW | `toast.controls.refreshFailed` | drops `{action}` — restore |
-| ko | `toast.settings.mappingsUpdated` | drops `{plural}` — acceptable in Korean, keep if possible |
+**`toast.settings.mappingsUpdated`** — the caller passes a hardcoded English inflection
+(`plural: count !== 1 ? 's' : ''`). Languages that cannot build a plural by appending that
+`s` (zh-CN/zh-TW, ja, ko, de, ru, he) **drop `{plural}`** and render a count-friendly form
+(`({count})` or a measure word); fr and es keep it (`mappage{plural}`, `mapeo{plural}`).
+
+```python
+# keep a copy of this rule next to the key if it ever moves:
+#   fr/es:  "... ({count} mappage{plural})"
+#   de/ru/he: "... ({count})"
+#   zh-CN: "（{count} 条映射）" / zh-TW: "（{count} 個對應）" / ja: "（{count} マッピング）"
+```
+
+Do NOT add `{...}` tokens the source lacks (the caller will not supply them, and the literal
+text renders in the UI), and do NOT rename source tokens (`{typePlural}` stays `{typePlural}`).
 
 ---
 
 ## 5. One term, one rendering — offender matrix
 
-Cross-locale summary of §2 inconsistencies. "✓" = already consistent.
+Cross-locale summary of §2 inconsistencies. "✓" = already consistent. All ✗ cells were
+resolved in the 2026-08 sweep; the row shows the single rendering now in force per locale.
 
 | Term | fr | de | es | ru | he | ja | ko | zh-CN | zh-TW |
 |---|---|---|---|---|---|---|---|---|---|
-| recipe | ✗ Recipe/recette | ✗ Rezept/Recipe | ✓ receta | ✗ рецепт/Recipe | ✓ מתכון | ✗ レシピ/Recipe | ✓ 레시피 | ✗ 配方/食谱 | ✗ 配方/食譜 |
-| Checkpoint | ✗ | ✓ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| Embedding | ✓ | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
-| prompt | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
-| base model | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
-| preset | ✗ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
-| workflow | ✓ | ✓ | ✗ | ✗ | ✓ | ✓ | ✗ | ✓ | ✓ |
-| hash | ✗ | ✓ | ✓ | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
-| metadata | ✗ | ✗ | ✓ | ✓ | ✗ | ✓ | ✓ | ✓ | ✓ |
-| tags | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| duplicates | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| bulk | ✗ | ✗ | ✗ | ✓ | ✗ | ✗ | ✗ | ✓ | ✓ |
+| recipe | Recipe | Rezept | receta | рецепт | מתכון | レシピ | 레시피 | 配方 | 配方 |
+| Checkpoint | Checkpoint | Checkpoint | Checkpoint | Checkpoint | Checkpoint | Checkpoint | Checkpoint | Checkpoint | Checkpoint |
+| Embedding | Embedding | Embedding | Embedding | Embedding | Embedding | Embedding | Embedding | Embedding | Embedding |
+| prompt | Prompt | Prompt | prompt | промпт | פרומפט | プロンプト | 프롬프트 | 提示词 | 提示詞 |
+| base model | modèle de base | Basismodell | modelo base | базовая модель | מודל בסיס | ベースモデル | 베이스 모델 | 基础模型 | 基礎模型 |
+| preset | préréglage | Voreinstellung | preajuste | пресет | קביעה מראש | プリセット | 프리셋 | 预设 | 預設 |
+| workflow | Workflow | Workflow | workflow | Workflow | workflow | ワークフロー | 워크플로 | 工作流 | 工作流 |
+| hash | hash | Hash | hash | хеш | hash | ハッシュ | 해시 | 哈希 | 雜湊 |
+| metadata | métadonnées | Metadaten | metadatos | метаданные | מטא-נתונים | メタデータ | 메타데이터 | 元数据 | 中繼資料 |
+| tags | Tags | Tags | etiquetas | теги | תגיות | タグ | 태그 | 标签 | 標籤 |
+| duplicates | en double | Duplikate | duplicados | дубликаты | כפילויות | 重複 | 중복 | 重复项 | 重複項 |
+| bulk | groupé | Massen- | por lotes | пакетный | בכמות גדולה | 一括 | 일괄 | 批量 | 批量 |
+
+Watch: ja/ko keep the model-type names **Checkpoint/Embedding** and `Diffusion Model` in
+Latin (consistent with their model-type sections) — do not transliterate them as
+チェックポイント/체크포인트.
 
 ---
 
-## 6. Untranslated English leftovers (per locale)
+## 6. Untranslated English leftovers (status)
 
-Values byte-identical to `en.json` that are actual UI sentences (brand names and URL
-placeholders are excluded). Translate them.
+Values byte-identical to `en.json` that are actual UI sentences are bugs (brand names and
+URL placeholders are the exception). As of the 2026-08 sweep, **all previously untranslated
+blocks are translated** in every locale: `recipes.batchImport.*` + `toast.recipes.batchImport*`
+(fr/de/es/ru/he/ja/ko), `banners.communitySupport.*`, `modals.model.license.*`,
+`globalContextMenu.fetchMissingLicenses.*`, the `doctor.*` issue/action/label subset,
+`toast.settings.libraryLoadFailed` / `libraryActivateFailed`, `toast.api.moveFailed`,
+`settings.extraFolderPaths.restartRequired`, `toast.recipes.recipeSaved`,
+`sidebar.dragDrop.moveUnsupported`, `checkpoints.modelTypes.diffusion_model`
+(ja/ko keep the English loanword), `initialization.recipes.title`.
 
-| Feature area | fr | de | es | ru | he | ja | ko | zh-CN | zh-TW |
-|---|---|---|---|---|---|---|---|---|---|
-| `recipes.batchImport.*` (whole modal, ~25–56 keys) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
-| `toast.recipes.batchImport*` (7 keys) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
-| `globalContextMenu.fetchMissingLicenses.*` (5 keys) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✓ |
-| `banners.communitySupport.*` (4 keys incl. long prose) | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✓ | ✗ |
-| `modals.model.license.noImageSell/noRentCivit/noRent/noSell` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `doctor.*` (subset: issues/actions/labels) | ✗ | ✗ | ✗ | ✗ | ✗ | — | — | — | — |
-| `toast.recipes.recipeSaved` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | — | — |
-| `toast.settings.libraryLoadFailed / libraryActivateFailed` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `toast.api.moveFailed` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `settings.extraFolderPaths.restartRequired` | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ | ✗ |
-| `checkpoints.modelTypes.diffusion_model` | — | ✗ | — | ✗ | — | ✗ | ✗ | — | — |
-| `sidebar.dragDrop.moveUnsupported` | — | — | — | — | — | — | — | ✗ | ✗ |
-| `initialization.recipes.title` (English "Recipe Manager") | — | — | — | ✗ | — | ✗ | — | — | — |
-| `uiHelpers.workflow.noPromptTargets` menu path line | — | — | ✗ | ✗ | — | — | — | ✗ | — |
+The only values that remain intentionally identical to `en.json` are non-translatable:
+URL/path placeholders (`https://…`, `C:/…`), numeric presets (`5 (1080p), 6 (2K), 8 (4K)`),
+example token lists (`character, concept, style(toon|toon_style)`), service/provider names
+(`CivitAI → CivArchive → Archive DB`), and the external playlist title
+(`help.updateVlogs.playlistTitle`, de: translated to "LoRA Manager-Update-Playlist").
 
-Legend: ✗ = untranslated (needs work), ✓ = translated and consistent, — = not flagged in
-the audit (assume translated; verify).
+Rule for `uiHelpers.workflow.noPromptTargets`: the second line (`Mark as → Send Prompt
+Target`) quotes literal ComfyUI context-menu items — keep those menu labels in English in
+every locale because that is what the user actually sees in ComfyUI.
 
-Note on the license labels (`modals.model.license.*`): if they are intentionally kept in
-English (CivitAI license boilerplate), make that decision explicit for all locales instead of
-leaving it inconsistent — `zh-CN` already translates the sibling `creditRequired`.
+License labels (`modals.model.license.*`): the restriction labels are now translated in all
+locales (the sibling `creditRequired` has always been translated).
 
 ---
 
