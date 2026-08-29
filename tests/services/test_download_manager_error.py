@@ -1790,3 +1790,140 @@ async def test_concurrent_downloads_with_same_target_path_do_not_destroy_each_ot
         f"Task B reused task A's exact target path instead of a unique one: "
         f"{downloader_paths}"
     )
+
+
+def test_reconcile_failed_aria2_partial_preserves_resumable_pair(tmp_path):
+    """Payload and .aria2 control file are a resumable pair: keep both."""
+    save_path = tmp_path / "model.safetensors"
+    save_path.write_text("partial")
+    control_path = tmp_path / "model.safetensors.aria2"
+    control_path.write_text("control")
+
+    DownloadManager._reconcile_failed_aria2_partial(str(save_path))
+
+    assert save_path.exists()
+    assert control_path.exists()
+
+
+def test_reconcile_failed_aria2_partial_preserves_likely_complete_file(tmp_path):
+    """Payload without a control file means aria2 finished it: keep it."""
+    save_path = tmp_path / "model.safetensors"
+    save_path.write_text("complete")
+
+    DownloadManager._reconcile_failed_aria2_partial(str(save_path))
+
+    assert save_path.exists()
+    assert not (tmp_path / "model.safetensors.aria2").exists()
+
+
+def test_reconcile_failed_aria2_partial_removes_orphaned_control_file(tmp_path):
+    """A control file without its payload cannot resume: remove the orphan."""
+    save_path = tmp_path / "model.safetensors"
+    control_path = tmp_path / "model.safetensors.aria2"
+    control_path.write_text("control")
+
+    DownloadManager._reconcile_failed_aria2_partial(str(save_path))
+
+    assert not control_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_execute_download_preserves_aria2_partial_pair_on_failure(
+    monkeypatch, tmp_path
+):
+    """A failed aria2 transfer keeps the payload and control file for resume."""
+    manager = DownloadManager()
+    settings = get_settings_manager()
+    settings.settings["download_backend"] = "aria2"
+
+    save_dir = tmp_path / "downloads"
+    save_dir.mkdir()
+    target_path = save_dir / "file.safetensors"
+
+    class DummyMetadata:
+        def __init__(self, path: Path):
+            self.file_path = str(path)
+            self.sha256 = "sha256"
+            self.file_name = path.stem
+            self.preview_url = None
+            self.autov3: Optional[str] = None
+
+        def generate_unique_filename(self, *_args, **_kwargs):
+            return os.path.basename(self.file_path)
+
+        def update_file_info(self, _path):
+            return None
+
+        def to_dict(self):
+            return {"file_path": self.file_path}
+
+    class FailingAria2Downloader:
+        async def download_file(
+            self,
+            url,
+            save_path,
+            *,
+            download_id,
+            progress_callback=None,
+            headers=None,
+        ):
+            Path(save_path).write_text("partial")
+            Path(f"{save_path}.aria2").write_text("control")
+            return False, "No URI available."
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_aria2_downloader",
+        AsyncMock(return_value=FailingAria2Downloader()),
+    )
+
+    result = await manager._execute_download(
+        download_urls=["https://civitai.com/api/download/models/1"],
+        save_dir=str(save_dir),
+        metadata=DummyMetadata(target_path),
+        version_info={"images": []},
+        relative_path="",
+        progress_callback=None,
+        model_type="lora",
+        download_id="download-fail",
+    )
+
+    assert result["success"] is False
+    assert result["error"] == "No URI available."
+    assert target_path.exists()
+    assert (save_dir / "file.safetensors.aria2").exists()
+
+
+@pytest.mark.asyncio
+async def test_restore_persisted_downloads_removes_orphaned_aria2_control_file(
+    monkeypatch, tmp_path
+):
+    """A persisted record whose .aria2 control file lost its payload is
+    dropped, and the orphaned control file is removed."""
+    manager = DownloadManager()
+    download_id = "download-orphan"
+    save_path = tmp_path / "file.safetensors"
+    control_path = tmp_path / "file.safetensors.aria2"
+    control_path.write_text("control")
+
+    await manager._aria2_state_store.upsert(
+        download_id,
+        {
+            "download_id": download_id,
+            "transfer_backend": "aria2",
+            "status": "failed",
+            "save_path": str(save_path),
+            "file_path": str(save_path),
+        },
+    )
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_aria2_downloader",
+        AsyncMock(return_value=SimpleNamespace()),
+    )
+
+    await manager._restore_persisted_downloads()
+
+    assert not control_path.exists()
+    assert await manager._aria2_state_store.get(download_id) is None

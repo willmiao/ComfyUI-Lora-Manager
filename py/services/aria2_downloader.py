@@ -82,6 +82,17 @@ CIVITAI_DOWNLOAD_URL_PREFIXES = (
 )
 
 
+def _is_no_uri_available_error(message: str) -> bool:
+    """Return True for aria2's "No URI available" transfer failure.
+
+    aria2 reports this when every URI for the transfer has become unusable.
+    For CivitAI downloads this typically means the temporary signed URL
+    expired mid-download; the transfer can be recovered by resolving a fresh
+    signed URL and re-scheduling with ``continue=true``.
+    """
+    return "no uri available" in message.lower()
+
+
 class Aria2Error(RuntimeError):
     """Raised when aria2 integration fails."""
 
@@ -145,8 +156,11 @@ class Aria2Downloader:
         disappears (e.g. another download restarted the daemon and
         ``close()`` cleared ``_transfers``) or the RPC becomes unreachable,
         the transfer is re-scheduled with ``continue=true`` so the download
-        resumes from the on-disk ``.aria2`` control file. Recovery is bounded
-        by ``MAX_TRANSFER_RECOVERY_ATTEMPTS``.
+        resumes from the on-disk ``.aria2`` control file.  The same
+        re-scheduling happens when aria2 fails with "No URI available"
+        (typically an expired CivitAI signed URL): a fresh URL is resolved
+        and the partial download continues.  Recovery is bounded by
+        ``MAX_TRANSFER_RECOVERY_ATTEMPTS``.
         """
 
         await self._ensure_process()
@@ -201,7 +215,36 @@ class Aria2Downloader:
                     completed_path = self._resolve_completed_path(status, save_path)
                     return True, completed_path
                 if state == "error":
-                    return False, status.get("errorMessage") or "aria2 download failed"
+                    error_message = status.get("errorMessage") or "aria2 download failed"
+                    if (
+                        _is_no_uri_available_error(error_message)
+                        and recovery_attempts < MAX_TRANSFER_RECOVERY_ATTEMPTS
+                    ):
+                        # The signed URL (e.g. CivitAI's) expired before the
+                        # transfer finished.  Re-registering resolves a fresh
+                        # URL and resumes from the on-disk partial payload and
+                        # .aria2 control file via ``continue=true``.
+                        recovery_attempts += 1
+                        logger.warning(
+                            "aria2 transfer %s failed with %r; refreshing the "
+                            "URL and resuming the partial download "
+                            "(attempt %d/%d)",
+                            download_id,
+                            error_message,
+                            recovery_attempts,
+                            MAX_TRANSFER_RECOVERY_ATTEMPTS,
+                        )
+                        await asyncio.sleep(1.0)
+                        await self._ensure_process()
+                        async with self._register_lock:
+                            transfer = await self._register_transfer(
+                                url,
+                                save_path,
+                                download_id=download_id,
+                                headers=headers,
+                            )
+                        continue
+                    return False, error_message
                 if state == "removed":
                     return False, "Download was cancelled"
 

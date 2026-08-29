@@ -717,6 +717,47 @@ class DownloadManager:
                 await asyncio.sleep(delay)
         return False
 
+    @staticmethod
+    def _reconcile_failed_aria2_partial(save_path: str) -> None:
+        """Reconcile on-disk partial state after a failed aria2 transfer.
+
+        The payload and its ``.aria2`` control file form a resumable pair and
+        are preserved together so a retry (with a refreshed URL when needed)
+        can resume via aria2's ``continue=true``.  A control file without its
+        payload cannot resume anything, so the orphan is reported and removed.
+        """
+        control_path = f"{save_path}.aria2"
+        payload_exists = os.path.exists(save_path)
+        control_exists = os.path.exists(control_path)
+
+        if payload_exists and not control_exists:
+            # If the .aria2 control file is missing, aria2 considers the
+            # download complete.  A transient RPC failure may have made us
+            # think the download failed even though the file is fully on disk.
+            # Keep the file so a retry can find it already complete.
+            logger.warning(
+                "aria2 download reported failure but .aria2 file is absent "
+                "for %s — the file is likely complete.  Preserving it for retry.",
+                save_path,
+            )
+        elif payload_exists and control_exists:
+            logger.info(
+                "Preserving aria2 partial download for resume: %s", save_path
+            )
+        elif control_exists:
+            logger.warning(
+                "Orphaned aria2 control file without payload: %s — removing it",
+                control_path,
+            )
+            try:
+                os.remove(control_path)
+            except OSError as exc:
+                logger.warning(
+                    "Failed to remove orphaned aria2 control file %s: %s",
+                    control_path,
+                    exc,
+                )
+
     async def _cleanup_cancelled_download_files(
         self,
         download_id: str,
@@ -1225,6 +1266,24 @@ class DownloadManager:
                         },
                     )
                     continue
+
+                if not os.path.exists(save_path) and os.path.exists(control_path):
+                    # A control file without its payload cannot resume
+                    # anything; report it and clean up the orphan.
+                    logger.warning(
+                        "Orphaned aria2 control file without payload for %s: "
+                        "%s — removing it",
+                        download_id,
+                        control_path,
+                    )
+                    try:
+                        os.remove(control_path)
+                    except OSError as exc:
+                        logger.warning(
+                            "Failed to remove orphaned aria2 control file %s: %s",
+                            control_path,
+                            exc,
+                        )
 
                 await self._aria2_state_store.remove(download_id)
 
@@ -2423,20 +2482,8 @@ class DownloadManager:
                     break
 
                 last_error = result
-                # For aria2: if the .aria2 control file is missing, aria2 considers
-                # the download complete.  A transient RPC failure may have made us
-                # think the download failed even though the file is fully on disk.
-                # Keep the file so a retry can find it already complete.
-                if (
-                    transfer_backend == "aria2"
-                    and os.path.exists(save_path)
-                    and not os.path.exists(f"{save_path}.aria2")
-                ):
-                    logger.warning(
-                        "aria2 download reported failure but .aria2 file is absent "
-                        "for %s — the file is likely complete.  Preserving it for retry.",
-                        save_path,
-                    )
+                if transfer_backend == "aria2":
+                    self._reconcile_failed_aria2_partial(save_path)
                 elif os.path.exists(save_path):
                     try:
                         os.remove(save_path)
