@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "跳过这些基础模型的下载",
-            "help": "适用于所有下载流程。这里只能选择受支持的基础模型。",
+            "help": "启用后，使用所选基础模型的版本将被跳过。",
             "searchPlaceholder": "筛选基础模型...",
             "empty": "没有与当前搜索匹配的基础模型。",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "隐藏抢先体验更新",
-            "help": "抢先体验更新"
+            "help": "启用后，仅有抢先体验更新的模型将不显示“可更新”徽章。"
         },
         "hidePaidUpdates": {
             "label": "隐藏付费更新",
@@ -920,7 +920,7 @@
                 "addTag": "添加",
                 "noTagsAdded": "未添加标签",
                 "lorasInRecipe": "此配方中的 LoRA",
-                "downloadLocationPreview": "下载位置预览：{path}",
+                "downloadLocationPreview": "下载位置预览：",
                 "useDefaultPath": "使用默认路径",
                 "useDefaultPathTooltip": "启用后，文件将自动使用配置的路径模板进行组织",
                 "selectLoraRoot": "选择 LoRA 根目录",
@@ -1382,8 +1382,8 @@
             "action": "全部删除"
         },
         "checkUpdates": {
-            "title": "检查所有 {type} 的更新？",
-            "message": "这会为库中的每个 {type} 检查更新，大型集合可能需要一些时间。",
+            "title": "检查所有 {typePlural} 的更新？",
+            "message": "这会检查库中的每个 {typePlural} 的更新，大型集合可能需要一些时间。",
             "tip": "想分批进行？切换到批量模式，选中需要的模型，然后使用“检查所选更新”。",
             "action": "检查全部"
         },
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "继续跟踪该模型的更新",
                     "ignoreModelUpdates": "忽略该模型的更新",
                     "viewLocalVersions": "查看所有本地版本",
-                    "viewLocalTooltip": "敬请期待"
+                    "viewLocalTooltip": "在主页面上显示该模型的所有本地版本"
                 },
                 "filters": {
                     "label": "基础筛选",
@@ -2161,7 +2161,7 @@
             "checkpointRootsFailed": "加载 Checkpoint 根目录失败：{message}",
             "unetRootsFailed": "加载 Diffusion Model 根目录失败：{message}",
             "embeddingRootsFailed": "加载 Embedding 根目录失败：{message}",
-            "mappingsUpdated": "基础模型路径映射已更新（{count} 条映射{plural}）",
+            "mappingsUpdated": "基础模型路径映射已更新（{count} 条映射）",
             "mappingsCleared": "基础模型路径映射已清除",
             "mappingSaveFailed": "保存基础模型映射失败：{message}",
             "downloadTemplatesUpdated": "下载路径模板已更新",

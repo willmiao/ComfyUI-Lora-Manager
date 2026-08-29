@@ -259,7 +259,7 @@
             "clearAll": "清除所有篩選",
             "any": "任一",
             "all": "全部",
-            "tagLogicAny": "符合任一票籤 (或)",
+            "tagLogicAny": "符合任一標籤 (或)",
             "tagLogicAll": "符合所有標籤 (與)",
             "loraAvailability": "LoRA 可用性",
             "availabilityReady": "可直接使用",
@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "跳過這些基礎模型的下載",
-            "help": "適用於所有下載流程。這裡只能選擇受支援的基礎模型。",
+            "help": "啟用後，使用所選基礎模型的版本將被略過。",
             "searchPlaceholder": "篩選基礎模型...",
             "empty": "沒有符合目前搜尋條件的基礎模型。",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "隱藏搶先體驗更新",
-            "help": "搶先體驗更新"
+            "help": "啟用後，只有搶先體驗更新的模型將不顯示「可更新」徽章。"
         },
         "hidePaidUpdates": {
             "label": "隱藏付費更新",
@@ -1382,8 +1382,8 @@
             "action": "全部刪除"
         },
         "checkUpdates": {
-            "title": "要檢查所有 {type} 的更新嗎？",
-            "message": "這會為資料庫中的每個 {type} 檢查更新，大型收藏可能會花上一些時間。",
+            "title": "要檢查所有 {typePlural} 的更新嗎？",
+            "message": "這會檢查資料庫中的每個 {typePlural} 的更新，大型收藏可能會花上一些時間。",
             "tip": "想分批處理？切換到批次模式，選擇需要的模型，然後使用「檢查所選更新」。",
             "action": "全部檢查"
         },
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "恢復追蹤此模型的更新",
                     "ignoreModelUpdates": "忽略此模型的更新",
                     "viewLocalVersions": "檢視所有本地版本",
-                    "viewLocalTooltip": "敬請期待"
+                    "viewLocalTooltip": "在主頁面上顯示此模型的所有本機版本"
                 },
                 "filters": {
                     "label": "基礎篩選",
@@ -2251,7 +2251,7 @@
         },
         "controls": {
             "reloadFailed": "重新載入 {pageType} 失敗：{message}",
-            "refreshFailed": "刷新 {pageType} 失敗：{message}",
+            "refreshFailed": "{action} {pageType} 失敗：{message}",
             "fetchMetadataFailed": "取得 metadata 失敗：{message}",
             "clearFilterFailed": "清除自訂篩選失敗：{message}"
         },

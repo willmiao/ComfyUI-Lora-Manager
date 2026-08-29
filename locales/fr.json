@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "Ignorer les téléchargements pour certains modèles de base",
-            "help": "S’applique à tous les flux de téléchargement. Seuls les modèles de base pris en charge peuvent être sélectionnés ici.",
+            "help": "Lorsqu'elle est activée, les versions utilisant les modèles de base sélectionnés seront ignorées.",
             "searchPlaceholder": "Filtrer les modèles de base...",
             "empty": "Aucun modèle de base ne correspond à la recherche actuelle.",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "Masquer les mises à jour en accès anticipé",
-            "help": "Seulement les mises à jour en accès anticipé"
+            "help": "Lorsqu'elle est activée, les modèles qui n'ont que des mises à jour en accès anticipé n'afficheront pas le badge « Mise à jour disponible »."
         },
         "hidePaidUpdates": {
             "label": "Masquer les mises à jour payantes",
@@ -708,7 +708,7 @@
                 "custom": "Personnalisé (compatible OpenAI)"
             },
             "apiBase": "URL de base de l'API",
-            "apiBaseHelp": "L'URL de base pour l'API LLM (ex. https://api.openai.com/v1). Laissez vide pour utiliser le fournisseur par défaut.",
+            "apiBaseHelp": "L'URL de base pour l'API LLM. Sélectionnez un préréglage ou saisissez une URL personnalisée. La liste déroulante affiche les préréglages de tous les fournisseurs pris en charge.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "Clé API",
             "apiKeyHelp": "Votre clé API du fournisseur LLM. Stockée localement, jamais envoyée à un serveur autre que votre fournisseur LLM choisi.",
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "Reprendre les mises à jour pour ce modèle",
                     "ignoreModelUpdates": "Ignorer les mises à jour pour ce modèle",
                     "viewLocalVersions": "Voir toutes les versions locales",
-                    "viewLocalTooltip": "Bientôt disponible"
+                    "viewLocalTooltip": "Afficher toutes les versions locales de ce modèle sur la page principale"
                 },
                 "filters": {
                     "label": "Filtre de base",

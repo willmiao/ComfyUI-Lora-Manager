@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "דלג על הורדות עבור מודלי בסיס",
-            "help": "חל על כל תהליכי ההורדה. ניתן לבחור כאן רק מודלי בסיס נתמכים.",
+            "help": "כשהאפשרות מופעלת, גרסאות המשתמשות במודלי הבסיס שנבחרו ידולגו.",
             "searchPlaceholder": "סנן מודלי בסיס...",
             "empty": "אין מודלי בסיס התואמים לחיפוש הנוכחי.",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "הסתר עדכוני גישה מוקדמת",
-            "help": "רק עדכוני גישה מוקדמת"
+            "help": "כשהאפשרות מופעלת, מודלים עם עדכוני גישה מוקדמת בלבד לא יציגו תג «עדכון זמין»."
         },
         "hidePaidUpdates": {
             "label": "הסתר עדכונים בתשלום",
@@ -708,7 +708,7 @@
                 "custom": "מותאם אישית (תואם OpenAI)"
             },
             "apiBase": "כתובת בסיס API",
-            "apiBaseHelp": "כתובת ה-URL הבסיסית ל-API של LLM (לדוגמה https://api.openai.com/v1). השאר ריק לשימוש בברירת המחדל של הספק.",
+            "apiBaseHelp": "כתובת ה-URL הבסיסית ל-API של LLM. בחר קביעה מראש או הזן כתובת URL מותאמת אישית. התפריט הנפתח מציג קביעות מוגדרות מראש עבור כל הספקים הנתמכים.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "מפתח API",
             "apiKeyHelp": "מפתח ה-API של ספק ה-LLM שלך. נשמר מקומית, לעולם לא נשלח לשרת כלשהו מלבד ספק ה-LLM שבחרת.",
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "המשך עדכונים עבור מודל זה",
                     "ignoreModelUpdates": "התעלם מעדכונים עבור מודל זה",
                     "viewLocalVersions": "הצג את כל הגרסאות המקומיות",
-                    "viewLocalTooltip": "יגיע בקרוב"
+                    "viewLocalTooltip": "הצג את כל הגרסאות המקומיות של המודל הזה בדף הראשי"
                 },
                 "filters": {
                     "label": "מסנן בסיס",
@@ -2161,7 +2161,7 @@
             "checkpointRootsFailed": "טעינת שורשי checkpoint נכשלה: {message}",
             "unetRootsFailed": "טעינת שורשי Diffusion Model נכשלה: {message}",
             "embeddingRootsFailed": "טעינת שורשי embedding נכשלה: {message}",
-            "mappingsUpdated": "מיפויי נתיבי מודל בסיס עודכנו ({count} מיפוי{plural})",
+            "mappingsUpdated": "מיפויי נתיבי מודל בסיס עודכנו ({count})",
             "mappingsCleared": "מיפויי נתיבי מודל בסיס נוקו",
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
             "downloadTemplatesUpdated": "תבניות נתיב הורדה עודכנו",

@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "ベースモデルのダウンロードをスキップ",
-            "help": "すべてのダウンロードフローに適用されます。ここでは対応しているベースモデルのみ選択できます。",
+            "help": "有効にすると、選択したベースモデルを使用するバージョンはスキップされます。",
             "searchPlaceholder": "ベースモデルを絞り込む...",
             "empty": "現在の検索に一致するベースモデルはありません。",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "早期アクセス更新を非表示",
-            "help": "早期アクセスのみの更新"
+            "help": "有効にすると、早期アクセス更新のみのモデルには「更新あり」バッジが表示されません。"
         },
         "hidePaidUpdates": {
             "label": "有料更新を非表示",
@@ -708,7 +708,7 @@
                 "custom": "カスタム（OpenAI 互換）"
             },
             "apiBase": "APIベースURL",
-            "apiBaseHelp": "LLM APIのベースURL（例：https://api.openai.com/v1）。空の場合はプロバイダーのデフォルトが使用されます。",
+            "apiBaseHelp": "LLM APIのベースURL。プリセットを選択するか、カスタムURLを入力してください。ドロップダウンには対応しているすべてのプロバイダーのプリセットが表示されます。",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "APIキー",
             "apiKeyHelp": "LLMプロバイダーのAPIキー。ローカルに保存され、選択したLLMプロバイダー以外のサーバーに送信されることはありません。",
@@ -1382,8 +1382,8 @@
             "action": "すべて削除"
         },
         "checkUpdates": {
-            "title": "すべての{type}の更新を確認しますか？",
-            "message": "ライブラリ内のすべての{type}で更新を確認します。コレクションが大きい場合は時間がかかることがあります。",
+            "title": "すべての{typePlural}の更新を確認しますか？",
+            "message": "ライブラリ内のすべての{typePlural}で更新を確認します。コレクションが大きい場合は時間がかかることがあります。",
             "tip": "少しずつ確認したい場合はバルクモードに切り替え、必要なモデルを選んで「選択項目の更新を確認」を使ってください。",
             "action": "すべて確認"
         },
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "このモデルの更新を再開",
                     "ignoreModelUpdates": "このモデルの更新を無視",
                     "viewLocalVersions": "ローカルの全バージョンを表示",
-                    "viewLocalTooltip": "近日対応予定"
+                    "viewLocalTooltip": "このモデルのすべてのローカルバージョンをメインページで表示"
                 },
                 "filters": {
                     "label": "ベースフィルター",
@@ -2161,7 +2161,7 @@
             "checkpointRootsFailed": "checkpointルートの読み込みに失敗しました：{message}",
             "unetRootsFailed": "Diffusion Modelルートの読み込みに失敗しました：{message}",
             "embeddingRootsFailed": "embeddingルートの読み込みに失敗しました：{message}",
-            "mappingsUpdated": "ベースモデルパスマッピングが更新されました（{count} マッピング{plural}）",
+            "mappingsUpdated": "ベースモデルパスマッピングが更新されました（{count} マッピング）",
             "mappingsCleared": "ベースモデルパスマッピングがクリアされました",
             "mappingSaveFailed": "ベースモデルマッピングの保存に失敗しました：{message}",
             "downloadTemplatesUpdated": "ダウンロードパステンプレートが更新されました",

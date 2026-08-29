@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "Downloads für Basismodelle überspringen",
-            "help": "Gilt für alle Download-Abläufe. Hier können nur unterstützte Basismodelle ausgewählt werden.",
+            "help": "Wenn aktiviert, werden Versionen, die die ausgewählten Basismodelle verwenden, übersprungen.",
             "searchPlaceholder": "Basismodelle filtern...",
             "empty": "Keine Basismodelle entsprechen der aktuellen Suche.",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "Früher Zugriff Updates ausblenden",
-            "help": "Nur Early-Access-Updates"
+            "help": "Wenn aktiviert, zeigen Modelle mit ausschließlich Early-Access-Updates kein Abzeichen „Update verfügbar“."
         },
         "hidePaidUpdates": {
             "label": "Bezahlte Updates ausblenden",
@@ -708,7 +708,7 @@
                 "custom": "Benutzerdefiniert (OpenAI-kompatibel)"
             },
             "apiBase": "API-Basis-URL",
-            "apiBaseHelp": "Die Basis-URL für die LLM-API (z.B. https://api.openai.com/v1). Leer lassen, um die Anbietervoreinstellung zu verwenden.",
+            "apiBaseHelp": "Die Basis-URL für die LLM-API. Wählen Sie eine Voreinstellung oder geben Sie eine benutzerdefinierte URL ein. Die Dropdown-Liste zeigt Voreinstellungen für alle unterstützten Anbieter.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "API-Schlüssel",
             "apiKeyHelp": "Ihr LLM-API-Schlüssel. Wird lokal gespeichert und niemals an einen anderen Server außer Ihrem gewählten LLM-Anbieter gesendet.",
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "Aktualisierungen für dieses Modell fortsetzen",
                     "ignoreModelUpdates": "Aktualisierungen für dieses Modell ignorieren",
                     "viewLocalVersions": "Alle lokalen Versionen anzeigen",
-                    "viewLocalTooltip": "Demnächst verfügbar"
+                    "viewLocalTooltip": "Alle lokalen Versionen dieses Modells auf der Hauptseite anzeigen"
                 },
                 "filters": {
                     "label": "Basisfilter",
@@ -2161,7 +2161,7 @@
             "checkpointRootsFailed": "Fehler beim Laden der Checkpoint-Stammverzeichnisse: {message}",
             "unetRootsFailed": "Fehler beim Laden der Diffusion-Modell-Stammverzeichnisse: {message}",
             "embeddingRootsFailed": "Fehler beim Laden der Embedding-Stammverzeichnisse: {message}",
-            "mappingsUpdated": "Basis-Modell-Pfad-Zuordnungen aktualisiert ({count} Zuordnung{plural})",
+            "mappingsUpdated": "Basis-Modell-Pfad-Zuordnungen aktualisiert ({count})",
             "mappingsCleared": "Basis-Modell-Pfad-Zuordnungen gelöscht",
             "mappingSaveFailed": "Fehler beim Speichern der Basis-Modell-Zuordnungen: {message}",
             "downloadTemplatesUpdated": "Download-Pfad-Vorlagen aktualisiert",

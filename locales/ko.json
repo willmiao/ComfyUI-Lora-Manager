@@ -259,7 +259,7 @@
             "clearAll": "모든 필터 지우기",
             "any": "아무",
             "all": "모두",
-            "tagLogicAny": "모든 태그 일치 (OR)",
+            "tagLogicAny": "어느 하나의 태그와 일치 (OR)",
             "tagLogicAll": "모든 태그 일치 (AND)",
             "loraAvailability": "LoRA 가용성",
             "availabilityReady": "바로 사용 가능",
@@ -428,7 +428,7 @@
         },
         "downloadSkipBaseModels": {
             "label": "기본 모델 다운로드 건너뛰기",
-            "help": "모든 다운로드 흐름에 적용됩니다. 여기서는 지원되는 기본 모델만 선택할 수 있습니다.",
+            "help": "활성화하면 선택한 베이스 모델을 사용하는 버전은 건너뜁니다.",
             "searchPlaceholder": "기본 모델 필터링...",
             "empty": "현재 검색과 일치하는 기본 모델이 없습니다.",
             "summary": {
@@ -625,7 +625,7 @@
         },
         "hideEarlyAccessUpdates": {
             "label": "얼리 액세스 업데이트 숨기기",
-            "help": "얼리 액세스 업데이트만"
+            "help": "활성화하면 얼리 액세스 업데이트만 있는 모델에는 '업데이트 가능' 배지가 표시되지 않습니다."
         },
         "hidePaidUpdates": {
             "label": "유료 업데이트 숨기기",
@@ -708,7 +708,7 @@
                 "custom": "사용자 정의 (OpenAI 호환)"
             },
             "apiBase": "API 기본 URL",
-            "apiBaseHelp": "LLM API의 기본 URL입니다 (예: https://api.openai.com/v1). 비워두면 제공자 기본값이 사용됩니다.",
+            "apiBaseHelp": "LLM API의 기본 URL입니다. 프리셋을 선택하거나 사용자 정의 URL을 입력하세요. 드롭다운에 지원되는 모든 제공자의 프리셋이 표시됩니다.",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "API 키",
             "apiKeyHelp": "LLM 제공자의 API 키입니다. 로컬에 저장되며 선택한 LLM 제공자 외의 서버로 전송되지 않습니다.",
@@ -1382,8 +1382,8 @@
             "action": "모두 삭제"
         },
         "checkUpdates": {
-            "title": "{type} 전체 업데이트를 확인할까요?",
-            "message": "라이브러리에 있는 모든 {type}의 업데이트를 확인합니다. 컬렉션이 클수록 시간이 조금 더 걸릴 수 있습니다.",
+            "title": "{typePlural} 전체 업데이트를 확인할까요?",
+            "message": "라이브러리에 있는 모든 {typePlural}의 업데이트를 확인합니다. 컬렉션이 클수록 시간이 조금 더 걸릴 수 있습니다.",
             "tip": "나눠서 진행하고 싶다면 벌크 모드로 전환해 필요한 모델만 선택한 뒤 \"선택 항목 업데이트 확인\"을 사용하세요.",
             "action": "전체 확인"
         },
@@ -1665,7 +1665,7 @@
                     "resumeModelUpdates": "이 모델 업데이트 재개",
                     "ignoreModelUpdates": "이 모델 업데이트 무시",
                     "viewLocalVersions": "로컬 버전 모두 보기",
-                    "viewLocalTooltip": "곧 제공 예정"
+                    "viewLocalTooltip": "이 모델의 모든 로컬 버전을 메인 페이지에 표시"
                 },
                 "filters": {
                     "label": "기본 필터",
