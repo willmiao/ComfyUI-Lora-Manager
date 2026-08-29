@@ -860,6 +860,7 @@
         "actions": {
             "sendCheckpoint": "שלח ל-ComfyUI",
             "sendRecipe": "שלח ל-ComfyUI",
+            "copyRecipeSyntax": "העתק תחביר מתכון",
             "deleteRecipeWithShortcut": "מחק מתכון (Del)"
         },
         "navigation": {

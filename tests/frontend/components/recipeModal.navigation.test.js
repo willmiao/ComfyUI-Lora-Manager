@@ -110,6 +110,7 @@ function recipeModalFixture() {
           </div>
           <div class="recipe-header-actions" id="recipeHeaderActions">
             <button class="modal-send-btn" id="sendRecipeBtn"><i class="fas fa-paper-plane"></i></button>
+            <button class="modal-copy-btn" id="copyRecipeSyntaxBtn"><i class="fas fa-copy"></i></button>
           </div>
           <div id="recipeTagsContainer"></div>
         </header>

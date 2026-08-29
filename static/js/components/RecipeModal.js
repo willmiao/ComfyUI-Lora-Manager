@@ -1383,6 +1383,15 @@ class RecipeModal {
             });
         }
 
+        // Copy recipe syntax button (header actions)
+        const copyRecipeSyntaxBtn = document.getElementById('copyRecipeSyntaxBtn');
+        if (copyRecipeSyntaxBtn) {
+            copyRecipeSyntaxBtn.addEventListener('click', () => {
+                // Use backend API to get recipe syntax
+                this.fetchAndCopyRecipeSyntax();
+            });
+        }
+
         // Send prompt to workflow buttons
         const sendPromptBtn = document.getElementById('sendPromptBtn');
         const sendNegativePromptBtn = document.getElementById('sendNegativePromptBtn');
@@ -1464,6 +1473,35 @@ class RecipeModal {
     // Helper method to copy text to clipboard
     copyToClipboard(text, successMessage) {
         copyToClipboard(text, successMessage);
+    }
+
+    // Fetch recipe syntax from backend and copy to clipboard
+    async fetchAndCopyRecipeSyntax() {
+        if (!this.recipeId) {
+            showToast('toast.recipes.noRecipeId', {}, 'error');
+            return;
+        }
+
+        try {
+            // Fetch recipe syntax from backend
+            const response = await fetch(`/api/lm/recipe/${this.recipeId}/syntax`);
+
+            if (!response.ok) {
+                throw new Error(`Failed to get recipe syntax: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            if (data.success && data.syntax) {
+                // Use the centralized copyToClipboard utility function
+                await copyToClipboard(data.syntax, 'Recipe syntax copied to clipboard');
+            } else {
+                throw new Error(data.error || 'No syntax returned from server');
+            }
+        } catch (error) {
+            console.error('Error fetching recipe syntax:', error);
+            showToast('toast.recipes.copyFailed', { message: error.message }, 'error');
+        }
     }
 
     // Send recipe to ComfyUI workflow

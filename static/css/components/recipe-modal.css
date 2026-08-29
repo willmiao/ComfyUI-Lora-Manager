@@ -190,6 +190,44 @@
     justify-content: center;
 }
 
+/* Icon-only companion to the Send button: same pill style as its neighbors,
+   just without the text label. */
+.modal-copy-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px 10px;
+    background: var(--surface-subtle);
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.9em;
+    transition: var(--transition-base);
+}
+
+[data-theme="dark"] .modal-copy-btn {
+    background: var(--surface-subtle);
+    border: 1px solid var(--lora-border);
+}
+
+.modal-copy-btn:hover {
+    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.1);
+    border-color: var(--lora-accent);
+    transform: translateY(-1px);
+}
+
+.modal-copy-btn:active {
+    transform: translateY(0);
+}
+
+.modal-copy-btn i {
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
 @media (max-height: 860px) {
     .recipe-header-actions {
         padding-bottom: 4px;

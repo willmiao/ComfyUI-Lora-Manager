@@ -860,6 +860,7 @@
         "actions": {
             "sendCheckpoint": "发送到 ComfyUI",
             "sendRecipe": "发送到 ComfyUI",
+            "copyRecipeSyntax": "复制配方语法",
             "deleteRecipeWithShortcut": "删除配方（Del）"
         },
         "navigation": {

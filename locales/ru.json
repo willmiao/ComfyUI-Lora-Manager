@@ -860,6 +860,7 @@
         "actions": {
             "sendCheckpoint": "Отправить в ComfyUI",
             "sendRecipe": "Отправить в ComfyUI",
+            "copyRecipeSyntax": "Копировать синтаксис рецепта",
             "deleteRecipeWithShortcut": "Удалить рецепт (Del)"
         },
         "navigation": {

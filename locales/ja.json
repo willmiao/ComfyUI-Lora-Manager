@@ -860,6 +860,7 @@
         "actions": {
             "sendCheckpoint": "ComfyUIへ送信",
             "sendRecipe": "ComfyUIへ送信",
+            "copyRecipeSyntax": "レシピ構文をコピー",
             "deleteRecipeWithShortcut": "レシピを削除（Del）"
         },
         "navigation": {

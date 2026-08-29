@@ -860,6 +860,7 @@
         "actions": {
             "sendCheckpoint": "ComfyUI로 보내기",
             "sendRecipe": "ComfyUI로 보내기",
+            "copyRecipeSyntax": "레시피 문법 복사",
             "deleteRecipeWithShortcut": "레시피 삭제(Del)"
         },
         "navigation": {

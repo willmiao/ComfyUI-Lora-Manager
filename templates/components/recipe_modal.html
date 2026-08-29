@@ -14,10 +14,13 @@
                     </button>
                 </div>
             </div>
-            <!-- Header Actions: Send button is static; source URL button is appended dynamically in RecipeModal.js -->
+            <!-- Header Actions: Send and Copy buttons are static; source URL button is appended dynamically in RecipeModal.js -->
             <div class="recipe-header-actions" id="recipeHeaderActions">
                 <button class="modal-send-btn" id="sendRecipeBtn" title="Send Recipe to ComfyUI">
                     <i class="fas fa-paper-plane"></i> <span>{{ t('recipes.actions.sendRecipe') }}</span>
+                </button>
+                <button class="modal-copy-btn" id="copyRecipeSyntaxBtn" title="{{ t('recipes.actions.copyRecipeSyntax') }}" aria-label="{{ t('recipes.actions.copyRecipeSyntax') }}">
+                    <i class="fas fa-copy" aria-hidden="true"></i>
                 </button>
                 <button class="modal-delete-btn" id="deleteRecipeBtn" title="{{ t('recipes.actions.deleteRecipeWithShortcut') }}" aria-label="{{ t('recipes.actions.deleteRecipeWithShortcut') }}">
                     <i class="fas fa-trash" aria-hidden="true"></i>
