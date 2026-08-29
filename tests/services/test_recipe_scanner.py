@@ -375,6 +375,34 @@ async def test_set_lora_entry_hash_invalid_persists_flag(tmp_path: Path, recipe_
 
 
 @pytest.mark.asyncio
+async def test_get_recipe_syntax_tokens_skips_unobtainable_loras(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "syntax-skip-1"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Syntax skip",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [
+            {"file_name": "usable_lora", "strength": 0.8, "hash": ""},
+            {"file_name": "deleted_lora", "strength": 1.0, "hash": "", "isDeleted": True},
+            {"file_name": "invalid_hash_lora", "strength": 1.0, "hash": "", "hashInvalid": True},
+        ],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    tokens = await scanner.get_recipe_syntax_tokens(recipe_id)
+
+    assert tokens == ["<lora:usable_lora:0.8>"]
+
+
+@pytest.mark.asyncio
 async def test_load_recipe_rewrites_missing_image_path(tmp_path: Path, recipe_scanner):
     scanner, _ = recipe_scanner
     recipes_dir = Path(config.loras_roots[0]) / "recipes"

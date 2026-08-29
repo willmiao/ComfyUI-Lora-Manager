@@ -3889,7 +3889,10 @@ class RecipeScanner:
                         break
 
             if not file_name:
-                if lora.get("isDeleted", False):
+                # LoRAs deleted from the source or with an unresolvable hash
+                # cannot be downloaded; skip them instead of emitting a token
+                # pointing at a file that does not exist locally.
+                if lora.get("isDeleted", False) or lora.get("hashInvalid", False):
                     continue
                 file_name = lora.get("file_name", "unknown-lora")
                 folder = lora.get("folder", "")

@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "אין LoRAs במתכון הזה",
             "allAvailable": "כל ה-LoRAs זמינים - מוכן לשימוש",
-            "missing": "{missing} מתוך {total} LoRAs חסרים"
+            "missing": "{missing} מתוך {total} LoRAs חסרים",
+            "missingAndUnavailable": "{missing} מתוך {total} LoRAs חסרים, {unavailable} לא זמינים (נמחקו מהמקור או hash שלא ניתן לפתור)",
+            "partial": "{unavailable} מתוך {total} LoRAs לא זמינים (נמחקו מהמקור או hash שלא ניתן לפתור) - ידולגו בעת שימוש במתכון",
+            "noneUsable": "אין LoRAs שמישים - {unavailable} מתוך {total} נמחקו מהמקור או hash שלא ניתן לפתור"
         },
         "resources": {
             "inLibrary": "בספרייה",

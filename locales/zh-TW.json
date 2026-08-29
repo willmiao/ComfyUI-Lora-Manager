@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "此配方不含 LoRA",
             "allAvailable": "所有 LoRA 皆已就緒 - 可直接使用",
-            "missing": "{total} 個 LoRA 中缺少 {missing} 個"
+            "missing": "{total} 個 LoRA 中缺少 {missing} 個",
+            "missingAndUnavailable": "{total} 個 LoRA 中缺少 {missing} 個，{unavailable} 個不可用（已從來源刪除或雜湊無法解析）",
+            "partial": "{total} 個 LoRA 中 {unavailable} 個不可用（已從來源刪除或雜湊無法解析）- 使用配方時將被略過",
+            "noneUsable": "沒有可用的 LoRA - {total} 個中 {unavailable} 個已從來源刪除或雜湊無法解析"
         },
         "resources": {
             "inLibrary": "已在庫存",

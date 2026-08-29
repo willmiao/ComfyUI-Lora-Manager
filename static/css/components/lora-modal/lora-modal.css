@@ -1078,6 +1078,19 @@
     color: #facc15;
 }
 
+/* Partial: usable but degraded — some LoRAs are unobtainable and skipped.
+   Orange sits between ready green and missing amber. */
+.recipe-card__badge--partial {
+    background: rgba(249, 115, 22, 0.2);
+    color: #fb923c;
+}
+
+/* Unavailable: no usable LoRA at all — red marks the recipe as dead. */
+.recipe-card__badge--unavailable {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
 .recipe-card__badge--empty {
     background: rgba(148, 163, 184, 0.18);
     color: #e2e8f0;
@@ -1091,6 +1104,16 @@
 [data-theme="light"] .recipe-card__badge--missing {
     color: #9f580a;
     background: rgba(245, 199, 43, 0.22);
+}
+
+[data-theme="light"] .recipe-card__badge--partial {
+    color: #c2410c;
+    background: rgba(249, 115, 22, 0.18);
+}
+
+[data-theme="light"] .recipe-card__badge--unavailable {
+    color: #b91c1c;
+    background: rgba(239, 68, 68, 0.16);
 }
 
 [data-theme="light"] .recipe-card__badge--empty {

@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "이 레시피에는 LoRA가 없습니다",
             "allAvailable": "모든 LoRA 사용 가능 - 바로 사용 가능",
-            "missing": "총 {total}개 중 {missing}개 LoRA 누락"
+            "missing": "총 {total}개 중 {missing}개 LoRA 누락",
+            "missingAndUnavailable": "총 {total}개 중 {missing}개 LoRA 누락, {unavailable}개 사용 불가(소스에서 삭제되었거나 해시를 확인할 수 없음)",
+            "partial": "총 {total}개 중 {unavailable}개 LoRA 사용 불가(소스에서 삭제되었거나 해시를 확인할 수 없음) - 레시피 사용 시 건너뜁니다",
+            "noneUsable": "사용 가능한 LoRA가 없습니다 - 총 {total}개 중 {unavailable}개가 소스에서 삭제되었거나 해시를 확인할 수 없습니다"
         },
         "resources": {
             "inLibrary": "라이브러리에 있음",

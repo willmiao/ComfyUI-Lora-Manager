@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "В этом рецепте нет LoRAs",
             "allAvailable": "Все LoRAs доступны - Готово к использованию",
-            "missing": "Отсутствует {missing} из {total} LoRAs"
+            "missing": "Отсутствует {missing} из {total} LoRAs",
+            "missingAndUnavailable": "Отсутствует {missing} из {total} LoRAs, {unavailable} недоступны (удалены из источника или хеш не разрешается)",
+            "partial": "{unavailable} из {total} LoRAs недоступны (удалены из источника или хеш не разрешается) - будут пропущены при использовании рецепта",
+            "noneUsable": "Нет доступных LoRAs - {unavailable} из {total} удалены из источника или хеш не разрешается"
         },
         "resources": {
             "inLibrary": "В библиотеке",

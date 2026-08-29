@@ -130,14 +130,61 @@ describe('RecipeCard LoRA status pill', () => {
     expect(card.element.querySelector('.lora-count.missing')).toBeNull();
   });
 
-  it('does not count deleted LoRAs as missing', async () => {
+  it('marks deleted-from-source LoRAs as partial instead of ready', async () => {
     const card = await createCard([
       { name: 'a', inLibrary: true },
       { name: 'b', inLibrary: false, isDeleted: true },
     ]);
 
     expect(card.element.querySelector('.lora-count.missing')).toBeNull();
-    expect(card.element.querySelector('.lora-count.ready')).not.toBeNull();
+    expect(card.element.querySelector('.lora-count.ready')).toBeNull();
+
+    const pill = card.element.querySelector('.lora-count.partial');
+    expect(pill).not.toBeNull();
+    expect(pill.querySelector('.fa-circle-minus')).not.toBeNull();
+    expect(pill.textContent).toContain('1/2');
+    expect(pill.title).toBe('1 of 2 LoRAs unavailable (deleted from source or unresolvable hash) - skipped when recipe is used');
+  });
+
+  it('treats an unresolvable hash as unobtainable, not missing', async () => {
+    const card = await createCard([
+      { name: 'a', inLibrary: true },
+      { name: 'b', inLibrary: false, hashInvalid: true },
+    ]);
+
+    expect(card.element.querySelector('.lora-count.missing')).toBeNull();
+
+    const pill = card.element.querySelector('.lora-count.partial');
+    expect(pill).not.toBeNull();
+    expect(pill.textContent).toContain('1/2');
+  });
+
+  it('shows 0/n unavailable when every LoRA is deleted and none is in the library', async () => {
+    const card = await createCard([
+      { name: 'a', inLibrary: false, isDeleted: true },
+      { name: 'b', inLibrary: false, isDeleted: true },
+    ]);
+
+    const pill = card.element.querySelector('.lora-count.unavailable');
+    expect(pill).not.toBeNull();
+    expect(pill.querySelector('.fa-ban')).not.toBeNull();
+    expect(pill.textContent).toContain('0/2');
+    expect(pill.title).toBe('No usable LoRAs - 2 of 2 deleted from source or unresolvable hash');
+    expect(card.element.querySelector('.lora-count.ready')).toBeNull();
+  });
+
+  it('keeps the actionable missing state when LoRAs are both missing and deleted', async () => {
+    const card = await createCard([
+      { name: 'a', inLibrary: true },
+      { name: 'b', inLibrary: false },
+      { name: 'c', inLibrary: false, isDeleted: true },
+    ]);
+
+    const pill = card.element.querySelector('.lora-count.missing');
+    expect(pill).not.toBeNull();
+    expect(pill.textContent).toContain('1/3');
+    expect(pill.title).toBe('1 of 3 LoRAs missing, 1 unavailable (deleted from source or unresolvable hash)');
+    expect(card.element.querySelector('.lora-count.partial')).toBeNull();
   });
 
   it('shows a neutral layers icon with a bare 0 when the recipe has no LoRAs', async () => {

@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "Aucun LoRA dans cette Recipe",
             "allAvailable": "Tous les LoRAs sont disponibles - Prêt à l'emploi",
-            "missing": "{missing} LoRA(s) manquant(s) sur {total}"
+            "missing": "{missing} LoRA(s) manquant(s) sur {total}",
+            "missingAndUnavailable": "{missing} LoRA(s) manquant(s) sur {total}, {unavailable} indisponible(s) (supprimé(s) de la source ou hash irrésolvable)",
+            "partial": "{unavailable} LoRA(s) indisponible(s) sur {total} (supprimé(s) de la source ou hash irrésolvable) - ignoré(s) lors de l'utilisation de la Recipe",
+            "noneUsable": "Aucun LoRA utilisable - {unavailable} sur {total} supprimé(s) de la source ou hash irrésolvable"
         },
         "resources": {
             "inLibrary": "Dans la bibliothèque",

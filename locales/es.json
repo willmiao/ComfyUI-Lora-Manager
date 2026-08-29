@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "No hay LoRAs en esta receta",
             "allAvailable": "Todos los LoRAs disponibles - Listo para usar",
-            "missing": "Faltan {missing} de {total} LoRAs"
+            "missing": "Faltan {missing} de {total} LoRAs",
+            "missingAndUnavailable": "Faltan {missing} de {total} LoRAs, {unavailable} no disponibles (eliminados de la fuente o hash no resoluble)",
+            "partial": "{unavailable} de {total} LoRAs no disponibles (eliminados de la fuente o hash no resoluble) - se omiten al usar la receta",
+            "noneUsable": "No hay LoRAs utilizables - {unavailable} de {total} eliminados de la fuente o hash no resoluble"
         },
         "resources": {
             "inLibrary": "En la biblioteca",

@@ -30,8 +30,9 @@ export class BulkMissingLoraDownloadManager {
             
             if (recipe.loras && Array.isArray(recipe.loras)) {
                 recipe.loras.forEach(lora => {
-                    // Only include LoRAs not in library and not deleted
-                    if (!lora.inLibrary && !lora.isDeleted) {
+                    // Only include LoRAs not in library and still downloadable
+                    // (not deleted from the source, hash still resolvable)
+                    if (!lora.inLibrary && !lora.isDeleted && !lora.hashInvalid) {
                         const uniqueKey = lora.hash || lora.id || lora.modelVersionId;
                         
                         if (uniqueKey && !uniqueLoras.has(uniqueKey)) {

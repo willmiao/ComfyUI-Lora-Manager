@@ -699,6 +699,20 @@ body.hide-card-version .hl-badge {
     border-color: rgba(231, 76, 60, 0.65);
 }
 
+/* Partial: usable but degraded — some LoRAs are unobtainable (deleted from
+   the source or unresolvable hash) and are skipped when the recipe is used.
+   Amber sits between ready green and missing red. */
+.lora-count.partial {
+    background: rgba(243, 156, 18, 0.35);
+    border-color: rgba(243, 156, 18, 0.65);
+}
+
+/* Unavailable: no usable LoRA at all — gray marks the recipe as dead. */
+.lora-count.unavailable {
+    background: rgba(149, 165, 166, 0.35);
+    border-color: rgba(149, 165, 166, 0.65);
+}
+
 .placeholder-message {
     grid-column: 1 / -1;
     text-align: center;

@@ -883,7 +883,10 @@
         "loraStatus": {
             "none": "このレシピにはLoRAがありません",
             "allAvailable": "すべてのLoRAが利用可能 - 使用可能",
-            "missing": "{total} 件中 {missing} 件のLoRAが不足"
+            "missing": "{total} 件中 {missing} 件のLoRAが不足",
+            "missingAndUnavailable": "{total} 件中 {missing} 件のLoRAが不足、{unavailable} 件は利用不可（ソースから削除済みかハッシュを解決できません）",
+            "partial": "{total} 件中 {unavailable} 件のLoRAが利用不可（ソースから削除済みかハッシュを解決できません）- レシピ使用時はスキップされます",
+            "noneUsable": "使用可能なLoRAがありません - {total} 件中 {unavailable} 件がソースから削除済みかハッシュを解決できません"
         },
         "resources": {
             "inLibrary": "ライブラリ内",

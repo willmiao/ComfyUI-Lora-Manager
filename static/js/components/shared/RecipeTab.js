@@ -130,17 +130,29 @@ function renderRecipes(tabElement, recipes, options) {
         const baseModel = recipe.base_model || '';
         const loras = recipe.loras || [];
         const lorasCount = loras.length;
-        const missingLorasCount = loras.filter(lora => !lora.inLibrary && !lora.isDeleted).length;
-        const allLorasAvailable = missingLorasCount === 0 && lorasCount > 0;
-        const statusClass = lorasCount === 0 ? 'empty' : (allLorasAvailable ? 'ready' : 'missing');
+        // Missing = still downloadable; unavailable = deleted from the source
+        // or unresolvable hash, silently skipped when the recipe is used.
+        const availableLorasCount = loras.filter(lora => lora.inLibrary).length;
+        const missingLorasCount = loras.filter(lora => !lora.inLibrary && !lora.isDeleted && !lora.hashInvalid).length;
+        const unavailableLorasCount = lorasCount - availableLorasCount - missingLorasCount;
+        const statusClass = lorasCount === 0 ? 'empty'
+            : (availableLorasCount === lorasCount ? 'ready'
+            : (missingLorasCount > 0 ? 'missing'
+            : (availableLorasCount > 0 ? 'partial' : 'unavailable')));
         let statusLabel;
 
         if (lorasCount === 0) {
             statusLabel = 'No linked LoRAs';
-        } else if (allLorasAvailable) {
+        } else if (statusClass === 'ready') {
             statusLabel = `${lorasCount} LoRA${lorasCount > 1 ? 's' : ''} ready`;
+        } else if (statusClass === 'missing') {
+            statusLabel = unavailableLorasCount > 0
+                ? `Missing ${missingLorasCount}, ${unavailableLorasCount} of ${lorasCount} unavailable`
+                : `Missing ${missingLorasCount} of ${lorasCount}`;
+        } else if (statusClass === 'partial') {
+            statusLabel = `${unavailableLorasCount} of ${lorasCount} unavailable - skipped when used`;
         } else {
-            statusLabel = `Missing ${missingLorasCount} of ${lorasCount}`;
+            statusLabel = 'No usable LoRAs';
         }
         
         const imageUrl = recipe.file_url || 
@@ -207,8 +219,16 @@ function renderRecipes(tabElement, recipes, options) {
         const statusBadge = document.createElement('span');
         statusBadge.className = `recipe-card__badge recipe-card__badge--${statusClass}`;
 
+        // Icon switches by state so status never relies on color alone.
+        const statusIcons = {
+            ready: 'fa-check',
+            missing: 'fa-exclamation-triangle',
+            partial: 'fa-circle-minus',
+            unavailable: 'fa-ban',
+            empty: 'fa-layer-group',
+        };
         const statusIcon = document.createElement('i');
-        statusIcon.className = 'fas fa-layer-group';
+        statusIcon.className = `fas ${statusIcons[statusClass] || 'fa-layer-group'}`;
         statusIcon.setAttribute('aria-hidden', 'true');
         statusBadge.appendChild(statusIcon);
 
@@ -216,7 +236,7 @@ function renderRecipes(tabElement, recipes, options) {
         statusText.textContent = statusLabel;
         statusBadge.appendChild(statusText);
 
-        statusBadge.title = getLoraStatusTitle(lorasCount, missingLorasCount);
+        statusBadge.title = getLoraStatusTitle(lorasCount, availableLorasCount, missingLorasCount, unavailableLorasCount);
         meta.appendChild(statusBadge);
 
         body.appendChild(meta);
@@ -264,13 +284,23 @@ function renderRecipes(tabElement, recipes, options) {
 /**
  * Returns a descriptive title for the LoRA status indicator
  * @param {number} totalCount - Total number of LoRAs in recipe
- * @param {number} missingCount - Number of missing LoRAs
+ * @param {number} availableCount - Number of LoRAs present in the library
+ * @param {number} missingCount - Number of missing LoRAs (still downloadable)
+ * @param {number} unavailableCount - Number of unobtainable LoRAs (deleted
+ *   from the source or unresolvable hash)
  * @returns {string} Status title text
  */
-function getLoraStatusTitle(totalCount, missingCount) {
+function getLoraStatusTitle(totalCount, availableCount, missingCount, unavailableCount) {
     if (totalCount === 0) return "No LoRAs in this recipe";
-    if (missingCount === 0) return "All LoRAs available - Ready to use";
-    return `${missingCount} of ${totalCount} LoRAs missing`;
+    if (availableCount === totalCount) return "All LoRAs available - Ready to use";
+    if (missingCount > 0 && unavailableCount > 0) {
+        return `${missingCount} of ${totalCount} LoRAs missing, ${unavailableCount} unavailable (deleted from source or unresolvable hash)`;
+    }
+    if (missingCount > 0) return `${missingCount} of ${totalCount} LoRAs missing`;
+    if (availableCount > 0) {
+        return `${unavailableCount} of ${totalCount} LoRAs unavailable (deleted from source or unresolvable hash) - skipped when recipe is used`;
+    }
+    return `No usable LoRAs - ${unavailableCount} of ${totalCount} deleted from source or unresolvable hash`;
 }
 
 /**
