@@ -131,7 +131,7 @@
             "updateFailed": "즐겨찾기 상태 업데이트 실패"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Checkpoint을 워크플로로 전송 - 구현 예정 기능",
+            "checkpointNotImplemented": "Checkpoint를 워크플로로 전송 - 구현 예정 기능",
             "missingPath": "이 카드의 모델 경로를 확인할 수 없습니다"
         },
         "exampleImages": {
@@ -427,10 +427,10 @@
             "noneAvailable": "아직 스냅샷이 없습니다"
         },
         "downloadSkipBaseModels": {
-            "label": "기본 모델 다운로드 건너뛰기",
+            "label": "베이스 모델 다운로드 건너뛰기",
             "help": "활성화하면 선택한 베이스 모델을 사용하는 버전은 건너뜁니다.",
-            "searchPlaceholder": "기본 모델 필터링...",
-            "empty": "현재 검색과 일치하는 기본 모델이 없습니다.",
+            "searchPlaceholder": "베이스 모델 필터링...",
+            "empty": "현재 검색과 일치하는 베이스 모델이 없습니다.",
             "summary": {
                 "none": "선택 없음",
                 "count": "{count}개 선택됨"
@@ -441,7 +441,7 @@
                 "clear": "지우기"
             },
             "validation": {
-                "saveFailed": "제외된 기본 모델을 저장할 수 없습니다: {message}"
+                "saveFailed": "제외된 베이스 모델을 저장할 수 없습니다: {message}"
             }
         },
         "skipPreviouslyDownloadedModelVersions": {
@@ -540,8 +540,8 @@
             "helpLinkLabel": "우선순위 태그 도움말 열기",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "체크포인트",
-                "embedding": "임베딩"
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
             "saveSuccess": "우선순위 태그가 업데이트되었습니다.",
             "saveError": "우선순위 태그를 업데이트하지 못했습니다.",
@@ -805,9 +805,9 @@
             "clear": "선택 지우기",
             "skipMetadataRefreshCount": "건너뛰기（{count}개 모델）",
             "resumeMetadataRefreshCount": "재개（{count}개 모델）",
-            "sendToWorkflow": "워크플로우로 보내기",
+            "sendToWorkflow": "워크플로로 보내기",
             "sections": {
-                "workflow": "워크플로우",
+                "workflow": "워크플로",
                 "metadata": "메타데이터",
                 "attributes": "속성",
                 "organize": "정리",
@@ -1110,7 +1110,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "{otherType} 폴더로 이동",
-            "sendToWorkflow": "워크플로우로 전송"
+            "sendToWorkflow": "워크플로로 전송"
         }
     },
     "embeddings": {
@@ -1384,7 +1384,7 @@
         "checkUpdates": {
             "title": "{typePlural} 전체 업데이트를 확인할까요?",
             "message": "라이브러리에 있는 모든 {typePlural}의 업데이트를 확인합니다. 컬렉션이 클수록 시간이 조금 더 걸릴 수 있습니다.",
-            "tip": "나눠서 진행하고 싶다면 벌크 모드로 전환해 필요한 모델만 선택한 뒤 \"선택 항목 업데이트 확인\"을 사용하세요.",
+            "tip": "나눠서 진행하고 싶다면 일괄 모드로 전환해 필요한 모델만 선택한 뒤 \"선택 항목 업데이트 확인\"을 사용하세요.",
             "action": "전체 확인"
         },
         "bulkAddTags": {
@@ -1822,7 +1822,7 @@
             "recipeReplaced": "레시피가 워크플로에서 교체되었습니다",
             "recipeFailedToSend": "레시피를 워크플로로 전송하지 못했습니다",
             "noMatchingNodes": "현재 워크플로에서 호환되는 노드가 없습니다",
-            "noPromptTargets": "워크플로우에 호환되는 프롬프트 타겟이 없습니다.\nComfyUI에서 노드를 우클릭 → Mark as → Send Prompt Target",
+            "noPromptTargets": "워크플로에 호환되는 프롬프트 타겟이 없습니다.\nComfyUI에서 노드를 우클릭 → Mark as → Send Prompt Target",
             "noTargetNodeSelected": "대상 노드가 선택되지 않았습니다",
             "modelUpdated": "모델이 워크플로에서 업데이트되었습니다",
             "modelFailed": "모델 노드 업데이트 실패",
@@ -1834,7 +1834,7 @@
         "nodeSelector": {
             "recipe": "레시피",
             "lora": "LoRA",
-            "embedding": "임베딩",
+            "embedding": "Embedding",
             "prompt": "프롬프트",
             "replace": "교체",
             "append": "추가",
@@ -2002,7 +2002,7 @@
             "pleaseSelectFile": "파일을 하나 이상 선택해주세요",
             "versionExists": "이 버전은 이미 라이브러리에 있습니다",
             "downloadCompleted": "다운로드가 성공적으로 완료되었습니다",
-            "downloadSkippedByBaseModel": "기본 모델 {baseModel}이(가) 제외되어 다운로드를 건너뛰었습니다",
+            "downloadSkippedByBaseModel": "베이스 모델 {baseModel}이(가) 제외되어 다운로드를 건너뛰었습니다",
             "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
             "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
@@ -2026,7 +2026,7 @@
             "negativePromptUpdated": "네거티브 프롬프트가 성공적으로 업데이트되었습니다",
             "promptEditorHint": "Enter 키를 눌러 저장, Shift+Enter로 새 줄",
             "noRecipeId": "사용 가능한 레시피 ID가 없습니다",
-            "sendToWorkflowFailed": "워크플로우에 레시피 보내기 실패: {message}",
+            "sendToWorkflowFailed": "워크플로에 레시피 보내기 실패: {message}",
             "copyFailed": "레시피 문법 복사 오류: {message}",
             "createError": "레시피 생성 중 오류 발생：{message}",
             "createFailed": "레시피 생성 실패：{error}",
@@ -2044,9 +2044,9 @@
             "cannotSend": "레시피를 전송할 수 없습니다: 레시피 ID 누락",
             "sendFailed": "레시피를 워크플로로 전송하는데 실패했습니다",
             "sendError": "레시피를 워크플로로 전송하는 중 오류",
-            "missingCheckpointPath": "체크포인트 경로를 사용할 수 없습니다",
-            "missingCheckpointInfo": "체크포인트 정보가 부족합니다",
-            "downloadCheckpointFailed": "체크포인트 다운로드 실패: {message}",
+            "missingCheckpointPath": "Checkpoint 경로를 사용할 수 없습니다",
+            "missingCheckpointInfo": "Checkpoint 정보가 부족합니다",
+            "downloadCheckpointFailed": "Checkpoint 다운로드 실패: {message}",
             "missingLoraDownloadInfo": "이 LoRA의 다운로드 정보가 없습니다",
             "hashNotFoundOnCivitai": "이 LoRA 해시는 CivitAI에서 해석할 수 없습니다 - 모델이 업데이트되었거나 해시가 유효하지 않을 수 있습니다",
             "downloadLoraFailed": "LoRA 다운로드 실패: {message}",
@@ -2390,7 +2390,7 @@
     "conflictConfirm": {
         "title": "파일명 충돌 해결",
         "message": "중복 파일명에 4자리 해시를 추가하여 이름을 변경합니다.",
-        "note": "이 작업은 디스크에 있는 파일의 이름을 변경합니다. A1111 구문 형식을 사용하는 경우 기존 워크플로우의 모델 참조를 업데이트해야 할 수 있습니다.",
+        "note": "이 작업은 디스크에 있는 파일의 이름을 변경합니다. A1111 구문 형식을 사용하는 경우 기존 워크플로의 모델 참조를 업데이트해야 할 수 있습니다.",
         "detail": "예시: <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
         "impact": "<strong>{groups}</strong>개 중복 그룹에서 <strong>{count}</strong>개 파일 이름을 변경합니다",
         "confirm": "파일 이름 변경",

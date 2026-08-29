@@ -108,12 +108,12 @@
             "viewOnHuggingFace": "Hugging Face で見る",
             "sendToWorkflow": "ComfyUIに送信（クリック：追加、Shift+クリック：置換）",
             "copyLoRASyntax": "LoRA構文をコピー",
-            "checkpointNameCopied": "checkpointの名前をコピーしました",
+            "checkpointNameCopied": "Checkpointの名前をコピーしました",
             "toggleBlur": "ぼかしの切り替え",
             "show": "表示",
             "openExampleImages": "例画像フォルダを開く",
             "replacePreview": "プレビューを置換",
-            "copyCheckpointName": "checkpoint名をコピー",
+            "copyCheckpointName": "Checkpoint名をコピー",
             "copyEmbeddingName": "embedding名をコピー",
             "embeddingNameCopied": "Embedding構文をコピーしました",
             "sendCheckpointToWorkflow": "ComfyUIに送信",
@@ -131,7 +131,7 @@
             "updateFailed": "お気に入り状態の更新に失敗しました"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "checkpointをワークフローに送信 - 実装予定の機能",
+            "checkpointNotImplemented": "Checkpointをワークフローに送信 - 実装予定の機能",
             "missingPath": "このカードのモデルパスを特定できません"
         },
         "exampleImages": {
@@ -183,7 +183,7 @@
             "label": "レシピデータの修復",
             "loading": "レシピデータを修復中...",
             "success": "{count} 件のレシピを正常に修復しました。",
-            "cancelled": "修復がキャンセルされました。{count}個のレシピが修復されました。",
+            "cancelled": "修復がキャンセルされました。{count}件のレシピが修復されました。",
             "error": "レシピの修復に失敗しました: {message}"
         },
         "rematchRecipes": {
@@ -503,7 +503,7 @@
             "defaultLoraRoot": "LoRAルート",
             "defaultLoraRootHelp": "ダウンロード、インポート、移動用のデフォルトLoRAルートディレクトリを設定",
             "defaultCheckpointRoot": "Checkpointルート",
-            "defaultCheckpointRootHelp": "ダウンロード、インポート、移動用のデフォルトcheckpointルートディレクトリを設定",
+            "defaultCheckpointRootHelp": "ダウンロード、インポート、移動用のデフォルトCheckpointルートディレクトリを設定",
             "defaultUnetRoot": "Diffusion Modelルート",
             "defaultUnetRootHelp": "ダウンロード、インポート、移動用のデフォルトDiffusion Model (UNET)ルートディレクトリを設定",
             "defaultEmbeddingRoot": "Embeddingルート",
@@ -529,8 +529,8 @@
             "saveError": "追加フォルダーパスの更新に失敗しました: {message}",
             "validation": {
                 "duplicatePath": "このパスはすでに設定されています",
-                "checkpointUnetOverlap": "checkpoints と diffusion models に同じパスは使用できません：{paths}",
-                "checkpointUnetOverlapInline": "このパスは別のモデルタイプですでに使用されています。checkpoints と diffusion models には別々のフォルダを使用してください。"
+                "checkpointUnetOverlap": "Checkpoints と diffusion models に同じパスは使用できません：{paths}",
+                "checkpointUnetOverlapInline": "このパスは別のモデルタイプですでに使用されています。Checkpoints と diffusion models には別々のフォルダを使用してください。"
             }
         },
         "priorityTags": {
@@ -540,7 +540,7 @@
             "helpLinkLabel": "優先タグのヘルプを開く",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "チェックポイント",
+                "checkpoint": "Checkpoint",
                 "embedding": "埋め込み"
             },
             "saveSuccess": "優先タグを更新しました。",
@@ -1384,7 +1384,7 @@
         "checkUpdates": {
             "title": "すべての{typePlural}の更新を確認しますか？",
             "message": "ライブラリ内のすべての{typePlural}で更新を確認します。コレクションが大きい場合は時間がかかることがあります。",
-            "tip": "少しずつ確認したい場合はバルクモードに切り替え、必要なモデルを選んで「選択項目の更新を確認」を使ってください。",
+            "tip": "少しずつ確認したい場合は一括モードに切り替え、必要なモデルを選んで「選択項目の更新を確認」を使ってください。",
             "action": "すべて確認"
         },
         "bulkAddTags": {
@@ -1748,14 +1748,14 @@
         },
         "checkpoints": {
             "title": "Checkpoint Managerを初期化中",
-            "message": "checkpointキャッシュをスキャンして構築中。数分かかる場合があります..."
+            "message": "Checkpointキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "embeddings": {
             "title": "Embedding Managerを初期化中",
             "message": "embeddingキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
         "recipes": {
-            "title": "Recipe Managerを初期化中",
+            "title": "レシピマネージャーを初期化中",
             "message": "レシピを読み込んで処理中。数分かかる場合があります..."
         },
         "statistics": {
@@ -2044,9 +2044,9 @@
             "cannotSend": "レシピを送信できません：レシピIDがありません",
             "sendFailed": "レシピのワークフローへの送信に失敗しました",
             "sendError": "レシピのワークフロー送信エラー",
-            "missingCheckpointPath": "チェックポイントのパスがありません",
-            "missingCheckpointInfo": "チェックポイント情報が不足しています",
-            "downloadCheckpointFailed": "チェックポイントのダウンロードに失敗しました: {message}",
+            "missingCheckpointPath": "Checkpointのパスがありません",
+            "missingCheckpointInfo": "Checkpoint情報が不足しています",
+            "downloadCheckpointFailed": "Checkpointのダウンロードに失敗しました: {message}",
             "missingLoraDownloadInfo": "この LoRA のダウンロード情報がありません",
             "hashNotFoundOnCivitai": "このLoRAハッシュはCivitAIで解決できません - モデルが更新されたか、ハッシュが無効な可能性があります",
             "downloadLoraFailed": "LoRA のダウンロードに失敗しました: {message}",
@@ -2158,7 +2158,7 @@
         },
         "settings": {
             "loraRootsFailed": "LoRAルートの読み込みに失敗しました：{message}",
-            "checkpointRootsFailed": "checkpointルートの読み込みに失敗しました：{message}",
+            "checkpointRootsFailed": "Checkpointルートの読み込みに失敗しました：{message}",
             "unetRootsFailed": "Diffusion Modelルートの読み込みに失敗しました：{message}",
             "embeddingRootsFailed": "embeddingルートの読み込みに失敗しました：{message}",
             "mappingsUpdated": "ベースモデルパスマッピングが更新されました（{count} マッピング）",

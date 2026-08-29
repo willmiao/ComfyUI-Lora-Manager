@@ -66,8 +66,8 @@
         },
         "steps": {
             "fetch": {
-                "title": "Modelldaten abrufen",
-                "content": "Klicken Sie auf die Schaltfläche <strong>Abrufen</strong>, um Modelldaten und Vorschaubilder von CivitAI herunterzuladen."
+                "title": "Metadaten abrufen",
+                "content": "Klicken Sie auf die Schaltfläche <strong>Abrufen</strong>, um Metadaten und Vorschaubilder von CivitAI herunterzuladen."
             },
             "download": {
                 "title": "Neue Modelle herunterladen",
@@ -83,7 +83,7 @@
             },
             "filter": {
                 "title": "Modelle filtern",
-                "content": "Verwenden Sie Filter, um Modelle nach Basis-Modelltyp (SD1.5, SDXL, Flux usw.) oder bestimmten Tags einzugrenzen."
+                "content": "Verwenden Sie Filter, um Modelle nach Basismodelltyp (SD1.5, SDXL, Flux usw.) oder bestimmten Tags einzugrenzen."
             },
             "breadcrumb": {
                 "title": "Breadcrumb-Navigation",
@@ -180,11 +180,11 @@
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
         },
         "repairRecipes": {
-            "label": "Recipe-Daten reparieren",
-            "loading": "Recipe-Daten werden repariert...",
+            "label": "Rezept-Daten reparieren",
+            "loading": "Rezept-Daten werden repariert...",
             "success": "{count} Rezepte erfolgreich repariert.",
             "cancelled": "Reparatur abgebrochen. {count} Rezepte wurden repariert.",
-            "error": "Recipe-Reparatur fehlgeschlagen: {message}"
+            "error": "Rezept-Reparatur fehlgeschlagen: {message}"
         },
         "rematchRecipes": {
             "label": "Rezepte lokalen Modellen neu zuordnen",
@@ -242,7 +242,7 @@
             "presetDeleteConfirmClick": "Zum Bestätigen erneut klicken",
             "presetOverwriteConfirm": "Voreinstellung \"{name}\" existiert bereits. Überschreiben?",
             "presetNamePlaceholder": "Voreinstellungsname...",
-            "baseModel": "Basis-Modell",
+            "baseModel": "Basismodell",
             "baseModelSearchPlaceholder": "Basismodelle durchsuchen...",
             "modelTags": "Tags",
             "modelTypes": "Modelltypen",
@@ -406,8 +406,8 @@
             "retention": "Aufbewahrungsanzahl",
             "retentionHelp": "Wie viele automatische Schnappschüsse behalten werden, bevor ältere entfernt werden.",
             "management": "Backup-Verwaltung",
-            "managementHelp": "Exportiere deinen aktuellen Benutzerstatus oder stelle ihn aus einem Backup-Archiv wieder her.",
-            "scopeHelp": "Sichert deine Einstellungen, den Downloadverlauf und den Status der Modellaktualisierung. Modelldateien und neu erzeugbare Caches sind nicht enthalten.",
+            "managementHelp": "Exportieren Sie Ihren aktuellen Benutzerstatus oder stellen Sie ihn aus einem Backup-Archiv wieder her.",
+            "scopeHelp": "Sichert Ihre Einstellungen, den Downloadverlauf und den Status der Modellaktualisierung. Modelldateien und neu erzeugbare Caches sind nicht enthalten.",
             "locationSummary": "Aktueller Backup-Speicherort",
             "openFolderButton": "Backup-Ordner öffnen",
             "openFolderSuccess": "Backup-Ordner geöffnet",
@@ -559,13 +559,13 @@
             "availablePlaceholders": "Verfügbare Platzhalter:",
             "templateOptions": {
                 "flatStructure": "Flache Struktur",
-                "byBaseModel": "Nach Basis-Modell",
+                "byBaseModel": "Nach Basismodell",
                 "byAuthor": "Nach Autor",
                 "byFirstTag": "Nach erstem Tag",
-                "baseModelFirstTag": "Basis-Modell + Erster Tag",
-                "baseModelAuthor": "Basis-Modell + Autor",
+                "baseModelFirstTag": "Basismodell + Erster Tag",
+                "baseModelAuthor": "Basismodell + Autor",
                 "authorFirstTag": "Autor + Erster Tag",
-                "baseModelAuthorFirstTag": "Basis-Modell + Autor + Erster Tag",
+                "baseModelAuthorFirstTag": "Basismodell + Autor + Erster Tag",
                 "customTemplate": "Benutzerdefinierte Vorlage"
             },
             "customTemplatePlaceholder": "Benutzerdefinierte Vorlage eingeben (z.B. {base_model}/{author}/{first_tag})",
@@ -574,10 +574,10 @@
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
-            "baseModelPathMappings": "Basis-Modell-Pfad-Zuordnungen",
-            "baseModelPathMappingsHelp": "Passen Sie Ordnernamen für spezifische Basis-Modelle an (z.B. \"Flux.1 D\" → \"flux\")",
+            "baseModelPathMappings": "Basismodell-Pfad-Zuordnungen",
+            "baseModelPathMappingsHelp": "Passen Sie Ordnernamen für spezifische Basismodelle an (z.B. \"Flux.1 D\" → \"flux\")",
             "addMapping": "Zuordnung hinzufügen",
-            "selectBaseModel": "Basis-Modell auswählen",
+            "selectBaseModel": "Basismodell auswählen",
             "customPathPlaceholder": "Benutzerdefinierter Pfad (z.B. flux)",
             "removeMapping": "Zuordnung entfernen",
             "validation": {
@@ -617,7 +617,7 @@
         },
         "versionGrouping": {
             "label": "Strategie für Update-Markierungen",
-            "help": "Entscheide, ob Update-Badges nur dann erscheinen, wenn eine neue Version dasselbe Basismodell wie deine lokalen Dateien verwendet, oder sobald es irgendein neueres Release für dieses Modell gibt.",
+            "help": "Entscheiden Sie, ob Update-Badges nur dann erscheinen, wenn eine neue Version dasselbe Basismodell wie Ihre lokalen Dateien verwendet, oder sobald es irgendein neueres Release für dieses Modell gibt.",
             "options": {
                 "sameBase": "Updates nach Basismodell abgleichen",
                 "any": "Jede verfügbare Aktualisierung markieren"
@@ -759,7 +759,7 @@
             },
             "bulk": {
                 "title": "Massenoperationen",
-                "action": "Massen"
+                "action": "Massenbearbeitung"
             },
             "duplicates": {
                 "title": "Duplikate finden",
@@ -782,7 +782,7 @@
             "selectedSuffix": "ausgewählt",
             "viewSelected": "Auswahl anzeigen",
             "addTags": "Allen Tags hinzufügen",
-            "setBaseModel": "Basis-Modell für alle festlegen",
+            "setBaseModel": "Basismodell für alle festlegen",
             "setContentRating": "Inhaltsbewertung für alle festlegen",
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
@@ -890,8 +890,8 @@
             "notInLibrary": "Nicht in Bibliothek",
             "deleted": "Gelöscht",
             "hashInvalid": "Nicht auflösbarer Hash",
-            "inLibraryTooltip": "Dieses Modell ist in deiner lokalen Bibliothek vorhanden",
-            "notInLibraryTooltip": "Dieses Modell ist nicht in deiner Bibliothek",
+            "inLibraryTooltip": "Dieses Modell ist in Ihrer lokalen Bibliothek vorhanden",
+            "notInLibraryTooltip": "Dieses Modell ist nicht in Ihrer Bibliothek",
             "deletedTooltip": "Dieses LoRA wurde an der Quelle gelöscht und kann nicht mehr heruntergeladen werden",
             "hashInvalidTooltip": "Dieser LoRA-Hash kann auf CivitAI nicht aufgelöst werden - das Modell wurde möglicherweise aktualisiert",
             "download": "Herunterladen",
@@ -1228,7 +1228,7 @@
         },
         "charts": {
             "collectionOverview": "Sammlungsübersicht",
-            "baseModelDistribution": "Basis-Modell-Verteilung",
+            "baseModelDistribution": "Basismodell-Verteilung",
             "usageTrends": "Nutzungstrends (Letzte 30 Tage)",
             "usageDistribution": "Nutzungsverteilung",
             "date": "Datum",
@@ -1366,7 +1366,7 @@
         "clearCache": {
             "title": "Cache-Dateien löschen",
             "message": "Sind Sie sicher, dass Sie alle Cache-Dateien löschen möchten?",
-            "description": "Dies entfernt alle zwischengespeicherten Modelldaten. Das System muss beim nächsten Start den Cache neu aufbauen, was je nach Größe Ihrer Modellsammlung einige Zeit dauern kann.",
+            "description": "Dies entfernt alle zwischengespeicherten Metadaten. Das System muss beim nächsten Start den Cache neu aufbauen, was je nach Größe Ihrer Modellsammlung einige Zeit dauern kann.",
             "action": "Cache löschen"
         },
         "bulkDelete": {
@@ -1383,8 +1383,8 @@
         },
         "checkUpdates": {
             "title": "Alle {typePlural} auf Updates prüfen?",
-            "message": "Damit werden alle {typePlural} in deiner Bibliothek auf Updates geprüft. Bei großen Sammlungen kann das etwas länger dauern.",
-            "tip": "Du möchtest in Etappen prüfen? Wechsle in den Sammelmodus, wähle die benötigten Modelle aus und nutze anschließend \"Auswahl auf Updates prüfen\".",
+            "message": "Damit werden alle {typePlural} in Ihrer Bibliothek auf Updates geprüft. Bei großen Sammlungen kann das etwas länger dauern.",
+            "tip": "Möchten Sie in Etappen prüfen? Wechseln Sie in den Massenmodus, wählen Sie die benötigten Modelle aus und nutzen Sie anschließend \"Auswahl auf Updates prüfen\".",
             "action": "Alles prüfen"
         },
         "bulkAddTags": {
@@ -1398,11 +1398,11 @@
             "saveChanges": "Änderungen speichern"
         },
         "bulkBaseModel": {
-            "title": "Basis-Modell für mehrere Modelle festlegen",
-            "description": "Basis-Modell festlegen für",
+            "title": "Basismodell für mehrere Modelle festlegen",
+            "description": "Basismodell festlegen für",
             "models": "Modelle",
-            "selectBaseModel": "Basis-Modell auswählen",
-            "save": "Basis-Modell aktualisieren",
+            "selectBaseModel": "Basismodell auswählen",
+            "save": "Basismodell aktualisieren",
             "cancel": "Abbrechen"
         },
         "bulkDownloadMissingLoras": {
@@ -1469,7 +1469,7 @@
             "actions": {
                 "editModelName": "Modellname bearbeiten",
                 "editFileName": "Dateiname bearbeiten",
-                "editBaseModel": "Basis-Modell bearbeiten",
+                "editBaseModel": "Basismodell bearbeiten",
                 "editVersionName": "Versionsname bearbeiten",
                 "viewOnCivitai": "Auf CivitAI anzeigen",
                 "viewOnCivitaiText": "Auf CivitAI anzeigen",
@@ -1495,7 +1495,7 @@
                 "version": "Version",
                 "fileName": "Dateiname",
                 "location": "Speicherort",
-                "baseModel": "Basis-Modell",
+                "baseModel": "Basismodell",
                 "size": "Größe",
                 "hashes": "Hashes",
                 "unknown": "Unbekannt",
@@ -1760,7 +1760,7 @@
         },
         "statistics": {
             "title": "Statistiken werden initialisiert",
-            "message": "Modelldaten für Statistiken werden verarbeitet. Dies kann einige Minuten dauern..."
+            "message": "Metadaten für Statistiken werden verarbeitet. Dies kann einige Minuten dauern..."
         },
         "tips": {
             "title": "Tipps & Tricks",
@@ -1781,7 +1781,7 @@
             },
             "filter": {
                 "title": "Schnelle Filterung",
-                "description": "Filtern Sie Modelle nach Tags oder Basis-Modelltyp mit der Filter-Schaltfläche in der Kopfzeile.",
+                "description": "Filtern Sie Modelle nach Tags oder Basismodelltyp mit der Filter-Schaltfläche in der Kopfzeile.",
                 "alt": "Modelle filtern"
             },
             "search": {
@@ -2107,13 +2107,13 @@
             "nameCannotBeEmpty": "Modellname darf nicht leer sein",
             "nameUpdatedSuccessfully": "Modellname erfolgreich aktualisiert",
             "nameUpdateFailed": "Fehler beim Aktualisieren des Modellnamens",
-            "baseModelUpdated": "Basis-Modell erfolgreich aktualisiert",
-            "baseModelUpdateFailed": "Fehler beim Aktualisieren des Basis-Modells",
-            "baseModelNotSelected": "Bitte ein Basis-Modell auswählen",
-            "bulkBaseModelUpdating": "Basis-Modell wird für {count} Modell(e) aktualisiert...",
-            "bulkBaseModelUpdateSuccess": "Basis-Modell erfolgreich für {count} Modell(e) aktualisiert",
+            "baseModelUpdated": "Basismodell erfolgreich aktualisiert",
+            "baseModelUpdateFailed": "Fehler beim Aktualisieren des Basismodells",
+            "baseModelNotSelected": "Bitte ein Basismodell auswählen",
+            "bulkBaseModelUpdating": "Basismodell wird für {count} Modell(e) aktualisiert...",
+            "bulkBaseModelUpdateSuccess": "Basismodell erfolgreich für {count} Modell(e) aktualisiert",
             "bulkBaseModelUpdatePartial": "{success} Modelle aktualisiert, {failed} fehlgeschlagen",
-            "bulkBaseModelUpdateFailed": "Aktualisierung des Basis-Modells für ausgewählte Modelle fehlgeschlagen",
+            "bulkBaseModelUpdateFailed": "Aktualisierung des Basismodells für ausgewählte Modelle fehlgeschlagen",
             "skipMetadataRefreshUpdating": "Aktualisiere Metadaten-Aktualisierungs-Flag für {count} Modell(e)...",
             "skipMetadataRefreshSet": "Metadaten-Aktualisierung für {count} Modell(e) übersprungen",
             "skipMetadataRefreshCleared": "Metadaten-Aktualisierung für {count} Modell(e) fortgesetzt",
@@ -2161,9 +2161,9 @@
             "checkpointRootsFailed": "Fehler beim Laden der Checkpoint-Stammverzeichnisse: {message}",
             "unetRootsFailed": "Fehler beim Laden der Diffusion-Modell-Stammverzeichnisse: {message}",
             "embeddingRootsFailed": "Fehler beim Laden der Embedding-Stammverzeichnisse: {message}",
-            "mappingsUpdated": "Basis-Modell-Pfad-Zuordnungen aktualisiert ({count})",
-            "mappingsCleared": "Basis-Modell-Pfad-Zuordnungen gelöscht",
-            "mappingSaveFailed": "Fehler beim Speichern der Basis-Modell-Zuordnungen: {message}",
+            "mappingsUpdated": "Basismodell-Pfad-Zuordnungen aktualisiert ({count})",
+            "mappingsCleared": "Basismodell-Pfad-Zuordnungen gelöscht",
+            "mappingSaveFailed": "Fehler beim Speichern der Basismodell-Zuordnungen: {message}",
             "downloadTemplatesUpdated": "Download-Pfad-Vorlagen aktualisiert",
             "downloadTemplatesFailed": "Fehler beim Speichern der Download-Pfad-Vorlagen: {message}",
             "recipesPathUpdated": "Rezepte-Speicherpfad aktualisiert",
@@ -2338,7 +2338,7 @@
         "title": "Doktor",
         "buttonTitle": "Diagnose und häufige Fehlerbehebungen ausführen",
         "loading": "Umgebung wird geprüft...",
-        "footer": "Exportiere ein Diagnosepaket, falls das Problem nach der Reparatur weiterhin besteht.",
+        "footer": "Exportieren Sie ein Diagnosepaket, falls das Problem nach der Reparatur weiterhin besteht.",
         "summary": {
             "idle": "Führe eine Überprüfung von Einstellungen, Cache-Integrität und UI-Konsistenz durch.",
             "ok": "Keine aktiven Probleme wurden in der aktuellen Umgebung gefunden.",

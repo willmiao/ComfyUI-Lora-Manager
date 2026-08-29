@@ -113,7 +113,7 @@
             "show": "顯示",
             "openExampleImages": "開啟範例圖片資料夾",
             "replacePreview": "更換預覽圖",
-            "copyCheckpointName": "複製檢查點名稱",
+            "copyCheckpointName": "複製 Checkpoint 名稱",
             "copyEmbeddingName": "複製嵌入名稱",
             "embeddingNameCopied": "已複製 Embedding 語法",
             "sendCheckpointToWorkflow": "傳送到 ComfyUI",
@@ -187,14 +187,14 @@
             "error": "配方修復失敗：{message}"
         },
         "rematchRecipes": {
-            "label": "將食譜重新匹配到本地模型",
-            "loading": "正在將食譜重新匹配到本地模型...",
-            "success": "已匹配 {entries} 個條目，涉及 {recipes} 個食譜",
-            "successErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個食譜，{failures} 個失敗",
-            "allFailed": "{failures}/{total} 個食譜重新匹配失敗",
-            "noMatch": "在 {recipes} 個食譜中找不到 {entries} 個條目的本地匹配",
-            "cancelled": "已取消重新匹配。{recipes} 個食譜已更新（{entries} 個條目）。",
-            "error": "食譜重新匹配失敗：{message}"
+            "label": "將配方重新匹配到本地模型",
+            "loading": "正在將配方重新匹配到本地模型...",
+            "success": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
+            "successErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
+            "allFailed": "{failures}/{total} 個配方重新匹配失敗",
+            "noMatch": "在 {recipes} 個配方中找不到 {entries} 個條目的本地匹配",
+            "cancelled": "已取消重新匹配。{recipes} 個配方已更新（{entries} 個條目）。",
+            "error": "配方重新匹配失敗：{message}"
         },
         "manageExcludedModels": {
             "label": "管理已排除的模型"
@@ -320,7 +320,7 @@
         "aria2HelpLink": "了解如何設定 aria2 下載後端",
         "civitaiHostBanner": {
             "title": "已提供 CivitAI 站點偏好設定",
-            "content": "CivitAI 現在使用 civitai.com 提供 SFW 內容，使用 civitai.red 提供無限制內容。你可以在設定中變更預設開啟的站點。",
+            "content": "CivitAI 現在使用 civitai.com 提供 SFW 內容，使用 civitai.red 提供無限制內容。您可以在設定中變更預設開啟的站點。",
             "openSettings": "開啟設定"
         },
         "openSettingsFileLocation": {
@@ -407,7 +407,7 @@
             "retentionHelp": "在刪除舊快照之前，要保留多少自動快照。",
             "management": "備份管理",
             "managementHelp": "匯出目前的使用者狀態，或從備份封存中還原。",
-            "scopeHelp": "備份你的設定、下載歷史與模型更新狀態。不包含模型檔案或可重建的快取。",
+            "scopeHelp": "備份您的設定、下載歷史與模型更新狀態。不包含模型檔案或可重建的快取。",
             "locationSummary": "目前備份位置",
             "openFolderButton": "開啟備份資料夾",
             "openFolderSuccess": "已開啟備份資料夾",
@@ -891,7 +891,7 @@
             "deleted": "已刪除",
             "hashInvalid": "無法解析的雜湊",
             "inLibraryTooltip": "此模型已存在於本地庫",
-            "notInLibraryTooltip": "此模型不在你的本地庫中",
+            "notInLibraryTooltip": "此模型不在您的本地庫中",
             "deletedTooltip": "此 LoRA 已從來源站刪除，無法下載",
             "hashInvalidTooltip": "此 LoRA 雜湊無法在 CivitAI 上解析——模型可能已更新",
             "download": "下載",
@@ -1193,36 +1193,36 @@
             "unusedLoras": {
                 "high": {
                     "title": "大量未使用的 LoRA",
-                    "description": "你的 LoRA 中有 {percent}%（{count}/{total}）從未被使用過。",
+                    "description": "您的 LoRA 中有 {percent}%（{count}/{total}）從未被使用過。",
                     "suggestion": "考慮整理或封存未使用的模型以釋放儲存空間。"
                 }
             },
             "unusedCheckpoints": {
                 "detected": {
                     "title": "檢測到未使用的 Checkpoint",
-                    "description": "你的 Checkpoint 中有 {percent}%（{count}/{total}）從未被使用過。",
+                    "description": "您的 Checkpoint 中有 {percent}%（{count}/{total}）從未被使用過。",
                     "suggestion": "審查並考慮刪除不再需要的 Checkpoint。"
                 }
             },
             "unusedEmbeddings": {
                 "high": {
                     "title": "大量未使用的 Embedding",
-                    "description": "你的 Embedding 中有 {percent}%（{count}/{total}）從未被使用過。",
-                    "suggestion": "考慮整理或封存未使用的 Embedding 以優化你的收藏。"
+                    "description": "您的 Embedding 中有 {percent}%（{count}/{total}）從未被使用過。",
+                    "suggestion": "考慮整理或封存未使用的 Embedding 以優化您的收藏。"
                 }
             },
             "collection": {
                 "large": {
                     "title": "檢測到大型收藏",
-                    "description": "你的模型收藏正在使用 {size} 的儲存空間。",
+                    "description": "您的模型收藏正在使用 {size} 的儲存空間。",
                     "suggestion": "考慮使用外部儲存或雲端解決方案以獲得更好的組織。"
                 }
             },
             "activity": {
                 "active": {
                     "title": "活躍用戶",
-                    "description": "你已經完成了 {count} 次生成！",
-                    "suggestion": "繼續探索並用你的模型創作精彩內容。"
+                    "description": "您已經完成了 {count} 次生成！",
+                    "suggestion": "繼續探索並用您的模型創作精彩內容。"
                 }
             }
         },
@@ -1292,7 +1292,7 @@
             "earlyAccessTooltip": "需要早期存取",
             "inLibrary": "已在庫存",
             "downloaded": "已下載",
-            "downloadedTooltip": "先前已下載，但目前不在你的庫中。",
+            "downloadedTooltip": "先前已下載，但目前不在您的庫中。",
             "alreadyInLibrary": "已在庫存",
             "partiallyDownloaded": "部分已下載",
             "autoOrganizedPath": "[依路徑範本自動整理]",
@@ -1407,7 +1407,7 @@
         },
         "bulkDownloadMissingLoras": {
             "title": "下載缺失的 LoRAs",
-            "message": "發現 {uniqueCount} 個獨特的缺失 LoRAs（從選取食譜中的 {totalCount} 個總數）。",
+            "message": "發現 {uniqueCount} 個獨特的缺失 LoRAs（從選取配方中的 {totalCount} 個總數）。",
             "previewTitle": "要下載的 LoRAs：",
             "moreItems": "...還有 {count} 個",
             "note": "檔案將使用預設路徑模板下載。根據 LoRAs 的數量，這可能需要一些時間。",
@@ -1606,8 +1606,8 @@
                 "importing": "正在匯入檔案...",
                 "noSupportedFiles": "未選擇支援的檔案。請選擇圖片或影片檔案。",
                 "allFiltered": "所有範例圖片都因 NSFW 內容設定而被過濾",
-                "sfwOnlyEnabled": "你目前的設定為僅顯示安全（SFW）內容",
-                "changeInSettings": "你可以在設定中變更此選項",
+                "sfwOnlyEnabled": "您目前的設定為僅顯示安全（SFW）內容",
+                "changeInSettings": "您可以在設定中變更此選項",
                 "nsfwMature": "成熟內容",
                 "nsfwR": "R 級內容",
                 "nsfwX": "X 級內容",
@@ -1631,13 +1631,13 @@
                 },
                 "badges": {
                     "current": "已開啟版本",
-                    "currentTooltip": "這是你用來開啟此彈窗的版本",
+                    "currentTooltip": "這是您用來開啟此彈窗的版本",
                     "inLibrary": "已在庫中",
-                    "inLibraryTooltip": "此版本已存在於你的本地庫中",
+                    "inLibraryTooltip": "此版本已存在於您的本地庫中",
                     "downloaded": "已下載",
-                    "downloadedTooltip": "此版本之前下載過，但目前不在你的本地庫中",
+                    "downloadedTooltip": "此版本之前下載過，但目前不在您的本地庫中",
                     "newer": "較新版本",
-                    "newerTooltip": "此版本比你本地的最新版本更新",
+                    "newerTooltip": "此版本比您本地的最新版本更新",
                     "earlyAccess": "搶先體驗",
                     "earlyAccessTooltip": "此版本目前需要 CivitAI 搶先體驗權限",
                     "paid": "付費",
@@ -2044,9 +2044,9 @@
             "cannotSend": "無法傳送配方：缺少配方 ID",
             "sendFailed": "傳送配方到工作流失敗",
             "sendError": "傳送配方到工作流錯誤",
-            "missingCheckpointPath": "缺少檢查點路徑",
-            "missingCheckpointInfo": "缺少檢查點資訊",
-            "downloadCheckpointFailed": "下載檢查點失敗：{message}",
+            "missingCheckpointPath": "缺少Checkpoint路徑",
+            "missingCheckpointInfo": "缺少Checkpoint資訊",
+            "downloadCheckpointFailed": "下載Checkpoint失敗：{message}",
             "missingLoraDownloadInfo": "缺少此 LoRA 的下載資訊",
             "hashNotFoundOnCivitai": "此 LoRA 雜湊無法在 CivitAI 上解析——模型可能已更新或雜湊無效",
             "downloadLoraFailed": "下載 LoRA 失敗：{message}",
@@ -2073,24 +2073,24 @@
             "batchImportCancelFailed": "取消批量匯入失敗：{message}",
             "batchImportNoUrls": "請輸入至少一個 URL 或檔案路徑",
             "batchImportNoDirectory": "請輸入目錄路徑",
-            "batchImportRateLimited": "已達到元數據提供方的速率限制 — 請求正在放緩，部分項目可能被略過。你可以稍後重新執行匯入。",
+            "batchImportRateLimited": "已達到元數據提供方的速率限制 — 請求正在放緩，部分項目可能被略過。您可以稍後重新執行匯入。",
             "batchImportBrowseFailed": "瀏覽目錄失敗：{message}",
             "batchImportDirectorySelected": "已選擇目錄：{path}",
-            "noRecipesSelected": "未選取任何食譜",
+            "noRecipesSelected": "未選取任何配方",
             "repairBulkComplete": "修復完成：{repaired} 個已修復，{skipped} 個已跳過（共 {total} 個）",
             "repairBulkSkipped": "所選 {total} 個配方無需修復",
             "repairBulkFailed": "修復所選配方失敗：{message}",
-            "rematchComplete": "已匹配 {entries} 個條目，涉及 {recipes} 個食譜",
-            "rematchCompleteErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個食譜，{failures} 個失敗",
-            "rematchAllFailed": "{failures}/{total} 個所選食譜重新匹配失敗",
-            "rematchUnmatched": "在 {recipes} 個食譜中找不到 {entries} 個條目的本地匹配",
-            "rematchSkipped": "{total} 個所選食譜均無需重新匹配",
-            "rematchFailed": "重新匹配所選食譜失敗：{message}",
+            "rematchComplete": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
+            "rematchCompleteErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
+            "rematchAllFailed": "{failures}/{total} 個所選配方重新匹配失敗",
+            "rematchUnmatched": "在 {recipes} 個配方中找不到 {entries} 個條目的本地匹配",
+            "rematchSkipped": "{total} 個所選配方均無需重新匹配",
+            "rematchFailed": "重新匹配所選配方失敗：{message}",
             "reimporting": "正在從來源重新匯入配方...",
             "reimportSuccess": "配方已從來源重新匯入成功",
             "reimportBulkComplete": "重新匯入完成：{completed} 個已匯入，{failed} 個失敗（共 {total} 個）",
             "reimportBulkFailed": "重新匯入某些配方失敗",
-            "noMissingLorasInSelection": "在選取的食譜中未找到缺失的 LoRAs",
+            "noMissingLorasInSelection": "在選取的配方中未找到缺失的 LoRAs",
             "noLoraRootConfigured": "未配置 LoRA 根目錄。請在設定中設定預設的 LoRA 根目錄。",
             "workflowSent": "工作流已傳送到 ComfyUI",
             "workflowSendFailed": "傳送工作流到 ComfyUI 失敗: {error}",

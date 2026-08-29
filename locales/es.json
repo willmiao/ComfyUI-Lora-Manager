@@ -74,8 +74,8 @@
                 "content": "Usa el botón <strong>Descargar</strong> para descargar modelos directamente desde URLs de CivitAI."
             },
             "bulk": {
-                "title": "Operaciones masivas",
-                "content": "Entra en modo masivo haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span>. Selecciona varios modelos y realiza operaciones por lotes. Usa <span class=\"onboarding-shortcut\">Ctrl+A</span> para seleccionar todos los modelos visibles."
+                "title": "Operaciones por lotes",
+                "content": "Entra en el modo por lotes haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span>. Selecciona varios modelos y realiza operaciones por lotes. Usa <span class=\"onboarding-shortcut\">Ctrl+A</span> para seleccionar todos los modelos visibles."
             },
             "searchOptions": {
                 "title": "Opciones de búsqueda",
@@ -131,7 +131,7 @@
             "updateFailed": "Error al actualizar estado de favoritos"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "Enviar checkpoint al flujo de trabajo - función por implementar",
+            "checkpointNotImplemented": "Enviar checkpoint al workflow - función por implementar",
             "missingPath": "No se puede determinar la ruta del modelo para esta tarjeta"
         },
         "exampleImages": {
@@ -636,8 +636,8 @@
             "useNewStyleHelp": "Mostrar permisos de licencia con indicadores de color (nuevo estilo) o solo iconos de restricción (estilo clásico). Refleja el diseño actual de CivitAI."
         },
         "misc": {
-            "includeTriggerWords": "Incluir palabras clave en la sintaxis de LoRA",
-            "includeTriggerWordsHelp": "Incluir palabras clave entrenadas al copiar la sintaxis de LoRA al portapapeles",
+            "includeTriggerWords": "Incluir palabras de activación en la sintaxis de LoRA",
+            "includeTriggerWordsHelp": "Incluir palabras de activación entrenadas al copiar la sintaxis de LoRA al portapapeles",
             "loraSyntaxFormat": "Formato de sintaxis LoRA",
             "loraSyntaxFormatHelp": "Formato de sintaxis LoRA. El formato completo incluye la ruta de la subcarpeta (<lora:style/anime/x:1.0>) para una resolución de modelo sin pérdidas. El formato heredado usa solo el nombre del archivo (<lora:x:1.0>) — convención A1111, puede ser ambiguo con nombres de archivo duplicados entre carpetas.",
             "loraSyntaxFormatOptions": {
@@ -758,8 +758,8 @@
                 "action": "Descargar"
             },
             "bulk": {
-                "title": "Operaciones masivas",
-                "action": "Masivo"
+                "title": "Operaciones por lotes",
+                "action": "Por lotes"
             },
             "duplicates": {
                 "title": "Buscar duplicados",
@@ -833,8 +833,8 @@
             "copySyntax": "Copiar sintaxis de LoRA",
             "copyFilename": "Copiar nombre de archivo del modelo",
             "copyRecipeSyntax": "Copiar sintaxis de receta",
-            "sendToWorkflowAppend": "Enviar al flujo de trabajo (Añadir)",
-            "sendToWorkflowReplace": "Enviar al flujo de trabajo (Reemplazar)",
+            "sendToWorkflowAppend": "Enviar al workflow (Añadir)",
+            "sendToWorkflowReplace": "Enviar al workflow (Reemplazar)",
             "openExamples": "Abrir carpeta de ejemplos",
             "downloadExamples": "Descargar imágenes de ejemplo",
             "downloadMissingExamples": "Descargar faltantes",
@@ -1013,7 +1013,7 @@
             },
             "sendRecipe": {
                 "missingId": "No se puede enviar la receta: Falta ID de receta",
-                "failed": "Error al enviar receta al flujo de trabajo"
+                "failed": "Error al enviar receta al workflow"
             },
             "viewLoras": {
                 "missingId": "No se pueden ver LoRAs: Falta ID de receta",
@@ -1110,7 +1110,7 @@
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Mover a la carpeta {otherType}",
-            "sendToWorkflow": "Enviar al flujo de trabajo"
+            "sendToWorkflow": "Enviar al workflow"
         }
     },
     "embeddings": {
@@ -1165,7 +1165,7 @@
             "totalGenerations": "Generaciones totales",
             "usageRate": "Tasa de uso",
             "loras": "LoRAs",
-            "checkpoints": "Puntos de control",
+            "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
             "uniqueTags": "Etiquetas únicas",
             "unusedModels": "Modelos no usados",
@@ -1199,9 +1199,9 @@
             },
             "unusedCheckpoints": {
                 "detected": {
-                    "title": "Puntos de control no utilizados detectados",
-                    "description": "El {percent}% de tus puntos de control ({count}/{total}) nunca se han utilizado.",
-                    "suggestion": "Revisa y considera eliminar los puntos de control que ya no necesites."
+                    "title": "Checkpoints no utilizados detectados",
+                    "description": "El {percent}% de tus Checkpoints ({count}/{total}) nunca se han utilizado.",
+                    "suggestion": "Revisa y considera eliminar los Checkpoints que ya no necesites."
                 }
             },
             "unusedEmbeddings": {
@@ -1243,7 +1243,7 @@
             "lora": "LoRA",
             "locon": "LyCORIS",
             "dora": "DoRA",
-            "checkpoint": "Punto de control",
+            "checkpoint": "Checkpoint",
             "diffusion_model": "Modelo de difusión",
             "embedding": "Embeddings"
         },
@@ -1515,7 +1515,7 @@
                 "showLess": "Mostrar menos"
             },
             "usageTips": {
-                "addPresetParameter": "Añadir parámetro preestablecido...",
+                "addPresetParameter": "Añadir parámetro preajustado...",
                 "strengthMin": "Fuerza mínima",
                 "strengthMax": "Fuerza máxima",
                 "strengthRange": "Rango de fuerza",
@@ -1528,18 +1528,18 @@
             },
             "triggerWords": {
                 "label": "Palabras clave",
-                "noTriggerWordsNeeded": "No se necesita palabra clave",
-                "edit": "Editar palabras clave",
+                "noTriggerWordsNeeded": "No se necesita palabra de activación",
+                "edit": "Editar palabras de activación",
                 "cancel": "Cancelar edición",
                 "save": "Guardar cambios",
                 "addPlaceholder": "Escribe para añadir o haz clic en sugerencias de abajo",
                 "editWord": "Editar palabra de activación",
                 "editPlaceholder": "Editar palabra de activación",
-                "copyWord": "Copiar palabra clave",
-                "deleteWord": "Eliminar palabra clave",
+                "copyWord": "Copiar palabra de activación",
+                "deleteWord": "Eliminar palabra de activación",
                 "suggestions": {
                     "noSuggestions": "No hay sugerencias disponibles",
-                    "noTrainedWords": "No se encontraron palabras entrenadas o tokens de clase en este modelo. Puedes introducir palabras clave manualmente.",
+                    "noTrainedWords": "No se encontraron palabras entrenadas o tokens de clase en este modelo. Puedes introducir palabras de activación manualmente.",
                     "classToken": "Token de clase",
                     "classTokenDescription": "Añadir a tu prompt para mejores resultados",
                     "wordSuggestions": "Sugerencias de palabras",
@@ -1808,27 +1808,27 @@
         },
         "lora": {
             "syntaxCopied": "Sintaxis de LoRA copiada al portapapeles",
-            "syntaxCopiedNoTriggerWords": "Sintaxis de LoRA copiada al portapapeles (no se encontraron palabras clave)",
-            "syntaxCopiedWithTriggerWords": "Sintaxis de LoRA con palabras clave copiada al portapapeles",
-            "syntaxCopiedWithTriggerWordGroups": "Sintaxis de LoRA con grupos de palabras clave copiada al portapapeles"
+            "syntaxCopiedNoTriggerWords": "Sintaxis de LoRA copiada al portapapeles (no se encontraron palabras de activación)",
+            "syntaxCopiedWithTriggerWords": "Sintaxis de LoRA con palabras de activación copiada al portapapeles",
+            "syntaxCopiedWithTriggerWordGroups": "Sintaxis de LoRA con grupos de palabras de activación copiada al portapapeles"
         },
         "workflow": {
-            "noSupportedNodes": "No se encontraron nodos de destino compatibles en el flujo de trabajo",
+            "noSupportedNodes": "No se encontraron nodos de destino compatibles en el workflow",
             "communicationFailed": "Error al comunicarse con ComfyUI",
-            "loraAdded": "LoRA añadido al flujo de trabajo",
-            "loraReplaced": "LoRA reemplazado en el flujo de trabajo",
-            "loraFailedToSend": "Error al enviar LoRA al flujo de trabajo",
-            "recipeAdded": "Receta añadida al flujo de trabajo",
-            "recipeReplaced": "Receta reemplazada en el flujo de trabajo",
-            "recipeFailedToSend": "Error al enviar receta al flujo de trabajo",
-            "noMatchingNodes": "No hay nodos compatibles disponibles en el flujo de trabajo actual",
+            "loraAdded": "LoRA añadido al workflow",
+            "loraReplaced": "LoRA reemplazado en el workflow",
+            "loraFailedToSend": "Error al enviar LoRA al workflow",
+            "recipeAdded": "Receta añadida al workflow",
+            "recipeReplaced": "Receta reemplazada en el workflow",
+            "recipeFailedToSend": "Error al enviar receta al workflow",
+            "noMatchingNodes": "No hay nodos compatibles disponibles en el workflow actual",
             "noPromptTargets": "No hay destinos de prompt compatibles en el workflow.\nHaz clic derecho en un nodo de ComfyUI → Marcar como → Destino de envío de prompt",
             "noTargetNodeSelected": "No se ha seleccionado ningún nodo de destino",
-            "modelUpdated": "Modelo actualizado en el flujo de trabajo",
+            "modelUpdated": "Modelo actualizado en el workflow",
             "modelFailed": "Error al actualizar nodo de modelo",
-            "embeddingAdded": "Embedding añadido al flujo de trabajo",
+            "embeddingAdded": "Embedding añadido al workflow",
             "embeddingFailed": "Error al añadir el embedding",
-            "promptSent": "Prompt enviado al flujo de trabajo",
+            "promptSent": "Prompt enviado al workflow",
             "promptFailed": "Error al enviar el prompt"
         },
         "nodeSelector": {
@@ -1983,7 +1983,7 @@
     "toast": {
         "general": {
             "cannotInteractStandalone": "No se puede interactuar con ComfyUI en modo independiente",
-            "failedWorkflowInfo": "Error al obtener información del flujo de trabajo",
+            "failedWorkflowInfo": "Error al obtener información del workflow",
             "pageInitFailed": "Error al inicializar la página de {pageType}. Por favor recarga.",
             "statisticsLoadFailed": "Error al cargar datos de estadísticas"
         },
@@ -1992,7 +1992,7 @@
             "noLorasSelected": "No hay LoRAs seleccionados",
             "missingDataForLoras": "Faltan datos para {count} LoRAs",
             "noValidLorasToCopy": "No hay LoRAs válidos para copiar",
-            "sendOnlyForLoras": "Enviar al flujo de trabajo solo está disponible para LoRAs",
+            "sendOnlyForLoras": "Enviar al workflow solo está disponible para LoRAs",
             "noValidLorasToSend": "No hay LoRAs válidos para enviar",
             "downloadSuccessful": "LoRAs descargados exitosamente",
             "allDownloadSuccessful": "Todos los {count} LoRAs descargados exitosamente",
@@ -2026,7 +2026,7 @@
             "negativePromptUpdated": "Prompt negativo actualizado exitosamente",
             "promptEditorHint": "Presiona Enter para guardar, Shift+Enter para nueva línea",
             "noRecipeId": "No hay ID de receta disponible",
-            "sendToWorkflowFailed": "Error al enviar la receta al flujo de trabajo: {message}",
+            "sendToWorkflowFailed": "Error al enviar la receta al workflow: {message}",
             "copyFailed": "Error copiando sintaxis de receta: {message}",
             "createError": "Error al crear la receta：{message}",
             "createFailed": "Error al crear la receta：{error}",
@@ -2042,8 +2042,8 @@
             "reconnectFailed": "Error reconectando LoRA: {message}",
             "noPromptToSend": "No hay prompt para enviar",
             "cannotSend": "No se puede enviar receta: Falta ID de receta",
-            "sendFailed": "Error al enviar receta al flujo de trabajo",
-            "sendError": "Error enviando receta al flujo de trabajo",
+            "sendFailed": "Error al enviar receta al workflow",
+            "sendError": "Error enviando receta al workflow",
             "missingCheckpointPath": "Ruta del checkpoint no disponible",
             "missingCheckpointInfo": "Falta información del checkpoint",
             "downloadCheckpointFailed": "Error al descargar el checkpoint: {message}",
@@ -2189,8 +2189,8 @@
             "created": "Preajuste \"{name}\" creado",
             "deleted": "Preajuste \"{name}\" eliminado",
             "applied": "Preajuste \"{name}\" aplicado",
-            "overwritten": "Preset \"{name}\" sobrescrito",
-            "restored": "Presets predeterminados restaurados"
+            "overwritten": "Preajuste \"{name}\" sobrescrito",
+            "restored": "Preajustes predeterminados restaurados"
         },
         "error": {
             "presetNameEmpty": "El nombre del preajuste no puede estar vacío",
@@ -2218,11 +2218,11 @@
         },
         "triggerWords": {
             "loadFailed": "No se pudieron cargar palabras entrenadas",
-            "tooLong": "La palabra clave no debe exceder 500 palabras",
-            "tooMany": "Máximo 100 palabras clave permitidas",
-            "alreadyExists": "Esta palabra clave ya existe",
+            "tooLong": "La palabra de activación no debe exceder 500 palabras",
+            "tooMany": "Máximo 100 palabras de activación permitidas",
+            "alreadyExists": "Esta palabra de activación ya existe",
             "updateSuccess": "Palabras clave actualizadas exitosamente",
-            "updateFailed": "Error al actualizar palabras clave",
+            "updateFailed": "Error al actualizar palabras de activación",
             "copyFailed": "Error al copiar"
         },
         "undo": {

@@ -226,7 +226,7 @@
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
-                "prompt": "Запрос"
+                "prompt": "Промпт"
             }
         },
         "filter": {
@@ -271,7 +271,7 @@
             "switchToLight": "Переключить на светлую тему",
             "switchToDark": "Переключить на тёмную тему",
             "switchToAuto": "Переключить на автоматическую тему",
-            "presets": "Предустановки тем",
+            "presets": "Пресеты тем",
             "default": "По умолчанию",
             "nord": "Nord",
             "midnight": "Midnight",
@@ -540,8 +540,8 @@
             "helpLinkLabel": "Открыть справку по приоритетным тегам",
             "modelTypes": {
                 "lora": "LoRA",
-                "checkpoint": "Чекпойнт",
-                "embedding": "Эмбеддинг"
+                "checkpoint": "Checkpoint",
+                "embedding": "Embedding"
             },
             "saveSuccess": "Приоритетные теги обновлены.",
             "saveError": "Не удалось обновить приоритетные теги.",
@@ -639,7 +639,7 @@
             "includeTriggerWords": "Включать триггерные слова в синтаксис LoRA",
             "includeTriggerWordsHelp": "Включать обученные триггерные слова при копировании синтаксиса LoRA в буфер обмена",
             "loraSyntaxFormat": "Формат синтаксиса LoRA",
-            "loraSyntaxFormatHelp": "Формат синтаксиса LoRA. Полный путь включает подпапку (<lora:style/anime/x:1.0>) для безпотерьного разрешения модели. Устаревший использует только имя файла (<lora:x:1.0>) — соглашение A1111, может быть неоднозначным при дублировании имён файлов в разных папках.",
+            "loraSyntaxFormatHelp": "Формат синтаксиса LoRA. Полный путь включает подпапку (<lora:style/anime/x:1.0>) для беспотерьного разрешения модели. Устаревший использует только имя файла (<lora:x:1.0>) — соглашение A1111, может быть неоднозначным при дублировании имён файлов в разных папках.",
             "loraSyntaxFormatOptions": {
                 "full": "Полный путь (подпапка/имя)",
                 "legacy": "Устаревший A1111 (только имя)"
@@ -889,11 +889,11 @@
             "inLibrary": "В библиотеке",
             "notInLibrary": "Не в библиотеке",
             "deleted": "Удалено",
-            "hashInvalid": "Нераспознанный хэш",
+            "hashInvalid": "Нераспознанный хеш",
             "inLibraryTooltip": "Эта модель есть в вашей локальной библиотеке",
             "notInLibraryTooltip": "Этой модели нет в вашей библиотеке",
             "deletedTooltip": "Этот LoRA был удалён из источника и больше недоступен для скачивания",
-            "hashInvalidTooltip": "Этот хэш LoRA не удаётся распознать на CivitAI - возможно, модель была обновлена",
+            "hashInvalidTooltip": "Этот хеш LoRA не удаётся распознать на CivitAI - возможно, модель была обновлена",
             "download": "Скачать",
             "downloadLoraTooltip": "Скачать этот LoRA",
             "preparingDownload": "Подготовка к скачиванию…",
@@ -998,12 +998,12 @@
             "noGroups": "Дубликатов с текущим критерием не найдено",
             "keepLatest": "Оставить последние версии",
             "deleteSelected": "Удалить выбранные",
-            "includePromptLabel": "Учитывать запрос при поиске дубликатов",
+            "includePromptLabel": "Учитывать промпт при поиске дубликатов",
             "basis": {
                 "loraCombo": "Критерий: комбинация LoRA",
-                "loraComboAndPrompt": "Критерий: комбинация LoRA + запрос",
+                "loraComboAndPrompt": "Критерий: комбинация LoRA + промпт",
                 "hintLoraCombo": "Рецепты с одинаковыми LoRA и одинаковой силой группируются вместе.",
-                "hintPromptIncluded": "Рецепты группируются только при одинаковых LoRA с одинаковой силой И одинаковом запросе."
+                "hintPromptIncluded": "Рецепты группируются только при одинаковых LoRA с одинаковой силой И одинаковом промпте."
             }
         },
         "contextMenu": {
@@ -1165,8 +1165,8 @@
             "totalGenerations": "Всего генераций",
             "usageRate": "Коэффициент использования",
             "loras": "LoRA",
-            "checkpoints": "Контрольные точки",
-            "embeddings": "Эмбеддинги",
+            "checkpoints": "Checkpoints",
+            "embeddings": "Embeddings",
             "uniqueTags": "Уникальные теги",
             "unusedModels": "Неиспользуемые модели",
             "avgUsesPerModel": "Сред. использований/модель"
@@ -1199,9 +1199,9 @@
             },
             "unusedCheckpoints": {
                 "detected": {
-                    "title": "Обнаружены неиспользуемые контрольные точки",
-                    "description": "{percent}% ваших контрольных точек ({count}/{total}) никогда не использовались.",
-                    "suggestion": "Проверьте и удалите ненужные контрольные точки."
+                    "title": "Обнаружены неиспользуемые Checkpoints",
+                    "description": "{percent}% ваших Checkpoints ({count}/{total}) никогда не использовались.",
+                    "suggestion": "Проверьте и удалите ненужные Checkpoints."
                 }
             },
             "unusedEmbeddings": {
@@ -1243,9 +1243,9 @@
             "lora": "LoRA",
             "locon": "LyCORIS",
             "dora": "DoRA",
-            "checkpoint": "Контрольная точка",
+            "checkpoint": "Checkpoint",
             "diffusion_model": "Диффузионная модель",
-            "embedding": "Эмбеддинги"
+            "embedding": "Embeddings"
         },
         "placeholders": {
             "loading": "Загрузка...",
@@ -1479,7 +1479,7 @@
                 "openFileLocation": "Открыть расположение файла",
                 "sendToWorkflow": "Отправить в ComfyUI",
                 "sendToWorkflowText": "Отправить в ComfyUI",
-                "copyHash": "Копировать хэш",
+                "copyHash": "Копировать хеш",
                 "deleteModelWithShortcut": "Удалить модель (Del)"
             },
             "openFileLocation": {
@@ -1828,14 +1828,14 @@
             "modelFailed": "Не удалось обновить узел модели",
             "embeddingAdded": "Embedding добавлен в workflow",
             "embeddingFailed": "Не удалось добавить embedding",
-            "promptSent": "Запрос отправлен в workflow",
-            "promptFailed": "Не удалось отправить запрос"
+            "promptSent": "Промпт отправлен в workflow",
+            "promptFailed": "Не удалось отправить промпт"
         },
         "nodeSelector": {
             "recipe": "Рецепт",
             "lora": "LoRA",
-            "embedding": "Эмбеддинг",
-            "prompt": "Запрос",
+            "embedding": "Embedding",
+            "prompt": "Промпт",
             "replace": "Заменить",
             "append": "Добавить",
             "selectTargetNode": "Выберите целевой узел",
@@ -2026,7 +2026,7 @@
             "negativePromptUpdated": "Негативный промпт успешно обновлён",
             "promptEditorHint": "Нажмите Enter для сохранения, Shift+Enter для новой строки",
             "noRecipeId": "ID рецепта недоступен",
-            "sendToWorkflowFailed": "Не удалось отправить рецепт в рабочий процесс: {message}",
+            "sendToWorkflowFailed": "Не удалось отправить рецепт в workflow: {message}",
             "copyFailed": "Ошибка копирования синтаксиса рецепта: {message}",
             "createError": "Ошибка при создании рецепта：{message}",
             "createFailed": "Не удалось создать рецепт：{error}",
@@ -2040,7 +2040,7 @@
             "enterLoraName": "Пожалуйста, введите название LoRA или синтаксис",
             "reconnectedSuccessfully": "LoRA успешно переподключена",
             "reconnectFailed": "Ошибка переподключения LoRA: {message}",
-            "noPromptToSend": "Нет запроса для отправки",
+            "noPromptToSend": "Нет промпта для отправки",
             "cannotSend": "Невозможно отправить рецепт: отсутствует ID рецепта",
             "sendFailed": "Не удалось отправить рецепт в workflow",
             "sendError": "Ошибка отправки рецепта в workflow",
@@ -2048,7 +2048,7 @@
             "missingCheckpointInfo": "Отсутствуют данные о чекпойнте",
             "downloadCheckpointFailed": "Не удалось скачать чекпойнт: {message}",
             "missingLoraDownloadInfo": "Нет информации для скачивания этого LoRA",
-            "hashNotFoundOnCivitai": "Этот хэш LoRA не удаётся распознать на CivitAI - возможно, модель была обновлена или хэш недействителен",
+            "hashNotFoundOnCivitai": "Этот хеш LoRA не удаётся распознать на CivitAI - возможно, модель была обновлена или хеш недействителен",
             "downloadLoraFailed": "Не удалось скачать LoRA: {message}",
             "cannotDelete": "Невозможно удалить рецепт: отсутствует ID рецепта",
             "deleteConfirmationError": "Ошибка отображения подтверждения удаления",

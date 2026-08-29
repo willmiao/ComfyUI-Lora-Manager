@@ -75,7 +75,7 @@
             },
             "bulk": {
                 "title": "Opérations groupées",
-                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations par lot. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
+                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations groupées. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
             },
             "searchOptions": {
                 "title": "Options de recherche",
@@ -136,7 +136,7 @@
         },
         "exampleImages": {
             "checkError": "Erreur lors de la vérification des images d'exemple",
-            "missingHash": "Informations de hachage du modèle manquantes.",
+            "missingHash": "Informations de hash du modèle manquantes.",
             "noRemoteImagesAvailable": "Aucune image d'exemple distante disponible pour ce modèle sur CivitAI"
         },
         "badges": {
@@ -180,21 +180,21 @@
             "error": "Failed to refresh license metadata for {typePlural}: {message}"
         },
         "repairRecipes": {
-            "label": "Réparer les données de recettes",
-            "loading": "Réparation des données de recettes...",
-            "success": "{count} recettes réparées avec succès.",
-            "cancelled": "Réparation annulée. {count} recettes ont été réparées.",
-            "error": "Échec de la réparation des recettes : {message}"
+            "label": "Réparer les données de Recipes",
+            "loading": "Réparation des données de Recipes...",
+            "success": "{count} Recipes réparées avec succès.",
+            "cancelled": "Réparation annulée. {count} Recipes ont été réparées.",
+            "error": "Échec de la réparation des Recipes : {message}"
         },
         "rematchRecipes": {
-            "label": "Réassocier les recettes aux modèles locaux",
-            "loading": "Réassociation des recettes aux modèles locaux...",
-            "success": "{entries} entrées associées dans {recipes} recettes",
-            "successErrors": "{entries} entrées associées dans {recipes} recettes, {failures} échecs",
-            "allFailed": "Échec de la réassociation de {failures} recettes sur {total}",
-            "noMatch": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} recettes",
-            "cancelled": "Réassociation annulée. {recipes} recettes mises à jour ({entries} entrées)",
-            "error": "Échec de la réassociation des recettes : {message}"
+            "label": "Réassocier les Recipes aux modèles locaux",
+            "loading": "Réassociation des Recipes aux modèles locaux...",
+            "success": "{entries} entrées associées dans {recipes} Recipes",
+            "successErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
+            "allFailed": "Échec de la réassociation de {failures} Recipes sur {total}",
+            "noMatch": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} Recipes",
+            "cancelled": "Réassociation annulée. {recipes} Recipes mises à jour ({entries} entrées)",
+            "error": "Échec de la réassociation des Recipes : {message}"
         },
         "manageExcludedModels": {
             "label": "Gérer les modèles exclus"
@@ -343,7 +343,7 @@
             "recipeSettings": "Recipes",
             "extraFolderPaths": "Chemins de dossiers supplémentaires",
             "downloadPathTemplates": "Modèles de chemin de téléchargement",
-            "priorityTags": "Étiquettes prioritaires",
+            "priorityTags": "Tags prioritaires",
             "versionScope": "Indicateurs de mise à jour",
             "exampleImages": "Images d'exemple",
             "autoOrganize": "Organisation automatique",
@@ -464,8 +464,8 @@
                 "compact": "7 (1080p), 8 (2K), 10 (4K)"
             },
             "displayDensityWarning": "Attention : Des densités plus élevées peuvent causer des problèmes de performance sur les systèmes avec des ressources limitées.",
-            "recipesLayout": "Disposition des recettes",
-            "recipesLayoutHelp": "Choisissez comment les cartes de recettes sont organisées : une grille uniforme ou une disposition masonry (style Pinterest) qui préserve le rapport d'aspect de chaque image.",
+            "recipesLayout": "Disposition des Recipes",
+            "recipesLayoutHelp": "Choisissez comment les cartes de Recipes sont organisées : une grille uniforme ou une disposition masonry (style Pinterest) qui préserve le rapport d'aspect de chaque image.",
             "recipesLayoutOptions": {
                 "grid": "Grille",
                 "masonry": "Masonry"
@@ -493,7 +493,7 @@
             },
             "modelNameDisplayHelp": "Choisissez ce qui doit être affiché dans le pied de page de la carte du modèle",
             "cardBlurAmount": "Flou de superposition des cartes",
-            "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de recettes (0 = aucun flou, 20 = flou maximal)."
+            "cardBlurAmountHelp": "Ajustez l'intensité du flou des superpositions d'en-tête et de pied de page sur les cartes de modèles et de Recipes (0 = aucun flou, 20 = flou maximal)."
         },
         "folderSettings": {
             "activeLibrary": "Bibliothèque active",
@@ -534,23 +534,23 @@
             }
         },
         "priorityTags": {
-            "title": "Étiquettes prioritaires",
-            "description": "Personnalisez l'ordre de priorité des étiquettes pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
+            "title": "Tags prioritaires",
+            "description": "Personnalisez l'ordre de priorité des tags pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",
             "placeholder": "character, concept, style(toon|toon_style)",
-            "helpLinkLabel": "Ouvrir l'aide sur les étiquettes prioritaires",
+            "helpLinkLabel": "Ouvrir l'aide sur les tags prioritaires",
             "modelTypes": {
                 "lora": "LoRA",
                 "checkpoint": "Checkpoint",
                 "embedding": "Embedding"
             },
-            "saveSuccess": "Étiquettes prioritaires mises à jour.",
-            "saveError": "Échec de la mise à jour des étiquettes prioritaires.",
+            "saveSuccess": "Tags prioritaires mis à jour.",
+            "saveError": "Échec de la mise à jour des tags prioritaires.",
             "loadingSuggestions": "Chargement des suggestions...",
             "validation": {
                 "missingClosingParen": "L'entrée {index} n'a pas de parenthèse fermante.",
-                "missingCanonical": "L'entrée {index} doit inclure un nom d'étiquette canonique.",
-                "duplicateCanonical": "L'étiquette canonique \"{tag}\" apparaît plusieurs fois.",
-                "unknown": "Configuration d'étiquettes prioritaires invalide."
+                "missingCanonical": "L'entrée {index} doit inclure un nom de tag canonique.",
+                "duplicateCanonical": "Le tag canonique \"{tag}\" apparaît plusieurs fois.",
+                "unknown": "Configuration de tags prioritaires invalide."
             }
         },
         "downloadPathTemplates": {
@@ -747,7 +747,7 @@
             "refresh": {
                 "title": "Actualiser la liste des modèles",
                 "full": "Reconstruire le cache",
-                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers metadata — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles."
+                "fullTooltip": "Recharge tous les détails des modèles depuis les fichiers de métadonnées — à utiliser si la bibliothèque paraît obsolète ou après des modifications manuelles."
             },
             "fetch": {
                 "title": "Récupérer les métadonnées depuis CivitAI",
@@ -860,10 +860,10 @@
         "actions": {
             "sendCheckpoint": "Envoyer vers ComfyUI",
             "sendRecipe": "Envoyer vers ComfyUI",
-            "deleteRecipeWithShortcut": "Supprimer la recette (Del)"
+            "deleteRecipeWithShortcut": "Supprimer la Recipe (Del)"
         },
         "navigation": {
-            "label": "Navigation des recettes",
+            "label": "Navigation des Recipes",
             "previousWithShortcut": "Recette précédente (←)",
             "nextWithShortcut": "Recette suivante (→)"
         },
@@ -871,7 +871,7 @@
             "sendWorkflow": "Envoyer le workflow vers ComfyUI",
             "sent": "Workflow envoyé vers ComfyUI",
             "sendFailed": "Échec de l'envoi du workflow vers ComfyUI",
-            "noWorkflow": "Aucun workflow intégré trouvé dans cette recette"
+            "noWorkflow": "Aucun workflow intégré trouvé dans cette Recipe"
         },
         "status": {
             "ready": "Prêt à l'emploi",
@@ -881,7 +881,7 @@
             "downloadMissingTooltip": "Cliquer pour télécharger les LoRAs manquants"
         },
         "loraStatus": {
-            "none": "Aucun LoRA dans cette recette",
+            "none": "Aucun LoRA dans cette Recipe",
             "allAvailable": "Tous les LoRAs sont disponibles - Prêt à l'emploi",
             "missing": "{missing} LoRA(s) manquant(s) sur {total}"
         },
@@ -930,7 +930,7 @@
                 "root": "Racine",
                 "browseFolders": "Parcourir les dossiers :",
                 "downloadAndSaveRecipe": "Télécharger et sauvegarder la recipe",
-                "importRecipeOnly": "Importer uniquement la recette",
+                "importRecipeOnly": "Importer uniquement la Recipe",
                 "importAndDownload": "Importer et télécharger",
                 "downloadMissingLoras": "Télécharger les LoRAs manquants",
                 "saveRecipe": "Sauvegarder la recipe",
@@ -963,7 +963,7 @@
                 }
             },
             "sort": {
-                "title": "Trier les recettes par...",
+                "title": "Trier les Recipes par...",
                 "name": "Nom",
                 "nameAsc": "A - Z",
                 "nameDesc": "Z - A",
@@ -987,13 +987,13 @@
                 "action": "Favoris"
             },
             "layout": {
-                "title": "Disposition des recettes",
+                "title": "Disposition des Recipes",
                 "grid": "Disposition en grille",
                 "masonry": "Disposition masonry (style Pinterest, préserve le rapport d'aspect de l'image)"
             }
         },
         "duplicates": {
-            "finding": "Recherche de recettes en doublon...",
+            "finding": "Recherche de Recipes en doublon...",
             "found": "Trouvé {count} groupes de doublons",
             "noGroups": "Aucun groupe de doublons trouvé avec le critère de correspondance actuel",
             "keepLatest": "Garder les dernières versions",
@@ -1002,8 +1002,8 @@
             "basis": {
                 "loraCombo": "Correspondance : combinaison de LoRA",
                 "loraComboAndPrompt": "Correspondance : combinaison de LoRA + prompt",
-                "hintLoraCombo": "Les recettes avec les mêmes LoRAs et des forces identiques sont regroupées.",
-                "hintPromptIncluded": "Les recettes ne sont regroupées que si elles utilisent les mêmes LoRAs avec des forces identiques ET ont le même prompt."
+                "hintLoraCombo": "Les Recipes avec les mêmes LoRAs et des forces identiques sont regroupées.",
+                "hintPromptIncluded": "Les Recipes ne sont regroupées que si elles utilisent les mêmes LoRAs avec des forces identiques ET ont le même prompt."
             }
         },
         "contextMenu": {
@@ -1027,18 +1027,18 @@
                 "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
             },
             "repair": {
-                "starting": "Réparation des métadonnées de la recette...",
-                "success": "Métadonnées de la recette réparées avec succès",
+                "starting": "Réparation des métadonnées de la Recipe...",
+                "success": "Métadonnées de la Recipe réparées avec succès",
                 "skipped": "Recette déjà à la version la plus récente, aucune réparation nécessaire",
-                "failed": "Échec de la réparation de la recette : {message}",
-                "missingId": "Impossible de réparer la recette : ID de recette manquant"
+                "failed": "Échec de la réparation de la Recipe : {message}",
+                "missingId": "Impossible de réparer la Recipe : ID de Recipe manquant"
             },
             "reimport": {
-                "starting": "Ré-import de la recette depuis la source...",
+                "starting": "Ré-import de la Recipe depuis la source...",
                 "success": "Recette ré-importée avec succès",
-                "noSourceUrl": "La recette n'a pas d'URL source, ré-import impossible",
-                "failed": "Échec du ré-import de la recette : {message}",
-                "missingId": "Impossible de ré-importer la recette : ID de recette manquant"
+                "noSourceUrl": "La Recipe n'a pas d'URL source, ré-import impossible",
+                "failed": "Échec du ré-import de la Recipe : {message}",
+                "missingId": "Impossible de ré-importer la Recipe : ID de Recipe manquant"
             }
         },
         "batchImport": {
@@ -1243,7 +1243,7 @@
             "lora": "LoRA",
             "locon": "LyCORIS",
             "dora": "DoRA",
-            "checkpoint": "Point de contrôle",
+            "checkpoint": "Checkpoint",
             "diffusion_model": "Modèle de diffusion",
             "embedding": "Embeddings"
         },
@@ -1354,13 +1354,13 @@
             "message": "Êtes-vous sûr de vouloir exclure ce modèle ? Les modèles exclus n'apparaîtront pas dans les recherches ou listes de modèles."
         },
         "deleteDuplicateRecipes": {
-            "title": "Supprimer les recipes dupliquées",
-            "message": "Êtes-vous sûr de vouloir supprimer les recipes dupliquées sélectionnées ?",
+            "title": "Supprimer les Recipes en double",
+            "message": "Êtes-vous sûr de vouloir supprimer les Recipes en double sélectionnées ?",
             "countMessage": "recipes seront définitivement supprimées."
         },
         "deleteDuplicateModels": {
-            "title": "Supprimer les modèles dupliqués",
-            "message": "Êtes-vous sûr de vouloir supprimer les modèles dupliqués sélectionnés ?",
+            "title": "Supprimer les modèles en double",
+            "message": "Êtes-vous sûr de vouloir supprimer les modèles en double sélectionnés ?",
             "countMessage": "modèles seront définitivement supprimés."
         },
         "clearCache": {
@@ -1384,7 +1384,7 @@
         "checkUpdates": {
             "title": "Vérifier les mises à jour pour tous les {typePlural} ?",
             "message": "Cette action vérifie les mises à jour pour tous les {typePlural} de votre bibliothèque. Les grandes collections peuvent prendre un peu plus de temps.",
-            "tip": "Besoin de procéder par étapes ? Passez en mode lot, sélectionnez les modèles souhaités puis utilisez \"Vérifier les mises à jour pour la sélection\".",
+            "tip": "Besoin de procéder par étapes ? Passez en mode groupé, sélectionnez les modèles souhaités puis utilisez \"Vérifier les mises à jour pour la sélection\".",
             "action": "Tout vérifier"
         },
         "bulkAddTags": {
@@ -1407,7 +1407,7 @@
         },
         "bulkDownloadMissingLoras": {
             "title": "Télécharger les LoRAs manquants",
-            "message": "{uniqueCount} LoRAs manquants uniques trouvés (sur un total de {totalCount} dans les recettes sélectionnées).",
+            "message": "{uniqueCount} LoRAs manquants uniques trouvés (sur un total de {totalCount} dans les Recipes sélectionnées).",
             "previewTitle": "LoRAs à télécharger :",
             "moreItems": "...et {count} de plus",
             "note": "Les fichiers seront téléchargés en utilisant les modèles de chemins par défaut. Cela peut prendre un certain temps selon le nombre de LoRAs.",
@@ -1515,7 +1515,7 @@
                 "showLess": "Afficher moins"
             },
             "usageTips": {
-                "addPresetParameter": "Ajouter un paramètre prédéfini...",
+                "addPresetParameter": "Ajouter un paramètre préréglé...",
                 "strengthMin": "Force Min",
                 "strengthMax": "Force Max",
                 "strengthRange": "Gamme de force",
@@ -1533,8 +1533,8 @@
                 "cancel": "Annuler la modification",
                 "save": "Sauvegarder les modifications",
                 "addPlaceholder": "Tapez pour ajouter ou cliquez sur les suggestions ci-dessous",
-                "editWord": "Modifier le mot déclencheur",
-                "editPlaceholder": "Modifier le mot déclencheur",
+                "editWord": "Modifier le mot-clé",
+                "editPlaceholder": "Modifier le mot-clé",
                 "copyWord": "Copier le mot-clé",
                 "deleteWord": "Supprimer le mot-clé",
                 "suggestions": {
@@ -2026,15 +2026,15 @@
             "negativePromptUpdated": "Prompt négatif mis à jour avec succès",
             "promptEditorHint": "Appuyez sur Entrée pour sauvegarder, Maj+Entrée pour nouvelle ligne",
             "noRecipeId": "Aucun ID de recipe disponible",
-            "sendToWorkflowFailed": "Échec de l'envoi de la recette vers le workflow : {message}",
+            "sendToWorkflowFailed": "Échec de l'envoi de la Recipe vers le workflow : {message}",
             "copyFailed": "Erreur lors de la copie de la syntaxe de la recipe : {message}",
             "createError": "Erreur lors de la création du Recipe ：{message}",
             "createFailed": "Échec de la création du Recipe ：{error}",
             "createMissingData": "Données requises manquantes pour créer le Recipe",
             "created": "Recipe créé avec succès",
             "noMissingLoras": "Aucun LoRA manquant à télécharger",
-            "noPreviousRecipe": "Aucune recette précédente",
-            "noNextRecipe": "Aucune recette suivante",
+            "noPreviousRecipe": "Aucune Recipe précédente",
+            "noNextRecipe": "Aucune Recipe suivante",
             "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
             "preparingForDownloadFailed": "Erreur lors de la préparation des LoRAs pour le téléchargement",
             "enterLoraName": "Veuillez entrer un nom ou une syntaxe LoRA",
@@ -2076,25 +2076,25 @@
             "batchImportRateLimited": "Limite de débit du fournisseur de métadonnées atteinte — les requêtes sont ralenties et certains éléments peuvent être ignorés. Vous pouvez relancer l'importation plus tard.",
             "batchImportBrowseFailed": "Failed to browse directory: {message}",
             "batchImportDirectorySelected": "Directory selected: {path}",
-            "noRecipesSelected": "Aucune recette sélectionnée",
+            "noRecipesSelected": "Aucune Recipe sélectionnée",
             "repairBulkComplete": "Réparation terminée : {repaired} réparée(s), {skipped} ignorée(s) (sur {total})",
-            "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} recettes sélectionnées",
-            "repairBulkFailed": "Échec de la réparation des recettes sélectionnées : {message}",
-            "rematchComplete": "{entries} entrées associées dans {recipes} recettes",
-            "rematchCompleteErrors": "{entries} entrées associées dans {recipes} recettes, {failures} échecs",
-            "rematchAllFailed": "Échec de la réassociation de {failures} recettes sélectionnées sur {total}",
-            "rematchUnmatched": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} recettes",
-            "rematchSkipped": "Aucune des {total} recettes sélectionnées ne nécessite de réassociation",
-            "rematchFailed": "Échec de la réassociation des recettes sélectionnées : {message}",
-            "reimporting": "Ré-import de la recette depuis la source...",
+            "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} Recipes sélectionnées",
+            "repairBulkFailed": "Échec de la réparation des Recipes sélectionnées : {message}",
+            "rematchComplete": "{entries} entrées associées dans {recipes} Recipes",
+            "rematchCompleteErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
+            "rematchAllFailed": "Échec de la réassociation de {failures} Recipes sélectionnées sur {total}",
+            "rematchUnmatched": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} Recipes",
+            "rematchSkipped": "Aucune des {total} Recipes sélectionnées ne nécessite de réassociation",
+            "rematchFailed": "Échec de la réassociation des Recipes sélectionnées : {message}",
+            "reimporting": "Ré-import de la Recipe depuis la source...",
             "reimportSuccess": "Recette ré-importée avec succès",
             "reimportBulkComplete": "Ré-import terminé : {completed} ré-importé(s), {failed} échec(s) (sur {total})",
-            "reimportBulkFailed": "Échec du ré-import de certaines recettes",
-            "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les recettes sélectionnées",
+            "reimportBulkFailed": "Échec du ré-import de certaines Recipes",
+            "noMissingLorasInSelection": "Aucun LoRA manquant trouvé dans les Recipes sélectionnées",
             "noLoraRootConfigured": "Aucun répertoire racine LoRA configuré. Veuillez définir un répertoire racine LoRA par défaut dans les paramètres.",
             "workflowSent": "Workflow envoyé vers ComfyUI",
             "workflowSendFailed": "Échec de l'envoi du workflow vers ComfyUI: {error}",
-            "workflowNoWorkflow": "Aucun workflow intégré trouvé dans cette recette"
+            "workflowNoWorkflow": "Aucun workflow intégré trouvé dans cette Recipe"
         },
         "models": {
             "noModelsSelected": "Aucun modèle sélectionné",
@@ -2190,7 +2190,7 @@
             "deleted": "Préréglage \"{name}\" supprimé",
             "applied": "Préréglage \"{name}\" appliqué",
             "overwritten": "Préréglage \"{name}\" remplacé",
-            "restored": "Paramètres par défaut restaurés"
+            "restored": "Préréglages par défaut restaurés"
         },
         "error": {
             "presetNameEmpty": "Le nom du préréglage ne peut pas être vide",
@@ -2389,7 +2389,7 @@
     },
     "conflictConfirm": {
         "title": "Résoudre les conflits de noms de fichiers",
-        "message": "Renommer en ajoutant un hachage de 4 caractères à chaque nom de fichier en double.",
+        "message": "Renommer en ajoutant un hash de 4 caractères à chaque nom de fichier en double.",
         "note": "Cette opération renomme les fichiers sur le disque. Les références de modèle dans les workflows existants peuvent nécessiter une mise à jour si vous utilisez le format de syntaxe A1111.",
         "detail": "Exemple : <code>filename_v1.2</code> → <code>filename_v1.2-ab3c</code>",
         "impact": "Renommera <strong>{count}</strong> fichier(s) dans <strong>{groups}</strong> groupe(s) de doublons",

@@ -108,7 +108,7 @@
             "viewOnHuggingFace": "在 Hugging Face 查看",
             "sendToWorkflow": "发送到 ComfyUI（点击：追加，Shift+点击：替换）",
             "copyLoRASyntax": "复制 LoRA 语法",
-            "checkpointNameCopied": "检查点名称已复制",
+            "checkpointNameCopied": "Checkpoint 名称已复制",
             "toggleBlur": "切换模糊",
             "show": "显示",
             "openExampleImages": "打开示例图片文件夹",
@@ -131,7 +131,7 @@
             "updateFailed": "收藏状态更新失败"
         },
         "sendToWorkflow": {
-            "checkpointNotImplemented": "发送检查点到工作流 - 功能待实现",
+            "checkpointNotImplemented": "发送Checkpoint到工作流 - 功能待实现",
             "missingPath": "无法确定此卡片的模型路径"
         },
         "exampleImages": {
@@ -187,14 +187,14 @@
             "error": "配方修复失败：{message}"
         },
         "rematchRecipes": {
-            "label": "将食谱重新匹配到本地模型",
-            "loading": "正在将食谱重新匹配到本地模型...",
-            "success": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱",
-            "successErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱，{failures} 个失败",
-            "allFailed": "{failures}/{total} 个食谱重新匹配失败",
-            "noMatch": "在 {recipes} 个食谱中未找到 {entries} 个条目的本地匹配",
-            "cancelled": "已取消重新匹配。{recipes} 个食谱已更新（{entries} 个条目）。",
-            "error": "食谱重新匹配失败：{message}"
+            "label": "将配方重新匹配到本地模型",
+            "loading": "正在将配方重新匹配到本地模型...",
+            "success": "已匹配 {entries} 个条目，涉及 {recipes} 个配方",
+            "successErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个配方，{failures} 个失败",
+            "allFailed": "{failures}/{total} 个配方重新匹配失败",
+            "noMatch": "在 {recipes} 个配方中未找到 {entries} 个条目的本地匹配",
+            "cancelled": "已取消重新匹配。{recipes} 个配方已更新（{entries} 个条目）。",
+            "error": "配方重新匹配失败：{message}"
         },
         "manageExcludedModels": {
             "label": "管理已排除的模型"
@@ -696,7 +696,7 @@
         "aiProvider": {
             "title": "AI 提供商",
             "provider": "提供商",
-            "providerHelp": "选择您的 LLM 提供商。OpenAI 和 Ollama 使用预设的 API 端点。自定义允许您指定任何兼容 OpenAI 的端点。",
+            "providerHelp": "选择你的 LLM 提供商。OpenAI 和 Ollama 使用预设的 API 端点。自定义允许你指定任何兼容 OpenAI 的端点。",
             "providerOptions": {
                 "openai": "OpenAI",
                 "ollama": "Ollama（本地）",
@@ -711,7 +711,7 @@
             "apiBaseHelp": "LLM API 的基础地址。选择预设或输入自定义地址，下拉框显示所有支持的提供商预设。",
             "apiBasePlaceholder": "https://api.openai.com/v1",
             "apiKey": "API 密钥",
-            "apiKeyHelp": "LLM 提供商的 API 密钥。本地存储，除您选择的 LLM 提供商外不会发送到任何服务器。",
+            "apiKeyHelp": "LLM 提供商的 API 密钥。本地存储，除你选择的 LLM 提供商外不会发送到任何服务器。",
             "apiKeyPlaceholder": "sk-...",
             "apiKeyNotSet": "未设置",
             "apiKeyConfigured": "已配置",
@@ -946,8 +946,8 @@
                 "earlyAccessRequired": "此 LoRA 需要提前访问权限才能下载。",
                 "earlyAccessEnds": "提前访问权限将于 {date} 结束。",
                 "earlyAccess": "提前访问",
-                "verifyEarlyAccess": "在下载之前，请验证您是否已购买提前访问权限。",
-                "duplicateRecipesFound": "在您的库中找到 {count} 个相同的配方。",
+                "verifyEarlyAccess": "在下载之前，请确认你已购买提前访问权限。",
+                "duplicateRecipesFound": "在你的库中找到 {count} 个相同的配方。",
                 "duplicateRecipesDescription": "这些配方包含相同的 LoRA，权重完全相同。",
                 "showDuplicates": "显示重复项",
                 "hideDuplicates": "隐藏重复项",
@@ -1671,13 +1671,13 @@
                     "label": "基础筛选",
                     "state": {
                         "showAll": "全部版本",
-                        "showSameBase": "相同基模型"
+                        "showSameBase": "相同基础模型"
                     },
                     "tooltip": {
                         "showAllVersions": "切换为显示所有版本",
-                        "showSameBaseVersions": "仅显示与当前基模型匹配的版本"
+                        "showSameBaseVersions": "仅显示与当前基础模型匹配的版本"
                     },
-                    "empty": "没有与当前基模型筛选匹配的版本。"
+                    "empty": "没有与当前基础模型筛选匹配的版本。"
                 },
                 "empty": "该模型还没有版本历史。",
                 "error": "加载版本失败。",
@@ -1850,7 +1850,7 @@
             "copiedUri": "链接已复制到剪贴板：{{uri}}",
             "uriClipboardFallback": "链接：{{uri}}",
             "setupRequired": "示例图片存储",
-            "setupDescription": "要添加自定义示例图片，您需要先设置下载位置。",
+            "setupDescription": "要添加自定义示例图片，你需要先设置下载位置。",
             "setupUsage": "此路径用于存储下载的示例图片和自定义图片。",
             "openSettings": "打开设置"
         }
@@ -2044,9 +2044,9 @@
             "cannotSend": "无法发送配方：缺少配方 ID",
             "sendFailed": "发送配方到工作流失败",
             "sendError": "发送配方到工作流出错",
-            "missingCheckpointPath": "缺少检查点路径",
-            "missingCheckpointInfo": "缺少检查点信息",
-            "downloadCheckpointFailed": "下载检查点失败：{message}",
+            "missingCheckpointPath": "缺少Checkpoint路径",
+            "missingCheckpointInfo": "缺少Checkpoint信息",
+            "downloadCheckpointFailed": "下载Checkpoint失败：{message}",
             "missingLoraDownloadInfo": "缺少此 LoRA 的下载信息",
             "hashNotFoundOnCivitai": "此 LoRA 哈希无法在 CivitAI 上解析——模型可能已更新或哈希无效",
             "downloadLoraFailed": "下载 LoRA 失败：{message}",
@@ -2080,12 +2080,12 @@
             "repairBulkComplete": "修复完成：{repaired} 个已修复，{skipped} 个已跳过（共 {total} 个）",
             "repairBulkSkipped": "所选 {total} 个配方无需修复",
             "repairBulkFailed": "修复所选配方失败：{message}",
-            "rematchComplete": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱",
-            "rematchCompleteErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个食谱，{failures} 个失败",
-            "rematchAllFailed": "{failures}/{total} 个所选食谱重新匹配失败",
-            "rematchUnmatched": "在 {recipes} 个食谱中未找到 {entries} 个条目的本地匹配",
-            "rematchSkipped": "{total} 个所选食谱均无需重新匹配",
-            "rematchFailed": "重新匹配所选食谱失败：{message}",
+            "rematchComplete": "已匹配 {entries} 个条目，涉及 {recipes} 个配方",
+            "rematchCompleteErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个配方，{failures} 个失败",
+            "rematchAllFailed": "{failures}/{total} 个所选配方重新匹配失败",
+            "rematchUnmatched": "在 {recipes} 个配方中未找到 {entries} 个条目的本地匹配",
+            "rematchSkipped": "{total} 个所选配方均无需重新匹配",
+            "rematchFailed": "重新匹配所选配方失败：{message}",
             "reimporting": "正在从源重新导入配方...",
             "reimportSuccess": "配方已从源重新导入成功",
             "reimportBulkComplete": "重新导入完成：{completed} 个已导入，{failed} 个失败（共 {total} 个）",
