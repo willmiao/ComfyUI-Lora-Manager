@@ -99,6 +99,8 @@ of these — pick the preferred form in the §2 tables and normalize.
 ### R8 — No untranslated English leftovers
 Full sentences left byte-identical to `en.json` are bugs (brand names and URL placeholders
 are the exception). Every locale has them; see §6 for the per-locale checklist.
+`[TODO: Translate]` placeholders are the sanctioned intermediate state during feature
+development (see §7) — do not "fix" them unless the feature owner asked for translations.
 
 ### R9 — Mirror the source even when the source is wrong
 If `en.json` itself contains an inconsistency (e.g. the `Civitai` vs `CivitAI` casing split,
@@ -325,10 +327,15 @@ locales (the sibling `creditRequired` has always been translated).
 ### Adding a new UI string
 1. Add the key to `locales/en.json` only.
 2. Run `python scripts/sync_translation_keys.py` — it inserts the key into the other 9
-   locales (as an English placeholder) preserving formatting.
-3. Translate the new key in every locale, applying §1–§3 (placeholders verbatim, Recipe
-   rule, term maps, register).
-4. If the new string contains new terminology, extend §2 tables.
+   locales (as a `[TODO: Translate]` placeholder) preserving formatting.
+3. **During feature development, stop here.** While the UI copy is still in flux, leave the
+   `[TODO: Translate]` placeholders as-is — translating churning strings into 9 locales is
+   wasted work. Placeholders are a normal intermediate state, not a bug.
+4. Once the wording is final and the feature owner explicitly asks for translations,
+   translate **all** pending `[TODO: Translate]` keys in every locale (not just the latest
+   feature's), applying §1–§3 (placeholders verbatim, Recipe rule, term maps, register).
+   Find pending keys with: `grep -c "TODO: Translate" locales/*.json`
+5. If the new string contains new terminology, extend §2 tables.
 
 ### Fixing a translation bug
 1. Locate the key (dotted path) in the relevant locale file.
