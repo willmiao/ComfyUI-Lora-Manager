@@ -330,6 +330,42 @@ describe('RecipeModal resource item interactions', () => {
     expect(container.classList.contains('active')).toBe(true);
   });
 
+  it('shows reconnect failures inline in the panel instead of a toast', async () => {
+    const recipeModal = await createRecipeModal();
+    global.fetch = vi.fn(async (url) => {
+      if (String(url).includes('/recipe/lora/reconnect')) {
+        return { ok: true, json: async () => ({ success: false, error: 'LoRA not found locally' }) };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    recipeModal.showRecipeDetails(recipeWithResources);
+    await flushWiring();
+
+    const deletedItem = document.querySelector('.recipe-lora-item.is-deleted');
+    deletedItem.querySelector('.lora-reconnect').click();
+    const container = deletedItem.querySelector('.lora-reconnect-container');
+    const input = container.querySelector('.reconnect-input');
+    const error = container.querySelector('.reconnect-error');
+    expect(error).not.toBeNull();
+
+    input.value = 'nonexistent-lora';
+    container.querySelector('.reconnect-confirm-btn').click();
+
+    await vi.waitFor(() => {
+      expect(error.classList.contains('active')).toBe(true);
+    });
+    expect(error.textContent).toContain('LoRA not found locally');
+    expect(showToastMock).not.toHaveBeenCalledWith(
+      'toast.recipes.reconnectFailed',
+      expect.anything(),
+      'error'
+    );
+
+    // Typing again clears the inline error
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    expect(error.classList.contains('active')).toBe(false);
+    expect(error.textContent).toBe('');
+  });
   it('renders hash-invalid LoRAs with a dedicated badge and reconnect instead of download', async () => {
     const recipeModal = await createRecipeModal();
     recipeModal.showRecipeDetails(recipeWithResources);

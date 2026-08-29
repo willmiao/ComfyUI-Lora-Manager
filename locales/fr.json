@@ -903,6 +903,9 @@
             "preparingDownload": "Préparation du téléchargement...",
             "reconnect": "Reconnecter",
             "reconnectTooltip": "Reconnecter avec un LoRA local",
+            "reconnectInstructions": "Entrez la syntaxe ou le nom du LoRA à reconnecter:",
+            "reconnectExample": "Exemple: <lora:name:1> ou simplement le nom",
+            "reconnectPlaceholder": "Entrez le nom ou la syntaxe du LoRA",
             "viewOnCivitai": "Voir sur CivitAI",
             "openLoraDetails": "Voir {name} dans la bibliothèque LoRA",
             "openCheckpointDetails": "Voir {name} dans la bibliothèque de modèles"

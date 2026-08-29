@@ -903,6 +903,9 @@
             "preparingDownload": "Подготовка к скачиванию...",
             "reconnect": "Переподключить",
             "reconnectTooltip": "Переподключить к локальному LoRA",
+            "reconnectInstructions": "Введите синтаксис или имя LoRA для переподключения:",
+            "reconnectExample": "Пример: <lora:name:1> или просто имя",
+            "reconnectPlaceholder": "Введите имя или синтаксис LoRA",
             "viewOnCivitai": "Открыть на CivitAI",
             "openLoraDetails": "Открыть {name} в библиотеке LoRA",
             "openCheckpointDetails": "Открыть {name} в библиотеке моделей"

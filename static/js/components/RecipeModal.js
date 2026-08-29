@@ -963,16 +963,17 @@ class RecipeModal {
                             ${isDeleted || lora.hashInvalid ? `
                             <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
                                 <div class="reconnect-instructions">
-                                    <p>Enter LoRA Syntax or Name to Reconnect:</p>
-                                    <small>Example: <code>&lt;lora:Boris_Vallejo_BV_flux_D:1&gt;</code> or just <code>Boris_Vallejo_BV_flux_D</code></small>
+                                    <p>${escapeHtml(translate('recipes.resources.reconnectInstructions', {}, 'Enter LoRA syntax or name to reconnect:'))}</p>
+                                    <small>${escapeHtml(translate('recipes.resources.reconnectExample', {}, 'Example: <lora:name:1> or just the name'))}</small>
                                 </div>
                                 <div class="reconnect-form">
-                                    <input type="text" class="reconnect-input" placeholder="Enter LoRA name or syntax">
+                                    <input type="text" class="reconnect-input" placeholder="${escapeHtml(translate('recipes.resources.reconnectPlaceholder', {}, 'Enter LoRA name or syntax'))}">
                                     <div class="reconnect-actions">
-                                        <button class="reconnect-cancel-btn">Cancel</button>
-                                        <button class="reconnect-confirm-btn">Reconnect</button>
+                                        <button class="reconnect-cancel-btn">${escapeHtml(translate('common.cancel', {}, 'Cancel'))}</button>
+                                        <button class="reconnect-confirm-btn">${escapeHtml(translate('recipes.resources.reconnect', {}, 'Reconnect'))}</button>
                                     </div>
                                 </div>
+                                <p class="reconnect-error" role="alert"></p>
                             </div>` : ''}
                         </div>
                     </div>
@@ -1660,6 +1661,9 @@ class RecipeModal {
         // Add keydown handlers to reconnect inputs
         const reconnectInputs = document.querySelectorAll('.reconnect-input');
         reconnectInputs.forEach(input => {
+            input.addEventListener('input', () => {
+                this.clearReconnectError(input.closest('.lora-reconnect-container'));
+            });
             input.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     const container = input.closest('.lora-reconnect-container');
@@ -1683,6 +1687,7 @@ class RecipeModal {
         const container = document.querySelector(`.lora-reconnect-container[data-lora-index="${loraIndex}"]`);
         if (container) {
             container.classList.add('active');
+            this.clearReconnectError(container);
             const input = container.querySelector('.reconnect-input');
             input.focus();
         }
@@ -1691,14 +1696,33 @@ class RecipeModal {
     hideReconnectInput(container) {
         if (container && container.classList.contains('active')) {
             container.classList.remove('active');
+            this.clearReconnectError(container);
             const input = container.querySelector('.reconnect-input');
             if (input) input.value = '';
         }
     }
 
+    showReconnectError(container, message) {
+        const error = container && container.querySelector('.reconnect-error');
+        if (error) {
+            error.textContent = message;
+            error.classList.add('active');
+        }
+    }
+
+    clearReconnectError(container) {
+        const error = container && container.querySelector('.reconnect-error');
+        if (error) {
+            error.textContent = '';
+            error.classList.remove('active');
+        }
+    }
+
     async reconnectLora(loraIndex, inputValue) {
+        const container = document.querySelector(`.lora-reconnect-container[data-lora-index="${loraIndex}"]`);
+
         if (!inputValue || !inputValue.trim()) {
-            showToast('toast.recipes.enterLoraName', {}, 'error');
+            this.showReconnectError(container, translate('toast.recipes.enterLoraName', {}, 'Please enter a LoRA name or syntax'));
             return;
         }
 
@@ -1729,7 +1753,6 @@ class RecipeModal {
 
             if (result.success) {
                 // Hide the reconnect input
-                const container = document.querySelector(`.lora-reconnect-container[data-lora-index="${loraIndex}"]`);
                 this.hideReconnectInput(container);
 
                 // Update the current recipe with the updated lora data
@@ -1747,11 +1770,11 @@ class RecipeModal {
                     loras: this.currentRecipe.loras
                 });
             } else {
-                showToast('toast.recipes.reconnectFailed', { message: result.error }, 'error');
+                this.showReconnectError(container, translate('toast.recipes.reconnectFailed', { message: result.error }, `Error reconnecting LoRA: ${result.error}`));
             }
         } catch (error) {
             console.error('Error reconnecting LoRA:', error);
-            showToast('toast.recipes.reconnectFailed', { message: error.message }, 'error');
+            this.showReconnectError(container, translate('toast.recipes.reconnectFailed', { message: error.message }, `Error reconnecting LoRA: ${error.message}`));
         } finally {
             state.loadingManager.hide();
         }

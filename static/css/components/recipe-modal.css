@@ -966,14 +966,14 @@
 /* Deleted badge is a pure status indicator; the reconnect action lives on
    an explicit ghost button in the item's action row. */
 
-/* LoRA reconnect container */
+/* LoRA reconnect container: an inline extension of the item, not a nested
+   card — a dashed separator reads lighter than another bordered box inside
+   an already bordered item. */
 .lora-reconnect-container {
     display: none;
     flex-direction: column;
-    background: var(--lora-surface);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    padding: 12px;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 10px;
     margin-top: 10px;
     gap: 10px;
 }
@@ -1001,18 +1001,6 @@
     font-size: 0.85em;
 }
 
-.reconnect-instructions code {
-    background: rgba(0, 0, 0, 0.1);
-    padding: 2px 4px;
-    border-radius: 3px;
-    font-family: var(--font-mono);
-    font-size: 0.9em;
-}
-
-[data-theme="dark"] .reconnect-instructions code {
-    background: rgba(255, 255, 255, 0.1);
-}
-
 .reconnect-form {
     display: flex;
     flex-direction: column;
@@ -1020,13 +1008,25 @@
 }
 
 .reconnect-input {
-    width: calc(100% - 20px);
+    box-sizing: border-box;
+    width: 100%;
     padding: 8px 10px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
     background: var(--bg-color);
     color: var(--text-color);
     font-size: 0.9em;
+}
+
+.reconnect-error {
+    display: none;
+    margin: 0;
+    color: var(--lora-error);
+    font-size: 0.85em;
+}
+
+.reconnect-error.active {
+    display: block;
 }
 
 .reconnect-actions {

@@ -903,6 +903,9 @@
             "preparingDownload": "正在準備下載...",
             "reconnect": "重新關聯",
             "reconnectTooltip": "與本地 LoRA 重新關聯",
+            "reconnectInstructions": "輸入 LoRA 語法或名稱以重新關聯：",
+            "reconnectExample": "範例：<lora:name:1> 或只填名稱",
+            "reconnectPlaceholder": "輸入 LoRA 名稱或語法",
             "viewOnCivitai": "在 CivitAI 上檢視",
             "openLoraDetails": "在 LoRA 庫中檢視 {name}",
             "openCheckpointDetails": "在模型庫中檢視 {name}"

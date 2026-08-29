@@ -903,6 +903,9 @@
             "preparingDownload": "מכין את ההורדה...",
             "reconnect": "חבר מחדש",
             "reconnectTooltip": "חבר מחדש עם LoRA מקומי",
+            "reconnectInstructions": "הזן תחביר או שם של LoRA לחיבור מחדש:",
+            "reconnectExample": "דוגמה: <lora:name:1> או רק את השם",
+            "reconnectPlaceholder": "הזן שם או תחביר של LoRA",
             "viewOnCivitai": "הצג ב-CivitAI",
             "openLoraDetails": "הצג את {name} בספריית ה-LoRA",
             "openCheckpointDetails": "הצג את {name} בספריית המודלים"
