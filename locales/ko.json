@@ -173,11 +173,11 @@
             "error": "예시 이미지 폴더 정리에 실패했습니다: {message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "라이선스 메타데이터 새로고침",
+            "loading": "{typePlural}의 라이선스 메타데이터를 새로고침하는 중...",
+            "success": "{count}개의 {typePlural} 라이선스 메타데이터를 업데이트했습니다",
+            "none": "모든 {typePlural}에 이미 라이선스 메타데이터가 있습니다",
+            "error": "{typePlural}의 라이선스 메타데이터를 새로고침하지 못했습니다: {message}"
         },
         "repairRecipes": {
             "label": "레시피 데이터 복구",
@@ -517,7 +517,7 @@
         "extraFolderPaths": {
             "title": "추가 폴다 경로",
             "description": "LoRA Manager 전용 추가 모델 루트 경로입니다. ComfyUI의 표준 폴더 외부 위치에서 모델을 로드하여 대규모 라이브러리로 인한 성능 저하를 방지합니다.",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "변경 사항을 적용하려면 재시작이 필요합니다",
             "modelTypes": {
                 "lora": "LoRA 경로",
                 "checkpoint": "Checkpoint 경로",
@@ -1573,10 +1573,10 @@
                 "noNext": "다음 모델이 없습니다"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "생성 콘텐츠 판매 금지",
+                "noRentCivit": "CivitAI 생성 불가",
+                "noRent": "생성 서비스 불가",
+                "noSell": "모델 판매 금지",
                 "creditRequired": "제작자 크레딧 필요",
                 "noDerivatives": "공유 병합 불가",
                 "noReLicense": "동일한 권한 필요",
@@ -1755,7 +1755,7 @@
             "message": "Embedding 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
         },
         "recipes": {
-            "title": "Recipe Manager 초기화 중",
+            "title": "레시피 매니저 초기화 중",
             "message": "레시피를 로딩하고 처리하고 있습니다. 몇 분이 걸릴 수 있습니다..."
         },
         "statistics": {
@@ -2064,7 +2064,7 @@
             "processingError": "처리 오류: {message}",
             "folderBrowserError": "폴더 브라우저 로딩 오류: {message}",
             "recipeSaveFailed": "레시피 저장 실패: {error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "레시피가 저장되었습니다",
             "importFailed": "가져오기 실패: {message}",
             "folderTreeFailed": "폴더 트리 로딩 실패",
             "folderTreeError": "폴더 트리 로딩 오류",
@@ -2172,8 +2172,8 @@
             "compactModeToggled": "컴팩트 모드 {state}",
             "settingSaveFailed": "설정 저장 실패: {message}",
             "displayDensitySet": "표시 밀도가 {density}로 설정되었습니다",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "라이브러리를 불러오지 못했습니다: {message}",
+            "libraryActivateFailed": "라이브러리를 활성화하지 못했습니다: {message}",
             "languageChangeFailed": "언어 변경 실패: {message}",
             "cacheCleared": "캐시 파일이 성공적으로 지워졌습니다. 다음 작업 시 캐시가 재구축됩니다.",
             "cacheClearFailed": "캐시 지우기 실패: {error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "{successCount}개 {type}이(가) 성공적으로 이동되었습니다",
             "exampleImagesDownloadSuccess": "예시 이미지가 성공적으로 다운로드되었습니다!",
             "exampleImagesDownloadFailed": "예시 이미지 다운로드 실패: {message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "항목을 이동하지 못했습니다: {message}",
             "copiedToClipboard": "클립보드에 복사됨",
             "downloadStarted": "다운로드 시작됨"
         },
@@ -2405,10 +2405,10 @@
             "seconds": "초"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM CivitAI Extension Tutorial"
+            "title": "여러분의 지원으로 LoRA Manager가 계속 성장합니다 ❤️",
+            "content": "LoRA Manager는 한 명의 개발자가 전담으로 유지하는 열정적인 프로젝트입니다. Ko-fi에서의 지원은 개발 비용을 충당하고 새로운 업데이트를 제공하는 데 도움이 되며, 감사의 의미로 LM CivitAI 확장 기능의 라이선스 키를 드립니다. 모든 기여가 실질적인 차이를 만듭니다.",
+            "supportCta": "Ko-fi에서 지원하기",
+            "learnMore": "LM CivitAI 확장 기능 튜토리얼"
         },
         "cacheHealth": {
             "corrupted": {

@@ -173,11 +173,11 @@
             "error": "例画像フォルダのクリーンアップに失敗しました：{message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "ライセンスメタデータを更新",
+            "loading": "{typePlural}のライセンスメタデータを更新中...",
+            "success": "{count} 件の{typePlural}のライセンスメタデータを更新しました",
+            "none": "すべての{typePlural}には既にライセンスメタデータがあります",
+            "error": "{typePlural}のライセンスメタデータを更新できませんでした: {message}"
         },
         "repairRecipes": {
             "label": "レシピデータの修復",
@@ -517,7 +517,7 @@
         "extraFolderPaths": {
             "title": "追加フォルダーパス",
             "description": "LoRA Manager専用の追加モデルルートパス。ComfyUIの標準フォルダー外の場所からモデルを読み込みます。ComfyUIの動作を低下させる可能性のある大規模ライブラリに最適です。",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "変更を有効にするには再起動が必要です",
             "modelTypes": {
                 "lora": "LoRAパス",
                 "checkpoint": "Checkpointパス",
@@ -1573,10 +1573,10 @@
                 "noNext": "次のモデルがありません"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "生成画像の販売禁止",
+                "noRentCivit": "CivitAIでの生成不可",
+                "noRent": "生成サービス不可",
+                "noSell": "モデルの販売禁止",
                 "creditRequired": "作成者のクレジットが必要",
                 "noDerivatives": "共有マージ不可",
                 "noReLicense": "同じ権限が必要",
@@ -2064,7 +2064,7 @@
             "processingError": "処理エラー：{message}",
             "folderBrowserError": "フォルダブラウザの読み込みエラー：{message}",
             "recipeSaveFailed": "レシピの保存に失敗しました：{error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "レシピを保存しました",
             "importFailed": "インポートに失敗しました：{message}",
             "folderTreeFailed": "フォルダツリーの読み込みに失敗しました",
             "folderTreeError": "フォルダツリー読み込みエラー",
@@ -2172,8 +2172,8 @@
             "compactModeToggled": "コンパクトモード {state}",
             "settingSaveFailed": "設定の保存に失敗しました：{message}",
             "displayDensitySet": "表示密度が {density} に設定されました",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "ライブラリを読み込めませんでした: {message}",
+            "libraryActivateFailed": "ライブラリをアクティブ化できませんでした: {message}",
             "languageChangeFailed": "言語の変更に失敗しました：{message}",
             "cacheCleared": "キャッシュファイルが正常にクリアされました。次回のアクションでキャッシュが再構築されます。",
             "cacheClearFailed": "キャッシュのクリアに失敗しました：{error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "{successCount} {type}が正常に移動されました",
             "exampleImagesDownloadSuccess": "例画像が正常にダウンロードされました！",
             "exampleImagesDownloadFailed": "例画像のダウンロードに失敗しました：{message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "アイテムを移動できませんでした: {message}",
             "copiedToClipboard": "クリップボードにコピーしました",
             "downloadStarted": "ダウンロードを開始しました"
         },
@@ -2405,10 +2405,10 @@
             "seconds": "秒"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM CivitAI Extension Tutorial"
+            "title": "あなたのサポートで LoRA Manager は成長し続けます ❤️",
+            "content": "LoRA Managerは一人の開発者がフルタイムで維持している情熱的なプロジェクトです。Ko-fiでのご支援は開発費用のカバーや新機能のリリースに役立ち、お礼としてLM CivitAI拡張機能のライセンスキーもご提供します。すべてのご寄付が大きな違いを生みます。",
+            "supportCta": "Ko-fiでサポート",
+            "learnMore": "LM CivitAI拡張機能チュートリアル"
         },
         "cacheHealth": {
             "corrupted": {

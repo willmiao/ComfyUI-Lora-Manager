@@ -173,11 +173,11 @@
             "error": "Fehler beim Bereinigen der Beispielbild-Ordner: {message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "Lizenzmetadaten aktualisieren",
+            "loading": "Lizenzmetadaten für {typePlural} werden aktualisiert...",
+            "success": "Lizenzmetadaten für {count} {typePlural} aktualisiert",
+            "none": "Alle {typePlural} verfügen bereits über Lizenzmetadaten",
+            "error": "Lizenzmetadaten für {typePlural} konnten nicht aktualisiert werden: {message}"
         },
         "repairRecipes": {
             "label": "Rezept-Daten reparieren",
@@ -517,7 +517,7 @@
         "extraFolderPaths": {
             "title": "Zusätzliche Ordnerpfade",
             "description": "Zusätzliche Modellstammverzeichnisse, die ausschließlich für LoRA Manager gelten. Laden Sie Modelle von Speicherorten außerhalb der Standardordner von ComfyUI – ideal für große Bibliotheken, die ComfyUI sonst verlangsamen würden.",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "Neustart erforderlich, damit die Änderung wirksam wird",
             "modelTypes": {
                 "lora": "LoRA-Pfade",
                 "checkpoint": "Checkpoint-Pfade",
@@ -1106,7 +1106,7 @@
         "title": "Checkpoint-Modelle",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "Diffusionsmodell"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "In {otherType}-Ordner verschieben",
@@ -1573,10 +1573,10 @@
                 "noNext": "Kein weiteres Modell verfügbar"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "Kein Verkauf generierter Bilder",
+                "noRentCivit": "Keine CivitAI-Generierung",
+                "noRent": "Keine Generierungsdienste",
+                "noSell": "Kein Verkauf von Modellen",
                 "creditRequired": "Ersteller-Angabe erforderlich",
                 "noDerivatives": "Keine gemeinsamen Zusammenführungen",
                 "noReLicense": "Gleiche Berechtigungen erforderlich",
@@ -2064,7 +2064,7 @@
             "processingError": "Verarbeitungsfehler: {message}",
             "folderBrowserError": "Fehler beim Laden des Ordner-Browsers: {message}",
             "recipeSaveFailed": "Fehler beim Speichern des Rezepts: {error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "Rezept erfolgreich gespeichert",
             "importFailed": "Import fehlgeschlagen: {message}",
             "folderTreeFailed": "Fehler beim Laden des Ordnerbaums",
             "folderTreeError": "Fehler beim Laden des Ordnerbaums",
@@ -2172,8 +2172,8 @@
             "compactModeToggled": "Kompakt-Modus {state}",
             "settingSaveFailed": "Fehler beim Speichern der Einstellung: {message}",
             "displayDensitySet": "Anzeige-Dichte auf {density} gesetzt",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "Bibliotheken konnten nicht geladen werden: {message}",
+            "libraryActivateFailed": "Bibliothek konnte nicht aktiviert werden: {message}",
             "languageChangeFailed": "Fehler beim Ändern der Sprache: {message}",
             "cacheCleared": "Cache-Dateien wurden erfolgreich gelöscht. Cache wird bei der nächsten Aktion neu aufgebaut.",
             "cacheClearFailed": "Fehler beim Löschen des Caches: {error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "{successCount} {type}s erfolgreich verschoben",
             "exampleImagesDownloadSuccess": "Beispielbilder erfolgreich heruntergeladen!",
             "exampleImagesDownloadFailed": "Fehler beim Herunterladen der Beispielbilder: {message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "Element konnte nicht verschoben werden: {message}",
             "copiedToClipboard": "In die Zwischenablage kopiert",
             "downloadStarted": "Download gestartet"
         },
@@ -2352,29 +2352,29 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "CivitAI API Key"
+                "title": "CivitAI-API-Schlüssel"
             },
             "cache_health": {
-                "title": "Model Cache Health"
+                "title": "Zustand des Modell-Caches"
             },
             "filename_conflicts": {
-                "title": "Duplicate Filename Conflicts"
+                "title": "Konflikte durch doppelte Dateinamen"
             },
             "ui_version": {
-                "title": "UI Version"
+                "title": "UI-Version"
             }
         },
         "actions": {
             "runAgain": "Erneut ausführen",
             "exportBundle": "Paket exportieren",
-            "open-settings": "Open Settings",
-            "open-settings-syntax-format": "Switch to Full Path Syntax",
-            "repair-cache": "Rebuild Cache",
-            "resolve-filename-conflicts": "Resolve Conflicts",
-            "reload-page": "Reload UI"
+            "open-settings": "Einstellungen öffnen",
+            "open-settings-syntax-format": "Zur Vollpfad-Syntax wechseln",
+            "repair-cache": "Cache neu aufbauen",
+            "resolve-filename-conflicts": "Konflikte auflösen",
+            "reload-page": "UI neu laden"
         },
         "labels": {
-            "conflicts": "Conflicts",
+            "conflicts": "Konflikte",
             "version": "Version"
         },
         "toast": {
@@ -2405,10 +2405,10 @@
             "seconds": "Sekunden"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM CivitAI Extension Tutorial"
+            "title": "Halten Sie LoRA Manager mit Ihrer Unterstützung am Leben ❤️",
+            "content": "LoRA Manager ist ein Herzensprojekt, das in Vollzeit von einem einzelnen Entwickler gepflegt wird. Ihre Unterstützung auf Ko-fi deckt Entwicklungskosten, ermöglicht neue Updates und gibt Ihnen als Dankeschön einen Lizenzschlüssel für die LM CivitAI-Erweiterung. Jeder Beitrag macht einen echten Unterschied.",
+            "supportCta": "Auf Ko-fi unterstützen",
+            "learnMore": "Tutorial zur LM CivitAI-Erweiterung"
         },
         "cacheHealth": {
             "corrupted": {

@@ -934,7 +934,7 @@
                 "importAndDownload": "导入并下载",
                 "downloadMissingLoras": "下载缺失的 LoRA",
                 "saveRecipe": "保存配方",
-                "loraCountInfo": "({existing}/{total} in library)",
+                "loraCountInfo": "（库中 {existing}/{total}）",
                 "processingInput": "处理输入...",
                 "analyzingMetadata": "分析图像元数据...",
                 "downloadingLoras": "下载 LoRA...",
@@ -1106,7 +1106,7 @@
         "title": "Checkpoint 模型",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "扩散模型"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "移动到 {otherType} 文件夹",
@@ -1130,7 +1130,7 @@
         "collapseAllDisabled": "列表视图下不可用",
         "dragDrop": {
             "unableToResolveRoot": "无法确定移动的目标路径。",
-            "moveUnsupported": "Move is not supported for this item.",
+            "moveUnsupported": "此条目不支持移动。",
             "createFolderHint": "释放以创建新文件夹",
             "newFolderName": "新文件夹名称",
             "folderNameHint": "按 Enter 确认，Escape 取消",
@@ -1573,10 +1573,10 @@
                 "noNext": "没有下一个模型"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "禁止出售生成的图片",
+                "noRentCivit": "禁止在 CivitAI 上生成",
+                "noRent": "禁止生成服务",
+                "noSell": "禁止出售模型",
                 "creditRequired": "需要创作者署名",
                 "noDerivatives": "禁止分享合并作品",
                 "noReLicense": "需要相同权限",
@@ -2172,8 +2172,8 @@
             "compactModeToggled": "紧凑模式 {state}",
             "settingSaveFailed": "保存设置失败：{message}",
             "displayDensitySet": "显示密度已设置为 {density}",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "加载模型库失败：{message}",
+            "libraryActivateFailed": "激活模型库失败：{message}",
             "languageChangeFailed": "切换语言失败：{message}",
             "cacheCleared": "缓存文件已成功清除。下次操作将重建缓存。",
             "cacheClearFailed": "清除缓存失败：{error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "成功移动 {successCount} 个 {type}",
             "exampleImagesDownloadSuccess": "示例图片下载成功！",
             "exampleImagesDownloadFailed": "示例图片下载失败：{message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "移动条目失败：{message}",
             "copiedToClipboard": "已复制到剪贴板",
             "downloadStarted": "下载已开始"
         },

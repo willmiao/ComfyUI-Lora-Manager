@@ -173,11 +173,11 @@
             "error": "Не удалось очистить папки с примерами изображений: {message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "Обновить метаданные лицензии",
+            "loading": "Обновление метаданных лицензии для {typePlural}...",
+            "success": "Обновлены метаданные лицензии для {count} {typePlural}",
+            "none": "У всех {typePlural} уже есть метаданные лицензии",
+            "error": "Не удалось обновить метаданные лицензии для {typePlural}: {message}"
         },
         "repairRecipes": {
             "label": "Восстановить данные рецептов",
@@ -517,7 +517,7 @@
         "extraFolderPaths": {
             "title": "Дополнительные пути к папкам",
             "description": "Дополнительные корневые пути моделей, эксклюзивные для LoRA Manager. Загружайте модели из расположений за пределами стандартных папок ComfyUI — идеально подходит для больших библиотек, которые иначе замедлили бы ComfyUI.",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "Требуется перезапуск, чтобы изменения вступили в силу",
             "modelTypes": {
                 "lora": "Пути LoRA",
                 "checkpoint": "Пути Checkpoint",
@@ -1106,7 +1106,7 @@
         "title": "Модели Checkpoint",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "Диффузионная модель"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Переместить в папку {otherType}",
@@ -1573,10 +1573,10 @@
                 "noNext": "Следующая модель отсутствует"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "Продажа сгенерированных изображений запрещена",
+                "noRentCivit": "Генерация через CivitAI запрещена",
+                "noRent": "Сервисы генерации запрещены",
+                "noSell": "Продажа моделей запрещена",
                 "creditRequired": "Требуется указание авторства",
                 "noDerivatives": "Запрет на совместное использование производных работ",
                 "noReLicense": "Требуются те же права",
@@ -1755,7 +1755,7 @@
             "message": "Сканирование и построение кэша embedding. Это может занять несколько минут..."
         },
         "recipes": {
-            "title": "Инициализация Recipe Manager",
+            "title": "Инициализация менеджера рецептов",
             "message": "Загрузка и обработка рецептов. Это может занять несколько минут..."
         },
         "statistics": {
@@ -2064,7 +2064,7 @@
             "processingError": "Ошибка обработки: {message}",
             "folderBrowserError": "Ошибка загрузки браузера папок: {message}",
             "recipeSaveFailed": "Не удалось сохранить рецепт: {error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "Рецепт успешно сохранён",
             "importFailed": "Импорт не удался: {message}",
             "folderTreeFailed": "Не удалось загрузить дерево папок",
             "folderTreeError": "Ошибка загрузки дерева папок",
@@ -2172,8 +2172,8 @@
             "compactModeToggled": "Компактный режим {state}",
             "settingSaveFailed": "Не удалось сохранить настройку: {message}",
             "displayDensitySet": "Плотность отображения установлена на {density}",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "Не удалось загрузить библиотеки: {message}",
+            "libraryActivateFailed": "Не удалось активировать библиотеку: {message}",
             "languageChangeFailed": "Не удалось изменить язык: {message}",
             "cacheCleared": "Файлы кэша успешно очищены. Кэш будет пересобран при следующем действии.",
             "cacheClearFailed": "Не удалось очистить кэш: {error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "Успешно перемещено {successCount} {type}s",
             "exampleImagesDownloadSuccess": "Примеры изображений успешно загружены!",
             "exampleImagesDownloadFailed": "Не удалось загрузить примеры изображений: {message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "Не удалось переместить элемент: {message}",
             "copiedToClipboard": "Скопировано в буфер обмена",
             "downloadStarted": "Загрузка начата"
         },
@@ -2352,30 +2352,30 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "CivitAI API Key"
+                "title": "Ключ API CivitAI"
             },
             "cache_health": {
-                "title": "Model Cache Health"
+                "title": "Состояние кэша моделей"
             },
             "filename_conflicts": {
-                "title": "Duplicate Filename Conflicts"
+                "title": "Конфликты дублирующихся имён файлов"
             },
             "ui_version": {
-                "title": "UI Version"
+                "title": "Версия интерфейса"
             }
         },
         "actions": {
             "runAgain": "Запустить снова",
             "exportBundle": "Экспортировать пакет",
-            "open-settings": "Open Settings",
-            "open-settings-syntax-format": "Switch to Full Path Syntax",
-            "repair-cache": "Rebuild Cache",
-            "resolve-filename-conflicts": "Resolve Conflicts",
-            "reload-page": "Reload UI"
+            "open-settings": "Открыть настройки",
+            "open-settings-syntax-format": "Переключиться на полные пути",
+            "repair-cache": "Пересобрать кэш",
+            "resolve-filename-conflicts": "Разрешить конфликты",
+            "reload-page": "Перезагрузить интерфейс"
         },
         "labels": {
-            "conflicts": "Conflicts",
-            "version": "Version"
+            "conflicts": "Конфликты",
+            "version": "Версия"
         },
         "toast": {
             "loadFailed": "Не удалось загрузить диагностику: {message}",
@@ -2405,10 +2405,10 @@
             "seconds": "секунд"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM CivitAI Extension Tutorial"
+            "title": "Поддержите развитие LoRA Manager ❤️",
+            "content": "LoRA Manager — это проект по призванию, которым в полную силу занимается один разработчик. Ваша поддержка на Ko-fi помогает покрывать расходы на разработку, обеспечивает новые обновления и даёт лицензионный ключ для расширения LM CivitAI в качестве благодарности. Каждый вклад действительно важен.",
+            "supportCta": "Поддержать на Ko-fi",
+            "learnMore": "Руководство по расширению LM CivitAI"
         },
         "cacheHealth": {
             "corrupted": {

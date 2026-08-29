@@ -517,7 +517,7 @@
         "extraFolderPaths": {
             "title": "額外資料夾路徑",
             "description": "LoRA Manager 專屬的額外模型根目錄。從 ComfyUI 標準資料夾之外的位置載入模型，特別適合管理大型模型庫，避免影響 ComfyUI 效能。",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "需要重新啟動才能生效",
             "modelTypes": {
                 "lora": "LoRA 路徑",
                 "checkpoint": "Checkpoint 路徑",
@@ -1106,7 +1106,7 @@
         "title": "Checkpoint 模型",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "擴散模型"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "移動到 {otherType} 資料夾",
@@ -1130,7 +1130,7 @@
         "collapseAllDisabled": "列表檢視下不可用",
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
-            "moveUnsupported": "Move is not supported for this item.",
+            "moveUnsupported": "此項目不支援移動。",
             "createFolderHint": "放開以建立新資料夾",
             "newFolderName": "新資料夾名稱",
             "folderNameHint": "按 Enter 確認，Escape 取消",
@@ -1573,10 +1573,10 @@
                 "noNext": "沒有下一個模型"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "禁止出售生成的圖片",
+                "noRentCivit": "禁止在 CivitAI 上生成",
+                "noRent": "禁止生成服務",
+                "noSell": "禁止出售模型",
                 "creditRequired": "需要創作者標示",
                 "noDerivatives": "禁止分享合併作品",
                 "noReLicense": "需要相同授權",
@@ -2172,8 +2172,8 @@
             "compactModeToggled": "緊湊模式已{state}",
             "settingSaveFailed": "儲存設定失敗：{message}",
             "displayDensitySet": "顯示密度已設為 {density}",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "載入模型庫失敗：{message}",
+            "libraryActivateFailed": "啟動模型庫失敗：{message}",
             "languageChangeFailed": "切換語言失敗：{message}",
             "cacheCleared": "快取檔案已成功清除。快取將於下次操作時重建。",
             "cacheClearFailed": "清除快取失敗：{error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "已成功移動 {successCount} 個 {type}",
             "exampleImagesDownloadSuccess": "範例圖片下載成功！",
             "exampleImagesDownloadFailed": "下載範例圖片失敗：{message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "移動項目失敗：{message}",
             "copiedToClipboard": "已複製到剪貼簿",
             "downloadStarted": "下載已開始"
         },
@@ -2405,10 +2405,10 @@
             "seconds": "秒後重新整理"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM CivitAI Extension Tutorial"
+            "title": "用您的支持讓 LoRA Manager 持續茁壯 ❤️",
+            "content": "LoRA Manager 是由一位獨立開發者全職維護的熱情項目。您在 Ko-fi 上的支持有助於支付開發成本、持續推出新更新，並將贈送 LM CivitAI 擴充功能的授權金鑰作為感謝之禮。每一份貢獻都意義重大。",
+            "supportCta": "在 Ko-fi 上支持",
+            "learnMore": "LM CivitAI 擴充功能教學"
         },
         "cacheHealth": {
             "corrupted": {

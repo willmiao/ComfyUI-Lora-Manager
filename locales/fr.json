@@ -173,11 +173,11 @@
             "error": "Échec du nettoyage des dossiers d'images d'exemple : {message}"
         },
         "fetchMissingLicenses": {
-            "label": "Refresh license metadata",
-            "loading": "Refreshing license metadata for {typePlural}...",
-            "success": "Updated license metadata for {count} {typePlural}",
-            "none": "All {typePlural} already have license metadata",
-            "error": "Failed to refresh license metadata for {typePlural}: {message}"
+            "label": "Actualiser les métadonnées de licence",
+            "loading": "Actualisation des métadonnées de licence pour les {typePlural}...",
+            "success": "Métadonnées de licence mises à jour pour {count} {typePlural}",
+            "none": "Tous les {typePlural} possèdent déjà des métadonnées de licence",
+            "error": "Échec de l'actualisation des métadonnées de licence pour les {typePlural} : {message}"
         },
         "repairRecipes": {
             "label": "Réparer les données de Recipes",
@@ -508,16 +508,16 @@
             "defaultUnetRootHelp": "Définir le répertoire racine Diffusion Model (UNET) par défaut pour les téléchargements, imports et déplacements",
             "defaultEmbeddingRoot": "Racine Embedding",
             "defaultEmbeddingRootHelp": "Définir le répertoire racine embedding par défaut pour les téléchargements, imports et déplacements",
-            "recipesPath": "Recipes Storage Path",
-            "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
+            "recipesPath": "Chemin de stockage des Recipes",
+            "recipesPathHelp": "Dossier personnalisé facultatif pour les Recipes enregistrées. Laissez vide pour utiliser le dossier recipes de la première racine LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
-            "recipesPathMigrating": "Migrating recipes storage...",
+            "recipesPathMigrating": "Migration du stockage des Recipes en cours...",
             "noDefault": "Aucun par défaut"
         },
         "extraFolderPaths": {
             "title": "Chemins de dossiers supplémentaires",
             "description": "Chemins racine de modèles supplémentaires exclusifs à LoRA Manager. Chargez des modèles depuis des emplacements en dehors des dossiers standard de ComfyUI, idéal pour les grandes bibliothèques qui ralentiraient autrement ComfyUI.",
-            "restartRequired": "Requires restart to take effect",
+            "restartRequired": "Un redémarrage est requis pour appliquer les changements",
             "modelTypes": {
                 "lora": "Chemins LoRA",
                 "checkpoint": "Chemins Checkpoint",
@@ -1106,7 +1106,7 @@
         "title": "Modèles Checkpoint",
         "modelTypes": {
             "checkpoint": "Checkpoint",
-            "diffusion_model": "Diffusion Model"
+            "diffusion_model": "Modèle de diffusion"
         },
         "contextMenu": {
             "moveToOtherTypeFolder": "Déplacer vers le dossier {otherType}",
@@ -1573,10 +1573,10 @@
                 "noNext": "Aucun modèle suivant"
             },
             "license": {
-                "noImageSell": "No selling generated content",
-                "noRentCivit": "No CivitAI generation",
-                "noRent": "No generation services",
-                "noSell": "No selling models",
+                "noImageSell": "Vente d'images générées interdite",
+                "noRentCivit": "Aucune génération via CivitAI",
+                "noRent": "Aucun service de génération",
+                "noSell": "Vente de modèles interdite",
                 "creditRequired": "Crédit du créateur requis",
                 "noDerivatives": "Pas de fusion de partage",
                 "noReLicense": "Mêmes autorisations requises",
@@ -2064,7 +2064,7 @@
             "processingError": "Erreur de traitement : {message}",
             "folderBrowserError": "Erreur lors du chargement du navigateur de dossiers : {message}",
             "recipeSaveFailed": "Échec de la sauvegarde de la recipe : {error}",
-            "recipeSaved": "Recipe saved successfully",
+            "recipeSaved": "Recipe enregistrée avec succès",
             "importFailed": "Échec de l'importation : {message}",
             "folderTreeFailed": "Échec du chargement de l'arborescence des dossiers",
             "folderTreeError": "Erreur lors du chargement de l'arborescence des dossiers",
@@ -2166,14 +2166,14 @@
             "mappingSaveFailed": "Échec de la sauvegarde des mappages de modèle de base : {message}",
             "downloadTemplatesUpdated": "Modèles de chemin de téléchargement mis à jour",
             "downloadTemplatesFailed": "Échec de la sauvegarde des modèles de chemin de téléchargement : {message}",
-            "recipesPathUpdated": "Recipes storage path updated",
-            "recipesPathSaveFailed": "Failed to update recipes storage path: {message}",
+            "recipesPathUpdated": "Chemin de stockage des Recipes mis à jour",
+            "recipesPathSaveFailed": "Échec de la mise à jour du chemin de stockage des Recipes : {message}",
             "settingsUpdated": "Paramètres mis à jour : {setting}",
             "compactModeToggled": "Mode compact {state}",
             "settingSaveFailed": "Échec de la sauvegarde du paramètre : {message}",
             "displayDensitySet": "Densité d'affichage définie sur {density}",
-            "libraryLoadFailed": "Failed to load libraries: {message}",
-            "libraryActivateFailed": "Failed to activate library: {message}",
+            "libraryLoadFailed": "Échec du chargement des bibliothèques : {message}",
+            "libraryActivateFailed": "Échec de l'activation de la bibliothèque : {message}",
             "languageChangeFailed": "Échec du changement de langue : {message}",
             "cacheCleared": "Les fichiers de cache ont été vidés avec succès. Le cache sera reconstruit à la prochaine action.",
             "cacheClearFailed": "Échec du vidage du cache : {error}",
@@ -2322,7 +2322,7 @@
             "bulkMoveSuccess": "{successCount} {type}s déplacés avec succès",
             "exampleImagesDownloadSuccess": "Images d'exemple téléchargées avec succès !",
             "exampleImagesDownloadFailed": "Échec du téléchargement des images d'exemple : {message}",
-            "moveFailed": "Failed to move item: {message}",
+            "moveFailed": "Échec du déplacement de l'élément : {message}",
             "copiedToClipboard": "Copié dans le presse-papiers",
             "downloadStarted": "Téléchargement démarré"
         },
@@ -2352,29 +2352,29 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "CivitAI API Key"
+                "title": "Clé API CivitAI"
             },
             "cache_health": {
-                "title": "Model Cache Health"
+                "title": "État du cache de modèles"
             },
             "filename_conflicts": {
-                "title": "Duplicate Filename Conflicts"
+                "title": "Conflits de noms de fichiers en double"
             },
             "ui_version": {
-                "title": "UI Version"
+                "title": "Version de l'interface"
             }
         },
         "actions": {
             "runAgain": "Relancer",
             "exportBundle": "Exporter le lot",
-            "open-settings": "Open Settings",
-            "open-settings-syntax-format": "Switch to Full Path Syntax",
-            "repair-cache": "Rebuild Cache",
-            "resolve-filename-conflicts": "Resolve Conflicts",
-            "reload-page": "Reload UI"
+            "open-settings": "Ouvrir les paramètres",
+            "open-settings-syntax-format": "Passer à la syntaxe de chemin complet",
+            "repair-cache": "Reconstruire le cache",
+            "resolve-filename-conflicts": "Résoudre les conflits",
+            "reload-page": "Recharger l'interface"
         },
         "labels": {
-            "conflicts": "Conflicts",
+            "conflicts": "Conflits",
             "version": "Version"
         },
         "toast": {
@@ -2405,10 +2405,10 @@
             "seconds": "secondes"
         },
         "communitySupport": {
-            "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
-            "supportCta": "Support on Ko-fi",
-            "learnMore": "LM CivitAI Extension Tutorial"
+            "title": "Soutenez l'avenir de LoRA Manager ❤️",
+            "content": "LoRA Manager est un projet passion mené à plein temps par un développeur solo. Votre soutien sur Ko-fi aide à couvrir les coûts de développement, à publier de nouvelles mises à jour et débloque une clé de licence pour l'extension LM CivitAI en guise de remerciement. Chaque contribution compte vraiment.",
+            "supportCta": "Soutenir sur Ko-fi",
+            "learnMore": "Tutoriel de l'extension LM CivitAI"
         },
         "cacheHealth": {
             "corrupted": {
