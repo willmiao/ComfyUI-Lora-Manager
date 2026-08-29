@@ -67,11 +67,11 @@
         "steps": {
             "fetch": {
                 "title": "取得模型 metadata",
-                "content": "點擊 <strong>取得</strong> 按鈕，從 Civitai 下載模型 metadata 與預覽圖片。"
+                "content": "點擊 <strong>取得</strong> 按鈕，從 CivitAI 下載模型 metadata 與預覽圖片。"
             },
             "download": {
                 "title": "下載新模型",
-                "content": "使用 <strong>下載</strong> 按鈕，直接從 Civitai 網址下載模型。"
+                "content": "使用 <strong>下載</strong> 按鈕，直接從 CivitAI 網址下載模型。"
             },
             "bulk": {
                 "title": "批次操作",
@@ -103,8 +103,8 @@
         "actions": {
             "addToFavorites": "加入收藏",
             "removeFromFavorites": "移除收藏",
-            "viewOnCivitai": "在 Civitai 查看",
-            "notAvailableFromCivitai": "Civitai 不提供",
+            "viewOnCivitai": "在 CivitAI 查看",
+            "notAvailableFromCivitai": "CivitAI 不提供",
             "viewOnHuggingFace": "在 Hugging Face 查看",
             "sendToWorkflow": "傳送到 ComfyUI（點擊：附加，Shift+點擊：取代）",
             "copyLoRASyntax": "複製 LoRA 語法",
@@ -137,7 +137,7 @@
         "exampleImages": {
             "checkError": "檢查範例圖片時發生錯誤",
             "missingHash": "缺少模型雜湊資訊。",
-            "noRemoteImagesAvailable": "此模型在 Civitai 上無遠端範例圖片"
+            "noRemoteImagesAvailable": "此模型在 CivitAI 上無遠端範例圖片"
         },
         "badges": {
             "update": "更新",
@@ -290,15 +290,15 @@
         }
     },
     "settings": {
-        "civitaiApiKey": "Civitai API 金鑰",
-        "civitaiApiKeyPlaceholder": "請輸入您的 Civitai API 金鑰",
-        "civitaiApiKeyHelp": "用於從 Civitai 下載模型時的身份驗證",
+        "civitaiApiKey": "CivitAI API 金鑰",
+        "civitaiApiKeyPlaceholder": "請輸入您的 CivitAI API 金鑰",
+        "civitaiApiKeyHelp": "用於從 CivitAI 下載模型時的身份驗證",
         "civitaiApiKeyConfigured": "已設定",
         "civitaiApiKeyNotConfigured": "未設定",
         "civitaiApiKeySet": "設定",
         "civitaiHost": {
-            "label": "Civitai 站點",
-            "help": "選擇使用「在 Civitai 中查看」時預設開啟的 Civitai 站點。",
+            "label": "CivitAI 站點",
+            "help": "選擇使用「在 CivitAI 中查看」時預設開啟的 CivitAI 站點。",
             "options": {
                 "com": "civitai.com（僅 SFW）",
                 "red": "civitai.red（無限制）"
@@ -319,8 +319,8 @@
         },
         "aria2HelpLink": "了解如何設定 aria2 下載後端",
         "civitaiHostBanner": {
-            "title": "已提供 Civitai 站點偏好設定",
-            "content": "Civitai 現在使用 civitai.com 提供 SFW 內容，使用 civitai.red 提供無限制內容。你可以在設定中變更預設開啟的站點。",
+            "title": "已提供 CivitAI 站點偏好設定",
+            "content": "CivitAI 現在使用 civitai.com 提供 SFW 內容，使用 civitai.red 提供無限制內容。你可以在設定中變更預設開啟的站點。",
             "openSettings": "開啟設定"
         },
         "openSettingsFileLocation": {
@@ -450,7 +450,7 @@
         },
         "layoutSettings": {
             "groupByModel": "按模型分組",
-            "groupByModelHelp": "啟用後，每個 Civitai 模型僅顯示最新版本的單張卡片，舊版本將被隱藏。",
+            "groupByModelHelp": "啟用後，每個 CivitAI 模型僅顯示最新版本的單張卡片，舊版本將被隱藏。",
             "displayDensity": "顯示密度",
             "displayDensityOptions": {
                 "default": "預設",
@@ -555,7 +555,7 @@
         },
         "downloadPathTemplates": {
             "title": "下載路徑範本",
-            "help": "設定從 Civitai 下載時不同模型類型的資料夾結構。",
+            "help": "設定從 CivitAI 下載時不同模型類型的資料夾結構。",
             "availablePlaceholders": "可用佔位符：",
             "templateOptions": {
                 "flatStructure": "扁平結構",
@@ -592,7 +592,7 @@
         "exampleImages": {
             "downloadLocation": "下載位置",
             "downloadLocationPlaceholder": "輸入範例圖片的資料夾路徑",
-            "downloadLocationHelp": "輸入從 Civitai 下載範例圖片要儲存的資料夾路徑",
+            "downloadLocationHelp": "輸入從 CivitAI 下載範例圖片要儲存的資料夾路徑",
             "autoDownload": "自動下載範例圖片",
             "autoDownloadHelp": "自動為沒有範例圖片的模型下載範例圖片（需設定下載位置）",
             "openMode": "開啟範例圖片動作",
@@ -647,7 +647,7 @@
         },
         "metadataArchive": {
             "enableArchiveDb": "啟用中繼資料封存資料庫",
-            "enableArchiveDbHelp": "使用本機資料庫以存取已從 Civitai 刪除模型的中繼資料。",
+            "enableArchiveDbHelp": "使用本機資料庫以存取已從 CivitAI 刪除模型的中繼資料。",
             "status": "狀態",
             "statusAvailable": "可用",
             "statusUnavailable": "不可用",
@@ -750,7 +750,7 @@
                 "fullTooltip": "從中繼資料檔重新載入所有模型資訊；適用於清單過時或手動編輯後。"
             },
             "fetch": {
-                "title": "從 Civitai 取得 metadata",
+                "title": "從 CivitAI 取得 metadata",
                 "action": "取得"
             },
             "download": {
@@ -825,10 +825,10 @@
             "enrichHfAgent": "AI HF 中繼資料增強"
         },
         "contextMenu": {
-            "refreshMetadata": "刷新 Civitai 資料",
+            "refreshMetadata": "刷新 CivitAI 資料",
             "checkUpdates": "檢查更新",
             "linkModel": "連結模型",
-            "linkCivitai": "連結到 Civitai",
+            "linkCivitai": "連結到 CivitAI",
             "linkHuggingFace": "連結到 HuggingFace",
             "copySyntax": "複製 LoRA 語法",
             "copyFilename": "複製模型檔名",
@@ -899,7 +899,7 @@
             "preparingDownload": "正在準備下載…",
             "reconnect": "重新關聯",
             "reconnectTooltip": "與本地 LoRA 重新關聯",
-            "viewOnCivitai": "在 Civitai 上檢視",
+            "viewOnCivitai": "在 CivitAI 上檢視",
             "openLoraDetails": "在 LoRA 庫中檢視 {name}",
             "openCheckpointDetails": "在模型庫中檢視 {name}"
         },
@@ -911,7 +911,7 @@
                 "dropZoneHint": "將圖片拖曳至此處、從剪貼簿貼上，或點擊瀏覽",
                 "orDivider": "或拖曳 / 貼上圖片",
                 "imageUrlOrPath": "圖片網址或檔案路徑：",
-                "urlPlaceholder": "https://civitai.com/images/... 或 C:/path/to/image.png",
+                "urlPlaceholder": "https://civitai.com/images/... 或 https://civitai.red/images/... 或 C:/path/to/image.png",
                 "fetchImage": "取得圖片",
                 "recipeName": "配方名稱",
                 "recipeNamePlaceholder": "輸入配方名稱",
@@ -940,7 +940,7 @@
                 "downloadingLoras": "下載 LoRA 中...",
                 "savingRecipe": "儲存配方中...",
                 "startingDownload": "開始下載 LoRA {current}/{total}",
-                "deletedFromCivitai": "已從 Civitai 刪除",
+                "deletedFromCivitai": "已從 CivitAI 刪除",
                 "inLibrary": "已在庫存",
                 "notInLibrary": "不在庫存",
                 "earlyAccessRequired": "此 LoRA 需購買早期存取才能下載。",
@@ -1268,7 +1268,7 @@
         "download": {
             "title": "從網址下載模型",
             "titleWithType": "從網址下載 {type}",
-            "civitaiUrl": "Civitai 網址：",
+            "civitaiUrl": "CivitAI 網址：",
             "placeholder": "https://civitai.com/models/...",
             "urlHint": "每行輸入一個 CivitAI、CivArchive 或 Hugging Face URL。支援批量下載多個 URL。",
             "selectHfFiles": "選擇從此倉庫下載的檔案：",
@@ -1303,7 +1303,7 @@
                 "inLibrary": "已在庫中"
             },
             "errors": {
-                "invalidUrl": "Civitai 網址格式無效",
+                "invalidUrl": "CivitAI 網址格式無效",
                 "noVersions": "此模型無可用版本",
                 "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face URL。",
                 "noModelFiles": "在此倉庫中未找到模型檔案。"
@@ -1417,7 +1417,7 @@
             "title": "本機範例圖片",
             "message": "此模型未找到本機範例圖片。可選擇：",
             "downloadOption": {
-                "title": "從 Civitai 下載",
+                "title": "從 CivitAI 下載",
                 "description": "將遠端範例儲存到本機以便離線使用及加快載入"
             },
             "importOption": {
@@ -1444,7 +1444,7 @@
             "confirmAction": "儲存並連結"
         },
         "relinkCivitai": {
-            "title": "重新連結至 Civitai",
+            "title": "重新連結至 CivitAI",
             "warning": "警告：",
             "warningText": "這是可能造成破壞性的操作。重新連結將會：",
             "warningList": {
@@ -1453,15 +1453,15 @@
                 "unintendedConsequences": "可能產生其他非預期後果"
             },
             "proceedText": "僅在確定需要執行時才繼續。",
-            "urlLabel": "Civitai 模型網址：",
-            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+            "urlLabel": "CivitAI 模型網址：",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 或 https://civitai.red/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "貼上任意 Civitai 或 CivitArchive 模型網址。支援格式：",
+                "title": "貼上任意 CivitAI 或 CivitArchive 模型網址。支援格式：",
                 "format1": "https://civitai.com/models/12345",
                 "format2": "https://civitai.com/models/12345?modelVersionId=67890",
                 "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
                 "note": "注意：若未提供 modelVersionId，將使用最新版本。",
-                "format4": "https://civarchive.com/models/12345 (CivitArchive)"
+                "format4": "https://civarchive.com/models/12345 (CivArchive)"
             },
             "confirmAction": "確認重新連結"
         },
@@ -1471,8 +1471,8 @@
                 "editFileName": "編輯檔案名稱",
                 "editBaseModel": "編輯基礎模型",
                 "editVersionName": "編輯版本名稱",
-                "viewOnCivitai": "在 Civitai 查看",
-                "viewOnCivitaiText": "在 Civitai 查看",
+                "viewOnCivitai": "在 CivitAI 查看",
+                "viewOnCivitaiText": "在 CivitAI 查看",
                 "viewOnHuggingFace": "在 Hugging Face 查看",
                 "viewOnHuggingFaceText": "在 Hugging Face 查看",
                 "viewCreatorProfile": "查看創作者個人檔案",
@@ -1574,7 +1574,7 @@
             },
             "license": {
                 "noImageSell": "No selling generated content",
-                "noRentCivit": "No Civitai generation",
+                "noRentCivit": "No CivitAI generation",
                 "noRent": "No generation services",
                 "noSell": "No selling models",
                 "creditRequired": "需要創作者標示",
@@ -1639,28 +1639,28 @@
                     "newer": "較新版本",
                     "newerTooltip": "此版本比你本地的最新版本更新",
                     "earlyAccess": "搶先體驗",
-                    "earlyAccessTooltip": "此版本目前需要 Civitai 搶先體驗權限",
+                    "earlyAccessTooltip": "此版本目前需要 CivitAI 搶先體驗權限",
                     "paid": "付費",
                     "paidTooltip": "此版本需要付費才能下載",
                     "ignored": "已忽略",
                     "ignoredTooltip": "此版本已關閉更新通知",
                     "onSiteOnly": "僅站內生成",
-                    "onSiteOnlyTooltip": "此版本僅在 Civitai 站內可用，無法下載"
+                    "onSiteOnlyTooltip": "此版本僅在 CivitAI 站內可用，無法下載"
                 },
                 "actions": {
                     "download": "下載",
                     "downloadTooltip": "下載此版本",
                     "downloadChooseFilesTooltip": "選擇要下載的檔案",
-                    "downloadEarlyAccessTooltip": "從 Civitai 下載此搶先體驗版本",
-                    "downloadPaidTooltip": "從 Civitai 下載此付費版本",
-                    "downloadNotAllowedTooltip": "此版本僅在 Civitai 站內可用，無法下載",
+                    "downloadEarlyAccessTooltip": "從 CivitAI 下載此搶先體驗版本",
+                    "downloadPaidTooltip": "從 CivitAI 下載此付費版本",
+                    "downloadNotAllowedTooltip": "此版本僅在 CivitAI 站內可用，無法下載",
                     "delete": "刪除",
                     "deleteTooltip": "刪除此本地版本",
                     "ignore": "忽略",
                     "unignore": "取消忽略",
                     "ignoreTooltip": "忽略此版本的更新通知",
                     "unignoreTooltip": "恢復此版本的更新通知",
-                    "viewVersionOnCivitai": "在 Civitai 上查看版本",
+                    "viewVersionOnCivitai": "在 CivitAI 上查看版本",
                     "earlyAccessTooltip": "需要購買搶先體驗",
                     "resumeModelUpdates": "恢復追蹤此模型的更新",
                     "ignoreModelUpdates": "忽略此模型的更新",
@@ -1681,7 +1681,7 @@
                 },
                 "empty": "此模型尚無版本歷史。",
                 "error": "載入版本失敗。",
-                "missingModelId": "此模型缺少 Civitai 模型 ID。",
+                "missingModelId": "此模型缺少 CivitAI 模型 ID。",
                 "hfGroupInfo": "這是一個 HuggingFace 模型組。打開庫頁面即可在網格中查看所有版本。",
                 "confirm": {
                     "delete": "要從庫中刪除此版本嗎？"
@@ -1765,14 +1765,14 @@
         "tips": {
             "title": "小技巧",
             "civitai": {
-                "title": "Civitai 整合",
-                "description": "連結您的 Civitai 帳號：前往個人頭像 → 設定 → API 金鑰 → 新增 API 金鑰，然後貼到 LoRA 管理器設定中。",
-                "alt": "Civitai API 設定"
+                "title": "CivitAI 整合",
+                "description": "連結您的 CivitAI 帳號：前往個人頭像 → 設定 → API 金鑰 → 新增 API 金鑰，然後貼到 LoRA 管理器設定中。",
+                "alt": "CivitAI API 設定"
             },
             "download": {
                 "title": "快速下載",
-                "description": "使用 Civitai 網址即可快速下載並安裝新模型。",
-                "alt": "Civitai 下載"
+                "description": "使用 CivitAI 網址即可快速下載並安裝新模型。",
+                "alt": "CivitAI 下載"
             },
             "recipes": {
                 "title": "儲存配方",
@@ -1956,7 +1956,7 @@
             "submitGithubIssue": "提交 GitHub 問題",
             "joinDiscord": "加入 Discord",
             "youtubeChannel": "YouTube 頻道",
-            "civitaiProfile": "Civitai 個人檔案",
+            "civitaiProfile": "CivitAI 個人檔案",
             "supportKofi": "在 Ko-fi 支持",
             "supportPatreon": "在 Patreon 支持"
         },
@@ -2131,8 +2131,8 @@
             "bulkUpdatesChecking": "正在檢查所選 {type} 的更新...",
             "bulkUpdatesSuccess": "{count} 個所選 {type} 有可用更新",
             "bulkUpdatesNone": "所選 {type} 未找到更新",
-            "bulkUpdatesMissing": "所選 {type} 未連結 Civitai 更新",
-            "bulkUpdatesPartialMissing": "已略過 {missing} 個未連結 Civitai 的所選 {type}",
+            "bulkUpdatesMissing": "所選 {type} 未連結 CivitAI 更新",
+            "bulkUpdatesPartialMissing": "已略過 {missing} 個未連結 CivitAI 的所選 {type}",
             "bulkUpdatesFailed": "檢查所選 {type} 更新失敗：{message}",
             "invalidCharactersRemoved": "已移除檔名中的無效字元",
             "filenameCannotBeEmpty": "檔案名稱不可為空",
@@ -2258,7 +2258,7 @@
         "contextMenu": {
             "contentRatingSet": "內容分級已設為 {level}",
             "contentRatingFailed": "設定內容分級失敗：{message}",
-            "relinkSuccess": "模型已成功重新連結至 Civitai",
+            "relinkSuccess": "模型已成功重新連結至 CivitAI",
             "relinkFailed": "錯誤：{message}",
             "linkHfSuccess": "模型已成功連結到 HuggingFace",
             "linkHfFailed": "錯誤：{message}",
@@ -2352,7 +2352,7 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "Civitai API 金鑰"
+                "title": "CivitAI API 金鑰"
             },
             "cache_health": {
                 "title": "模型快取健康狀態"
@@ -2406,9 +2406,9 @@
         },
         "communitySupport": {
             "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
+            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
-            "learnMore": "LM Civitai Extension Tutorial"
+            "learnMore": "LM CivitAI Extension Tutorial"
         },
         "cacheHealth": {
             "corrupted": {

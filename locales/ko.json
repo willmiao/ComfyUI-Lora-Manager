@@ -67,11 +67,11 @@
         "steps": {
             "fetch": {
                 "title": "모델 메타데이터 가져오기",
-                "content": "<strong>가져오기</strong> 버튼을 클릭하여 Civitai에서 모델 메타데이터와 미리보기 이미지를 다운로드하세요."
+                "content": "<strong>가져오기</strong> 버튼을 클릭하여 CivitAI에서 모델 메타데이터와 미리보기 이미지를 다운로드하세요."
             },
             "download": {
                 "title": "새 모델 다운로드",
-                "content": "<strong>다운로드</strong> 버튼을 사용하여 Civitai URL에서 모델을 직접 다운로드하세요."
+                "content": "<strong>다운로드</strong> 버튼을 사용하여 CivitAI URL에서 모델을 직접 다운로드하세요."
             },
             "bulk": {
                 "title": "일괄 작업",
@@ -103,8 +103,8 @@
         "actions": {
             "addToFavorites": "즐겨찾기에 추가",
             "removeFromFavorites": "즐겨찾기에서 제거",
-            "viewOnCivitai": "Civitai에서 보기",
-            "notAvailableFromCivitai": "Civitai에서 사용할 수 없음",
+            "viewOnCivitai": "CivitAI에서 보기",
+            "notAvailableFromCivitai": "CivitAI에서 사용할 수 없음",
             "viewOnHuggingFace": "Hugging Face에서 보기",
             "sendToWorkflow": "ComfyUI로 전송 (클릭: 추가, Shift+클릭: 교체)",
             "copyLoRASyntax": "LoRA 문법 복사",
@@ -137,7 +137,7 @@
         "exampleImages": {
             "checkError": "예시 이미지 확인 중 오류",
             "missingHash": "모델 해시 정보가 없습니다.",
-            "noRemoteImagesAvailable": "Civitai에서 이 모델의 원격 예시 이미지를 사용할 수 없습니다"
+            "noRemoteImagesAvailable": "CivitAI에서 이 모델의 원격 예시 이미지를 사용할 수 없습니다"
         },
         "badges": {
             "update": "업데이트",
@@ -290,15 +290,15 @@
         }
     },
     "settings": {
-        "civitaiApiKey": "Civitai API 키",
-        "civitaiApiKeyPlaceholder": "Civitai API 키를 입력하세요",
-        "civitaiApiKeyHelp": "Civitai에서 모델을 다운로드할 때 인증에 사용됩니다",
+        "civitaiApiKey": "CivitAI API 키",
+        "civitaiApiKeyPlaceholder": "CivitAI API 키를 입력하세요",
+        "civitaiApiKeyHelp": "CivitAI에서 모델을 다운로드할 때 인증에 사용됩니다",
         "civitaiApiKeyConfigured": "설정됨",
         "civitaiApiKeyNotConfigured": "설정되지 않음",
         "civitaiApiKeySet": "설정",
         "civitaiHost": {
-            "label": "Civitai 호스트",
-            "help": "\"View on Civitai\" 링크를 사용할 때 어떤 Civitai 사이트를 열지 선택합니다.",
+            "label": "CivitAI 호스트",
+            "help": "\"View on CivitAI\" 링크를 사용할 때 어떤 CivitAI 사이트를 열지 선택합니다.",
             "options": {
                 "com": "civitai.com(SFW 전용)",
                 "red": "civitai.red(무제한)"
@@ -319,8 +319,8 @@
         },
         "aria2HelpLink": "aria2 다운로드 백엔드 설정 방법 알아보기",
         "civitaiHostBanner": {
-            "title": "Civitai 호스트 기본 설정 사용 가능",
-            "content": "이제 Civitai는 SFW 콘텐츠에 civitai.com을, 무제한 콘텐츠에 civitai.red를 사용합니다. 설정에서 기본으로 열 사이트를 변경할 수 있습니다.",
+            "title": "CivitAI 호스트 기본 설정 사용 가능",
+            "content": "이제 CivitAI는 SFW 콘텐츠에 civitai.com을, 무제한 콘텐츠에 civitai.red를 사용합니다. 설정에서 기본으로 열 사이트를 변경할 수 있습니다.",
             "openSettings": "설정 열기"
         },
         "openSettingsFileLocation": {
@@ -450,7 +450,7 @@
         },
         "layoutSettings": {
             "groupByModel": "모델별 그룹화",
-            "groupByModelHelp": "활성화하면 각 Civitai 모델의 최신 버전만 단일 카드로 표시되며, 이전 버전은 숨겨집니다.",
+            "groupByModelHelp": "활성화하면 각 CivitAI 모델의 최신 버전만 단일 카드로 표시되며, 이전 버전은 숨겨집니다.",
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
                 "default": "기본",
@@ -555,7 +555,7 @@
         },
         "downloadPathTemplates": {
             "title": "다운로드 경로 템플릿",
-            "help": "Civitai에서 다운로드할 때 다양한 모델 유형의 폴더 구조를 구성합니다.",
+            "help": "CivitAI에서 다운로드할 때 다양한 모델 유형의 폴더 구조를 구성합니다.",
             "availablePlaceholders": "사용 가능한 플레이스홀더:",
             "templateOptions": {
                 "flatStructure": "플랫 구조",
@@ -592,7 +592,7 @@
         "exampleImages": {
             "downloadLocation": "다운로드 위치",
             "downloadLocationPlaceholder": "예시 이미지 폴더 경로를 입력하세요",
-            "downloadLocationHelp": "Civitai의 예시 이미지가 저장될 폴더 경로를 입력하세요",
+            "downloadLocationHelp": "CivitAI의 예시 이미지가 저장될 폴더 경로를 입력하세요",
             "autoDownload": "예시 이미지 자동 다운로드",
             "autoDownloadHelp": "예시 이미지가 없는 모델의 예시 이미지를 자동으로 다운로드합니다 (다운로드 위치 설정 필요)",
             "openMode": "예시 이미지 열기 동작",
@@ -647,7 +647,7 @@
         },
         "metadataArchive": {
             "enableArchiveDb": "메타데이터 아카이브 데이터베이스 활성화",
-            "enableArchiveDbHelp": "Civitai에서 삭제된 모델의 메타데이터에 접근하기 위해 로컬 데이터베이스를 사용합니다.",
+            "enableArchiveDbHelp": "CivitAI에서 삭제된 모델의 메타데이터에 접근하기 위해 로컬 데이터베이스를 사용합니다.",
             "status": "상태",
             "statusAvailable": "사용 가능",
             "statusUnavailable": "사용 불가",
@@ -750,7 +750,7 @@
                 "fullTooltip": "메타데이터 파일에서 모든 모델 정보를 다시 불러옵니다. 라이브러리가 오래되어 보이거나 수동 수정 후에 사용하세요."
             },
             "fetch": {
-                "title": "Civitai에서 메타데이터 가져오기",
+                "title": "CivitAI에서 메타데이터 가져오기",
                 "action": "가져오기"
             },
             "download": {
@@ -825,10 +825,10 @@
             "enrichHfAgent": "HF AI로 메타데이터 보강"
         },
         "contextMenu": {
-            "refreshMetadata": "Civitai 데이터 새로고침",
+            "refreshMetadata": "CivitAI 데이터 새로고침",
             "checkUpdates": "업데이트 확인",
             "linkModel": "모델 연결",
-            "linkCivitai": "Civitai에 연결",
+            "linkCivitai": "CivitAI에 연결",
             "linkHuggingFace": "HuggingFace에 연결",
             "copySyntax": "LoRA 문법 복사",
             "copyFilename": "모델 파일명 복사",
@@ -899,7 +899,7 @@
             "preparingDownload": "다운로드 준비 중…",
             "reconnect": "다시 연결",
             "reconnectTooltip": "로컬 LoRA와 다시 연결",
-            "viewOnCivitai": "Civitai에서 보기",
+            "viewOnCivitai": "CivitAI에서 보기",
             "openLoraDetails": "LoRA 라이브러리에서 {name} 보기",
             "openCheckpointDetails": "모델 라이브러리에서 {name} 보기"
         },
@@ -911,7 +911,7 @@
                 "dropZoneHint": "이미지를 여기에 끌어다 놓거나, 클립보드에서 붙여넣거나, 클릭하여 찾아보세요",
                 "orDivider": "또는 이미지를 끌어다 놓기 / 붙여넣기",
                 "imageUrlOrPath": "이미지 URL 또는 파일 경로:",
-                "urlPlaceholder": "https://civitai.com/images/... 또는 C:/path/to/image.png",
+                "urlPlaceholder": "https://civitai.com/images/... 또는 https://civitai.red/images/... 또는 C:/path/to/image.png",
                 "fetchImage": "이미지 가져오기",
                 "recipeName": "레시피 이름",
                 "recipeNamePlaceholder": "레시피 이름을 입력하세요",
@@ -940,7 +940,7 @@
                 "downloadingLoras": "LoRA 다운로드 중...",
                 "savingRecipe": "레시피 저장 중...",
                 "startingDownload": "LoRA {current}/{total} 다운로드 시작",
-                "deletedFromCivitai": "Civitai에서 삭제됨",
+                "deletedFromCivitai": "CivitAI에서 삭제됨",
                 "inLibrary": "라이브러리에 있음",
                 "notInLibrary": "라이브러리에 없음",
                 "earlyAccessRequired": "이 LoRA는 얼리 액세스 결제가 필요합니다.",
@@ -1268,7 +1268,7 @@
         "download": {
             "title": "URL에서 모델 다운로드",
             "titleWithType": "URL에서 {type} 다운로드",
-            "civitaiUrl": "Civitai URL:",
+            "civitaiUrl": "CivitAI URL:",
             "placeholder": "https://civitai.com/models/...",
             "urlHint": "한 줄에 하나의 CivitAI, CivArchive 또는 Hugging Face URL을 입력하세요. 여러 URL을 일괄 다운로드할 수 있습니다.",
             "selectHfFiles": "이 저장소에서 다운로드할 파일을 선택하세요：",
@@ -1303,7 +1303,7 @@
                 "inLibrary": "라이브러리에 있음"
             },
             "errors": {
-                "invalidUrl": "잘못된 Civitai URL 형식",
+                "invalidUrl": "잘못된 CivitAI URL 형식",
                 "noVersions": "이 모델에 사용 가능한 버전이 없습니다",
                 "mixedSources": "동일한 배치에서 CivitAI와 Hugging Face URL을 혼합할 수 없습니다.",
                 "noModelFiles": "이 저장소에서 모델 파일을 찾을 수 없습니다."
@@ -1417,7 +1417,7 @@
             "title": "로컬 예시 이미지",
             "message": "이 모델의 로컬 예시 이미지를 찾을 수 없습니다. 보기 옵션:",
             "downloadOption": {
-                "title": "Civitai에서 다운로드",
+                "title": "CivitAI에서 다운로드",
                 "description": "오프라인 사용 및 빠른 로딩을 위해 원격 예시를 로컬에 저장"
             },
             "importOption": {
@@ -1444,7 +1444,7 @@
             "confirmAction": "저장 및 연결"
         },
         "relinkCivitai": {
-            "title": "Civitai에 다시 연결",
+            "title": "CivitAI에 다시 연결",
             "warning": "경고:",
             "warningText": "이것은 잠재적으로 파괴적인 작업입니다. 다시 연결하면:",
             "warningList": {
@@ -1453,15 +1453,15 @@
                 "unintendedConsequences": "기타 의도하지 않은 결과가 있을 수 있음"
             },
             "proceedText": "원하는 작업이 확실한 경우에만 진행하세요.",
-            "urlLabel": "Civitai 모델 URL:",
-            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+            "urlLabel": "CivitAI 모델 URL:",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 또는 https://civitai.red/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "Civitai 또는 CivitArchive 모델 URL을 붙여넣으세요. 지원되는 형식:",
+                "title": "CivitAI 또는 CivitArchive 모델 URL을 붙여넣으세요. 지원되는 형식:",
                 "format1": "https://civitai.com/models/12345",
                 "format2": "https://civitai.com/models/12345?modelVersionId=67890",
                 "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
                 "note": "참고: modelVersionId가 제공되지 않으면 최신 버전이 사용됩니다.",
-                "format4": "https://civarchive.com/models/12345 (CivitArchive)"
+                "format4": "https://civarchive.com/models/12345 (CivArchive)"
             },
             "confirmAction": "다시 연결 확인"
         },
@@ -1471,8 +1471,8 @@
                 "editFileName": "파일명 편집",
                 "editBaseModel": "베이스 모델 편집",
                 "editVersionName": "버전명 편집",
-                "viewOnCivitai": "Civitai에서 보기",
-                "viewOnCivitaiText": "Civitai에서 보기",
+                "viewOnCivitai": "CivitAI에서 보기",
+                "viewOnCivitaiText": "CivitAI에서 보기",
                 "viewOnHuggingFace": "Hugging Face에서 보기",
                 "viewOnHuggingFaceText": "Hugging Face에서 보기",
                 "viewCreatorProfile": "제작자 프로필 보기",
@@ -1574,7 +1574,7 @@
             },
             "license": {
                 "noImageSell": "No selling generated content",
-                "noRentCivit": "No Civitai generation",
+                "noRentCivit": "No CivitAI generation",
                 "noRent": "No generation services",
                 "noSell": "No selling models",
                 "creditRequired": "제작자 크레딧 필요",
@@ -1639,28 +1639,28 @@
                     "newer": "최신 버전",
                     "newerTooltip": "이 버전은 로컬의 최신 버전보다 더 새롭습니다",
                     "earlyAccess": "얼리 액세스",
-                    "earlyAccessTooltip": "이 버전은 현재 Civitai 얼리 액세스가 필요합니다",
+                    "earlyAccessTooltip": "이 버전은 현재 CivitAI 얼리 액세스가 필요합니다",
                     "paid": "유료",
                     "paidTooltip": "이 버전은 다운로드하려면 결제가 필요합니다",
                     "ignored": "무시됨",
                     "ignoredTooltip": "이 버전은 업데이트 알림이 비활성화되어 있습니다",
                     "onSiteOnly": "사이트 내 전용",
-                    "onSiteOnlyTooltip": "이 버전은 Civitai 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다"
+                    "onSiteOnlyTooltip": "이 버전은 CivitAI 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다"
                 },
                 "actions": {
                     "download": "다운로드",
                     "downloadTooltip": "이 버전 다운로드",
                     "downloadChooseFilesTooltip": "다운로드할 파일 선택",
-                    "downloadEarlyAccessTooltip": "Civitai에서 이 얼리 액세스 버전 다운로드",
-                    "downloadPaidTooltip": "Civitai에서 이 유료 버전 다운로드",
-                    "downloadNotAllowedTooltip": "이 버전은 Civitai 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
+                    "downloadEarlyAccessTooltip": "CivitAI에서 이 얼리 액세스 버전 다운로드",
+                    "downloadPaidTooltip": "CivitAI에서 이 유료 버전 다운로드",
+                    "downloadNotAllowedTooltip": "이 버전은 CivitAI 사이트 내에서만 사용 가능하며 다운로드할 수 없습니다",
                     "delete": "삭제",
                     "deleteTooltip": "이 로컬 버전 삭제",
                     "ignore": "무시",
                     "unignore": "무시 해제",
                     "ignoreTooltip": "이 버전의 업데이트 알림 무시",
                     "unignoreTooltip": "이 버전의 업데이트 알림 다시 받기",
-                    "viewVersionOnCivitai": "Civitai에서 버전 보기",
+                    "viewVersionOnCivitai": "CivitAI에서 버전 보기",
                     "earlyAccessTooltip": "얼리 액세스 구매 필요",
                     "resumeModelUpdates": "이 모델 업데이트 재개",
                     "ignoreModelUpdates": "이 모델 업데이트 무시",
@@ -1681,7 +1681,7 @@
                 },
                 "empty": "이 모델에는 아직 버전 기록이 없습니다.",
                 "error": "버전을 불러오지 못했습니다.",
-                "missingModelId": "이 모델에는 Civitai 모델 ID가 없습니다.",
+                "missingModelId": "이 모델에는 CivitAI 모델 ID가 없습니다.",
                 "hfGroupInfo": "HuggingFace 모델 그룹입니다. 라이브러리를 열어 그리드에서 모든 버전을 확인하세요.",
                 "confirm": {
                     "delete": "이 버전을 라이브러리에서 삭제하시겠습니까?"
@@ -1765,14 +1765,14 @@
         "tips": {
             "title": "팁 & 요령",
             "civitai": {
-                "title": "Civitai 통합",
-                "description": "Civitai 계정 연결: 프로필 아바타 → 설정 → API 키 → API 키 추가를 방문한 후 LoRA Manager 설정에 붙여넣으세요.",
-                "alt": "Civitai API 설정"
+                "title": "CivitAI 통합",
+                "description": "CivitAI 계정 연결: 프로필 아바타 → 설정 → API 키 → API 키 추가를 방문한 후 LoRA Manager 설정에 붙여넣으세요.",
+                "alt": "CivitAI API 설정"
             },
             "download": {
                 "title": "간편 다운로드",
-                "description": "Civitai URL을 사용하여 새로운 모델을 빠르게 다운로드하고 설치하세요.",
-                "alt": "Civitai 다운로드"
+                "description": "CivitAI URL을 사용하여 새로운 모델을 빠르게 다운로드하고 설치하세요.",
+                "alt": "CivitAI 다운로드"
             },
             "recipes": {
                 "title": "레시피 저장",
@@ -1956,7 +1956,7 @@
             "submitGithubIssue": "GitHub 이슈 제출",
             "joinDiscord": "Discord 참여",
             "youtubeChannel": "YouTube 채널",
-            "civitaiProfile": "Civitai 프로필",
+            "civitaiProfile": "CivitAI 프로필",
             "supportKofi": "Ko-fi에서 지원",
             "supportPatreon": "Patreon에서 지원"
         },
@@ -2131,8 +2131,8 @@
             "bulkUpdatesChecking": "선택한 {type}의 업데이트를 확인하는 중...",
             "bulkUpdatesSuccess": "선택한 {count}개의 {type}에 사용할 수 있는 업데이트가 있습니다",
             "bulkUpdatesNone": "선택한 {type}에 대한 업데이트가 없습니다",
-            "bulkUpdatesMissing": "선택한 {type}이 Civitai 업데이트에 연결되어 있지 않습니다",
-            "bulkUpdatesPartialMissing": "Civitai 링크가 없는 {missing}개의 {type}을 건너뛰었습니다",
+            "bulkUpdatesMissing": "선택한 {type}이 CivitAI 업데이트에 연결되어 있지 않습니다",
+            "bulkUpdatesPartialMissing": "CivitAI 링크가 없는 {missing}개의 {type}을 건너뛰었습니다",
             "bulkUpdatesFailed": "선택한 {type}의 업데이트 확인에 실패했습니다: {message}",
             "invalidCharactersRemoved": "파일명에서 잘못된 문자가 제거되었습니다",
             "filenameCannotBeEmpty": "파일 이름은 비어있을 수 없습니다",
@@ -2258,7 +2258,7 @@
         "contextMenu": {
             "contentRatingSet": "콘텐츠 등급이 {level}로 설정되었습니다",
             "contentRatingFailed": "콘텐츠 등급 설정 실패: {message}",
-            "relinkSuccess": "모델이 Civitai에 성공적으로 다시 연결되었습니다",
+            "relinkSuccess": "모델이 CivitAI에 성공적으로 다시 연결되었습니다",
             "relinkFailed": "오류: {message}",
             "linkHfSuccess": "모델이 HuggingFace에 연결되었습니다",
             "linkHfFailed": "오류: {message}",
@@ -2352,7 +2352,7 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "Civitai API 키"
+                "title": "CivitAI API 키"
             },
             "cache_health": {
                 "title": "모델 캐시 상태"
@@ -2406,9 +2406,9 @@
         },
         "communitySupport": {
             "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
+            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
-            "learnMore": "LM Civitai Extension Tutorial"
+            "learnMore": "LM CivitAI Extension Tutorial"
         },
         "cacheHealth": {
             "corrupted": {

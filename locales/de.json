@@ -67,11 +67,11 @@
         "steps": {
             "fetch": {
                 "title": "Modelldaten abrufen",
-                "content": "Klicken Sie auf die Schaltfläche <strong>Abrufen</strong>, um Modelldaten und Vorschaubilder von Civitai herunterzuladen."
+                "content": "Klicken Sie auf die Schaltfläche <strong>Abrufen</strong>, um Modelldaten und Vorschaubilder von CivitAI herunterzuladen."
             },
             "download": {
                 "title": "Neue Modelle herunterladen",
-                "content": "Verwenden Sie die Schaltfläche <strong>Herunterladen</strong>, um Modelle direkt über Civitai-URLs herunterzuladen."
+                "content": "Verwenden Sie die Schaltfläche <strong>Herunterladen</strong>, um Modelle direkt über CivitAI-URLs herunterzuladen."
             },
             "bulk": {
                 "title": "Massenoperationen",
@@ -103,8 +103,8 @@
         "actions": {
             "addToFavorites": "Zu Favoriten hinzufügen",
             "removeFromFavorites": "Aus Favoriten entfernen",
-            "viewOnCivitai": "Auf Civitai anzeigen",
-            "notAvailableFromCivitai": "Nicht auf Civitai verfügbar",
+            "viewOnCivitai": "Auf CivitAI anzeigen",
+            "notAvailableFromCivitai": "Nicht auf CivitAI verfügbar",
             "viewOnHuggingFace": "Auf Hugging Face ansehen",
             "sendToWorkflow": "An ComfyUI senden (Klick: Anhängen, Shift+Klick: Ersetzen)",
             "copyLoRASyntax": "LoRA-Syntax kopieren",
@@ -137,7 +137,7 @@
         "exampleImages": {
             "checkError": "Fehler beim Überprüfen der Beispielbilder",
             "missingHash": "Fehlende Modell-Hash-Informationen.",
-            "noRemoteImagesAvailable": "Keine Remote-Beispielbilder für dieses Modell auf Civitai verfügbar"
+            "noRemoteImagesAvailable": "Keine Remote-Beispielbilder für dieses Modell auf CivitAI verfügbar"
         },
         "badges": {
             "update": "Update",
@@ -290,15 +290,15 @@
         }
     },
     "settings": {
-        "civitaiApiKey": "Civitai API Key",
-        "civitaiApiKeyPlaceholder": "Geben Sie Ihren Civitai API Key ein",
-        "civitaiApiKeyHelp": "Wird für die Authentifizierung beim Herunterladen von Modellen von Civitai verwendet",
+        "civitaiApiKey": "CivitAI API Key",
+        "civitaiApiKeyPlaceholder": "Geben Sie Ihren CivitAI API Key ein",
+        "civitaiApiKeyHelp": "Wird für die Authentifizierung beim Herunterladen von Modellen von CivitAI verwendet",
         "civitaiApiKeyConfigured": "Konfiguriert",
         "civitaiApiKeyNotConfigured": "Nicht konfiguriert",
         "civitaiApiKeySet": "Einrichten",
         "civitaiHost": {
-            "label": "Civitai-Host",
-            "help": "Wählen Sie aus, welche Civitai-Seite geöffnet wird, wenn Sie „View on Civitai“-Links verwenden.",
+            "label": "CivitAI-Host",
+            "help": "Wählen Sie aus, welche CivitAI-Seite geöffnet wird, wenn Sie „View on CivitAI“-Links verwenden.",
             "options": {
                 "com": "civitai.com (nur SFW)",
                 "red": "civitai.red (uneingeschränkt)"
@@ -319,8 +319,8 @@
         },
         "aria2HelpLink": "Erfahren Sie, wie Sie das aria2-Download-Backend einrichten",
         "civitaiHostBanner": {
-            "title": "Civitai-Host-Einstellung verfügbar",
-            "content": "Civitai verwendet jetzt civitai.com für SFW-Inhalte und civitai.red für uneingeschränkte Inhalte. In den Einstellungen können Sie ändern, welche Seite standardmäßig geöffnet wird.",
+            "title": "CivitAI-Host-Einstellung verfügbar",
+            "content": "CivitAI verwendet jetzt civitai.com für SFW-Inhalte und civitai.red für uneingeschränkte Inhalte. In den Einstellungen können Sie ändern, welche Seite standardmäßig geöffnet wird.",
             "openSettings": "Einstellungen öffnen"
         },
         "openSettingsFileLocation": {
@@ -450,7 +450,7 @@
         },
         "layoutSettings": {
             "groupByModel": "Nach Modell gruppieren",
-            "groupByModelHelp": "Wenn aktiviert, wird nur die neueste Version jedes Civitai-Modells als einzelne Karte angezeigt. Ältere Versionen werden ausgeblendet.",
+            "groupByModelHelp": "Wenn aktiviert, wird nur die neueste Version jedes CivitAI-Modells als einzelne Karte angezeigt. Ältere Versionen werden ausgeblendet.",
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
                 "default": "Standard",
@@ -555,7 +555,7 @@
         },
         "downloadPathTemplates": {
             "title": "Download-Pfad-Vorlagen",
-            "help": "Konfigurieren Sie Ordnerstrukturen für verschiedene Modelltypen beim Herunterladen von Civitai.",
+            "help": "Konfigurieren Sie Ordnerstrukturen für verschiedene Modelltypen beim Herunterladen von CivitAI.",
             "availablePlaceholders": "Verfügbare Platzhalter:",
             "templateOptions": {
                 "flatStructure": "Flache Struktur",
@@ -592,7 +592,7 @@
         "exampleImages": {
             "downloadLocation": "Download-Speicherort",
             "downloadLocationPlaceholder": "Ordnerpfad für Beispielbilder eingeben",
-            "downloadLocationHelp": "Geben Sie den Ordnerpfad ein, wo Beispielbilder von Civitai gespeichert werden",
+            "downloadLocationHelp": "Geben Sie den Ordnerpfad ein, wo Beispielbilder von CivitAI gespeichert werden",
             "autoDownload": "Beispielbilder automatisch herunterladen",
             "autoDownloadHelp": "Beispielbilder automatisch für Modelle herunterladen, die keine haben (erfordert gesetzten Download-Speicherort)",
             "openMode": "Aktion für Beispielbilder öffnen",
@@ -647,7 +647,7 @@
         },
         "metadataArchive": {
             "enableArchiveDb": "Metadaten-Archiv-Datenbank aktivieren",
-            "enableArchiveDbHelp": "Verwenden Sie eine lokale Datenbank, um auf Metadaten von Modellen zuzugreifen, die von Civitai gelöscht wurden.",
+            "enableArchiveDbHelp": "Verwenden Sie eine lokale Datenbank, um auf Metadaten von Modellen zuzugreifen, die von CivitAI gelöscht wurden.",
             "status": "Status",
             "statusAvailable": "Verfügbar",
             "statusUnavailable": "Nicht verfügbar",
@@ -750,7 +750,7 @@
                 "fullTooltip": "Alle Modelldetails aus Metadatendateien neu laden – nutzen, wenn die Bibliothek veraltet wirkt oder nach manuellen Änderungen."
             },
             "fetch": {
-                "title": "Metadaten von Civitai abrufen",
+                "title": "Metadaten von CivitAI abrufen",
                 "action": "Abrufen"
             },
             "download": {
@@ -825,10 +825,10 @@
             "enrichHfAgent": "HF-Metadaten mit KI anreichern"
         },
         "contextMenu": {
-            "refreshMetadata": "Civitai-Daten aktualisieren",
+            "refreshMetadata": "CivitAI-Daten aktualisieren",
             "checkUpdates": "Updates prüfen",
             "linkModel": "Modell verknüpfen",
-            "linkCivitai": "Mit Civitai neu verknüpfen",
+            "linkCivitai": "Mit CivitAI neu verknüpfen",
             "linkHuggingFace": "Mit HuggingFace verknüpfen",
             "copySyntax": "LoRA-Syntax kopieren",
             "copyFilename": "Modell-Dateiname kopieren",
@@ -899,7 +899,7 @@
             "preparingDownload": "Download wird vorbereitet…",
             "reconnect": "Neu verknüpfen",
             "reconnectTooltip": "Mit einem lokalen LoRA neu verknüpfen",
-            "viewOnCivitai": "Auf Civitai anzeigen",
+            "viewOnCivitai": "Auf CivitAI anzeigen",
             "openLoraDetails": "{name} in der LoRA-Bibliothek anzeigen",
             "openCheckpointDetails": "{name} in der Modellbibliothek anzeigen"
         },
@@ -911,7 +911,7 @@
                 "dropZoneHint": "Bild hierher ziehen, aus der Zwischenablage einfügen oder klicken zum Durchsuchen",
                 "orDivider": "oder Bild per Drag & Drop / Einfügen hinzufügen",
                 "imageUrlOrPath": "Bild-URL oder Dateipfad:",
-                "urlPlaceholder": "https://civitai.com/images/... oder C:/pfad/zu/bild.png",
+                "urlPlaceholder": "https://civitai.com/images/... oder https://civitai.red/images/... oder C:/pfad/zu/bild.png",
                 "fetchImage": "Bild abrufen",
                 "recipeName": "Rezeptname",
                 "recipeNamePlaceholder": "Rezeptname eingeben",
@@ -940,7 +940,7 @@
                 "downloadingLoras": "LoRAs werden heruntergeladen...",
                 "savingRecipe": "Rezept wird gespeichert...",
                 "startingDownload": "Download für LoRA {current}/{total} wird gestartet",
-                "deletedFromCivitai": "Von Civitai gelöscht",
+                "deletedFromCivitai": "Von CivitAI gelöscht",
                 "inLibrary": "In Bibliothek",
                 "notInLibrary": "Nicht in Bibliothek",
                 "earlyAccessRequired": "Dieses LoRA erfordert eine Early Access-Zahlung zum Herunterladen.",
@@ -1268,7 +1268,7 @@
         "download": {
             "title": "Modell von URL herunterladen",
             "titleWithType": "{type} von URL herunterladen",
-            "civitaiUrl": "Civitai URL:",
+            "civitaiUrl": "CivitAI URL:",
             "placeholder": "https://civitai.com/models/...",
             "urlHint": "Geben Sie eine CivitAI-, CivArchive- oder Hugging Face-URL pro Zeile ein. Unterstützt mehrere URLs für den Batch-Download.",
             "selectHfFiles": "Datei(en) zum Herunterladen aus diesem Repository auswählen:",
@@ -1303,7 +1303,7 @@
                 "inLibrary": "In Bibliothek"
             },
             "errors": {
-                "invalidUrl": "Ungültiges Civitai URL-Format",
+                "invalidUrl": "Ungültiges CivitAI URL-Format",
                 "noVersions": "Keine Versionen für dieses Modell verfügbar",
                 "mixedSources": "CivitAI- und Hugging Face-URLs können nicht in derselben Charge gemischt werden.",
                 "noModelFiles": "In diesem Repository wurden keine Modelldateien gefunden."
@@ -1417,7 +1417,7 @@
             "title": "Lokale Beispielbilder",
             "message": "Keine lokalen Beispielbilder für dieses Modell gefunden. Ansichtsoptionen:",
             "downloadOption": {
-                "title": "Von Civitai herunterladen",
+                "title": "Von CivitAI herunterladen",
                 "description": "Remote-Beispiele lokal speichern für Offline-Nutzung und schnelleres Laden"
             },
             "importOption": {
@@ -1444,7 +1444,7 @@
             "confirmAction": "Speichern & Verknüpfen"
         },
         "relinkCivitai": {
-            "title": "Mit Civitai neu verknüpfen",
+            "title": "Mit CivitAI neu verknüpfen",
             "warning": "Warnung:",
             "warningText": "Dies ist eine potentiell destruktive Operation. Das Neu-Verknüpfen wird:",
             "warningList": {
@@ -1453,15 +1453,15 @@
                 "unintendedConsequences": "Möglicherweise andere unbeabsichtigte Folgen haben"
             },
             "proceedText": "Fahren Sie nur fort, wenn Sie sicher sind, dass Sie das wollen.",
-            "urlLabel": "Civitai-Modell-URL:",
-            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+            "urlLabel": "CivitAI-Modell-URL:",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 oder https://civitai.red/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "Fügen Sie eine beliebige Civitai- oder CivitArchive-Modell-URL ein. Unterstützte Formate:",
+                "title": "Fügen Sie eine beliebige CivitAI- oder CivitArchive-Modell-URL ein. Unterstützte Formate:",
                 "format1": "https://civitai.com/models/12345",
                 "format2": "https://civitai.com/models/12345?modelVersionId=67890",
                 "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
                 "note": "Hinweis: Wenn keine modelVersionId angegeben ist, wird die neueste Version verwendet.",
-                "format4": "https://civarchive.com/models/12345 (CivitArchive)"
+                "format4": "https://civarchive.com/models/12345 (CivArchive)"
             },
             "confirmAction": "Neu-Verknüpfung bestätigen"
         },
@@ -1471,8 +1471,8 @@
                 "editFileName": "Dateiname bearbeiten",
                 "editBaseModel": "Basis-Modell bearbeiten",
                 "editVersionName": "Versionsname bearbeiten",
-                "viewOnCivitai": "Auf Civitai anzeigen",
-                "viewOnCivitaiText": "Auf Civitai anzeigen",
+                "viewOnCivitai": "Auf CivitAI anzeigen",
+                "viewOnCivitaiText": "Auf CivitAI anzeigen",
                 "viewOnHuggingFace": "Auf Hugging Face ansehen",
                 "viewOnHuggingFaceText": "Auf Hugging Face ansehen",
                 "viewCreatorProfile": "Ersteller-Profil anzeigen",
@@ -1574,7 +1574,7 @@
             },
             "license": {
                 "noImageSell": "No selling generated content",
-                "noRentCivit": "No Civitai generation",
+                "noRentCivit": "No CivitAI generation",
                 "noRent": "No generation services",
                 "noSell": "No selling models",
                 "creditRequired": "Ersteller-Angabe erforderlich",
@@ -1639,28 +1639,28 @@
                     "newer": "Neuere Version",
                     "newerTooltip": "Diese Version ist neuer als Ihre neueste lokale Version",
                     "earlyAccess": "Früher Zugriff",
-                    "earlyAccessTooltip": "Für diese Version ist derzeit Civitai Early Access erforderlich",
+                    "earlyAccessTooltip": "Für diese Version ist derzeit CivitAI Early Access erforderlich",
                     "paid": "Bezahlt",
                     "paidTooltip": "Diese Version erfordert eine Zahlung zum Herunterladen",
                     "ignored": "Ignoriert",
                     "ignoredTooltip": "Für diese Version sind Update-Benachrichtigungen deaktiviert",
                     "onSiteOnly": "Nur On-Site",
-                    "onSiteOnlyTooltip": "Diese Version ist nur für die On-Site-Generierung auf Civitai verfügbar"
+                    "onSiteOnlyTooltip": "Diese Version ist nur für die On-Site-Generierung auf CivitAI verfügbar"
                 },
                 "actions": {
                     "download": "Herunterladen",
                     "downloadTooltip": "Diese Version herunterladen",
                     "downloadChooseFilesTooltip": "Auswählen, welche Dateien heruntergeladen werden sollen",
-                    "downloadEarlyAccessTooltip": "Diese Early-Access-Version von Civitai herunterladen",
-                    "downloadPaidTooltip": "Diese bezahlte Version von Civitai herunterladen",
-                    "downloadNotAllowedTooltip": "Diese Version ist nur für die On-Site-Generierung auf Civitai verfügbar",
+                    "downloadEarlyAccessTooltip": "Diese Early-Access-Version von CivitAI herunterladen",
+                    "downloadPaidTooltip": "Diese bezahlte Version von CivitAI herunterladen",
+                    "downloadNotAllowedTooltip": "Diese Version ist nur für die On-Site-Generierung auf CivitAI verfügbar",
                     "delete": "Löschen",
                     "deleteTooltip": "Diese lokale Version löschen",
                     "ignore": "Ignorieren",
                     "unignore": "Ignorierung aufheben",
                     "ignoreTooltip": "Update-Benachrichtigungen für diese Version ignorieren",
                     "unignoreTooltip": "Update-Benachrichtigungen für diese Version fortsetzen",
-                    "viewVersionOnCivitai": "Version auf Civitai anzeigen",
+                    "viewVersionOnCivitai": "Version auf CivitAI anzeigen",
                     "earlyAccessTooltip": "Erfordert Early-Access-Kauf",
                     "resumeModelUpdates": "Aktualisierungen für dieses Modell fortsetzen",
                     "ignoreModelUpdates": "Aktualisierungen für dieses Modell ignorieren",
@@ -1681,7 +1681,7 @@
                 },
                 "empty": "Noch keine Versionshistorie für dieses Modell vorhanden.",
                 "error": "Versionen konnten nicht geladen werden.",
-                "missingModelId": "Für dieses Modell ist keine Civitai-Model-ID vorhanden.",
+                "missingModelId": "Für dieses Modell ist keine CivitAI-Model-ID vorhanden.",
                 "hfGroupInfo": "Dies ist eine HuggingFace-Modellgruppe. Öffnen Sie die Bibliothek, um alle Versionen im Raster zu sehen.",
                 "confirm": {
                     "delete": "Diese Version aus Ihrer Bibliothek löschen?"
@@ -1765,14 +1765,14 @@
         "tips": {
             "title": "Tipps & Tricks",
             "civitai": {
-                "title": "Civitai-Integration",
-                "description": "Verbinden Sie Ihr Civitai-Konto: Besuchen Sie Profil-Avatar → Einstellungen → API-Schlüssel → API-Schlüssel hinzufügen, dann fügen Sie ihn in die LoRA Manager-Einstellungen ein.",
-                "alt": "Civitai API-Setup"
+                "title": "CivitAI-Integration",
+                "description": "Verbinden Sie Ihr CivitAI-Konto: Besuchen Sie Profil-Avatar → Einstellungen → API-Schlüssel → API-Schlüssel hinzufügen, dann fügen Sie ihn in die LoRA Manager-Einstellungen ein.",
+                "alt": "CivitAI API-Setup"
             },
             "download": {
                 "title": "Einfacher Download",
-                "description": "Verwenden Sie Civitai-URLs, um schnell neue Modelle herunterzuladen und zu installieren.",
-                "alt": "Civitai-Download"
+                "description": "Verwenden Sie CivitAI-URLs, um schnell neue Modelle herunterzuladen und zu installieren.",
+                "alt": "CivitAI-Download"
             },
             "recipes": {
                 "title": "Rezepte speichern",
@@ -1956,7 +1956,7 @@
             "submitGithubIssue": "GitHub Issue einreichen",
             "joinDiscord": "Discord beitreten",
             "youtubeChannel": "YouTube-Kanal",
-            "civitaiProfile": "Civitai-Profil",
+            "civitaiProfile": "CivitAI-Profil",
             "supportKofi": "Auf Ko-fi unterstützen",
             "supportPatreon": "Auf Patreon unterstützen"
         },
@@ -2131,8 +2131,8 @@
             "bulkUpdatesChecking": "Ausgewählte {type}-Modelle werden auf Updates geprüft...",
             "bulkUpdatesSuccess": "Updates für {count} ausgewählte {type}-Modelle verfügbar",
             "bulkUpdatesNone": "Keine Updates für ausgewählte {type}-Modelle gefunden",
-            "bulkUpdatesMissing": "Ausgewählte {type}-Modelle sind nicht mit Civitai-Updates verknüpft",
-            "bulkUpdatesPartialMissing": "{missing} ausgewählte {type}-Modelle ohne Civitai-Verknüpfung übersprungen",
+            "bulkUpdatesMissing": "Ausgewählte {type}-Modelle sind nicht mit CivitAI-Updates verknüpft",
+            "bulkUpdatesPartialMissing": "{missing} ausgewählte {type}-Modelle ohne CivitAI-Verknüpfung übersprungen",
             "bulkUpdatesFailed": "Updates für ausgewählte {type}-Modelle konnten nicht geprüft werden: {message}",
             "invalidCharactersRemoved": "Ungültige Zeichen aus Dateiname entfernt",
             "filenameCannotBeEmpty": "Dateiname darf nicht leer sein",
@@ -2258,7 +2258,7 @@
         "contextMenu": {
             "contentRatingSet": "Inhaltsbewertung auf {level} gesetzt",
             "contentRatingFailed": "Fehler beim Setzen der Inhaltsbewertung: {message}",
-            "relinkSuccess": "Modell erfolgreich mit Civitai neu verknüpft",
+            "relinkSuccess": "Modell erfolgreich mit CivitAI neu verknüpft",
             "relinkFailed": "Fehler: {message}",
             "linkHfSuccess": "Modell erfolgreich mit HuggingFace verknüpft",
             "linkHfFailed": "Fehler: {message}",
@@ -2352,7 +2352,7 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "Civitai API Key"
+                "title": "CivitAI API Key"
             },
             "cache_health": {
                 "title": "Model Cache Health"
@@ -2406,9 +2406,9 @@
         },
         "communitySupport": {
             "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
+            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
-            "learnMore": "LM Civitai Extension Tutorial"
+            "learnMore": "LM CivitAI Extension Tutorial"
         },
         "cacheHealth": {
             "corrupted": {

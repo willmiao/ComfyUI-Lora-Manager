@@ -67,11 +67,11 @@
         "steps": {
             "fetch": {
                 "title": "Получить метаданные моделей",
-                "content": "Нажмите кнопку <strong>Получить</strong>, чтобы загрузить метаданные моделей и изображения превью с Civitai."
+                "content": "Нажмите кнопку <strong>Получить</strong>, чтобы загрузить метаданные моделей и изображения превью с CivitAI."
             },
             "download": {
                 "title": "Загрузить новые модели",
-                "content": "Используйте кнопку <strong>Загрузить</strong> для скачивания моделей напрямую по URL Civitai."
+                "content": "Используйте кнопку <strong>Загрузить</strong> для скачивания моделей напрямую по URL CivitAI."
             },
             "bulk": {
                 "title": "Массовые операции",
@@ -103,8 +103,8 @@
         "actions": {
             "addToFavorites": "Добавить в избранное",
             "removeFromFavorites": "Удалить из избранного",
-            "viewOnCivitai": "Посмотреть на Civitai",
-            "notAvailableFromCivitai": "Недоступно на Civitai",
+            "viewOnCivitai": "Посмотреть на CivitAI",
+            "notAvailableFromCivitai": "Недоступно на CivitAI",
             "viewOnHuggingFace": "Открыть Hugging Face",
             "sendToWorkflow": "Отправить в ComfyUI (Клик: Добавить, Shift+Клик: Заменить)",
             "copyLoRASyntax": "Копировать синтаксис LoRA",
@@ -137,7 +137,7 @@
         "exampleImages": {
             "checkError": "Ошибка проверки примеров изображений",
             "missingHash": "Отсутствует хеш модели.",
-            "noRemoteImagesAvailable": "Нет удаленных примеров изображений для этой модели на Civitai"
+            "noRemoteImagesAvailable": "Нет удаленных примеров изображений для этой модели на CivitAI"
         },
         "badges": {
             "update": "Обновление",
@@ -290,15 +290,15 @@
         }
     },
     "settings": {
-        "civitaiApiKey": "Ключ API Civitai",
-        "civitaiApiKeyPlaceholder": "Введите ваш ключ API Civitai",
-        "civitaiApiKeyHelp": "Используется для аутентификации при загрузке моделей с Civitai",
+        "civitaiApiKey": "Ключ API CivitAI",
+        "civitaiApiKeyPlaceholder": "Введите ваш ключ API CivitAI",
+        "civitaiApiKeyHelp": "Используется для аутентификации при загрузке моделей с CivitAI",
         "civitaiApiKeyConfigured": "Настроен",
         "civitaiApiKeyNotConfigured": "Не настроен",
         "civitaiApiKeySet": "Настроить",
         "civitaiHost": {
-            "label": "Хост Civitai",
-            "help": "Выберите, какой сайт Civitai будет открываться при использовании ссылок «View on Civitai».",
+            "label": "Хост CivitAI",
+            "help": "Выберите, какой сайт CivitAI будет открываться при использовании ссылок «View on CivitAI».",
             "options": {
                 "com": "civitai.com (только SFW)",
                 "red": "civitai.red (без ограничений)"
@@ -319,8 +319,8 @@
         },
         "aria2HelpLink": "Узнайте, как настроить сервер загрузки aria2",
         "civitaiHostBanner": {
-            "title": "Доступна настройка хоста Civitai",
-            "content": "Теперь Civitai использует civitai.com для контента SFW и civitai.red для контента без ограничений. В настройках можно изменить, какой сайт открывать по умолчанию.",
+            "title": "Доступна настройка хоста CivitAI",
+            "content": "Теперь CivitAI использует civitai.com для контента SFW и civitai.red для контента без ограничений. В настройках можно изменить, какой сайт открывать по умолчанию.",
             "openSettings": "Открыть настройки"
         },
         "openSettingsFileLocation": {
@@ -450,7 +450,7 @@
         },
         "layoutSettings": {
             "groupByModel": "Группировать по модели",
-            "groupByModelHelp": "При включении отображается только последняя версия каждой модели Civitai в виде одной карточки. Старые версии скрыты.",
+            "groupByModelHelp": "При включении отображается только последняя версия каждой модели CivitAI в виде одной карточки. Старые версии скрыты.",
             "displayDensity": "Плотность отображения",
             "displayDensityOptions": {
                 "default": "По умолчанию",
@@ -555,7 +555,7 @@
         },
         "downloadPathTemplates": {
             "title": "Шаблоны путей загрузки",
-            "help": "Настройте структуру папок для разных типов моделей при загрузке с Civitai.",
+            "help": "Настройте структуру папок для разных типов моделей при загрузке с CivitAI.",
             "availablePlaceholders": "Доступные заполнители:",
             "templateOptions": {
                 "flatStructure": "Плоская структура",
@@ -592,7 +592,7 @@
         "exampleImages": {
             "downloadLocation": "Место загрузки",
             "downloadLocationPlaceholder": "Введите путь к папке для примеров изображений",
-            "downloadLocationHelp": "Введите путь к папке, где будут сохраняться примеры изображений с Civitai",
+            "downloadLocationHelp": "Введите путь к папке, где будут сохраняться примеры изображений с CivitAI",
             "autoDownload": "Автозагрузка примеров изображений",
             "autoDownloadHelp": "Автоматически загружать примеры изображений для моделей, у которых их нет (требует настройки места загрузки)",
             "openMode": "Действие открытия примеров изображений",
@@ -647,7 +647,7 @@
         },
         "metadataArchive": {
             "enableArchiveDb": "Включить архив метаданных",
-            "enableArchiveDbHelp": "Использовать локальную базу данных для доступа к метаданным моделей, удалённых с Civitai.",
+            "enableArchiveDbHelp": "Использовать локальную базу данных для доступа к метаданным моделей, удалённых с CivitAI.",
             "status": "Статус",
             "statusAvailable": "Доступно",
             "statusUnavailable": "Недоступно",
@@ -750,7 +750,7 @@
                 "fullTooltip": "Перечитывает все данные моделей из файлов метаданных — используйте, если библиотека выглядит устаревшей или после ручных правок."
             },
             "fetch": {
-                "title": "Получить метаданные с Civitai",
+                "title": "Получить метаданные с CivitAI",
                 "action": "Получить"
             },
             "download": {
@@ -825,10 +825,10 @@
             "enrichHfAgent": "Обогатить HF метаданные (ИИ)"
         },
         "contextMenu": {
-            "refreshMetadata": "Обновить данные Civitai",
+            "refreshMetadata": "Обновить данные CivitAI",
             "checkUpdates": "Проверить обновления",
             "linkModel": "Связать модель",
-            "linkCivitai": "Пересвязать с Civitai",
+            "linkCivitai": "Пересвязать с CivitAI",
             "linkHuggingFace": "Связать с HuggingFace",
             "copySyntax": "Копировать синтаксис LoRA",
             "copyFilename": "Копировать имя файла модели",
@@ -899,7 +899,7 @@
             "preparingDownload": "Подготовка к скачиванию…",
             "reconnect": "Переподключить",
             "reconnectTooltip": "Переподключить к локальному LoRA",
-            "viewOnCivitai": "Открыть на Civitai",
+            "viewOnCivitai": "Открыть на CivitAI",
             "openLoraDetails": "Открыть {name} в библиотеке LoRA",
             "openCheckpointDetails": "Открыть {name} в библиотеке моделей"
         },
@@ -911,7 +911,7 @@
                 "dropZoneHint": "Перетащите изображение сюда, вставьте из буфера обмена или нажмите для выбора",
                 "orDivider": "или перетащите / вставьте изображение",
                 "imageUrlOrPath": "URL изображения или путь к файлу:",
-                "urlPlaceholder": "https://civitai.com/images/... или C:/path/to/image.png",
+                "urlPlaceholder": "https://civitai.com/images/... или https://civitai.red/images/... или C:/path/to/image.png",
                 "fetchImage": "Получить изображение",
                 "recipeName": "Название рецепта",
                 "recipeNamePlaceholder": "Введите название рецепта",
@@ -940,7 +940,7 @@
                 "downloadingLoras": "Загрузка LoRAs...",
                 "savingRecipe": "Сохранение рецепта...",
                 "startingDownload": "Начало загрузки LoRA {current}/{total}",
-                "deletedFromCivitai": "Удалено с Civitai",
+                "deletedFromCivitai": "Удалено с CivitAI",
                 "inLibrary": "В библиотеке",
                 "notInLibrary": "Не в библиотеке",
                 "earlyAccessRequired": "Для загрузки этой LoRA требуется платный ранний доступ.",
@@ -1268,7 +1268,7 @@
         "download": {
             "title": "Скачать модель по URL",
             "titleWithType": "Скачать {type} по URL",
-            "civitaiUrl": "Civitai URL:",
+            "civitaiUrl": "CivitAI URL:",
             "placeholder": "https://civitai.com/models/...",
             "urlHint": "Введите один URL CivitAI, CivArchive или Hugging Face в каждой строке. Поддерживает несколько URL для пакетной загрузки.",
             "selectHfFiles": "Выберите файл(ы) для загрузки из этого репозитория：",
@@ -1303,7 +1303,7 @@
                 "inLibrary": "В библиотеке"
             },
             "errors": {
-                "invalidUrl": "Неверный формат URL Civitai",
+                "invalidUrl": "Неверный формат URL CivitAI",
                 "noVersions": "Нет доступных версий для этой модели",
                 "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face в одном пакете.",
                 "noModelFiles": "В этом репозитории не найдено файлов моделей."
@@ -1417,7 +1417,7 @@
             "title": "Локальные примеры изображений",
             "message": "Локальные примеры изображений для этой модели не найдены. Варианты просмотра:",
             "downloadOption": {
-                "title": "Скачать с Civitai",
+                "title": "Скачать с CivitAI",
                 "description": "Сохранить удаленные примеры локально для использования офлайн и более быстрой загрузки"
             },
             "importOption": {
@@ -1444,7 +1444,7 @@
             "confirmAction": "Сохранить и связать"
         },
         "relinkCivitai": {
-            "title": "Пересвязать с Civitai",
+            "title": "Пересвязать с CivitAI",
             "warning": "Предупреждение:",
             "warningText": "Это потенциально разрушительная операция. Пересвязывание:",
             "warningList": {
@@ -1453,15 +1453,15 @@
                 "unintendedConsequences": "Может иметь другие непредвиденные последствия"
             },
             "proceedText": "Продолжайте только если вы уверены, что это то, что вам нужно.",
-            "urlLabel": "URL модели Civitai:",
-            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
+            "urlLabel": "URL модели CivitAI:",
+            "urlPlaceholder": "https://civitai.com/models/12345/model-name?modelVersionId=67890 или https://civitai.red/models/12345/model-name?modelVersionId=67890",
             "helpText": {
-                "title": "Вставьте любой URL модели Civitai или CivitArchive. Поддерживаемые форматы:",
+                "title": "Вставьте любой URL модели CivitAI или CivitArchive. Поддерживаемые форматы:",
                 "format1": "https://civitai.com/models/12345",
                 "format2": "https://civitai.com/models/12345?modelVersionId=67890",
                 "format3": "https://civitai.com/models/12345/model-name?modelVersionId=67890",
                 "note": "Примечание: Если modelVersionId не указан, будет использована последняя версия.",
-                "format4": "https://civarchive.com/models/12345 (CivitArchive)"
+                "format4": "https://civarchive.com/models/12345 (CivArchive)"
             },
             "confirmAction": "Подтвердить пересвязывание"
         },
@@ -1471,8 +1471,8 @@
                 "editFileName": "Редактировать имя файла",
                 "editBaseModel": "Редактировать базовую модель",
                 "editVersionName": "Редактировать название версии",
-                "viewOnCivitai": "Посмотреть на Civitai",
-                "viewOnCivitaiText": "Посмотреть на Civitai",
+                "viewOnCivitai": "Посмотреть на CivitAI",
+                "viewOnCivitaiText": "Посмотреть на CivitAI",
                 "viewOnHuggingFace": "Открыть Hugging Face",
                 "viewOnHuggingFaceText": "Открыть Hugging Face",
                 "viewCreatorProfile": "Посмотреть профиль создателя",
@@ -1574,7 +1574,7 @@
             },
             "license": {
                 "noImageSell": "No selling generated content",
-                "noRentCivit": "No Civitai generation",
+                "noRentCivit": "No CivitAI generation",
                 "noRent": "No generation services",
                 "noSell": "No selling models",
                 "creditRequired": "Требуется указание авторства",
@@ -1639,28 +1639,28 @@
                     "newer": "Более новая версия",
                     "newerTooltip": "Эта версия новее вашей последней локальной версии",
                     "earlyAccess": "Ранний доступ",
-                    "earlyAccessTooltip": "Для этой версии сейчас требуется ранний доступ Civitai",
+                    "earlyAccessTooltip": "Для этой версии сейчас требуется ранний доступ CivitAI",
                     "paid": "Платная",
                     "paidTooltip": "Скачивание этой версии платное",
                     "ignored": "Игнорируется",
                     "ignoredTooltip": "Уведомления об обновлениях для этой версии отключены",
                     "onSiteOnly": "Только на Сайте",
-                    "onSiteOnlyTooltip": "Эта версия доступна только для генерации на сайте Civitai"
+                    "onSiteOnlyTooltip": "Эта версия доступна только для генерации на сайте CivitAI"
                 },
                 "actions": {
                     "download": "Скачать",
                     "downloadTooltip": "Скачать эту версию",
                     "downloadChooseFilesTooltip": "Выбрать файлы для скачивания",
-                    "downloadEarlyAccessTooltip": "Скачать эту версию раннего доступа с Civitai",
-                    "downloadPaidTooltip": "Скачать эту платную версию с Civitai",
-                    "downloadNotAllowedTooltip": "Эта версия доступна только для генерации на сайте Civitai",
+                    "downloadEarlyAccessTooltip": "Скачать эту версию раннего доступа с CivitAI",
+                    "downloadPaidTooltip": "Скачать эту платную версию с CivitAI",
+                    "downloadNotAllowedTooltip": "Эта версия доступна только для генерации на сайте CivitAI",
                     "delete": "Удалить",
                     "deleteTooltip": "Удалить эту локальную версию",
                     "ignore": "Игнорировать",
                     "unignore": "Перестать игнорировать",
                     "ignoreTooltip": "Игнорировать уведомления об обновлениях для этой версии",
                     "unignoreTooltip": "Возобновить уведомления об обновлениях для этой версии",
-                    "viewVersionOnCivitai": "Посмотреть версию на Civitai",
+                    "viewVersionOnCivitai": "Посмотреть версию на CivitAI",
                     "earlyAccessTooltip": "Требуется покупка раннего доступа",
                     "resumeModelUpdates": "Возобновить обновления для этой модели",
                     "ignoreModelUpdates": "Игнорировать обновления для этой модели",
@@ -1681,7 +1681,7 @@
                 },
                 "empty": "Для этой модели пока нет истории версий.",
                 "error": "Не удалось загрузить версии.",
-                "missingModelId": "У этой модели отсутствует идентификатор модели Civitai.",
+                "missingModelId": "У этой модели отсутствует идентификатор модели CivitAI.",
                 "hfGroupInfo": "Это группа моделей HuggingFace. Откройте библиотеку, чтобы увидеть все версии в сетке.",
                 "confirm": {
                     "delete": "Удалить эту версию из библиотеки?"
@@ -1765,14 +1765,14 @@
         "tips": {
             "title": "Советы и хитрости",
             "civitai": {
-                "title": "Интеграция с Civitai",
-                "description": "Подключите ваш аккаунт Civitai: Перейдите в Аватар профиля → Настройки → API ключи → Добавить API ключ, затем вставьте его в настройки Lora Manager.",
-                "alt": "Настройка API Civitai"
+                "title": "Интеграция с CivitAI",
+                "description": "Подключите ваш аккаунт CivitAI: Перейдите в Аватар профиля → Настройки → API ключи → Добавить API ключ, затем вставьте его в настройки Lora Manager.",
+                "alt": "Настройка API CivitAI"
             },
             "download": {
                 "title": "Легкая загрузка",
-                "description": "Используйте URL Civitai для быстрой загрузки и установки новых моделей.",
-                "alt": "Загрузка с Civitai"
+                "description": "Используйте URL CivitAI для быстрой загрузки и установки новых моделей.",
+                "alt": "Загрузка с CivitAI"
             },
             "recipes": {
                 "title": "Сохранение рецептов",
@@ -1956,7 +1956,7 @@
             "submitGithubIssue": "Создать issue на GitHub",
             "joinDiscord": "Присоединиться к Discord",
             "youtubeChannel": "YouTube канал",
-            "civitaiProfile": "Профиль на Civitai",
+            "civitaiProfile": "Профиль на CivitAI",
             "supportKofi": "Поддержать на Ko-fi",
             "supportPatreon": "Поддержать на Patreon"
         },
@@ -2131,8 +2131,8 @@
             "bulkUpdatesChecking": "Проверка обновлений для выбранных {type}...",
             "bulkUpdatesSuccess": "Доступны обновления для {count} выбранных {type}",
             "bulkUpdatesNone": "Обновления для выбранных {type} не найдены",
-            "bulkUpdatesMissing": "Выбранные {type} не привязаны к обновлениям Civitai",
-            "bulkUpdatesPartialMissing": "Пропущено {missing} выбранных {type} без привязки Civitai",
+            "bulkUpdatesMissing": "Выбранные {type} не привязаны к обновлениям CivitAI",
+            "bulkUpdatesPartialMissing": "Пропущено {missing} выбранных {type} без привязки CivitAI",
             "bulkUpdatesFailed": "Не удалось проверить обновления для выбранных {type}: {message}",
             "invalidCharactersRemoved": "Недопустимые символы удалены из имени файла",
             "filenameCannotBeEmpty": "Имя файла не может быть пустым",
@@ -2258,7 +2258,7 @@
         "contextMenu": {
             "contentRatingSet": "Рейтинг контента установлен на {level}",
             "contentRatingFailed": "Не удалось установить рейтинг контента: {message}",
-            "relinkSuccess": "Модель успешно пересвязана с Civitai",
+            "relinkSuccess": "Модель успешно пересвязана с CivitAI",
             "relinkFailed": "Ошибка: {message}",
             "linkHfSuccess": "Модель успешно связана с HuggingFace",
             "linkHfFailed": "Ошибка: {message}",
@@ -2352,7 +2352,7 @@
         },
         "issues": {
             "civitai_api_key": {
-                "title": "Civitai API Key"
+                "title": "CivitAI API Key"
             },
             "cache_health": {
                 "title": "Model Cache Health"
@@ -2406,9 +2406,9 @@
         },
         "communitySupport": {
             "title": "Keep LoRA Manager Thriving with Your Support ❤️",
-            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM Civitai Extension as a thank-you gift. Every contribution truly makes a difference.",
+            "content": "LoRA Manager is a passion project maintained full-time by a solo developer. Your support on Ko-fi helps cover development costs, keeps new updates coming, and unlocks a license key for the LM CivitAI Extension as a thank-you gift. Every contribution truly makes a difference.",
             "supportCta": "Support on Ko-fi",
-            "learnMore": "LM Civitai Extension Tutorial"
+            "learnMore": "LM CivitAI Extension Tutorial"
         },
         "cacheHealth": {
             "corrupted": {
