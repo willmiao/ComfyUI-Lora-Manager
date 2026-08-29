@@ -960,7 +960,7 @@ class RecipeModal {
                                 ${lora.baseModel ? `<div class="base-model">${lora.baseModel}</div>` : ''}
                             </div>
                             ${actionsRow}
-                            ${isDeleted ? `
+                            ${isDeleted || lora.hashInvalid ? `
                             <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
                                 <div class="reconnect-instructions">
                                     <p>Enter LoRA Syntax or Name to Reconnect:</p>

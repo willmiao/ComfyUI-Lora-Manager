@@ -342,7 +342,13 @@ describe('RecipeModal resource item interactions', () => {
     expect(badge.textContent).toContain('Unresolvable Hash');
 
     expect(invalidItem.querySelector('.lora-download')).toBeNull();
-    expect(invalidItem.querySelector('.lora-reconnect')).not.toBeNull();
+    const reconnectButton = invalidItem.querySelector('.lora-reconnect');
+    expect(reconnectButton).not.toBeNull();
+
+    reconnectButton.click();
+    const container = invalidItem.querySelector('.lora-reconnect-container');
+    expect(container).not.toBeNull();
+    expect(container.classList.contains('active')).toBe(true);
   });
 
   it('marks the entry hash-invalid when hash resolution returns Model not found', async () => {
