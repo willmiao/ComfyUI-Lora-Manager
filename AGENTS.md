@@ -72,6 +72,11 @@ python scripts/sync_translation_keys.py
 
 Locale files are in `locales/` (en, zh-CN, zh-TW, ja, ko, fr, de, es, ru, he).
 
+After adding keys to `en.json` and syncing, **stop**: the `[TODO: Translate]` placeholders in
+the other locales are the expected end state during feature development. Do NOT translate
+proactively — translate only when the feature owner explicitly asks (see
+`docs/i18n-translation-guidelines.md` §7).
+
 **Before translating anything, read `docs/i18n-translation-guidelines.md`** — it defines the
 term conventions (e.g. "Recipe" stays untranslated in French, 配方 in Chinese; model-type and
 brand names are never translated), per-locale preferred renderings, placeholder rules, and

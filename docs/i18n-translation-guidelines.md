@@ -23,7 +23,9 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
   same nested key set. `tests/i18n/test_i18n.py` enforces this.
 - When a new UI string is added to `en.json`, run
   `python scripts/sync_translation_keys.py` (adds the missing keys to all locales with
-  placeholder copies), then translate the newly added keys in every locale.
+  `[TODO: Translate]` placeholder copies) — **then stop**. Do NOT translate proactively:
+  placeholders are the expected end state during feature development, and translations are
+  filled in only when the feature owner explicitly asks (workflow details in §7).
 - Never reorder, re-indent, or reformat a locale file "for tidiness". The sync script
   preserves formatting; manual reformatting creates noisy diffs.
 
