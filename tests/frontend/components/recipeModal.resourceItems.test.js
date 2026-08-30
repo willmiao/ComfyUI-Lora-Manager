@@ -92,11 +92,13 @@ vi.mock('../../../static/js/api/apiConfig.js', () => ({
   },
 }));
 
+const downloadManagerMock = {
+  downloadVersionWithDefaults: downloadVersionWithDefaultsMock,
+  _lastDownloadError: '',
+};
+
 vi.mock('../../../static/js/managers/DownloadManager.js', () => ({
-  downloadManager: {
-    downloadVersionWithDefaults: downloadVersionWithDefaultsMock,
-    _lastDownloadError: '',
-  },
+  downloadManager: downloadManagerMock,
 }));
 
 function recipeModalFixture() {
@@ -193,6 +195,7 @@ describe('RecipeModal resource item interactions', () => {
     // the shared mocks to their defaults explicitly.
     downloadVersionWithDefaultsMock.mockReset();
     downloadVersionWithDefaultsMock.mockResolvedValue(undefined);
+    downloadManagerMock._lastDownloadError = '';
     fetchRecipeDetailsMock.mockReset();
     // Hydration re-fetches the recipe right after render; resolving an empty
     // object would delete currentRecipe.loras and wipe the list, so resolve
@@ -429,19 +432,100 @@ describe('RecipeModal resource item interactions', () => {
     expect(downloadVersionWithDefaultsMock).not.toHaveBeenCalled();
   });
 
-  it('renders no action row when neither identifiers nor hash are available', async () => {
+  it('offers reconnect for name-only LoRAs with no CivitAI identifiers', async () => {
     const recipeModal = await createRecipeModal();
     recipeModal.showRecipeDetails(recipeWithResources);
+    await flushWiring();
 
     const mysteryItem = document.querySelector('[data-lora-index="4"]');
     expect(mysteryItem.querySelector('.lora-download')).toBeNull();
-    // No actions at all -> no empty action row taking vertical space
-    expect(mysteryItem.querySelector('.recipe-lora-actions')).toBeNull();
+    const reconnectButton = mysteryItem.querySelector('.lora-reconnect');
+    expect(reconnectButton).not.toBeNull();
+
+    reconnectButton.click();
+    const container = mysteryItem.querySelector('.lora-reconnect-container');
+    expect(container).not.toBeNull();
+    expect(container.classList.contains('active')).toBe(true);
 
     // The name-fallback search link still sits inline in the title
     const link = mysteryItem.querySelector('.recipe-lora-title a.recipe-civitai-link');
     expect(link).not.toBeNull();
     expect(link.href).toContain('query=Mystery%20LoRA');
+  });
+
+  it('marks the entry hash-invalid when a direct download fails with an unresolvable error', async () => {
+    const recipeModal = await createRecipeModal();
+    const requests = [];
+    // Deep copy so the mark step mutating loras[1].hashInvalid does not
+    // leak into the shared fixture used by later tests.
+    const isolatedRecipe = JSON.parse(JSON.stringify(recipeWithResources));
+    fetchRecipeDetailsMock.mockResolvedValue(isolatedRecipe);
+    downloadManagerMock._lastDownloadError = 'Model not found';
+    downloadVersionWithDefaultsMock.mockResolvedValue(false);
+    global.fetch = vi.fn(async (url, options) => {
+      requests.push({ url: String(url), options });
+      return { ok: true, json: async () => ({}) };
+    });
+    recipeModal.showRecipeDetails(isolatedRecipe);
+    await flushWiring();
+
+    // missingLora carries direct identifiers, so no hash-resolution round
+    // trip happens before the download attempt.
+    const missingItem = document.querySelector('[data-lora-index="1"]');
+    missingItem.querySelector('.lora-download').click();
+
+    await vi.waitFor(() => {
+      expect(downloadVersionWithDefaultsMock).toHaveBeenCalledTimes(1);
+    });
+    await vi.waitFor(() => {
+      expect(
+        requests.some(r => r.url.includes('/recipe/lora/mark-hash-invalid'))
+      ).toBe(true);
+    });
+
+    const markRequest = requests.find(r => r.url.includes('/mark-hash-invalid'));
+    expect(JSON.parse(markRequest.options.body)).toEqual({
+      recipe_id: 'recipe-resources',
+      lora_index: 1,
+    });
+
+    // The re-rendered entry swaps the download action for the reconnect one
+    await vi.waitFor(() => {
+      const item = document.querySelector('[data-lora-index="1"]');
+      expect(item.querySelector('.lora-reconnect')).not.toBeNull();
+      expect(item.querySelector('.lora-download')).toBeNull();
+      expect(item.querySelector('.invalid-hash-badge')).not.toBeNull();
+    });
+  });
+
+  it('leaves the entry untouched when a direct download fails transiently', async () => {
+    const recipeModal = await createRecipeModal();
+    const requests = [];
+    const isolatedRecipe = JSON.parse(JSON.stringify(recipeWithResources));
+    fetchRecipeDetailsMock.mockResolvedValue(isolatedRecipe);
+    downloadManagerMock._lastDownloadError = 'Connection timed out';
+    downloadVersionWithDefaultsMock.mockResolvedValue(false);
+    global.fetch = vi.fn(async (url, options) => {
+      requests.push({ url: String(url), options });
+      return { ok: true, json: async () => ({}) };
+    });
+    recipeModal.showRecipeDetails(isolatedRecipe);
+    await flushWiring();
+
+    const missingItem = document.querySelector('[data-lora-index="1"]');
+    missingItem.querySelector('.lora-download').click();
+
+    await vi.waitFor(() => {
+      expect(downloadVersionWithDefaultsMock).toHaveBeenCalledTimes(1);
+    });
+    // Give any (unexpected) mark request a chance to fire
+    await new Promise(resolve => setTimeout(resolve, 50));
+    expect(requests.some(r => r.url.includes('mark-hash-invalid'))).toBe(false);
+
+    // The entry keeps the download action and never flips to reconnect
+    const item = document.querySelector('[data-lora-index="1"]');
+    expect(item.querySelector('.lora-download')).not.toBeNull();
+    expect(item.querySelector('.lora-reconnect')).toBeNull();
   });
 
   it('offers download for hash-only LoRAs and resolves identifiers on demand', async () => {

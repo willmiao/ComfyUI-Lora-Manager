@@ -922,6 +922,13 @@ class RecipeModal {
                 const isDeleted = lora.isDeleted;
                 const loraIndex = loras.indexOf(lora);
 
+                // Mirror the checkpoint "broken" rule: deleted, an
+                // unresolvable hash, or a name-only remnant with no CivitAI
+                // identifiers at all cannot be fixed by downloading —
+                // reconnecting a local LoRA is the only remediation.
+                const needsReconnect = !existsLocally
+                    && (isDeleted || lora.hashInvalid || !this.canDownloadLora(lora));
+
                 // Status badges are pure indicators (consistent with the
                 // versions-tab pattern): they never carry click behavior,
                 // only a tooltip. Remediation lives in the action row below.
@@ -948,7 +955,7 @@ class RecipeModal {
                         </div>`;
                 }
 
-                const actionsRow = this.renderLoraItemActions(lora, loraIndex, { existsLocally, isDeleted });
+                const actionsRow = this.renderLoraItemActions(loraIndex, { existsLocally, needsReconnect });
 
                 // The Civitai link belongs to the model name (it answers
                 // "what is this"), so it sits inline in the title — the same
@@ -1019,7 +1026,7 @@ class RecipeModal {
                             </div>
                             ${actionsRow}
                         </div>
-                        ${isDeleted || lora.hashInvalid ? `
+                        ${needsReconnect ? `
                         <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
                             <div class="reconnect-instructions">
                                 <p>${escapeHtml(translate('recipes.resources.reconnectInstructions', {}, 'Enter LoRA syntax or name to reconnect:'))}</p>
@@ -2654,9 +2661,8 @@ class RecipeModal {
             // backend rejected it). Enroll the entry in the rematch/reconnect
             // remediation flow only when the failure is clearly unresolvable
             // (model removed or version gone on CivitAI) — the same signal
-            // rule as the LoRA path, which marks the hash invalid only when
-            // resolving it on CivitAI returns "not found". Transient
-            // failures (network, 5xx) leave the entry untouched.
+            // rule as the LoRA path. Transient failures (network, 5xx) leave
+            // the entry untouched.
             if (this._isUnresolvableDownloadError(downloadManager._lastDownloadError)) {
                 await this.markCheckpointHashInvalid();
             }
@@ -2729,7 +2735,7 @@ class RecipeModal {
         `;
     }
 
-    renderLoraItemActions(lora, loraIndex, { existsLocally, isDeleted }) {
+    renderLoraItemActions(loraIndex, { existsLocally, needsReconnect }) {
         // In-library LoRAs need no remediation: the badge and the local path
         // already tell the full story. (The restore affordance for manually
         // reconnected entries lives on the info row, not here.)
@@ -2738,7 +2744,7 @@ class RecipeModal {
         }
 
         const controls = [];
-        if (isDeleted || lora.hashInvalid) {
+        if (needsReconnect) {
             const reconnectLabel = translate('recipes.resources.reconnect', {}, 'Reconnect');
             const reconnectTooltip = translate('recipes.resources.reconnectTooltip', {}, 'Reconnect with a local LoRA');
             controls.push(`
@@ -2749,24 +2755,20 @@ class RecipeModal {
                 </button>
             `);
         } else {
-            if (this.canDownloadLora(lora)) {
-                const downloadLabel = translate('recipes.resources.download', {}, 'Download');
-                const downloadTooltip = translate('recipes.resources.downloadLoraTooltip', {}, 'Download this LoRA');
-                controls.push(`
-                    <button type="button" class="resource-action primary compact lora-download" data-lora-index="${loraIndex}"
-                        title="${escapeHtml(downloadTooltip)}" aria-label="${escapeHtml(downloadTooltip)}">
-                        <i class="fas fa-download" aria-hidden="true"></i>
-                        <span>${escapeHtml(downloadLabel)}</span>
-                    </button>
-                `);
-            }
+            // needsReconnect already implies canDownloadLora() here, so the
+            // download action is unconditional.
+            const downloadLabel = translate('recipes.resources.download', {}, 'Download');
+            const downloadTooltip = translate('recipes.resources.downloadLoraTooltip', {}, 'Download this LoRA');
+            controls.push(`
+                <button type="button" class="resource-action primary compact lora-download" data-lora-index="${loraIndex}"
+                    title="${escapeHtml(downloadTooltip)}" aria-label="${escapeHtml(downloadTooltip)}">
+                    <i class="fas fa-download" aria-hidden="true"></i>
+                    <span>${escapeHtml(downloadLabel)}</span>
+                </button>
+            `);
         }
 
-        const markup = controls.filter(Boolean).join('');
-        if (!markup) {
-            return '';
-        }
-        return `<div class="recipe-lora-actions">${markup}</div>`;
+        return `<div class="recipe-lora-actions">${controls.join('')}</div>`;
     }
 
     setupLoraItemActions() {
@@ -2928,6 +2930,16 @@ class RecipeModal {
             );
             if (success) {
                 await this.refreshResourcesAfterDownload();
+                return;
+            }
+            // Business-level download failure (the request completed but the
+            // backend rejected it). Mark the hash invalid — and thereby offer
+            // the reconnect affordance — only when the failure is clearly
+            // unresolvable (model removed or version gone on CivitAI), the
+            // same signal rule as the checkpoint path. Transient failures
+            // (network, 5xx) leave the entry untouched.
+            if (this._isUnresolvableDownloadError(downloadManager._lastDownloadError)) {
+                await this.markLoraHashInvalid(loraIndex);
             }
         } catch (error) {
             if (!hasDirectIds) {
