@@ -5,6 +5,8 @@
 from __future__ import annotations
 
 import asyncio
+import copy
+import difflib
 import json
 import logging
 import os
@@ -243,6 +245,188 @@ class RecipeScanner:
             self._local_filename_cache = cache
             self._local_filename_cache_versions = versions
             return cache
+
+    @staticmethod
+    def _strip_weight_extension(name: str) -> str:
+        """Strip a known weight-file extension, preserving the original case."""
+        lower = name.lower()
+        for ext in sorted(WEIGHT_FILE_EXTENSIONS, key=len, reverse=True):
+            if lower.endswith(ext):
+                return name[: -len(ext)]
+        return name
+
+    async def suggest_reconnect_candidates(
+        self,
+        *,
+        entry: dict[str, Any],
+        recipe_base_model: Optional[str],
+        query: Optional[str] = None,
+        limit: int = 5,
+    ) -> list[dict[str, Any]]:
+        """Rank local LoRAs as reconnect candidates for a broken recipe entry.
+
+        Identity signals (same hash / same CivitAI model version) outrank
+        similarity signals (filename / model name fuzzy match). A confident
+        base-model mismatch (both sides known and different) is a hard
+        rejection here. This is deliberately stricter than reconnect itself,
+        which tolerates same-architecture-family labels (Pony ↔ Illustrious):
+        suggestions trade recall for a noise-free list, and the input box
+        remains available for deliberate cross-family picks. Unknown on
+        either side stays eligible, matching ``find_matching_models``.
+        When ``query`` is given
+        (search-as-you-type), identity signals are skipped and both
+        similarity signals score against the query, with a substring hit
+        (query of 3+ chars) flooring that signal's ratio at 0.8.
+
+        The name-similarity threshold (0.65) is stricter than the filename
+        one (0.55): long generic names share tokens like "style"/"pony" and
+        score deceptively high (measured 0.638 for unrelated models), while
+        filenames are the authoritative match key and get more slack.
+        """
+        if limit <= 0 or not isinstance(entry, dict):
+            return []
+
+        lora_scanner = self._lora_scanner
+        if lora_scanner is None:
+            return []
+
+        data = await lora_scanner.get_cached_data()
+        recipe_bm = (recipe_base_model or "").strip().casefold()
+
+        def _base_model_known_mismatch(item: dict[str, Any]) -> bool:
+            """Confident mismatch only — unknown on either side stays eligible."""
+            if not recipe_bm or recipe_bm == "unknown":
+                return False
+            item_bm = (item.get("base_model") or "").strip().casefold()
+            return bool(item_bm) and item_bm != "unknown" and item_bm != recipe_bm
+
+        def _base_model_adjustment(item: dict[str, Any]) -> float:
+            # Mismatches are already filtered out; this only boosts known-equal.
+            if not recipe_bm or recipe_bm == "unknown":
+                return 0.0
+            item_bm = (item.get("base_model") or "").strip().casefold()
+            return 0.1 if item_bm == recipe_bm else 0.0
+
+        pool: list[dict[str, Any]] = []
+        for item in getattr(data, "raw_data", None) or []:
+            if not isinstance(item, dict):
+                continue
+            # Items without a sha256 (pending/failed downloads) leave the
+            # entry without a usable hash — same rule as the filename cache.
+            if not (item.get("sha256") or "").strip():
+                continue
+            if not self._is_type_compatible(item, is_checkpoint=False):
+                continue
+            if _base_model_known_mismatch(item):
+                continue
+            pool.append(item)
+        if not pool:
+            return []
+
+        # Basename collision counts decide whether target_name needs the
+        # folder-relative path to resolve uniquely in find_matching_models.
+        basename_counts: dict[str, int] = {}
+        for item in pool:
+            key = self._normalize_filename_key(item.get("file_name") or "")
+            if key:
+                basename_counts[key] = basename_counts.get(key, 0) + 1
+
+        best: dict[str, dict[str, Any]] = {}
+
+        def _consider(item: dict[str, Any], score: float, reason: str) -> None:
+            key = item.get("file_path") or item.get("file_name") or ""
+            if not key:
+                return
+            current = best.get(key)
+            if current is None or score > current["score"]:
+                best[key] = {"item": item, "score": score, "reason": reason}
+
+        query_text = (query or "").strip()
+
+        if not query_text:
+            entry_hash = (entry.get("hash") or "").lower()
+            if entry_hash:
+                hash_cache = await self.build_local_hash_cache()
+                hit = hash_cache.get(entry_hash)
+                if (
+                    isinstance(hit, dict)
+                    and (hit.get("sha256") or "").strip()
+                    and self._is_type_compatible(hit, is_checkpoint=False)
+                    and not _base_model_known_mismatch(hit)
+                ):
+                    _consider(hit, 1.0 + _base_model_adjustment(hit), "same_hash")
+
+            version_id = entry.get("modelVersionId") or entry.get("id")
+            if version_id is not None:
+                hit = self._get_lora_from_version_index(str(version_id))
+                if (
+                    isinstance(hit, dict)
+                    and (hit.get("sha256") or "").strip()
+                    and not _base_model_known_mismatch(hit)
+                ):
+                    _consider(hit, 0.95 + _base_model_adjustment(hit), "same_version")
+
+        filename_source = query_text or (entry.get("file_name") or "")
+        name_source = query_text or (entry.get("modelName") or "")
+        norm_filename_source = self._normalize_filename_key(filename_source)
+        name_source_cf = name_source.casefold()
+        # Substring hits floor the similarity ratio, but only for meaningful
+        # queries — a 1-2 character query is a substring of nearly every
+        # filename and would flood the suggestions with noise.
+        substring_floor = len(query_text) >= 3
+
+        for item in pool:
+            adjustment = _base_model_adjustment(item)
+
+            item_filename = self._normalize_filename_key(item.get("file_name") or "")
+            if norm_filename_source and item_filename:
+                ratio = difflib.SequenceMatcher(
+                    None, norm_filename_source, item_filename
+                ).ratio()
+                if substring_floor and norm_filename_source in item_filename:
+                    ratio = max(ratio, 0.8)
+                if ratio >= 0.55:
+                    _consider(
+                        item, 0.5 + 0.4 * ratio + adjustment, "similar_filename"
+                    )
+
+            item_name = (item.get("model_name") or "").casefold()
+            if name_source_cf and item_name:
+                ratio = difflib.SequenceMatcher(
+                    None, name_source_cf, item_name
+                ).ratio()
+                if substring_floor and name_source_cf in item_name:
+                    ratio = max(ratio, 0.8)
+                if ratio >= 0.65:
+                    _consider(item, 0.4 + 0.35 * ratio + adjustment, "similar_name")
+
+        suggestions = []
+        for record in best.values():
+            item = record["item"]
+            file_name = item.get("file_name") or ""
+            stem = self._strip_weight_extension(file_name)
+            folder = (item.get("folder") or "").replace("\\", "/").strip("/")
+            norm_key = self._normalize_filename_key(file_name)
+            if norm_key and basename_counts.get(norm_key, 0) > 1 and folder:
+                target_name = f"{folder}/{stem}"
+            else:
+                target_name = stem
+            suggestions.append(
+                {
+                    "file_name": file_name,
+                    "file_path": item.get("file_path") or "",
+                    "model_name": item.get("model_name") or "",
+                    "base_model": item.get("base_model") or "",
+                    "preview_url": item.get("preview_url") or "",
+                    "hash": (item.get("sha256") or "").lower(),
+                    "score": round(record["score"], 3),
+                    "match_reason": record["reason"],
+                    "target_name": target_name,
+                }
+            )
+
+        suggestions.sort(key=lambda s: (-s["score"], s["file_name"].lower()))
+        return suggestions[:limit]
 
     def _is_rematch_candidate(self, entry: dict[str, Any]) -> bool:
         """Return True when a recipe entry is eligible for local re-matching.
@@ -3677,6 +3861,13 @@ class RecipeScanner:
                 raise RecipeNotFoundError("LoRA index out of range in recipe")
 
             lora_entry = loras[lora_index]
+            # Snapshot the pre-update state so the association can be restored
+            # later (undo reconnect). Never nest snapshots.
+            snapshot = {
+                key: copy.deepcopy(value)
+                for key, value in lora_entry.items()
+                if key != "reconnectSnapshot"
+            }
             lora_entry["isDeleted"] = False
             lora_entry["hashInvalid"] = False
             lora_entry["exclude"] = False
@@ -3694,6 +3885,8 @@ class RecipeScanner:
                     )
                     lora_entry["modelVersionName"] = civitai_info.get("name", "")
                     lora_entry["modelVersionId"] = civitai_info.get("id")
+
+            lora_entry["reconnectSnapshot"] = snapshot
 
             from ..utils.utils import calculate_recipe_fingerprint
 
@@ -3729,6 +3922,68 @@ class RecipeScanner:
 
         updated_lora = self._enrich_lora_entry(updated_lora)
         return recipe_data, updated_lora
+
+    async def restore_lora_entry(
+        self,
+        recipe_id: str,
+        lora_index: int,
+    ) -> Tuple[Dict[str, Any], Dict[str, Any]]:
+        """Restore a LoRA entry to its pre-reconnect snapshot.
+
+        Reverses :meth:`update_lora_entry`: the entry saved under
+        ``reconnectSnapshot`` becomes the entry again and the snapshot is
+        dropped. Returns the updated recipe data and the restored LoRA
+        metadata.
+        """
+
+        recipe_json_path = await self.get_recipe_json_path(recipe_id)
+        if not recipe_json_path or not os.path.exists(recipe_json_path):
+            raise RecipeNotFoundError("Recipe not found")
+
+        async with self._mutation_lock:
+            with open(recipe_json_path, "r", encoding="utf-8") as file_obj:
+                recipe_data = json.load(file_obj)
+
+            loras = recipe_data.get("loras", [])
+            if lora_index < 0 or lora_index >= len(loras):
+                raise RecipeNotFoundError("LoRA index out of range in recipe")
+
+            snapshot = loras[lora_index].get("reconnectSnapshot")
+            if not isinstance(snapshot, dict):
+                raise RecipeValidationError(
+                    "LoRA entry has no reconnect snapshot to restore"
+                )
+
+            restored_entry = copy.deepcopy(snapshot)
+            restored_entry.pop("reconnectSnapshot", None)
+            loras[lora_index] = restored_entry
+
+            from ..utils.utils import calculate_recipe_fingerprint
+
+            recipe_data["fingerprint"] = calculate_recipe_fingerprint(
+                recipe_data.get("loras", [])
+            )
+            recipe_data["modified"] = time.time()
+
+            with open(recipe_json_path, "w", encoding="utf-8") as file_obj:
+                json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
+
+        cache = await self.get_cached_data()
+        replaced = await cache.replace_recipe(recipe_id, recipe_data, resort=False)
+        if not replaced:
+            await cache.add_recipe(recipe_data, resort=False)
+        self._schedule_resort()
+
+        # Update FTS index
+        self._update_fts_index_for_recipe(recipe_data, "update")
+
+        # Update persistent SQLite cache
+        if self._persistent_cache:
+            self._persistent_cache.update_recipe(recipe_data, recipe_json_path)
+            self._json_path_map[recipe_id] = recipe_json_path
+
+        restored_lora = self._enrich_lora_entry(dict(restored_entry))
+        return recipe_data, restored_lora
 
     async def set_lora_entry_hash_invalid(
         self,

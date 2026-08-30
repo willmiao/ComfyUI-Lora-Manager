@@ -12,6 +12,7 @@ import { openMediaViewer } from './shared/MediaViewer.js';
 import { showRecipeDeleteConfirmation } from './RecipeCard.js';
 import { renderCompactTags, setupTagTooltip } from './shared/utils.js';
 import { setupTagEditMode } from './shared/ModelTags.js';
+import { Combobox } from './Combobox.js';
 
 const ALLOWED_GEN_PARAM_KEYS = new Set([
     'prompt',
@@ -171,7 +172,10 @@ class RecipeModal {
             reconnectContainers.forEach(container => {
                 if (container.classList.contains('active') &&
                     !container.contains(event.target) &&
-                    !event.target.closest('.lora-reconnect')) {
+                    !event.target.closest('.lora-reconnect') &&
+                    // The Combobox dropdown lives on document.body — clicks on
+                    // its options are part of the reconnect interaction.
+                    !event.target.closest('.lm-combobox-panel')) {
                     this.hideReconnectInput(container);
                 }
             });
@@ -236,6 +240,7 @@ class RecipeModal {
             this.navigationKeyHandler = null;
         }
         this.navigationInProgress = false;
+        this._destroyAllReconnectComboboxes();
     }
 
     setupNavigationShortcuts() {
@@ -878,6 +883,9 @@ class RecipeModal {
         }
 
         if (lorasListElement && loras.length > 0) {
+            // The list innerHTML below discards every reconnect container;
+            // tear down their Combobox panels (appended to document.body) first.
+            this._destroyAllReconnectComboboxes();
             lorasListElement.innerHTML = loras.map(lora => {
                 const existsLocally = lora.inLibrary;
                 const isDeleted = lora.isDeleted;
@@ -941,6 +949,24 @@ class RecipeModal {
                     ? ` role="button" tabindex="0" aria-label="${escapeHtml(translate('recipes.resources.openLoraDetails', { name: lora.modelName }, `View ${lora.modelName} in the LoRA library`))}"`
                     : '';
 
+                // A reconnect snapshot marks a manually reconnected entry.
+                // The restore icon on the info row doubles as that marker;
+                // its tooltip names the previous association.
+                let undoReconnectIcon = '';
+                if (existsLocally && lora.reconnectSnapshot) {
+                    const previousName = lora.reconnectSnapshot.file_name || lora.reconnectSnapshot.modelName || '';
+                    const undoLabel = translate('recipes.resources.undoReconnect', {}, 'Undo');
+                    const undoTooltip = previousName
+                        ? translate('recipes.resources.undoReconnectTooltipNamed', { name: previousName }, `Restore to ${previousName} (the association before reconnecting)`)
+                        : translate('recipes.resources.undoReconnectTooltip', {}, 'Restore the association this entry had before reconnecting');
+                    undoReconnectIcon = `
+                        <button type="button" class="lora-undo-reconnect" data-lora-index="${loraIndex}"
+                            title="${escapeHtml(undoTooltip)}" aria-label="${escapeHtml(undoTooltip)}">
+                            <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                        </button>
+                    `;
+                }
+
                 return `
                     <div class="${loraItemClass}" data-lora-index="${loraIndex}"${rowA11yAttributes}>
                         <div class="recipe-lora-thumbnail">
@@ -958,24 +984,26 @@ class RecipeModal {
                                 ${lora.modelVersionName ? `<div class="recipe-lora-version">${lora.modelVersionName}</div>` : ''}
                                 <div class="recipe-lora-weight">Weight: ${lora.strength || 1.0}</div>
                                 ${lora.baseModel ? `<div class="base-model">${lora.baseModel}</div>` : ''}
+                                ${undoReconnectIcon}
                             </div>
                             ${actionsRow}
-                            ${isDeleted || lora.hashInvalid ? `
-                            <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
-                                <div class="reconnect-instructions">
-                                    <p>${escapeHtml(translate('recipes.resources.reconnectInstructions', {}, 'Enter LoRA syntax or name to reconnect:'))}</p>
-                                    <small>${escapeHtml(translate('recipes.resources.reconnectExample', {}, 'Example: <lora:name:1> or just the name'))}</small>
-                                </div>
-                                <div class="reconnect-form">
-                                    <input type="text" class="reconnect-input" placeholder="${escapeHtml(translate('recipes.resources.reconnectPlaceholder', {}, 'Enter LoRA name or syntax'))}">
-                                    <div class="reconnect-actions">
-                                        <button class="reconnect-cancel-btn">${escapeHtml(translate('common.cancel', {}, 'Cancel'))}</button>
-                                        <button class="reconnect-confirm-btn">${escapeHtml(translate('recipes.resources.reconnect', {}, 'Reconnect'))}</button>
-                                    </div>
-                                </div>
-                                <p class="reconnect-error" role="alert"></p>
-                            </div>` : ''}
                         </div>
+                        ${isDeleted || lora.hashInvalid ? `
+                        <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
+                            <div class="reconnect-instructions">
+                                <p>${escapeHtml(translate('recipes.resources.reconnectInstructions', {}, 'Enter LoRA syntax or name to reconnect:'))}</p>
+                                <small>${escapeHtml(translate('recipes.resources.reconnectExample', {}, 'Example: <lora:name:1> or just the name'))}</small>
+                            </div>
+                            <div class="reconnect-form">
+                                <input type="text" class="reconnect-input" placeholder="${escapeHtml(translate('recipes.resources.reconnectPlaceholder', {}, 'Enter LoRA name or syntax'))}">
+                                <div class="reconnect-actions">
+                                    <button class="reconnect-cancel-btn">${escapeHtml(translate('common.cancel', {}, 'Cancel'))}</button>
+                                    <button class="reconnect-confirm-btn">${escapeHtml(translate('recipes.resources.reconnect', {}, 'Reconnect'))}</button>
+                                </div>
+                            </div>
+                            <div class="reconnect-suggestions"></div>
+                            <p class="reconnect-error" role="alert"></p>
+                        </div>` : ''}
                     </div>
                 `;
             }).join('');
@@ -988,6 +1016,7 @@ class RecipeModal {
 
             this.recipeLorasSyntax = '';
         } else if (lorasListElement) {
+            this._destroyAllReconnectComboboxes();
             lorasListElement.innerHTML = '<div class="no-loras">No LoRAs associated with this recipe</div>';
             this.recipeLorasSyntax = '';
         }
@@ -1665,12 +1694,17 @@ class RecipeModal {
                 this.clearReconnectError(input.closest('.lora-reconnect-container'));
             });
             input.addEventListener('keydown', (e) => {
+                const container = input.closest('.lora-reconnect-container');
+                // When a Combobox is attached it owns Enter (pick a highlighted
+                // option, or commit free text via onCommit) and, while its
+                // dropdown is open, Escape (close the dropdown first).
+                const combobox = this._reconnectComboboxes && this._reconnectComboboxes.get(container);
                 if (e.key === 'Enter') {
-                    const container = input.closest('.lora-reconnect-container');
+                    if (combobox) return;
                     const loraIndex = container.getAttribute('data-lora-index');
                     this.reconnectLora(loraIndex, input.value);
                 } else if (e.key === 'Escape') {
-                    const container = input.closest('.lora-reconnect-container');
+                    if (combobox && combobox.isOpen()) return;
                     this.hideReconnectInput(container);
                 }
             });
@@ -1680,7 +1714,7 @@ class RecipeModal {
     showReconnectInput(loraIndex) {
         // Hide any currently active reconnect containers
         document.querySelectorAll('.lora-reconnect-container.active').forEach(active => {
-            active.classList.remove('active');
+            this.hideReconnectInput(active);
         });
 
         // Show the reconnect container for this lora
@@ -1690,6 +1724,8 @@ class RecipeModal {
             this.clearReconnectError(container);
             const input = container.querySelector('.reconnect-input');
             input.focus();
+            this._attachReconnectCombobox(container, loraIndex);
+            this._loadReconnectSuggestions(container, loraIndex);
         }
     }
 
@@ -1700,6 +1736,139 @@ class RecipeModal {
             const input = container.querySelector('.reconnect-input');
             if (input) input.value = '';
         }
+        if (container) {
+            this._destroyReconnectCombobox(container);
+            // Invalidate any in-flight suggestions fetch for this panel
+            this._reconnectSuggestionsToken = (this._reconnectSuggestionsToken || 0) + 1;
+            const suggestions = container.querySelector('.reconnect-suggestions');
+            if (suggestions) suggestions.innerHTML = '';
+        }
+    }
+
+    _attachReconnectCombobox(container, loraIndex) {
+        if (!this._reconnectComboboxes) {
+            this._reconnectComboboxes = new Map();
+        }
+        if (this._reconnectComboboxes.has(container)) {
+            return;
+        }
+        const input = container.querySelector('.reconnect-input');
+        if (!input) {
+            return;
+        }
+        const combobox = new Combobox(input, {
+            fetchOptions: async (value) => {
+                const suggestions = await this._fetchReconnectSuggestions(loraIndex, value);
+                return suggestions.map(suggestion => suggestion.target_name);
+            },
+            // emptyText only labels the dropdown empty state; the input keeps
+            // its own translated placeholder from the markup.
+            emptyText: translate('recipes.resources.reconnectSuggestionsEmpty', {}, 'No matching LoRAs in your local library'),
+            onCommit: (value) => {
+                this.reconnectLora(loraIndex, value);
+            },
+        });
+        this._reconnectComboboxes.set(container, combobox);
+    }
+
+    _destroyReconnectCombobox(container) {
+        const combobox = this._reconnectComboboxes && this._reconnectComboboxes.get(container);
+        if (combobox) {
+            combobox.destroy();
+            this._reconnectComboboxes.delete(container);
+        }
+    }
+
+    _destroyAllReconnectComboboxes() {
+        if (!this._reconnectComboboxes) {
+            return;
+        }
+        this._reconnectComboboxes.forEach(combobox => combobox.destroy());
+        this._reconnectComboboxes.clear();
+        this._reconnectSuggestionsToken = (this._reconnectSuggestionsToken || 0) + 1;
+    }
+
+    async _fetchReconnectSuggestions(loraIndex, query) {
+        const suffix = query ? `?query=${encodeURIComponent(query)}` : '';
+        const response = await fetch(`/api/lm/recipe/${this.recipeId}/lora/${loraIndex}/reconnect-suggestions${suffix}`);
+        if (!response.ok) {
+            return [];
+        }
+        const result = await response.json();
+        return result && result.success && Array.isArray(result.suggestions) ? result.suggestions : [];
+    }
+
+    async _loadReconnectSuggestions(container, loraIndex) {
+        const listElement = container.querySelector('.reconnect-suggestions');
+        if (!listElement) {
+            return;
+        }
+        const token = (this._reconnectSuggestionsToken || 0) + 1;
+        this._reconnectSuggestionsToken = token;
+        listElement.innerHTML = `<div class="reconnect-suggestions-loading">${escapeHtml(translate('recipes.resources.reconnectSuggestionsLoading', {}, 'Searching local library...'))}</div>`;
+        try {
+            const suggestions = await this._fetchReconnectSuggestions(loraIndex);
+            // Stale guard: panel closed or another item opened while fetching
+            if (token !== this._reconnectSuggestionsToken || !container.classList.contains('active')) {
+                return;
+            }
+            this._renderReconnectSuggestions(container, suggestions, loraIndex);
+        } catch (error) {
+            console.error('Error fetching reconnect suggestions:', error);
+            if (token !== this._reconnectSuggestionsToken || !container.classList.contains('active')) {
+                return;
+            }
+            this._renderReconnectSuggestions(container, [], loraIndex);
+        }
+    }
+
+    _renderReconnectSuggestions(container, suggestions, loraIndex) {
+        const listElement = container.querySelector('.reconnect-suggestions');
+        if (!listElement) {
+            return;
+        }
+        listElement.innerHTML = '';
+        if (!suggestions.length) {
+            const empty = document.createElement('div');
+            empty.className = 'reconnect-suggestions-empty';
+            empty.textContent = translate('recipes.resources.reconnectSuggestionsEmpty', {}, 'No matching LoRAs in your local library');
+            listElement.appendChild(empty);
+            return;
+        }
+        const reasonLabels = {
+            same_hash: translate('recipes.resources.reconnectMatchSameHash', {}, 'Same hash'),
+            same_version: translate('recipes.resources.reconnectMatchSameVersion', {}, 'Same model version'),
+            similar_filename: translate('recipes.resources.reconnectMatchSimilarFilename', {}, 'Similar filename'),
+            similar_name: translate('recipes.resources.reconnectMatchSimilarName', {}, 'Similar name'),
+        };
+        suggestions.forEach(suggestion => {
+            // The filename (stem) is what the match scored on and what gets
+            // submitted — show it as the primary label, with the base model
+            // as secondary context. The model name is omitted: it played no
+            // part in the match and only adds noise.
+            const stem = suggestion.target_name || suggestion.file_name || '';
+            const secondaryParts = [];
+            if (suggestion.base_model) {
+                secondaryParts.push(suggestion.base_model);
+            }
+            const secondary = secondaryParts.join(' · ');
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'reconnect-suggestion';
+            row.title = stem;
+            row.innerHTML = `
+                <img class="reconnect-suggestion-preview" src="${escapeHtml(suggestion.preview_url || '/loras_static/images/no-preview.png')}" alt="" loading="lazy" onerror="this.src='/loras_static/images/no-preview.png'">
+                <span class="reconnect-suggestion-info">
+                    <span class="reconnect-suggestion-name">${escapeHtml(stem)}</span>
+                    ${secondary ? `<span class="reconnect-suggestion-secondary">${escapeHtml(secondary)}</span>` : ''}
+                </span>
+                <span class="reconnect-suggestion-reason">${escapeHtml(reasonLabels[suggestion.match_reason] || suggestion.match_reason || '')}</span>
+            `;
+            row.addEventListener('click', () => {
+                this.reconnectLora(loraIndex, suggestion.target_name);
+            });
+            listElement.appendChild(row);
+        });
     }
 
     showReconnectError(container, message) {
@@ -1761,6 +1930,19 @@ class RecipeModal {
                 // Show success message
                 showToast('toast.recipes.reconnectedSuccessfully', {}, 'success');
 
+                // Same-architecture-family reconnects (e.g. Pony ↔ Illustrious)
+                // succeed but carry structured mismatch data — warn the user.
+                if (result.base_model_mismatch) {
+                    showToast(
+                        'toast.recipes.reconnectBaseModelMismatch',
+                        {
+                            recipe: result.base_model_mismatch.recipe_base_model,
+                            lora: result.base_model_mismatch.lora_base_model,
+                        },
+                        'warning'
+                    );
+                }
+
                 // Refresh modal to show updated content
                 setTimeout(() => {
                     this.showRecipeDetails(this.currentRecipe);
@@ -1775,6 +1957,47 @@ class RecipeModal {
         } catch (error) {
             console.error('Error reconnecting LoRA:', error);
             this.showReconnectError(container, translate('toast.recipes.reconnectFailed', { message: error.message }, `Error reconnecting LoRA: ${error.message}`));
+        } finally {
+            state.loadingManager.hide();
+        }
+    }
+
+    async restoreLora(loraIndex) {
+        try {
+            state.loadingManager.showSimpleLoading('Restoring LoRA...');
+
+            const response = await fetch('/api/lm/recipe/lora/restore', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipe_id: this.recipeId,
+                    lora_index: loraIndex
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Swap the entry back to its pre-reconnect state
+                this.currentRecipe.loras[loraIndex] = result.updated_lora;
+
+                showToast('toast.recipes.loraRestored', {}, 'success');
+
+                setTimeout(() => {
+                    this.showRecipeDetails(this.currentRecipe);
+                }, 500);
+
+                state.virtualScroller.updateSingleItem(this.listFilePath || this.currentRecipe.file_path, {
+                    loras: this.currentRecipe.loras
+                });
+            } else {
+                showToast('toast.recipes.loraRestoreFailed', { message: result.error }, 'error');
+            }
+        } catch (error) {
+            console.error('Error restoring LoRA:', error);
+            showToast('toast.recipes.loraRestoreFailed', { message: error.message }, 'error');
         } finally {
             state.loadingManager.hide();
         }
@@ -2042,7 +2265,8 @@ class RecipeModal {
 
     renderLoraItemActions(lora, loraIndex, { existsLocally, isDeleted }) {
         // In-library LoRAs need no remediation: the badge and the local path
-        // already tell the full story.
+        // already tell the full story. (The restore affordance for manually
+        // reconnected entries lives on the info row, not here.)
         if (existsLocally) {
             return '';
         }
@@ -2111,6 +2335,17 @@ class RecipeModal {
             button.addEventListener('click', (e) => {
                 e.stopPropagation();
                 this.showReconnectInput(button.dataset.loraIndex);
+            });
+        });
+
+        lorasListElement.querySelectorAll('.lora-undo-reconnect').forEach(button => {
+            if (button.dataset.wired === 'true') {
+                return;
+            }
+            button.dataset.wired = 'true';
+            button.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.restoreLora(button.dataset.loraIndex);
             });
         });
     }

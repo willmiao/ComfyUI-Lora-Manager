@@ -539,4 +539,241 @@ describe('RecipeModal resource item interactions', () => {
     checkpointItem.click();
     expect(navigateSpy).not.toHaveBeenCalled();
   });
+
+  describe('reconnect suggestions', () => {
+    const suggestionsPayload = {
+      success: true,
+      suggestions: [
+        {
+          file_name: 'deleted-lora-v1.safetensors',
+          file_path: '/models/loras/deleted-lora-v1.safetensors',
+          model_name: 'Deleted LoRA v1',
+          base_model: 'SD 1.5',
+          preview_url: '/preview/deleted.png',
+          hash: 'abc123',
+          score: 0.95,
+          match_reason: 'same_version',
+          target_name: 'deleted-lora-v1',
+        },
+      ],
+    };
+
+    function mockSuggestionsFetch(payload) {
+      const requests = [];
+      global.fetch = vi.fn(async (url, options) => {
+        requests.push({ url: String(url), options });
+        if (String(url).includes('/reconnect-suggestions')) {
+          return { ok: true, json: async () => payload };
+        }
+        if (String(url).includes('/recipe/lora/reconnect')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              updated_lora: { name: 'deleted-lora-v1', modelName: 'Deleted LoRA v1', inLibrary: true },
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+      return requests;
+    }
+
+    async function openReconnectPanel(recipeModal, loraIndex) {
+      recipeModal.showRecipeDetails(recipeWithResources);
+      await flushWiring();
+      const item = document.querySelector(`[data-lora-index="${loraIndex}"]`);
+      item.querySelector('.lora-reconnect').click();
+      return item.querySelector('.lora-reconnect-container');
+    }
+
+    it('fetches suggestions when the panel opens and renders them as rows', async () => {
+      const recipeModal = await createRecipeModal();
+      mockSuggestionsFetch(suggestionsPayload);
+
+      const container = await openReconnectPanel(recipeModal, 2);
+
+      // The loading state shows synchronously while the fetch is in flight
+      expect(container.querySelector('.reconnect-suggestions-loading')).not.toBeNull();
+
+      await vi.waitFor(() => {
+        expect(container.querySelectorAll('.reconnect-suggestion').length).toBe(1);
+      });
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/lm/recipe/recipe-resources/lora/2/reconnect-suggestions'
+      );
+
+      const row = container.querySelector('.reconnect-suggestion');
+      // Primary label is the file stem (what the match scored on and what
+      // gets submitted); the secondary line shows only the base model — the
+      // model name is noise and intentionally omitted.
+      expect(row.querySelector('.reconnect-suggestion-name').textContent).toBe('deleted-lora-v1');
+      expect(row.querySelector('.reconnect-suggestion-secondary').textContent).toBe('SD 1.5');
+      expect(row.querySelector('.reconnect-suggestion-reason').textContent).toBe('Same model version');
+      expect(row.title).toBe('deleted-lora-v1');
+      const preview = row.querySelector('.reconnect-suggestion-preview');
+      expect(preview.getAttribute('src')).toBe('/preview/deleted.png');
+    });
+
+    it('reconnects with the suggestion target_name when a row is clicked', async () => {
+      const recipeModal = await createRecipeModal();
+      const requests = mockSuggestionsFetch(suggestionsPayload);
+
+      const container = await openReconnectPanel(recipeModal, 2);
+      await vi.waitFor(() => {
+        expect(container.querySelectorAll('.reconnect-suggestion').length).toBe(1);
+      });
+
+      container.querySelector('.reconnect-suggestion').click();
+
+      await vi.waitFor(() => {
+        expect(requests.some(r => r.url === '/api/lm/recipe/lora/reconnect')).toBe(true);
+      });
+
+      const reconnectRequest = requests.find(r => r.url === '/api/lm/recipe/lora/reconnect');
+      expect(reconnectRequest.options.method).toBe('POST');
+      // lora_index rides as the DOM attribute string, same as the manual form
+      expect(JSON.parse(reconnectRequest.options.body)).toEqual({
+        recipe_id: 'recipe-resources',
+        lora_index: '2',
+        target_name: 'deleted-lora-v1',
+      });
+    });
+
+    it('warns when the reconnect crossed base-model families', async () => {
+      const recipeModal = await createRecipeModal();
+      global.fetch = vi.fn(async (url) => {
+        if (String(url).includes('/reconnect-suggestions')) {
+          return { ok: true, json: async () => suggestionsPayload };
+        }
+        if (String(url).includes('/recipe/lora/reconnect')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              updated_lora: { name: 'deleted-lora-v1', modelName: 'Deleted LoRA v1', inLibrary: true },
+              base_model_mismatch: { recipe_base_model: 'Illustrious', lora_base_model: 'Pony' },
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+
+      const container = await openReconnectPanel(recipeModal, 2);
+      await vi.waitFor(() => {
+        expect(container.querySelectorAll('.reconnect-suggestion').length).toBe(1);
+      });
+
+      container.querySelector('.reconnect-suggestion').click();
+
+      await vi.waitFor(() => {
+        expect(showToastMock).toHaveBeenCalledWith(
+          'toast.recipes.reconnectBaseModelMismatch',
+          { recipe: 'Illustrious', lora: 'Pony' },
+          'warning'
+        );
+      });
+    });
+
+    it('shows an empty state when no suggestions are available', async () => {
+      const recipeModal = await createRecipeModal();
+      mockSuggestionsFetch({ success: true, suggestions: [] });
+
+      const container = await openReconnectPanel(recipeModal, 3);
+
+      await vi.waitFor(() => {
+        expect(container.querySelector('.reconnect-suggestions-empty')).not.toBeNull();
+      });
+      expect(container.querySelector('.reconnect-suggestions-empty').textContent)
+        .toBe('No matching LoRAs in your local library');
+      expect(container.querySelectorAll('.reconnect-suggestion').length).toBe(0);
+    });
+
+    it('submits free text via the combobox onCommit when Enter is pressed', async () => {
+      const recipeModal = await createRecipeModal();
+      const requests = mockSuggestionsFetch({ success: true, suggestions: [] });
+
+      const container = await openReconnectPanel(recipeModal, 2);
+      const input = container.querySelector('.reconnect-input');
+      input.value = 'typed-lora-name';
+      input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }));
+
+      await vi.waitFor(() => {
+        expect(requests.some(r => r.url === '/api/lm/recipe/lora/reconnect')).toBe(true);
+      });
+      const reconnectRequest = requests.find(r => r.url === '/api/lm/recipe/lora/reconnect');
+      expect(JSON.parse(reconnectRequest.options.body)).toEqual({
+        recipe_id: 'recipe-resources',
+        lora_index: '2',
+        target_name: 'typed-lora-name',
+      });
+    });
+
+    it('keeps the panel open when the combobox dropdown is clicked', async () => {
+      const recipeModal = await createRecipeModal();
+      mockSuggestionsFetch({ success: true, suggestions: [] });
+
+      recipeModal.showRecipeDetails(recipeWithResources);
+      await flushWiring();
+      // Open the panel directly — button wiring races the hydration re-render,
+      // and this test is about the document click handler, not the button.
+      recipeModal.showReconnectInput('2');
+      const container = document.querySelector('.lora-reconnect-container[data-lora-index="2"]');
+      expect(container.classList.contains('active')).toBe(true);
+
+      // The dropdown panel lives on document.body; clicking an option there is
+      // part of the reconnect interaction, not an outside click.
+      const panel = document.createElement('div');
+      panel.className = 'lm-combobox-panel';
+      document.body.appendChild(panel);
+      panel.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(container.classList.contains('active')).toBe(true);
+      panel.remove();
+
+      // A genuine outside click still closes the panel
+      document.body.dispatchEvent(new MouseEvent('click', { bubbles: true }));
+      expect(container.classList.contains('active')).toBe(false);
+    });
+  });
+
+  it('offers undo for reconnected entries and restores via the API', async () => {
+    const recipeModal = await createRecipeModal();
+    const isolatedRecipe = JSON.parse(JSON.stringify(recipeWithResources));
+    isolatedRecipe.loras[0].reconnectSnapshot = { file_name: 'gone', isDeleted: true };
+    fetchRecipeDetailsMock.mockResolvedValue(isolatedRecipe);
+    const requests = [];
+    global.fetch = vi.fn(async (url, options) => {
+      requests.push({ url: String(url), options });
+      if (String(url).includes('/recipe/lora/restore')) {
+        return {
+          ok: true,
+          json: async () => ({
+            success: true,
+            updated_lora: { name: 'gone', modelName: 'Gone', inLibrary: false, isDeleted: true },
+          }),
+        };
+      }
+      return { ok: true, json: async () => ({}) };
+    });
+    recipeModal.showRecipeDetails(isolatedRecipe);
+    await flushWiring();
+
+    const item = document.querySelector('[data-lora-index="0"]');
+    const undoButton = item.querySelector('.lora-undo-reconnect');
+    expect(undoButton).not.toBeNull();
+
+    undoButton.click();
+    // Wait for the whole restore chain (fetch -> json -> toast), not just the
+    // request itself.
+    await vi.waitFor(() => {
+      expect(showToastMock).toHaveBeenCalledWith('toast.recipes.loraRestored', {}, 'success');
+    });
+    const restoreRequest = requests.find(r => r.url === '/api/lm/recipe/lora/restore');
+    expect(restoreRequest.options.method).toBe('POST');
+    expect(JSON.parse(restoreRequest.options.body)).toEqual({
+      recipe_id: 'recipe-resources',
+      lora_index: '0',
+    });
+  });
 });

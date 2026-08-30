@@ -13,6 +13,11 @@ from typing import Any, Awaitable, Dict, Iterable, Optional, cast
 
 from ...config import config
 from ...recipes.constants import GEN_PARAM_KEYS
+from ...utils.base_model import (
+    RELATION_COMPATIBLE,
+    RELATION_INCOMPATIBLE,
+    base_model_relation,
+)
 from ...utils.utils import calculate_recipe_fingerprint
 from ..pending_delete_service import get_pending_delete_service
 from .errors import RecipeNotFoundError, RecipeValidationError
@@ -430,25 +435,73 @@ class RecipePersistenceService:
         with open(recipe_path, "r", encoding="utf-8") as file_obj:
             recipe_base_model = json.load(file_obj).get("base_model", "")
 
-        target_lora = await recipe_scanner.get_local_lora(target_name, recipe_base_model)
-        if not target_lora:
-            matches = await recipe_scanner.find_local_loras_by_name(target_name)
-            if len(matches) > 1:
-                raise RecipeValidationError(
-                    f"Multiple local LoRAs match '{target_name}'; "
-                    "include the folder path to disambiguate"
-                )
-            if len(matches) == 1:
-                raise RecipeValidationError(
-                    f"Local LoRA '{target_name}' has a different base model than the recipe"
-                )
+        matches = await recipe_scanner.find_local_loras_by_name(target_name)
+        if not matches:
             raise RecipeNotFoundError(f"Local LoRA not found with name: {target_name}")
+
+        # Three-tier base-model guard: exact/unknown labels pass silently;
+        # labels from the same architecture family (e.g. Pony ↔ Illustrious)
+        # pass but are reported so the UI can warn; confident architecture
+        # mismatches stay hard-rejected because they can never load.
+        eligible: list[tuple[dict, str]] = []
+        for match in matches:
+            relation = base_model_relation(recipe_base_model, match.get("base_model"))
+            if relation != RELATION_INCOMPATIBLE:
+                eligible.append((match, relation))
+
+        if not eligible:
+            raise RecipeValidationError(
+                f"Local LoRA '{target_name}' has a different base model than the recipe"
+            )
+        if len(eligible) > 1:
+            raise RecipeValidationError(
+                f"Multiple local LoRAs match '{target_name}'; "
+                "include the folder path to disambiguate"
+            )
+        target_lora, target_relation = eligible[0]
 
         recipe_data, updated_lora = await recipe_scanner.update_lora_entry(
             recipe_id,
             lora_index,
             target_name=target_name,
             target_lora=target_lora,
+        )
+
+        image_path = recipe_data.get("file_path")
+        if image_path and os.path.exists(image_path):
+            self._exif_utils.append_recipe_metadata(image_path, recipe_data)
+
+        matching_recipes = []
+        if "fingerprint" in recipe_data:
+            matching_recipes = await recipe_scanner.find_recipes_by_fingerprint(recipe_data["fingerprint"])
+            if recipe_id in matching_recipes:
+                matching_recipes.remove(recipe_id)
+
+        payload: dict[str, Any] = {
+            "success": True,
+            "recipe_id": recipe_id,
+            "updated_lora": updated_lora,
+            "matching_recipes": matching_recipes,
+        }
+        if target_relation == RELATION_COMPATIBLE:
+            # Structured data, not prose — the frontend localizes the warning.
+            payload["base_model_mismatch"] = {
+                "recipe_base_model": recipe_base_model,
+                "lora_base_model": target_lora.get("base_model") or "",
+            }
+        return PersistenceResult(payload)
+
+    async def restore_lora(
+        self,
+        *,
+        recipe_scanner,
+        recipe_id: str,
+        lora_index: int,
+    ) -> PersistenceResult:
+        """Restore a LoRA entry to the state captured before its reconnect."""
+
+        recipe_data, updated_lora = await recipe_scanner.restore_lora_entry(
+            recipe_id, lora_index
         )
 
         image_path = recipe_data.get("file_path")
@@ -469,6 +522,35 @@ class RecipePersistenceService:
                 "matching_recipes": matching_recipes,
             }
         )
+
+    async def get_reconnect_suggestions(
+        self,
+        *,
+        recipe_scanner,
+        recipe_id: str,
+        lora_index: int,
+        query: str | None = None,
+    ) -> PersistenceResult:
+        """Return ranked local LoRA candidates for reconnecting a recipe entry."""
+
+        recipe_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+        if not recipe_path or not os.path.exists(recipe_path):
+            raise RecipeNotFoundError("Recipe not found")
+
+        with open(recipe_path, "r", encoding="utf-8") as file_obj:
+            recipe_data = json.load(file_obj)
+
+        loras = recipe_data.get("loras") or []
+        if lora_index < 0 or lora_index >= len(loras):
+            raise RecipeValidationError(f"Invalid lora_index: {lora_index}")
+
+        suggestions = await recipe_scanner.suggest_reconnect_candidates(
+            entry=loras[lora_index],
+            recipe_base_model=recipe_data.get("base_model"),
+            query=query,
+        )
+
+        return PersistenceResult({"success": True, "suggestions": suggestions})
 
     async def mark_lora_hash_invalid(
         self,

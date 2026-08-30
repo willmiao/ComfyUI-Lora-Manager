@@ -1316,6 +1316,189 @@ async def test_reconnect_lora_distinguishes_ambiguous_mismatched_and_missing(tmp
 
 
 @pytest.mark.asyncio
+async def test_reconnect_lora_family_compatible_succeeds_with_warning(tmp_path):
+    service = RecipePersistenceService(
+        exif_utils=DummyExifUtils(),
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    pony_item = {
+        "file_name": "style.safetensors",
+        "folder": "",
+        "file_path": "/models/loras/style.safetensors",
+        "base_model": "Pony",
+        "sha256": "ab" * 32,
+    }
+
+    recipe_path = tmp_path / "recipe.json"
+    recipe_path.write_text(
+        json.dumps({"id": "r1", "base_model": "Illustrious", "loras": [{}]})
+    )
+
+    class DummyScanner:
+        async def get_recipe_json_path(self, recipe_id):
+            return str(recipe_path)
+
+        async def find_local_loras_by_name(self, name, base_model=None):
+            return [pony_item]
+
+        async def update_lora_entry(self, recipe_id, lora_index, *, target_name, target_lora):
+            assert target_lora is pony_item
+            return ({"id": "r1"}, {"file_name": target_lora["file_name"]})
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    result = await service.reconnect_lora(
+        recipe_scanner=DummyScanner(), recipe_id="r1", lora_index=0, target_name="style"
+    )
+
+    assert result.payload["success"] is True
+    assert result.payload["base_model_mismatch"] == {
+        "recipe_base_model": "Illustrious",
+        "lora_base_model": "Pony",
+    }
+
+
+@pytest.mark.asyncio
+async def test_reconnect_lora_exact_base_model_has_no_warning(tmp_path):
+    service = RecipePersistenceService(
+        exif_utils=DummyExifUtils(),
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    item = {
+        "file_name": "style.safetensors",
+        "folder": "",
+        "file_path": "/models/loras/style.safetensors",
+        "base_model": "SDXL 1.0",
+        "sha256": "ab" * 32,
+    }
+
+    recipe_path = tmp_path / "recipe.json"
+    recipe_path.write_text(
+        json.dumps({"id": "r1", "base_model": "SDXL 1.0", "loras": [{}]})
+    )
+
+    class DummyScanner:
+        async def get_recipe_json_path(self, recipe_id):
+            return str(recipe_path)
+
+        async def find_local_loras_by_name(self, name, base_model=None):
+            return [item]
+
+        async def update_lora_entry(self, recipe_id, lora_index, *, target_name, target_lora):
+            return ({"id": "r1"}, {"file_name": target_lora["file_name"]})
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    result = await service.reconnect_lora(
+        recipe_scanner=DummyScanner(), recipe_id="r1", lora_index=0, target_name="style"
+    )
+
+    assert result.payload["success"] is True
+    assert "base_model_mismatch" not in result.payload
+
+
+@pytest.mark.asyncio
+async def test_get_reconnect_suggestions_loads_entry_and_delegates(tmp_path):
+    service = RecipePersistenceService(
+        exif_utils=DummyExifUtils(),
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    recipe_path = tmp_path / "recipe.json"
+    recipe_path.write_text(
+        json.dumps(
+            {
+                "id": "r1",
+                "base_model": "SD 1.5",
+                "loras": [
+                    {"file_name": "a.safetensors", "hash": "aaa"},
+                    {"file_name": "b.safetensors", "hash": "bbb", "isDeleted": True},
+                ],
+            }
+        )
+    )
+
+    class DummyScanner:
+        def __init__(self):
+            self.calls = []
+
+        async def get_recipe_json_path(self, recipe_id):
+            assert recipe_id == "r1"
+            return str(recipe_path)
+
+        async def suggest_reconnect_candidates(
+            self, *, entry, recipe_base_model, query=None, limit=5
+        ):
+            self.calls.append(
+                {
+                    "entry": entry,
+                    "recipe_base_model": recipe_base_model,
+                    "query": query,
+                }
+            )
+            return [
+                {
+                    "file_name": "b.safetensors",
+                    "score": 1.0,
+                    "match_reason": "same_hash",
+                    "target_name": "b",
+                }
+            ]
+
+    scanner = DummyScanner()
+    result = await service.get_reconnect_suggestions(
+        recipe_scanner=scanner, recipe_id="r1", lora_index=1, query="b"
+    )
+
+    assert result.payload["success"] is True
+    assert result.payload["suggestions"][0]["target_name"] == "b"
+    assert scanner.calls == [
+        {
+            "entry": {"file_name": "b.safetensors", "hash": "bbb", "isDeleted": True},
+            "recipe_base_model": "SD 1.5",
+            "query": "b",
+        }
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_reconnect_suggestions_validates_recipe_and_index(tmp_path):
+    service = RecipePersistenceService(
+        exif_utils=DummyExifUtils(),
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    class MissingScanner:
+        async def get_recipe_json_path(self, recipe_id):
+            return str(tmp_path / "missing.json")
+
+    with pytest.raises(RecipeNotFoundError):
+        await service.get_reconnect_suggestions(
+            recipe_scanner=MissingScanner(), recipe_id="nope", lora_index=0
+        )
+
+    recipe_path = tmp_path / "recipe.json"
+    recipe_path.write_text(json.dumps({"id": "r1", "loras": []}))
+
+    class EmptyScanner:
+        async def get_recipe_json_path(self, recipe_id):
+            return str(recipe_path)
+
+    with pytest.raises(RecipeValidationError, match="lora_index"):
+        await service.get_reconnect_suggestions(
+            recipe_scanner=EmptyScanner(), recipe_id="r1", lora_index=0
+        )
+
+
+@pytest.mark.asyncio
 async def test_mark_lora_hash_invalid_delegates_and_reports(tmp_path):
     service = RecipePersistenceService(
         exif_utils=DummyExifUtils(),

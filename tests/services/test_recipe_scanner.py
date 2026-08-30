@@ -16,6 +16,7 @@ from py.services.recipe_scanner import RecipeScanner
 from py.services import settings_manager as settings_manager_module
 from py.utils.models import BaseModelMetadata
 from py.utils.utils import calculate_recipe_fingerprint
+from py.services.recipes.errors import RecipeValidationError
 
 
 async def _wait_for_resort(scanner: RecipeScanner) -> None:
@@ -162,6 +163,285 @@ async def test_local_lora_lookup_requires_unambiguous_name_and_matching_base_mod
     assert await scanner.get_local_lora("sdxl/style.safetensors", "SD 1.5") is None
     assert await scanner.get_local_lora("other/style.safetensors") is None
     assert await scanner.get_local_lora_by_hash("b" * 64) is models[1]
+
+
+def _suggestion_item(**overrides):
+    item = {
+        "sha256": "ab" * 32,
+        "file_name": "style.safetensors",
+        "file_path": "/models/loras/style.safetensors",
+        "folder": "",
+        "model_name": "Style LoRA",
+        "base_model": "SD 1.5",
+        "preview_url": "/preview/style.png",
+    }
+    item.update(overrides)
+    return item
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_same_hash_ranks_first(recipe_scanner):
+    scanner, stub = recipe_scanner
+    stub.cache_version = 1
+    same_hash = _suggestion_item(
+        file_name="zzz-unrelated.safetensors",
+        file_path="/models/loras/zzz-unrelated.safetensors",
+        model_name="Unrelated",
+    )
+    similar = _suggestion_item(
+        sha256="cd" * 32,
+        file_name="anime-style-v2.safetensors",
+        file_path="/models/loras/anime-style-v2.safetensors",
+        model_name="Anime Style",
+    )
+    stub._cache.raw_data = [same_hash, similar]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"hash": "ab" * 32, "file_name": "anime-style-v2.safetensors"},
+        recipe_base_model="SD 1.5",
+    )
+
+    assert suggestions[0]["match_reason"] == "same_hash"
+    assert suggestions[0]["file_path"] == same_hash["file_path"]
+    assert suggestions[0]["score"] >= 1.0
+    assert any(s["match_reason"] == "similar_filename" for s in suggestions[1:])
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_same_version(recipe_scanner):
+    scanner, stub = recipe_scanner
+    item = _suggestion_item()
+    stub._cache.raw_data = [item]
+    stub._cache.version_index[456] = item
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"modelVersionId": 456},
+        recipe_base_model="SD 1.5",
+    )
+
+    assert len(suggestions) == 1
+    assert suggestions[0]["match_reason"] == "same_version"
+    assert suggestions[0]["score"] >= 0.95
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_base_model_mismatch_excluded(recipe_scanner):
+    scanner, stub = recipe_scanner
+    matching = _suggestion_item(
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/anime-style.safetensors",
+        model_name="Anime Style",
+        base_model="SD 1.5",
+    )
+    mismatched = _suggestion_item(
+        sha256="cd" * 32,
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/sdxl/anime-style.safetensors",
+        folder="sdxl",
+        model_name="Anime Style",
+        base_model="SDXL 1.0",
+    )
+    stub._cache.raw_data = [matching, mismatched]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "anime-style.safetensors"},
+        recipe_base_model="SD 1.5",
+    )
+
+    # A confident base-model mismatch is a hard rejection — reconnect itself
+    # enforces that rule, so suggesting the mismatch would guarantee failure.
+    assert [s["file_path"] for s in suggestions] == [matching["file_path"]]
+    assert suggestions[0]["target_name"] == "anime-style"
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_base_model_unknown_stays_eligible(recipe_scanner):
+    scanner, stub = recipe_scanner
+    unknown_item = _suggestion_item(
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/anime-style.safetensors",
+        model_name="Anime Style",
+        base_model="",
+    )
+    stub._cache.raw_data = [unknown_item]
+
+    # Unknown base model on the item side must not be rejected — reconnect
+    # accepts it too (find_matching_models lenient guard).
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "anime-style.safetensors"},
+        recipe_base_model="SD 1.5",
+    )
+
+    assert [s["file_path"] for s in suggestions] == [unknown_item["file_path"]]
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_same_hash_mismatched_base_model_excluded(
+    recipe_scanner,
+):
+    scanner, stub = recipe_scanner
+    stub.cache_version = 1
+    mismatched = _suggestion_item(
+        file_name="zzz-unrelated.safetensors",
+        file_path="/models/loras/zzz-unrelated.safetensors",
+        model_name="Unrelated",
+        base_model="SDXL 1.0",
+    )
+    stub._cache.raw_data = [mismatched]
+
+    # Even the strongest identity signal (same hash) must not surface a
+    # candidate that reconnect would reject on base-model grounds.
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"hash": "ab" * 32, "file_name": "other.safetensors"},
+        recipe_base_model="SD 1.5",
+    )
+
+    assert suggestions == []
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_basename_collision_uses_folder_path(recipe_scanner):
+    scanner, stub = recipe_scanner
+    first = _suggestion_item(
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/anime-style.safetensors",
+        model_name="Anime Style",
+        base_model="SD 1.5",
+    )
+    second = _suggestion_item(
+        sha256="cd" * 32,
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/sd15/anime-style.safetensors",
+        folder="sd15",
+        model_name="Anime Style v2",
+        base_model="SD 1.5",
+    )
+    stub._cache.raw_data = [first, second]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "anime-style.safetensors"},
+        recipe_base_model="SD 1.5",
+    )
+
+    # Duplicate basenames disambiguate target_name with the folder path.
+    assert {s["target_name"] for s in suggestions} == {"anime-style", "sd15/anime-style"}
+    scanner, stub = recipe_scanner
+    checkpoint = _suggestion_item(sub_type="checkpoint")
+    lora = _suggestion_item(
+        sha256="cd" * 32,
+        file_path="/models/loras/other/style.safetensors",
+        folder="other",
+    )
+    stub._cache.raw_data = [checkpoint, lora]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "style.safetensors"},
+        recipe_base_model=None,
+    )
+
+    assert all(s["file_path"] != checkpoint["file_path"] for s in suggestions)
+    assert any(s["file_path"] == lora["file_path"] for s in suggestions)
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_respects_limit(recipe_scanner):
+    scanner, stub = recipe_scanner
+    stub._cache.raw_data = [
+        _suggestion_item(
+            sha256=f"{i:064x}",
+            file_name=f"anime-style-{i}.safetensors",
+            file_path=f"/models/loras/anime-style-{i}.safetensors",
+            model_name=f"Anime Style {i}",
+        )
+        for i in range(10)
+    ]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "anime-style.safetensors"},
+        recipe_base_model="SD 1.5",
+        limit=3,
+    )
+
+    assert len(suggestions) == 3
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_query_substring(recipe_scanner):
+    scanner, stub = recipe_scanner
+    item = _suggestion_item(
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/anime-style.safetensors",
+        model_name="Anime Style",
+    )
+    stub._cache.raw_data = [item]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "unrelated.safetensors"},
+        recipe_base_model="SD 1.5",
+        query="anime",
+    )
+
+    assert len(suggestions) == 1
+    assert suggestions[0]["match_reason"] == "similar_filename"
+    # Substring hits floor the ratio at 0.8: 0.5 + 0.4 * 0.8 + 0.1 base boost.
+    assert suggestions[0]["score"] == 0.92
+    assert suggestions[0]["target_name"] == "anime-style"
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_skips_items_without_hash(recipe_scanner):
+    scanner, stub = recipe_scanner
+    no_hash = _suggestion_item(sha256="")
+    stub._cache.raw_data = [no_hash]
+
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "style.safetensors"},
+        recipe_base_model="SD 1.5",
+    )
+
+    assert suggestions == []
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_short_query_no_substring_floor(recipe_scanner):
+    scanner, stub = recipe_scanner
+    item = _suggestion_item(
+        file_name="anime-style.safetensors",
+        file_path="/models/loras/anime-style.safetensors",
+        model_name="Anime Style",
+    )
+    stub._cache.raw_data = [item]
+
+    # A 1-2 character query is a substring of nearly everything; it must NOT
+    # floor the ratio, otherwise every library item surfaces as a suggestion.
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"file_name": "unrelated.safetensors"},
+        recipe_base_model="SD 1.5",
+        query="a",
+    )
+
+    assert suggestions == []
+
+
+@pytest.mark.asyncio
+async def test_suggest_reconnect_candidates_name_threshold_filters_generic_overlap(recipe_scanner):
+    scanner, stub = recipe_scanner
+    item = _suggestion_item(
+        file_name="not-artists-styles-pony.safetensors",
+        file_path="/models/loras/not-artists-styles-pony.safetensors",
+        model_name="Not Artists Styles for Pony Diffusion V6 XL",
+    )
+    stub._cache.raw_data = [item]
+
+    # Long names sharing generic tokens ("style", "pony", "diffusion") score
+    # ~0.638 — below the name-similarity threshold, so unrelated models stay
+    # out of the suggestions.
+    suggestions = await scanner.suggest_reconnect_candidates(
+        entry={"modelName": "Concept Art Twilight Style SDXL_LoRA_Pony Diffusion"},
+        recipe_base_model="Pony",
+    )
+
+    assert suggestions == []
 
 
 def test_recipes_dir_uses_custom_settings_path(tmp_path: Path, monkeypatch):
@@ -329,6 +609,120 @@ async def test_update_lora_entry_updates_cache_and_file(tmp_path: Path, recipe_s
     cached_recipe = next(item for item in cache.raw_data if item["id"] == recipe_id)
     assert cached_recipe["loras"][0]["hash"] == target_hash
     assert cached_recipe["fingerprint"] == expected_fingerprint
+
+
+async def test_update_lora_entry_snapshots_previous_state(tmp_path: Path, recipe_scanner):
+    scanner, stub = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-snapshot"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    original_entry = {
+        "file_name": "old",
+        "strength": 1.0,
+        "hash": "",
+        "isDeleted": True,
+        "exclude": True,
+    }
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Original",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [dict(original_entry)],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+
+    await scanner.add_recipe(dict(recipe_data))
+
+    target_info = {
+        "sha256": "abc123",
+        "file_path": str(tmp_path / "loras" / "target.safetensors"),
+        "preview_url": "preview.png",
+        "civitai": {"id": 42, "name": "v1", "model": {"name": "Target"}},
+    }
+    stub.register_model("target", target_info)
+
+    await scanner.update_lora_entry(
+        recipe_id, 0, target_name="target", target_lora=target_info
+    )
+
+    with recipe_path.open("r", encoding="utf-8") as file_obj:
+        persisted = json.load(file_obj)
+
+    snapshot = persisted["loras"][0]["reconnectSnapshot"]
+    assert snapshot == original_entry
+    # Snapshots never nest
+    assert "reconnectSnapshot" not in snapshot
+
+
+async def test_restore_lora_entry_round_trip(tmp_path: Path, recipe_scanner):
+    scanner, stub = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-restore"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    original_entry = {
+        "file_name": "old",
+        "strength": 1.0,
+        "hash": "",
+        "isDeleted": True,
+        "exclude": True,
+    }
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Original",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "loras": [dict(original_entry)],
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+
+    await scanner.add_recipe(dict(recipe_data))
+
+    target_info = {
+        "sha256": "abc123",
+        "file_path": str(tmp_path / "loras" / "target.safetensors"),
+        "preview_url": "preview.png",
+        "civitai": {"id": 42, "name": "v1", "model": {"name": "Target"}},
+    }
+    stub.register_model("target", target_info)
+
+    await scanner.update_lora_entry(
+        recipe_id, 0, target_name="target", target_lora=target_info
+    )
+    restored_recipe, restored_lora = await scanner.restore_lora_entry(recipe_id, 0)
+
+    entry = restored_recipe["loras"][0]
+    assert entry == original_entry
+    assert "reconnectSnapshot" not in entry
+    assert restored_lora["isDeleted"] is True
+    assert restored_lora["inLibrary"] is False
+    assert restored_recipe["fingerprint"] == calculate_recipe_fingerprint([original_entry])
+
+    with recipe_path.open("r", encoding="utf-8") as file_obj:
+        persisted = json.load(file_obj)
+    assert persisted["loras"][0] == original_entry
+    assert persisted["fingerprint"] == restored_recipe["fingerprint"]
+
+
+async def test_restore_lora_entry_without_snapshot_rejected(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-no-snapshot"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_path.write_text(
+        json.dumps({"id": recipe_id, "loras": [{"file_name": "plain"}]})
+    )
+
+    with pytest.raises(RecipeValidationError):
+        await scanner.restore_lora_entry(recipe_id, 0)
 
 
 async def test_set_lora_entry_hash_invalid_persists_flag(tmp_path: Path, recipe_scanner):

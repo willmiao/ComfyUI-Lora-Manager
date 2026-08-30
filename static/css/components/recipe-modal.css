@@ -729,6 +729,9 @@
 
 .recipe-lora-item {
     display: flex;
+    /* The reconnect panel is a full-width child that wraps below the
+       thumbnail + content row. */
+    flex-wrap: wrap;
     gap: var(--space-2);
     padding: 10px var(--space-2);
     border: 1px solid var(--border-color);
@@ -887,6 +890,29 @@
     color: var(--lora-accent);
 }
 
+/* Restore icon for manually reconnected entries: its presence on the info
+   row doubles as the "was reconnected" marker. */
+.lora-undo-reconnect {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--text-color);
+    opacity: 0.55;
+    cursor: pointer;
+    padding: 2px 4px;
+    border-radius: var(--border-radius-xs);
+    font-size: 0.95em;
+    line-height: 1;
+    transition: var(--transition-base);
+}
+
+.lora-undo-reconnect:hover,
+.lora-undo-reconnect:focus-visible {
+    opacity: 1;
+    color: var(--lora-accent);
+    background: var(--lora-surface);
+}
+
 .local-badge, 
 .missing-badge,
 .invalid-hash-badge {
@@ -968,13 +994,17 @@
 
 /* LoRA reconnect container: an inline extension of the item, not a nested
    card — a dashed separator reads lighter than another bordered box inside
-   an already bordered item. */
+   an already bordered item. It is a direct child of .recipe-lora-item and
+   spans the full row (thumbnail column included). */
 .lora-reconnect-container {
     display: none;
     flex-direction: column;
+    flex-basis: 100%;
+    /* Flex items default to min-width:auto — never let content force the
+       panel wider than the row. */
+    min-width: 0;
     border-top: 1px dashed var(--border-color);
     padding-top: 10px;
-    margin-top: 10px;
     gap: 10px;
 }
 
@@ -1015,7 +1045,7 @@
     border-radius: var(--border-radius-xs);
     background: var(--bg-color);
     color: var(--text-color);
-    font-size: 0.9em;
+    font-size: 0.95em;
 }
 
 .reconnect-error {
@@ -1027,6 +1057,89 @@
 
 .reconnect-error.active {
     display: block;
+}
+
+.reconnect-suggestions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.reconnect-suggestions:empty {
+    display: none;
+}
+
+.reconnect-suggestions-loading,
+.reconnect-suggestions-empty {
+    font-size: 0.85em;
+    color: var(--text-color);
+    opacity: 0.7;
+    padding: 4px 2px;
+}
+
+.reconnect-suggestion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    /* Buttons default to content-box: without this, width:100% + padding +
+       border overflows the panel by 18px and forces a horizontal scrollbar. */
+    box-sizing: border-box;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--lora-surface, var(--bg-color));
+    color: var(--text-color);
+    font-size: 0.95em;
+    text-align: left;
+    cursor: pointer;
+    transition: var(--transition-base);
+}
+
+.reconnect-suggestion:hover,
+.reconnect-suggestion:focus-visible {
+    border-color: var(--lora-accent);
+}
+
+.reconnect-suggestion-preview {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--border-radius-xs);
+    object-fit: cover;
+    flex-shrink: 0;
+    background: var(--bg-color);
+}
+
+.reconnect-suggestion-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+.reconnect-suggestion-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reconnect-suggestion-secondary {
+    font-size: 0.9em;
+    opacity: 0.7;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.reconnect-suggestion-reason {
+    flex-shrink: 0;
+    padding: 2px 6px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--border-color);
+    color: var(--lora-accent);
+    font-size: 0.85em;
+    white-space: nowrap;
 }
 
 .reconnect-actions {

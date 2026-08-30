@@ -113,6 +113,8 @@ class RecipeHandlerSet:
             "update_recipe": self.management.update_recipe,
             "record_recipe_open": self.management.record_recipe_open,
             "reconnect_lora": self.management.reconnect_lora,
+            "restore_lora": self.management.restore_lora,
+            "get_reconnect_suggestions": self.management.get_reconnect_suggestions,
             "mark_lora_hash_invalid": self.management.mark_lora_hash_invalid,
             "find_duplicates": self.query.find_duplicates,
             "move_recipes_bulk": self.management.move_recipes_bulk,
@@ -1591,6 +1593,65 @@ class RecipeManagementHandler:
             return web.json_response({"error": str(exc)}, status=404)
         except Exception as exc:
             self._logger.error("Error reconnecting LoRA: %s", exc, exc_info=True)
+            return web.json_response({"error": str(exc)}, status=500)
+
+    async def restore_lora(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            data = await request.json()
+            for field in ("recipe_id", "lora_index"):
+                if field not in data:
+                    raise RecipeValidationError(f"Missing required field: {field}")
+
+            result = await self._persistence_service.restore_lora(
+                recipe_scanner=recipe_scanner,
+                recipe_id=data["recipe_id"],
+                lora_index=int(data["lora_index"]),
+            )
+            return web.json_response(result.payload, status=result.status)
+        except RecipeValidationError as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error("Error restoring LoRA: %s", exc, exc_info=True)
+            return web.json_response({"error": str(exc)}, status=500)
+
+    async def get_reconnect_suggestions(self, request: web.Request) -> web.Response:
+        try:
+            await self._ensure_dependencies_ready()
+            recipe_scanner = self._recipe_scanner_getter()
+            if recipe_scanner is None:
+                raise RuntimeError("Recipe scanner unavailable")
+
+            recipe_id = request.match_info.get("recipe_id")
+            lora_index_raw = request.match_info.get("lora_index")
+            if not recipe_id or lora_index_raw is None:
+                raise RecipeValidationError("recipe_id and lora_index are required")
+            try:
+                lora_index = int(lora_index_raw)
+            except (TypeError, ValueError):
+                raise RecipeValidationError("lora_index must be an integer")
+
+            result = await self._persistence_service.get_reconnect_suggestions(
+                recipe_scanner=recipe_scanner,
+                recipe_id=recipe_id,
+                lora_index=lora_index,
+                query=request.query.get("query") or None,
+            )
+            return web.json_response(result.payload, status=result.status)
+        except RecipeValidationError as exc:
+            return web.json_response({"error": str(exc)}, status=400)
+        except RecipeNotFoundError as exc:
+            return web.json_response({"error": str(exc)}, status=404)
+        except Exception as exc:
+            self._logger.error(
+                "Error suggesting reconnect candidates: %s", exc, exc_info=True
+            )
             return web.json_response({"error": str(exc)}, status=500)
 
     async def mark_lora_hash_invalid(self, request: web.Request) -> web.Response:
