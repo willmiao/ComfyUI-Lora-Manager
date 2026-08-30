@@ -948,7 +948,14 @@
             "undoReconnectTooltipNamed": "恢復為 {name}（重新關聯前的關聯）",
             "viewOnCivitai": "在 CivitAI 上檢視",
             "openLoraDetails": "在 LoRA 庫中檢視 {name}",
-            "openCheckpointDetails": "在模型庫中檢視 {name}"
+            "openCheckpointDetails": "在模型庫中檢視 {name}",
+            "checkpointDeletedTooltip": "此 Checkpoint 已從來源刪除，無法再下載 - 請使用本地模型重新關聯",
+            "checkpointHashInvalidTooltip": "此 Checkpoint 的雜湊無法在 CivitAI 上解析 - 模型可能已更新",
+            "reconnectCheckpoint": "重新關聯",
+            "reconnectCheckpointTooltip": "與本地 Checkpoint 重新關聯",
+            "checkpointReconnectInstructions": "輸入 Checkpoint 名稱以重新關聯：",
+            "checkpointReconnectPlaceholder": "輸入 Checkpoint 名稱",
+            "checkpointReconnectSuggestionsEmpty": "本地庫中沒有符合的 Checkpoint"
         },
         "controls": {
             "import": {
@@ -2097,6 +2104,13 @@
             "missingCheckpointPath": "缺少Checkpoint路徑",
             "missingCheckpointInfo": "缺少Checkpoint資訊",
             "downloadCheckpointFailed": "下載Checkpoint失敗：{message}",
+            "enterCheckpointName": "請輸入 Checkpoint 名稱",
+            "checkpointReconnectedSuccessfully": "Checkpoint 重新連結成功",
+            "reconnectCheckpointBaseModelMismatch": "已重新關聯，但基礎模型不同（配方：{recipe}，Checkpoint：{checkpoint}）——兩者架構相容",
+            "checkpointReconnectFailed": "Checkpoint 重新連結錯誤：{message}",
+            "checkpointRestored": "Checkpoint 已恢復為重新關聯前的關聯",
+            "checkpointRestoreFailed": "Checkpoint 恢復錯誤：{message}",
+            "checkpointDownloadUnavailable": "缺少 CivitAI 標識，無法下載此 Checkpoint - 請嘗試使用本地 Checkpoint 重新關聯",
             "missingLoraDownloadInfo": "缺少此 LoRA 的下載資訊",
             "hashNotFoundOnCivitai": "此 LoRA 雜湊無法在 CivitAI 上解析——模型可能已更新或雜湊無效",
             "downloadLoraFailed": "下載 LoRA 失敗：{message}",

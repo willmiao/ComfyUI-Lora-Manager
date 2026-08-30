@@ -948,7 +948,14 @@
             "undoReconnectTooltipNamed": "Restaurer vers {name} (l'association avant la reconnexion)",
             "viewOnCivitai": "Voir sur CivitAI",
             "openLoraDetails": "Voir {name} dans la bibliothèque LoRA",
-            "openCheckpointDetails": "Voir {name} dans la bibliothèque de modèles"
+            "openCheckpointDetails": "Voir {name} dans la bibliothèque de modèles",
+            "checkpointDeletedTooltip": "Ce checkpoint a été supprimé de la source et ne peut plus être téléchargé - reconnectez-le avec un modèle local",
+            "checkpointHashInvalidTooltip": "Le hash de ce checkpoint ne peut pas être résolu sur CivitAI - le modèle a peut-être été mis à jour",
+            "reconnectCheckpoint": "Reconnecter",
+            "reconnectCheckpointTooltip": "Reconnecter avec un checkpoint local",
+            "checkpointReconnectInstructions": "Entrez le nom du checkpoint à reconnecter:",
+            "checkpointReconnectPlaceholder": "Entrez le nom du checkpoint",
+            "checkpointReconnectSuggestionsEmpty": "Aucun checkpoint correspondant dans votre bibliothèque locale"
         },
         "controls": {
             "import": {
@@ -2097,6 +2104,13 @@
             "missingCheckpointPath": "Chemin du checkpoint indisponible",
             "missingCheckpointInfo": "Informations sur le checkpoint manquantes",
             "downloadCheckpointFailed": "Échec du téléchargement du checkpoint : {message}",
+            "enterCheckpointName": "Veuillez saisir un nom de checkpoint",
+            "checkpointReconnectedSuccessfully": "Checkpoint reconnecté avec succès",
+            "reconnectCheckpointBaseModelMismatch": "Reconnexion effectuée, mais les modèles de base diffèrent (Recipe : {recipe}, checkpoint : {checkpoint}) — ils sont compatibles au niveau architectural",
+            "checkpointReconnectFailed": "Erreur lors de la reconnexion du checkpoint : {message}",
+            "checkpointRestored": "Checkpoint restauré à son association précédente",
+            "checkpointRestoreFailed": "Erreur lors de la restauration du checkpoint : {message}",
+            "checkpointDownloadUnavailable": "Ce checkpoint ne peut pas être téléchargé sans identifiants CivitAI - essayez de le reconnecter avec un checkpoint local",
             "missingLoraDownloadInfo": "Informations de téléchargement manquantes pour ce LoRA",
             "hashNotFoundOnCivitai": "Ce hash de LoRA ne peut pas être résolu sur CivitAI - le modèle a peut-être été mis à jour ou le hash est invalide",
             "downloadLoraFailed": "Échec du téléchargement du LoRA : {message}",

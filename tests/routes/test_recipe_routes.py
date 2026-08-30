@@ -311,6 +311,28 @@ class StubPersistenceService:
     ) -> SimpleNamespace:  # pragma: no cover
         return SimpleNamespace(payload={"success": True}, status=200)
 
+    async def reconnect_checkpoint(
+        self, *, recipe_scanner, recipe_id: str, target_name: str
+    ) -> SimpleNamespace:  # pragma: no cover
+        return SimpleNamespace(payload={"success": True}, status=200)
+
+    async def restore_checkpoint(
+        self, *, recipe_scanner, recipe_id: str
+    ) -> SimpleNamespace:  # pragma: no cover
+        return SimpleNamespace(payload={"success": True}, status=200)
+
+    async def get_checkpoint_reconnect_suggestions(
+        self, *, recipe_scanner, recipe_id: str, query: str | None = None
+    ) -> SimpleNamespace:  # pragma: no cover
+        return SimpleNamespace(
+            payload={"success": True, "suggestions": []}, status=200
+        )
+
+    async def mark_checkpoint_hash_invalid(
+        self, *, recipe_scanner, recipe_id: str, hash_invalid: bool = True
+    ) -> SimpleNamespace:  # pragma: no cover
+        return SimpleNamespace(payload={"success": True}, status=200)
+
     async def bulk_delete(
         self, *, recipe_scanner, recipe_ids: List[str]
     ) -> SimpleNamespace:  # pragma: no cover
@@ -2050,3 +2072,99 @@ async def test_find_duplicates_forwards_include_prompt_and_assigns_unique_keys(
         assert len(groups) == 2
         assert {g["type"] for g in groups} == {"fingerprint", "source_path"}
         assert len({g["key"] for g in groups}) == 2
+
+
+# ---------------------------------------------------------------------------
+# Checkpoint reconnect routes (manual remediation for recipe.checkpoint)
+# ---------------------------------------------------------------------------
+
+
+async def test_checkpoint_reconnect_route(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/checkpoint/reconnect",
+            json={"recipe_id": "r1", "target_name": "main"},
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+
+async def test_checkpoint_reconnect_route_requires_target_name(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/checkpoint/reconnect",
+            json={"recipe_id": "r1"},
+        )
+        assert response.status == 400
+
+
+async def test_checkpoint_restore_route(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/checkpoint/restore",
+            json={"recipe_id": "r1"},
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+
+async def test_checkpoint_restore_route_requires_recipe_id(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/checkpoint/restore",
+            json={},
+        )
+        assert response.status == 400
+
+
+async def test_checkpoint_reconnect_suggestions_route(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get(
+            "/api/lm/recipe/r1/checkpoint/reconnect-suggestions?query=main"
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["suggestions"] == []
+
+
+async def test_checkpoint_reconnect_suggestions_route_without_query(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.get(
+            "/api/lm/recipe/r1/checkpoint/reconnect-suggestions"
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+
+async def test_checkpoint_mark_hash_invalid_route(monkeypatch, tmp_path: Path) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/checkpoint/mark-hash-invalid",
+            json={"recipe_id": "r1"},
+        )
+        payload = await response.json()
+        assert response.status == 200
+        assert payload["success"] is True
+
+
+async def test_checkpoint_mark_hash_invalid_route_requires_recipe_id(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipe/checkpoint/mark-hash-invalid",
+            json={},
+        )
+        assert response.status == 400

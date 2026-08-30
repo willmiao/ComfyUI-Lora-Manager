@@ -948,7 +948,14 @@
             "undoReconnectTooltipNamed": "이전 연결 상태로 복원: {name}",
             "viewOnCivitai": "CivitAI에서 보기",
             "openLoraDetails": "LoRA 라이브러리에서 {name} 보기",
-            "openCheckpointDetails": "모델 라이브러리에서 {name} 보기"
+            "openCheckpointDetails": "모델 라이브러리에서 {name} 보기",
+            "checkpointDeletedTooltip": "이 Checkpoint는 소스에서 삭제되어 더 이상 다운로드할 수 없습니다 - 로컬 모델로 다시 연결하세요",
+            "checkpointHashInvalidTooltip": "이 Checkpoint의 해시를 CivitAI에서 확인할 수 없습니다 - 모델이 업데이트되었을 수 있습니다",
+            "reconnectCheckpoint": "다시 연결",
+            "reconnectCheckpointTooltip": "로컬 Checkpoint와 다시 연결",
+            "checkpointReconnectInstructions": "다시 연결할 Checkpoint 이름을 입력하세요：",
+            "checkpointReconnectPlaceholder": "Checkpoint 이름 입력",
+            "checkpointReconnectSuggestionsEmpty": "로컬 라이브러리에 일치하는 Checkpoint가 없습니다"
         },
         "controls": {
             "import": {
@@ -2097,6 +2104,13 @@
             "missingCheckpointPath": "Checkpoint 경로를 사용할 수 없습니다",
             "missingCheckpointInfo": "Checkpoint 정보가 부족합니다",
             "downloadCheckpointFailed": "Checkpoint 다운로드 실패: {message}",
+            "enterCheckpointName": "Checkpoint 이름을 입력하세요",
+            "checkpointReconnectedSuccessfully": "Checkpoint가 성공적으로 다시 연결되었습니다",
+            "reconnectCheckpointBaseModelMismatch": "다시 연결했지만 베이스 모델이 다릅니다(레시피: {recipe}, Checkpoint: {checkpoint}) — 아키텍처 호환입니다",
+            "checkpointReconnectFailed": "Checkpoint 다시 연결 오류: {message}",
+            "checkpointRestored": "Checkpoint가 이전 연결 상태로 복원되었습니다",
+            "checkpointRestoreFailed": "Checkpoint 복원 오류: {message}",
+            "checkpointDownloadUnavailable": "CivitAI 식별자가 없어 이 Checkpoint를 다운로드할 수 없습니다 - 로컬 Checkpoint로 다시 연결해 보세요",
             "missingLoraDownloadInfo": "이 LoRA의 다운로드 정보가 없습니다",
             "hashNotFoundOnCivitai": "이 LoRA 해시는 CivitAI에서 해석할 수 없습니다 - 모델이 업데이트되었거나 해시가 유효하지 않을 수 있습니다",
             "downloadLoraFailed": "LoRA 다운로드 실패: {message}",

@@ -948,7 +948,14 @@
       "undoReconnectTooltipNamed": "Restore to {name} (the association before reconnecting)",
       "viewOnCivitai": "View on CivitAI",
       "openLoraDetails": "View {name} in the LoRA library",
-      "openCheckpointDetails": "View {name} in the model library"
+      "openCheckpointDetails": "View {name} in the model library",
+      "checkpointDeletedTooltip": "This checkpoint was deleted from the source and can no longer be downloaded - reconnect it with a local model",
+      "checkpointHashInvalidTooltip": "This checkpoint hash cannot be resolved on CivitAI - the model may have been updated",
+      "reconnectCheckpoint": "Reconnect",
+      "reconnectCheckpointTooltip": "Reconnect with a local checkpoint",
+      "checkpointReconnectInstructions": "Enter checkpoint name to reconnect:",
+      "checkpointReconnectPlaceholder": "Enter checkpoint name",
+      "checkpointReconnectSuggestionsEmpty": "No matching checkpoints in your local library"
     },
     "controls": {
       "import": {
@@ -2097,6 +2104,13 @@
       "missingCheckpointPath": "Checkpoint path not available",
       "missingCheckpointInfo": "Missing checkpoint information",
       "downloadCheckpointFailed": "Failed to download checkpoint: {message}",
+      "enterCheckpointName": "Please enter a checkpoint name",
+      "checkpointReconnectedSuccessfully": "Checkpoint reconnected successfully",
+      "reconnectCheckpointBaseModelMismatch": "Reconnected, but base models differ (recipe: {recipe}, checkpoint: {checkpoint}) — they are architecture-compatible",
+      "checkpointReconnectFailed": "Error reconnecting checkpoint: {message}",
+      "checkpointRestored": "Checkpoint restored to its previous association",
+      "checkpointRestoreFailed": "Error restoring checkpoint: {message}",
+      "checkpointDownloadUnavailable": "This checkpoint cannot be downloaded without CivitAI identifiers - try reconnecting it with a local checkpoint",
       "missingLoraDownloadInfo": "Missing download information for this LoRA",
       "hashNotFoundOnCivitai": "This LoRA hash cannot be resolved on CivitAI - the model may have been updated or the hash is invalid",
       "downloadLoraFailed": "Failed to download LoRA: {message}",

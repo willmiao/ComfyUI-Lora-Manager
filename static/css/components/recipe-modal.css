@@ -957,8 +957,10 @@
 }
 
 /* Restore icon for manually reconnected entries: its presence on the info
-   row doubles as the "was reconnected" marker. */
-.lora-undo-reconnect {
+   row doubles as the "was reconnected" marker. Shared by LoRA and
+   checkpoint entries, which use the same info-row flex layout. */
+.lora-undo-reconnect,
+.checkpoint-undo-reconnect {
     margin-left: auto;
     background: none;
     border: none;
@@ -973,7 +975,9 @@
 }
 
 .lora-undo-reconnect:hover,
-.lora-undo-reconnect:focus-visible {
+.lora-undo-reconnect:focus-visible,
+.checkpoint-undo-reconnect:hover,
+.checkpoint-undo-reconnect:focus-visible {
     opacity: 1;
     color: var(--lora-accent);
     background: var(--lora-surface);

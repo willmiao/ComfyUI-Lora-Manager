@@ -948,7 +948,14 @@
             "undoReconnectTooltipNamed": "{name} に戻す（再接続前の関連付け）",
             "viewOnCivitai": "CivitAI で表示",
             "openLoraDetails": "LoRA ライブラリで {name} を表示",
-            "openCheckpointDetails": "モデルライブラリで {name} を表示"
+            "openCheckpointDetails": "モデルライブラリで {name} を表示",
+            "checkpointDeletedTooltip": "この Checkpoint はソースから削除されたため、ダウンロードできません - ローカルモデルで再接続してください",
+            "checkpointHashInvalidTooltip": "この Checkpoint のハッシュは CivitAI で解決できません - モデルが更新された可能性があります",
+            "reconnectCheckpoint": "再接続",
+            "reconnectCheckpointTooltip": "ローカルの Checkpoint と再接続",
+            "checkpointReconnectInstructions": "再接続する Checkpoint の名前を入力してください：",
+            "checkpointReconnectPlaceholder": "Checkpoint 名を入力",
+            "checkpointReconnectSuggestionsEmpty": "ローカルライブラリに一致するCheckpointがありません"
         },
         "controls": {
             "import": {
@@ -2097,6 +2104,13 @@
             "missingCheckpointPath": "Checkpointのパスがありません",
             "missingCheckpointInfo": "Checkpoint情報が不足しています",
             "downloadCheckpointFailed": "Checkpointのダウンロードに失敗しました: {message}",
+            "enterCheckpointName": "Checkpoint 名を入力してください",
+            "checkpointReconnectedSuccessfully": "Checkpointが正常に再接続されました",
+            "reconnectCheckpointBaseModelMismatch": "再接続しましたが、ベースモデルが異なります（レシピ：{recipe}、Checkpoint：{checkpoint}）— アーキテクチャ互換です",
+            "checkpointReconnectFailed": "Checkpoint再接続エラー：{message}",
+            "checkpointRestored": "Checkpoint が以前の関連付けに復元されました",
+            "checkpointRestoreFailed": "Checkpoint復元エラー：{message}",
+            "checkpointDownloadUnavailable": "CivitAI の識別子がないため、この Checkpoint をダウンロードできません - ローカルの Checkpoint と再接続してみてください",
             "missingLoraDownloadInfo": "この LoRA のダウンロード情報がありません",
             "hashNotFoundOnCivitai": "このLoRAハッシュはCivitAIで解決できません - モデルが更新されたか、ハッシュが無効な可能性があります",
             "downloadLoraFailed": "LoRA のダウンロードに失敗しました: {message}",

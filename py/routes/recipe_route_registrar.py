@@ -58,6 +58,22 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "POST", "/api/lm/recipe/lora/mark-hash-invalid", "mark_lora_hash_invalid"
     ),
+    RouteDefinition(
+        "POST", "/api/lm/recipe/checkpoint/reconnect", "reconnect_checkpoint"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/recipe/checkpoint/restore", "restore_checkpoint"
+    ),
+    RouteDefinition(
+        "GET",
+        "/api/lm/recipe/{recipe_id}/checkpoint/reconnect-suggestions",
+        "get_checkpoint_reconnect_suggestions",
+    ),
+    RouteDefinition(
+        "POST",
+        "/api/lm/recipe/checkpoint/mark-hash-invalid",
+        "mark_checkpoint_hash_invalid",
+    ),
     RouteDefinition("GET", "/api/lm/recipes/find-duplicates", "find_duplicates"),
     RouteDefinition("POST", "/api/lm/recipes/bulk-delete", "bulk_delete"),
     RouteDefinition(

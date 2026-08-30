@@ -1182,10 +1182,13 @@ export class DownloadManager {
             if (!response?.success) {
                 this.loadingManager.setStatus(translate('modals.download.status.finalizing'));
                 const errorMessage = response?.error || 'Unknown error';
+                // Always record the latest failure so callers can distinguish
+                // an unresolvable model (not found / deleted) from a transient
+                // transport failure; the summary flow below may or may not run.
+                this._lastDownloadError = errorMessage;
                 // When the caller aggregates failures itself (multi-file
                 // loop), just record the error and return (#1058).
                 if (suppressFailureSummary) {
-                    this._lastDownloadError = errorMessage;
                     return false;
                 }
                 // A file-level "already in library" rejection is an expected

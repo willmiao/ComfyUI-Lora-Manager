@@ -95,6 +95,7 @@ vi.mock('../../../static/js/api/apiConfig.js', () => ({
 vi.mock('../../../static/js/managers/DownloadManager.js', () => ({
   downloadManager: {
     downloadVersionWithDefaults: downloadVersionWithDefaultsMock,
+    _lastDownloadError: '',
   },
 }));
 
@@ -774,6 +775,323 @@ describe('RecipeModal resource item interactions', () => {
     expect(JSON.parse(restoreRequest.options.body)).toEqual({
       recipe_id: 'recipe-resources',
       lora_index: '0',
+    });
+  });
+
+  describe('checkpoint reconnect', () => {
+    const brokenCheckpoint = {
+      name: 'gone-checkpoint',
+      file_name: 'gone',
+      inLibrary: false,
+      isDeleted: true,
+      hash: 'a2a12bfa01',
+    };
+    const hashInvalidCheckpoint = {
+      name: 'invalid-checkpoint',
+      file_name: 'invalid',
+      inLibrary: false,
+      hashInvalid: true,
+      hash: 'deadbeefcafe',
+    };
+
+    function recipeWithCheckpoint(checkpoint) {
+      return {
+        ...JSON.parse(JSON.stringify(recipeWithResources)),
+        checkpoint: { ...checkpoint },
+      };
+    }
+
+    // Hydration re-fetches the recipe right after render and re-renders the
+    // modal, so the mock must resolve the SAME broken-checkpoint recipe —
+    // otherwise the fetch wipes isDeleted/hashInvalid back to the fixture.
+    async function renderBrokenCheckpoint(recipeModal, checkpoint) {
+      const isolated = recipeWithCheckpoint(checkpoint);
+      fetchRecipeDetailsMock.mockResolvedValue(isolated);
+      recipeModal.showRecipeDetails(isolated);
+      await flushWiring();
+    }
+
+    function mockCheckpointSuggestionsFetch(payload) {
+      const requests = [];
+      global.fetch = vi.fn(async (url, options) => {
+        requests.push({ url: String(url), options });
+        if (String(url).includes('/checkpoint/reconnect-suggestions')) {
+          return { ok: true, json: async () => payload };
+        }
+        if (String(url).includes('/recipe/checkpoint/reconnect')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              updated_checkpoint: {
+                name: 'main-checkpoint',
+                file_name: 'main',
+                inLibrary: true,
+              },
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+      return requests;
+    }
+
+    it('renders a deleted checkpoint with a badge and reconnect affordance', async () => {
+      const recipeModal = await createRecipeModal();
+      await renderBrokenCheckpoint(recipeModal, brokenCheckpoint);
+
+      const item = document.querySelector('.checkpoint-item');
+      expect(item.classList.contains('is-deleted')).toBe(true);
+      expect(item.querySelector('.deleted-badge')).not.toBeNull();
+      const reconnectButton = item.querySelector('.checkpoint-reconnect');
+      expect(reconnectButton).not.toBeNull();
+      // Deleted checkpoints lose the civitai link (their source page is gone)
+      expect(item.querySelector('.recipe-lora-title a.recipe-civitai-link')).toBeNull();
+      // The inline form is present but hidden until the button is pressed
+      const container = item.querySelector('.lora-reconnect-container[data-lora-index="checkpoint"]');
+      expect(container).not.toBeNull();
+      expect(container.classList.contains('active')).toBe(false);
+    });
+
+    it('renders a hash-invalid checkpoint with the unresolvable hash badge', async () => {
+      const recipeModal = await createRecipeModal();
+      await renderBrokenCheckpoint(recipeModal, hashInvalidCheckpoint);
+
+      const item = document.querySelector('.checkpoint-item');
+      expect(item.querySelector('.invalid-hash-badge')).not.toBeNull();
+      expect(item.querySelector('.checkpoint-reconnect')).not.toBeNull();
+    });
+
+    it('renders reconnect for a name-only checkpoint with no download identifiers', async () => {
+      // Importers can leave a checkpoint entry with nothing but a model name
+      // (no hash / version id, so nothing was ever queryable on CivitAI).
+      // It cannot be downloaded and is not marked deleted — reconnect is the
+      // only remediation, so it must still surface.
+      const recipeModal = await createRecipeModal();
+      await renderBrokenCheckpoint(recipeModal, {
+        type: 'checkpoint',
+        modelName: 'meichidarkMix_meichidarkanimxlV1',
+        inLibrary: false,
+      });
+
+      const item = document.querySelector('.checkpoint-item');
+      expect(item.querySelector('.checkpoint-download')).toBeNull();
+      const reconnectButton = item.querySelector('.checkpoint-reconnect');
+      expect(reconnectButton).not.toBeNull();
+      const container = item.querySelector('.lora-reconnect-container[data-lora-index="checkpoint"]');
+      expect(container).not.toBeNull();
+
+      reconnectButton.click();
+      expect(container.classList.contains('active')).toBe(true);
+    });
+
+    it('fetches checkpoint suggestions against the checkpoint endpoint', async () => {
+      const recipeModal = await createRecipeModal();
+      const suggestionsPayload = {
+        success: true,
+        suggestions: [
+          {
+            file_name: 'main-checkpoint.safetensors',
+            base_model: 'SD 1.5',
+            preview_url: '/preview/main.png',
+            score: 0.95,
+            match_reason: 'same_version',
+            target_name: 'main-checkpoint',
+          },
+        ],
+      };
+      mockCheckpointSuggestionsFetch(suggestionsPayload);
+
+      await renderBrokenCheckpoint(recipeModal, brokenCheckpoint);
+      document.querySelector('.checkpoint-reconnect').click();
+      const container = document.querySelector('.lora-reconnect-container[data-lora-index="checkpoint"]');
+
+      expect(container.classList.contains('active')).toBe(true);
+      expect(global.fetch).toHaveBeenCalledWith(
+        '/api/lm/recipe/recipe-resources/checkpoint/reconnect-suggestions'
+      );
+
+      await vi.waitFor(() => {
+        expect(container.querySelectorAll('.reconnect-suggestion').length).toBe(1);
+      });
+      expect(container.querySelector('.reconnect-suggestion-name').textContent)
+        .toBe('main-checkpoint');
+    });
+
+    it('reconnects the checkpoint via its own endpoint when a suggestion is clicked', async () => {
+      const recipeModal = await createRecipeModal();
+      const requests = mockCheckpointSuggestionsFetch({
+        success: true,
+        suggestions: [
+          {
+            file_name: 'main-checkpoint.safetensors',
+            target_name: 'main-checkpoint',
+            match_reason: 'same_version',
+            score: 0.95,
+          },
+        ],
+      });
+
+      await renderBrokenCheckpoint(recipeModal, brokenCheckpoint);
+      document.querySelector('.checkpoint-reconnect').click();
+      const container = document.querySelector('.lora-reconnect-container[data-lora-index="checkpoint"]');
+
+      await vi.waitFor(() => {
+        expect(container.querySelectorAll('.reconnect-suggestion').length).toBe(1);
+      });
+      container.querySelector('.reconnect-suggestion').click();
+
+      await vi.waitFor(() => {
+        expect(requests.some(r => r.url === '/api/lm/recipe/checkpoint/reconnect')).toBe(true);
+      });
+      const reconnectRequest = requests.find(r => r.url === '/api/lm/recipe/checkpoint/reconnect');
+      expect(reconnectRequest.options.method).toBe('POST');
+      expect(JSON.parse(reconnectRequest.options.body)).toEqual({
+        recipe_id: 'recipe-resources',
+        target_name: 'main-checkpoint',
+      });
+      await vi.waitFor(() => {
+        expect(showToastMock).toHaveBeenCalledWith(
+          'toast.recipes.checkpointReconnectedSuccessfully',
+          {},
+          'success'
+        );
+      });
+      expect(recipeModal.currentRecipe.checkpoint.inLibrary).toBe(true);
+    });
+
+    it('warns when the checkpoint reconnect crossed base-model families', async () => {
+      const recipeModal = await createRecipeModal();
+      global.fetch = vi.fn(async (url) => {
+        if (String(url).includes('/checkpoint/reconnect-suggestions')) {
+          return { ok: true, json: async () => ({ success: true, suggestions: [] }) };
+        }
+        if (String(url).includes('/recipe/checkpoint/reconnect')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              updated_checkpoint: { name: 'main', inLibrary: true },
+              base_model_mismatch: { recipe_base_model: 'Illustrious', checkpoint_base_model: 'Pony' },
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+
+      await renderBrokenCheckpoint(recipeModal, brokenCheckpoint);
+      document.querySelector('.checkpoint-reconnect').click();
+      const container = document.querySelector('.lora-reconnect-container[data-lora-index="checkpoint"]');
+      const input = container.querySelector('.reconnect-input');
+      input.value = 'main';
+      container.querySelector('.reconnect-confirm-btn').click();
+
+      await vi.waitFor(() => {
+        expect(showToastMock).toHaveBeenCalledWith(
+          'toast.recipes.reconnectCheckpointBaseModelMismatch',
+          { recipe: 'Illustrious', checkpoint: 'Pony' },
+          'warning'
+        );
+      });
+    });
+
+    it('offers undo for a reconnected checkpoint and restores via the API', async () => {
+      const recipeModal = await createRecipeModal();
+      const isolatedRecipe = recipeWithCheckpoint(brokenCheckpoint);
+      isolatedRecipe.checkpoint = {
+        name: 'main-checkpoint',
+        file_name: 'main',
+        inLibrary: true,
+        reconnectSnapshot: { name: 'gone-checkpoint', file_name: 'gone', isDeleted: true },
+      };
+      fetchRecipeDetailsMock.mockResolvedValue(isolatedRecipe);
+      const requests = [];
+      global.fetch = vi.fn(async (url, options) => {
+        requests.push({ url: String(url), options });
+        if (String(url).includes('/recipe/checkpoint/restore')) {
+          return {
+            ok: true,
+            json: async () => ({
+              success: true,
+              updated_checkpoint: { name: 'gone', inLibrary: false, isDeleted: true },
+            }),
+          };
+        }
+        return { ok: true, json: async () => ({}) };
+      });
+      recipeModal.showRecipeDetails(isolatedRecipe);
+      await flushWiring();
+
+      const item = document.querySelector('.checkpoint-item');
+      const undoButton = item.querySelector('.checkpoint-undo-reconnect');
+      expect(undoButton).not.toBeNull();
+
+      undoButton.click();
+      await vi.waitFor(() => {
+        expect(showToastMock).toHaveBeenCalledWith('toast.recipes.checkpointRestored', {}, 'success');
+      });
+      const restoreRequest = requests.find(r => r.url === '/api/lm/recipe/checkpoint/restore');
+      expect(restoreRequest.options.method).toBe('POST');
+      expect(JSON.parse(restoreRequest.options.body)).toEqual({
+        recipe_id: 'recipe-resources',
+      });
+    });
+
+    it('marks the checkpoint hash invalid only when the failure is unresolvable', async () => {
+      const recipeModal = await createRecipeModal();
+      const { downloadManager } = await import('../../../static/js/managers/DownloadManager.js');
+      const requests = [];
+      global.fetch = vi.fn(async (url, options) => {
+        requests.push({ url: String(url), options });
+        return { ok: true, json: async () => ({ success: true }) };
+      });
+
+      // Explicit "model removed" signal: the entry becomes a rematch/
+      // reconnect candidate (same rule as the LoRA resolve "not found").
+      // Use an isolated copy so the hashInvalid mutation does not leak into
+      // the shared recipeWithResources fixture used by later tests.
+      const isolatedRecipe = JSON.parse(JSON.stringify(recipeWithResources));
+      fetchRecipeDetailsMock.mockResolvedValue(isolatedRecipe);
+      downloadVersionWithDefaultsMock.mockResolvedValue(false);
+      downloadManager._lastDownloadError = 'Model not found';
+      recipeModal.showRecipeDetails(isolatedRecipe);
+      await flushWiring();
+      document.querySelector('.checkpoint-download').click();
+
+      await vi.waitFor(() => {
+        expect(requests.some(r => r.url === '/api/lm/recipe/checkpoint/mark-hash-invalid')).toBe(true);
+      });
+      const markRequest = requests.find(r => r.url === '/api/lm/recipe/checkpoint/mark-hash-invalid');
+      expect(markRequest.options.method).toBe('POST');
+      expect(JSON.parse(markRequest.options.body)).toEqual({ recipe_id: 'recipe-resources' });
+      expect(recipeModal.currentRecipe.checkpoint.hashInvalid).toBe(true);
+    });
+
+    it('does not mark the checkpoint hash invalid on transient download failures', async () => {
+      const recipeModal = await createRecipeModal();
+      const { downloadManager } = await import('../../../static/js/managers/DownloadManager.js');
+      const requests = [];
+      global.fetch = vi.fn(async (url, options) => {
+        requests.push({ url: String(url), options });
+        return { ok: true, json: async () => ({ success: true }) };
+      });
+
+      // Transport/API exceptions must NOT enroll the entry in the
+      // remediation flow — transient failures are not evidence the model is
+      // unrecoverable (mirrors the LoRA path).
+      downloadVersionWithDefaultsMock.mockRejectedValue(new Error('Network timeout'));
+      recipeModal.showRecipeDetails(recipeWithResources);
+      await flushWiring();
+      document.querySelector('.checkpoint-download').click();
+
+      await new Promise(resolve => setTimeout(resolve, 100));
+      expect(requests.some(r => r.url === '/api/lm/recipe/checkpoint/mark-hash-invalid')).toBe(false);
+
+      // Business failure without an unresolvable signal also stays untouched.
+      downloadVersionWithDefaultsMock.mockResolvedValue(false);
+      downloadManager._lastDownloadError = 'Connection refused';
+      await recipeModal.downloadCheckpoint(recipeModal.currentRecipe.checkpoint);
+      expect(requests.some(r => r.url === '/api/lm/recipe/checkpoint/mark-hash-invalid')).toBe(false);
     });
   });
 });

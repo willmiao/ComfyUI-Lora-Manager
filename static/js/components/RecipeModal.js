@@ -848,6 +848,14 @@ class RecipeModal {
         const loras = Array.isArray(recipe.loras) ? recipe.loras : [];
 
         if (checkpointContainer) {
+            // The innerHTML below discards the checkpoint reconnect container;
+            // tear down its Combobox panel (appended to document.body) first.
+            const checkpointPanel = checkpointContainer.querySelector(
+                '.lora-reconnect-container[data-lora-index="checkpoint"]'
+            );
+            if (checkpointPanel) {
+                this._destroyReconnectCombobox(checkpointPanel);
+            }
             checkpointContainer.innerHTML = '';
             if (recipe.checkpoint && typeof recipe.checkpoint === 'object') {
                 checkpointContainer.innerHTML = this.renderCheckpoint(recipe.checkpoint);
@@ -1936,7 +1944,9 @@ class RecipeModal {
             },
             // emptyText only labels the dropdown empty state; the input keeps
             // its own translated placeholder from the markup.
-            emptyText: translate('recipes.resources.reconnectSuggestionsEmpty', {}, 'No matching LoRAs in your local library'),
+            emptyText: String(loraIndex) === 'checkpoint'
+                ? translate('recipes.resources.checkpointReconnectSuggestionsEmpty', {}, 'No matching checkpoints in your local library')
+                : translate('recipes.resources.reconnectSuggestionsEmpty', {}, 'No matching LoRAs in your local library'),
             onCommit: (value) => {
                 this.reconnectLora(loraIndex, value);
             },
@@ -1963,7 +1973,10 @@ class RecipeModal {
 
     async _fetchReconnectSuggestions(loraIndex, query) {
         const suffix = query ? `?query=${encodeURIComponent(query)}` : '';
-        const response = await fetch(`/api/lm/recipe/${this.recipeId}/lora/${loraIndex}/reconnect-suggestions${suffix}`);
+        const targetPath = String(loraIndex) === 'checkpoint'
+            ? 'checkpoint/reconnect-suggestions'
+            : `lora/${loraIndex}/reconnect-suggestions`;
+        const response = await fetch(`/api/lm/recipe/${this.recipeId}/${targetPath}${suffix}`);
         if (!response.ok) {
             return [];
         }
@@ -2004,7 +2017,9 @@ class RecipeModal {
         if (!suggestions.length) {
             const empty = document.createElement('div');
             empty.className = 'reconnect-suggestions-empty';
-            empty.textContent = translate('recipes.resources.reconnectSuggestionsEmpty', {}, 'No matching LoRAs in your local library');
+            empty.textContent = String(loraIndex) === 'checkpoint'
+                ? translate('recipes.resources.checkpointReconnectSuggestionsEmpty', {}, 'No matching checkpoints in your local library')
+                : translate('recipes.resources.reconnectSuggestionsEmpty', {}, 'No matching LoRAs in your local library');
             listElement.appendChild(empty);
             return;
         }
@@ -2061,6 +2076,12 @@ class RecipeModal {
     }
 
     async reconnectLora(loraIndex, inputValue) {
+        // The checkpoint entry reuses the same container/combobox machinery;
+        // route it to the checkpoint-specific flow (no <lora:...> syntax, no
+        // lora_index in the payload).
+        if (String(loraIndex) === 'checkpoint') {
+            return this.reconnectCheckpoint(inputValue);
+        }
         const container = document.querySelector(`.lora-reconnect-container[data-lora-index="${loraIndex}"]`);
 
         if (!inputValue || !inputValue.trim()) {
@@ -2176,8 +2197,153 @@ class RecipeModal {
         }
     }
 
+    async reconnectCheckpoint(inputValue) {
+        const container = document.querySelector('.lora-reconnect-container[data-lora-index="checkpoint"]');
+
+        if (!inputValue || !inputValue.trim()) {
+            this.showReconnectError(container, translate('toast.recipes.enterCheckpointName', {}, 'Please enter a checkpoint name'));
+            return;
+        }
+
+        try {
+            // Remove .safetensors extension if present
+            const fileName = inputValue.trim().replace(/\.safetensors$/, '');
+
+            state.loadingManager.showSimpleLoading('Reconnecting checkpoint...');
+
+            // Call API to reconnect the checkpoint entry
+            const response = await fetch('/api/lm/recipe/checkpoint/reconnect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipe_id: this.recipeId,
+                    target_name: fileName
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Hide the reconnect input
+                this.hideReconnectInput(container);
+
+                // Update the current recipe with the updated checkpoint data
+                this.currentRecipe.checkpoint = result.updated_checkpoint;
+
+                // Show success message
+                showToast('toast.recipes.checkpointReconnectedSuccessfully', {}, 'success');
+
+                // Same-architecture-family reconnects (e.g. Pony ↔ Illustrious)
+                // succeed but carry structured mismatch data — warn the user.
+                if (result.base_model_mismatch) {
+                    showToast(
+                        'toast.recipes.reconnectCheckpointBaseModelMismatch',
+                        {
+                            recipe: result.base_model_mismatch.recipe_base_model,
+                            checkpoint: result.base_model_mismatch.checkpoint_base_model,
+                        },
+                        'warning'
+                    );
+                }
+
+                // Refresh modal to show updated content
+                setTimeout(() => {
+                    this.showRecipeDetails(this.currentRecipe);
+                }, 500);
+
+                state.virtualScroller.updateSingleItem(this.listFilePath || this.currentRecipe.file_path, {
+                    checkpoint: this.currentRecipe.checkpoint
+                });
+            } else {
+                this.showReconnectError(container, translate('toast.recipes.checkpointReconnectFailed', { message: result.error }, `Error reconnecting checkpoint: ${result.error}`));
+            }
+        } catch (error) {
+            console.error('Error reconnecting checkpoint:', error);
+            this.showReconnectError(container, translate('toast.recipes.checkpointReconnectFailed', { message: error.message }, `Error reconnecting checkpoint: ${error.message}`));
+        } finally {
+            state.loadingManager.hide();
+        }
+    }
+
+    async restoreCheckpoint() {
+        try {
+            state.loadingManager.showSimpleLoading('Restoring checkpoint...');
+
+            const response = await fetch('/api/lm/recipe/checkpoint/restore', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipe_id: this.recipeId
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Swap the entry back to its pre-reconnect state
+                this.currentRecipe.checkpoint = result.updated_checkpoint;
+
+                showToast('toast.recipes.checkpointRestored', {}, 'success');
+
+                setTimeout(() => {
+                    this.showRecipeDetails(this.currentRecipe);
+                }, 500);
+
+                state.virtualScroller.updateSingleItem(this.listFilePath || this.currentRecipe.file_path, {
+                    checkpoint: this.currentRecipe.checkpoint
+                });
+            } else {
+                showToast('toast.recipes.checkpointRestoreFailed', { message: result.error }, 'error');
+            }
+        } catch (error) {
+            console.error('Error restoring checkpoint:', error);
+            showToast('toast.recipes.checkpointRestoreFailed', { message: error.message }, 'error');
+        } finally {
+            state.loadingManager.hide();
+        }
+    }
+
+    async markCheckpointHashInvalid() {
+        const recipeId =
+            this.recipeId ||
+            extractRecipeId(this.listFilePath || this.currentRecipe?.file_path);
+        if (!recipeId) {
+            return;
+        }
+        try {
+            await fetch('/api/lm/recipe/checkpoint/mark-hash-invalid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    recipe_id: recipeId,
+                }),
+            });
+            if (this.currentRecipe?.checkpoint) {
+                this.currentRecipe.checkpoint.hashInvalid = true;
+                this.syncResourcesSection(this.currentRecipe);
+            }
+        } catch (error) {
+            console.warn('Failed to mark checkpoint hash invalid:', error);
+        }
+    }
+
     renderCheckpoint(checkpoint) {
         const existsLocally = !!checkpoint.inLibrary;
+        const isDeleted = !!checkpoint.isDeleted;
+        const hashInvalid = !!checkpoint.hashInvalid;
+        // "Broken" = cannot be restored by downloading: explicitly marked
+        // deleted, an unresolvable hash, or an entry with no CivitAI
+        // identifiers at all (a name-only remnant that never had a version
+        // id to query — it can only be fixed by reconnecting a local model).
+        const broken = isDeleted
+            || hashInvalid
+            || (!existsLocally && !this.canDownloadCheckpoint(checkpoint));
         const localPath = checkpoint.localPath || '';
         const previewUrl = checkpoint.preview_url || checkpoint.thumbnailUrl || '/loras_static/images/no-preview.png';
         const isPreviewVideo = typeof previewUrl === 'string' && previewUrl.toLowerCase().endsWith('.mp4');
@@ -2194,24 +2360,54 @@ class RecipeModal {
         ` : `<img src="${previewUrl}" alt="Checkpoint preview" onerror="this.onerror=null; this.src='/loras_static/images/no-preview.png'">`;
 
         // Status badge: pure indicator with a tooltip, mirroring the LoRA
-        // items and the versions-tab badge pattern. The header carries only
-        // the badge; every action lives in the bottom action row.
-        const badge = existsLocally ? `
-            <div class="local-badge" title="${escapeHtml(translate('recipes.resources.inLibraryTooltip', {}, 'This model exists in your local library'))}">
-                <i class="fas fa-check" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.inLibrary', {}, 'In Library'))}
-            </div>
-        ` : `
-            <div class="missing-badge" title="${escapeHtml(translate('recipes.resources.notInLibraryTooltip', {}, 'This model is not in your library'))}">
-                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.notInLibrary', {}, 'Not in Library'))}
-            </div>
-        `;
+        // items and the versions-tab badge pattern. Deleted / unresolvable
+        // hash states render the same fixable-broken badges as LoRA entries.
+        let badge;
+        if (existsLocally) {
+            badge = `
+                <div class="local-badge" title="${escapeHtml(translate('recipes.resources.inLibraryTooltip', {}, 'This model exists in your local library'))}">
+                    <i class="fas fa-check" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.inLibrary', {}, 'In Library'))}
+                </div>
+            `;
+        } else if (isDeleted) {
+            badge = `
+                <div class="deleted-badge" title="${escapeHtml(translate('recipes.resources.checkpointDeletedTooltip', {}, 'This checkpoint was deleted from the source and can no longer be downloaded - reconnect it with a local model'))}">
+                    <i class="fas fa-trash-alt" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.deleted', {}, 'Deleted'))}
+                </div>
+            `;
+        } else if (hashInvalid) {
+            badge = `
+                <div class="invalid-hash-badge" title="${escapeHtml(translate('recipes.resources.checkpointHashInvalidTooltip', {}, 'This checkpoint hash cannot be resolved on CivitAI - the model may have been updated'))}">
+                    <i class="fas fa-question-circle" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.hashInvalid', {}, 'Unresolvable Hash'))}
+                </div>
+            `;
+        } else {
+            badge = `
+                <div class="missing-badge" title="${escapeHtml(translate('recipes.resources.notInLibraryTooltip', {}, 'This model is not in your library'))}">
+                    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i> ${escapeHtml(translate('recipes.resources.notInLibrary', {}, 'Not in Library'))}
+                </div>
+            `;
+        }
 
+        // Action row: broken (deleted / unresolvable hash) entries offer the
+        // reconnect affordance instead of the download button — same rule as
+        // the LoRA items. A local checkpoint only exposes "Send to ComfyUI".
         const actions = [];
         if (existsLocally && localPath) {
             actions.push(`
                 <button class="resource-action primary compact checkpoint-send">
                     <i class="fas fa-paper-plane"></i>
                     <span>${translate('recipes.actions.sendCheckpoint', {}, 'Send to ComfyUI')}</span>
+                </button>
+            `);
+        } else if (broken) {
+            const reconnectLabel = translate('recipes.resources.reconnectCheckpoint', {}, 'Reconnect');
+            const reconnectTooltip = translate('recipes.resources.reconnectCheckpointTooltip', {}, 'Reconnect with a local checkpoint');
+            actions.push(`
+                <button type="button" class="resource-action ghost compact checkpoint-reconnect"
+                    title="${escapeHtml(reconnectTooltip)}" aria-label="${escapeHtml(reconnectTooltip)}">
+                    <i class="fas fa-link" aria-hidden="true"></i>
+                    <span>${escapeHtml(reconnectLabel)}</span>
                 </button>
             `);
         } else if (!existsLocally && this.canDownloadCheckpoint(checkpoint)) {
@@ -2228,15 +2424,56 @@ class RecipeModal {
             : '';
 
         // Civitai link lives inline with the title, same as LoRA items.
-        const titleLink = this.renderCivitaiLink(this.getResourceCivitaiUrl(checkpoint));
+        // Skipped for deleted models: their source page is gone.
+        const titleLink = isDeleted
+            ? ''
+            : this.renderCivitaiLink(this.getResourceCivitaiUrl(checkpoint));
 
         // Only in-library checkpoints are row-navigable; make it keyboard-accessible.
         const rowA11yAttributes = existsLocally
             ? ` role="button" tabindex="0" aria-label="${escapeHtml(translate('recipes.resources.openCheckpointDetails', { name: checkpointName }, `View ${checkpointName} in the model library`))}"`
             : '';
 
+        // A reconnect snapshot marks a manually reconnected entry. The restore
+        // icon on the info row doubles as that marker (mirrors LoRA entries).
+        let undoReconnectIcon = '';
+        if (existsLocally && checkpoint.reconnectSnapshot) {
+            const previousName = checkpoint.reconnectSnapshot.name
+                || checkpoint.reconnectSnapshot.file_name
+                || checkpoint.reconnectSnapshot.modelName
+                || '';
+            const undoLabel = translate('recipes.resources.undoReconnect', {}, 'Undo');
+            const undoTooltip = previousName
+                ? translate('recipes.resources.undoReconnectTooltipNamed', { name: previousName }, `Restore to ${previousName} (the association before reconnecting)`)
+                : translate('recipes.resources.undoReconnectTooltip', {}, 'Restore the association this entry had before reconnecting');
+            undoReconnectIcon = `
+                <button type="button" class="checkpoint-undo-reconnect"
+                    title="${escapeHtml(undoTooltip)}" aria-label="${escapeHtml(undoTooltip)}">
+                    <i class="fas fa-rotate-left" aria-hidden="true"></i>
+                </button>
+            `;
+        }
+
+        // Inline reconnect form for broken entries, sharing the LoRA
+        // container structure/classes and the combobox interaction.
+        const reconnectContainer = broken ? `
+            <div class="lora-reconnect-container" data-lora-index="checkpoint">
+                <div class="reconnect-instructions">
+                    <p>${escapeHtml(translate('recipes.resources.checkpointReconnectInstructions', {}, 'Enter checkpoint name to reconnect:'))}</p>
+                </div>
+                <div class="reconnect-form">
+                    <input type="text" class="reconnect-input" placeholder="${escapeHtml(translate('recipes.resources.checkpointReconnectPlaceholder', {}, 'Enter checkpoint name'))}">
+                    <div class="reconnect-actions">
+                        <button class="reconnect-cancel-btn">${escapeHtml(translate('common.cancel', {}, 'Cancel'))}</button>
+                        <button class="reconnect-confirm-btn">${escapeHtml(translate('recipes.resources.reconnect', {}, 'Reconnect'))}</button>
+                    </div>
+                </div>
+                <div class="reconnect-suggestions"></div>
+                <p class="reconnect-error" role="alert"></p>
+            </div>` : '';
+
         return `
-            <div class="recipe-lora-item checkpoint-item ${existsLocally ? 'exists-locally' : 'missing-locally'}"${rowA11yAttributes}>
+            <div class="recipe-lora-item checkpoint-item ${existsLocally ? 'exists-locally' : (isDeleted ? 'is-deleted' : 'missing-locally')}"${rowA11yAttributes}>
                 <div class="recipe-lora-thumbnail">
                     ${previewMedia}
                 </div>
@@ -2252,9 +2489,11 @@ class RecipeModal {
                         ${versionLabel ? `<div class="recipe-lora-version">${versionLabel}</div>` : ''}
                         ${baseModel ? `<div class="base-model">${baseModel}</div>` : ''}
                         ${modelTypeLabel ? `<span class="checkpoint-type-text">${modelTypeLabel}</span>` : ''}
+                        ${undoReconnectIcon}
                     </div>
                     ${actionsRow}
                 </div>
+                ${reconnectContainer}
             </div>
         `;
     }
@@ -2273,6 +2512,27 @@ class RecipeModal {
             downloadBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 await this.downloadCheckpoint(checkpoint, downloadBtn);
+            });
+        }
+
+        // Deferred wiring can run again after a hydration re-render while the
+        // latest DOM is already in place; a data flag prevents stacking
+        // duplicate handlers (same pattern as the LoRA item actions).
+        const reconnectBtn = container.querySelector('.checkpoint-reconnect');
+        if (reconnectBtn && reconnectBtn.dataset.wired !== 'true') {
+            reconnectBtn.dataset.wired = 'true';
+            reconnectBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.showReconnectInput('checkpoint');
+            });
+        }
+
+        const undoBtn = container.querySelector('.checkpoint-undo-reconnect');
+        if (undoBtn && undoBtn.dataset.wired !== 'true') {
+            undoBtn.dataset.wired = 'true';
+            undoBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.restoreCheckpoint();
             });
         }
     }
@@ -2357,7 +2617,14 @@ class RecipeModal {
 
     async downloadCheckpoint(checkpoint, button) {
         if (!this.canDownloadCheckpoint(checkpoint)) {
-            showToast('toast.recipes.missingCheckpointInfo', {}, 'error');
+            // No resolvable CivitAI identifiers for this entry. A hash-only
+            // checkpoint is not downloadable through the version downloader —
+            // point the user at the reconnect flow instead.
+            if (this._getCheckpointHash(checkpoint)) {
+                showToast('toast.recipes.checkpointDownloadUnavailable', {}, 'warning');
+            } else {
+                showToast('toast.recipes.missingCheckpointInfo', {}, 'error');
+            }
             return;
         }
 
@@ -2381,6 +2648,17 @@ class RecipeModal {
             );
             if (success) {
                 await this.refreshResourcesAfterDownload();
+                return;
+            }
+            // Business-level download failure (the request completed but the
+            // backend rejected it). Enroll the entry in the rematch/reconnect
+            // remediation flow only when the failure is clearly unresolvable
+            // (model removed or version gone on CivitAI) — the same signal
+            // rule as the LoRA path, which marks the hash invalid only when
+            // resolving it on CivitAI returns "not found". Transient
+            // failures (network, 5xx) leave the entry untouched.
+            if (this._isUnresolvableDownloadError(downloadManager._lastDownloadError)) {
+                await this.markCheckpointHashInvalid();
             }
         } catch (error) {
             console.error('Error downloading checkpoint:', error);
@@ -2390,6 +2668,21 @@ class RecipeModal {
                 button.disabled = false;
             }
         }
+    }
+
+    /**
+     * Decide whether a download failure means the model is unrecoverable.
+     *
+     * Mirrors the LoRA behaviour: the hash invalid flag (and the resulting
+     * rematch/reconnect candidacy) is only set when CivitAI explicitly says
+     * the model cannot be resolved — never for transient transport errors.
+     */
+    _isUnresolvableDownloadError(message) {
+        if (!message) {
+            return false;
+        }
+        const text = String(message).toLowerCase();
+        return /(not found|no longer available|deleted|removed|404|410|gone)/.test(text);
     }
 
     getResourceCivitaiUrl(resource) {

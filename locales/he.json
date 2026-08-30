@@ -948,7 +948,14 @@
             "undoReconnectTooltipNamed": "שחזר ל-{name} (השיוך לפני החיבור מחדש)",
             "viewOnCivitai": "הצג ב-CivitAI",
             "openLoraDetails": "הצג את {name} בספריית ה-LoRA",
-            "openCheckpointDetails": "הצג את {name} בספריית המודלים"
+            "openCheckpointDetails": "הצג את {name} בספריית המודלים",
+            "checkpointDeletedTooltip": "Checkpoint זה נמחק מהמקור ואינו זמין עוד להורדה - חבר אותו מחדש עם מודל מקומי",
+            "checkpointHashInvalidTooltip": "לא ניתן לפתור את ה-hash של Checkpoint זה ב-CivitAI - ייתכן שהמודל עודכן",
+            "reconnectCheckpoint": "חבר מחדש",
+            "reconnectCheckpointTooltip": "חבר מחדש עם Checkpoint מקומי",
+            "checkpointReconnectInstructions": "הזן שם של Checkpoint לחיבור מחדש:",
+            "checkpointReconnectPlaceholder": "הזן שם של Checkpoint",
+            "checkpointReconnectSuggestionsEmpty": "לא נמצאו Checkpoints תואמים בספרייה המקומית שלך"
         },
         "controls": {
             "import": {
@@ -2097,6 +2104,13 @@
             "missingCheckpointPath": "נתיב ה-checkpoint אינו זמין",
             "missingCheckpointInfo": "חסרים פרטי checkpoint",
             "downloadCheckpointFailed": "הורדת checkpoint נכשלה: {message}",
+            "enterCheckpointName": "הזן שם של Checkpoint",
+            "checkpointReconnectedSuccessfully": "Checkpoint קושר מחדש בהצלחה",
+            "reconnectCheckpointBaseModelMismatch": "הקישור מחדש הצליח, אך מודלי הבסיס שונים (מתכון: {recipe}, Checkpoint: {checkpoint}) — הם תואמים מבחינת הארכיטקטורה",
+            "checkpointReconnectFailed": "שגיאה בקישור מחדש של Checkpoint: {message}",
+            "checkpointRestored": "Checkpoint שוחזר לשיוך הקודם",
+            "checkpointRestoreFailed": "שגיאה בשחזור Checkpoint: {message}",
+            "checkpointDownloadUnavailable": "לא ניתן להוריד Checkpoint זה ללא מזהי CivitAI - נסה לחבר אותו מחדש עם Checkpoint מקומי",
             "missingLoraDownloadInfo": "חסר מידע הורדה עבור LoRA זה",
             "hashNotFoundOnCivitai": "לא ניתן לפתור את ה-hash של ה-LoRA ב-CivitAI - ייתכן שהמודל עודכן או שה-hash אינו תקין",
             "downloadLoraFailed": "הורדת ה-LoRA נכשלה: {message}",

@@ -768,6 +768,251 @@ async def test_set_lora_entry_hash_invalid_persists_flag(tmp_path: Path, recipe_
     assert cleared_lora["hashInvalid"] is False
 
 
+async def test_update_checkpoint_entry_updates_cache_and_file(
+    tmp_path: Path, recipe_scanner
+):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-ckpt-1"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    original_checkpoint = {
+        "name": "Old Model",
+        "version": "v1",
+        "id": 1,
+        "type": "Checkpoint",
+        "baseModel": "SDXL 1.0",
+        "file_name": "old",
+        "hash": "aaa",
+        "isDeleted": True,
+    }
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Original",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "base_model": "SDXL 1.0",
+        "checkpoint": dict(original_checkpoint),
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    target_info = {
+        "sha256": "abc123",
+        "file_path": str(tmp_path / "checkpoints" / "main.safetensors"),
+        "preview_url": "preview.png",
+        "model_name": "Main Model",
+        "base_model": "SDXL 1.0",
+        "civitai": {"id": 42, "name": "v2"},
+    }
+
+    updated_recipe, updated_checkpoint = await scanner.update_checkpoint_entry(
+        recipe_id,
+        target_name="main",
+        target_checkpoint=target_info,
+    )
+
+    # Write-back follows the pinned checkpoint key set, keeping the
+    # user-entered file_name.
+    assert updated_checkpoint["file_name"] == "main"
+    assert updated_checkpoint["hash"] == "abc123"
+    assert updated_checkpoint["isDeleted"] is False
+    assert updated_checkpoint["hashInvalid"] is False
+    assert updated_checkpoint["name"] == "Main Model"
+    assert updated_checkpoint["version"] == "v2"
+    assert updated_checkpoint["baseModel"] == "SDXL 1.0"
+    assert updated_checkpoint["id"] == 42
+    # The pre-reconnect state is snapshotted for undo
+    assert updated_checkpoint["reconnectSnapshot"] == original_checkpoint
+    assert "reconnectSnapshot" not in updated_checkpoint["reconnectSnapshot"]
+
+    with recipe_path.open("r", encoding="utf-8") as file_obj:
+        persisted = json.load(file_obj)
+    assert persisted["checkpoint"]["hash"] == "abc123"
+    assert persisted["checkpoint"]["reconnectSnapshot"] == original_checkpoint
+
+    cache = await scanner.get_cached_data()
+    cached_recipe = next(item for item in cache.raw_data if item["id"] == recipe_id)
+    assert cached_recipe["checkpoint"]["hash"] == "abc123"
+
+
+async def test_update_checkpoint_entry_backfills_missing_display_keys(
+    tmp_path: Path, recipe_scanner
+):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-ckpt-sparse"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    # Parser-style sparse entry without name/version/baseModel keys
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Sparse",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "checkpoint": {"file_name": "old", "hash": "aaa", "isDeleted": True},
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    target_info = {
+        "sha256": "abc123",
+        "file_path": "/models/checkpoints/main.safetensors",
+        "model_name": "Main Model",
+        "base_model": "SDXL 1.0",
+        "civitai": {"id": 42, "name": "v2"},
+    }
+
+    _, updated_checkpoint = await scanner.update_checkpoint_entry(
+        recipe_id,
+        target_name="main",
+        target_checkpoint=target_info,
+    )
+
+    assert updated_checkpoint["name"] == "Main Model"
+    assert updated_checkpoint["version"] == "v2"
+    assert updated_checkpoint["baseModel"] == "SDXL 1.0"
+    assert updated_checkpoint["modelVersionId"] == 42
+
+
+async def test_restore_checkpoint_entry_round_trip(tmp_path: Path, recipe_scanner):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-ckpt-restore"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    original_checkpoint = {
+        "name": "Old Model",
+        "file_name": "old",
+        "hash": "aaa",
+        "isDeleted": True,
+    }
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Original",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "checkpoint": dict(original_checkpoint),
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    target_info = {
+        "sha256": "abc123",
+        "file_path": "/models/checkpoints/main.safetensors",
+        "model_name": "Main Model",
+        "civitai": {"id": 42, "name": "v2"},
+    }
+    await scanner.update_checkpoint_entry(
+        recipe_id, target_name="main", target_checkpoint=target_info
+    )
+
+    restored_recipe, restored_checkpoint = await scanner.restore_checkpoint_entry(
+        recipe_id
+    )
+
+    assert restored_recipe["checkpoint"] == original_checkpoint
+    assert "reconnectSnapshot" not in restored_recipe["checkpoint"]
+    assert restored_checkpoint["file_name"] == "old"
+
+    with recipe_path.open("r", encoding="utf-8") as file_obj:
+        persisted = json.load(file_obj)
+    assert persisted["checkpoint"] == original_checkpoint
+
+
+async def test_restore_checkpoint_entry_without_snapshot_rejected(
+    tmp_path: Path, recipe_scanner
+):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "recipe-ckpt-no-snapshot"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_path.write_text(
+        json.dumps({"id": recipe_id, "checkpoint": {"file_name": "plain"}})
+    )
+
+    with pytest.raises(RecipeValidationError):
+        await scanner.restore_checkpoint_entry(recipe_id)
+
+
+async def test_set_checkpoint_entry_hash_invalid_persists_flag(
+    tmp_path: Path, recipe_scanner
+):
+    scanner, _ = recipe_scanner
+    recipes_dir = Path(config.loras_roots[0]) / "recipes"
+    recipes_dir.mkdir(parents=True, exist_ok=True)
+
+    recipe_id = "hash-invalid-ckpt"
+    recipe_path = recipes_dir / f"{recipe_id}.recipe.json"
+    recipe_data = {
+        "id": recipe_id,
+        "file_path": str(tmp_path / "image.png"),
+        "title": "Hash invalid",
+        "modified": 0.0,
+        "created_date": 0.0,
+        "checkpoint": {"name": "Old", "file_name": "old", "hash": "a2a12bfa01"},
+    }
+    recipe_path.write_text(json.dumps(recipe_data))
+    await scanner.add_recipe(dict(recipe_data))
+
+    updated_recipe, updated_checkpoint = await scanner.set_checkpoint_entry_hash_invalid(
+        recipe_id, True
+    )
+
+    assert updated_checkpoint["hashInvalid"] is True
+    assert updated_recipe["checkpoint"]["hashInvalid"] is True
+    with recipe_path.open("r", encoding="utf-8") as file_obj:
+        persisted = json.load(file_obj)
+    assert persisted["checkpoint"]["hashInvalid"] is True
+    assert persisted["checkpoint"]["hash"] == "a2a12bfa01"
+
+    cache = await scanner.get_cached_data()
+    cached_recipe = next(item for item in cache.raw_data if item["id"] == recipe_id)
+    assert cached_recipe["checkpoint"]["hashInvalid"] is True
+
+    _, cleared_checkpoint = await scanner.set_checkpoint_entry_hash_invalid(
+        recipe_id, False
+    )
+    assert cleared_checkpoint["hashInvalid"] is False
+
+
+async def test_find_local_checkpoints_by_name_uses_checkpoint_scanner(
+    tmp_path: Path, monkeypatch
+):
+    from py.services.recipe_scanner import RecipeScanner as RecipeScannerCls
+
+    class StubCheckpointScanner:
+        async def find_models_by_name(self, name, *, base_model=None):
+            return [
+                {"file_name": f"{name}.safetensors", "base_model": base_model or ""}
+            ]
+
+    class StubLoraScannerForCkpt:
+        async def get_cached_data(self):
+            return SimpleNamespace(raw_data=[], version_index={})
+
+    RecipeScannerCls._instance = None
+    scanner = RecipeScannerCls(
+        lora_scanner=StubLoraScannerForCkpt(),
+        checkpoint_scanner=StubCheckpointScanner(),  # pyright: ignore[reportArgumentType]
+    )
+
+    matches = await scanner.find_local_checkpoints_by_name("main")
+    assert matches == [{"file_name": "main.safetensors", "base_model": ""}]
+
+    assert await scanner.find_local_checkpoints_by_name("") == []
+    scanner._checkpoint_scanner = None
+    assert await scanner.find_local_checkpoints_by_name("main") == []
+
+
 @pytest.mark.asyncio
 async def test_get_recipe_syntax_tokens_skips_unobtainable_loras(tmp_path: Path, recipe_scanner):
     scanner, _ = recipe_scanner
