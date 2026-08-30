@@ -898,6 +898,37 @@
       "notInLibraryTooltip": "This model is not in your library",
       "deletedTooltip": "This LoRA was deleted from the source and is no longer available for download",
       "hashInvalidTooltip": "This LoRA hash cannot be resolved on CivitAI - the model may have been updated",
+      "noLorasAssociated": "No LoRAs associated with this recipe",
+      "noLorasWhyToggle": "Why no LoRAs?",
+      "noLorasImportMethod": "Import method",
+      "noLorasInferredNote": "Possible reason (inferred) — this recipe was imported before import diagnostics were recorded.",
+      "noLorasChannels": {
+        "batch_import_url": "Batch import (image URL)",
+        "batch_import_local": "Batch import (local file)",
+        "url": "Image URL import",
+        "local": "Local file import",
+        "upload": "Image upload",
+        "widget": "Saved from workflow",
+        "reimport_url": "Re-import (image URL)",
+        "reimport_local": "Re-import (local file)"
+      },
+      "noLorasReasons": {
+        "no_loras_used": "The generation metadata is complete and does not reference any LoRAs.",
+        "api_meta_no_lora_resources": "The source API returned no LoRA resource data for this image. LoRAs shown on the CivitAI page may come from internal data that the public API does not expose.",
+        "api_meta_missing": "The source API returned no generation metadata for this image.",
+        "no_embedded_metadata": "The image has no embedded generation metadata, so LoRA information could not be recovered.",
+        "workflow_metadata_limited": "The image's embedded metadata is a ComfyUI workflow; extracting LoRA information from workflows is limited.",
+        "video_no_metadata": "Video files do not carry embedded generation metadata.",
+        "metadata_unsupported": "The image contains metadata in a format that could not be parsed.",
+        "unknown": "The reason could not be determined from the stored recipe data."
+      },
+      "noLorasDetails": {
+        "apiMetaFields": "API metadata fields",
+        "modelVersionIds": "Model version IDs reported",
+        "embeddedMetadata": "Embedded metadata",
+        "present": "found",
+        "absent": "none"
+      },
       "download": "Download",
       "downloadLoraTooltip": "Download this LoRA",
       "preparingDownload": "Preparing download...",

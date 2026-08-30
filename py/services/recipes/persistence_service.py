@@ -21,6 +21,7 @@ from ...utils.base_model import (
 from ...utils.utils import calculate_recipe_fingerprint
 from ..pending_delete_service import get_pending_delete_service
 from .errors import RecipeNotFoundError, RecipeValidationError
+from .import_info import CHANNEL_UPLOAD, CHANNEL_WIDGET, build_import_info
 
 
 @dataclass(frozen=True)
@@ -133,6 +134,22 @@ class RecipePersistenceService:
 
         if metadata.get("source_path"):
             recipe_data["source_path"] = metadata.get("source_path")
+
+        # Persist import provenance. Batch import / re-import paths pass a
+        # prebuilt import_info; frontend-driven saves (upload, single URL,
+        # local path) carry the analysis payload's diagnostics, from which
+        # import_info is derived here.
+        import_info = metadata.get("import_info")
+        if not isinstance(import_info, dict):
+            diagnostics = metadata.get("diagnostics")
+            if isinstance(diagnostics, dict):
+                import_info = build_import_info(
+                    diagnostics.get("channel") or CHANNEL_UPLOAD,
+                    diagnostics,
+                    loras_data,
+                )
+        if isinstance(import_info, dict) and import_info:
+            recipe_data["import_info"] = import_info
 
         nsfw_level = metadata.get("preview_nsfw_level")
         if nsfw_level is not None and isinstance(nsfw_level, int):
@@ -731,6 +748,9 @@ class RecipePersistenceService:
             # Widget saves re-encode an in-memory tensor to PNG/WebP with no
             # embedded metadata chunks, so a workflow can never be present.
             "has_workflow": False,
+            # Widget saves read LoRAs straight from the current workflow; an
+            # empty list means the workflow used no LoRAs.
+            "import_info": build_import_info(CHANNEL_WIDGET, None, loras_data),
         }
         if checkpoint_entry:
             recipe_data["checkpoint"] = checkpoint_entry

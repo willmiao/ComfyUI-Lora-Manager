@@ -2115,6 +2115,23 @@ class RecipeManagementHandler:
             await self._download_remote_media(image_url)
         )
 
+        # Diagnostics for the recipe modal's "Why no LoRAs?" panel. This path
+        # always comes from a CivitAI image URL (import_from_url validates the
+        # image id), so civitai_image is True.
+        diagnostics: Dict[str, Any] = {
+            "civitai_image": True,
+            "is_video": extension in (".mp4", ".webm"),
+        }
+        if isinstance(civitai_meta_raw, dict):
+            raw_mvids = civitai_meta_raw.get("modelVersionIds")
+            diagnostics["api_model_version_ids"] = (
+                len(raw_mvids) if isinstance(raw_mvids, list) else 0
+            )
+            inner_meta_for_diag = civitai_meta_raw.get("meta")
+            if isinstance(inner_meta_for_diag, dict):
+                diagnostics["api_meta_present"] = True
+                diagnostics["api_meta_keys"] = sorted(inner_meta_for_diag.keys())
+
         # Build a version-cached map of local model hashes to cache items so
         # CivitaiApiMetadataParser can skip CivitAI API calls for models that
         # exist on disk. Built once and shared by every parse pass below.
@@ -2135,6 +2152,7 @@ class RecipeManagementHandler:
                 raw_embedded = await asyncio.to_thread(
                     ExifUtils.extract_image_metadata, temp_img_path
                 )
+                diagnostics["exif_present"] = bool(raw_embedded)
                 if raw_embedded:
                     parser = (
                         self._analysis_service._recipe_parser_factory.create_parser(
@@ -2142,6 +2160,7 @@ class RecipeManagementHandler:
                         )
                     )
                     if parser:
+                        diagnostics["exif_parser"] = parser.__class__.__name__
                         if isinstance(parser, CivitaiApiMetadataParser):
                             parsed_embedded = await parser.parse_metadata(
                                 raw_embedded,
@@ -2182,6 +2201,7 @@ class RecipeManagementHandler:
                         raw_orig = await asyncio.to_thread(
                             ExifUtils.extract_image_metadata, orig_tmp_path
                         )
+                        diagnostics["exif_present"] = bool(raw_orig)
                         if raw_orig:
                             parser = (
                                 self._analysis_service._recipe_parser_factory.create_parser(
@@ -2189,6 +2209,7 @@ class RecipeManagementHandler:
                                 )
                             )
                             if parser:
+                                diagnostics["exif_parser"] = parser.__class__.__name__
                                 if isinstance(parser, CivitaiApiMetadataParser):
                                     parsed_embedded = await parser.parse_metadata(
                                         raw_orig,
@@ -2310,6 +2331,20 @@ class RecipeManagementHandler:
         else:
             name = f"Civitai Image {image_id}"
 
+        # Record why this import ended up with no LoRAs so the recipe modal
+        # can explain it (collapsed by default).
+        from ...services.recipes.import_info import (
+            CHANNEL_REIMPORT_URL,
+            CHANNEL_URL,
+            build_import_info,
+        )
+
+        metadata["import_info"] = build_import_info(
+            CHANNEL_REIMPORT_URL if recipe_id else CHANNEL_URL,
+            diagnostics,
+            metadata.get("loras"),
+        )
+
         result = await self._persistence_service.save_recipe(
             recipe_scanner=recipe_scanner,
             image_bytes=image_bytes,
@@ -2368,6 +2403,17 @@ class RecipeManagementHandler:
         }
         if checkpoint:
             metadata["checkpoint"] = checkpoint
+
+        from ...services.recipes.import_info import (
+            CHANNEL_REIMPORT_LOCAL,
+            build_import_info,
+        )
+
+        metadata["import_info"] = build_import_info(
+            CHANNEL_REIMPORT_LOCAL,
+            analysis_payload.get("diagnostics"),
+            loras,
+        )
 
         prompt = (
             gen_params.get("prompt")

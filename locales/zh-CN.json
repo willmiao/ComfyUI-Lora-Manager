@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "该模型不在你的本地库中",
             "deletedTooltip": "该 LoRA 已从来源站删除，无法下载",
             "hashInvalidTooltip": "此 LoRA 哈希无法在 CivitAI 上解析——模型可能已更新",
+            "noLorasAssociated": "此配方没有关联任何 LoRA",
+            "noLorasWhyToggle": "为什么没有 LoRA？",
+            "noLorasImportMethod": "导入方式",
+            "noLorasInferredNote": "可能的原因（推断）——该配方是在记录导入诊断信息之前导入的。",
+            "noLorasChannels": {
+                "batch_import_url": "批量导入（图片 URL）",
+                "batch_import_local": "批量导入（本地文件）",
+                "url": "图片 URL 导入",
+                "local": "本地文件导入",
+                "upload": "图片上传",
+                "widget": "从工作流保存",
+                "reimport_url": "重新导入（图片 URL）",
+                "reimport_local": "重新导入（本地文件）"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "生成元数据完整，且未引用任何 LoRA。",
+                "api_meta_no_lora_resources": "来源 API 未返回此图片的 LoRA 资源数据。CivitAI 页面上显示的 LoRA 可能来自公开 API 未开放的内部数据。",
+                "api_meta_missing": "来源 API 未返回此图片的生成元数据。",
+                "no_embedded_metadata": "图片没有内嵌生成元数据，因此无法恢复 LoRA 信息。",
+                "workflow_metadata_limited": "图片内嵌的元数据是 ComfyUI 工作流；从工作流中提取 LoRA 信息的能力有限。",
+                "video_no_metadata": "视频文件不携带内嵌生成元数据。",
+                "metadata_unsupported": "图片包含的元数据格式无法解析。",
+                "unknown": "无法从存储的配方数据中确定原因。"
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "API 元数据字段",
+                "modelVersionIds": "报告的模型版本 ID 数",
+                "embeddedMetadata": "内嵌元数据",
+                "present": "已找到",
+                "absent": "无"
+            },
             "download": "下载",
             "downloadLoraTooltip": "下载此 LoRA",
             "preparingDownload": "正在准备下载...",

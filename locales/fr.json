@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "Ce modèle n'est pas dans votre bibliothèque",
             "deletedTooltip": "Ce LoRA a été supprimé de la source et ne peut plus être téléchargé",
             "hashInvalidTooltip": "Ce hash de LoRA ne peut pas être résolu sur CivitAI - le modèle a peut-être été mis à jour",
+            "noLorasAssociated": "Aucune LoRA associée à cette Recipe",
+            "noLorasWhyToggle": "Pourquoi aucune LoRA ?",
+            "noLorasImportMethod": "Méthode d'import",
+            "noLorasInferredNote": "Raison possible (déduite) — cette Recipe a été importée avant l'enregistrement des diagnostics d'import.",
+            "noLorasChannels": {
+                "batch_import_url": "Import groupé (URL d'image)",
+                "batch_import_local": "Import groupé (fichier local)",
+                "url": "Import d'une URL d'image",
+                "local": "Import d'un fichier local",
+                "upload": "Téléversement d'image",
+                "widget": "Enregistrée depuis le Workflow",
+                "reimport_url": "Réimport (URL d'image)",
+                "reimport_local": "Réimport (fichier local)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "Les métadonnées de génération sont complètes et ne référencent aucune LoRA.",
+                "api_meta_no_lora_resources": "L'API source n'a renvoyé aucune donnée de ressource LoRA pour cette image. Les LoRAs affichées sur la page CivitAI peuvent provenir de données internes que l'API publique n'expose pas.",
+                "api_meta_missing": "L'API source n'a renvoyé aucune métadonnée de génération pour cette image.",
+                "no_embedded_metadata": "L'image ne contient aucune métadonnée de génération intégrée ; les informations LoRA n'ont donc pas pu être récupérées.",
+                "workflow_metadata_limited": "Les métadonnées intégrées à l'image sont un Workflow ComfyUI ; l'extraction des informations LoRA à partir des Workflows est limitée.",
+                "video_no_metadata": "Les fichiers vidéo ne contiennent pas de métadonnées de génération intégrées.",
+                "metadata_unsupported": "L'image contient des métadonnées dans un format non analysable.",
+                "unknown": "La raison n'a pas pu être déterminée à partir des données de la Recipe enregistrée."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "Champs de métadonnées de l'API",
+                "modelVersionIds": "IDs de version de modèle signalés",
+                "embeddedMetadata": "Métadonnées intégrées",
+                "present": "trouvées",
+                "absent": "aucune"
+            },
             "download": "Télécharger",
             "downloadLoraTooltip": "Télécharger ce LoRA",
             "preparingDownload": "Préparation du téléchargement...",

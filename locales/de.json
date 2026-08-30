@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "Dieses Modell ist nicht in Ihrer Bibliothek",
             "deletedTooltip": "Dieses LoRA wurde an der Quelle gelöscht und kann nicht mehr heruntergeladen werden",
             "hashInvalidTooltip": "Dieser LoRA-Hash kann auf CivitAI nicht aufgelöst werden - das Modell wurde möglicherweise aktualisiert",
+            "noLorasAssociated": "Keine LoRAs mit diesem Rezept verknüpft",
+            "noLorasWhyToggle": "Warum keine LoRAs?",
+            "noLorasImportMethod": "Importmethode",
+            "noLorasInferredNote": "Mögliche Ursache (abgeleitet) — dieses Rezept wurde importiert, bevor Importdiagnosen aufgezeichnet wurden.",
+            "noLorasChannels": {
+                "batch_import_url": "Massenimport (Bild-URL)",
+                "batch_import_local": "Massenimport (lokale Datei)",
+                "url": "Bild-URL-Import",
+                "local": "Import lokaler Datei",
+                "upload": "Bild-Upload",
+                "widget": "Aus Workflow gespeichert",
+                "reimport_url": "Neuimport (Bild-URL)",
+                "reimport_local": "Neuimport (lokale Datei)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "Die Generierungsmetadaten sind vollständig und verweisen auf keine LoRAs.",
+                "api_meta_no_lora_resources": "Die Quell-API hat für dieses Bild keine LoRA-Ressourcendaten zurückgegeben. Auf der CivitAI-Seite angezeigte LoRAs stammen möglicherweise aus internen Daten, die die öffentliche API nicht bereitstellt.",
+                "api_meta_missing": "Die Quell-API hat für dieses Bild keine Generierungsmetadaten zurückgegeben.",
+                "no_embedded_metadata": "Das Bild enthält keine eingebetteten Generierungsmetadaten, sodass LoRA-Informationen nicht wiederhergestellt werden konnten.",
+                "workflow_metadata_limited": "Die eingebetteten Metadaten des Bildes sind ein ComfyUI-Workflow; das Extrahieren von LoRA-Informationen aus Workflows ist eingeschränkt.",
+                "video_no_metadata": "Videodateien enthalten keine eingebetteten Generierungsmetadaten.",
+                "metadata_unsupported": "Das Bild enthält Metadaten in einem Format, das nicht analysiert werden konnte.",
+                "unknown": "Die Ursache konnte aus den gespeicherten Rezeptdaten nicht ermittelt werden."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "API-Metadatenfelder",
+                "modelVersionIds": "Gemeldete Modellversions-IDs",
+                "embeddedMetadata": "Eingebettete Metadaten",
+                "present": "gefunden",
+                "absent": "keine"
+            },
             "download": "Herunterladen",
             "downloadLoraTooltip": "Dieses LoRA herunterladen",
             "preparingDownload": "Download wird vorbereitet...",

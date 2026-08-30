@@ -715,6 +715,72 @@
     min-height: 0;
 }
 
+/* Empty LoRA list + collapsible "Why no LoRAs?" explanation */
+.no-loras {
+    color: var(--text-muted);
+    font-size: 0.9em;
+    padding: var(--space-2) 0;
+}
+
+.no-loras-reason {
+    margin: var(--space-1) 0 var(--space-2);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-xs);
+    background: var(--lora-surface);
+    font-size: 0.85em;
+}
+
+.no-loras-reason summary {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    cursor: pointer;
+    color: var(--text-muted);
+    user-select: none;
+    list-style: none;
+}
+
+/* Hide the native disclosure triangle; rotate the icon instead. */
+.no-loras-reason summary::-webkit-details-marker {
+    display: none;
+}
+
+.no-loras-reason summary i {
+    transition: transform 0.15s ease;
+}
+
+.no-loras-reason[open] summary i {
+    transform: rotate(90deg);
+}
+
+.no-loras-reason summary:hover {
+    color: var(--text-color);
+}
+
+.no-loras-reason-body {
+    padding: 0 var(--space-3) var(--space-3);
+    color: var(--text-muted);
+}
+
+.no-loras-reason-body ul {
+    margin: 0;
+    padding-left: var(--space-5);
+}
+
+.no-loras-reason-body li {
+    margin: var(--space-1) 0;
+}
+
+.no-loras-bullet-label {
+    color: var(--text-color);
+    font-weight: 600;
+}
+
+.no-loras-inferred-note {
+    font-style: italic;
+}
+
 .recipe-checkpoint-container {
     display: flex;
     flex-direction: column;

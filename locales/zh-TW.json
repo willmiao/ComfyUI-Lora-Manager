@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "此模型不在您的本地庫中",
             "deletedTooltip": "此 LoRA 已從來源站刪除，無法下載",
             "hashInvalidTooltip": "此 LoRA 雜湊無法在 CivitAI 上解析——模型可能已更新",
+            "noLorasAssociated": "此配方未關聯任何 LoRA",
+            "noLorasWhyToggle": "為什麼沒有 LoRA？",
+            "noLorasImportMethod": "匯入方式",
+            "noLorasInferredNote": "可能的原因（推斷）——此配方是在記錄匯入診斷資訊之前匯入的。",
+            "noLorasChannels": {
+                "batch_import_url": "批量匯入（圖片 URL）",
+                "batch_import_local": "批量匯入（本機檔案）",
+                "url": "圖片 URL 匯入",
+                "local": "本機檔案匯入",
+                "upload": "圖片上傳",
+                "widget": "從工作流儲存",
+                "reimport_url": "重新匯入（圖片 URL）",
+                "reimport_local": "重新匯入（本機檔案）"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "生成中繼資料完整，且未引用任何 LoRA。",
+                "api_meta_no_lora_resources": "來源 API 未回傳此圖片的 LoRA 資源資料。CivitAI 頁面上顯示的 LoRA 可能來自公開 API 未開放的內部資料。",
+                "api_meta_missing": "來源 API 未回傳此圖片的生成中繼資料。",
+                "no_embedded_metadata": "圖片沒有內嵌生成中繼資料，因此無法復原 LoRA 資訊。",
+                "workflow_metadata_limited": "圖片內嵌的中繼資料是 ComfyUI 工作流；從工作流中提取 LoRA 資訊的能力有限。",
+                "video_no_metadata": "影片檔案不攜帶內嵌生成中繼資料。",
+                "metadata_unsupported": "圖片包含的中繼資料格式無法解析。",
+                "unknown": "無法從儲存的配方資料中確定原因。"
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "API 中繼資料欄位",
+                "modelVersionIds": "回報的模型版本 ID 數",
+                "embeddedMetadata": "內嵌中繼資料",
+                "present": "已找到",
+                "absent": "無"
+            },
             "download": "下載",
             "downloadLoraTooltip": "下載此 LoRA",
             "preparingDownload": "正在準備下載...",

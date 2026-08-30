@@ -65,6 +65,13 @@ export class DownloadManager {
                     raw_metadata: this.importManager.recipeData.raw_metadata || {},
                 };
 
+                // Pass analysis diagnostics through so the backend can record
+                // why the recipe ended up with no LoRAs (recipe modal panel).
+                const diagnostics = this.importManager.recipeData.diagnostics;
+                if (diagnostics && typeof diagnostics === 'object') {
+                    completeMetadata.diagnostics = diagnostics;
+                }
+
                 // Preserve preview_nsfw_level from analysis so the saved
                 // recipe applies the correct NSFW blur on the preview image.
                 const nsfwLevel = this.importManager.recipeData.preview_nsfw_level;

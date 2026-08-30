@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "מודל זה לא נמצא בספרייה שלך",
             "deletedTooltip": "LoRA זה נמחק מהמקור ואינו זמין יותר להורדה",
             "hashInvalidTooltip": "לא ניתן לפתור את ה-hash של ה-LoRA ב-CivitAI - ייתכן שהמודל עודכן",
+            "noLorasAssociated": "אין LoRAs המשויכים למתכון זה",
+            "noLorasWhyToggle": "למה אין LoRAs?",
+            "noLorasImportMethod": "שיטת ייבוא",
+            "noLorasInferredNote": "סיבה אפשרית (משוערת) — מתכון זה יובא לפני שנרשמו אבחוני ייבוא.",
+            "noLorasChannels": {
+                "batch_import_url": "ייבוא בכמות גדולה (URL של תמונה)",
+                "batch_import_local": "ייבוא בכמות גדולה (קובץ מקומי)",
+                "url": "ייבוא מ-URL של תמונה",
+                "local": "ייבוא קובץ מקומי",
+                "upload": "העלאת תמונה",
+                "widget": "נשמר מה-workflow",
+                "reimport_url": "ייבוא מחדש (URL של תמונה)",
+                "reimport_local": "ייבוא מחדש (קובץ מקומי)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "מטא-הנתונים של היצירה שלמים ואינם מפנים ל-LoRAs כלשהם.",
+                "api_meta_no_lora_resources": "ה-API של המקור לא החזיר נתוני משאבי LoRA עבור תמונה זו. LoRAs המוצגים בעמוד CivitAI עשויים להגיע מנתונים פנימיים שה-API הציבורי אינו חושף.",
+                "api_meta_missing": "ה-API של המקור לא החזיר מטא-נתוני יצירה עבור תמונה זו.",
+                "no_embedded_metadata": "לתמונה אין מטא-נתוני יצירה מוטבעים, ולכן לא ניתן היה לשחזר את מידע ה-LoRA.",
+                "workflow_metadata_limited": "המטא-נתונים המוטבעים של התמונה הם workflow של ComfyUI; חילוץ מידע LoRA מתוך workflows מוגבל.",
+                "video_no_metadata": "קבצי וידאו אינם נושאים מטא-נתוני יצירה מוטבעים.",
+                "metadata_unsupported": "התמונה מכילה מטא-נתונים בפורמט שלא ניתן לנתח.",
+                "unknown": "לא ניתן היה לקבוע את הסיבה מנתוני המתכון השמורים."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "שדות מטא-נתונים של API",
+                "modelVersionIds": "מספר מזהי גרסת מודל שדווחו",
+                "embeddedMetadata": "מטא-נתונים מוטבעים",
+                "present": "נמצאו",
+                "absent": "אין"
+            },
             "download": "הורדה",
             "downloadLoraTooltip": "הורד את ה-LoRA הזה",
             "preparingDownload": "מכין את ההורדה...",

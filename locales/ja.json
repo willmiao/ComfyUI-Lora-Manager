@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "このモデルはライブラリにありません",
             "deletedTooltip": "この LoRA は配信元から削除されたため、ダウンロードできません",
             "hashInvalidTooltip": "このLoRAハッシュはCivitAIで解決できません - モデルが更新された可能性があります",
+            "noLorasAssociated": "このレシピに関連付けられた LoRA はありません",
+            "noLorasWhyToggle": "LoRA がない理由",
+            "noLorasImportMethod": "インポート方法",
+            "noLorasInferredNote": "考えられる理由（推定）— このレシピはインポート診断が記録される前にインポートされました。",
+            "noLorasChannels": {
+                "batch_import_url": "一括インポート（画像 URL）",
+                "batch_import_local": "一括インポート（ローカルファイル）",
+                "url": "画像 URL からのインポート",
+                "local": "ローカルファイルのインポート",
+                "upload": "画像のアップロード",
+                "widget": "ワークフローから保存",
+                "reimport_url": "再インポート（画像 URL）",
+                "reimport_local": "再インポート（ローカルファイル）"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "生成メタデータは完全で、LoRA への参照は含まれていません。",
+                "api_meta_no_lora_resources": "ソース API がこの画像の LoRA リソースデータを返しませんでした。CivitAI ページに表示される LoRA は、公開 API では公開されない内部データに由来する場合があります。",
+                "api_meta_missing": "ソース API がこの画像の生成メタデータを返しませんでした。",
+                "no_embedded_metadata": "画像に埋め込まれた生成メタデータがないため、LoRA 情報を復元できませんでした。",
+                "workflow_metadata_limited": "画像に埋め込まれたメタデータは ComfyUI ワークフローです。ワークフローからの LoRA 情報の抽出には限界があります。",
+                "video_no_metadata": "動画ファイルには埋め込み生成メタデータがありません。",
+                "metadata_unsupported": "画像に解析できない形式のメタデータが含まれています。",
+                "unknown": "保存されたレシピデータから理由を特定できませんでした。"
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "API メタデータフィールド",
+                "modelVersionIds": "報告されたモデルバージョン ID 数",
+                "embeddedMetadata": "埋め込みメタデータ",
+                "present": "あり",
+                "absent": "なし"
+            },
             "download": "ダウンロード",
             "downloadLoraTooltip": "この LoRA をダウンロード",
             "preparingDownload": "ダウンロードを準備中...",

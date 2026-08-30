@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "Este modelo no está en tu biblioteca",
             "deletedTooltip": "Este LoRA fue eliminado de la fuente y ya no se puede descargar",
             "hashInvalidTooltip": "Este hash de LoRA no se puede resolver en CivitAI - el modelo puede haber sido actualizado",
+            "noLorasAssociated": "No hay LoRAs asociados con esta receta",
+            "noLorasWhyToggle": "¿Por qué no hay LoRAs?",
+            "noLorasImportMethod": "Método de importación",
+            "noLorasInferredNote": "Posible motivo (inferido): esta receta se importó antes de que se registraran los diagnósticos de importación.",
+            "noLorasChannels": {
+                "batch_import_url": "Importación por lotes (URL de imagen)",
+                "batch_import_local": "Importación por lotes (archivo local)",
+                "url": "Importación desde URL de imagen",
+                "local": "Importación de archivo local",
+                "upload": "Carga de imagen",
+                "widget": "Guardada desde el workflow",
+                "reimport_url": "Reimportación (URL de imagen)",
+                "reimport_local": "Reimportación (archivo local)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "Los metadatos de generación están completos y no hacen referencia a ningún LoRA.",
+                "api_meta_no_lora_resources": "La API de origen no devolvió datos de recursos LoRA para esta imagen. Los LoRAs que se muestran en la página de CivitAI pueden proceder de datos internos que la API pública no expone.",
+                "api_meta_missing": "La API de origen no devolvió metadatos de generación para esta imagen.",
+                "no_embedded_metadata": "La imagen no tiene metadatos de generación incrustados, por lo que no se pudo recuperar la información de LoRAs.",
+                "workflow_metadata_limited": "Los metadatos incrustados en la imagen son un workflow de ComfyUI; la extracción de información de LoRAs a partir de workflows es limitada.",
+                "video_no_metadata": "Los archivos de vídeo no contienen metadatos de generación incrustados.",
+                "metadata_unsupported": "La imagen contiene metadatos en un formato que no se pudo analizar.",
+                "unknown": "No se pudo determinar el motivo a partir de los datos de la receta almacenados."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "Campos de metadatos de la API",
+                "modelVersionIds": "IDs de versión de modelo informados",
+                "embeddedMetadata": "Metadatos incrustados",
+                "present": "encontrados",
+                "absent": "ninguno"
+            },
             "download": "Descargar",
             "downloadLoraTooltip": "Descargar este LoRA",
             "preparingDownload": "Preparando descarga...",

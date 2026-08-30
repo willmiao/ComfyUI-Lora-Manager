@@ -120,6 +120,76 @@ class TestPersistentRecipeCache:
         loaded = cache.load_cache()
         assert loaded is None
 
+    def test_import_info_roundtrip(self, temp_db_path, sample_recipes):
+        """import_info (import provenance + no-LoRA reason) survives the cache."""
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+
+        sample_recipes[0]["import_info"] = {
+            "channel": "batch_import_url",
+            "reason": "api_meta_no_lora_resources",
+            "details": {"api_meta_keys": ["prompt"], "api_model_version_ids": 0},
+        }
+        cache.save_cache(sample_recipes)
+
+        loaded = cache.load_cache()
+        assert loaded is not None
+        r1 = next(r for r in loaded.raw_data if r["id"] == "recipe-001")
+        assert r1["import_info"]["channel"] == "batch_import_url"
+        assert r1["import_info"]["reason"] == "api_meta_no_lora_resources"
+        assert r1["import_info"]["details"]["api_meta_keys"] == ["prompt"]
+
+        # Recipes without import_info simply omit the key.
+        r2 = next(r for r in loaded.raw_data if r["id"] == "recipe-002")
+        assert "import_info" not in r2
+
+    def test_import_info_column_migration(self, temp_db_path, sample_recipes):
+        """Existing databases gain the import_info_json column via ALTER TABLE."""
+        import sqlite3
+
+        # Simulate a legacy database without the new column.
+        conn = sqlite3.connect(temp_db_path)
+        conn.executescript(
+            """
+            CREATE TABLE recipes (
+                recipe_id TEXT PRIMARY KEY,
+                file_path TEXT,
+                json_path TEXT,
+                title TEXT,
+                folder TEXT,
+                source_path TEXT,
+                base_model TEXT,
+                fingerprint TEXT,
+                created_date REAL,
+                modified REAL,
+                file_mtime REAL,
+                file_size INTEGER,
+                favorite INTEGER DEFAULT 0,
+                repair_version INTEGER DEFAULT 0,
+                preview_nsfw_level INTEGER DEFAULT 0,
+                loras_json TEXT,
+                checkpoint_json TEXT,
+                gen_params_json TEXT,
+                tags_json TEXT,
+                has_workflow INTEGER DEFAULT 0
+            );
+            CREATE TABLE cache_metadata (key TEXT PRIMARY KEY, value TEXT);
+            """
+        )
+        conn.commit()
+        conn.close()
+
+        cache = PersistentRecipeCache(db_path=temp_db_path)
+        cache.save_cache(sample_recipes)
+
+        conn = sqlite3.connect(temp_db_path)
+        columns = {row[1] for row in conn.execute("PRAGMA table_info(recipes)")}
+        conn.close()
+        assert "import_info_json" in columns
+
+        loaded = cache.load_cache()
+        assert loaded is not None
+        assert len(loaded.raw_data) == 2
+
     def test_update_single_recipe(self, temp_db_path, sample_recipes):
         """Test updating a single recipe."""
         cache = PersistentRecipeCache(db_path=temp_db_path)
@@ -595,15 +665,19 @@ class TestHasWorkflowColumn:
         assert by_id["wf-3"]["has_workflow"] is False
 
     def test_prepare_recipe_row_matches_column_order(self, temp_db_path):
-        """The prepared row must append has_workflow in column order."""
+        """The prepared row must append has_workflow/import_info in column order."""
         cache = PersistentRecipeCache(db_path=temp_db_path)
         row_true = cache._prepare_recipe_row({"id": "r1", "has_workflow": True}, "")
         row_false = cache._prepare_recipe_row({"id": "r2", "has_workflow": False}, "")
 
-        assert row_true[-1] == 1
-        assert row_false[-1] == 0
+        assert row_true[-2] == 1
+        assert row_false[-2] == 0
+        # import_info_json is the trailing column, unset by default.
+        assert row_true[-1] is None
+        assert row_false[-1] is None
         assert len(row_true) == len(cache._RECIPE_COLUMNS)
-        assert cache._RECIPE_COLUMNS[-1] == "has_workflow"
+        assert cache._RECIPE_COLUMNS[-2] == "has_workflow"
+        assert cache._RECIPE_COLUMNS[-1] == "import_info_json"
 
     def test_update_recipe_preserves_has_workflow(self, temp_db_path):
         """update_recipe() must write the has_workflow column correctly."""

@@ -898,6 +898,37 @@
             "notInLibraryTooltip": "이 모델은 라이브러리에 없습니다",
             "deletedTooltip": "이 LoRA는 소스에서 삭제되어 더 이상 다운로드할 수 없습니다",
             "hashInvalidTooltip": "이 LoRA 해시는 CivitAI에서 해석할 수 없습니다 - 모델이 업데이트되었을 수 있습니다",
+            "noLorasAssociated": "이 레시피에 연결된 LoRA가 없습니다",
+            "noLorasWhyToggle": "LoRA가 없는 이유",
+            "noLorasImportMethod": "가져오기 방법",
+            "noLorasInferredNote": "가능한 이유(추정) — 이 레시피는 가져오기 진단이 기록되기 전에 가져온 것입니다.",
+            "noLorasChannels": {
+                "batch_import_url": "일괄 가져오기(이미지 URL)",
+                "batch_import_local": "일괄 가져오기(로컬 파일)",
+                "url": "이미지 URL 가져오기",
+                "local": "로컬 파일 가져오기",
+                "upload": "이미지 업로드",
+                "widget": "워크플로에서 저장",
+                "reimport_url": "다시 가져오기(이미지 URL)",
+                "reimport_local": "다시 가져오기(로컬 파일)"
+            },
+            "noLorasReasons": {
+                "no_loras_used": "생성 메타데이터가 완전하며 LoRA를 참조하지 않습니다.",
+                "api_meta_no_lora_resources": "소스 API가 이 이미지에 대한 LoRA 리소스 데이터를 반환하지 않았습니다. CivitAI 페이지에 표시되는 LoRA는 공개 API가 노출하지 않는 내부 데이터에서 비롯될 수 있습니다.",
+                "api_meta_missing": "소스 API가 이 이미지에 대한 생성 메타데이터를 반환하지 않았습니다.",
+                "no_embedded_metadata": "이미지에 내장된 생성 메타데이터가 없어 LoRA 정보를 복구할 수 없습니다.",
+                "workflow_metadata_limited": "이미지에 내장된 메타데이터는 ComfyUI 워크플로입니다. 워크플로에서 LoRA 정보를 추출하는 것은 제한적입니다.",
+                "video_no_metadata": "동영상 파일에는 내장 생성 메타데이터가 없습니다.",
+                "metadata_unsupported": "이미지에 파싱할 수 없는 형식의 메타데이터가 포함되어 있습니다.",
+                "unknown": "저장된 레시피 데이터에서 이유를 확인할 수 없습니다."
+            },
+            "noLorasDetails": {
+                "apiMetaFields": "API 메타데이터 필드",
+                "modelVersionIds": "보고된 모델 버전 ID 수",
+                "embeddedMetadata": "내장 메타데이터",
+                "present": "있음",
+                "absent": "없음"
+            },
             "download": "다운로드",
             "downloadLoraTooltip": "이 LoRA 다운로드",
             "preparingDownload": "다운로드 준비 중...",

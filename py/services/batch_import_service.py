@@ -20,6 +20,11 @@ from .recipes import (
     RecipeDownloadError,
     RecipeNotFoundError,
 )
+from .recipes.import_info import (
+    CHANNEL_BATCH_IMPORT_LOCAL,
+    CHANNEL_BATCH_IMPORT_URL,
+    build_import_info,
+)
 
 
 class ImportItemType(Enum):
@@ -624,6 +629,17 @@ class BatchImportService:
                     "loras": loras,
                     "gen_params": payload.get("gen_params", {}),
                     "source_path": item.source,
+                    # Record why this import ended up with no LoRAs so the
+                    # recipe modal can explain it (collapsed by default).
+                    "import_info": build_import_info(
+                        (
+                            CHANNEL_BATCH_IMPORT_URL
+                            if item.item_type == ImportItemType.URL
+                            else CHANNEL_BATCH_IMPORT_LOCAL
+                        ),
+                        payload.get("diagnostics"),
+                        loras,
+                    ),
                 }
 
                 if payload.get("checkpoint"):

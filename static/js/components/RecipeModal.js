@@ -66,6 +66,29 @@ function escapeHtml(value) {
         .replace(/'/g, '&#39;');
 }
 
+// Fallback English strings for the collapsed "Why no LoRAs?" panel.
+// Translations live in locales/*.json under recipes.resources.
+const NO_LORAS_REASON_FALLBACKS = {
+    api_meta_no_lora_resources: 'The source API returned no LoRA resource data for this image. LoRAs shown on the CivitAI page may come from internal data that the public API does not expose.',
+    api_meta_missing: 'The source API returned no generation metadata for this image.',
+    no_embedded_metadata: 'The image has no embedded generation metadata, so LoRA information could not be recovered.',
+    workflow_metadata_limited: "The image's embedded metadata is a ComfyUI workflow; extracting LoRA information from workflows is limited.",
+    video_no_metadata: 'Video files do not carry embedded generation metadata.',
+    metadata_unsupported: 'The image contains metadata in a format that could not be parsed.',
+    unknown: 'The reason could not be determined from the stored recipe data.',
+};
+
+const NO_LORAS_CHANNEL_FALLBACKS = {
+    batch_import_url: 'Batch import (image URL)',
+    batch_import_local: 'Batch import (local file)',
+    url: 'Image URL import',
+    local: 'Local file import',
+    upload: 'Image upload',
+    widget: 'Saved from workflow',
+    reimport_url: 'Re-import (image URL)',
+    reimport_local: 'Re-import (local file)',
+};
+
 class RecipeModal {
     constructor() {
         this.promptEditorState = {};
@@ -1017,7 +1040,7 @@ class RecipeModal {
             this.recipeLorasSyntax = '';
         } else if (lorasListElement) {
             this._destroyAllReconnectComboboxes();
-            lorasListElement.innerHTML = '<div class="no-loras">No LoRAs associated with this recipe</div>';
+            lorasListElement.innerHTML = this.renderNoLorasState(recipe);
             this.recipeLorasSyntax = '';
         }
 
@@ -1026,6 +1049,156 @@ class RecipeModal {
             const hasLoraItems = lorasListElement && lorasListElement.querySelector('.recipe-lora-item');
             resourceDivider.style.display = hasCheckpoint && hasLoraItems ? 'block' : 'none';
         }
+    }
+
+    /**
+     * Render the empty LoRA list, including a collapsed "Why no LoRAs?"
+     * explanation panel when the cause is known or can be inferred.
+     * @param {Object} recipe
+     * @returns {string}
+     */
+    renderNoLorasState(recipe) {
+        const emptyText = translate(
+            'recipes.resources.noLorasAssociated',
+            {},
+            'No LoRAs associated with this recipe'
+        );
+        const reason = this.resolveNoLorasReason(recipe);
+        let html = `<div class="no-loras">${escapeHtml(emptyText)}</div>`;
+
+        // 'no_loras_used' is the normal case — the generation simply used no
+        // LoRAs, nothing to explain.
+        if (!reason || reason.code === 'no_loras_used') {
+            return html;
+        }
+
+        const toggle = translate('recipes.resources.noLorasWhyToggle', {}, 'Why no LoRAs?');
+        const reasonText = translate(
+            `recipes.resources.noLorasReasons.${reason.code}`,
+            {},
+            NO_LORAS_REASON_FALLBACKS[reason.code] || NO_LORAS_REASON_FALLBACKS.unknown
+        );
+
+        const bullets = [];
+        if (reason.channel) {
+            const channelText = translate(
+                `recipes.resources.noLorasChannels.${reason.channel}`,
+                {},
+                NO_LORAS_CHANNEL_FALLBACKS[reason.channel] || reason.channel
+            );
+            bullets.push(
+                `<li><span class="no-loras-bullet-label">${escapeHtml(translate('recipes.resources.noLorasImportMethod', {}, 'Import method'))}:</span> ${escapeHtml(channelText)}</li>`
+            );
+        }
+        bullets.push(`<li>${escapeHtml(reasonText)}</li>`);
+        bullets.push(...this.renderNoLorasDetailBullets(reason));
+        if (reason.inferred) {
+            bullets.push(
+                `<li class="no-loras-inferred-note">${escapeHtml(translate('recipes.resources.noLorasInferredNote', {}, 'Possible reason (inferred) — this recipe was imported before import diagnostics were recorded.'))}</li>`
+            );
+        }
+
+        html += `
+            <details class="no-loras-reason">
+                <summary><i class="fas fa-circle-question" aria-hidden="true"></i> ${escapeHtml(toggle)}</summary>
+                <div class="no-loras-reason-body"><ul>${bullets.join('')}</ul></div>
+            </details>`;
+        return html;
+    }
+
+    /**
+     * Resolve the no-LoRA reason: recorded import_info takes precedence;
+     * legacy recipes without it fall back to heuristics on the stored data.
+     * @param {Object} recipe
+     * @returns {{code: string, channel: ?string, details: ?Object, inferred: boolean}|null}
+     */
+    resolveNoLorasReason(recipe) {
+        const importInfo =
+            recipe && typeof recipe.import_info === 'object' && recipe.import_info !== null
+                ? recipe.import_info
+                : null;
+        if (importInfo && typeof importInfo.reason === 'string' && importInfo.reason) {
+            return {
+                code: importInfo.reason,
+                channel: typeof importInfo.channel === 'string' ? importInfo.channel : null,
+                details:
+                    typeof importInfo.details === 'object' && importInfo.details !== null
+                        ? importInfo.details
+                        : null,
+                inferred: false,
+            };
+        }
+        return this.inferNoLorasReason(recipe);
+    }
+
+    /**
+     * Heuristic reason for legacy recipes that predate import_info.
+     * @param {Object} recipe
+     * @returns {{code: string, channel: ?string, details: ?Object, inferred: boolean}}
+     */
+    inferNoLorasReason(recipe) {
+        const sourcePath = recipe && recipe.source_path ? String(recipe.source_path).trim() : '';
+        const genParams =
+            recipe && recipe.gen_params && typeof recipe.gen_params === 'object'
+                ? recipe.gen_params
+                : {};
+        const paramKeys = Object.keys(genParams).filter(
+            (key) => genParams[key] !== '' && genParams[key] !== null && genParams[key] !== undefined
+        );
+
+        if (recipe && recipe.has_workflow) {
+            return { code: 'workflow_metadata_limited', channel: null, details: null, inferred: true };
+        }
+        if (/^https?:\/\//i.test(sourcePath)) {
+            // URL imports come from CivitAI; a missing LoRA list there almost
+            // always means the public API did not report LoRA resources.
+            return { code: 'api_meta_no_lora_resources', channel: 'url', details: null, inferred: true };
+        }
+        if (sourcePath) {
+            return paramKeys.length === 0
+                ? { code: 'no_embedded_metadata', channel: 'local', details: null, inferred: true }
+                : { code: 'no_loras_used', channel: 'local', details: null, inferred: true };
+        }
+        if (paramKeys.length > 0) {
+            return { code: 'no_loras_used', channel: null, details: null, inferred: true };
+        }
+        return { code: 'unknown', channel: null, details: null, inferred: true };
+    }
+
+    /**
+     * Render the recorded diagnostic detail bullets (API meta shape, EXIF
+     * presence). Only shown for recorded (non-inferred) import_info.
+     * @param {{details: ?Object}} reason
+     * @returns {string[]}
+     */
+    renderNoLorasDetailBullets(reason) {
+        const details = reason.details;
+        if (!details) {
+            return [];
+        }
+        const bullets = [];
+        if (Array.isArray(details.api_meta_keys) && details.api_meta_keys.length > 0) {
+            const label = translate('recipes.resources.noLorasDetails.apiMetaFields', {}, 'API metadata fields');
+            bullets.push(
+                `<li><span class="no-loras-bullet-label">${escapeHtml(label)}:</span> ${escapeHtml(details.api_meta_keys.join(', '))}</li>`
+            );
+        }
+        if (typeof details.api_model_version_ids === 'number') {
+            const label = translate('recipes.resources.noLorasDetails.modelVersionIds', {}, 'Model version IDs reported');
+            bullets.push(
+                `<li><span class="no-loras-bullet-label">${escapeHtml(label)}:</span> ${details.api_model_version_ids}</li>`
+            );
+        }
+        if (typeof details.exif_present === 'boolean') {
+            const label = translate('recipes.resources.noLorasDetails.embeddedMetadata', {}, 'Embedded metadata');
+            const value = details.exif_present
+                ? translate('recipes.resources.noLorasDetails.present', {}, 'found')
+                : translate('recipes.resources.noLorasDetails.absent', {}, 'none');
+            bullets.push(
+                `<li><span class="no-loras-bullet-label">${escapeHtml(label)}:</span> ${escapeHtml(value)}</li>`
+            );
+        }
+        return bullets;
     }
 
     updateSourceUrlDisplay(sourcePath, options = {}) {
