@@ -1,5 +1,5 @@
-"""Tests for the loader-pool endpoint backing the Random Checkpoint/Unet
-Loader nodes' front-end base_model filtering.
+"""Tests for the loader-pool endpoint backing the Checkpoint/Unet Loader
+nodes' front-end base_model filtering.
 """
 
 import json

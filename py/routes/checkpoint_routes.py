@@ -47,15 +47,16 @@ class CheckpointRoutes(BaseModelRoutes):
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/checkpoints_roots', prefix, self.get_checkpoints_roots)
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/unet_roots', prefix, self.get_unet_roots)
 
-        # Name/base_model pool for the Random Checkpoint/Unet Loader nodes
+        # Name/base_model pool for the Checkpoint/Unet Loader nodes' base_model filtering
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/loader-pool', prefix, self.get_loader_pool)
     
     async def get_loader_pool(self, request: web.Request) -> web.Response:
         """Return ComfyUI-formatted model names with their base_model.
 
-        Backing data for the Random Checkpoint/Unet Loader nodes: the front-end
-        filters the ckpt_name/unet_name combo options by base_model using this
-        pool, so control_after_generate randomizes within the narrowed set.
+        Backing data for the Checkpoint/Unet Loader nodes'
+        control_after_generate feature: the front-end filters the
+        ckpt_name/unet_name combo options by base_model using this pool, so
+        randomize mode picks within the narrowed set.
         """
         try:
             sub_type = request.query.get("sub_type", "checkpoint")
