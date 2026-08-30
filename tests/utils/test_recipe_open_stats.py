@@ -24,6 +24,11 @@ def _prepare(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         stats_module, "get_settings_dir", lambda create=True: str(settings_dir)
     )
+    # Shrink the debounce well below the 100 x 0.01s poll window in
+    # _wait_for_save so the background write always lands with a wide margin.
+    # The debounce duration is not what these tests verify; SAVE_DELAY stays
+    # at its production default (1.0s) outside this test module.
+    monkeypatch.setattr(RecipeOpenStats, "SAVE_DELAY", 0.05)
     created_tasks = []
     real_create_task = stats_module.asyncio.create_task
 
