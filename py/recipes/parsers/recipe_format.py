@@ -196,7 +196,7 @@ class RecipeFormatParser(RecipeMetadataParser):
                         filtered_gen_params[key] = value
             
             return {
-                'base_model': checkpoint['baseModel'] if checkpoint and checkpoint.get('baseModel') else recipe_metadata.get('base_model', ''),
+                'base_model': checkpoint['baseModel'] if checkpoint and checkpoint.get('baseModel') else (recipe_metadata.get('base_model') or None),
                 'loras': loras,
                 'gen_params': filtered_gen_params,
                 'tags': recipe_metadata.get('tags', []),

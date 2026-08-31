@@ -112,6 +112,36 @@ async def test_recipe_format_parser_populates_checkpoint(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_recipe_format_parser_base_model_defaults_to_none_when_unknown(monkeypatch):
+    class _FakeScanner:
+        pass
+
+    # No checkpoint and empty base_model -> unknown renders as None (not "")
+    result = await _parse(
+        monkeypatch,
+        {"title": "T", "base_model": "", "loras": [], "gen_params": {}},
+        _FakeScanner(),
+    )
+    assert result["base_model"] is None
+
+    # Missing base_model key behaves the same
+    result = await _parse(
+        monkeypatch,
+        {"title": "T", "loras": [], "gen_params": {}},
+        _FakeScanner(),
+    )
+    assert result["base_model"] is None
+
+    # A real base_model in recipe metadata is kept
+    result = await _parse(
+        monkeypatch,
+        {"title": "T", "base_model": "Illustrious", "loras": [], "gen_params": {}},
+        _FakeScanner(),
+    )
+    assert result["base_model"] == "Illustrious"
+
+
+@pytest.mark.asyncio
 async def test_recipe_format_parser_marks_lora_in_library_by_version(monkeypatch):
     async def fake_metadata_provider():
         class Provider:

@@ -48,6 +48,12 @@ _CHECKPOINT_MODEL_TYPE_ALIASES = {"diffusionmodel": "diffusion_model"}
 # Valid LoRA availability statuses for the recipe listing filter.
 _VALID_LORA_AVAILABILITY_STATUSES = frozenset({"ready", "missing", "deleted"})
 
+# Filter marker for recipes whose base model could not be determined
+# (base_model is None or empty). The UI displays "Unknown" for this bucket;
+# the marker keeps the semantics explicit and disjoint from any real base
+# model string.
+UNKNOWN_BASE_MODEL_FILTER = "__unknown__"
+
 
 class RecipeScanner:
     """Service for scanning and managing recipe images"""
@@ -3530,11 +3536,23 @@ class RecipeScanner:
             if filters:
                 # Filter by base model
                 if "base_model" in filters and filters["base_model"]:
-                    filtered_data = [
-                        item
-                        for item in filtered_data
-                        if item.get("base_model", "") in filters["base_model"]
-                    ]
+                    base_model_filter = filters["base_model"]
+                    if UNKNOWN_BASE_MODEL_FILTER in base_model_filter:
+                        # The unknown bucket matches recipes whose base model
+                        # could not be determined (None/empty); real base
+                        # models in the list still match by exact name.
+                        filtered_data = [
+                            item
+                            for item in filtered_data
+                            if not item.get("base_model")
+                            or item.get("base_model") in base_model_filter
+                        ]
+                    else:
+                        filtered_data = [
+                            item
+                            for item in filtered_data
+                            if item.get("base_model", "") in base_model_filter
+                        ]
 
                 # Filter by favorite
                 if "favorite" in filters and filters["favorite"]:

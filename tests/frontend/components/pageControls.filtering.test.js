@@ -350,6 +350,49 @@ describe('FilterManager tag and base model filters', () => {
     expect(baseModelChip.classList.contains('active')).toBe(false);
   });
 
+  it('filters recipes by the unknown base model bucket via its marker value', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        success: true,
+        base_models: [
+          { name: 'Unknown', value: '__unknown__', count: 3 },
+          { name: 'SDXL', count: 2 },
+        ],
+      }),
+    });
+
+    renderControlsDom('recipes');
+    const stateModule = await import('../../../static/js/state/index.js');
+    stateModule.initPageState('recipes');
+    const { getCurrentPageState } = stateModule;
+    const { FilterManager } = await import('../../../static/js/managers/FilterManager.js');
+
+    const loadRecipesMock = vi.fn().mockResolvedValue(undefined);
+    window.recipeManager = { loadRecipes: loadRecipesMock };
+
+    new FilterManager({ page: 'recipes' });
+
+    await vi.waitFor(() => {
+      const chip = document.querySelector('[data-base-model="__unknown__"]');
+      expect(chip).not.toBeNull();
+    });
+
+    const unknownChip = document.querySelector('[data-base-model="__unknown__"]');
+    // Display label is "Unknown" even though the filter value is the marker
+    expect(unknownChip.textContent).toContain('Unknown');
+
+    unknownChip.dispatchEvent(new Event('click', { bubbles: true }));
+    await vi.waitFor(() => expect(loadRecipesMock).toHaveBeenCalledTimes(1));
+
+    expect(getCurrentPageState().filters.baseModel).toEqual(['__unknown__']);
+    expect(unknownChip.classList.contains('active')).toBe(true);
+
+    const storageKey = 'lora_manager_recipes_filters';
+    const storedFilters = JSON.parse(localStorage.getItem(storageKey));
+    expect(storedFilters.baseModel).toEqual(['__unknown__']);
+  });
+
   it('filters base model chips locally without changing selected state', async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,

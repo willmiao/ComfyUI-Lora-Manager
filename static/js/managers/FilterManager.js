@@ -511,18 +511,21 @@ export class FilterManager {
         filteredModels.forEach(model => {
             const tag = document.createElement('div');
             tag.className = 'filter-tag base-model-tag';
-            tag.dataset.baseModel = model.name;
+            // Display name may differ from the filter value (e.g. the "Unknown"
+            // bucket shows "Unknown" but filters via a dedicated marker).
+            const filterValue = model.value ?? model.name;
+            tag.dataset.baseModel = filterValue;
             tag.innerHTML = `${model.name} <span class="tag-count">${model.count}</span>`;
 
             tag.addEventListener('click', async () => {
                 tag.classList.toggle('active');
 
                 if (tag.classList.contains('active')) {
-                    if (!this.filters.baseModel.includes(model.name)) {
-                        this.filters.baseModel.push(model.name);
+                    if (!this.filters.baseModel.includes(filterValue)) {
+                        this.filters.baseModel.push(filterValue);
                     }
                 } else {
-                    this.filters.baseModel = this.filters.baseModel.filter(m => m !== model.name);
+                    this.filters.baseModel = this.filters.baseModel.filter(m => m !== filterValue);
                 }
 
                 this.updateActiveFiltersCount();

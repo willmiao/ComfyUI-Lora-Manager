@@ -12,7 +12,7 @@ from py.services import model_scanner as model_scanner_module
 from py.services.model_cache import ModelCache
 from py.services.model_hash_index import ModelHashIndex
 from py.services.model_scanner import CacheBuildResult, ModelScanner
-from py.services.recipe_scanner import RecipeScanner
+from py.services.recipe_scanner import RecipeScanner, UNKNOWN_BASE_MODEL_FILTER
 from py.services import settings_manager as settings_manager_module
 from py.utils.models import BaseModelMetadata
 from py.utils.utils import calculate_recipe_fingerprint
@@ -1952,6 +1952,59 @@ async def test_get_paginated_data_filters_by_favorite(recipe_scanner):
         page=1, page_size=10, filters={"favorite": False}
     )
     assert len(result_fav_false["items"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_get_paginated_data_filters_by_base_model_unknown_bucket(recipe_scanner):
+    scanner, _ = recipe_scanner
+
+    await scanner.add_recipe(
+        {
+            "id": "known",
+            "file_path": "path/known.png",
+            "title": "Known Base Model",
+            "modified": 1.0,
+            "created_date": 1.0,
+            "base_model": "SDXL 1.0",
+            "loras": [],
+        }
+    )
+    await scanner.add_recipe(
+        {
+            "id": "unknown",
+            "file_path": "path/unknown.png",
+            "title": "Unknown Base Model",
+            "modified": 2.0,
+            "created_date": 2.0,
+            "base_model": None,
+            "loras": [],
+        }
+    )
+
+    await asyncio.sleep(0)
+    await _wait_for_resort(scanner)
+
+    # Exact-name filter matches only the recipe with that base model
+    result_known = await scanner.get_paginated_data(
+        page=1, page_size=10, filters={"base_model": ["SDXL 1.0"]}
+    )
+    assert [item["id"] for item in result_known["items"]] == ["known"]
+
+    # Unknown bucket matches recipes whose base model could not be determined
+    result_unknown = await scanner.get_paginated_data(
+        page=1,
+        page_size=10,
+        filters={"base_model": [UNKNOWN_BASE_MODEL_FILTER]},
+    )
+    assert [item["id"] for item in result_unknown["items"]] == ["unknown"]
+
+    # Mixing known values with the unknown bucket matches both groups
+    result_both = await scanner.get_paginated_data(
+        page=1,
+        page_size=10,
+        filters={"base_model": ["SDXL 1.0", UNKNOWN_BASE_MODEL_FILTER]},
+    )
+    assert {item["id"] for item in result_both["items"]} == {"known", "unknown"}
 
 
 @pytest.mark.asyncio

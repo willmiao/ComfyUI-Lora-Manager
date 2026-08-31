@@ -26,6 +26,7 @@ from ...services.recipes import (
     RecipeValidationError,
 )
 from ...services.metadata_service import get_default_metadata_provider
+from ...services.recipe_scanner import UNKNOWN_BASE_MODEL_FILTER
 from ...utils.civitai_utils import (
     build_civitai_image_page_url,
     extract_civitai_image_id,
@@ -473,17 +474,32 @@ class RecipeQueryHandler:
             cache = await recipe_scanner.get_cached_data()
 
             base_model_counts: Dict[str, int] = {}
+            unknown_count = 0
             for recipe in getattr(cache, "raw_data", []):
                 base_model = recipe.get("base_model")
                 if base_model:
                     base_model_counts[base_model] = (
                         base_model_counts.get(base_model, 0) + 1
                     )
+                else:
+                    unknown_count += 1
 
             sorted_models = [
                 {"name": model, "count": count}
                 for model, count in base_model_counts.items()
             ]
+            if unknown_count:
+                # Synthetic "Unknown" bucket for recipes whose base model could
+                # not be determined. `value` carries the filter marker so the
+                # UI can display "Unknown" without colliding with real base
+                # model strings.
+                sorted_models.append(
+                    {
+                        "name": "Unknown",
+                        "value": UNKNOWN_BASE_MODEL_FILTER,
+                        "count": unknown_count,
+                    }
+                )
             sorted_models.sort(key=lambda entry: entry["count"], reverse=True)
             if limit > 0:
                 sorted_models = sorted_models[:limit]
