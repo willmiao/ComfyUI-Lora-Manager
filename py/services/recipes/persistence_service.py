@@ -58,6 +58,7 @@ class RecipePersistenceService:
         extension: str | None = None,
         recipe_id: str | None = None,
         target_dir: str | None = None,
+        skip_optimize: bool = False,
     ) -> PersistenceResult:
         """Persist a user uploaded recipe.
 
@@ -67,6 +68,11 @@ class RecipePersistenceService:
             target_dir: If provided, save recipe files to this directory instead
                 of the default recipes_dir. Used by re-import to preserve the
                 original folder location.
+            skip_optimize: If True, store the image bytes verbatim without
+                resizing/re-encoding (recipe metadata is still embedded via a
+                byte-level EXIF update that leaves the pixels untouched). Used
+                by local re-import, where the source is the recipe's own
+                already-optimized preview image.
         """
 
         missing_fields = []
@@ -87,9 +93,12 @@ class RecipePersistenceService:
 
         recipe_id = recipe_id or str(uuid.uuid4())
         
-        # Handle video formats by bypassing optimization and metadata embedding
+        # Handle video formats by bypassing optimization and metadata embedding.
+        # Local re-import also bypasses optimization: the source is the
+        # recipe's own already-optimized preview image, so re-compressing it
+        # would only degrade quality.
         is_video = extension in [".mp4", ".webm"]
-        if is_video:
+        if is_video or skip_optimize:
             optimized_image = resolved_image_bytes
             # extension is already set
         else:
@@ -175,7 +184,11 @@ class RecipePersistenceService:
             json.dump(recipe_data, file_obj, indent=4, ensure_ascii=False)
 
         if not is_video:
-            self._exif_utils.append_recipe_metadata(normalized_image_path, recipe_data)
+            self._exif_utils.append_recipe_metadata(
+                normalized_image_path,
+                recipe_data,
+                pixel_preserving=skip_optimize,
+            )
 
         matching_recipes = await self._find_matching_recipes(recipe_scanner, fingerprint, exclude_id=recipe_id)
         await recipe_scanner.add_recipe(recipe_data)

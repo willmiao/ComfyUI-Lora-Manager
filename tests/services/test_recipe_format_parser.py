@@ -3,7 +3,7 @@ from typing import Any, Dict
 
 import pytest
 
-from py.recipes.parsers.recipe_format import RecipeFormatParser
+from py.recipes.parsers.recipe_format import RecipeFormatParser, strip_recipe_metadata
 from py.config import config
 
 
@@ -425,3 +425,38 @@ async def test_recipe_format_parser_sha256_less_cache_item_no_keyerror(monkeypat
     lora_entry = result["loras"][0]
     assert lora_entry["existsLocally"] is False
     assert lora_entry["localPath"] is None
+
+
+def test_strip_recipe_metadata_removes_appended_marker():
+    original = (
+        "masterpiece, best quality\n"
+        "Negative prompt: lowres\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 123, "
+        "Size: 512x768, Model hash: abc123, Model: foo_v1, Clip skip: 2\n"
+        ' Recipe metadata: {"title": "Saved", "loras": []}'
+    )
+    stripped = strip_recipe_metadata(original)
+
+    assert "Recipe metadata:" not in stripped
+    assert stripped.startswith("masterpiece, best quality")
+    assert "Steps: 20" in stripped
+    assert '{"title": "Saved"}' not in stripped
+
+
+def test_strip_recipe_metadata_returns_input_without_marker():
+    text = "Steps: 20, Sampler: DPM++ 2M Karras, Seed: 1"
+    assert strip_recipe_metadata(text) == text
+
+
+def test_strip_recipe_metadata_empty_when_only_marker():
+    text = ' Recipe metadata: {"title": "Saved"}'
+    assert strip_recipe_metadata(text) == ""
+
+
+def test_strip_recipe_metadata_handles_multiline_json_marker():
+    original = (
+        "Steps: 20, Sampler: DPM++ 2M Karras, Seed: 1\n"
+        ' Recipe metadata: {"title": "Saved", "loras": [{"name": "a", "hash": "h"}]}'
+    )
+    stripped = strip_recipe_metadata(original)
+    assert stripped == "Steps: 20, Sampler: DPM++ 2M Karras, Seed: 1"

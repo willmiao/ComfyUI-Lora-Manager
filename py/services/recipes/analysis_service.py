@@ -368,6 +368,7 @@ class RecipeAnalysisService:
         *,
         file_path: str | None,
         recipe_scanner,
+        ignore_recipe_metadata: bool = False,
     ) -> AnalysisResult:
         """Analyze a file already present on disk."""
 
@@ -388,6 +389,22 @@ class RecipeAnalysisService:
                 "exif_present": False,
             }
             return result
+
+        if ignore_recipe_metadata:
+            # Re-import: re-parse the original embedded generation metadata
+            # instead of the recipe JSON block LoRA Manager appended on save.
+            from ...recipes.parsers.recipe_format import strip_recipe_metadata
+
+            metadata = strip_recipe_metadata(metadata)
+            if not metadata:
+                result = self._metadata_not_found_response(normalized_path)
+                result.payload["diagnostics"] = {
+                    "channel": "local",
+                    "exif_present": True,
+                    "ignore_recipe_metadata": True,
+                    "reason": "only_recipe_metadata",
+                }
+                return result
 
         result = await self._parse_metadata(
             metadata,

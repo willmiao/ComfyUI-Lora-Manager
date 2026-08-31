@@ -32,8 +32,8 @@ class DummyExifUtils:
         self.optimized_calls += 1
         return image_data, ".webp"
 
-    def append_recipe_metadata(self, image_path, recipe_data):
-        self.appended = (image_path, recipe_data)
+    def append_recipe_metadata(self, image_path, recipe_data, pixel_preserving=False):
+        self.appended = (image_path, recipe_data, pixel_preserving)
 
     def extract_image_metadata(self, path):
         return {}
@@ -85,6 +85,87 @@ async def test_save_recipe_video_bypasses_optimization(tmp_path):
     assert Path(result.payload["image_path"]).read_bytes() == video_bytes
     assert exif_utils.optimized_calls == 0, "Optimization should be bypassed for video"
     assert exif_utils.appended is None, "Metadata embedding should be bypassed for video"
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_skip_optimize_preserves_image_bytes(tmp_path):
+    """Local re-import sources are already-optimized recipe images; saving them
+    must keep the bytes verbatim instead of re-compressing, while the recipe
+    metadata block is still embedded via a pixel-preserving EXIF update."""
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root / "recipes")
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    image_bytes = b"\x89PNG-not-optimized-again"
+    result = await service.save_recipe(
+        recipe_scanner=scanner,
+        image_bytes=image_bytes,
+        image_base64=None,
+        name="Re-imported",
+        tags=[],
+        metadata={"gen_params": {"steps": 20}, "base_model": "SDXL", "loras": []},
+        extension=".webp",
+        skip_optimize=True,
+    )
+
+    assert result.payload["image_path"].endswith(".webp")
+    assert Path(result.payload["image_path"]).read_bytes() == image_bytes
+    assert exif_utils.optimized_calls == 0, "Optimization should be bypassed"
+    # Metadata is still embedded, but through the pixel-preserving path.
+    assert exif_utils.appended is not None
+    assert exif_utils.appended[2] is True
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_skip_optimize_default_optimizes(tmp_path):
+    """Normal saves must keep optimizing; only re-import opts out."""
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root / "recipes")
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    await service.save_recipe(
+        recipe_scanner=scanner,
+        image_bytes=b"raw-image",
+        image_base64=None,
+        name="Normal",
+        tags=[],
+        metadata={"gen_params": {"steps": 20}, "base_model": "SDXL", "loras": []},
+        extension=".webp",
+    )
+
+    assert exif_utils.optimized_calls == 1
+    assert exif_utils.appended is not None
+    assert exif_utils.appended[2] is False
 
 
 @pytest.mark.asyncio
@@ -1979,3 +2060,116 @@ async def test_mark_checkpoint_hash_invalid_can_clear_flag(tmp_path):
 
     assert result.payload["hash_invalid"] is False
     assert result.payload["updated_checkpoint"]["hashInvalid"] is False
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_ignore_recipe_metadata_strips_marker(tmp_path):
+    """Re-import must re-parse the original embedded metadata, not the
+    recipe JSON block appended on save."""
+    original = (
+        "masterpiece, best quality\n"
+        "Negative prompt: lowres\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 1, "
+        "Size: 512x768, Model hash: abc123, Model: foo_v1, Clip skip: 2\n"
+        ' Recipe metadata: {"title": "Saved", "loras": [], "gen_params": {}}'
+    )
+
+    class SpyFactory:
+        def __init__(self):
+            self.received = None
+
+        def create_parser(self, metadata):
+            self.received = metadata
+            return _AutomaticMetadataSpyParser()
+
+    class _AutomaticMetadataSpyParser:
+        async def parse_metadata(self, user_comment, recipe_scanner=None, civitai_client=None):
+            return {"loras": [], "base_model": "Illustrious", "gen_params": {"seed": 1}}
+
+    class DummyScanner:
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    image_path = tmp_path / "rec.webp"
+    image_path.write_bytes(b"fake-image")
+
+    factory = SpyFactory()
+    service = _make_analysis_service(factory, _exif_utils_returning(original))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path),
+        recipe_scanner=DummyScanner(),
+        ignore_recipe_metadata=True,
+    )
+
+    # The parser must receive the original A1111 text without the appended
+    # recipe metadata block, so it re-parses rather than reusing the snapshot.
+    assert factory.received is not None
+    assert "Recipe metadata:" not in factory.received
+    assert factory.received.startswith("masterpiece, best quality")
+    assert '{"title": "Saved"}' not in factory.received
+    assert result.payload["parser"] == "_AutomaticMetadataSpyParser"
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_ignore_recipe_metadata_only_marker(tmp_path):
+    """An image carrying only the recipe metadata block (no original embedded
+    metadata) cannot be re-imported; report it instead of reusing the block."""
+    original = 'Recipe metadata: {"title": "Saved", "loras": []}'
+
+    class NeverFactory:
+        def create_parser(self, metadata):
+            raise AssertionError("Parser must not run on stripped metadata")
+
+    image_path = tmp_path / "rec.webp"
+    image_path.write_bytes(b"fake-image")
+
+    service = _make_analysis_service(NeverFactory(), _exif_utils_returning(original))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path),
+        recipe_scanner=SimpleNamespace(),
+        ignore_recipe_metadata=True,
+    )
+
+    assert "error" in result.payload
+    assert result.payload["diagnostics"]["reason"] == "only_recipe_metadata"
+
+
+@pytest.mark.asyncio
+async def test_analyze_local_image_default_keeps_recipe_metadata_behavior(tmp_path):
+    """Normal import path keeps preferring the recipe metadata block."""
+    original = (
+        "Steps: 20, Sampler: DPM++ 2M Karras, Seed: 1\n"
+        ' Recipe metadata: {"title": "Saved", "loras": [], "gen_params": {}}'
+    )
+
+    class SpyFactory:
+        def __init__(self):
+            self.received = None
+
+        def create_parser(self, metadata):
+            self.received = metadata
+            return _AutomaticMetadataSpyParser()
+
+    class _AutomaticMetadataSpyParser:
+        async def parse_metadata(self, user_comment, recipe_scanner=None, civitai_client=None):
+            return {"loras": [], "base_model": "Illustrious", "gen_params": {"seed": 1}}
+
+    class DummyScanner:
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    image_path = tmp_path / "rec.webp"
+    image_path.write_bytes(b"fake-image")
+
+    factory = SpyFactory()
+    service = _make_analysis_service(factory, _exif_utils_returning(original))
+
+    result = await service.analyze_local_image(
+        file_path=str(image_path),
+        recipe_scanner=DummyScanner(),
+    )
+
+    assert factory.received == original
+    assert "Recipe metadata:" in factory.received

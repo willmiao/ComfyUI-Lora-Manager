@@ -65,6 +65,69 @@ def test_append_recipe_metadata_includes_checkpoint(monkeypatch, tmp_path):
     assert payload["base_model"] == "Illustrious"
 
 
+def test_append_recipe_metadata_pixel_preserving_webp(tmp_path):
+    """pixel_preserving=True must rewrite only the EXIF chunk of a WebP,
+    leaving the pixel chunks byte-identical and the old block replaced."""
+    img = Image.new("RGB", (64, 48), (120, 30, 200))
+    original_params = (
+        "masterpiece, best quality\n"
+        "Negative prompt: lowres\n"
+        "Steps: 20, Sampler: DPM++ 2M Karras, CFG scale: 7, Seed: 1, "
+        "Size: 512x768, Model hash: abc123, Model: foo_v1, Clip skip: 2\n"
+        ' Recipe metadata: {"title": "Old", "loras": []}'
+    )
+    exif = piexif.dump(
+        {
+            "0th": {},
+            "Exif": {
+                piexif.ExifIFD.UserComment: b"UNICODE\x00"
+                + original_params.encode("utf-16be")
+            },
+        }
+    )
+    image_path = tmp_path / "recipe.webp"
+    img.save(str(image_path), format="WEBP", exif=exif, quality=85)
+
+    with open(image_path, "rb") as fh:
+        before = fh.read()
+
+    new_recipe = {
+        "title": "New",
+        "base_model": "SDXL",
+        "loras": [],
+        "gen_params": {"steps": 25},
+    }
+    ExifUtils.append_recipe_metadata(
+        str(image_path), new_recipe, pixel_preserving=True
+    )
+
+    with open(image_path, "rb") as fh:
+        after = fh.read()
+
+    def chunks(data: bytes) -> Dict[bytes, bytes]:
+        pos, result = 12, {}
+        while pos + 8 <= len(data):
+            fourcc = data[pos : pos + 4]
+            size = int.from_bytes(data[pos + 4 : pos + 8], "little")
+            result[fourcc] = data[pos + 8 : pos + 8 + size]
+            pos += 8 + size + (size % 2)
+        return result
+
+    before_chunks = chunks(before)
+    after_chunks = chunks(after)
+    for fourcc, payload in before_chunks.items():
+        if fourcc == b"EXIF":
+            assert after_chunks[fourcc] != payload, "EXIF must be replaced"
+        else:
+            assert after_chunks[fourcc] == payload, f"{fourcc} was re-encoded"
+
+    # The appended block is updated; the original parameters stay in front.
+    metadata = ExifUtils.extract_image_metadata(str(image_path))
+    assert "Steps: 20" in metadata
+    assert 'Recipe metadata: {"title": "New"' in metadata
+    assert '"title": "Old"' not in metadata
+
+
 def test_optimize_image_preserves_workflow_when_converting_png_to_webp(tmp_path):
     image_path = tmp_path / "source.png"
     png_info = PngImagePlugin.PngInfo()

@@ -208,3 +208,24 @@ class RecipeFormatParser(RecipeMetadataParser):
         except Exception as e:
             logger.error(f"Error parsing recipe format metadata: {e}", exc_info=True)
             return {"error": str(e), "loras": []}
+
+
+def strip_recipe_metadata(metadata_text: str) -> str:
+    """Strip the ``Recipe metadata: {...}`` block appended by LoRA Manager.
+
+    The saved recipe image carries the original generation metadata followed
+    by an appended recipe JSON block (see ``ExifUtils.append_recipe_metadata``).
+    Re-import wants to re-parse the original embedded metadata, so this returns
+    only the text before the appended marker. The input is returned unchanged
+    when no marker is present.
+    """
+    if not metadata_text:
+        return metadata_text
+    match = re.search(
+        RecipeFormatParser.METADATA_MARKER,
+        metadata_text,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return metadata_text
+    return metadata_text[: match.start()].strip()

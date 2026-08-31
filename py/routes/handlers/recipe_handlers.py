@@ -1090,12 +1090,14 @@ class RecipeManagementHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def reimport_recipe(self, request: web.Request) -> web.Response:
-        """Delete a recipe and re-import it from its source URL.
+        """Delete a recipe and re-import it from its source.
 
-        This gives the recipe a fresh start — re-downloads the image from
-        CivitAI, re-parses EXIF metadata with the current parser, and
-        re-resolves LoRAs / checkpoint. User edits (title, tags, favorite)
-        are carried over from the old recipe.
+        Gives the recipe a fresh start: URL-sourced recipes re-download the
+        image from CivitAI; local ones re-parse the saved recipe image. Both
+        use the original embedded generation metadata (the appended recipe
+        metadata block is ignored) with the current parser, and re-resolve
+        LoRAs / checkpoint. User edits (title, tags, favorite) are carried
+        over from the old recipe.
         """
         try:
             await self._ensure_dependencies_ready()
@@ -1108,13 +1110,34 @@ class RecipeManagementHandler:
             if not old_recipe:
                 raise RecipeNotFoundError(f"Recipe {recipe_id} not found")
 
-            source_path = old_recipe.get("source_path")
-            if not source_path:
+            old_file_path = old_recipe.get("file_path", "")
+            old_folder = os.path.dirname(old_file_path) if old_file_path else None
+
+            source_path = old_recipe.get("source_path") or ""
+            image_id = extract_civitai_image_id(source_path) if source_path else None
+
+            # Local re-import sources: an explicit local source_path, or — when
+            # no source_path was recorded (drag & drop / file-picker imports) —
+            # the recipe's own saved image, which still carries the original
+            # embedded generation metadata next to the recipe metadata block.
+            local_source = None
+            if not image_id and source_path and os.path.isfile(source_path):
+                local_source = source_path
+            elif (
+                not image_id
+                and not source_path
+                and old_file_path
+                and os.path.isfile(old_file_path)
+            ):
+                local_source = old_file_path
+
+            if not image_id and not local_source:
                 return web.json_response(
                     {
                         "success": False,
                         "error": (
-                            "Recipe has no source URL — cannot re-import. "
+                            "Recipe has no re-importable source (no source URL "
+                            "and no accessible local image). "
                             "Use repair or manual import instead."
                         ),
                     },
@@ -1128,28 +1151,9 @@ class RecipeManagementHandler:
             if "tags" in user_edits and not isinstance(user_edits["tags"], list):
                 del user_edits["tags"]
 
-            old_file_path = old_recipe.get("file_path", "")
-            old_folder = os.path.dirname(old_file_path) if old_file_path else None
-
-            image_id = extract_civitai_image_id(source_path)
-            is_local_file = not image_id and os.path.isfile(source_path)
-
-            if not image_id and not is_local_file:
-                return web.json_response(
-                    {
-                        "success": False,
-                        "error": (
-                            "Recipe source is neither a valid CivitAI image URL "
-                            "nor an accessible local file. "
-                            "Use repair or manual import instead."
-                        ),
-                    },
-                    status=400,
-                )
-
-            if is_local_file:
+            if local_source:
                 return await self._do_reimport_from_local(
-                    source_path,
+                    local_source,
                     recipe_scanner,
                     recipe_id=recipe_id,
                     target_dir=old_folder,
@@ -2500,8 +2504,10 @@ class RecipeManagementHandler:
     ) -> web.Response:
         """Re-import a recipe from a local image file.
 
-        Reads the original source file, re-parses its EXIF metadata, saves a
-        fresh recipe, then deletes the old one.
+        Reads the original source file, re-parses its original embedded
+        generation metadata (the appended recipe metadata block is ignored so
+        the current parser gets a fresh pass), saves a new recipe, then deletes
+        the old one.
         """
         normalized = os.path.normpath(file_path)
         if not os.path.isfile(normalized):
@@ -2517,6 +2523,7 @@ class RecipeManagementHandler:
         analysis_result = await self._analysis_service.analyze_local_image(
             file_path=normalized,
             recipe_scanner=recipe_scanner,
+            ignore_recipe_metadata=True,
         )
         analysis_payload: dict[str, Any] = analysis_result.payload
 
@@ -2561,6 +2568,10 @@ class RecipeManagementHandler:
             metadata=metadata,
             extension=extension,
             target_dir=target_dir,
+            # The source is the recipe's own already-optimized preview image;
+            # store its bytes verbatim instead of re-compressing (which would
+            # only degrade quality) and skip the metadata re-append.
+            skip_optimize=True,
         )
 
         await self._persistence_service.delete_recipe(
