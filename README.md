@@ -10,6 +10,54 @@ A comprehensive toolset that streamlines organizing, downloading, and applying L
 
 ![Interface Preview](https://github.com/willmiao/ComfyUI-Lora-Manager/blob/main/static/images/screenshot.png)
 
+## 🚀 Quick Start
+
+### Requirements
+
+- Python 3.10+ (Windows / macOS / Linux)
+- Optional: a CivitAI API key for the download features (add it later in the settings page)
+
+### Standalone Edition (no ComfyUI required)
+
+```bash
+git clone https://github.com/shoomybln/ComfyUI-Lora-Manager.git
+cd ComfyUI-Lora-Manager
+pip install -r requirements.txt
+python standalone.py --port 8188
+```
+
+Then open **http://127.0.0.1:8188/loras** in your browser. On first start the manager creates a default `settings.json` — configure your model folders in the web UI, or edit the file directly:
+
+```json
+{
+  "use_portable_settings": true,
+  "folder_paths": {
+    "loras": ["/path/to/your/loras"],
+    "checkpoints": [],
+    "embeddings": []
+  }
+}
+```
+
+Notes:
+
+- `"use_portable_settings": true` keeps the configuration inside the repository folder instead of your user settings directory
+- Change the port with `python standalone.py --port 9001`
+- On Windows, the portable package also ships with a convenient `run.bat`
+
+### ComfyUI Plugin Mode
+
+1. Install via **ComfyUI Manager** (search for `lora-manager`) or clone this repository into `ComfyUI/custom_nodes/ComfyUI-Lora-Manager`
+2. Restart ComfyUI and click **Launch LoRA Manager** in the ComfyUI menu (or open `http://127.0.0.1:8188/loras`)
+
+## 🎨 Draw Things Integration (this fork)
+
+This fork adds first-class support for [Draw Things](https://drawthings.ai) model libraries:
+
+- Point the **LoRA root** at your Draw Things models folder (`~/Library/Containers/com.liuliu.draw-things/Data/Documents/Models`) — LoRAs stored as converted `<name>_lora_f16.ckpt` files are discovered alongside `.safetensors`
+- Checkpoint scanning supports Draw Things converted checkpoints as well
+- Metadata enrichment tries hash-based CivitAI lookup first and falls back to **name-based lookup** automatically — Draw Things' f16 conversion changes file hashes, so embedded model metadata cannot be used
+
 ## 📺 Tutorial: One-Click LoRA Integration
 Watch this quick tutorial to learn how to use the new one-click LoRA integration feature:
 
