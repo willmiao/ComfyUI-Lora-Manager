@@ -257,4 +257,58 @@ describe('Showcase gallery', () => {
 
     vi.unstubAllGlobals();
   });
+
+  it('prefetches one extra example ahead along the navigation direction', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    const prefetched = [];
+    class MockImage {
+      set src(value) { prefetched.push(value); }
+      set fetchPriority(_value) { /* jsdom lacks fetchPriority */ }
+    }
+    vi.stubGlobal('Image', MockImage);
+
+    // Unique URLs: the module-level prefetch dedup set persists across tests
+    const images = [0, 1, 2, 3, 4].map(i => ({
+      url: `https://image.civitai.com/pd/${i}.jpeg`, width: 100, height: 100, nsfwLevel: 0,
+    }));
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(images, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+
+    // Pin position, then step forward: prefetch reaches +2 ahead (index 3)
+    updateMainDisplay(0);
+    updateMainDisplay(1);
+    expect(prefetched).toContain('https://image.civitai.com/pd/2.jpeg');
+    expect(prefetched).toContain('https://image.civitai.com/pd/3.jpeg');
+
+    // Step backward: prefetch reaches -2 ahead (index 4 wrapping around)
+    updateMainDisplay(0);
+    expect(prefetched).toContain('https://image.civitai.com/pd/4.jpeg');
+
+    vi.unstubAllGlobals();
+  });
+
+  it('defers video thumbnail metadata fetches until the strip shows them', async () => {
+    const { renderShowcaseContent, initShowcaseContent } = await import(SHOWCASE_MODULE);
+
+    const images = [
+      { url: 'https://image.civitai.com/lv/fff.jpeg', width: 100, height: 100, nsfwLevel: 0 },
+      { url: 'https://image.civitai.com/lv/ggg.mp4', width: 100, height: 100, nsfwLevel: 0 },
+    ];
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(images, [], PREVIEW_URL, true)}</div>`;
+
+    const video = document.querySelector('.gallery-strip video');
+    expect(video?.getAttribute('preload')).toBe('none');
+    expect(video?.hasAttribute('data-lazy-video')).toBe(true);
+
+    // jsdom's HTMLMediaElement.load() is a not-implemented stub that logs
+    const loadSpy = vi.spyOn(HTMLMediaElement.prototype, 'load').mockImplementation(() => {});
+
+    // jsdom has no IntersectionObserver → fallback enables everything at once
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    expect(video.preload).toBe('metadata');
+    expect(video.hasAttribute('data-lazy-video')).toBe(false);
+    expect(loadSpy).toHaveBeenCalled();
+    loadSpy.mockRestore();
+  });
 });

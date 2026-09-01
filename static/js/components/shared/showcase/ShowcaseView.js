@@ -284,7 +284,7 @@ function renderThumbnail(img, index, exampleFiles) {
     const activeClass = index === galleryState.activeIndex ? ' active' : '';
     const blurClass = shouldBlur ? ' blurred' : '';
     const mediaHtml = isVideo ?
-        `<video class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" muted playsinline preload="metadata"></video>
+        `<video class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" muted playsinline preload="none" data-lazy-video></video>
          <i class="fas fa-play thumb-video-badge"></i>` :
         `<img class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" loading="lazy" fetchpriority="low" alt="">`;
     const nsfwBadge = shouldBlur ? '<i class="fas fa-eye-slash thumb-nsfw-badge"></i>' : '';
@@ -442,18 +442,24 @@ function findLocalFile(img, index, exampleFiles) {
 // never issue duplicate prefetch requests
 const prefetchedUrls = new Set();
 
+// Direction of the last main-viewer navigation (+1 next / -1 prev); users
+// tend to keep clicking the same arrow, so prefetch reaches one further
+// ahead along it. Defaults to forward (Next is the most common navigation)
+let lastNavDirection = 1;
+
 /**
- * Warm the HTTP cache for the examples most likely to be shown next (the
- * indices adjacent to the active one), so prev/next navigation feels instant.
- * Images only: video payloads are too heavy for speculative prefetch, and
- * locally stored examples need no network fetch at all.
+ * Warm the HTTP cache for the examples most likely to be shown next: both
+ * indices adjacent to the active one, plus one extra ahead along the last
+ * navigation direction, so prev/next navigation feels instant. Images only:
+ * video payloads are too heavy for speculative prefetch, and locally stored
+ * examples need no network fetch at all.
  */
 function prefetchAdjacentMedia() {
     const { images, exampleFiles, activeIndex, expanded } = galleryState;
     if (!expanded || images.length < 2) return;
 
-    [activeIndex + 1, activeIndex - 1].forEach(i => {
-        const index = ((i % images.length) + images.length) % images.length;
+    [1, -1, lastNavDirection * 2].forEach(offset => {
+        const index = ((activeIndex + offset) % images.length + images.length) % images.length;
         const img = images[index];
         if (!img?.url || findLocalFile(img, index, exampleFiles)) return;
 
@@ -479,6 +485,11 @@ function prefetchAdjacentMedia() {
 export function updateMainDisplay(index) {
     const count = galleryState.images.length;
     if (!count || !galleryState.expanded) return;
+
+    // Remember the navigation direction for direction-aware prefetching
+    // (a raw index of -1 / count means wrap-around prev / next)
+    const delta = index - galleryState.activeIndex;
+    if (delta !== 0) lastNavDirection = delta > 0 ? 1 : -1;
 
     galleryState.activeIndex = ((index % count) + count) % count;
 
@@ -660,6 +671,40 @@ function setupScrollToExpand(gallery) {
 }
 
 /**
+ * Defer metadata fetches for video thumbnails until they scroll into view:
+ * with preload="metadata" on every strip video, expanding the gallery would
+ * otherwise hit the network for all of them at once
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+function initStripVideoLazyLoading(gallery) {
+    const videos = gallery.querySelectorAll('.gallery-strip video[data-lazy-video]');
+    if (!videos.length) return;
+
+    const enable = (video) => {
+        video.preload = 'metadata';
+        video.load();
+        video.removeAttribute('data-lazy-video');
+    };
+
+    if (typeof IntersectionObserver === 'undefined') {
+        videos.forEach(enable);
+        return;
+    }
+
+    // No explicit root: intersection accounts for the strip's overflow
+    // clipping, so off-screen thumbnails stay at preload="none"
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                enable(entry.target);
+                observer.unobserve(entry.target);
+            }
+        });
+    });
+    videos.forEach(video => observer.observe(video));
+}
+
+/**
  * Initialize all gallery interactions
  * @param {HTMLElement} gallery - The .showcase-gallery element
  */
@@ -721,6 +766,8 @@ export function initShowcaseContent(gallery) {
         // Gallery just (re)rendered expanded: warm the cache for the
         // examples adjacent to the active one
         prefetchAdjacentMedia();
+        // Video thumbnails start at preload="none"; enable them on visibility
+        initStripVideoLazyLoading(gallery);
     }
 
     // Reposition controls on window resize
