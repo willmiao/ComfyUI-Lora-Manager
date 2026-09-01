@@ -868,6 +868,21 @@
             "previousWithShortcut": "המתכון הקודם (←)",
             "nextWithShortcut": "המתכון הבא (→)"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "פתח מיקום קובץ",
+                "copyId": "העתק מזהה מתכון"
+            },
+            "openFileLocation": {
+                "success": "מיקום הקובץ נפתח בהצלחה",
+                "failed": "פתיחת מיקום הקובץ נכשלה",
+                "copied": "הנתיב הועתק ללוח העריכה: {{path}}",
+                "clipboardFallback": "נתיב: {{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "שלח workflow ל-ComfyUI",
             "sent": "ה-workflow נשלח ל-ComfyUI",

@@ -868,6 +868,21 @@
             "previousWithShortcut": "Receta anterior (←)",
             "nextWithShortcut": "Siguiente receta (→)"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "Abrir ubicación del archivo",
+                "copyId": "Copiar ID de la receta"
+            },
+            "openFileLocation": {
+                "success": "Ubicación del archivo abierta exitosamente",
+                "failed": "Error al abrir la ubicación del archivo",
+                "copied": "Ruta copiada al portapapeles: {{path}}",
+                "clipboardFallback": "Ruta: {{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "Enviar workflow a ComfyUI",
             "sent": "Workflow enviado a ComfyUI",

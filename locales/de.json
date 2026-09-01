@@ -868,6 +868,21 @@
             "previousWithShortcut": "Vorheriges Rezept (←)",
             "nextWithShortcut": "Nächstes Rezept (→)"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "Dateispeicherort öffnen",
+                "copyId": "Rezept-ID kopieren"
+            },
+            "openFileLocation": {
+                "success": "Dateispeicherort erfolgreich geöffnet",
+                "failed": "Fehler beim Öffnen des Dateispeicherorts",
+                "copied": "Pfad in die Zwischenablage kopiert: {{path}}",
+                "clipboardFallback": "Pfad: {{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "Workflow an ComfyUI senden",
             "sent": "Workflow an ComfyUI gesendet",

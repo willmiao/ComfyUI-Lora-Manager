@@ -868,6 +868,21 @@
             "previousWithShortcut": "上一个配方（←）",
             "nextWithShortcut": "下一个配方（→）"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "打开文件位置",
+                "copyId": "复制配方 ID"
+            },
+            "openFileLocation": {
+                "success": "文件位置已成功打开",
+                "failed": "打开文件位置失败",
+                "copied": "路径已复制到剪贴板：{{path}}",
+                "clipboardFallback": "路径：{{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "发送工作流到 ComfyUI",
             "sent": "工作流已发送到 ComfyUI",

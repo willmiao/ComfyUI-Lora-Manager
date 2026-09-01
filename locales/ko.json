@@ -868,6 +868,21 @@
             "previousWithShortcut": "이전 레시피(←)",
             "nextWithShortcut": "다음 레시피(→)"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "파일 위치 열기",
+                "copyId": "레시피 ID 복사"
+            },
+            "openFileLocation": {
+                "success": "파일 위치가 성공적으로 열렸습니다",
+                "failed": "파일 위치 열기에 실패했습니다",
+                "copied": "경로가 클립보드에 복사되었습니다: {{path}}",
+                "clipboardFallback": "경로: {{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "워크플로를 ComfyUI로 보내기",
             "sent": "워크플로를 ComfyUI로 보냈습니다",

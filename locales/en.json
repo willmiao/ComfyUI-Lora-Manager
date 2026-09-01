@@ -868,6 +868,21 @@
       "previousWithShortcut": "Previous recipe (←)",
       "nextWithShortcut": "Next recipe (→)"
     },
+    "modal": {
+      "metadata": {
+        "id": "ID"
+      },
+      "actions": {
+        "openFileLocation": "Open File Location",
+        "copyId": "Copy recipe ID"
+      },
+      "openFileLocation": {
+        "success": "File location opened successfully",
+        "failed": "Failed to open file location",
+        "copied": "Path copied to clipboard: {{path}}",
+        "clipboardFallback": "Path: {{path}}"
+      }
+    },
     "workflow": {
       "sendWorkflow": "Send Workflow to ComfyUI",
       "sent": "Workflow sent to ComfyUI",

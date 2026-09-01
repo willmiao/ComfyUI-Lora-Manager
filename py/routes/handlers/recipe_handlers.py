@@ -353,6 +353,17 @@ class RecipeListingHandler:
 
             if not recipe:
                 return web.json_response({"error": "Recipe not found"}, status=404)
+
+            # Expose the on-disk recipe JSON path so the modal can offer
+            # "open file location" without guessing the storage layout.
+            recipe = dict(recipe)
+            try:
+                json_path = await recipe_scanner.get_recipe_json_path(recipe_id)
+            except Exception:  # pragma: no cover - details must still load
+                json_path = None
+            if json_path:
+                recipe["recipe_json_path"] = json_path
+
             return web.json_response(recipe)
         except Exception as exc:
             self._logger.error(

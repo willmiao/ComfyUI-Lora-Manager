@@ -2246,3 +2246,31 @@ async def test_reimport_without_any_source_returns_400(
         assert payload["success"] is False
         assert harness.analysis.local_calls == []
         assert harness.persistence.delete_calls == []
+
+
+async def test_get_recipe_detail_includes_recipe_json_path(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """The detail response exposes the recipe JSON path for open-location UI."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipes_dir = Path(harness.scanner.recipes_dir)
+        recipes_dir.mkdir(parents=True, exist_ok=True)
+        harness.scanner.recipes["recipe-1"] = {
+            "id": "recipe-1",
+            "title": "Demo",
+            "file_path": str(recipes_dir / "recipe-1.png"),
+        }
+        json_file = recipes_dir / "recipe-1.recipe.json"
+        json_file.write_text("{}", encoding="utf-8")
+
+        response = await harness.client.get("/api/lm/recipe/recipe-1")
+        assert response.status == 200
+        payload = await response.json()
+        assert payload["recipe_json_path"] == str(json_file)
+
+        # Without the JSON file on disk the key is omitted entirely.
+        json_file.unlink()
+        response = await harness.client.get("/api/lm/recipe/recipe-1")
+        assert response.status == 200
+        payload = await response.json()
+        assert "recipe_json_path" not in payload

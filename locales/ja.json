@@ -868,6 +868,21 @@
             "previousWithShortcut": "前のレシピ（←）",
             "nextWithShortcut": "次のレシピ（→）"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "ファイルの場所を開く",
+                "copyId": "レシピIDをコピー"
+            },
+            "openFileLocation": {
+                "success": "ファイルの場所を正常に開きました",
+                "failed": "ファイルの場所を開くのに失敗しました",
+                "copied": "パスをクリップボードにコピーしました: {{path}}",
+                "clipboardFallback": "パス: {{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "ワークフローをComfyUIへ送信",
             "sent": "ワークフローをComfyUIへ送信しました",

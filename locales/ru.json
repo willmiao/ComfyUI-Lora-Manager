@@ -868,6 +868,21 @@
             "previousWithShortcut": "Предыдущий рецепт (←)",
             "nextWithShortcut": "Следующий рецепт (→)"
         },
+        "modal": {
+            "metadata": {
+                "id": "ID"
+            },
+            "actions": {
+                "openFileLocation": "Открыть расположение файла",
+                "copyId": "Копировать ID рецепта"
+            },
+            "openFileLocation": {
+                "success": "Расположение файла успешно открыто",
+                "failed": "Не удалось открыть расположение файла",
+                "copied": "Путь скопирован в буфер обмена: {{path}}",
+                "clipboardFallback": "Путь: {{path}}"
+            }
+        },
         "workflow": {
             "sendWorkflow": "Отправить workflow в ComfyUI",
             "sent": "Workflow отправлен в ComfyUI",

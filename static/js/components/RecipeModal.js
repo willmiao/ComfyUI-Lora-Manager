@@ -10,7 +10,7 @@ import { downloadManager } from '../managers/DownloadManager.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { openMediaViewer } from './shared/MediaViewer.js';
 import { showRecipeDeleteConfirmation } from './RecipeCard.js';
-import { renderCompactTags, setupTagTooltip } from './shared/utils.js';
+import { renderCompactTags, setupTagTooltip, escapeAttribute } from './shared/utils.js';
 import { setupTagEditMode } from './shared/ModelTags.js';
 import { Combobox } from './Combobox.js';
 
@@ -64,6 +64,39 @@ function escapeHtml(value) {
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
+}
+
+/**
+ * Call backend to open the recipe's file location and select the file.
+ * Mirrors the model modal's openFileLocation, including the Docker
+ * clipboard fallback.
+ * @param {string} filePath
+ */
+async function openRecipeFileLocation(filePath) {
+    try {
+        const resp = await fetch('/api/lm/open-file-location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 'file_path': filePath })
+        });
+        if (!resp.ok) throw new Error('Failed to open file location');
+
+        const data = await resp.json();
+
+        if (data.mode === 'clipboard' && data.path) {
+            try {
+                await navigator.clipboard.writeText(data.path);
+                showToast('recipes.modal.openFileLocation.copied', { path: data.path }, 'success');
+            } catch (clipboardErr) {
+                console.warn('Clipboard API not available:', clipboardErr);
+                showToast('recipes.modal.openFileLocation.clipboardFallback', { path: data.path }, 'info');
+            }
+        } else {
+            showToast('recipes.modal.openFileLocation.success', {}, 'success');
+        }
+    } catch (err) {
+        showToast('recipes.modal.openFileLocation.failed', {}, 'error');
+    }
 }
 
 // Fallback English strings for the collapsed "Why no LoRAs?" panel.
@@ -421,6 +454,7 @@ class RecipeModal {
         this.syncGenerationParams(hydratedRecipe.gen_params);
         this.syncResourcesSection(hydratedRecipe);
         this.syncHeaderActions();
+        this.syncMetaFooter();
 
         // Show the modal
         modalManager.showModal('recipeModal', null, null, () => this.cleanupNavigationShortcuts());
@@ -443,6 +477,79 @@ class RecipeModal {
                 hydrationRequestId,
                 requestEditVersions
             );
+        }
+    }
+
+    /**
+     * Render the meta footer: clickable file location (opens the recipe JSON
+     * in the OS file manager) plus the truncated recipe ID with copy button.
+     * De-emphasized by design, mirroring the model modal's hash footnote.
+     */
+    syncMetaFooter() {
+        const footer = document.getElementById('recipeMetaFooter');
+        if (!footer) {
+            return;
+        }
+
+        const recipeId = this.currentRecipe?.id || '';
+        const filePath = this.currentRecipe?.file_path || '';
+        const openTarget = this.currentRecipe?.recipe_json_path || filePath;
+        const folderPath = filePath.replace(/[^/\\]+$/, '');
+
+        if (!recipeId && !folderPath) {
+            footer.hidden = true;
+            footer.innerHTML = '';
+            return;
+        }
+
+        const truncatedId = recipeId.length > 14
+            ? `${recipeId.slice(0, 8)}…${recipeId.slice(-4)}`
+            : recipeId;
+        const openLocationLabel = translate('recipes.modal.actions.openFileLocation', {}, 'Open File Location');
+        const copyIdLabel = translate('recipes.modal.actions.copyId', {}, 'Copy recipe ID');
+
+        const locationMarkup = folderPath ? `
+            <span class="recipe-meta-location" role="button" tabindex="0"
+                title="${escapeAttribute(folderPath)}"
+                aria-label="${escapeAttribute(openLocationLabel)}"
+                data-filepath="${escapeAttribute(openTarget)}">
+                <i class="fas fa-folder-open" aria-hidden="true"></i>
+                <span class="recipe-meta-location-path">${escapeHtml(folderPath)}</span>
+            </span>` : '';
+
+        const idMarkup = recipeId ? `
+            <span class="recipe-meta-id">
+                <span class="recipe-meta-id-label">${translate('recipes.modal.metadata.id', {}, 'ID')}</span>
+                <span class="recipe-meta-id-value" title="${escapeAttribute(recipeId)}">${escapeHtml(truncatedId)}</span>
+                <button class="recipe-meta-copy-btn" title="${escapeAttribute(copyIdLabel)}" aria-label="${escapeAttribute(copyIdLabel)}">
+                    <i class="fas fa-copy" aria-hidden="true"></i>
+                </button>
+            </span>` : '';
+
+        footer.innerHTML = locationMarkup + idMarkup;
+        footer.hidden = false;
+
+        const locationEl = footer.querySelector('.recipe-meta-location');
+        if (locationEl) {
+            const openLocation = () => {
+                if (locationEl.dataset.filepath) {
+                    openRecipeFileLocation(locationEl.dataset.filepath);
+                }
+            };
+            locationEl.addEventListener('click', openLocation);
+            locationEl.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openLocation();
+                }
+            });
+        }
+
+        const copyBtn = footer.querySelector('.recipe-meta-copy-btn');
+        if (copyBtn && recipeId) {
+            copyBtn.addEventListener('click', () => {
+                copyToClipboard(recipeId);
+            });
         }
     }
 
@@ -470,6 +577,9 @@ class RecipeModal {
             const previousFilePath = nextRecipe.file_path;
             if (fullRecipe.file_path !== undefined) {
                 nextRecipe.file_path = fullRecipe.file_path;
+            }
+            if (fullRecipe.recipe_json_path !== undefined) {
+                nextRecipe.recipe_json_path = fullRecipe.recipe_json_path;
             }
             if (fullRecipe.file_url !== undefined) {
                 nextRecipe.file_url = fullRecipe.file_url;
@@ -568,6 +678,7 @@ class RecipeModal {
             this.updateSourceUrlDisplay(this.currentRecipe.source_path || '');
         }
         this.syncHeaderActions();
+        this.syncMetaFooter();
     }
 
     getPreviewMediaUrl(recipe = {}) {
