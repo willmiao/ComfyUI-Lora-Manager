@@ -789,3 +789,32 @@ async def test_get_creator_model_count_never_raises(downloader):
 
     client = await CivitaiClient.get_instance()
     assert await client.get_creator_model_count("pixel") is None
+
+
+@pytest.mark.parametrize(
+    "placeholder_hash",
+    [
+        "e3b0c44298",  # AutoV2 (10 chars)
+        "e3b0c44298fc",  # AutoV3 (12 chars)
+        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",  # full SHA256
+    ],
+)
+async def test_get_model_by_hash_rejects_empty_placeholder_without_request(downloader, placeholder_hash):
+    """The empty-hash placeholder must never be resolved via the by-hash API:
+    CivitAI's index can contain polluted entries for it (e.g. a broken SD 1.5
+    LoRA whose AutoV3 equals the placeholder)."""
+    requested = []
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        requested.append(url)
+        return True, {}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_hash(placeholder_hash)
+
+    assert result is None
+    assert error == "Model not found"
+    assert requested == []

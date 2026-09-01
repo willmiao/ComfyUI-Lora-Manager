@@ -503,3 +503,64 @@ async def test_parse_metadata_extracts_checkpoint_from_model_hash(monkeypatch):
     assert result["model"] == checkpoint
     assert result["base_model"] == "flux"
     assert result["loras"] == []
+
+
+@pytest.mark.asyncio
+async def test_parse_metadata_keeps_empty_placeholder_hash_lora_unresolved(monkeypatch):
+    """A LoRA hash equal to the SHA256("") placeholder must never be resolved
+    against CivitAI or the local hash index, but the LoRA item itself must be
+    kept: matched by filename locally when present, otherwise kept as an
+    unresolved entry (no hash) instead of being dropped."""
+    queried_hashes = []
+
+    async def fake_metadata_provider():
+        class Provider:
+            async def get_model_by_hash(self, model_hash):
+                queried_hashes.append(model_hash)
+                return None, "Model not found"
+
+            async def get_model_version_info(self, version_id):
+                raise AssertionError("get_model_version_info should not be called")
+
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.parsers.automatic.get_default_metadata_provider",
+        fake_metadata_provider,
+    )
+
+    parser = AutomaticMetadataParser()
+    metadata_text = (
+        "photo of a DeLorean DMC12, <lora:dmc12bttf:1.2>, at night\n"
+        "Steps: 20, Sampler: Euler, CFG scale: 1, Seed: 2242760352, Size: 1280x720, "
+        "Model: flux1-dev, Model hash: 3f97fdc57a, "
+        'Lora hashes: "dmc12bttf: e3b0c44298fc"'
+    )
+
+    # Local file with the same name: the item is matched by filename.
+    scanner_with_local = LocalRecipeScanner({"dmc12bttf": local_lora("dmc12bttf")})
+    result = await parser.parse_metadata(metadata_text, recipe_scanner=scanner_with_local)
+
+    assert "e3b0c44298fc" not in queried_hashes
+    assert "e3b0c44298" not in queried_hashes
+    assert scanner_with_local.hash_queries == []
+    assert scanner_with_local.queries == ["dmc12bttf"]
+    assert len(result["loras"]) == 1
+    assert result["loras"][0]["file_name"] == "dmc12bttf"
+    assert result["loras"][0]["weight"] == 1.2
+    assert result["loras"][0]["existsLocally"] is True
+    assert result["loras"][0]["isDeleted"] is False
+
+    # No local file: the item is kept as unresolved (empty hash, flagged
+    # hashInvalid so the UI renders the unresolvable-hash badge).
+    scanner_without_local = LocalRecipeScanner({})
+    result = await parser.parse_metadata(metadata_text, recipe_scanner=scanner_without_local)
+
+    assert len(result["loras"]) == 1
+    lora = result["loras"][0]
+    assert lora["file_name"] == "dmc12bttf"
+    assert lora["weight"] == 1.2
+    assert lora["hash"] == ""
+    assert lora["hashInvalid"] is True
+    assert lora["existsLocally"] is False
+    assert lora["isDeleted"] is False

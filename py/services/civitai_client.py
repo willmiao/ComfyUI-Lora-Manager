@@ -21,7 +21,7 @@ from .model_metadata_provider import (
 from .downloader import get_downloader
 from .errors import RateLimitError, ResourceNotFoundError
 from ..utils.civitai_utils import resolve_license_payload
-from ..utils.constants import MODEL_WEIGHT_FILE_TYPES
+from ..utils.constants import MODEL_WEIGHT_FILE_TYPES, is_empty_placeholder_hash
 
 logger = logging.getLogger(__name__)
 
@@ -180,6 +180,11 @@ class CivitaiClient:
     async def get_model_by_hash(
         self, model_hash: str
     ) -> Tuple[Optional[Dict[str, Any]], Optional[str]]:
+        if is_empty_placeholder_hash(model_hash):
+            # The empty-hash placeholder (SHA256 of an empty byte string)
+            # matches no real file; CivitAI's by-hash index can contain
+            # polluted entries for it, so never resolve it.
+            return None, "Model not found"
         try:
             success, version = await self._make_request(
                 "GET",
@@ -502,6 +507,8 @@ class CivitaiClient:
 
     async def _fetch_version_by_hash(self, model_hash: Optional[str]) -> Optional[Dict[str, Any]]:
         if not model_hash:
+            return None
+        if is_empty_placeholder_hash(model_hash):
             return None
 
         success, version = await self._make_request(

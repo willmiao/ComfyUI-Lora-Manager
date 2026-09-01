@@ -1,5 +1,6 @@
 import pytest
 from py.services.model_hash_index import ModelHashIndex
+from py.utils.constants import EMPTY_HASH_SHA256
 
 
 class TestModelHashIndexRemoveByPath:
@@ -253,3 +254,38 @@ class TestModelHashIndexAutov3:
         assert index.has_hash("abcdef123456") is False
         assert index.get_path("fedcba654321") == "/models/ckpt.safetensors"
         assert index.get_all_autov3() == {"fedcba654321": "/models/ckpt.safetensors"}
+
+
+class TestModelHashIndexEmptyPlaceholder:
+    def test_add_autov3_rejects_empty_placeholder(self):
+        index = ModelHashIndex()
+        index.add_autov3("e3b0c44298fc", "/models/lora.safetensors")
+        assert "e3b0c44298fc" not in index.get_all_autov3()
+
+    def test_add_entry_rejects_empty_placeholder_autov3(self):
+        index = ModelHashIndex()
+        index.add_entry("abc123", "/models/lora.safetensors", autov3="e3b0c44298fc")
+        assert "e3b0c44298fc" not in index.get_all_autov3()
+
+    def test_has_hash_false_for_placeholder(self):
+        index = ModelHashIndex()
+        index.add_entry("abc123", "/models/lora.safetensors")
+        assert not index.has_hash("e3b0c44298")
+        assert not index.has_hash("e3b0c44298fc")
+        assert not index.has_hash(EMPTY_HASH_SHA256)
+
+    def test_get_path_none_for_placeholder(self):
+        index = ModelHashIndex()
+        index.add_entry("abc123", "/models/lora.safetensors")
+        assert index.get_path("e3b0c44298") is None
+        assert index.get_path("e3b0c44298fc") is None
+        assert index.get_path(EMPTY_HASH_SHA256) is None
+
+    def test_placeholder_autov3_does_not_clobber_existing_mapping(self):
+        # Registering a path with a placeholder autov3 must not replace or
+        # clear autov3 mappings already registered for other paths.
+        index = ModelHashIndex()
+        index.add_entry("a" * 64, "/models/real.safetensors", autov3="abcdef123456")
+        index.add_entry("b" * 64, "/models/other.safetensors", autov3="e3b0c44298fc")
+        assert index.get_path("abcdef123456") == "/models/real.safetensors"
+        assert index.get_all_autov3() == {"abcdef123456": "/models/real.safetensors"}

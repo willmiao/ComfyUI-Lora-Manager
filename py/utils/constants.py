@@ -1,3 +1,5 @@
+from typing import Any
+
 NSFW_LEVELS = {
     "PG": 1,
     "PG13": 2,
@@ -99,11 +101,30 @@ DEFAULT_HASH_CHUNK_SIZE_MB = 4
 # absurd 64-bit header length from forcing a multi-GB allocation during scan.
 MAX_SAFETENSORS_HEADER_BYTES = 64 * 1024 * 1024
 
-# First 12 chars of the SHA256 of an empty byte string. Some (re-packaging)
-# training tools write this placeholder into safetensors metadata instead of a
-# real hash; it must never be treated as a valid AutoV3 — several broken
-# models sharing it would collide in the hash index and falsely match recipes.
-INVALID_AUTOV3_EMPTY_HASH = "e3b0c44298fc"
+# SHA256 of an empty byte string. Some (re-packaging) training tools write a
+# truncated form of this placeholder into safetensors metadata (as
+# ``modelspec.hash_sha256`` / ``sshs_model_hash``), and hashing an empty or
+# unreadable file produces it directly. It must never be treated as a valid
+# hash: several broken models share it, CivitAI's by-hash index can contain
+# such polluted entries, and matching it falsely attributes recipes.
+EMPTY_HASH_SHA256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+INVALID_AUTOV3_EMPTY_HASH = EMPTY_HASH_SHA256[:12]
+INVALID_AUTOV2_EMPTY_HASH = EMPTY_HASH_SHA256[:10]
+
+
+def is_empty_placeholder_hash(value: Any) -> bool:
+    """True for a 10/12/64-hex-char spelling of the empty-hash placeholder.
+
+    These are the AutoV2, AutoV3 and full-SHA256 forms of the placeholder;
+    such values identify no real model and must never be resolved against
+    local files or CivitAI.
+    """
+    if not isinstance(value, str):
+        return False
+    v = value.strip().lower()
+    if len(v) not in (10, 12, 64):
+        return False
+    return v == EMPTY_HASH_SHA256[: len(v)]
 
 # Auto-organize settings
 AUTO_ORGANIZE_BATCH_SIZE = (
