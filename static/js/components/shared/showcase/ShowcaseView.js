@@ -22,7 +22,7 @@ import {
 } from './MediaUtils.js';
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
-import { getShowcaseUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
+import { getShowcaseUrl, getDisplayUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
 import { openMediaViewer } from '../MediaViewer.js';
 import { escapeAttribute } from '../utils.js';
 
@@ -311,8 +311,9 @@ function renderMediaItem(img, index, exampleFiles) {
                   originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
     const mediaType = isVideo ? 'video' : 'image';
 
-    // Optimize CivitAI URLs for showcase display (full quality)
-    const remoteUrl = getShowcaseUrl(originalRemoteUrl, mediaType);
+    // Optimize CivitAI URLs for in-modal display (images capped at width=2400;
+    // the full-size media viewer uses getShowcaseUrl separately)
+    const remoteUrl = getDisplayUrl(originalRemoteUrl, mediaType);
 
     const localUrl = localFile ? localFile.path : '';
 
@@ -466,7 +467,9 @@ function prefetchAdjacentMedia() {
         const isVideo = img.url.endsWith('.mp4') || img.url.endsWith('.webm');
         if (isVideo) return;
 
-        const url = getShowcaseUrl(img.url, 'image');
+        // Must match the main viewer's URL (display mode) or the warmed
+        // cache entry is never used
+        const url = getDisplayUrl(img.url, 'image');
         if (prefetchedUrls.has(url)) return;
         prefetchedUrls.add(url);
 
