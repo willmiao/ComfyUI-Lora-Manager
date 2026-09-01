@@ -288,6 +288,35 @@ describe('Showcase gallery', () => {
     vi.unstubAllGlobals();
   });
 
+  it('resets the gallery position when a new model is loaded', async () => {
+    const { renderShowcaseContent, loadExampleImages, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    // Model A: expand and navigate to the third example
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    updateMainDisplay(2);
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('2');
+
+    // Model B opens: loadExampleImages is the per-model entry point
+    const modelBImages = [0, 1, 2, 3].map(i => ({
+      url: `https://image.civitai.com/reset/${i}.jpeg`, width: 100, height: 100, nsfwLevel: 0,
+    }));
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      json: () => Promise.resolve({ success: true, files: [] }),
+    }));
+    await loadExampleImages(modelBImages, 'model-b-hash', '');
+    vi.unstubAllGlobals();
+
+    // The leaked index (2) must not carry over: model B starts at example 1
+    const gallery = document.querySelector('.showcase-gallery');
+    expect(gallery).toBeTruthy();
+    expect(document.querySelector('.gallery-indicator-bar')).toBeTruthy();
+    // Expand model B's gallery: it renders from index 0, not the leaked 2
+    // (loadExampleImages already bound the controls via initShowcaseContent)
+    document.querySelector('#galleryShowBtn').click();
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+    expect(document.querySelector('#galleryPosition')?.textContent).toBe('1 / 4');
+  });
+
   it('defers video thumbnail metadata fetches until the strip shows them', async () => {
     const { renderShowcaseContent, initShowcaseContent } = await import(SHOWCASE_MODULE);
 

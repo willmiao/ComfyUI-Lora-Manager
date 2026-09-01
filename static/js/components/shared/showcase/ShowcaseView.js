@@ -54,6 +54,13 @@ export async function loadExampleImages(images, modelHash, previewUrl = '') {
         const showcaseTab = document.getElementById('showcase-tab');
         if (!showcaseTab) return;
 
+        // Fresh load of a model's examples: reset the gallery position so a
+        // previously viewed model's active index / expansion state never leaks
+        // into this one (the modal is a singleton, state is module-level)
+        galleryState.activeIndex = 0;
+        galleryState.expanded = false;
+        lastNavDirection = 1;
+
         // First fetch local example files
         let localFiles = [];
 
