@@ -9,6 +9,7 @@ import {
     getOptimizedUrl,
     getShowcaseUrl,
     getThumbnailUrl,
+    getGalleryThumbnailUrl,
     extractCivitaiImageId,
     extractCivitaiModelUrlParts,
     classifyModelRelinkUrl,
@@ -22,6 +23,7 @@ describe('civitaiUtils', () => {
         it('should have correct mode values', () => {
             expect(OptimizationMode.SHOWCASE).toBe('showcase');
             expect(OptimizationMode.THUMBNAIL).toBe('thumbnail');
+            expect(OptimizationMode.GALLERY_THUMBNAIL).toBe('gallery-thumbnail');
         });
     });
 
@@ -105,6 +107,22 @@ describe('civitaiUtils', () => {
 
             expect(wasRewritten).toBe(true);
             expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=450,optimized=true/12345.jpeg');
+        });
+
+        it('should rewrite image URLs with /original=true for gallery-thumbnail mode (width=160)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'image', OptimizationMode.GALLERY_THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=160,optimized=true/12345.jpeg');
+        });
+
+        it('should rewrite video URLs with /original=true for gallery-thumbnail mode', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const [rewritten, wasRewritten] = rewriteCivitaiUrl(originalUrl, 'video', OptimizationMode.GALLERY_THUMBNAIL);
+
+            expect(wasRewritten).toBe(true);
+            expect(rewritten).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=160,optimized=true/12345.mp4');
         });
 
         it('should not rewrite URLs without /original=true', () => {
@@ -229,6 +247,22 @@ describe('civitaiUtils', () => {
             const thumbnailUrl = getThumbnailUrl(originalUrl, 'video');
 
             expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=450,optimized=true/12345.mp4');
+        });
+    });
+
+    describe('getGalleryThumbnailUrl', () => {
+        it('should return gallery-thumbnail-optimized URL (width=160)', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.jpeg';
+            const thumbnailUrl = getGalleryThumbnailUrl(originalUrl, 'image');
+
+            expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/width=160,optimized=true/12345.jpeg');
+        });
+
+        it('should handle videos for gallery thumbnails', () => {
+            const originalUrl = 'https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/original=true/12345.mp4';
+            const thumbnailUrl = getGalleryThumbnailUrl(originalUrl, 'video');
+
+            expect(thumbnailUrl).toBe('https://image.civitai.com/xG1nkqKTMzGDvpLrqFT7WA/abc123/transcode=true,width=160,optimized=true/12345.mp4');
         });
     });
 

@@ -197,4 +197,64 @@ describe('Showcase gallery', () => {
     expect(document.querySelector('.gallery-indicator-bar')).toBeTruthy();
     expect(document.querySelectorAll('.gallery-thumb')).toHaveLength(0);
   });
+
+  it('prefetches adjacent example images (skipping videos) while expanded', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    const prefetched = [];
+    class MockImage {
+      set src(value) { prefetched.push(value); }
+      set fetchPriority(_value) { /* jsdom lacks fetchPriority */ }
+    }
+    vi.stubGlobal('Image', MockImage);
+
+    // Unique URLs: the module-level prefetch dedup set persists across tests
+    const images = [
+      { url: 'https://image.civitai.com/pf/aaa.jpeg', width: 100, height: 100, nsfwLevel: 0 },
+      { url: 'https://image.civitai.com/pf/bbb.jpeg', width: 100, height: 100, nsfwLevel: 0 },
+      { url: 'https://image.civitai.com/pf/ccc.mp4', width: 100, height: 100, nsfwLevel: 0 },
+    ];
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(images, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+
+    // galleryState.activeIndex persists across tests → pin it to 0
+    updateMainDisplay(0);
+
+    // Active index 0 → prefetches index 1; index 2 is a video and is skipped
+    expect(prefetched).toContain('https://image.civitai.com/pf/bbb.jpeg');
+    expect(prefetched).not.toContain('https://image.civitai.com/pf/ccc.mp4');
+
+    // Navigating to 1 prefetches the new neighbor (index 0)
+    updateMainDisplay(1);
+    expect(prefetched).toContain('https://image.civitai.com/pf/aaa.jpeg');
+
+    // Navigating back does not duplicate prefetch requests
+    const count = prefetched.length;
+    updateMainDisplay(0);
+    expect(prefetched).toHaveLength(count);
+
+    vi.unstubAllGlobals();
+  });
+
+  it('does not prefetch while collapsed', async () => {
+    const { renderShowcaseContent, initShowcaseContent } = await import(SHOWCASE_MODULE);
+
+    const prefetched = [];
+    class MockImage {
+      set src(value) { prefetched.push(value); }
+      set fetchPriority(_value) { /* jsdom lacks fetchPriority */ }
+    }
+    vi.stubGlobal('Image', MockImage);
+
+    const images = [
+      { url: 'https://image.civitai.com/pc/ddd.jpeg', width: 100, height: 100, nsfwLevel: 0 },
+      { url: 'https://image.civitai.com/pc/eee.jpeg', width: 100, height: 100, nsfwLevel: 0 },
+    ];
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(images, [], PREVIEW_URL)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+
+    expect(prefetched).toHaveLength(0);
+
+    vi.unstubAllGlobals();
+  });
 });

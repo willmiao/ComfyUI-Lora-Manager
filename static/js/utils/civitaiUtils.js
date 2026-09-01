@@ -11,6 +11,8 @@ export const OptimizationMode = {
     SHOWCASE: 'showcase',
     /** Thumbnail size for cards - uses /width=450,optimized=true */
     THUMBNAIL: 'thumbnail',
+    /** Small thumbnails for the showcase gallery strip (72px display) - uses /width=160,optimized=true */
+    GALLERY_THUMBNAIL: 'gallery-thumbnail',
 };
 
 export const DEFAULT_CIVITAI_PAGE_HOST = 'civitai.com';
@@ -100,10 +102,11 @@ export function rewriteCivitaiUrl(sourceUrl, mediaType = null, mode = Optimizati
             // Full quality for showcase - no width restriction
             replacement = '/optimized=true';
         } else {
-            // Thumbnail mode with width restriction
-            replacement = '/width=450,optimized=true';
+            // Thumbnail modes with width restriction
+            const width = mode === OptimizationMode.GALLERY_THUMBNAIL ? 160 : 450;
+            replacement = `/width=${width},optimized=true`;
             if (mediaType && mediaType.toLowerCase() === 'video') {
-                replacement = '/transcode=true,width=450,optimized=true';
+                replacement = `/transcode=true,width=${width},optimized=true`;
             }
         }
 
@@ -159,6 +162,17 @@ export function getShowcaseUrl(url, type = 'image') {
  */
 export function getThumbnailUrl(url, type = 'image') {
     return getOptimizedUrl(url, type, OptimizationMode.THUMBNAIL);
+}
+
+/**
+ * Get gallery-strip-thumbnail-optimized URL (width=160, for the 72px strip)
+ *
+ * @param {string} url - Original URL
+ * @param {string} type - Media type ("image" or "video")
+ * @returns {string} - Optimized URL for gallery strip thumbnail display
+ */
+export function getGalleryThumbnailUrl(url, type = 'image') {
+    return getOptimizedUrl(url, type, OptimizationMode.GALLERY_THUMBNAIL);
 }
 
 /**

@@ -22,7 +22,7 @@ import {
 } from './MediaUtils.js';
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
-import { getShowcaseUrl, getThumbnailUrl } from '../../../utils/civitaiUtils.js';
+import { getShowcaseUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
 import { openMediaViewer } from '../MediaViewer.js';
 import { escapeAttribute } from '../utils.js';
 
@@ -275,7 +275,7 @@ function renderThumbnail(img, index, exampleFiles) {
         originalRemoteUrl.endsWith('.mp4') || originalRemoteUrl.endsWith('.webm');
     const mediaType = isVideo ? 'video' : 'image';
 
-    const thumbUrl = localFile ? localFile.path : getThumbnailUrl(originalRemoteUrl, mediaType);
+    const thumbUrl = localFile ? localFile.path : getGalleryThumbnailUrl(originalRemoteUrl, mediaType);
 
     const nsfwLevel = img.nsfwLevel !== undefined ? img.nsfwLevel : 0;
     const matureBlurThreshold = getMatureBlurThreshold(state.settings);
@@ -286,7 +286,7 @@ function renderThumbnail(img, index, exampleFiles) {
     const mediaHtml = isVideo ?
         `<video class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" muted playsinline preload="metadata"></video>
          <i class="fas fa-play thumb-video-badge"></i>` :
-        `<img class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" loading="lazy" alt="">`;
+        `<img class="thumb-media${blurClass}" src="${escapeAttribute(thumbUrl)}" loading="lazy" fetchpriority="low" alt="">`;
     const nsfwBadge = shouldBlur ? '<i class="fas fa-eye-slash thumb-nsfw-badge"></i>' : '';
 
     return `<button class="gallery-thumb${activeClass}" data-index="${index}">${mediaHtml}${nsfwBadge}</button>`;
@@ -438,6 +438,40 @@ function findLocalFile(img, index, exampleFiles) {
     return localFile;
 }
 
+// URLs already warmed in the HTTP cache, so repeat navigations and re-renders
+// never issue duplicate prefetch requests
+const prefetchedUrls = new Set();
+
+/**
+ * Warm the HTTP cache for the examples most likely to be shown next (the
+ * indices adjacent to the active one), so prev/next navigation feels instant.
+ * Images only: video payloads are too heavy for speculative prefetch, and
+ * locally stored examples need no network fetch at all.
+ */
+function prefetchAdjacentMedia() {
+    const { images, exampleFiles, activeIndex, expanded } = galleryState;
+    if (!expanded || images.length < 2) return;
+
+    [activeIndex + 1, activeIndex - 1].forEach(i => {
+        const index = ((i % images.length) + images.length) % images.length;
+        const img = images[index];
+        if (!img?.url || findLocalFile(img, index, exampleFiles)) return;
+
+        const isVideo = img.url.endsWith('.mp4') || img.url.endsWith('.webm');
+        if (isVideo) return;
+
+        const url = getShowcaseUrl(img.url, 'image');
+        if (prefetchedUrls.has(url)) return;
+        prefetchedUrls.add(url);
+
+        // Off-DOM image: fills the HTTP/memory cache without affecting layout.
+        // Low priority keeps it from competing with the active media's load.
+        const preloader = new Image();
+        preloader.fetchPriority = 'low';
+        preloader.src = url;
+    });
+}
+
 /**
  * Switch the main viewer to another example (wraps around)
  * @param {number} index - Target index in galleryState.images
@@ -470,6 +504,7 @@ export function updateMainDisplay(index) {
     });
 
     initMainMediaInteractions(container);
+    prefetchAdjacentMedia();
 }
 
 /**
@@ -683,6 +718,9 @@ export function initShowcaseContent(gallery) {
     const container = gallery.querySelector('.main-media-container');
     if (container && galleryState.expanded) {
         initMainMediaInteractions(container);
+        // Gallery just (re)rendered expanded: warm the cache for the
+        // examples adjacent to the active one
+        prefetchAdjacentMedia();
     }
 
     // Reposition controls on window resize

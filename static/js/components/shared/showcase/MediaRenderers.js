@@ -76,6 +76,7 @@ export function generateImageWrapper(media, shouldBlur, nsfwText, metadataPanel,
                 alt="Preview" 
                 width="${media.width}"
                 height="${media.height}"
+                fetchpriority="high"
                 class="lazy ${shouldBlur ? 'blurred' : ''}"> 
             ${shouldBlur ? `
                 <div class="nsfw-overlay">
