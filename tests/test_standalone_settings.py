@@ -36,6 +36,15 @@ def read_example_settings() -> dict[str, Any]:
 
 
 def test_missing_settings_creates_defaults_and_emits_warnings(tmp_path):
+    """Missing settings file triggers defaults creation and warnings."""
+
+    # ``ensure_settings_file()`` may already seed a template settings.json on
+    # first run; the manager must treat a *deleted* file as "missing" to
+    # exercise the bootstrap path this test verifies.
+    settings_path = Path(settings_paths.ensure_settings_file())
+    if settings_path.exists():
+        settings_path.unlink()
+
     manager = get_settings_manager()
     settings_path = Path(manager.settings_file)
 
