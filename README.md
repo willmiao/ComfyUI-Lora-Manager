@@ -20,7 +20,7 @@ A comprehensive toolset that streamlines organizing, downloading, and applying L
 ### Standalone Edition (no ComfyUI required)
 
 ```bash
-git clone https://github.com/shoomybln/ComfyUI-Lora-Manager.git
+git clone https://github.com/shoomybln/LoRA-Manager-Draw-Things-Remix-ComfyUI-unplugged.git
 cd ComfyUI-Lora-Manager
 pip install -r requirements.txt
 python standalone.py --port 8188
