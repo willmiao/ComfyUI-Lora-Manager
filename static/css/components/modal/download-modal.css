@@ -921,8 +921,8 @@
     position: sticky;
     top: 0;
     z-index: 1;
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
+    -webkit-backdrop-filter: blur(var(--modal-backdrop-blur, 6px));
 }
 
 .batch-preview-select-all input[type="checkbox"] {

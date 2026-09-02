@@ -13,6 +13,16 @@
     overflow: auto; /* Change from hidden to auto to allow scrolling */
 }
 
+/* Software-rendering fallback (set by applyModalBackdropBlurPolicy): a
+   full-viewport backdrop-filter forces per-frame CPU rasterization of
+   everything behind the modal and freezes the browser (issue #1092) */
+html.no-modal-backdrop-blur .modal,
+html.no-modal-backdrop-blur .delete-modal,
+html.no-modal-backdrop-blur .batch-preview-select-all {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+}
+
 /* Prevent body scroll when modal is open */
 body.modal-open {
     position: fixed;

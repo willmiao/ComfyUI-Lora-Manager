@@ -12,6 +12,7 @@ import { helpManager } from './managers/HelpManager.js';
 import { doctorManager } from './managers/DoctorManager.js';
 import { bannerService } from './managers/BannerService.js';
 import { initTheme, initBackToTop } from './utils/uiHelpers.js';
+import { applyModalBackdropBlurPolicy } from './utils/renderingCapability.js';
 import { initializeInfiniteScroll } from './utils/infiniteScroll.js';
 import { i18n } from './i18n/index.js';
 import { onboardingManager } from './managers/OnboardingManager.js';
@@ -33,7 +34,11 @@ export class AppCore {
         if (this.initialized) return;
 
         console.log('AppCore: Initializing...');
-        
+
+        // Disable full-viewport backdrop blur under software rendering before
+        // anything can open a modal (issue #1092)
+        applyModalBackdropBlurPolicy();
+
         // Initialize i18n first
         window.i18n = i18n;
         // Wait for i18n to be ready
