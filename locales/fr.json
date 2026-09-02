@@ -1593,7 +1593,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valeur",
                 "add": "Ajouter",
-                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y"
+                "invalidRange": "Format de plage invalide. Utilisez x.x-y.y",
+                "invalidValue": "Veuillez saisir un nombre valide",
+                "saveFailed": "Échec de l'enregistrement du paramètre préréglé",
+                "added": "Paramètre préréglé ajouté",
+                "updated": "Paramètre préréglé mis à jour"
             },
             "triggerWords": {
                 "label": "Mots-clés",

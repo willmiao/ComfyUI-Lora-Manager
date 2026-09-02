@@ -1593,7 +1593,11 @@
         "clipSkip": "Clip Skip",
         "valuePlaceholder": "Value",
         "add": "Add",
-        "invalidRange": "Invalid range format. Use x.x-y.y"
+        "invalidRange": "Invalid range format. Use x.x-y.y",
+        "invalidValue": "Please enter a valid number",
+        "saveFailed": "Failed to save preset parameter",
+        "added": "Preset parameter added",
+        "updated": "Preset parameter updated"
       },
       "triggerWords": {
         "label": "Trigger Words",

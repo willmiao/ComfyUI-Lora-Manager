@@ -1593,7 +1593,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "ערך",
                 "add": "הוסף",
-                "invalidRange": "פורמט טווח לא תקין. השתמש ב-x.x-y.y"
+                "invalidRange": "פורמט טווח לא תקין. השתמש ב-x.x-y.y",
+                "invalidValue": "נא להזין מספר תקין",
+                "saveFailed": "שמירת הפרמטר הקבוע מראש נכשלה",
+                "added": "הפרמטר הקבוע מראש נוסף",
+                "updated": "הפרמטר הקבוע מראש עודכן"
             },
             "triggerWords": {
                 "label": "מילות טריגר",

@@ -1593,7 +1593,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Valor",
                 "add": "Añadir",
-                "invalidRange": "Formato de rango inválido. Use x.x-y.y"
+                "invalidRange": "Formato de rango inválido. Use x.x-y.y",
+                "invalidValue": "Introduce un número válido",
+                "saveFailed": "Error al guardar el parámetro preajustado",
+                "added": "Parámetro preajustado añadido",
+                "updated": "Parámetro preajustado actualizado"
             },
             "triggerWords": {
                 "label": "Palabras clave",

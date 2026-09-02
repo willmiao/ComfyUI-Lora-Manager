@@ -1593,7 +1593,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "値",
                 "add": "追加",
-                "invalidRange": "無効な範囲形式です。x.x-y.y を使用してください"
+                "invalidRange": "無効な範囲形式です。x.x-y.y を使用してください",
+                "invalidValue": "有効な数値を入力してください",
+                "saveFailed": "プリセットパラメータの保存に失敗しました",
+                "added": "プリセットパラメータを追加しました",
+                "updated": "プリセットパラメータを更新しました"
             },
             "triggerWords": {
                 "label": "トリガーワード",

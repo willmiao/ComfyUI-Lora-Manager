@@ -1593,7 +1593,11 @@
                 "clipSkip": "클립 스킵",
                 "valuePlaceholder": "값",
                 "add": "추가",
-                "invalidRange": "잘못된 범위 형식입니다. x.x-y.y를 사용하세요"
+                "invalidRange": "잘못된 범위 형식입니다. x.x-y.y를 사용하세요",
+                "invalidValue": "유효한 숫자를 입력하세요",
+                "saveFailed": "프리셋 매개변수 저장에 실패했습니다",
+                "added": "프리셋 매개변수가 추가되었습니다",
+                "updated": "프리셋 매개변수가 업데이트되었습니다"
             },
             "triggerWords": {
                 "label": "트리거 단어",

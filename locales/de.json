@@ -1593,7 +1593,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "Wert",
                 "add": "Hinzufügen",
-                "invalidRange": "Ungültiges Bereichsformat. Verwenden Sie x.x-y.y"
+                "invalidRange": "Ungültiges Bereichsformat. Verwenden Sie x.x-y.y",
+                "invalidValue": "Bitte geben Sie eine gültige Zahl ein",
+                "saveFailed": "Fehler beim Speichern des voreingestellten Parameters",
+                "added": "Voreingestellter Parameter hinzugefügt",
+                "updated": "Voreingestellter Parameter aktualisiert"
             },
             "triggerWords": {
                 "label": "Trigger Words",

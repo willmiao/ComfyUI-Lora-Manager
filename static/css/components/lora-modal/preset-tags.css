@@ -66,3 +66,12 @@
 .add-preset-btn:hover {
   opacity: 0.9;
 }
+
+.add-preset-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.add-preset-btn:hover:disabled {
+  opacity: 0.5;
+}

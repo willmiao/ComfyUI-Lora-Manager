@@ -877,8 +877,9 @@ function renderLoraSpecificContent(lora, escapedWords) {
                         <option value="clip_strength">${translate('modals.model.usageTips.clipStrength', {}, 'Clip Strength')}</option>
                         <option value="clip_skip">${translate('modals.model.usageTips.clipSkip', {}, 'Clip Skip')}</option>
                     </select>
-                    <input type="number" id="preset-value" step="0.01" placeholder="${translate('modals.model.usageTips.valuePlaceholder', {}, 'Value')}" style="display:none;">
-                    <button class="add-preset-btn">${translate('modals.model.usageTips.add', {}, 'Add')}</button>
+                    <!-- autofill opt-out attrs prevent password managers / email-alias extensions from attaching popups -->
+                    <input type="number" id="preset-value" step="0.01" placeholder="${translate('modals.model.usageTips.valuePlaceholder', {}, 'Value')}" style="display:none;" autocomplete="off" data-1p-ignore data-lpignore="true" data-bwignore data-form-type="other">
+                    <button class="add-preset-btn" disabled>${translate('modals.model.usageTips.add', {}, 'Add')}</button>
                 </div>
                 <div class="preset-tags">
                     ${renderPresetTags(parsePresets(lora.usage_tips))}
@@ -1086,6 +1087,11 @@ function setupLoraSpecificFields(filePath) {
 
     if (!presetSelector || !presetValue || !addPresetBtn || !presetTags) return;
 
+    // Add button stays disabled until both a parameter and a value are provided
+    const updateAddPresetButtonState = () => {
+        addPresetBtn.disabled = !(presetSelector.value && presetValue.value.trim());
+    };
+
     presetSelector.addEventListener('change', function () {
         const selected = this.value;
         if (selected) {
@@ -1111,12 +1117,16 @@ function setupLoraSpecificFields(filePath) {
         } else {
             presetValue.style.display = 'none';
         }
+        updateAddPresetButtonState();
     });
+
+    presetValue.addEventListener('input', updateAddPresetButtonState);
 
     addPresetBtn.addEventListener('click', async function () {
         const key = presetSelector.value;
-        const value = presetValue.value;
+        const value = presetValue.value.trim();
 
+        // Unreachable via UI while the button is disabled; kept as a safety net
         if (!key || !value) return;
 
         const currentPath = resolveFilePath();
@@ -1131,9 +1141,11 @@ function setupLoraSpecificFields(filePath) {
             document.querySelector(`.model-card[data-filepath="${escapedFilePath}"]`);
         const currentPresets = parsePresets(loraCard?.dataset.usage_tips);
 
+        let isUpdate;
         if (key === 'strength_range') {
             const rangeMatch = value.match(/^(-?\d*\.?\d+)\s*[-~]\s*(-?\d*\.?\d+)$/);
             if (rangeMatch) {
+                isUpdate = 'strength_min' in currentPresets || 'strength_max' in currentPresets;
                 currentPresets['strength_min'] = parseFloat(rangeMatch[1]);
                 currentPresets['strength_max'] = parseFloat(rangeMatch[2]);
             } else {
@@ -1141,17 +1153,36 @@ function setupLoraSpecificFields(filePath) {
                 return;
             }
         } else {
-            currentPresets[key] = parseFloat(value);
+            const numericValue = parseFloat(value);
+            if (!Number.isFinite(numericValue)) {
+                showToast('modals.model.usageTips.invalidValue', {}, 'error', 'Please enter a valid number');
+                return;
+            }
+            isUpdate = key in currentPresets;
+            currentPresets[key] = numericValue;
         }
         const newPresetsJson = JSON.stringify(currentPresets);
 
-        await getModelApiClient().saveModelMetadata(currentPath, { usage_tips: newPresetsJson });
+        try {
+            await getModelApiClient().saveModelMetadata(currentPath, { usage_tips: newPresetsJson });
+        } catch (error) {
+            console.error('Failed to save preset parameter:', error);
+            showToast('modals.model.usageTips.saveFailed', {}, 'error', 'Failed to save preset parameter');
+            return;
+        }
 
         presetTags.innerHTML = renderPresetTags(currentPresets);
+        showToast(
+            isUpdate ? 'modals.model.usageTips.updated' : 'modals.model.usageTips.added',
+            {},
+            'success',
+            isUpdate ? 'Preset parameter updated' : 'Preset parameter added'
+        );
 
         presetSelector.value = '';
         presetValue.value = '';
         presetValue.style.display = 'none';
+        addPresetBtn.disabled = true;
     });
 
     // Add keydown event for preset value

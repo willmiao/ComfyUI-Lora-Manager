@@ -1593,7 +1593,11 @@
                 "clipSkip": "Clip Skip",
                 "valuePlaceholder": "數值",
                 "add": "新增",
-                "invalidRange": "無效的範圍格式。請使用 x.x-y.y"
+                "invalidRange": "無效的範圍格式。請使用 x.x-y.y",
+                "invalidValue": "請輸入有效的數值",
+                "saveFailed": "儲存預設參數失敗",
+                "added": "已新增預設參數",
+                "updated": "已更新預設參數"
             },
             "triggerWords": {
                 "label": "觸發詞",
