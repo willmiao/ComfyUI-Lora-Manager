@@ -16,6 +16,7 @@ vi.mock(MEDIA_UTILS_MODULE, () => ({
 
 vi.mock(MEDIA_VIEWER_MODULE, () => ({
   openMediaViewer: vi.fn(),
+  isMediaViewerOpen: vi.fn(() => false),
 }));
 
 const PREVIEW_URL = '/loras_static/preview/abc.png';
@@ -339,5 +340,219 @@ describe('Showcase gallery', () => {
     expect(video.hasAttribute('data-lazy-video')).toBe(false);
     expect(loadSpy).toHaveBeenCalled();
     loadSpy.mockRestore();
+  });
+
+  it('switches examples on wheel over the main viewer', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+
+    const main = document.querySelector('.gallery-main');
+    main.dispatchEvent(new WheelEvent('wheel', { deltaX: 120, deltaY: 0, bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+
+    // The one-step-per-gesture cooldown intentionally blocks an immediate
+    // second step; a fresh gallery (new listener) accepts the next gesture.
+    // No .modal-content ancestor → no boundary guard, vertical also navigates
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+    document.querySelector('.gallery-main')
+      .dispatchEvent(new WheelEvent('wheel', { deltaX: 0, deltaY: 120, bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+  });
+
+  it('vertical wheel only hijacks at the modal scroll boundary', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    document.body.innerHTML = `
+      <div class="modal-content">
+        <div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>
+      </div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+
+    const scroller = document.querySelector('.modal-content');
+    // Mid-scroll: the modal owns vertical wheel, the gallery must not navigate
+    Object.defineProperties(scroller, {
+      scrollTop: { value: 100, configurable: true },
+      scrollHeight: { value: 1000, configurable: true },
+      clientHeight: { value: 500, configurable: true },
+    });
+
+    const main = document.querySelector('.gallery-main');
+    main.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+
+    // Bottom of the modal: further down-scroll switches to the next example
+    // (and starts a vertical wheel session — covered by the next test)
+    Object.defineProperty(scroller, 'scrollTop', { value: 500, configurable: true });
+    main.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+
+    // Leaving the viewer area ends the session: up-scroll away from the top
+    // belongs to the modal again
+    main.dispatchEvent(new Event('pointerleave'));
+    main.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+  });
+
+  it('keeps vertical wheel in a sticky session once engaged, until pointer leaves', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    document.body.innerHTML = `
+      <div class="modal-content">
+        <div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>
+      </div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+
+    const scroller = document.querySelector('.modal-content');
+    // Modal sits at its bottom: down-scroll engages the gallery
+    Object.defineProperties(scroller, {
+      scrollTop: { value: 500, configurable: true },
+      scrollHeight: { value: 1000, configurable: true },
+      clientHeight: { value: 500, configurable: true },
+    });
+
+    // The one-step-per-gesture cooldown would block consecutive steps; fake
+    // the clock so each gesture lands after it
+    let now = 10000;
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
+
+    const main = document.querySelector('.gallery-main');
+    const wheelUp = () => main.dispatchEvent(
+      new WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
+    const wheelDown = () => main.dispatchEvent(
+      new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+
+    wheelDown();
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+
+    // Reverse gesture must undo: up-scroll switches back to the previous
+    // example even though the modal is not at its top
+    now += 300;
+    wheelUp();
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+
+    // Pointer leaving the viewer area releases vertical wheel to the modal
+    now += 300;
+    main.dispatchEvent(new Event('pointerleave'));
+    wheelUp();
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+
+    nowSpy.mockRestore();
+  });
+
+  it('ignores wheel events coming from the metadata panel', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+
+    // MediaUtils is mocked, so hoist a panel manually (real code appends it
+    // as a direct child of .gallery-main)
+    const main = document.querySelector('.gallery-main');
+    const panel = document.createElement('div');
+    panel.className = 'image-metadata-panel visible';
+    main.appendChild(panel);
+
+    panel.dispatchEvent(new WheelEvent('wheel', { deltaX: 120, bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+  });
+
+  it('switches examples with [ and ] while expanded, with guards', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+    const { isMediaViewerOpen } = await import(MEDIA_VIEWER_MODULE);
+
+    document.body.innerHTML = `<div id="showcase-tab" class="tab-pane active">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '[', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+
+    // Typing in a field: the key belongs to the field
+    const input = document.createElement('input');
+    document.body.appendChild(input);
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+    input.remove();
+
+    // Focus resting on a button (e.g. right after clicking a thumbnail or nav
+    // button) must NOT deaden the keys — buttons consume Space/Enter natively
+    document.querySelector('#galleryNextBtn')
+      .dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: '[', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+
+    // Full-size media viewer open: it owns the keys
+    isMediaViewerOpen.mockReturnValueOnce(true);
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+
+    // Another tab active: examples must not change behind the scenes
+    document.getElementById('showcase-tab').classList.remove('active');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: ']', bubbles: true, cancelable: true }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('0');
+  });
+
+  it('switches examples on touch swipe and suppresses the follow-up click', async () => {
+    const { renderShowcaseContent, initShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+    const { openMediaViewer } = await import(MEDIA_VIEWER_MODULE);
+
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    initShowcaseContent(document.querySelector('.showcase-gallery'));
+    updateMainDisplay(0);
+
+    const main = document.querySelector('.gallery-main');
+    const img = main.querySelector('.media-wrapper img');
+
+    // A plain tap still opens the full-size viewer
+    img.click();
+    expect(openMediaViewer).toHaveBeenCalledTimes(1);
+
+    // jsdom lacks PointerEvent; MouseEvent carries clientX/clientY and its
+    // undefined pointerType passes the non-mouse guard
+    main.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 300, clientY: 100 }));
+    main.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 100, clientY: 110 }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+
+    // The click synthesized after the swipe must not open the viewer
+    document.querySelector('.gallery-main .media-wrapper img').click();
+    expect(openMediaViewer).toHaveBeenCalledTimes(1);
+
+    // A short drag below the threshold neither navigates nor eats the click
+    main.dispatchEvent(new MouseEvent('pointerdown', { bubbles: true, clientX: 300, clientY: 100 }));
+    main.dispatchEvent(new MouseEvent('pointerup', { bubbles: true, clientX: 280, clientY: 100 }));
+    expect(document.querySelector('.gallery-thumb.active')?.dataset.index).toBe('1');
+  });
+
+  it('marks the main viewer with a direction-aware slide class on switches', async () => {
+    const { renderShowcaseContent, updateMainDisplay } = await import(SHOWCASE_MODULE);
+
+    document.body.innerHTML = `<div id="showcase-tab">${renderShowcaseContent(IMAGES, [], PREVIEW_URL, true)}</div>`;
+    const container = document.getElementById('mainMediaContainer');
+
+    // galleryState.activeIndex leaks across tests → anchor on the actual index
+    const start = Number(document.querySelector('.gallery-thumb.active')?.dataset.index || 0);
+
+    updateMainDisplay(start); // same index: no direction, no slide
+    expect(container.classList.contains('slide-from-right')).toBe(false);
+    expect(container.classList.contains('slide-from-left')).toBe(false);
+
+    updateMainDisplay(start + 1); // forward
+    expect(container.classList.contains('slide-from-right')).toBe(true);
+    expect(container.classList.contains('slide-from-left')).toBe(false);
+
+    updateMainDisplay(start); // backward
+    expect(container.classList.contains('slide-from-left')).toBe(true);
+    expect(container.classList.contains('slide-from-right')).toBe(false);
   });
 });

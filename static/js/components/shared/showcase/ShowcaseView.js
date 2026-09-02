@@ -23,7 +23,7 @@ import {
 import { generateMetadataPanel } from './MetadataPanel.js';
 import { generateImageWrapper, generateVideoWrapper } from './MediaRenderers.js';
 import { getShowcaseUrl, getDisplayUrl, getGalleryThumbnailUrl } from '../../../utils/civitaiUtils.js';
-import { openMediaViewer } from '../MediaViewer.js';
+import { openMediaViewer, isMediaViewerOpen } from '../MediaViewer.js';
 import { escapeAttribute } from '../utils.js';
 
 /**
@@ -231,10 +231,10 @@ export function renderShowcaseContent(images, exampleFiles = [], previewUrl = ''
                     ${renderMediaItem(activeImg, galleryState.activeIndex, exampleFiles)}
                     ${renderPositionBadge(positionText)}
                 </div>
-                ${showNav ? `<button class="gallery-nav prev" id="galleryPrevBtn" title="${translate('modals.model.showcase.previousExample', {}, 'Previous example')}">
+                ${showNav ? `<button class="gallery-nav prev" id="galleryPrevBtn" title="${translate('modals.model.showcase.previousExample', {}, 'Previous example ([)')}">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <button class="gallery-nav next" id="galleryNextBtn" title="${translate('modals.model.showcase.nextExample', {}, 'Next example')}">
+                <button class="gallery-nav next" id="galleryNextBtn" title="${translate('modals.model.showcase.nextExample', {}, 'Next example (])')}">
                     <i class="fas fa-chevron-right"></i>
                 </button>` : ''}
             </div>
@@ -508,6 +508,13 @@ export function updateMainDisplay(index) {
 
     const activeImg = galleryState.images[galleryState.activeIndex];
     container.style.setProperty('--media-aspect', mediaAspectRatio(activeImg));
+    // Direction-aware slide makes every switch (wheel, keys, buttons,
+    // thumbnails) perceivable instead of an instant, unexplained swap
+    container.classList.remove('slide-from-left', 'slide-from-right');
+    if (delta !== 0) {
+        void container.offsetWidth; // restart the animation on rapid switches
+        container.classList.add(delta > 0 ? 'slide-from-right' : 'slide-from-left');
+    }
     // The badge lives inside the container, so rebuild it together with the media
     container.innerHTML = renderMediaItem(
         activeImg,
@@ -680,6 +687,177 @@ function setupScrollToExpand(gallery) {
     }, { passive: true });
 }
 
+// Wheel-navigation tuning: one gesture = one step. Trackpads emit a stream
+// of small deltas, so deltas accumulate until the threshold; the cooldown
+// keeps the tail of the same gesture from stepping again
+const WHEEL_STEP_THRESHOLD = 50;
+const WHEEL_COOLDOWN_MS = 250;
+const WHEEL_ACCUM_RESET_MS = 200;
+
+/**
+ * Wheel navigation on the main viewer area. Bound to .gallery-main (not the
+ * media element) so it works wherever the cursor rests within the viewer —
+ * including over the nav buttons and the dead zones beside the media, and
+ * regardless of whether the hover-triggered metadata panel is showing.
+ *
+ * - Horizontal-dominant deltas (trackpad two-finger swipe) always navigate;
+ *   the modal never scrolls horizontally, so nothing is hijacked.
+ * - Vertical deltas navigate only when the modal content cannot scroll
+ *   further in that direction (same boundary pass-through pattern as the
+ *   metadata panel's wheel handler), so wheel-scrolling the modal through
+ *   the gallery is never trapped mid-way.
+ * - Once a boundary crossing triggers a vertical switch, a "wheel session"
+ *   starts: while the pointer stays over .gallery-main, vertical wheel in
+ *   BOTH directions switches examples (down = next, up = prev — the reverse
+ *   gesture must undo, not scroll the modal away). The session ends when the
+ *   pointer leaves the area, returning vertical scroll to the modal.
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+function initWheelNavigation(gallery) {
+    const main = gallery.querySelector('.gallery-main');
+    if (!main || galleryState.images.length < 2) return;
+
+    let accumulated = 0;
+    let lastEventAt = 0;
+    let lastStepAt = 0;
+    let verticalSession = false;
+
+    // Leaving the viewer area releases the vertical wheel back to the modal
+    main.addEventListener('pointerleave', () => {
+        verticalSession = false;
+        accumulated = 0;
+    });
+
+    main.addEventListener('wheel', (event) => {
+        // The metadata panel and media controls keep their own behavior;
+        // the panel passes boundary scrolls through to the modal by itself
+        if (event.target.closest('.image-metadata-panel, .media-controls')) return;
+
+        const horizontal = Math.abs(event.deltaX) > Math.abs(event.deltaY);
+        const delta = horizontal ? event.deltaX : event.deltaY;
+        if (delta === 0) return;
+
+        if (!horizontal && !verticalSession) {
+            const scroller = main.closest('.modal-content');
+            if (scroller) {
+                const atTop = scroller.scrollTop <= 0;
+                const atBottom = scroller.scrollHeight - scroller.scrollTop - scroller.clientHeight <= 1;
+                if ((delta < 0 && !atTop) || (delta > 0 && !atBottom)) return;
+            }
+        }
+
+        event.preventDefault();
+
+        const now = performance.now();
+        if (now - lastEventAt > WHEEL_ACCUM_RESET_MS) accumulated = 0;
+        lastEventAt = now;
+        if (now - lastStepAt < WHEEL_COOLDOWN_MS) return;
+
+        accumulated += delta;
+        if (Math.abs(accumulated) < WHEEL_STEP_THRESHOLD) return;
+
+        const direction = accumulated > 0 ? 1 : -1;
+        accumulated = 0;
+        lastStepAt = now;
+        if (!horizontal) verticalSession = true;
+        updateMainDisplay(galleryState.activeIndex + direction);
+    }, { passive: false });
+}
+
+// Touch/pen swipe tuning. Mouse is excluded: it already has wheel, keys and
+// buttons, and mouse-drag would fight the media's click-to-view gesture
+const SWIPE_THRESHOLD_PX = 50;
+const SWIPE_CLICK_SUPPRESS_MS = 400;
+
+/**
+ * Horizontal swipe navigation on the main viewer area (touch/pen). Requires
+ * `touch-action: pan-y` on .gallery-main so horizontal pans reach these
+ * handlers while vertical pans still scroll the modal.
+ * @param {HTMLElement} gallery - The .showcase-gallery element
+ */
+function initSwipeNavigation(gallery) {
+    const main = gallery.querySelector('.gallery-main');
+    if (!main || galleryState.images.length < 2) return;
+
+    let startX = 0;
+    let startY = 0;
+    let tracking = false;
+    let lastSwipeAt = 0;
+
+    main.addEventListener('pointerdown', (event) => {
+        if (event.pointerType === 'mouse') return;
+        // Native video controls own their pointer gestures (scrubbing etc.)
+        if (event.target.closest('video, .image-metadata-panel, .media-controls, .gallery-nav')) return;
+        startX = event.clientX;
+        startY = event.clientY;
+        tracking = true;
+    });
+
+    main.addEventListener('pointercancel', () => { tracking = false; });
+
+    main.addEventListener('pointerup', (event) => {
+        if (!tracking) return;
+        tracking = false;
+        const dx = event.clientX - startX;
+        const dy = event.clientY - startY;
+        if (Math.abs(dx) < SWIPE_THRESHOLD_PX || Math.abs(dx) < Math.abs(dy) * 1.5) return;
+        lastSwipeAt = performance.now();
+        updateMainDisplay(galleryState.activeIndex + (dx < 0 ? 1 : -1));
+    });
+
+    // A completed swipe still produces a click on the media — swallow it in
+    // the capture phase (beats the media element's own handler) so the
+    // full-size viewer does not open
+    main.addEventListener('click', (event) => {
+        if (performance.now() - lastSwipeAt < SWIPE_CLICK_SUPPRESS_MS) {
+            event.stopPropagation();
+            event.preventDefault();
+        }
+    }, true);
+}
+
+/**
+ * True when the showcase tab is the active pane of an open modal
+ * @returns {boolean}
+ */
+function isShowcaseTabVisible() {
+    const showcaseTab = document.getElementById('showcase-tab');
+    if (!showcaseTab || !showcaseTab.classList.contains('active')) return false;
+    const modalEl = showcaseTab.closest('.modal');
+    // No .modal ancestor: standalone/test rendering, treat as visible
+    if (!modalEl) return true;
+    return modalEl.classList.contains('show') || modalEl.style.display === 'block';
+}
+
+/**
+ * Typing-target guard for the example shortcuts. Unlike the model-level
+ * navigation guard, buttons are NOT excluded: clicking a thumbnail or nav
+ * button leaves focus on it, which would make [ ] feel dead right after the
+ * most common interaction — and buttons consume Space/Enter natively, never
+ * bracket keys.
+ * @param {EventTarget|null} target - keydown event target
+ * @returns {boolean}
+ */
+function isTypingTarget(target) {
+    if (!target) return false;
+    const tagName = target.tagName ? target.tagName.toLowerCase() : '';
+    return target.isContentEditable || ['input', 'textarea', 'select'].includes(tagName);
+}
+
+// '[' / ']' switch examples while the gallery is expanded. ArrowLeft/Right
+// stay reserved for model-level navigation (ModelModal), and the full-size
+// media viewer owns its keys while open.
+document.addEventListener('keydown', (event) => {
+    if (event.key !== '[' && event.key !== ']') return;
+    if (!galleryState.expanded || galleryState.images.length < 2) return;
+    if (isTypingTarget(event.target)) return;
+    if (isMediaViewerOpen()) return;
+    if (!isShowcaseTabVisible()) return;
+
+    event.preventDefault();
+    updateMainDisplay(galleryState.activeIndex + (event.key === ']' ? 1 : -1));
+});
+
 /**
  * Defer metadata fetches for video thumbnails until they scroll into view:
  * with preload="metadata" on every strip video, expanding the gallery would
@@ -773,6 +951,8 @@ export function initShowcaseContent(gallery) {
     const container = gallery.querySelector('.main-media-container');
     if (container && galleryState.expanded) {
         initMainMediaInteractions(container);
+        initWheelNavigation(gallery);
+        initSwipeNavigation(gallery);
         // Gallery just (re)rendered expanded: warm the cache for the
         // examples adjacent to the active one
         prefetchAdjacentMedia();

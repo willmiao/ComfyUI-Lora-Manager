@@ -115,6 +115,9 @@
   position: relative;
   overflow: hidden;
   border-radius: var(--border-radius-sm);
+  /* Horizontal touch pans are claimed for swipe navigation (ShowcaseView);
+     vertical pans still scroll the modal */
+  touch-action: pan-y;
 }
 
 .main-media-container {
@@ -132,6 +135,32 @@
   width: 100%;
   height: 100%;
   margin-bottom: 0;
+}
+
+/* Direction-aware slide on example switches (set by updateMainDisplay) */
+.main-media-container.slide-from-right .media-wrapper {
+  animation: gallery-slide-from-right 0.25s ease;
+}
+
+.main-media-container.slide-from-left .media-wrapper {
+  animation: gallery-slide-from-left 0.25s ease;
+}
+
+@keyframes gallery-slide-from-right {
+  from { transform: translateX(32px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@keyframes gallery-slide-from-left {
+  from { transform: translateX(-32px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .main-media-container.slide-from-right .media-wrapper,
+  .main-media-container.slide-from-left .media-wrapper {
+    animation: none;
+  }
 }
 
 .main-media-container .media-wrapper img,
