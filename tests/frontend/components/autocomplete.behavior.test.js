@@ -1789,7 +1789,7 @@ describe('AutoComplete widget interactions', () => {
     expect(settingSetMock).toHaveBeenCalledWith('loramanager.lora_active_filters_autocomplete', true);
   });
 
-  it('appends active filter params to loras autocomplete requests when enabled', async () => {
+  it('sends only the use_active_filters flag when enabled (filters resolved server-side)', async () => {
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1799,12 +1799,11 @@ describe('AutoComplete widget interactions', () => {
       return undefined;
     });
 
+    // Stored manager-page filters must NOT leak into the request URL; the
+    // backend injects them from its server-side store.
     localStorage.setItem('lora_manager_loras_filters', JSON.stringify({
       baseModel: ['SD 1.5'],
-      tags: { anime: 'include', nsfw: 'exclude', __no_tags__: 'exclude' },
-      autoTags: { I2V: 'include' },
-      modelTypes: ['standard'],
-      tagLogic: 'all',
+      tags: { anime: 'include', nsfw: 'exclude' },
       license: { noCredit: 'include', allowSelling: 'exclude' },
     }));
     localStorage.setItem('lora_manager_loras_activeFolder', 'MyLoras');
@@ -1830,19 +1829,7 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('/lm/loras/relative-paths?search=example&limit=100');
-    expect(calledUrl).toContain('folder=MyLoras');
-    expect(calledUrl).toContain('recursive=true');
-    expect(calledUrl).toContain('tag_include=anime');
-    expect(calledUrl).toContain('tag_exclude=nsfw');
-    expect(calledUrl).toContain('tag_exclude=__no_tags__');
-    expect(calledUrl).toContain('auto_tag_include=I2V');
-    expect(calledUrl).toContain('tag_logic=all');
-    expect(calledUrl).toContain('credit_required=false');
-    expect(calledUrl).toContain('allow_selling_generated_content=false');
-    const parsed = new URL(calledUrl, 'https://example.com');
-    expect(parsed.searchParams.get('base_model')).toBe('SD 1.5');
-    expect(parsed.searchParams.get('model_type')).toBe('standard');
+    expect(calledUrl).toBe('/lm/loras/relative-paths?search=example&limit=100&use_active_filters=true');
   });
 
   it('keeps the default loras autocomplete URL when active-filters mode is off', async () => {
@@ -1870,10 +1857,12 @@ describe('AutoComplete widget interactions', () => {
     expect(fetchApiMock).toHaveBeenCalledWith('/lm/loras/relative-paths?search=example&limit=100');
   });
 
-  it('sends the filter-pipeline signal even when no filters are stored', async () => {
+  it('sends the filter-pipeline flag even when no filters are stored', async () => {
     // Regression: with filter mode on but no folder/filters stored, the request
-    // carried no params, so the backend skipped the filter pipeline and global
-    // settings like show_only_sfw diverged from the list endpoint.
+    // carried no signal, so the backend skipped the filter pipeline and global
+    // settings like show_only_sfw diverged from the list endpoint. The flag
+    // makes the backend run the pipeline (injecting nothing when its store
+    // is empty).
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1907,10 +1896,13 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('use_active_filters=true');
   });
 
-  it('omits folder param when active folder is root and recursion is enabled', async () => {
+  it('leaves folder params to the backend when active folder is root with recursion enabled', async () => {
+    // The root-folder/recursion semantics now live server-side (see
+    // active_filters_store.active_filters_to_query_kwargs); the client only
+    // sends the flag.
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1948,10 +1940,12 @@ describe('AutoComplete widget interactions', () => {
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
     expect(calledUrl).not.toContain('folder=');
-    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('use_active_filters=true');
   });
 
-  it('sends an empty folder param for root with recursion disabled, mirroring the page list', async () => {
+  it('leaves the root+non-recursive folder mapping to the backend', async () => {
+    // Root with recursion disabled maps to folder='' server-side (mirroring
+    // the page list); the client no longer encodes this in the URL.
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -1988,15 +1982,14 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('folder=');
-    expect(calledUrl).toContain('recursive=false');
-    const parsed = new URL(calledUrl, 'https://example.com');
-    expect(parsed.searchParams.get('folder')).toBe('');
+    expect(calledUrl).not.toContain('folder=');
+    expect(calledUrl).toContain('use_active_filters=true');
   });
 
-  it('applies the active folder even when no filter-panel filters are set', async () => {
+  it('sends the flag even when only a folder is stored (no filter-panel filters)', async () => {
     // Regression: folder was skipped when lora_manager_loras_filters was
-    // missing because the filters key gate returned early.
+    // missing because the filters key gate returned early. The flag is now
+    // unconditional, and the backend injects the folder from its store.
     vi.useFakeTimers();
 
     settingGetMock.mockImplementation((key) => {
@@ -2029,8 +2022,8 @@ describe('AutoComplete widget interactions', () => {
     await Promise.resolve();
 
     const calledUrl = fetchApiMock.mock.calls[0][0];
-    expect(calledUrl).toContain('folder=Flux.1+D%2Fstyle');
-    expect(calledUrl).toContain('recursive=true');
+    expect(calledUrl).toContain('use_active_filters=true');
+    expect(calledUrl).not.toContain('folder=');
   });
 
   describe('discoverability hints', () => {

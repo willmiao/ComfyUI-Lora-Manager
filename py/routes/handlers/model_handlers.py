@@ -15,6 +15,10 @@ from aiohttp import web
 import jinja2
 
 from ...config import config
+from ...services.active_filters_store import (
+    ActiveFiltersStore,
+    active_filters_to_query_kwargs,
+)
 from ...services.download_coordinator import DownloadCoordinator
 from ...services.connectivity_guard import (
     OFFLINE_FRIENDLY_MESSAGE,
@@ -1595,12 +1599,50 @@ class ModelQueryHandler:
                     allow_selling_generated_content.lower() not in ("false", "0", "")
                 )
 
+            # When requested, merge the manager page's active filters stored
+            # server-side. Explicit query parameters take precedence over the
+            # stored values.
+            use_active_filters = (
+                request.query.get("use_active_filters", "").lower() in ("1", "true")
+            )
+            if use_active_filters:
+                stored = ActiveFiltersStore.get_instance().get_filters(
+                    self._service.model_type
+                )
+                injected = active_filters_to_query_kwargs(stored)
+                if folder is None and "folder" in injected:
+                    folder = injected["folder"]
+                if "recursive" not in request.query and "recursive" in injected:
+                    recursive = injected["recursive"]
+                if not base_models and injected.get("base_models"):
+                    base_models = injected["base_models"]
+                if not model_types and injected.get("model_types"):
+                    model_types = injected["model_types"]
+                if not tag_filters and injected.get("tags"):
+                    tag_filters = injected["tags"]
+                if not auto_tag_filters and injected.get("auto_tags"):
+                    auto_tag_filters = injected["auto_tags"]
+                if "tag_logic" not in request.query and injected.get("tag_logic"):
+                    injected_logic = str(injected["tag_logic"]).lower()
+                    if injected_logic in ("any", "all"):
+                        tag_logic = injected_logic
+                if credit_required is None and "credit_required" in injected:
+                    credit_required = injected["credit_required"]
+                if (
+                    allow_selling_generated_content is None
+                    and "allow_selling_generated_content" in injected
+                ):
+                    allow_selling_generated_content = injected[
+                        "allow_selling_generated_content"
+                    ]
+
             # The presence of the recursive param (always sent by the loras
             # widget when filter mode is on) signals that the filter pipeline
             # must run even when no concrete filter is set, so global settings
             # like show_only_sfw stay consistent with the list endpoint.
             apply_filters = (
-                "recursive" in request.query
+                use_active_filters
+                or "recursive" in request.query
                 or folder is not None
                 or bool(base_models)
                 or bool(model_types)
@@ -1631,6 +1673,50 @@ class ModelQueryHandler:
         except Exception as exc:
             self._logger.error(
                 "Error getting relative paths for autocomplete: %s", exc, exc_info=True
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def update_active_filters(self, request: web.Request) -> web.Response:
+        """Store the manager page's active filters for this model type."""
+        try:
+            payload = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+
+        if not isinstance(payload, dict):
+            return web.json_response(
+                {"success": False, "error": "Body must be a JSON object"}, status=400
+            )
+
+        try:
+            ActiveFiltersStore.get_instance().set_filters(
+                self._service.model_type, payload
+            )
+            return web.json_response({"success": True})
+        except Exception as exc:
+            self._logger.error(
+                "Error updating active filters for %s: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
+            )
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def get_active_filters(self, request: web.Request) -> web.Response:
+        """Return the stored active filters for this model type."""
+        try:
+            filters = ActiveFiltersStore.get_instance().get_filters(
+                self._service.model_type
+            )
+            return web.json_response({"success": True, "filters": filters})
+        except Exception as exc:
+            self._logger.error(
+                "Error getting active filters for %s: %s",
+                self._service.model_type,
+                exc,
+                exc_info=True,
             )
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
@@ -3339,6 +3425,8 @@ class ModelHandlerSet:
             "get_model_metadata": self.query.get_model_metadata,
             "get_model_description": self.query.get_model_description,
             "get_relative_paths": self.query.get_relative_paths,
+            "update_active_filters": self.query.update_active_filters,
+            "get_active_filters": self.query.get_active_filters,
             "refresh_model_updates": self.updates.refresh_model_updates,
             "fetch_missing_civitai_license_data": self.updates.fetch_missing_civitai_license_data,
             "set_model_update_ignore": self.updates.set_model_update_ignore,

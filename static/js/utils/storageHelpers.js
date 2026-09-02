@@ -6,6 +6,31 @@
 // Namespace prefix for all localStorage keys
 const STORAGE_PREFIX = 'lora_manager_';
 
+// Matches keys that carry the manager page's active filter state
+// (e.g. 'loras_activeFolder', 'checkpoints_filters').
+const ACTIVE_FILTER_KEY_PATTERN = /^(loras|checkpoints|embeddings)_(activeFolder|recursiveSearch|filters)$/;
+
+let activeFiltersListener = null;
+
+/**
+ * Register a listener invoked with the page type whenever one of the
+ * active-filter storage keys changes. Used to mirror filter state to the
+ * backend so the ComfyUI-side autocomplete can pick it up across
+ * browsers/origins where localStorage is not shared.
+ * @param {function(string): void} listener
+ */
+export function setActiveFiltersListener(listener) {
+    activeFiltersListener = listener;
+}
+
+function notifyActiveFiltersChanged(key) {
+    if (!activeFiltersListener) return;
+    const match = ACTIVE_FILTER_KEY_PATTERN.exec(key);
+    if (match) {
+        activeFiltersListener(match[1]);
+    }
+}
+
 /**
  * Get an item from localStorage with namespace support and fallback to legacy keys
  * @param {string} key - The key without prefix
@@ -51,13 +76,15 @@ export function getStorageItem(key, defaultValue = null) {
  */
 export function setStorageItem(key, value) {
     const prefixedKey = STORAGE_PREFIX + key;
-    
+
     // Convert objects and arrays to JSON strings
     if (typeof value === 'object' && value !== null) {
         localStorage.setItem(prefixedKey, JSON.stringify(value));
     } else {
         localStorage.setItem(prefixedKey, value);
     }
+
+    notifyActiveFiltersChanged(key);
 }
 
 /**
@@ -67,6 +94,8 @@ export function setStorageItem(key, value) {
 export function removeStorageItem(key) {
     localStorage.removeItem(STORAGE_PREFIX + key);
     localStorage.removeItem(key); // Also remove legacy key
+
+    notifyActiveFiltersChanged(key);
 }
 
 /**

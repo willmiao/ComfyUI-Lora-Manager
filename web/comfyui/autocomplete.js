@@ -1317,88 +1317,17 @@ class AutoComplete {
     }
 
     /**
-     * Build a URL-encoded query string from the LoRA Manager page's active
-     * filters in localStorage, or null when not applicable.
+     * Return the query flag that tells the backend to inject the LoRA Manager
+     * page's active filters (stored server-side) into the search, or null when
+     * not applicable. The filters themselves are synced to the backend by the
+     * manager page, so this works across browsers/origins where localStorage
+     * is not shared.
      */
     _getActiveLoraFilters() {
         if (this.modelType !== 'loras' || !getLoraActiveFiltersAutocompletePreference()) {
             return null;
         }
-        try {
-            const params = new URLSearchParams();
-
-            const folder = localStorage.getItem('lora_manager_loras_activeFolder');
-            const recursiveRaw = localStorage.getItem('lora_manager_loras_recursiveSearch');
-            const recursive = recursiveRaw === null ? true : recursiveRaw.toLowerCase() === 'true';
-
-            if (folder && folder !== 'null') {
-                params.append('folder', folder);
-            } else if (!recursive) {
-                // Root folder with recursion disabled mirrors the page list,
-                // which matches only root-level files via folder=''.
-                params.append('folder', '');
-            }
-
-            const raw = localStorage.getItem('lora_manager_loras_filters');
-            if (raw) {
-                const filters = JSON.parse(raw);
-
-                if (Array.isArray(filters.baseModel)) {
-                    filters.baseModel.forEach((m) => m && params.append('base_model', m));
-                }
-
-                if (filters.tags && typeof filters.tags === 'object') {
-                    Object.entries(filters.tags).forEach(([tag, state]) => {
-                        if (state === 'include') {
-                            params.append('tag_include', tag);
-                        } else if (state === 'exclude') {
-                            params.append('tag_exclude', tag);
-                        }
-                    });
-                }
-
-                if (filters.autoTags && typeof filters.autoTags === 'object') {
-                    Object.entries(filters.autoTags).forEach(([tag, state]) => {
-                        if (state === 'include') {
-                            params.append('auto_tag_include', tag);
-                        } else if (state === 'exclude') {
-                            params.append('auto_tag_exclude', tag);
-                        }
-                    });
-                }
-
-                if (Array.isArray(filters.modelTypes)) {
-                    filters.modelTypes.forEach((t) => t && params.append('model_type', t));
-                }
-
-                if (filters.tagLogic) {
-                    params.append('tag_logic', filters.tagLogic);
-                }
-
-                if (filters.license) {
-                    if (filters.license.noCredit === 'include') {
-                        params.append('credit_required', 'false');
-                    } else if (filters.license.noCredit === 'exclude') {
-                        params.append('credit_required', 'true');
-                    }
-                    if (filters.license.allowSelling === 'include') {
-                        params.append('allow_selling_generated_content', 'true');
-                    } else if (filters.license.allowSelling === 'exclude') {
-                        params.append('allow_selling_generated_content', 'false');
-                    }
-                }
-            }
-
-            // Always send recursive in filter mode — its presence also signals
-            // the backend to run the filter pipeline (e.g. show_only_sfw) even
-            // when no concrete filter is set, matching the list endpoint.
-            params.append('recursive', String(recursive));
-
-            return params.toString();
-        } catch (error) {
-            console.warn('[Lora Manager] Failed to read active filters for autocomplete:', error);
-            return null;
-        }
+        return 'use_active_filters=true';
     }
 
     async search(term = '', endpoint = null) {

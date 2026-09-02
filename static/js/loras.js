@@ -4,6 +4,7 @@ import { updateCardsForBulkMode } from './components/shared/ModelCard.js';
 import { createPageControls } from './components/controls/index.js';
 import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } from './utils/modalUtils.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
+import { initActiveFiltersSync } from './utils/activeFiltersSync.js';
 
 // Initialize the LoRA page
 export class LoraPageManager {
@@ -41,6 +42,9 @@ export class LoraPageManager {
 
         // Initialize common page features (including context menus and virtual scroll)
         appCore.initializePageFeatures();
+
+        // Mirror active filters to the backend for the ComfyUI-side autocomplete
+        initActiveFiltersSync('loras');
     }
 }
 

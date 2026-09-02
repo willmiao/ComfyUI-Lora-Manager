@@ -3,6 +3,7 @@ import { confirmDelete, closeDeleteModal, confirmExclude, closeExcludeModal } fr
 import { createPageControls } from './components/controls/index.js';
 import { ModelDuplicatesManager } from './components/ModelDuplicatesManager.js';
 import { MODEL_TYPES } from './api/apiConfig.js';
+import { initActiveFiltersSync } from './utils/activeFiltersSync.js';
 
 // Initialize the Embeddings page
 class EmbeddingsPageManager {
@@ -32,6 +33,9 @@ class EmbeddingsPageManager {
         // Initialize common page features (including context menus)
         appCore.initializePageFeatures();
         
+        // Mirror active filters to the backend for the ComfyUI-side autocomplete
+        initActiveFiltersSync(MODEL_TYPES.EMBEDDING);
+
         console.log('Embeddings Manager initialized');
     }
 }
