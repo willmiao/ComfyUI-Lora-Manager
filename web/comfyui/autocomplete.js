@@ -1398,7 +1398,8 @@ class AutoComplete {
             }
 
             // Merge and deduplicate results while preserving order from backend
-            // Backend returns results sorted by relevance, so we maintain that order
+            // Backend returns results grouped by folder and sorted by relevance
+            // within each group, so we maintain that order
             const seen = new Set();
             const mergedItems = [];
 

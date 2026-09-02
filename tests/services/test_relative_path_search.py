@@ -49,9 +49,83 @@ async def test_search_relative_paths_supports_multiple_tokens():
 
     matching = await service.search_relative_paths("flux detail")
 
+    # Folder grouping takes precedence over cross-folder relevance:
+    # the "detail" folder sorts before "flux" alphabetically.
     assert matching == [
-        f"flux{os.sep}detail-model.safetensors",
         f"detail{os.sep}flux-trained.safetensors",
+        f"flux{os.sep}detail-model.safetensors",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_search_relative_paths_groups_by_folder_alphabetically():
+    """Same-folder entries cluster together; folders sort alphabetically."""
+    scanner = FakeScanner(
+        [
+            {"file_path": "/models/zeta/model-z1.safetensors"},
+            {"file_path": "/models/alpha/model-a1.safetensors"},
+            {"file_path": "/models/zeta/model-z2.safetensors"},
+            {"file_path": "/models/alpha/model-a2.safetensors"},
+            {"file_path": "/models/model-root.safetensors"},
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    matching = await service.search_relative_paths("model")
+
+    assert matching == [
+        # Root-level files (empty folder) come first
+        "model-root.safetensors",
+        f"alpha{os.sep}model-a1.safetensors",
+        f"alpha{os.sep}model-a2.safetensors",
+        f"zeta{os.sep}model-z1.safetensors",
+        f"zeta{os.sep}model-z2.safetensors",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_search_relative_paths_relevance_within_folder_group():
+    """Within a folder group, the relevance ordering still applies."""
+    scanner = FakeScanner(
+        [
+            {"file_path": "/models/flux/x-detail-model.safetensors"},
+            {"file_path": "/models/flux/detail-model.safetensors"},
+            {"file_path": "/models/flux/a-very-long-detail-model-name.safetensors"},
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    matching = await service.search_relative_paths("flux detail")
+
+    assert matching == [
+        # Prefix hit on the full path wins
+        f"flux{os.sep}detail-model.safetensors",
+        # Then earliest match position, then shorter path
+        f"flux{os.sep}x-detail-model.safetensors",
+        f"flux{os.sep}a-very-long-detail-model-name.safetensors",
+    ]
+
+
+@pytest.mark.asyncio
+async def test_search_relative_paths_nested_folders_sort_naturally():
+    scanner = FakeScanner(
+        [
+            {"file_path": "/models/styles/anime/model-b.safetensors"},
+            {"file_path": "/models/styles/model-a.safetensors"},
+            {"file_path": "/models/other/model-c.safetensors"},
+        ],
+        ["/models"],
+    )
+    service = DummyService("stub", scanner, BaseModelMetadata)
+
+    matching = await service.search_relative_paths("model")
+
+    assert matching == [
+        f"other{os.sep}model-c.safetensors",
+        f"styles{os.sep}model-a.safetensors",
+        f"styles{os.sep}anime{os.sep}model-b.safetensors",
     ]
 
 

@@ -1295,6 +1295,27 @@ class BaseModelService(ABC):
             path_for_sorting,
         )
 
+    @staticmethod
+    def _relative_path_folder_group_sort_key(
+        relative_path: str, include_terms: List[str]
+    ) -> tuple:
+        """Group paths by folder, then sort by relevance within each group.
+
+        Folders are ordered alphabetically (case-insensitive) by their full
+        folder path, with root-level files (empty folder) first. Within a
+        folder, paths keep the relevance ordering of
+        ``_relative_path_sort_key``. This keeps same-folder entries together
+        in the autocomplete dropdown instead of interleaving them by filename.
+        """
+        path_for_sorting = BaseModelService._remove_model_extension(
+            relative_path.lower()
+        )
+        folder = path_for_sorting.rpartition(os.sep)[0]
+
+        return (folder,) + BaseModelService._relative_path_sort_key(
+            relative_path, include_terms
+        )
+
     async def search_relative_paths(
         self,
         search_term: str,
@@ -1404,9 +1425,13 @@ class BaseModelService(ABC):
             ):
                 matching_paths.append(relative_path)
 
-        # Sort by relevance (prefix and earliest hits first, then by length and alphabetically)
+        # Group by folder (root first, then alphabetically) and sort by
+        # relevance (prefix and earliest hits, then length and alphabetically)
+        # within each folder group.
         matching_paths.sort(
-            key=lambda relative: self._relative_path_sort_key(relative, include_terms)
+            key=lambda relative: self._relative_path_folder_group_sort_key(
+                relative, include_terms
+            )
         )
 
         # Apply offset and limit
