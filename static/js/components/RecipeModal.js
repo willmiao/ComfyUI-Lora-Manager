@@ -128,6 +128,9 @@ class RecipeModal {
         this.recipeHydrationRequestId = 0;
         this.navigationKeyHandler = null;
         this.navigationInProgress = false;
+        this._disposed = false;
+        this._deferredTimerIds = new Set();
+        this._documentClickHandler = null;
         this.resetLocalEditState();
         this.init();
     }
@@ -197,7 +200,7 @@ class RecipeModal {
         this.setupDeleteControl();
 
         // Set up document click handler to close edit fields
-        document.addEventListener('click', (event) => {
+        this._documentClickHandler = (event) => {
             const recipeModal = document.getElementById('recipeModal');
             if (recipeModal && recipeModal.style.display !== 'none') {
                 const mediaEl = event.target.closest('.recipe-preview-media');
@@ -235,7 +238,8 @@ class RecipeModal {
                     this.hideReconnectInput(container);
                 }
             });
-        });
+        };
+        document.addEventListener('click', this._documentClickHandler);
     }
 
     setupNavigationControls() {
@@ -299,6 +303,39 @@ class RecipeModal {
         this._destroyAllReconnectComboboxes();
     }
 
+    /**
+     * Run a callback on a tracked timer so it can be cancelled when the
+     * modal is disposed. Used for render/wiring work that must never touch
+     * the DOM after the modal has been torn down (test teardown, close).
+     */
+    _scheduleDeferred(fn, delay) {
+        const timerId = setTimeout(() => {
+            this._deferredTimerIds.delete(timerId);
+            fn();
+        }, delay);
+        this._deferredTimerIds.add(timerId);
+        return timerId;
+    }
+
+    /**
+     * Tear the modal down: mark it disposed (in-flight async chains and any
+     * later render/wiring become no-ops), cancel pending deferred work, and
+     * detach global listeners. Safe to call multiple times.
+     */
+    dispose() {
+        if (this._disposed) {
+            return;
+        }
+        this._disposed = true;
+        this._deferredTimerIds.forEach(timerId => clearTimeout(timerId));
+        this._deferredTimerIds.clear();
+        if (this._documentClickHandler) {
+            document.removeEventListener('click', this._documentClickHandler);
+            this._documentClickHandler = null;
+        }
+        this.cleanupNavigationShortcuts();
+    }
+
     setupNavigationShortcuts() {
         const modalElement = document.getElementById('recipeModal');
         if (!modalElement) return;
@@ -353,6 +390,9 @@ class RecipeModal {
     }
 
     showRecipeDetails(recipe) {
+        if (this._disposed) {
+            return;
+        }
         const hydratedRecipe = recipe || {};
         this.resetLocalEditState();
         // Store the full recipe for editing
@@ -443,7 +483,7 @@ class RecipeModal {
             // Delay binding slightly so modal layout is stable, but skip if this render was torn down.
             const sourceUrlContainerRef = sourceUrlContainer;
             const sourceUrlEditorRef = sourceUrlEditor;
-            setTimeout(() => {
+            this._scheduleDeferred(() => {
                 if (!document.body.contains(sourceUrlContainerRef) || !document.body.contains(sourceUrlEditorRef)) {
                     return;
                 }
@@ -556,7 +596,7 @@ class RecipeModal {
     async hydrateRecipeDetails(recipeId, requestId, requestEditVersions = {}) {
         try {
             const fullRecipe = await fetchRecipeDetails(recipeId);
-            if (requestId !== this.recipeHydrationRequestId || !fullRecipe) {
+            if (this._disposed || requestId !== this.recipeHydrationRequestId || !fullRecipe) {
                 return;
             }
 
@@ -952,6 +992,9 @@ class RecipeModal {
     }
 
     syncResourcesSection(recipe = {}) {
+        if (this._disposed) {
+            return;
+        }
         const checkpointContainer = document.getElementById('recipeCheckpoint');
         const resourceDivider = document.getElementById('recipeResourceDivider');
         const lorasListElement = document.getElementById('recipeLorasList');
@@ -1016,7 +1059,7 @@ class RecipeModal {
                 missingStatus.addEventListener('click', () => this.showDownloadMissingLorasModal());
             }
 
-            setTimeout(() => {
+            this._scheduleDeferred(() => {
                 const viewRecipeLorasBtn = document.getElementById('viewRecipeLorasBtn');
                 if (viewRecipeLorasBtn) {
                     viewRecipeLorasBtn.addEventListener('click', () => this.navigateToLorasPage());
@@ -1157,7 +1200,7 @@ class RecipeModal {
                 `;
             }).join('');
 
-            setTimeout(() => {
+            this._scheduleDeferred(() => {
                 this.setupReconnectButtons();
                 this.setupLoraItemActions();
                 this.setupLoraItemsClickable();
@@ -2113,13 +2156,13 @@ class RecipeModal {
         try {
             const suggestions = await this._fetchReconnectSuggestions(loraIndex);
             // Stale guard: panel closed or another item opened while fetching
-            if (token !== this._reconnectSuggestionsToken || !container.classList.contains('active')) {
+            if (this._disposed || token !== this._reconnectSuggestionsToken || !container.classList.contains('active')) {
                 return;
             }
             this._renderReconnectSuggestions(container, suggestions, loraIndex);
         } catch (error) {
             console.error('Error fetching reconnect suggestions:', error);
-            if (token !== this._reconnectSuggestionsToken || !container.classList.contains('active')) {
+            if (this._disposed || token !== this._reconnectSuggestionsToken || !container.classList.contains('active')) {
                 return;
             }
             this._renderReconnectSuggestions(container, [], loraIndex);
@@ -2231,6 +2274,9 @@ class RecipeModal {
             });
 
             const result = await response.json();
+            if (this._disposed) {
+                return;
+            }
 
             if (result.success) {
                 // Hide the reconnect input
@@ -2256,7 +2302,7 @@ class RecipeModal {
                 }
 
                 // Refresh modal to show updated content
-                setTimeout(() => {
+                this._scheduleDeferred(() => {
                     this.showRecipeDetails(this.currentRecipe);
                 }, 500);
 
@@ -2290,6 +2336,9 @@ class RecipeModal {
             });
 
             const result = await response.json();
+            if (this._disposed) {
+                return;
+            }
 
             if (result.success) {
                 // Swap the entry back to its pre-reconnect state
@@ -2297,7 +2346,7 @@ class RecipeModal {
 
                 showToast('toast.recipes.loraRestored', {}, 'success');
 
-                setTimeout(() => {
+                this._scheduleDeferred(() => {
                     this.showRecipeDetails(this.currentRecipe);
                 }, 500);
 
@@ -2342,6 +2391,9 @@ class RecipeModal {
             });
 
             const result = await response.json();
+            if (this._disposed) {
+                return;
+            }
 
             if (result.success) {
                 // Hide the reconnect input
@@ -2367,7 +2419,7 @@ class RecipeModal {
                 }
 
                 // Refresh modal to show updated content
-                setTimeout(() => {
+                this._scheduleDeferred(() => {
                     this.showRecipeDetails(this.currentRecipe);
                 }, 500);
 
@@ -2400,6 +2452,9 @@ class RecipeModal {
             });
 
             const result = await response.json();
+            if (this._disposed) {
+                return;
+            }
 
             if (result.success) {
                 // Swap the entry back to its pre-reconnect state
@@ -2407,7 +2462,7 @@ class RecipeModal {
 
                 showToast('toast.recipes.checkpointRestored', {}, 'success');
 
-                setTimeout(() => {
+                this._scheduleDeferred(() => {
                     this.showRecipeDetails(this.currentRecipe);
                 }, 500);
 
@@ -2442,6 +2497,9 @@ class RecipeModal {
                     recipe_id: recipeId,
                 }),
             });
+            if (this._disposed) {
+                return;
+            }
             if (this.currentRecipe?.checkpoint) {
                 this.currentRecipe.checkpoint.hashInvalid = true;
                 this.syncResourcesSection(this.currentRecipe);
@@ -2975,6 +3033,9 @@ class RecipeModal {
                 return;
             }
             const updated = await fetchRecipeDetails(recipeId);
+            if (this._disposed) {
+                return;
+            }
             if (!updated) {
                 return;
             }
@@ -3083,6 +3144,9 @@ class RecipeModal {
                     lora_index: loraIndex,
                 }),
             });
+            if (this._disposed) {
+                return;
+            }
             if (this.currentRecipe?.loras?.[loraIndex]) {
                 this.currentRecipe.loras[loraIndex].hashInvalid = true;
                 this.syncResourcesSection(this.currentRecipe);

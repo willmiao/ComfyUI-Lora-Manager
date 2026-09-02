@@ -210,7 +210,11 @@ describe('RecipeModal resource item interactions', () => {
   });
 
   afterEach(() => {
-    createdModals.forEach(recipeModal => recipeModal.cleanupNavigationShortcuts());
+    // dispose() marks each modal instance dead: pending deferred timers
+    // (wiring, 500ms reconnect re-renders) are cancelled and in-flight
+    // async chains become no-ops, so nothing from this test can touch the
+    // DOM of the next one.
+    createdModals.forEach(recipeModal => recipeModal.dispose());
     createdModals.length = 0;
     document.body.innerHTML = '';
     delete global.modalManager;
