@@ -9,6 +9,7 @@ import {
   getNodeFromGraph,
   getWidgetByName,
   getWidgetSerializedValue,
+  LORA_PATTERN,
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
 
@@ -104,6 +105,46 @@ app.registerExtension({
     // Trigger the callback to update the loras widget
     if (typeof inputWidget.callback === "function") {
       inputWidget.callback(inputWidget.value);
+    }
+
+    // mergeLoras keeps the saved state of LoRAs that are already on the node,
+    // so re-enable the ones that were just sent. Otherwise sending a LoRA that
+    // is present but toggled off would silently do nothing.
+    this.activateLorasFromCode(node, loraCode);
+  },
+
+  // Turn on the toggle of every LoRA referenced by loraCode that already
+  // exists on the node but is currently disabled
+  activateLorasFromCode(node, loraCode) {
+    const lorasWidget = node.lorasWidget;
+    if (!lorasWidget || !loraCode) return;
+
+    const names = new Set();
+    let match;
+    LORA_PATTERN.lastIndex = 0;
+    while ((match = LORA_PATTERN.exec(loraCode)) !== null) {
+      names.add(match[1]);
+    }
+    if (names.size === 0) return;
+
+    const currentLoras = Array.isArray(lorasWidget.value) ? lorasWidget.value : [];
+    let changed = false;
+    const updatedLoras = currentLoras.map((lora) => {
+      if (lora && names.has(lora.name) && lora.active !== true) {
+        changed = true;
+        return { ...lora, active: true };
+      }
+      return lora;
+    });
+
+    if (!changed) return;
+
+    lorasWidget.value = updatedLoras;
+
+    // Mirrors the manual toggle: the widget setter re-renders, the callback
+    // refreshes trigger words and syncs the text widget
+    if (typeof lorasWidget.callback === "function") {
+      lorasWidget.callback(lorasWidget.value);
     }
   },
 
