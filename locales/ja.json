@@ -52,24 +52,24 @@
             "tb": "TB"
         },
         "scanProgress": {
-            "refreshing": "[TODO: Translate] Refreshing {type}s...",
-            "fullRebuilding": "[TODO: Translate] Full rebuild {type}s...",
-            "actionRefresh": "[TODO: Translate] Refresh",
-            "actionFullRebuild": "[TODO: Translate] Full rebuild",
-            "actionRefreshLower": "[TODO: Translate] refresh",
-            "actionRebuildLower": "[TODO: Translate] rebuild",
+            "refreshing": "{type}を更新中...",
+            "fullRebuilding": "{type}を完全に再構築中...",
+            "actionRefresh": "更新",
+            "actionFullRebuild": "完全な再構築",
+            "actionRefreshLower": "更新",
+            "actionRebuildLower": "再構築",
             "stages": {
-                "scan_folders": "[TODO: Translate] Scanning folders...",
-                "count_models": "[TODO: Translate] Found {total} files",
-                "process_models": "[TODO: Translate] Processing models",
-                "reconcile_scan": "[TODO: Translate] Checking for changes...",
-                "process_new": "[TODO: Translate] Processing new models",
-                "finalizing": "[TODO: Translate] Finalizing..."
+                "scan_folders": "フォルダをスキャン中...",
+                "count_models": "{total} 件のファイルが見つかりました",
+                "process_models": "モデルを処理中",
+                "reconcile_scan": "変更を確認中...",
+                "process_new": "新しいモデルを処理中",
+                "finalizing": "最終処理中..."
             },
             "eta": {
-                "lessThanMinute": "[TODO: Translate] Less than a minute remaining",
-                "minutes": "[TODO: Translate] ~{minutes} min remaining",
-                "hours": "[TODO: Translate] ~{hours} hr {minutes} min remaining"
+                "lessThanMinute": "残り1分未満",
+                "minutes": "残り約 {minutes} 分",
+                "hours": "残り約 {hours} 時間 {minutes} 分"
             }
         }
     },

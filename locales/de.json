@@ -52,24 +52,24 @@
             "tb": "TB"
         },
         "scanProgress": {
-            "refreshing": "[TODO: Translate] Refreshing {type}s...",
-            "fullRebuilding": "[TODO: Translate] Full rebuild {type}s...",
-            "actionRefresh": "[TODO: Translate] Refresh",
-            "actionFullRebuild": "[TODO: Translate] Full rebuild",
-            "actionRefreshLower": "[TODO: Translate] refresh",
-            "actionRebuildLower": "[TODO: Translate] rebuild",
+            "refreshing": "{type} werden aktualisiert...",
+            "fullRebuilding": "{type} werden vollständig neu aufgebaut...",
+            "actionRefresh": "Aktualisierung",
+            "actionFullRebuild": "Vollständiger Neuaufbau",
+            "actionRefreshLower": "Aktualisieren",
+            "actionRebuildLower": "Neuaufbau",
             "stages": {
-                "scan_folders": "[TODO: Translate] Scanning folders...",
-                "count_models": "[TODO: Translate] Found {total} files",
-                "process_models": "[TODO: Translate] Processing models",
-                "reconcile_scan": "[TODO: Translate] Checking for changes...",
-                "process_new": "[TODO: Translate] Processing new models",
-                "finalizing": "[TODO: Translate] Finalizing..."
+                "scan_folders": "Ordner werden gescannt...",
+                "count_models": "{total} Dateien gefunden",
+                "process_models": "Modelle werden verarbeitet",
+                "reconcile_scan": "Änderungen werden geprüft...",
+                "process_new": "Neue Modelle werden verarbeitet",
+                "finalizing": "Abschließen..."
             },
             "eta": {
-                "lessThanMinute": "[TODO: Translate] Less than a minute remaining",
-                "minutes": "[TODO: Translate] ~{minutes} min remaining",
-                "hours": "[TODO: Translate] ~{hours} hr {minutes} min remaining"
+                "lessThanMinute": "Weniger als eine Minute verbleibend",
+                "minutes": "~{minutes} Min. verbleibend",
+                "hours": "~{hours} Std. {minutes} Min. verbleibend"
             }
         }
     },

@@ -52,24 +52,24 @@
             "tb": "TB"
         },
         "scanProgress": {
-            "refreshing": "[TODO: Translate] Refreshing {type}s...",
-            "fullRebuilding": "[TODO: Translate] Full rebuild {type}s...",
-            "actionRefresh": "[TODO: Translate] Refresh",
-            "actionFullRebuild": "[TODO: Translate] Full rebuild",
-            "actionRefreshLower": "[TODO: Translate] refresh",
-            "actionRebuildLower": "[TODO: Translate] rebuild",
+            "refreshing": "Actualizando {type}...",
+            "fullRebuilding": "Reconstrucción completa de {type}...",
+            "actionRefresh": "Actualización",
+            "actionFullRebuild": "Reconstrucción completa",
+            "actionRefreshLower": "actualizar",
+            "actionRebuildLower": "reconstruir",
             "stages": {
-                "scan_folders": "[TODO: Translate] Scanning folders...",
-                "count_models": "[TODO: Translate] Found {total} files",
-                "process_models": "[TODO: Translate] Processing models",
-                "reconcile_scan": "[TODO: Translate] Checking for changes...",
-                "process_new": "[TODO: Translate] Processing new models",
-                "finalizing": "[TODO: Translate] Finalizing..."
+                "scan_folders": "Escaneando carpetas...",
+                "count_models": "Se encontraron {total} archivos",
+                "process_models": "Procesando modelos",
+                "reconcile_scan": "Comprobando cambios...",
+                "process_new": "Procesando modelos nuevos",
+                "finalizing": "Finalizando..."
             },
             "eta": {
-                "lessThanMinute": "[TODO: Translate] Less than a minute remaining",
-                "minutes": "[TODO: Translate] ~{minutes} min remaining",
-                "hours": "[TODO: Translate] ~{hours} hr {minutes} min remaining"
+                "lessThanMinute": "Queda menos de un minuto",
+                "minutes": "Quedan ~{minutes} min",
+                "hours": "Quedan ~{hours} h {minutes} min"
             }
         }
     },

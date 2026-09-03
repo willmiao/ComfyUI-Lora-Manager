@@ -52,24 +52,24 @@
             "tb": "TB"
         },
         "scanProgress": {
-            "refreshing": "[TODO: Translate] Refreshing {type}s...",
-            "fullRebuilding": "[TODO: Translate] Full rebuild {type}s...",
-            "actionRefresh": "[TODO: Translate] Refresh",
-            "actionFullRebuild": "[TODO: Translate] Full rebuild",
-            "actionRefreshLower": "[TODO: Translate] refresh",
-            "actionRebuildLower": "[TODO: Translate] rebuild",
+            "refreshing": "{type} 새로고침 중...",
+            "fullRebuilding": "{type} 전체 재구성 중...",
+            "actionRefresh": "새로고침",
+            "actionFullRebuild": "전체 재구성",
+            "actionRefreshLower": "새로고침",
+            "actionRebuildLower": "재구성",
             "stages": {
-                "scan_folders": "[TODO: Translate] Scanning folders...",
-                "count_models": "[TODO: Translate] Found {total} files",
-                "process_models": "[TODO: Translate] Processing models",
-                "reconcile_scan": "[TODO: Translate] Checking for changes...",
-                "process_new": "[TODO: Translate] Processing new models",
-                "finalizing": "[TODO: Translate] Finalizing..."
+                "scan_folders": "폴더 스캔 중...",
+                "count_models": "파일 {total}개 발견",
+                "process_models": "모델 처리 중",
+                "reconcile_scan": "변경 사항 확인 중...",
+                "process_new": "새 모델 처리 중",
+                "finalizing": "마무리 중..."
             },
             "eta": {
-                "lessThanMinute": "[TODO: Translate] Less than a minute remaining",
-                "minutes": "[TODO: Translate] ~{minutes} min remaining",
-                "hours": "[TODO: Translate] ~{hours} hr {minutes} min remaining"
+                "lessThanMinute": "남은 시간 1분 미만",
+                "minutes": "약 {minutes}분 남음",
+                "hours": "약 {hours}시간 {minutes}분 남음"
             }
         }
     },

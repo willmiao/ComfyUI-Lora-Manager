@@ -52,24 +52,24 @@
             "tb": "TB"
         },
         "scanProgress": {
-            "refreshing": "[TODO: Translate] Refreshing {type}s...",
-            "fullRebuilding": "[TODO: Translate] Full rebuild {type}s...",
-            "actionRefresh": "[TODO: Translate] Refresh",
-            "actionFullRebuild": "[TODO: Translate] Full rebuild",
-            "actionRefreshLower": "[TODO: Translate] refresh",
-            "actionRebuildLower": "[TODO: Translate] rebuild",
+            "refreshing": "正在重新整理 {type}...",
+            "fullRebuilding": "正在完整重建 {type}...",
+            "actionRefresh": "重新整理",
+            "actionFullRebuild": "完整重建",
+            "actionRefreshLower": "重新整理",
+            "actionRebuildLower": "重建",
             "stages": {
-                "scan_folders": "[TODO: Translate] Scanning folders...",
-                "count_models": "[TODO: Translate] Found {total} files",
-                "process_models": "[TODO: Translate] Processing models",
-                "reconcile_scan": "[TODO: Translate] Checking for changes...",
-                "process_new": "[TODO: Translate] Processing new models",
-                "finalizing": "[TODO: Translate] Finalizing..."
+                "scan_folders": "正在掃描資料夾...",
+                "count_models": "找到 {total} 個檔案",
+                "process_models": "正在處理模型",
+                "reconcile_scan": "正在檢查變更...",
+                "process_new": "正在處理新模型",
+                "finalizing": "正在收尾..."
             },
             "eta": {
-                "lessThanMinute": "[TODO: Translate] Less than a minute remaining",
-                "minutes": "[TODO: Translate] ~{minutes} min remaining",
-                "hours": "[TODO: Translate] ~{hours} hr {minutes} min remaining"
+                "lessThanMinute": "剩餘時間不到一分鐘",
+                "minutes": "剩餘約 {minutes} 分鐘",
+                "hours": "剩餘約 {hours} 小時 {minutes} 分鐘"
             }
         }
     },
