@@ -23,6 +23,18 @@
           <line x1="6" y1="6" x2="18" y2="18" />
         </svg>
       </button>
+      <button
+        v-if="isLorasMode"
+        type="button"
+        class="active-filters-toggle"
+        :class="{ 'is-active': activeFiltersEnabled }"
+        :title="activeFiltersToggleTitle"
+        @click="toggleActiveFiltersSearch"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -30,6 +42,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useAutocomplete } from '@/composables/useAutocomplete'
+// @ts-ignore - ComfyUI external module
+import { LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID, SETTING_TOGGLED_EVENT_NAME, getLoraActiveFiltersAutocompletePreference, setLoraManagerSettingValue } from '../../../web/comfyui/settings.js'
 
 // Access LiteGraph global for initial mode detection
 declare const LiteGraph: { vueNodesMode?: boolean } | undefined
@@ -66,6 +80,48 @@ const hasText = ref(false)
 
 // Show clear button when there is text
 const showClearButton = computed(() => hasText.value)
+
+// Active-filters search indicator (loras nodes only). Mirrors the
+// loramanager.lora_active_filters_autocomplete setting so users can
+// discover and toggle the /activefilters mode without opening the
+// dropdown or the settings dialog.
+const isLorasMode = (props.modelType ?? 'loras') === 'loras'
+const activeFiltersEnabled = ref(false)
+
+const refreshActiveFiltersState = () => {
+  if (isLorasMode) {
+    activeFiltersEnabled.value = getLoraActiveFiltersAutocompletePreference()
+  }
+}
+
+const onSettingToggled = (event: Event) => {
+  const detail = (event as CustomEvent<{ settingId?: string; value?: unknown }>).detail
+  if (detail?.settingId === LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID) {
+    activeFiltersEnabled.value = detail.value === true
+  }
+}
+
+const activeFiltersToggleTitle = computed(() =>
+  activeFiltersEnabled.value
+    ? 'Active Filters Search is ON: suggestions respect the LoRA Manager page filters. Click to disable, or type /noactivefilters.'
+    : 'Active Filters Search is OFF: suggestions search the full library. Click to enable, or type /activefilters.'
+)
+
+const toggleActiveFiltersSearch = async () => {
+  const newValue = !activeFiltersEnabled.value
+  try {
+    const success = await setLoraManagerSettingValue(
+      LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID,
+      newValue
+    )
+    if (!success) {
+      throw new Error('settings API unavailable')
+    }
+    activeFiltersEnabled.value = newValue
+  } catch (error) {
+    console.error('[Lora Manager] Failed to toggle active filters search:', error)
+  }
+}
 
 // Initialize autocomplete with direct ref access
 useAutocomplete(
@@ -252,6 +308,11 @@ onMounted(() => {
   // Setup widget.onSetValue callback
   setupWidgetOnSetValue()
 
+  // Active-filters indicator: read initial state and stay in sync with
+  // slash-command / context-menu toggles dispatched via settings.js
+  refreshActiveFiltersState()
+  window.addEventListener(SETTING_TOGGLED_EVENT_NAME, onSettingToggled)
+
   // Listen for custom event dispatched by main.ts
   document.addEventListener('lora-manager:vue-mode-change', onModeChange)
 })
@@ -277,6 +338,7 @@ onUnmounted(() => {
 
   // Remove event listener
   document.removeEventListener('lora-manager:vue-mode-change', onModeChange)
+  window.removeEventListener(SETTING_TOGGLED_EVENT_NAME, onSettingToggled)
 })
 </script>
 
@@ -367,6 +429,58 @@ onUnmounted(() => {
 .clear-button svg {
   width: 12px;
   height: 12px;
+}
+
+/* Active-filters search indicator (loras nodes only) */
+.active-filters-toggle {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 16px;
+  height: 16px;
+  padding: 2px;
+  margin: 0;
+  border: none;
+  border-radius: 4px;
+  background: rgba(128, 128, 128, 0.25);
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, background-color 0.2s ease, color 0.2s ease;
+  z-index: 10;
+}
+
+.active-filters-toggle:hover {
+  opacity: 1;
+  background: rgba(128, 128, 128, 0.45);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.active-filters-toggle.is-active {
+  background: rgba(59, 130, 246, 0.35);
+  color: #7db8ff;
+  opacity: 1;
+}
+
+.active-filters-toggle svg {
+  width: 11px;
+  height: 11px;
+}
+
+/* Vue DOM mode adjustments for the indicator */
+.text-input.vue-dom-mode ~ .active-filters-toggle {
+  top: 8px;
+  right: 8px;
+  width: 20px;
+  height: 20px;
+}
+
+.text-input.vue-dom-mode ~ .active-filters-toggle svg {
+  width: 13px;
+  height: 13px;
 }
 
 /* Vue DOM mode adjustments for clear button */

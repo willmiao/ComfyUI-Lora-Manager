@@ -23,6 +23,8 @@ import { showToast } from "./utils.js";
 
 // localStorage key for the one-time "how to disable" hint in the dropdown
 const FIRST_RUN_HINT_DISMISSED_KEY = 'lm:autocomplete-disable-tip-dismissed';
+// localStorage key for the one-time "try active filters search" hint (loras nodes)
+const ACTIVE_FILTERS_HINT_DISMISSED_KEY = 'lm:activefilters-tip-dismissed';
 
 // Command definitions for category filtering
 const TAG_COMMANDS = {
@@ -1763,22 +1765,31 @@ class AutoComplete {
     }
 
     /**
-     * Render a state hint below the slash command list so the autocomplete
-     * toggle commands explain themselves. Only applies to prompt nodes.
+     * Render a state hint below the slash command list so the toggle commands
+     * explain themselves. Prompt nodes advertise /autocomplete, loras nodes
+     * advertise /activefilters.
      */
     _renderCommandListFooter() {
         this._removeCommandListFooter();
 
-        if (this.modelType !== 'prompt') {
+        let text = null;
+        if (this.modelType === 'prompt') {
+            const enabled = getPromptTagAutocompletePreference();
+            text = enabled
+                ? 'Tag autocomplete is ON — /noautocomplete to disable'
+                : 'Tag autocomplete is OFF — /autocomplete to enable';
+        } else if (this.modelType === 'loras') {
+            const enabled = getLoraActiveFiltersAutocompletePreference();
+            text = enabled
+                ? 'Active Filters Search: ON — /noactivefilters to disable'
+                : 'Active Filters Search: OFF — /activefilters to enable';
+        } else {
             return;
         }
 
-        const enabled = getPromptTagAutocompletePreference();
         const footer = document.createElement('div');
         footer.className = 'lm-autocomplete-command-footer';
-        footer.textContent = enabled
-            ? 'Tag autocomplete is ON — /noautocomplete to disable'
-            : 'Tag autocomplete is OFF — /autocomplete to enable';
+        footer.textContent = text;
         footer.style.cssText = `
             padding: 6px 12px;
             font-size: 11px;
@@ -1801,23 +1812,44 @@ class AutoComplete {
     }
 
     /**
-     * Show a one-time, dismissible hint inside the dropdown telling users how
-     * to disable tag autocomplete. Dismissal is persisted in localStorage.
+     * Show a one-time, dismissible hint inside the dropdown surfacing the
+     * toggle commands: prompt nodes advertise /noautocomplete, loras nodes
+     * advertise /activefilters. Dismissal is persisted in localStorage.
      */
     _maybeShowFirstRunHint() {
         if (this.firstRunHint) {
             return;
         }
-        if (this.modelType !== 'prompt'
-            || this.showingCommands
-            || this.searchType !== 'custom_words'
-            || this.activeCommand) {
+
+        let hintText = null;
+        let storageKey = null;
+
+        if (this.modelType === 'prompt') {
+            // Only hint during plain tag searches, not command/embedding modes
+            if (this.showingCommands
+                || this.searchType !== 'custom_words'
+                || this.activeCommand) {
+                return;
+            }
+            hintText = 'Tip: type /noautocomplete to turn off these suggestions';
+            storageKey = FIRST_RUN_HINT_DISMISSED_KEY;
+        } else if (this.modelType === 'loras') {
+            // Only advertise active-filters search while it is disabled
+            if (this.showingCommands || this.activeCommand) {
+                return;
+            }
+            if (getLoraActiveFiltersAutocompletePreference()) {
+                return;
+            }
+            hintText = 'Tip: type /activefilters to search within the LoRA Manager page filters';
+            storageKey = ACTIVE_FILTERS_HINT_DISMISSED_KEY;
+        } else {
             return;
         }
 
         let dismissed = false;
         try {
-            dismissed = localStorage.getItem(FIRST_RUN_HINT_DISMISSED_KEY) === '1';
+            dismissed = localStorage.getItem(storageKey) === '1';
         } catch (e) {
             // localStorage unavailable - fall through and show the hint
         }
@@ -1839,7 +1871,7 @@ class AutoComplete {
         `;
 
         const text = document.createElement('span');
-        text.textContent = 'Tip: type /noautocomplete to turn off these suggestions';
+        text.textContent = hintText;
 
         const closeBtn = document.createElement('button');
         closeBtn.type = 'button';
@@ -1856,7 +1888,7 @@ class AutoComplete {
         `;
         closeBtn.addEventListener('click', () => {
             try {
-                localStorage.setItem(FIRST_RUN_HINT_DISMISSED_KEY, '1');
+                localStorage.setItem(storageKey, '1');
             } catch (e) {
             }
             this._removeFirstRunHint();

@@ -1,6 +1,12 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
 import {
+  LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID,
+  getLoraActiveFiltersAutocompletePreference,
+  setLoraManagerSettingValue,
+} from "./settings.js";
+import { showToast } from "./utils.js";
+import {
   collectActiveLorasFromChain,
   updateConnectedTriggerWords,
   chainCallback,
@@ -11,6 +17,65 @@ import {
   getWidgetSerializedValue,
 } from "./utils.js";
 import { applyLoraValuesToText, debounce } from "./lora_syntax_utils.js";
+
+// Node classes whose "text" widget uses the loras autocomplete. Kept in sync
+// with the broadcast-compatible classes in handleLoraCodeUpdate below.
+const LORA_AUTOCOMPLETE_NODE_CLASSES = [
+  "Lora Loader (LoraManager)",
+  "Lora Stacker (LoraManager)",
+  "WanVideo Lora Select (LoraManager)",
+  "Create Hook LoRA (LoraManager)",
+];
+
+// Expose the active-filters search toggle in the node's right-click menu so
+// users can discover the switch where the behavior actually happens, instead
+// of only via the /activefilters and /noactivefilters slash commands. Mirrors
+// the tag-autocomplete menu entry on Prompt (LoraManager) nodes.
+function addActiveFiltersSearchMenuOption(nodeType) {
+  const getExtraMenuOptions = nodeType.prototype.getExtraMenuOptions;
+  nodeType.prototype.getExtraMenuOptions = function (_, options) {
+    getExtraMenuOptions?.apply?.(this, arguments);
+
+    options.push(null);
+
+    const filtersSearchEnabled = getLoraActiveFiltersAutocompletePreference();
+    options.push({
+      content: filtersSearchEnabled
+        ? "Active Filters Search: ON (/noactivefilters to disable)"
+        : "Active Filters Search: OFF (/activefilters to enable)",
+      callback: async () => {
+        const newValue = !filtersSearchEnabled;
+        try {
+          const success = await setLoraManagerSettingValue(
+            LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID,
+            newValue
+          );
+          if (!success) {
+            throw new Error("settings API unavailable");
+          }
+          showToast({
+            severity: newValue ? "success" : "secondary",
+            summary: newValue
+              ? "Active Filters Search Enabled"
+              : "Active Filters Search Disabled",
+            detail: newValue
+              ? "LoRA autocomplete now respects the active filters of the LoRA Manager page. Type /noactivefilters in the LoRA field to disable."
+              : "LoRA autocomplete searches the full library again. Type /activefilters in the LoRA field to re-enable.",
+            life: 3000,
+          });
+        } catch (error) {
+          console.error("[Lora Manager] Failed to toggle setting:", error);
+          showToast({
+            severity: "error",
+            summary: "Error",
+            detail: "Failed to toggle active filters search setting",
+            life: 3000,
+          });
+        }
+      },
+    });
+  };
+}
 
 app.registerExtension({
   name: "LoraManager.LoraLoader",
@@ -35,12 +100,7 @@ app.registerExtension({
     // Handle broadcast mode (for Desktop/non-browser support)
     if (numericNodeId === -1) {
       // Find all compatible nodes in the current graph
-      const compatibleClasses = new Set([
-        "Lora Loader (LoraManager)",
-        "Lora Stacker (LoraManager)",
-        "WanVideo Lora Select (LoraManager)",
-        "Create Hook LoRA (LoraManager)",
-      ]);
+      const compatibleClasses = new Set(LORA_AUTOCOMPLETE_NODE_CLASSES);
       const targetNodes = getAllGraphNodes(app.graph)
         .map(({ node }) => node)
         .filter((node) => compatibleClasses.has(node?.comfyClass));
@@ -108,6 +168,10 @@ app.registerExtension({
   },
 
   async beforeRegisterNodeDef(nodeType, nodeData, app) {
+    if (LORA_AUTOCOMPLETE_NODE_CLASSES.includes(nodeType.comfyClass)) {
+      addActiveFiltersSearchMenuOption(nodeType);
+    }
+
     if (nodeType.comfyClass == "Lora Loader (LoraManager)") {
       chainCallback(nodeType.prototype, "onNodeCreated", function () {
         // Enable widget serialization
