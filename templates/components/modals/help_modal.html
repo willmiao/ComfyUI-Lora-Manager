@@ -1,5 +1,5 @@
 <!-- Help Modal -->
-<div id="helpModal" class="modal">
+<div id="helpModal" class="modal" data-help-content-version="2026-09-03">
     <div class="modal-content help-modal">
         <button class="close" onclick="modalManager.closeModal('helpModal')">&times;</button>
         <div class="help-header">
@@ -44,6 +44,7 @@
                     <button id="replayTutorialBtn" class="replay-tutorial-btn">
                         <i class="fas fa-graduation-cap"></i>
                         <span>{{ t('help.gettingStarted.replayTutorial') }}</span>
+                        <span class="new-content-badge">{{ t('help.newContentBadge') }}</span>
                     </button>
                 </div>
             </div>

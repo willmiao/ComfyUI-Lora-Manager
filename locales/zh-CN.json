@@ -2028,7 +2028,8 @@
             "settings": "设置与配置",
             "extensions": "扩展",
             "newBadge": "新"
-        }
+        },
+        "newContentBadge": "新"
     },
     "update": {
         "title": "检查更新",

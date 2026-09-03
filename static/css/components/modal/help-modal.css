@@ -167,6 +167,29 @@
   box-shadow: var(--shadow-lg);
 }
 
+/* Replay Tutorial button: badge hidden until the button is flagged as new content */
+.replay-tutorial-btn .new-content-badge {
+  display: none;
+  background-color: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  box-shadow: none;
+  margin-left: 2px;
+}
+
+.replay-tutorial-btn.has-new-content .new-content-badge {
+  display: inline-flex;
+}
+
+/* One-time attention pulse when the button is flagged as new content */
+@keyframes new-content-glow {
+  0% { box-shadow: 0 0 0 0 oklch(from var(--lora-accent) l c h / 55%); }
+  100% { box-shadow: 0 0 0 16px transparent; }
+}
+
+.replay-tutorial-btn.has-new-content {
+  animation: new-content-glow 1.2s ease-out 3;
+}
+
 /* Update video list styles */
 .video-list {
   display: flex;

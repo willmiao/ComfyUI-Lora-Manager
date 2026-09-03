@@ -2028,7 +2028,8 @@
             "settings": "설정 & 구성",
             "extensions": "확장",
             "newBadge": "신규"
-        }
+        },
+        "newContentBadge": "신규"
     },
     "update": {
         "title": "업데이트 확인",

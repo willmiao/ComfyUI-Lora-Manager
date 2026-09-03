@@ -2028,7 +2028,8 @@
             "settings": "Einstellungen & Konfiguration",
             "extensions": "Erweiterungen",
             "newBadge": "NEU"
-        }
+        },
+        "newContentBadge": "NEU"
     },
     "update": {
         "title": "Nach Updates suchen",

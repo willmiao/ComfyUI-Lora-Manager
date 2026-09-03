@@ -2028,7 +2028,8 @@
             "settings": "הגדרות ותצורה",
             "extensions": "הרחבות",
             "newBadge": "חדש"
-        }
+        },
+        "newContentBadge": "חדש"
     },
     "update": {
         "title": "בדוק עדכונים",

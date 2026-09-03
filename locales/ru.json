@@ -2028,7 +2028,8 @@
             "settings": "Настройки и конфигурация",
             "extensions": "Расширения",
             "newBadge": "НОВОЕ"
-        }
+        },
+        "newContentBadge": "НОВОЕ"
     },
     "update": {
         "title": "Проверить обновления",

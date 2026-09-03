@@ -2028,7 +2028,8 @@
             "settings": "Configuración",
             "extensions": "Extensiones",
             "newBadge": "NUEVO"
-        }
+        },
+        "newContentBadge": "NUEVO"
     },
     "update": {
         "title": "Comprobar actualizaciones",

@@ -2028,7 +2028,8 @@
             "settings": "設定&構成",
             "extensions": "拡張機能",
             "newBadge": "新着"
-        }
+        },
+        "newContentBadge": "新着"
     },
     "update": {
         "title": "更新確認",
