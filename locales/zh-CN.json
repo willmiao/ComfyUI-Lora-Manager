@@ -96,7 +96,7 @@
             },
             "bulk": {
                 "title": "批量操作",
-                "content": "点击此按钮或按 <span class=\"onboarding-shortcut\">B</span> 进入批量模式。可多选模型并进行批量操作。使用 <span class=\"onboarding-shortcut\">Ctrl+A</span> 全选所有可见模型。"
+                "content": "点击此按钮或按 <span class=\"onboarding-shortcut\">B</span> 进入批量模式，可多选模型并执行批量操作。<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> 全选所有可见模型，<span class=\"onboarding-shortcut\">Shift+Click</span> 选择一个范围。<br>• 按 <span class=\"onboarding-shortcut\">Esc</span> 或点击空白区域退出批量模式。"
             },
             "searchOptions": {
                 "title": "搜索选项",
@@ -116,19 +116,19 @@
             },
             "contextMenu": {
                 "title": "右键菜单",
-                "content": "<strong>右键点击</strong>任意模型卡片可打开更多操作菜单。"
+                "content": "<strong>右键点击</strong>任意模型卡片，可打开包含移动、删除或编辑元数据等卡片操作的菜单。"
             },
             "marqueeSelect": {
-                "title": "[TODO: Translate] Drag to Select",
-                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+                "title": "拖动框选",
+                "content": "在网格的空白区域按住<strong>鼠标左键</strong>并拖动，绘制一个可同时选中多张卡片的框选区域。"
             },
             "dragToSidebar": {
-                "title": "[TODO: Translate] Organize by Dragging",
-                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+                "title": "拖放整理",
+                "content": "将模型卡片拖到侧边栏的文件夹上，即可把文件移动到该文件夹。批量模式下选中的多张卡片也可如此操作。"
             },
             "contextMenus": {
-                "title": "[TODO: Translate] More Context Menus",
-                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
+                "title": "更多右键菜单",
+                "content": "在批量模式下，<strong>右键点击已选中的卡片</strong>可进行批量操作。<strong>右键点击页面空白区域</strong>可使用检查更新、管理已排除的模型等全局操作。"
             }
         }
     },
@@ -1641,7 +1641,7 @@
                 "addPlaceholder": "输入或点击下方建议添加",
                 "editWord": "编辑触发词",
                 "editPlaceholder": "编辑触发词",
-                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
+                "copyOrEditWord": "单击复制，双击编辑",
                 "deleteWord": "删除触发词",
                 "suggestions": {
                     "noSuggestions": "暂无建议",
@@ -1967,50 +1967,50 @@
             "gettingStarted": "新手入门",
             "updateVlogs": "更新日志",
             "documentation": "文档",
-            "shortcuts": "[TODO: Translate] Shortcuts"
+            "shortcuts": "快捷键"
         },
         "gettingStarted": {
             "title": "LoRA 管理器新手入门",
-            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+            "replayTutorial": "重播教程"
         },
         "shortcuts": {
-            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "title": "键盘与鼠标快捷键",
             "groups": {
-                "general": "[TODO: Translate] General",
-                "actions": "[TODO: Translate] Actions",
-                "selection": "[TODO: Translate] Selection & Bulk Mode",
-                "navigation": "[TODO: Translate] Navigation",
-                "modelModal": "[TODO: Translate] Model / Recipe Modal",
-                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+                "general": "通用",
+                "actions": "操作",
+                "selection": "选择与批量模式",
+                "navigation": "导航",
+                "modelModal": "模型 / 配方弹窗",
+                "mediaViewer": "媒体查看器 / 示例展示"
             },
             "keys": {
-                "click": "[TODO: Translate] Click",
-                "drag": "[TODO: Translate] Drag",
-                "rightClick": "[TODO: Translate] Right-click",
-                "letter": "[TODO: Translate] Letter",
-                "swipe": "[TODO: Translate] Swipe"
+                "click": "单击",
+                "drag": "拖动",
+                "rightClick": "右键点击",
+                "letter": "字母",
+                "swipe": "滑动"
             },
             "entries": {
-                "focusSearch": "[TODO: Translate] Focus search",
-                "closeModal": "[TODO: Translate] Close modal / panel",
-                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
-                "refresh": "[TODO: Translate] Refresh model list",
-                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
-                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
-                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
-                "selectAll": "[TODO: Translate] Select all visible models",
-                "rangeSelect": "[TODO: Translate] Range select",
-                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
-                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
-                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
-                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
-                "scrollPages": "[TODO: Translate] Scroll pages",
-                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
-                "prevNext": "[TODO: Translate] Previous / next model",
-                "deleteEntry": "[TODO: Translate] Delete",
-                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
-                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
-                "closeViewer": "[TODO: Translate] Close viewer"
+                "focusSearch": "聚焦搜索框",
+                "closeModal": "关闭弹窗 / 面板",
+                "openShortcuts": "打开本快捷键面板",
+                "refresh": "刷新模型列表",
+                "fetchMetadata": "从 CivitAI 获取元数据（仅模型页面）",
+                "downloadModel": "下载模型（仅模型页面）",
+                "toggleBulkMode": "切换批量模式",
+                "selectAll": "全选所有可见模型",
+                "rangeSelect": "范围选择",
+                "marqueeSelect": "框选卡片（在网格空白区域）",
+                "exitBulkMode": "退出批量模式",
+                "bulkActions": "在已选中的卡片上：批量操作菜单",
+                "globalActions": "在页面空白区域：全局操作菜单（检查更新、管理已排除的模型）",
+                "scrollPages": "滚动页面",
+                "jumpAlphabet": "字母索引栏跳转",
+                "prevNext": "上一个 / 下一个模型",
+                "deleteEntry": "删除",
+                "cycleMedia": "切换媒体（在示例展示中按 [ / ]）",
+                "swipeTouch": "在触屏设备上切换媒体",
+                "closeViewer": "关闭查看器"
             }
         },
         "updateVlogs": {

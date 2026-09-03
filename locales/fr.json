@@ -96,7 +96,7 @@
             },
             "bulk": {
                 "title": "Opérations groupées",
-                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span>. Sélectionnez plusieurs modèles et effectuez des opérations groupées. Utilisez <span class=\"onboarding-shortcut\">Ctrl+A</span> pour sélectionner tous les modèles visibles."
+                "content": "Activez le mode groupé en cliquant sur ce bouton ou en appuyant sur <span class=\"onboarding-shortcut\">B</span> pour sélectionner plusieurs modèles et effectuer des opérations groupées.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> sélectionne tous les modèles visibles, <span class=\"onboarding-shortcut\">Shift+Click</span> sélectionne une plage.<br>• <span class=\"onboarding-shortcut\">Esc</span> ou un clic sur une zone vide quitte le mode groupé."
             },
             "searchOptions": {
                 "title": "Options de recherche",
@@ -116,19 +116,19 @@
             },
             "contextMenu": {
                 "title": "Menu contextuel",
-                "content": "<strong>Clic droit</strong> sur une carte de modèle pour accéder à un menu contextuel avec des actions supplémentaires."
+                "content": "<strong>Clic droit</strong> sur n'importe quelle carte de modèle pour ouvrir un menu contextuel avec des actions sur la carte comme déplacer, supprimer ou modifier les métadonnées."
             },
             "marqueeSelect": {
-                "title": "[TODO: Translate] Drag to Select",
-                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+                "title": "Glisser pour sélectionner",
+                "content": "Maintenez le <strong>bouton gauche de la souris</strong> enfoncé sur une zone vide de la grille et glissez pour tracer un rectangle de sélection qui sélectionne plusieurs cartes à la fois."
             },
             "dragToSidebar": {
-                "title": "[TODO: Translate] Organize by Dragging",
-                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+                "title": "Organiser par glisser-déposer",
+                "content": "Glissez une carte de modèle sur un dossier de la barre latérale pour y déplacer le fichier. Cela fonctionne aussi avec plusieurs cartes sélectionnées en mode groupé."
             },
             "contextMenus": {
-                "title": "[TODO: Translate] More Context Menus",
-                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
+                "title": "Plus de menus contextuels",
+                "content": "En mode groupé, <strong>faites un clic droit sur une carte sélectionnée</strong> pour accéder aux actions groupées. <strong>Faites un clic droit sur une zone vide</strong> de la page pour accéder aux actions globales comme la vérification des mises à jour et la gestion des modèles exclus."
             }
         }
     },
@@ -1641,7 +1641,7 @@
                 "addPlaceholder": "Tapez pour ajouter ou cliquez sur les suggestions ci-dessous",
                 "editWord": "Modifier le mot-clé",
                 "editPlaceholder": "Modifier le mot-clé",
-                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
+                "copyOrEditWord": "Cliquez pour copier, double-cliquez pour modifier",
                 "deleteWord": "Supprimer le mot-clé",
                 "suggestions": {
                     "noSuggestions": "Aucune suggestion disponible",
@@ -1967,50 +1967,50 @@
             "gettingStarted": "Commencer",
             "updateVlogs": "Vlogs de mise à jour",
             "documentation": "Documentation",
-            "shortcuts": "[TODO: Translate] Shortcuts"
+            "shortcuts": "Raccourcis"
         },
         "gettingStarted": {
             "title": "Premiers pas avec le Gestionnaire LoRA",
-            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+            "replayTutorial": "Rejouer le tutoriel"
         },
         "shortcuts": {
-            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "title": "Raccourcis clavier et souris",
             "groups": {
-                "general": "[TODO: Translate] General",
-                "actions": "[TODO: Translate] Actions",
-                "selection": "[TODO: Translate] Selection & Bulk Mode",
-                "navigation": "[TODO: Translate] Navigation",
-                "modelModal": "[TODO: Translate] Model / Recipe Modal",
-                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+                "general": "Général",
+                "actions": "Actions",
+                "selection": "Sélection et mode groupé",
+                "navigation": "Navigation",
+                "modelModal": "Modale Modèle / Recipe",
+                "mediaViewer": "Visionneuse de médias / Galerie d'exemples"
             },
             "keys": {
-                "click": "[TODO: Translate] Click",
-                "drag": "[TODO: Translate] Drag",
-                "rightClick": "[TODO: Translate] Right-click",
-                "letter": "[TODO: Translate] Letter",
-                "swipe": "[TODO: Translate] Swipe"
+                "click": "Clic",
+                "drag": "Glisser",
+                "rightClick": "Clic droit",
+                "letter": "Lettre",
+                "swipe": "Balayage"
             },
             "entries": {
-                "focusSearch": "[TODO: Translate] Focus search",
-                "closeModal": "[TODO: Translate] Close modal / panel",
-                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
-                "refresh": "[TODO: Translate] Refresh model list",
-                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
-                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
-                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
-                "selectAll": "[TODO: Translate] Select all visible models",
-                "rangeSelect": "[TODO: Translate] Range select",
-                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
-                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
-                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
-                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
-                "scrollPages": "[TODO: Translate] Scroll pages",
-                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
-                "prevNext": "[TODO: Translate] Previous / next model",
-                "deleteEntry": "[TODO: Translate] Delete",
-                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
-                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
-                "closeViewer": "[TODO: Translate] Close viewer"
+                "focusSearch": "Donner le focus au champ de recherche",
+                "closeModal": "Fermer la fenêtre modale / le panneau",
+                "openShortcuts": "Ouvrir ce panneau de raccourcis",
+                "refresh": "Actualiser la liste des modèles",
+                "fetchMetadata": "Récupérer les métadonnées depuis CivitAI (pages de modèles uniquement)",
+                "downloadModel": "Télécharger un modèle (pages de modèles uniquement)",
+                "toggleBulkMode": "Activer/désactiver le mode groupé",
+                "selectAll": "Sélectionner tous les modèles visibles",
+                "rangeSelect": "Sélection d'une plage",
+                "marqueeSelect": "Sélection par glisser-déposer des cartes (sur une zone vide de la grille)",
+                "exitBulkMode": "Quitter le mode groupé",
+                "bulkActions": "Sur une carte sélectionnée : menu des actions groupées",
+                "globalActions": "Sur une zone vide de la page : menu des actions globales (vérification des mises à jour, gestion des modèles exclus)",
+                "scrollPages": "Faire défiler les pages",
+                "jumpAlphabet": "Sauter via la barre alphabétique",
+                "prevNext": "Modèle précédent / suivant",
+                "deleteEntry": "Supprimer",
+                "cycleMedia": "Parcourir les médias ([ / ] dans la galerie d'exemples)",
+                "swipeTouch": "Parcourir les médias sur les appareils tactiles",
+                "closeViewer": "Fermer la visionneuse"
             }
         },
         "updateVlogs": {

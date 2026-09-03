@@ -96,7 +96,7 @@
             },
             "bulk": {
                 "title": "一括操作",
-                "content": "このボタンをクリックするか、<span class=\"onboarding-shortcut\">B</span>キーを押して一括モードに入ります。複数のモデルを選択して一括操作が可能です。<span class=\"onboarding-shortcut\">Ctrl+A</span>で表示中のモデルをすべて選択できます。"
+                "content": "このボタンをクリックするか、<span class=\"onboarding-shortcut\">B</span>キーを押して一括モードに入り、複数のモデルを選択して一括操作を実行できます。<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span>で表示中のモデルをすべて選択、<span class=\"onboarding-shortcut\">Shift+Click</span>で範囲選択。<br>• <span class=\"onboarding-shortcut\">Esc</span>キーまたは空白部分をクリックすると一括モードを終了します。"
             },
             "searchOptions": {
                 "title": "検索オプション",
@@ -116,19 +116,19 @@
             },
             "contextMenu": {
                 "title": "コンテキストメニュー",
-                "content": "<strong>モデルカードを右クリック</strong>すると追加の操作ができるコンテキストメニューが表示されます。"
+                "content": "<strong>モデルカードを右クリック</strong>すると、移動、削除、メタデータの編集などのカード操作を含むコンテキストメニューが表示されます。"
             },
             "marqueeSelect": {
-                "title": "[TODO: Translate] Drag to Select",
-                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+                "title": "ドラッグで選択",
+                "content": "グリッドの空白部分で<strong>マウスの左ボタン</strong>を押したままドラッグすると、複数のカードを一度に選択する矩形（マーキー）を描画できます。"
             },
             "dragToSidebar": {
-                "title": "[TODO: Translate] Organize by Dragging",
-                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+                "title": "ドラッグで整理",
+                "content": "モデルカードをサイドバーのフォルダにドラッグすると、ファイルをそこに移動できます。一括モードで複数選択したカードでも同様に機能します。"
             },
             "contextMenus": {
-                "title": "[TODO: Translate] More Context Menus",
-                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
+                "title": "その他のコンテキストメニュー",
+                "content": "一括モードでは、<strong>選択したカードを右クリック</strong>すると一括操作メニューが表示されます。<strong>ページの空白部分を右クリック</strong>すると、更新の確認や除外モデルの管理などのグローバル操作メニューが表示されます。"
             }
         }
     },
@@ -1641,7 +1641,7 @@
                 "addPlaceholder": "入力して追加するか、下の提案をクリック",
                 "editWord": "トリガーワードを編集",
                 "editPlaceholder": "トリガーワードを編集",
-                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
+                "copyOrEditWord": "クリックでコピー、ダブルクリックで編集",
                 "deleteWord": "トリガーワードを削除",
                 "suggestions": {
                     "noSuggestions": "提案はありません",
@@ -1967,50 +1967,50 @@
             "gettingStarted": "はじめに",
             "updateVlogs": "更新Vlog",
             "documentation": "ドキュメント",
-            "shortcuts": "[TODO: Translate] Shortcuts"
+            "shortcuts": "ショートカット"
         },
         "gettingStarted": {
             "title": "LoRA Managerを始める",
-            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+            "replayTutorial": "チュートリアルをもう一度再生"
         },
         "shortcuts": {
-            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "title": "キーボード & マウスのショートカット",
             "groups": {
-                "general": "[TODO: Translate] General",
-                "actions": "[TODO: Translate] Actions",
-                "selection": "[TODO: Translate] Selection & Bulk Mode",
-                "navigation": "[TODO: Translate] Navigation",
-                "modelModal": "[TODO: Translate] Model / Recipe Modal",
-                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+                "general": "一般",
+                "actions": "操作",
+                "selection": "選択 & 一括モード",
+                "navigation": "ナビゲーション",
+                "modelModal": "モデル / レシピモーダル",
+                "mediaViewer": "メディアビューア / ショーケース"
             },
             "keys": {
-                "click": "[TODO: Translate] Click",
-                "drag": "[TODO: Translate] Drag",
-                "rightClick": "[TODO: Translate] Right-click",
-                "letter": "[TODO: Translate] Letter",
-                "swipe": "[TODO: Translate] Swipe"
+                "click": "クリック",
+                "drag": "ドラッグ",
+                "rightClick": "右クリック",
+                "letter": "文字キー",
+                "swipe": "スワイプ"
             },
             "entries": {
-                "focusSearch": "[TODO: Translate] Focus search",
-                "closeModal": "[TODO: Translate] Close modal / panel",
-                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
-                "refresh": "[TODO: Translate] Refresh model list",
-                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
-                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
-                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
-                "selectAll": "[TODO: Translate] Select all visible models",
-                "rangeSelect": "[TODO: Translate] Range select",
-                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
-                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
-                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
-                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
-                "scrollPages": "[TODO: Translate] Scroll pages",
-                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
-                "prevNext": "[TODO: Translate] Previous / next model",
-                "deleteEntry": "[TODO: Translate] Delete",
-                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
-                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
-                "closeViewer": "[TODO: Translate] Close viewer"
+                "focusSearch": "検索にフォーカス",
+                "closeModal": "モーダル / パネルを閉じる",
+                "openShortcuts": "このショートカットパネルを開く",
+                "refresh": "モデルリストを更新",
+                "fetchMetadata": "CivitAIからメタデータを取得（モデルページのみ）",
+                "downloadModel": "モデルをダウンロード（モデルページのみ）",
+                "toggleBulkMode": "一括モードを切り替え",
+                "selectAll": "表示中のモデルをすべて選択",
+                "rangeSelect": "範囲選択",
+                "marqueeSelect": "カードを矩形選択（グリッドの空白部分で）",
+                "exitBulkMode": "一括モードを終了",
+                "bulkActions": "選択したカード上：一括操作メニュー",
+                "globalActions": "ページの空白部分：グローバル操作メニュー（更新の確認、除外モデルの管理）",
+                "scrollPages": "ページをスクロール",
+                "jumpAlphabet": "アルファベットバーへジャンプ",
+                "prevNext": "前 / 次のモデル",
+                "deleteEntry": "削除",
+                "cycleMedia": "メディアを切り替え（ショーケースギャラリーでは [ / ]）",
+                "swipeTouch": "タッチデバイスでメディアを切り替え",
+                "closeViewer": "ビューアを閉じる"
             }
         },
         "updateVlogs": {

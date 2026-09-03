@@ -96,7 +96,7 @@
             },
             "bulk": {
                 "title": "Operaciones por lotes",
-                "content": "Entra en el modo por lotes haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span>. Selecciona varios modelos y realiza operaciones por lotes. Usa <span class=\"onboarding-shortcut\">Ctrl+A</span> para seleccionar todos los modelos visibles."
+                "content": "Entra en el modo por lotes haciendo clic en este botón o presionando <span class=\"onboarding-shortcut\">B</span> para seleccionar varios modelos y realizar operaciones por lotes.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> selecciona todos los modelos visibles, <span class=\"onboarding-shortcut\">Shift+Click</span> selecciona un rango.<br>• <span class=\"onboarding-shortcut\">Esc</span> o hacer clic en un área vacía sale del modo por lotes."
             },
             "searchOptions": {
                 "title": "Opciones de búsqueda",
@@ -116,19 +116,19 @@
             },
             "contextMenu": {
                 "title": "Menú contextual",
-                "content": "<strong>Clic derecho</strong> en cualquier tarjeta de modelo para ver un menú contextual con acciones adicionales."
+                "content": "<strong>Clic derecho</strong> en cualquier tarjeta de modelo para ver un menú contextual con acciones de la tarjeta como mover, eliminar o editar metadatos."
             },
             "marqueeSelect": {
-                "title": "[TODO: Translate] Drag to Select",
-                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+                "title": "Arrastrar para seleccionar",
+                "content": "Mantén pulsado el <strong>botón izquierdo del ratón</strong> en un área vacía de la cuadrícula y arrastra para dibujar un rectángulo de selección que selecciona varias tarjetas a la vez."
             },
             "dragToSidebar": {
-                "title": "[TODO: Translate] Organize by Dragging",
-                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+                "title": "Organizar arrastrando",
+                "content": "Arrastra una tarjeta de modelo hasta una carpeta de la barra lateral para mover el archivo allí. Esto también funciona con varias tarjetas seleccionadas en el modo por lotes."
             },
             "contextMenus": {
-                "title": "[TODO: Translate] More Context Menus",
-                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
+                "title": "Más menús contextuales",
+                "content": "En el modo por lotes, <strong>haz clic derecho en una tarjeta seleccionada</strong> para ver las acciones por lotes. <strong>Haz clic derecho en un área vacía</strong> de la página para ver acciones globales como comprobar actualizaciones y gestionar modelos excluidos."
             }
         }
     },
@@ -1641,7 +1641,7 @@
                 "addPlaceholder": "Escribe para añadir o haz clic en sugerencias de abajo",
                 "editWord": "Editar palabra de activación",
                 "editPlaceholder": "Editar palabra de activación",
-                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
+                "copyOrEditWord": "Haz clic para copiar, doble clic para editar",
                 "deleteWord": "Eliminar palabra de activación",
                 "suggestions": {
                     "noSuggestions": "No hay sugerencias disponibles",
@@ -1967,50 +1967,50 @@
             "gettingStarted": "Comenzando",
             "updateVlogs": "Vlogs de actualización",
             "documentation": "Documentación",
-            "shortcuts": "[TODO: Translate] Shortcuts"
+            "shortcuts": "Atajos"
         },
         "gettingStarted": {
             "title": "Comenzando con el gestor de LoRA",
-            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+            "replayTutorial": "Repetir tutorial"
         },
         "shortcuts": {
-            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "title": "Atajos de teclado y ratón",
             "groups": {
-                "general": "[TODO: Translate] General",
-                "actions": "[TODO: Translate] Actions",
-                "selection": "[TODO: Translate] Selection & Bulk Mode",
-                "navigation": "[TODO: Translate] Navigation",
-                "modelModal": "[TODO: Translate] Model / Recipe Modal",
-                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+                "general": "General",
+                "actions": "Acciones",
+                "selection": "Selección y modo por lotes",
+                "navigation": "Navegación",
+                "modelModal": "Modal de modelo / receta",
+                "mediaViewer": "Visor de medios / Ejemplos"
             },
             "keys": {
-                "click": "[TODO: Translate] Click",
-                "drag": "[TODO: Translate] Drag",
-                "rightClick": "[TODO: Translate] Right-click",
-                "letter": "[TODO: Translate] Letter",
-                "swipe": "[TODO: Translate] Swipe"
+                "click": "Clic",
+                "drag": "Arrastrar",
+                "rightClick": "Clic derecho",
+                "letter": "Letra",
+                "swipe": "Deslizar"
             },
             "entries": {
-                "focusSearch": "[TODO: Translate] Focus search",
-                "closeModal": "[TODO: Translate] Close modal / panel",
-                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
-                "refresh": "[TODO: Translate] Refresh model list",
-                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
-                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
-                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
-                "selectAll": "[TODO: Translate] Select all visible models",
-                "rangeSelect": "[TODO: Translate] Range select",
-                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
-                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
-                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
-                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
-                "scrollPages": "[TODO: Translate] Scroll pages",
-                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
-                "prevNext": "[TODO: Translate] Previous / next model",
-                "deleteEntry": "[TODO: Translate] Delete",
-                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
-                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
-                "closeViewer": "[TODO: Translate] Close viewer"
+                "focusSearch": "Enfocar la búsqueda",
+                "closeModal": "Cerrar modal / panel",
+                "openShortcuts": "Abrir este panel de atajos",
+                "refresh": "Actualizar la lista de modelos",
+                "fetchMetadata": "Obtener metadatos de CivitAI (solo páginas de modelos)",
+                "downloadModel": "Descargar un modelo (solo páginas de modelos)",
+                "toggleBulkMode": "Activar/desactivar el modo por lotes",
+                "selectAll": "Seleccionar todos los modelos visibles",
+                "rangeSelect": "Selección por rango",
+                "marqueeSelect": "Seleccionar tarjetas con un rectángulo de selección (en un área vacía de la cuadrícula)",
+                "exitBulkMode": "Salir del modo por lotes",
+                "bulkActions": "En una tarjeta seleccionada: menú de acciones por lotes",
+                "globalActions": "En un área vacía de la página: menú de acciones globales (comprobar actualizaciones, gestionar modelos excluidos)",
+                "scrollPages": "Desplazarse por las páginas",
+                "jumpAlphabet": "Saltar con la barra alfabética",
+                "prevNext": "Modelo anterior / siguiente",
+                "deleteEntry": "Eliminar",
+                "cycleMedia": "Cambiar de medio ([ / ] en la galería de ejemplos)",
+                "swipeTouch": "Cambiar de medio en dispositivos táctiles",
+                "closeViewer": "Cerrar el visor"
             }
         },
         "updateVlogs": {

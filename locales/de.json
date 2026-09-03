@@ -96,7 +96,7 @@
             },
             "bulk": {
                 "title": "Massenoperationen",
-                "content": "Wechseln Sie in den Massenmodus, indem Sie auf diese Schaltfläche klicken oder <span class=\"onboarding-shortcut\">B</span> drücken. Wählen Sie mehrere Modelle aus und führen Sie Stapeloperationen durch. Mit <span class=\"onboarding-shortcut\">Strg+A</span> können Sie alle sichtbaren Modelle auswählen."
+                "content": "Wechseln Sie in den Massenmodus, indem Sie auf diese Schaltfläche klicken oder <span class=\"onboarding-shortcut\">B</span> drücken, um mehrere Modelle auszuwählen und Stapeloperationen durchzuführen.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> wählt alle sichtbaren Modelle aus, <span class=\"onboarding-shortcut\">Shift+Click</span> wählt einen Bereich aus.<br>• <span class=\"onboarding-shortcut\">Esc</span> oder ein Klick auf einen leeren Bereich verlässt den Massenmodus."
             },
             "searchOptions": {
                 "title": "Suchoptionen",
@@ -116,19 +116,19 @@
             },
             "contextMenu": {
                 "title": "Kontextmenü",
-                "content": "<strong>Rechtsklick</strong> auf eine Modellkarte öffnet ein Kontextmenü mit weiteren Aktionen."
+                "content": "<strong>Rechtsklick</strong> auf eine beliebige Modellkarte öffnet ein Kontextmenü mit Kartenaktionen wie Verschieben, Löschen oder Bearbeiten von Metadaten."
             },
             "marqueeSelect": {
-                "title": "[TODO: Translate] Drag to Select",
-                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+                "title": "Durch Ziehen auswählen",
+                "content": "Halten Sie die <strong>linke Maustaste</strong> auf einem leeren Bereich des Rasters gedrückt und ziehen Sie, um einen Auswahlrahmen aufzuziehen, der mehrere Karten gleichzeitig auswählt."
             },
             "dragToSidebar": {
-                "title": "[TODO: Translate] Organize by Dragging",
-                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+                "title": "Organisieren durch Ziehen",
+                "content": "Ziehen Sie eine Modellkarte auf einen Ordner in der Seitenleiste, um die Datei dorthin zu verschieben. Dies funktioniert auch mit mehreren ausgewählten Karten im Massenmodus."
             },
             "contextMenus": {
-                "title": "[TODO: Translate] More Context Menus",
-                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
+                "title": "Weitere Kontextmenüs",
+                "content": "<strong>Rechtsklick auf eine ausgewählte Karte</strong> im Massenmodus öffnet die Massenaktionen. <strong>Rechtsklick auf einen leeren Bereich</strong> der Seite öffnet globale Aktionen wie das Prüfen auf Updates und das Verwalten ausgeschlossener Modelle."
             }
         }
     },
@@ -1641,7 +1641,7 @@
                 "addPlaceholder": "Tippen zum Hinzufügen oder klicken Sie auf Vorschläge unten",
                 "editWord": "Trigger Word bearbeiten",
                 "editPlaceholder": "Trigger Word bearbeiten",
-                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
+                "copyOrEditWord": "Klicken zum Kopieren, Doppelklick zum Bearbeiten",
                 "deleteWord": "Trigger Word löschen",
                 "suggestions": {
                     "noSuggestions": "Keine Vorschläge verfügbar",
@@ -1967,50 +1967,50 @@
             "gettingStarted": "Erste Schritte",
             "updateVlogs": "Update-Vlogs",
             "documentation": "Dokumentation",
-            "shortcuts": "[TODO: Translate] Shortcuts"
+            "shortcuts": "Tastenkürzel"
         },
         "gettingStarted": {
             "title": "Erste Schritte mit LoRA Manager",
-            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+            "replayTutorial": "Tutorial erneut abspielen"
         },
         "shortcuts": {
-            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "title": "Tastatur- & Mauskürzel",
             "groups": {
-                "general": "[TODO: Translate] General",
-                "actions": "[TODO: Translate] Actions",
-                "selection": "[TODO: Translate] Selection & Bulk Mode",
-                "navigation": "[TODO: Translate] Navigation",
-                "modelModal": "[TODO: Translate] Model / Recipe Modal",
-                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+                "general": "Allgemein",
+                "actions": "Aktionen",
+                "selection": "Auswahl & Massenmodus",
+                "navigation": "Navigation",
+                "modelModal": "Modell- / Rezept-Dialog",
+                "mediaViewer": "Medienanzeige / Beispielgalerie"
             },
             "keys": {
-                "click": "[TODO: Translate] Click",
-                "drag": "[TODO: Translate] Drag",
-                "rightClick": "[TODO: Translate] Right-click",
-                "letter": "[TODO: Translate] Letter",
-                "swipe": "[TODO: Translate] Swipe"
+                "click": "Klick",
+                "drag": "Ziehen",
+                "rightClick": "Rechtsklick",
+                "letter": "Buchstabe",
+                "swipe": "Wischen"
             },
             "entries": {
-                "focusSearch": "[TODO: Translate] Focus search",
-                "closeModal": "[TODO: Translate] Close modal / panel",
-                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
-                "refresh": "[TODO: Translate] Refresh model list",
-                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
-                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
-                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
-                "selectAll": "[TODO: Translate] Select all visible models",
-                "rangeSelect": "[TODO: Translate] Range select",
-                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
-                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
-                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
-                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
-                "scrollPages": "[TODO: Translate] Scroll pages",
-                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
-                "prevNext": "[TODO: Translate] Previous / next model",
-                "deleteEntry": "[TODO: Translate] Delete",
-                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
-                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
-                "closeViewer": "[TODO: Translate] Close viewer"
+                "focusSearch": "Suche fokussieren",
+                "closeModal": "Dialog / Panel schließen",
+                "openShortcuts": "Dieses Tastenkürzel-Panel öffnen",
+                "refresh": "Modellliste aktualisieren",
+                "fetchMetadata": "Metadaten von CivitAI abrufen (nur Modellseiten)",
+                "downloadModel": "Ein Modell herunterladen (nur Modellseiten)",
+                "toggleBulkMode": "Massenmodus umschalten",
+                "selectAll": "Alle sichtbaren Modelle auswählen",
+                "rangeSelect": "Bereich auswählen",
+                "marqueeSelect": "Karten mit Auswahlrahmen auswählen (auf leerem Rasterbereich)",
+                "exitBulkMode": "Massenmodus verlassen",
+                "bulkActions": "Auf ausgewählter Karte: Menü für Massenaktionen",
+                "globalActions": "Auf leerem Seitenbereich: Menü für globale Aktionen (Updates prüfen, ausgeschlossene Modelle verwalten)",
+                "scrollPages": "Seiten scrollen",
+                "jumpAlphabet": "Zur Alphabetleiste springen",
+                "prevNext": "Vorheriges / nächstes Modell",
+                "deleteEntry": "Löschen",
+                "cycleMedia": "Medien durchblättern ([ / ] in der Beispielgalerie)",
+                "swipeTouch": "Medien auf Touch-Geräten durchblättern",
+                "closeViewer": "Medienanzeige schließen"
             }
         },
         "updateVlogs": {

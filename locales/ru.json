@@ -96,7 +96,7 @@
             },
             "bulk": {
                 "title": "Массовые операции",
-                "content": "Войдите в массовый режим, нажав эту кнопку или клавишу <span class=\"onboarding-shortcut\">B</span>. Выберите несколько моделей и выполните пакетные операции. Используйте <span class=\"onboarding-shortcut\">Ctrl+A</span> для выбора всех видимых моделей."
+                "content": "Войдите в массовый режим, нажав эту кнопку или клавишу <span class=\"onboarding-shortcut\">B</span>, чтобы выбрать несколько моделей и выполнить пакетные операции.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> — выбрать все видимые модели, <span class=\"onboarding-shortcut\">Shift+Click</span> — выбрать диапазон.<br>• <span class=\"onboarding-shortcut\">Esc</span> или клик по пустой области выходит из массового режима."
             },
             "searchOptions": {
                 "title": "Опции поиска",
@@ -116,19 +116,19 @@
             },
             "contextMenu": {
                 "title": "Контекстное меню",
-                "content": "<strong>Правый клик</strong> по карточке модели откроет контекстное меню с дополнительными действиями."
+                "content": "<strong>Правый клик</strong> по любой карточке модели открывает контекстное меню с действиями над карточкой, такими как перемещение, удаление или редактирование метаданных."
             },
             "marqueeSelect": {
-                "title": "[TODO: Translate] Drag to Select",
-                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+                "title": "Выделение рамкой",
+                "content": "Удерживайте <strong>левую кнопку мыши</strong> на пустой области сетки и перетащите, чтобы нарисовать рамку, выделяющую сразу несколько карточек."
             },
             "dragToSidebar": {
-                "title": "[TODO: Translate] Organize by Dragging",
-                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+                "title": "Организация перетаскиванием",
+                "content": "Перетащите карточку модели на папку в боковой панели, чтобы переместить туда файл. Это также работает с несколькими выделенными карточками в массовом режиме."
             },
             "contextMenus": {
-                "title": "[TODO: Translate] More Context Menus",
-                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
+                "title": "Другие контекстные меню",
+                "content": "В массовом режиме <strong>правый клик по выделенной карточке</strong> открывает меню массовых операций. <strong>Правый клик по пустой области</strong> страницы открывает глобальные действия, такие как проверка обновлений и управление исключёнными моделями."
             }
         }
     },
@@ -1641,7 +1641,7 @@
                 "addPlaceholder": "Введите для добавления или нажмите на предложения ниже",
                 "editWord": "Редактировать триггерное слово",
                 "editPlaceholder": "Редактировать триггерное слово",
-                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
+                "copyOrEditWord": "Клик — скопировать, двойной клик — редактировать",
                 "deleteWord": "Удалить триггерное слово",
                 "suggestions": {
                     "noSuggestions": "Предложения недоступны",
@@ -1967,50 +1967,50 @@
             "gettingStarted": "Начало работы",
             "updateVlogs": "Видео обновлений",
             "documentation": "Документация",
-            "shortcuts": "[TODO: Translate] Shortcuts"
+            "shortcuts": "Горячие клавиши"
         },
         "gettingStarted": {
             "title": "Начало работы с LoRA Manager",
-            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+            "replayTutorial": "Повторить обучение"
         },
         "shortcuts": {
-            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "title": "Горячие клавиши и действия мыши",
             "groups": {
-                "general": "[TODO: Translate] General",
-                "actions": "[TODO: Translate] Actions",
-                "selection": "[TODO: Translate] Selection & Bulk Mode",
-                "navigation": "[TODO: Translate] Navigation",
-                "modelModal": "[TODO: Translate] Model / Recipe Modal",
-                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+                "general": "Общие",
+                "actions": "Действия",
+                "selection": "Выделение и массовый режим",
+                "navigation": "Навигация",
+                "modelModal": "Окно модели / рецепта",
+                "mediaViewer": "Просмотр медиа / Витрина"
             },
             "keys": {
-                "click": "[TODO: Translate] Click",
-                "drag": "[TODO: Translate] Drag",
-                "rightClick": "[TODO: Translate] Right-click",
-                "letter": "[TODO: Translate] Letter",
-                "swipe": "[TODO: Translate] Swipe"
+                "click": "Клик",
+                "drag": "Перетаскивание",
+                "rightClick": "Правый клик",
+                "letter": "Буква",
+                "swipe": "Свайп"
             },
             "entries": {
-                "focusSearch": "[TODO: Translate] Focus search",
-                "closeModal": "[TODO: Translate] Close modal / panel",
-                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
-                "refresh": "[TODO: Translate] Refresh model list",
-                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
-                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
-                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
-                "selectAll": "[TODO: Translate] Select all visible models",
-                "rangeSelect": "[TODO: Translate] Range select",
-                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
-                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
-                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
-                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
-                "scrollPages": "[TODO: Translate] Scroll pages",
-                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
-                "prevNext": "[TODO: Translate] Previous / next model",
-                "deleteEntry": "[TODO: Translate] Delete",
-                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
-                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
-                "closeViewer": "[TODO: Translate] Close viewer"
+                "focusSearch": "Переход к поиску",
+                "closeModal": "Закрыть модальное окно / панель",
+                "openShortcuts": "Открыть эту панель горячих клавиш",
+                "refresh": "Обновить список моделей",
+                "fetchMetadata": "Получить метаданные с CivitAI (только на страницах моделей)",
+                "downloadModel": "Загрузить модель (только на страницах моделей)",
+                "toggleBulkMode": "Переключить массовый режим",
+                "selectAll": "Выбрать все видимые модели",
+                "rangeSelect": "Выбор диапазона",
+                "marqueeSelect": "Выделение карточек рамкой (на пустой области сетки)",
+                "exitBulkMode": "Выйти из массового режима",
+                "bulkActions": "На выделенной карточке: меню массовых операций",
+                "globalActions": "На пустой области страницы: меню глобальных действий (проверка обновлений, управление исключёнными моделями)",
+                "scrollPages": "Прокрутка страниц",
+                "jumpAlphabet": "Переход по алфавитной панели",
+                "prevNext": "Предыдущая / следующая модель",
+                "deleteEntry": "Удалить",
+                "cycleMedia": "Переключение медиа ([ / ] в галерее витрины)",
+                "swipeTouch": "Переключение медиа на сенсорных устройствах",
+                "closeViewer": "Закрыть окно просмотра"
             }
         },
         "updateVlogs": {
