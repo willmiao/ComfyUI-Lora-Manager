@@ -1977,6 +1977,7 @@
             "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
             "groups": {
                 "general": "[TODO: Translate] General",
+                "actions": "[TODO: Translate] Actions",
                 "selection": "[TODO: Translate] Selection & Bulk Mode",
                 "navigation": "[TODO: Translate] Navigation",
                 "modelModal": "[TODO: Translate] Model / Recipe Modal",
@@ -1993,6 +1994,9 @@
                 "focusSearch": "[TODO: Translate] Focus search",
                 "closeModal": "[TODO: Translate] Close modal / panel",
                 "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
+                "refresh": "[TODO: Translate] Refresh model list",
+                "fetchMetadata": "[TODO: Translate] Fetch metadata from CivitAI (model pages only)",
+                "downloadModel": "[TODO: Translate] Download a model (model pages only)",
                 "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
                 "selectAll": "[TODO: Translate] Select all visible models",
                 "rangeSelect": "[TODO: Translate] Range select",

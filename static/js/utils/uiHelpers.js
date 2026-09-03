@@ -311,6 +311,20 @@ export function showActionToast(key, params = {}, type = 'info', options = {}) {
   toast.append(closeBtn);
 }
 
+/**
+ * Check whether the event target is a text-entry context (input, textarea,
+ * select, or contenteditable) where single-letter shortcuts should be treated
+ * as literal input.
+ * @param {EventTarget|null} target - The DOM event target
+ * @returns {boolean}
+ */
+export function isTypingContext(target) {
+  if (!(target instanceof Element)) return false;
+
+  const tagName = target.tagName?.toLowerCase();
+  return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+}
+
 export function restoreFolderFilter() {
   const activeFolder = getStorageItem('activeFolder');
   const folderTag = activeFolder && document.querySelector(`.tag[data-folder="${activeFolder}"]`);

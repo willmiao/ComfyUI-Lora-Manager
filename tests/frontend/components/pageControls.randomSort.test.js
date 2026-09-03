@@ -13,6 +13,12 @@ vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
   showToast: vi.fn(),
   openCivitaiByMetadata: vi.fn(),
   updatePanelPositions: vi.fn(),
+  // Faithful stand-in for the real helper in uiHelpers.js
+  isTypingContext: (target) => {
+    if (!(target instanceof Element)) return false;
+    const tagName = target.tagName?.toLowerCase();
+    return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+  },
 }));
 
 vi.mock('../../../static/js/managers/DownloadManager.js', () => ({

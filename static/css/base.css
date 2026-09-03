@@ -31,9 +31,14 @@ body {
     --header-height: 48px;
     --scrollbar-width: 8px;
 
-    --shortcut-bg: var(--color-accent-subtle);
-    --shortcut-border: var(--color-accent-border);
-    --shortcut-text: var(--text-primary);
+    /* Neutral "keycap" style for keyboard shortcut hints (GitHub/Linear-like).
+       Derived from --text-muted so it adapts to every theme/preset. */
+    --shortcut-bg: color-mix(in oklch, var(--text-muted) 10%, transparent);
+    --shortcut-bg-hover: color-mix(in oklch, var(--text-muted) 16%, transparent);
+    --shortcut-border: color-mix(in oklch, var(--text-muted) 30%, transparent);
+    --shortcut-border-hover: color-mix(in oklch, var(--text-muted) 45%, transparent);
+    --shortcut-text: var(--text-muted);
+    --shortcut-shadow: 0 1.5px 0 color-mix(in oklch, var(--text-muted) 30%, transparent);
 
     --lora-accent-transparent: var(--color-accent-transparent);
 

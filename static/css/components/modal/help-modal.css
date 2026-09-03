@@ -376,10 +376,10 @@
   font-family: inherit;
   font-size: 0.68rem;
   font-weight: 500;
-  color: var(--text-muted);
-  /* Subtle tint derived from text color so it adapts to both light & dark themes */
-  background: color-mix(in oklch, var(--text-muted) 12%, transparent);
-  border: 1px solid color-mix(in oklch, var(--text-muted) 25%, transparent);
+  color: var(--shortcut-text);
+  background: var(--shortcut-bg);
+  border: 1px solid var(--shortcut-border);
+  box-shadow: var(--shortcut-shadow);
   border-radius: var(--border-radius-xs, 3px);
   line-height: 1;
 }

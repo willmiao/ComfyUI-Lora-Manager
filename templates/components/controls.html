@@ -65,7 +65,7 @@
                 </select>
             </div>
             <div title="{% if page_id == 'recipes' %}{{ t('recipes.controls.refresh.title') }}{% else %}{{ t('loras.controls.refresh.title') }}{% endif %}" class="control-group dropdown-group">
-                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span>{{ t('common.actions.refresh') }}</span></button>
+                <button data-action="refresh" class="dropdown-main"><i class="fas fa-sync"></i> <span><span>{{ t('common.actions.refresh') }}</span> <kbd class="shortcut-key">R</kbd></span></button>
                 <button class="dropdown-toggle" aria-label="Show refresh options">
                     <i class="fas fa-caret-down"></i>
                 </button>
@@ -78,11 +78,11 @@
             
             {% if page_id != 'recipes' %}
             <div class="control-group">
-                <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><i class="fas fa-download"></i> <span>{{ t('loras.controls.fetch.action') }}</span></button>
+                <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><i class="fas fa-download"></i> <span><span>{{ t('loras.controls.fetch.action') }}</span> <kbd class="shortcut-key">F</kbd></span></button>
             </div>
             <div class="control-group">
                 <button data-action="download" title="{{ t('loras.controls.download.title') }}">
-                    <i class="fas fa-cloud-download-alt"></i> <span>{{ t('loras.controls.download.action') }}</span>
+                    <i class="fas fa-cloud-download-alt"></i> <span><span>{{ t('loras.controls.download.action') }}</span> <kbd class="shortcut-key">D</kbd></span>
                 </button>
             </div>
             {% endif %}
@@ -96,7 +96,7 @@
             {% endif %}
             <div class="control-group">
                 <button id="bulkOperationsBtn" data-action="bulk" title="{{ t('loras.controls.bulk.title') }}">
-                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span> <div class="shortcut-key">B</div></span>
+                    <i class="fas fa-th-large"></i> <span><span>{{ t('loras.controls.bulk.action') }}</span> <kbd class="shortcut-key">B</kbd></span>
                 </button>
             </div>
             <div class="control-group">

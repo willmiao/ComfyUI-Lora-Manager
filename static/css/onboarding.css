@@ -205,6 +205,7 @@
     display: inline-block;
     background: var(--shortcut-bg);
     border: 1px solid var(--shortcut-border);
+    box-shadow: var(--shortcut-shadow);
     border-radius: var(--border-radius-xs);
     padding: 2px 6px;
     font-size: 0.8em;
