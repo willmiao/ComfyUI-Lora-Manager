@@ -50,6 +50,27 @@
             "mb": "МБ",
             "gb": "ГБ",
             "tb": "ТБ"
+        },
+        "scanProgress": {
+            "refreshing": "[TODO: Translate] Refreshing {type}s...",
+            "fullRebuilding": "[TODO: Translate] Full rebuild {type}s...",
+            "actionRefresh": "[TODO: Translate] Refresh",
+            "actionFullRebuild": "[TODO: Translate] Full rebuild",
+            "actionRefreshLower": "[TODO: Translate] refresh",
+            "actionRebuildLower": "[TODO: Translate] rebuild",
+            "stages": {
+                "scan_folders": "[TODO: Translate] Scanning folders...",
+                "count_models": "[TODO: Translate] Found {total} files",
+                "process_models": "[TODO: Translate] Processing models",
+                "reconcile_scan": "[TODO: Translate] Checking for changes...",
+                "process_new": "[TODO: Translate] Processing new models",
+                "finalizing": "[TODO: Translate] Finalizing..."
+            },
+            "eta": {
+                "lessThanMinute": "[TODO: Translate] Less than a minute remaining",
+                "minutes": "[TODO: Translate] ~{minutes} min remaining",
+                "hours": "[TODO: Translate] ~{hours} hr {minutes} min remaining"
+            }
         }
     },
     "onboarding": {

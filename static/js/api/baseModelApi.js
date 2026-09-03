@@ -12,6 +12,11 @@ import {
 } from './apiConfig.js';
 import { resetAndReload } from './modelApiFactory.js';
 import { sidebarManager } from '../components/SidebarManager.js';
+// Shared scan ETA helpers live in a dependency-light module so pages that do
+// not use BaseModelApiClient (e.g. recipes) can reuse them without pulling
+// this module's import cycle (modelApiFactory -> loraApi -> baseModelApi).
+import { createScanEtaTracker, formatScanRemainingTime } from '../utils/scanEtaUtils.js';
+export { createScanEtaTracker, formatScanRemainingTime };
 
 /**
  * Abstract base class for all model API clients
@@ -507,15 +512,59 @@ export class BaseModelApiClient {
 
     async refreshModels(fullRebuild = false) {
         const abortController = new AbortController();
-        try {
-            state.loadingManager.show(
-                `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${this.apiConfig.config.displayName}s...`,
-                0
+        const displayName = this.apiConfig.config.displayName;
+        const singularName = this.apiConfig.config.singularName;
+        const actionText = translate(
+            fullRebuild ? 'common.scanProgress.actionFullRebuild' : 'common.scanProgress.actionRefresh',
+            {},
+            fullRebuild ? 'Full rebuild' : 'Refresh'
+        );
+        const actionLowerText = translate(
+            fullRebuild ? 'common.scanProgress.actionRebuildLower' : 'common.scanProgress.actionRefreshLower',
+            {},
+            fullRebuild ? 'rebuild' : 'refresh'
+        );
+        const initialMessage = translate(
+            fullRebuild ? 'common.scanProgress.fullRebuilding' : 'common.scanProgress.refreshing',
+            { type: displayName },
+            `${fullRebuild ? 'Full rebuild' : 'Refreshing'} ${displayName}s...`
+        );
+        const etaTracker = createScanEtaTracker();
+        let ws = null;
+
+        const handleScanProgress = (data) => {
+            if (typeof data.progress === 'number') {
+                state.loadingManager.setProgress(data.progress);
+            }
+            let statusText = translate(
+                `common.scanProgress.stages.${data.stage}`,
+                { total: data.total },
+                data.stage || ''
             );
+            if (data.status === 'processing' && data.total > 0) {
+                statusText += ` (${data.processed}/${data.total})`;
+                if (data.current_name) {
+                    statusText += ` ${data.current_name}`;
+                }
+                const etaText = etaTracker.update(data.processed, data.total);
+                if (etaText) {
+                    statusText += ` | ${etaText}`;
+                }
+            }
+            state.loadingManager.setStatus(statusText);
+        };
+
+        try {
+            state.loadingManager.show(initialMessage, 0);
             state.loadingManager.showCancelButton(() => {
                 this.cancelTask();
                 abortController.abort();
             });
+
+            // Connect to the shared progress channel for live scan updates.
+            // Failure to connect must not block the refresh itself — fall back
+            // to the plain loading indicator.
+            ws = await this._connectScanProgressSocket(handleScanProgress, singularName);
 
             const url = new URL(this.apiConfig.endpoints.scan, window.location.origin);
             url.searchParams.append('full_rebuild', fullRebuild);
@@ -523,7 +572,7 @@ export class BaseModelApiClient {
             const response = await fetch(url, { signal: abortController.signal });
 
             if (!response.ok) {
-                throw new Error(`Failed to refresh ${this.apiConfig.config.displayName}s: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to refresh ${displayName}s: ${response.status} ${response.statusText}`);
             }
 
             const data = await response.json();
@@ -534,17 +583,66 @@ export class BaseModelApiClient {
 
             resetAndReload(true);
 
-            showToast('toast.api.refreshComplete', { action: fullRebuild ? 'Full rebuild' : 'Refresh' }, 'success');
+            showToast('toast.api.refreshComplete', { action: actionText }, 'success');
         } catch (error) {
             if (error.name === 'AbortError') {
                 showToast('toast.api.operationCancelled', {}, 'info');
                 return;
             }
             console.error('Refresh failed:', error);
-            showToast('toast.api.refreshFailed', { action: fullRebuild ? 'rebuild' : 'refresh', type: this.apiConfig.config.displayName }, 'error');
+            showToast('toast.api.refreshFailed', { action: actionLowerText, type: displayName }, 'error');
         } finally {
+            if (ws) {
+                ws.close();
+            }
             state.loadingManager.hide();
             state.loadingManager.restoreProgressBar();
+        }
+    }
+
+    /**
+     * Connect to the shared fetch-progress WebSocket for scan progress updates.
+     * Returns null when the connection cannot be established (silent fallback).
+     * @param {Function} onScanProgress - Handler for scan_progress messages
+     * @param {string} singularName - Model type filter (e.g. 'lora')
+     * @returns {Promise<WebSocket|null>}
+     */
+    async _connectScanProgressSocket(onScanProgress, singularName) {
+        let socket = null;
+        try {
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+            socket = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+
+            await new Promise((resolve, reject) => {
+                socket.onopen = resolve;
+                socket.onerror = reject;
+            });
+
+            socket.onmessage = (event) => {
+                let data;
+                try {
+                    data = JSON.parse(event.data);
+                } catch (parseError) {
+                    return;
+                }
+                // Only handle scan progress for this client's model type;
+                // other operations share this channel and must be ignored.
+                if (data.type !== 'scan_progress' || data.model_type !== singularName) {
+                    return;
+                }
+                onScanProgress(data);
+            };
+
+            return socket;
+        } catch (error) {
+            if (socket) {
+                try {
+                    socket.close();
+                } catch (closeError) {
+                    // Ignore close errors during fallback
+                }
+            }
+            return null;
         }
     }
 
@@ -604,6 +702,9 @@ export class BaseModelApiClient {
                 const operationComplete = new Promise((resolve, reject) => {
                     ws.onmessage = (event) => {
                         const data = JSON.parse(event.data);
+
+                        // Scan progress shares this channel; it is handled by refreshModels
+                        if (data.type === 'scan_progress') return;
 
                         switch (data.status) {
                             case 'started':

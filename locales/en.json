@@ -50,6 +50,27 @@
       "mb": "MB",
       "gb": "GB",
       "tb": "TB"
+    },
+    "scanProgress": {
+      "refreshing": "Refreshing {type}s...",
+      "fullRebuilding": "Full rebuild {type}s...",
+      "actionRefresh": "Refresh",
+      "actionFullRebuild": "Full rebuild",
+      "actionRefreshLower": "refresh",
+      "actionRebuildLower": "rebuild",
+      "stages": {
+        "scan_folders": "Scanning folders...",
+        "count_models": "Found {total} files",
+        "process_models": "Processing models",
+        "reconcile_scan": "Checking for changes...",
+        "process_new": "Processing new models",
+        "finalizing": "Finalizing..."
+      },
+      "eta": {
+        "lessThanMinute": "Less than a minute remaining",
+        "minutes": "~{minutes} min remaining",
+        "hours": "~{hours} hr {minutes} min remaining"
+      }
     }
   },
   "onboarding": {

@@ -30,9 +30,13 @@ from py.utils.models import BaseModelMetadata
 class RecordingWebSocketManager:
     def __init__(self) -> None:
         self.payloads: List[Dict[str, Any]] = []
+        self.broadcasts: List[Dict[str, Any]] = []
 
     async def broadcast_init_progress(self, payload: Dict[str, Any]) -> None:
         self.payloads.append(payload)
+
+    async def broadcast(self, payload: Dict[str, Any]) -> None:
+        self.broadcasts.append(payload)
 
 
 def _normalize_path(path: Path) -> str:
@@ -1395,3 +1399,185 @@ async def test_get_all_folders_invalidated_after_move(tmp_path: Path):
     assert "new" in all_folders
     assert "new/deep" in all_folders
     assert set(cache.folders) <= set(all_folders)
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_broadcasts_scan_progress(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    await scanner._initialize_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages, "expected scan_progress broadcasts"
+
+    started = messages[0]
+    assert started["type"] == "scan_progress"
+    assert started["status"] == "started"
+    assert started["stage"] == "scan_folders"
+    assert started["progress"] == 0
+    assert started["model_type"] == "dummy"
+    assert started["pageType"] == "dummy"
+    assert started["full_rebuild"] is True
+
+    count_messages = [m for m in messages if m["stage"] == "count_models"]
+    assert count_messages and count_messages[0]["total"] == 3
+
+    process_messages = [
+        m for m in messages
+        if m["stage"] == "process_models" and m["status"] == "processing"
+    ]
+    assert process_messages, "expected at least one process_models update"
+    final_process = process_messages[-1]
+    assert final_process["processed"] == 3
+    assert final_process["total"] == 3
+    assert final_process["current_name"].endswith(".txt")
+    for message in process_messages:
+        assert 0 < message["progress"] <= 99
+
+    stages = [m["stage"] for m in messages]
+    assert "finalizing" in stages
+    completed = messages[-1]
+    assert completed["status"] == "completed"
+    assert completed["progress"] == 100
+    assert completed["elapsed_seconds"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_broadcasts_cancelled(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    original_process = DummyScanner._process_model_file
+
+    async def cancelling_process(self, file_path, root_path, **kwargs):
+        scanner.cancel_task()
+        return await original_process(self, file_path, root_path, **kwargs)
+
+    monkeypatch.setattr(DummyScanner, "_process_model_file", cancelling_process)
+
+    await scanner._initialize_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "cancelled"
+    assert messages[-1]["elapsed_seconds"] >= 0
+    assert not any(m["status"] == "completed" for m in messages)
+
+
+@pytest.mark.asyncio
+async def test_initialize_cache_broadcasts_error(tmp_path: Path, monkeypatch):
+    scanner = DummyScanner(tmp_path)
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    async def raising_gather(**_kwargs):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(scanner, "_gather_model_data", raising_gather)
+
+    await scanner._initialize_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "error"
+    assert messages[-1]["error"] == "boom"
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_broadcasts_scan_progress(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    new_file = tmp_path / "three.txt"
+    new_file.write_text("three", encoding="utf-8")
+
+    await scanner._reconcile_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages, "expected scan_progress broadcasts"
+
+    started = messages[0]
+    assert started["type"] == "scan_progress"
+    assert started["status"] == "started"
+    assert started["stage"] == "reconcile_scan"
+    assert started["progress"] == 0
+    assert started["full_rebuild"] is False
+
+    process_messages = [
+        m for m in messages
+        if m["stage"] == "process_new" and m["status"] == "processing"
+    ]
+    assert process_messages, "expected process_new progress updates"
+    assert process_messages[-1]["processed"] == 1
+    assert process_messages[-1]["total"] == 1
+    assert process_messages[-1]["current_name"] == "three.txt"
+
+    completed = messages[-1]
+    assert completed["status"] == "completed"
+    assert completed["progress"] == 100
+    assert completed["added"] == 1
+    assert completed["removed"] == 0
+    assert completed["elapsed_seconds"] >= 0
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_broadcasts_cancelled(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    new_file = tmp_path / "four.txt"
+    new_file.write_text("four", encoding="utf-8")
+
+    original_process = DummyScanner._process_model_file
+
+    async def cancelling_process(self, file_path, root_path, **kwargs):
+        scanner.cancel_task()
+        return await original_process(self, file_path, root_path, **kwargs)
+
+    monkeypatch.setattr(DummyScanner, "_process_model_file", cancelling_process)
+
+    await scanner._reconcile_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "cancelled"
+    assert messages[-1]["elapsed_seconds"] >= 0
+    assert not any(m["status"] == "completed" for m in messages)
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_broadcasts_error(tmp_path: Path, monkeypatch):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+
+    ws_stub = RecordingWebSocketManager()
+    monkeypatch.setattr(model_scanner, "ws_manager", ws_stub)
+
+    def raising_walk(*_args, **_kwargs):
+        raise RuntimeError("walk failed")
+
+    monkeypatch.setattr(model_scanner.os, "walk", raising_walk)
+
+    await scanner._reconcile_cache()
+
+    messages = ws_stub.broadcasts
+    assert messages[0]["status"] == "started"
+    assert messages[-1]["status"] == "error"
+    assert messages[-1]["error"] == "walk failed"

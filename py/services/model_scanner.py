@@ -66,6 +66,14 @@ def _is_hidden_relative_path(rel_path: str) -> bool:
 # requests (modal open + autocomplete) do not re-walk the model roots.
 ALL_FOLDERS_CACHE_TTL_SECONDS = 5.0
 
+# Maps a scanner model type to the manager page type used in progress
+# broadcasts (e.g. 'lora' -> 'loras').
+PAGE_TYPE_MAP = {
+    'lora': 'loras',
+    'checkpoint': 'checkpoints',
+    'embedding': 'embeddings',
+}
+
 
 def _is_pending_delete_path(path: str) -> bool:
     """Return True when any path component is the pending-delete staging dir."""
@@ -148,6 +156,38 @@ class ModelScanner:
 
         # Register this service
         asyncio.create_task(self._register_service())
+
+    @property
+    def page_type(self) -> str:
+        """Manager page type used in progress broadcasts (e.g. 'loras')."""
+        return PAGE_TYPE_MAP.get(self.model_type, self.model_type)
+
+    async def _broadcast_scan_progress(
+        self,
+        status: str,
+        stage: str,
+        progress: int,
+        full_rebuild: bool,
+        **extra: Any,
+    ) -> None:
+        """Broadcast manual-refresh scan progress on the generic WS channel.
+
+        Best-effort only: broadcast failures must never affect the scan itself.
+        """
+        payload: Dict[str, Any] = {
+            'type': 'scan_progress',
+            'status': status,
+            'model_type': self.model_type,
+            'pageType': self.page_type,
+            'stage': stage,
+            'full_rebuild': full_rebuild,
+            'progress': progress,
+        }
+        payload.update(extra)
+        try:
+            await ws_manager.broadcast(payload)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(f"Error broadcasting scan progress for {self.model_type}: {exc}")
 
     @property
     def cache_version(self) -> int:
@@ -434,12 +474,7 @@ class ModelScanner:
             self._is_initializing = True
             
             # Determine the page type based on model type
-            page_type_map = {
-                'lora': 'loras',
-                'checkpoint': 'checkpoints',
-                'embedding': 'embeddings'
-            }
-            page_type = page_type_map.get(self.model_type, self.model_type)
+            page_type = self.page_type
             
             # First, try to load from cache
             await ws_manager.broadcast_init_progress({
@@ -804,7 +839,7 @@ class ModelScanner:
             last_progress_time = time.time()
             last_progress_percent = 0
 
-            async def progress_callback(processed_files: int, expected_total: int) -> None:
+            async def progress_callback(processed_files: int, expected_total: int, current_name: str = '') -> None:
                 nonlocal last_progress_time, last_progress_percent
 
                 if expected_total <= 0:
@@ -871,32 +906,84 @@ class ModelScanner:
     async def _initialize_cache(self) -> None:
         """Initialize or refresh the cache"""
         self._is_initializing = True  # Set flag
+        last_progress_percent = 0
         try:
             start_time = time.time()
-            
+
+            await self._broadcast_scan_progress('started', 'scan_folders', 0, True)
+
             # Manually trigger a symlink rescan during a full rebuild.
             # This ensures that any new symlink mappings are correctly picked up.
             config.rebuild_symlink_cache()
 
-            # Determine the page type based on model type
+            # Count files in a thread so the event loop stays responsive
+            loop = asyncio.get_running_loop()
+            total_files = await loop.run_in_executor(None, self._count_model_files)
+            await self._broadcast_scan_progress(
+                'processing', 'count_models', 1, True,
+                processed=0, total=total_files,
+            )
+
+            last_progress_time = time.time()
+
+            async def progress_callback(processed_files: int, expected_total: int, current_name: str = '') -> None:
+                nonlocal last_progress_time, last_progress_percent
+
+                if expected_total <= 0:
+                    return
+
+                current_time = time.time()
+                progress_percent = min(99, int(1 + (processed_files / expected_total) * 98))
+
+                if progress_percent <= last_progress_percent:
+                    return
+
+                if current_time - last_progress_time <= 0.5 and processed_files != expected_total:
+                    return
+
+                last_progress_percent = progress_percent
+                last_progress_time = current_time
+
+                await self._broadcast_scan_progress(
+                    'processing', 'process_models', progress_percent, True,
+                    processed=processed_files, total=expected_total,
+                    current_name=current_name,
+                )
+
             # Scan for new data
-            scan_result = await self._gather_model_data()
+            scan_result = await self._gather_model_data(
+                total_files=total_files,
+                progress_callback=progress_callback,
+            )
             if not self.is_cancelled():
+                await self._broadcast_scan_progress('finalizing', 'finalizing', 99, True)
                 await self._apply_scan_result(scan_result)
                 await self._save_persistent_cache(scan_result)
                 await self._sync_download_history(scan_result.raw_data, source='scan')
+                await self._broadcast_scan_progress(
+                    'completed', 'finalizing', 100, True,
+                    elapsed_seconds=time.time() - start_time,
+                )
 
                 logger.info(
                     f"{self.model_type.capitalize()} Scanner: Cache initialization completed in {time.time() - start_time:.2f} seconds, "
                     f"found {len(scan_result.raw_data)} models"
                 )
             else:
+                await self._broadcast_scan_progress(
+                    'cancelled', 'process_models', last_progress_percent, True,
+                    elapsed_seconds=time.time() - start_time,
+                )
                 logger.info(
                     f"{self.model_type.capitalize()} Scanner: Cache initialization cancelled "
                     f"after {time.time() - start_time:.2f} seconds"
                 )
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error initializing cache: {e}")
+            await self._broadcast_scan_progress(
+                'error', 'process_models', last_progress_percent, True,
+                error=str(e),
+            )
             # Ensure cache is at least an empty structure on error
             if self._cache is None:
                 self._cache = ModelCache(
@@ -914,6 +1001,8 @@ class ModelScanner:
         try:
             start_time = time.time()
             logger.info(f"{self.model_type.capitalize()} Scanner: Starting fast cache reconciliation...")
+
+            await self._broadcast_scan_progress('started', 'reconcile_scan', 0, False)
             
             # Get current cached file paths
             cached_paths = {item['file_path'] for item in self._cache.raw_data}
@@ -987,6 +1076,10 @@ class ModelScanner:
                     await asyncio.sleep(0)
                     if self.is_cancelled():
                         logger.info(f"{self.model_type.capitalize()} Scanner: Reconcile scan cancelled")
+                        await self._broadcast_scan_progress(
+                            'cancelled', 'reconcile_scan', 0, False,
+                            elapsed_seconds=time.time() - start_time,
+                        )
                         return
 
             # Process new files in batches
@@ -994,10 +1087,14 @@ class ModelScanner:
             if new_files:
                 logger.info(f"{self.model_type.capitalize()} Scanner: Found {len(new_files)} new files to process")
                 batch_size = 50
-                for i in range(0, len(new_files), batch_size):
+                total_new = len(new_files)
+                processed_new = 0
+                last_progress_time = time.time()
+                for i in range(0, total_new, batch_size):
                     batch = new_files[i:i+batch_size]
                     for path in batch:
                         logger.info(f"{self.model_type.capitalize()} Scanner: Processing {path}")
+                        processed_new += 1
                         try:
                             # Find the appropriate root path for this file
                             root_path = None
@@ -1053,9 +1150,24 @@ class ModelScanner:
                                 logger.error(f"Could not determine root path for {path}")
                         except Exception as e:
                             logger.error(f"Error adding {path} to cache: {e}")
-                        
+
+                        current_time = time.time()
+                        if current_time - last_progress_time > 0.5 or processed_new == total_new:
+                            last_progress_time = current_time
+                            await self._broadcast_scan_progress(
+                                'processing', 'process_new',
+                                min(99, int(1 + (processed_new / total_new) * 98)), False,
+                                processed=processed_new, total=total_new,
+                                current_name=os.path.basename(path),
+                            )
+
                         if self.is_cancelled():
                             logger.info(f"{self.model_type.capitalize()} Scanner: Reconcile processing cancelled")
+                            await self._broadcast_scan_progress(
+                                'cancelled', 'process_new',
+                                min(99, int(1 + (processed_new / total_new) * 98)), False,
+                                elapsed_seconds=time.time() - start_time,
+                            )
                             return
             
             # Find missing files (in cache but not in filesystem)
@@ -1121,8 +1233,17 @@ class ModelScanner:
                 await self._persist_current_cache()
                 
             logger.info(f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in {time.time() - start_time:.2f} seconds. Added {total_added}, removed {total_removed} models.")
+            await self._broadcast_scan_progress(
+                'completed', 'process_new', 100, False,
+                added=total_added, removed=total_removed,
+                elapsed_seconds=time.time() - start_time,
+            )
         except Exception as e:
             logger.error(f"{self.model_type.capitalize()} Scanner: Error reconciling cache: {e}", exc_info=True)
+            await self._broadcast_scan_progress(
+                'error', 'reconcile_scan', 0, False,
+                error=str(e),
+            )
         finally:
             self._is_initializing = False # Unset flag
             self.bump_cache_version()
@@ -1498,7 +1619,7 @@ class ModelScanner:
         self,
         *,
         total_files: int = 0,
-        progress_callback: Optional[Callable[[int, int], Awaitable[None]]] = None
+        progress_callback: Optional[Callable[[int, int, str], Awaitable[None]]] = None
     ) -> CacheBuildResult:
         """Collect metadata for all model files."""
 
@@ -1510,11 +1631,11 @@ class ModelScanner:
         processed_real_files: Set[str] = set()
         visited_real_dirs: Set[str] = set()
 
-        async def handle_progress() -> None:
+        async def handle_progress(current_name: str = '') -> None:
             if progress_callback is None:
                 return
             try:
-                await progress_callback(processed_files, total_files)
+                await progress_callback(processed_files, total_files, current_name)
             except Exception as exc:  # pragma: no cover - defensive logging
                 logger.error(f"Error reporting progress for {self.model_type}: {exc}")
 
@@ -1580,7 +1701,7 @@ class ModelScanner:
                                 for tag in result.get('tags') or []:
                                     tags_count[tag] = tags_count.get(tag, 0) + 1
 
-                            await handle_progress()
+                            await handle_progress(entry.name)
                             await asyncio.sleep(0)
                             if self.is_cancelled():
                                 return

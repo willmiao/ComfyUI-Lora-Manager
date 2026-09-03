@@ -1753,7 +1753,36 @@ class RecipeScanner:
             # Mark initialization as complete regardless of outcome
             self._is_initializing = False
 
-    def _initialize_recipe_cache_sync(self):
+    async def _broadcast_scan_progress(
+        self,
+        status: str,
+        stage: str,
+        progress: int,
+        full_rebuild: bool,
+        **extra: Any,
+    ) -> None:
+        """Broadcast manual-refresh scan progress on the generic WS channel.
+
+        Mirrors ``ModelScanner._broadcast_scan_progress`` so the recipes page
+        can reuse the same frontend contract. Best-effort only: broadcast
+        failures must never affect the scan itself.
+        """
+        payload: Dict[str, Any] = {
+            'type': 'scan_progress',
+            'status': status,
+            'model_type': 'recipe',
+            'pageType': 'recipes',
+            'stage': stage,
+            'full_rebuild': full_rebuild,
+            'progress': progress,
+        }
+        payload.update(extra)
+        try:
+            await ws_manager.broadcast(payload)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error(f"Error broadcasting scan progress for recipe: {exc}")
+
+    def _initialize_recipe_cache_sync(self, report_progress: bool = False):
         """Synchronous version of recipe cache initialization for thread pool execution.
 
         Uses persistent cache for fast startup when available:
@@ -1761,8 +1790,14 @@ class RecipeScanner:
         2. Reconcile with filesystem (check mtime/size for changes)
         3. Fall back to full directory scan if cache miss or reconciliation fails
         4. Persist results for next startup
+
+        Args:
+            report_progress: When True (manual force-refresh only), broadcast
+                scan_progress messages during the full directory scan. Startup
+                initialization leaves this False and behaves as before.
         """
         loop = None
+        scan_start_time: Optional[float] = None
         try:
             # Ensure cache exists to avoid None reference errors
             if self._cache is None:
@@ -1844,7 +1879,17 @@ class RecipeScanner:
 
             # Fall back to full directory scan
             logger.info("Recipe cache miss: performing full directory scan")
-            recipes, json_paths = self._full_directory_scan_sync(recipes_dir)
+            if report_progress:
+                scan_start_time = time.time()
+                # Broadcast from the worker thread via its own event loop,
+                # mirroring ModelScanner._initialize_cache_sync.
+                loop.run_until_complete(
+                    self._broadcast_scan_progress('started', 'scan_folders', 0, True)
+                )
+            recipes, json_paths = self._full_directory_scan_sync(
+                recipes_dir,
+                progress_loop=loop if report_progress else None,
+            )
             self._json_path_map = json_paths
 
             # Update cache with the collected data
@@ -1858,12 +1903,30 @@ class RecipeScanner:
                 recipes, json_paths, self._cache.image_id_map
             )
 
+            if report_progress:
+                loop.run_until_complete(
+                    self._broadcast_scan_progress(
+                        'completed', 'finalizing', 100, True,
+                        elapsed_seconds=time.time() - (scan_start_time or time.time()),
+                        total=len(recipes),
+                    )
+                )
+
             return self._cache
         except Exception as e:
             logger.error(f"Error in thread-based recipe cache initialization: {e}")
             import traceback
 
             traceback.print_exc(file=sys.stderr)
+            if report_progress and loop is not None:
+                try:
+                    loop.run_until_complete(
+                        self._broadcast_scan_progress(
+                            'error', 'process_models', 0, True, error=str(e)
+                        )
+                    )
+                except Exception:  # pragma: no cover - defensive logging
+                    logger.error("Error broadcasting recipe scan failure", exc_info=True)
             return self._cache if hasattr(self, "_cache") else None
         finally:
             # Clean up the event loop
@@ -2017,12 +2080,16 @@ class RecipeScanner:
         return updated
 
     def _full_directory_scan_sync(
-        self, recipes_dir: str
+        self,
+        recipes_dir: str,
+        progress_loop: Optional[asyncio.AbstractEventLoop] = None,
     ) -> Tuple[List[Dict[str, Any]], Dict[str, str]]:
         """Perform a full synchronous directory scan for recipes.
 
         Args:
             recipes_dir: Path to the recipes directory.
+            progress_loop: When set (manual force-refresh only), broadcast
+                scan_progress messages through this thread-local event loop.
 
         Returns:
             Tuple of (recipes list, json_paths dict).
@@ -2037,6 +2104,17 @@ class RecipeScanner:
                 if file.lower().endswith(".recipe.json"):
                     recipe_files.append(os.path.join(root, file))
 
+        total_files = len(recipe_files)
+        if progress_loop is not None:
+            progress_loop.run_until_complete(
+                self._broadcast_scan_progress(
+                    'processing', 'count_models', 1, True,
+                    processed=0, total=total_files,
+                )
+            )
+
+        last_progress_time = time.time()
+
         # Process each recipe file
         for i, recipe_path in enumerate(recipe_files):
             recipe_data = self._load_recipe_file_sync(recipe_path)
@@ -2044,6 +2122,23 @@ class RecipeScanner:
                 recipe_id = str(recipe_data.get("id", ""))
                 recipes.append(recipe_data)
                 json_paths[recipe_id] = recipe_path
+            if progress_loop is not None and total_files > 0:
+                processed = i + 1
+                current_time = time.time()
+                # Throttle to one update per 0.5s; always send the final one.
+                if (
+                    processed == total_files
+                    or current_time - last_progress_time > 0.5
+                ):
+                    last_progress_time = current_time
+                    progress_percent = min(99, int(1 + (processed / total_files) * 98))
+                    progress_loop.run_until_complete(
+                        self._broadcast_scan_progress(
+                            'processing', 'process_models', progress_percent, True,
+                            processed=processed, total=total_files,
+                            current_name=os.path.basename(recipe_path),
+                        )
+                    )
             # Periodically release GIL so the event loop thread can run
             if i % 100 == 0:
                 time.sleep(0)
@@ -2613,11 +2708,14 @@ class RecipeScanner:
                         start_time = time.time()
 
                         # Run the heavy lifting in a thread pool – same path
-                        # used by initialize_in_background().
+                        # used by initialize_in_background(). Pass
+                        # report_progress=True so manual refreshes broadcast
+                        # scan_progress updates; startup init keeps it off.
                         loop = asyncio.get_event_loop()
                         cache = await loop.run_in_executor(
                             None,
                             self._initialize_recipe_cache_sync,
+                            True,
                         )
                         if cache is not None:
                             self._cache = cache
