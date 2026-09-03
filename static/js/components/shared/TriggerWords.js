@@ -227,7 +227,7 @@ export function renderTriggerWords(words, filePath) {
         const escapedWord = escapeHtml(word);
         const escapedAttr = escapeAttribute(word);
         return `
-                        <div class="trigger-word-tag" data-word="${escapedAttr}" title="${translate('modals.model.triggerWords.copyWord')}">
+                        <div class="trigger-word-tag" data-word="${escapedAttr}" title="${translate('modals.model.triggerWords.copyOrEditWord')}">
                             <span class="trigger-word-content">${escapedWord}</span>
                             <span class="trigger-word-copy">
                                 <i class="fas fa-copy"></i>
@@ -455,7 +455,7 @@ function resetTriggerWordsUIState(section) {
         // Restore click-to-copy functionality
         tag.removeEventListener('click', startEditTriggerWord);
         setupDisplayTriggerWordTag(tag);
-        tag.title = translate('modals.model.triggerWords.copyWord');
+        tag.title = translate('modals.model.triggerWords.copyOrEditWord');
 
         // Show copy icon, hide delete button
         if (copyIcon) copyIcon.style.display = '';
@@ -503,7 +503,7 @@ function createTriggerWordTag(word, isEditMode = false) {
     const tag = document.createElement('div');
     tag.className = 'trigger-word-tag';
     tag.dataset.word = word;
-    tag.title = translate(isEditMode ? 'modals.model.triggerWords.editWord' : 'modals.model.triggerWords.copyWord');
+    tag.title = translate(isEditMode ? 'modals.model.triggerWords.editWord' : 'modals.model.triggerWords.copyOrEditWord');
 
     const escapedWord = escapeHtml(word);
     tag.innerHTML = `
@@ -537,7 +537,7 @@ function setupDisplayTriggerWordTag(tag) {
 
     tag.addEventListener('click', handleDisplayTriggerWordClick);
     tag.addEventListener('dblclick', handleDisplayTriggerWordDoubleClick);
-    tag.title = translate('modals.model.triggerWords.copyWord');
+    tag.title = translate('modals.model.triggerWords.copyOrEditWord');
 }
 
 /**

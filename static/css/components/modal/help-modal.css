@@ -305,3 +305,86 @@
 [data-theme="dark"] .video-container {
   background-color: var(--surface-hover);
 }
+/* Replay tutorial button styles */
+.help-actions {
+  margin-top: var(--space-3);
+}
+
+.replay-tutorial-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  border-radius: var(--border-radius-sm);
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition-base);
+  background-color: var(--lora-accent);
+  color: white;
+  border: none;
+}
+
+.replay-tutorial-btn:hover {
+  background-color: oklch(from var(--lora-accent) l c h / 85%);
+}
+
+/* Shortcuts tab styles */
+.shortcuts-section {
+  margin-bottom: var(--space-3);
+}
+
+.shortcuts-section h4 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--space-1);
+}
+
+.shortcuts-list {
+  list-style-type: none;
+  padding-left: var(--space-3);
+}
+
+.shortcuts-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: var(--space-1);
+}
+
+.shortcut-keys {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 150px;
+}
+
+.shortcut-sep {
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  margin: 0 1px;
+}
+
+.shortcuts-list kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  font-family: inherit;
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  /* Subtle tint derived from text color so it adapts to both light & dark themes */
+  background: color-mix(in oklch, var(--text-muted) 12%, transparent);
+  border: 1px solid color-mix(in oklch, var(--text-muted) 25%, transparent);
+  border-radius: var(--border-radius-xs, 3px);
+  line-height: 1;
+}
+
+.shortcut-description {
+  font-size: 0.9em;
+  opacity: 0.85;
+}

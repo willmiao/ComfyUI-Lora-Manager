@@ -1,4 +1,5 @@
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
+import { onboardingManager } from './OnboardingManager.js';
 
 /**
  * Manages help modal functionality and tutorial update notifications
@@ -55,31 +56,78 @@ export class HelpManager {
         const tabButtons = document.querySelectorAll('.help-tabs .tab-btn');
         tabButtons.forEach(button => {
             button.addEventListener('click', (event) => {
-                // Remove active class from all buttons and panes
-                document.querySelectorAll('.help-tabs .tab-btn').forEach(btn => {
-                    btn.classList.remove('active');
-                });
-                document.querySelectorAll('.help-content .tab-pane').forEach(pane => {
-                    pane.classList.remove('active');
-                });
-                
-                // Add active class to clicked button
-                event.currentTarget.classList.add('active');
-                
-                // Show corresponding tab content
-                const tabId = event.currentTarget.getAttribute('data-tab');
-                document.getElementById(tabId).classList.add('active');
+                this.activateHelpTab(event.currentTarget.getAttribute('data-tab'));
             });
         });
+
+        // Replay tutorial button in the Getting Started tab
+        const replayTutorialBtn = document.getElementById('replayTutorialBtn');
+        if (replayTutorialBtn) {
+            replayTutorialBtn.addEventListener('click', () => {
+                // Close the help modal, then restart the onboarding tutorial
+                if (window.modalManager) {
+                    window.modalManager.closeModal('helpModal');
+                }
+                onboardingManager.reset();
+                onboardingManager.startTutorial();
+            });
+        }
+
+        // Global "?" shortcut opens the help modal on the Shortcuts tab
+        document.addEventListener('keydown', (event) => {
+            if (event.key !== '?') return;
+            if (this.isTypingContext(event.target)) return;
+            if (window.modalManager?.isAnyModalOpen()) return;
+
+            event.preventDefault();
+            this.openHelpModal('shortcuts');
+        });
+    }
+
+    /**
+     * Check if the event target is a text entry context where "?" is literal input
+     */
+    isTypingContext(target) {
+        if (!(target instanceof Element)) return false;
+
+        const tagName = target.tagName?.toLowerCase();
+        return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
+    }
+
+    /**
+     * Activate a specific help modal tab by its data-tab id
+     * @param {string} tabId - The tab id (matches data-tab and pane element id)
+     */
+    activateHelpTab(tabId) {
+        const tabButton = document.querySelector(`.help-tabs .tab-btn[data-tab="${tabId}"]`);
+        const tabPane = document.getElementById(tabId);
+        if (!tabButton || !tabPane) return;
+
+        // Remove active class from all buttons and panes
+        document.querySelectorAll('.help-tabs .tab-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+        document.querySelectorAll('.help-content .tab-pane').forEach(pane => {
+            pane.classList.remove('active');
+        });
+
+        // Activate the requested tab
+        tabButton.classList.add('active');
+        tabPane.classList.add('active');
     }
     
     /**
      * Open the help modal
+     * @param {string} [tabId] - Optional tab id to activate after opening
      */
-    openHelpModal() {
+    openHelpModal(tabId) {
         // Use modalManager to open the help modal
         if (window.modalManager) {
             window.modalManager.toggleModal('helpModal');
+
+            if (tabId) {
+                this.activateHelpTab(tabId);
+            }
             
             // Add visual indicator to Documentation tab if there's new content
             this.updateDocumentationTabIndicator();

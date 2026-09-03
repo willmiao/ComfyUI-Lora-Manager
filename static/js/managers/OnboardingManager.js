@@ -43,7 +43,7 @@ export class OnboardingManager {
             {
                 target: '.controls .action-buttons [data-action="bulk"]',
                 title: () => translate('onboarding.steps.bulk.title', {}, 'Bulk Operations'),
-                content: () => translate('onboarding.steps.bulk.content', {}, 'Enter bulk mode by clicking this button or pressing <span class="onboarding-shortcut">B</span>. Select multiple models and perform batch operations. Use <span class="onboarding-shortcut">Ctrl+A</span> to select all visible models.'),
+                content: () => translate('onboarding.steps.bulk.content', {}, 'Enter bulk mode by clicking this button or pressing <span class="onboarding-shortcut">B</span> to select multiple models and perform batch operations.<br>• <span class="onboarding-shortcut">Ctrl/Cmd+A</span> select all visible models, <span class="onboarding-shortcut">Shift+Click</span> select a range.<br>• <span class="onboarding-shortcut">Esc</span> or clicking an empty area exits bulk mode.'),
                 position: 'bottom'
             },
             {
@@ -73,8 +73,28 @@ export class OnboardingManager {
             },
             {
                 target: '.card-grid',
+                title: () => translate('onboarding.steps.marqueeSelect.title', {}, 'Drag to Select'),
+                content: () => translate('onboarding.steps.marqueeSelect.content', {}, 'Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once.'),
+                position: 'top',
+                customPosition: { top: '20%', left: '50%' }
+            },
+            {
+                target: '#folderSidebar',
+                title: () => translate('onboarding.steps.dragToSidebar.title', {}, 'Organize by Dragging'),
+                content: () => translate('onboarding.steps.dragToSidebar.content', {}, 'Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode.'),
+                position: 'right'
+            },
+            {
+                target: '.card-grid',
                 title: () => translate('onboarding.steps.contextMenu.title', {}, 'Context Menu'),
-                content: () => translate('onboarding.steps.contextMenu.content', {}, '<strong>Right-click</strong> any model card for a context menu with additional actions.'),
+                content: () => translate('onboarding.steps.contextMenu.content', {}, '<strong>Right-click</strong> any model card for a context menu with card actions like moving, deleting, or editing metadata.'),
+                position: 'top',
+                customPosition: { top: '20%', left: '50%' }
+            },
+            {
+                target: '.card-grid',
+                title: () => translate('onboarding.steps.contextMenus.title', {}, 'More Context Menus'),
+                content: () => translate('onboarding.steps.contextMenus.content', {}, 'In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models.'),
                 position: 'top',
                 customPosition: { top: '20%', left: '50%' }
             }

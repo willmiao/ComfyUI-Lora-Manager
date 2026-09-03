@@ -117,6 +117,18 @@
             "contextMenu": {
                 "title": "コンテキストメニュー",
                 "content": "<strong>モデルカードを右クリック</strong>すると追加の操作ができるコンテキストメニューが表示されます。"
+            },
+            "marqueeSelect": {
+                "title": "[TODO: Translate] Drag to Select",
+                "content": "[TODO: Translate] Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+            },
+            "dragToSidebar": {
+                "title": "[TODO: Translate] Organize by Dragging",
+                "content": "[TODO: Translate] Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+            },
+            "contextMenus": {
+                "title": "[TODO: Translate] More Context Menus",
+                "content": "[TODO: Translate] In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
             }
         }
     },
@@ -1629,7 +1641,7 @@
                 "addPlaceholder": "入力して追加するか、下の提案をクリック",
                 "editWord": "トリガーワードを編集",
                 "editPlaceholder": "トリガーワードを編集",
-                "copyWord": "トリガーワードをコピー",
+                "copyOrEditWord": "[TODO: Translate] Click to copy, double-click to edit",
                 "deleteWord": "トリガーワードを削除",
                 "suggestions": {
                     "noSuggestions": "提案はありません",
@@ -1954,10 +1966,48 @@
         "tabs": {
             "gettingStarted": "はじめに",
             "updateVlogs": "更新Vlog",
-            "documentation": "ドキュメント"
+            "documentation": "ドキュメント",
+            "shortcuts": "[TODO: Translate] Shortcuts"
         },
         "gettingStarted": {
-            "title": "LoRA Managerを始める"
+            "title": "LoRA Managerを始める",
+            "replayTutorial": "[TODO: Translate] Replay Tutorial"
+        },
+        "shortcuts": {
+            "title": "[TODO: Translate] Keyboard & Mouse Shortcuts",
+            "groups": {
+                "general": "[TODO: Translate] General",
+                "selection": "[TODO: Translate] Selection & Bulk Mode",
+                "navigation": "[TODO: Translate] Navigation",
+                "modelModal": "[TODO: Translate] Model / Recipe Modal",
+                "mediaViewer": "[TODO: Translate] Media Viewer / Showcase"
+            },
+            "keys": {
+                "click": "[TODO: Translate] Click",
+                "drag": "[TODO: Translate] Drag",
+                "rightClick": "[TODO: Translate] Right-click",
+                "letter": "[TODO: Translate] Letter",
+                "swipe": "[TODO: Translate] Swipe"
+            },
+            "entries": {
+                "focusSearch": "[TODO: Translate] Focus search",
+                "closeModal": "[TODO: Translate] Close modal / panel",
+                "openShortcuts": "[TODO: Translate] Open this shortcuts panel",
+                "toggleBulkMode": "[TODO: Translate] Toggle bulk mode",
+                "selectAll": "[TODO: Translate] Select all visible models",
+                "rangeSelect": "[TODO: Translate] Range select",
+                "marqueeSelect": "[TODO: Translate] Marquee-select cards (on empty grid area)",
+                "exitBulkMode": "[TODO: Translate] Exit bulk mode",
+                "bulkActions": "[TODO: Translate] On selected card: bulk actions menu",
+                "globalActions": "[TODO: Translate] On empty page area: global actions menu (update check, manage excluded models)",
+                "scrollPages": "[TODO: Translate] Scroll pages",
+                "jumpAlphabet": "[TODO: Translate] Jump alphabet bar",
+                "prevNext": "[TODO: Translate] Previous / next model",
+                "deleteEntry": "[TODO: Translate] Delete",
+                "cycleMedia": "[TODO: Translate] Cycle media ([ / ] in showcase gallery)",
+                "swipeTouch": "[TODO: Translate] Cycle media on touch devices",
+                "closeViewer": "[TODO: Translate] Close viewer"
+            }
         },
         "updateVlogs": {
             "title": "最新の更新",

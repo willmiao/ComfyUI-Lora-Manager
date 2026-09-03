@@ -10,6 +10,7 @@
             <button class="tab-btn active" data-tab="getting-started">{{ t('help.tabs.gettingStarted') }}</button>
             <button class="tab-btn" data-tab="update-vlogs">{{ t('help.tabs.updateVlogs') }}</button>
             <button class="tab-btn" data-tab="documentation">{{ t('help.tabs.documentation') }}</button>
+            <button class="tab-btn" data-tab="shortcuts">{{ t('help.tabs.shortcuts') }}</button>
         </div>
         
         <div class="help-content">
@@ -38,6 +39,12 @@
                         <li><strong>Advanced Controls:</strong> Trigger word toggles and customizable loader node</li>
                         <li><strong>Recipe System:</strong> Create, save and share your perfect combinations</li>
                     </ul>
+                </div>
+                <div class="help-actions">
+                    <button id="replayTutorialBtn" class="replay-tutorial-btn">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span>{{ t('help.gettingStarted.replayTutorial') }}</span>
+                    </button>
                 </div>
             </div>
             
@@ -132,6 +139,108 @@
                                 LM Civitai Extension
                                 <span class="new-content-badge inline">{{ t('help.documentation.newBadge') }}</span>
                             </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <!-- Shortcuts Tab -->
+            <div class="tab-pane" id="shortcuts">
+                <h3>{{ t('help.shortcuts.title') }}</h3>
+
+                <div class="shortcuts-section">
+                    <h4><i class="fas fa-keyboard"></i> {{ t('help.shortcuts.groups.general') }}</h4>
+                    <ul class="shortcuts-list">
+                        <li>
+                            <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="shortcut-sep">/</span><kbd>Cmd</kbd><span class="shortcut-sep">+</span><kbd>F</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.focusSearch') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.closeModal') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>?</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.openShortcuts') }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="shortcuts-section">
+                    <h4><i class="fas fa-object-group"></i> {{ t('help.shortcuts.groups.selection') }}</h4>
+                    <ul class="shortcuts-list">
+                        <li>
+                            <span class="shortcut-keys"><kbd>B</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.toggleBulkMode') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Ctrl</kbd><span class="shortcut-sep">/</span><kbd>Cmd</kbd><span class="shortcut-sep">+</span><kbd>A</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.selectAll') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Shift</kbd><span class="shortcut-sep">+</span><kbd>{{ t('help.shortcuts.keys.click') }}</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.rangeSelect') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>{{ t('help.shortcuts.keys.drag') }}</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.marqueeSelect') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.exitBulkMode') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>{{ t('help.shortcuts.keys.rightClick') }}</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.bulkActions') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>{{ t('help.shortcuts.keys.rightClick') }}</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.globalActions') }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="shortcuts-section">
+                    <h4><i class="fas fa-arrows-alt-v"></i> {{ t('help.shortcuts.groups.navigation') }}</h4>
+                    <ul class="shortcuts-list">
+                        <li>
+                            <span class="shortcut-keys"><kbd>PageUp</kbd><span class="shortcut-sep">/</span><kbd>PageDown</kbd><span class="shortcut-sep">/</span><kbd>Home</kbd><span class="shortcut-sep">/</span><kbd>End</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.scrollPages') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Alt</kbd><span class="shortcut-sep">+</span><kbd>{{ t('help.shortcuts.keys.letter') }}</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.jumpAlphabet') }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="shortcuts-section">
+                    <h4><i class="fas fa-window-restore"></i> {{ t('help.shortcuts.groups.modelModal') }}</h4>
+                    <ul class="shortcuts-list">
+                        <li>
+                            <span class="shortcut-keys"><kbd>&larr;</kbd><span class="shortcut-sep">/</span><kbd>&rarr;</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.prevNext') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Delete</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.deleteEntry') }}</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="shortcuts-section">
+                    <h4><i class="fas fa-images"></i> {{ t('help.shortcuts.groups.mediaViewer') }}</h4>
+                    <ul class="shortcuts-list">
+                        <li>
+                            <span class="shortcut-keys"><kbd>&larr;</kbd><span class="shortcut-sep">/</span><kbd>&rarr;</kbd><span class="shortcut-sep">/</span><kbd>[</kbd><span class="shortcut-sep">/</span><kbd>]</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.cycleMedia') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>{{ t('help.shortcuts.keys.swipe') }}</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.swipeTouch') }}</span>
+                        </li>
+                        <li>
+                            <span class="shortcut-keys"><kbd>Esc</kbd></span>
+                            <span class="shortcut-description">{{ t('help.shortcuts.entries.closeViewer') }}</span>
                         </li>
                     </ul>
                 </div>

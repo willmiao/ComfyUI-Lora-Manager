@@ -607,9 +607,11 @@ export function createModelCard(model, modelType) {
         sendTitle = translate('modelCard.actions.sendToWorkflow', {}, 'Send to ComfyUI (Click: Append, Shift+Click: Replace)');
         copyTitle = translate('modelCard.actions.copyLoRASyntax', {}, 'Copy LoRA Syntax');
     } else if (modelType === MODEL_TYPES.CHECKPOINT) {
+        // Checkpoint send sets the widget value directly; no append/replace modes.
         sendTitle = translate('modelCard.actions.sendCheckpointToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyCheckpointName', {}, 'Copy checkpoint name');
     } else if (modelType === MODEL_TYPES.EMBEDDING) {
+        // Embedding send always appends to the prompt; no replace mode.
         sendTitle = translate('modelCard.actions.sendEmbeddingToWorkflow', {}, 'Send to ComfyUI');
         copyTitle = translate('modelCard.actions.copyEmbeddingName', {}, 'Copy embedding name');
     } else {

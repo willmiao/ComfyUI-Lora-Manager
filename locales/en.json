@@ -96,7 +96,7 @@
       },
       "bulk": {
         "title": "Bulk Operations",
-        "content": "Enter bulk mode by clicking this button or pressing <span class=\"onboarding-shortcut\">B</span>. Select multiple models and perform batch operations. Use <span class=\"onboarding-shortcut\">Ctrl+A</span> to select all visible models."
+        "content": "Enter bulk mode by clicking this button or pressing <span class=\"onboarding-shortcut\">B</span> to select multiple models and perform batch operations.<br>• <span class=\"onboarding-shortcut\">Ctrl/Cmd+A</span> select all visible models, <span class=\"onboarding-shortcut\">Shift+Click</span> select a range.<br>• <span class=\"onboarding-shortcut\">Esc</span> or clicking an empty area exits bulk mode."
       },
       "searchOptions": {
         "title": "Search Options",
@@ -116,7 +116,19 @@
       },
       "contextMenu": {
         "title": "Context Menu",
-        "content": "<strong>Right-click</strong> any model card for a context menu with additional actions."
+        "content": "<strong>Right-click</strong> any model card for a context menu with card actions like moving, deleting, or editing metadata."
+      },
+      "marqueeSelect": {
+        "title": "Drag to Select",
+        "content": "Hold the <strong>left mouse button</strong> on an empty area of the grid and drag to draw a marquee that selects multiple cards at once."
+      },
+      "dragToSidebar": {
+        "title": "Organize by Dragging",
+        "content": "Drag a model card onto a folder in the sidebar to move the file there. This also works with multiple selected cards in bulk mode."
+      },
+      "contextMenus": {
+        "title": "More Context Menus",
+        "content": "In bulk mode, <strong>right-click a selected card</strong> for bulk actions. <strong>Right-click an empty area</strong> of the page for global actions like update checks and managing excluded models."
       }
     }
   },
@@ -1629,7 +1641,7 @@
         "addPlaceholder": "Type to add or click suggestions below",
         "editWord": "Edit trigger word",
         "editPlaceholder": "Edit trigger word",
-        "copyWord": "Copy trigger word",
+        "copyOrEditWord": "Click to copy, double-click to edit",
         "deleteWord": "Delete trigger word",
         "suggestions": {
           "noSuggestions": "No suggestions available",
@@ -1954,10 +1966,48 @@
     "tabs": {
       "gettingStarted": "Getting Started",
       "updateVlogs": "Update Vlogs",
-      "documentation": "Documentation"
+      "documentation": "Documentation",
+      "shortcuts": "Shortcuts"
     },
     "gettingStarted": {
-      "title": "Getting Started with LoRA Manager"
+      "title": "Getting Started with LoRA Manager",
+      "replayTutorial": "Replay Tutorial"
+    },
+    "shortcuts": {
+      "title": "Keyboard & Mouse Shortcuts",
+      "groups": {
+        "general": "General",
+        "selection": "Selection & Bulk Mode",
+        "navigation": "Navigation",
+        "modelModal": "Model / Recipe Modal",
+        "mediaViewer": "Media Viewer / Showcase"
+      },
+      "keys": {
+        "click": "Click",
+        "drag": "Drag",
+        "rightClick": "Right-click",
+        "letter": "Letter",
+        "swipe": "Swipe"
+      },
+      "entries": {
+        "focusSearch": "Focus search",
+        "closeModal": "Close modal / panel",
+        "openShortcuts": "Open this shortcuts panel",
+        "toggleBulkMode": "Toggle bulk mode",
+        "selectAll": "Select all visible models",
+        "rangeSelect": "Range select",
+        "marqueeSelect": "Marquee-select cards (on empty grid area)",
+        "exitBulkMode": "Exit bulk mode",
+        "bulkActions": "On selected card: bulk actions menu",
+        "globalActions": "On empty page area: global actions menu (update check, manage excluded models)",
+        "scrollPages": "Scroll pages",
+        "jumpAlphabet": "Jump alphabet bar",
+        "prevNext": "Previous / next model",
+        "deleteEntry": "Delete",
+        "cycleMedia": "Cycle media ([ / ] in showcase gallery)",
+        "swipeTouch": "Cycle media on touch devices",
+        "closeViewer": "Close viewer"
+      }
     },
     "updateVlogs": {
       "title": "Latest Updates",
