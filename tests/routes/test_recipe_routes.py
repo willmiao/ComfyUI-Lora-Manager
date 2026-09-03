@@ -2222,10 +2222,92 @@ async def test_reimport_without_source_path_falls_back_to_recipe_file(
         # The already-optimized preview image must be stored verbatim.
         assert harness.persistence.save_calls[-1]["skip_optimize"] is True
         assert harness.persistence.save_calls[-1]["image_bytes"] == b"fake-image"
+        # The fallback source is the recipe's own previous preview, which gets
+        # deleted with the old recipe — it must not be recorded as source_path.
+        assert harness.persistence.save_calls[-1]["metadata"]["source_path"] == ""
         # User edits (title, tags) are carried over to the new recipe.
         assert harness.persistence.update_calls[-1]["recipe_id"] == "new-rec"
         assert harness.persistence.update_calls[-1]["updates"]["title"] == "Old title"
         assert harness.persistence.update_calls[-1]["updates"]["tags"] == ["tag1"]
+
+
+async def test_reimport_with_dangling_source_path_falls_back_to_recipe_file(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A source_path pointing to a deleted file (left by an earlier re-import)
+    must not block re-import: fall back to the recipe's own saved image and
+    clear the dangling source_path."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        recipe_file = harness.tmp_dir / "recipes" / "rec3.webp"
+        recipe_file.parent.mkdir(parents=True, exist_ok=True)
+        recipe_file.write_bytes(b"fake-image")
+
+        harness.scanner.recipes["rec3"] = {
+            "id": "rec3",
+            "title": "Dangling source",
+            "file_path": str(recipe_file),
+            "tags": [],
+            # Dangling local path: the file no longer exists.
+            "source_path": str(harness.tmp_dir / "recipes" / "deleted.webp"),
+        }
+        harness.analysis.result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-3", "loras": []},
+            status=200,
+        )
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-3"}, status=200
+        )
+
+        response = await harness.client.post("/api/lm/recipe/rec3/reimport")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["recipe_id"] == "new-rec-3"
+        assert harness.analysis.local_calls == [str(recipe_file)]
+        assert harness.persistence.delete_calls == ["rec3"]
+        # The dangling path is not carried over to the new recipe.
+        assert harness.persistence.save_calls[-1]["metadata"]["source_path"] == ""
+
+
+async def test_reimport_with_accessible_local_source_keeps_source_path(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """When the recorded source_path is an existing external file, it remains
+    the source of truth and stays recorded on the new recipe."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        source_file = harness.tmp_dir / "imports" / "original.png"
+        source_file.parent.mkdir(parents=True, exist_ok=True)
+        source_file.write_bytes(b"original-image")
+        recipe_file = harness.tmp_dir / "recipes" / "rec4.webp"
+        recipe_file.parent.mkdir(parents=True, exist_ok=True)
+        recipe_file.write_bytes(b"fake-image")
+
+        harness.scanner.recipes["rec4"] = {
+            "id": "rec4",
+            "title": "External source",
+            "file_path": str(recipe_file),
+            "tags": [],
+            "source_path": str(source_file),
+        }
+        harness.analysis.result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-4", "loras": []},
+            status=200,
+        )
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-4"}, status=200
+        )
+
+        response = await harness.client.post("/api/lm/recipe/rec4/reimport")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        # The external source file is re-parsed, not the recipe preview.
+        assert harness.analysis.local_calls == [str(source_file)]
+        assert harness.persistence.save_calls[-1]["metadata"]["source_path"] == str(
+            source_file
+        )
 
 
 async def test_reimport_without_any_source_returns_400(

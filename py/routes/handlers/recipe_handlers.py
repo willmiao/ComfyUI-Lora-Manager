@@ -1128,15 +1128,21 @@ class RecipeManagementHandler:
             image_id = extract_civitai_image_id(source_path) if source_path else None
 
             # Local re-import sources: an explicit local source_path, or — when
-            # no source_path was recorded (drag & drop / file-picker imports) —
-            # the recipe's own saved image, which still carries the original
+            # no usable source_path was recorded (drag & drop / file-picker
+            # imports, or a dangling path left by an earlier re-import) — the
+            # recipe's own saved image, which still carries the original
             # embedded generation metadata next to the recipe metadata block.
+            # In the fallback case nothing is persisted as source_path: the
+            # recipe's own previous preview is not an external source, and it
+            # is deleted together with the old recipe below.
             local_source = None
+            persisted_source_path = ""
             if not image_id and source_path and os.path.isfile(source_path):
                 local_source = source_path
+                persisted_source_path = source_path
             elif (
                 not image_id
-                and not source_path
+                and not source_path.startswith(("http://", "https://"))
                 and old_file_path
                 and os.path.isfile(old_file_path)
             ):
@@ -1170,6 +1176,7 @@ class RecipeManagementHandler:
                     target_dir=old_folder,
                     user_edits=user_edits,
                     old_title=old_recipe.get("title", ""),
+                    persisted_source_path=persisted_source_path,
                 )
 
             async with self._import_semaphore:
@@ -2512,6 +2519,7 @@ class RecipeManagementHandler:
         target_dir: str | None,
         user_edits: dict[str, Any],
         old_title: str,
+        persisted_source_path: str,
     ) -> web.Response:
         """Re-import a recipe from a local image file.
 
@@ -2519,6 +2527,12 @@ class RecipeManagementHandler:
         generation metadata (the appended recipe metadata block is ignored so
         the current parser gets a fresh pass), saves a new recipe, then deletes
         the old one.
+
+        ``persisted_source_path`` is the source_path recorded on the new
+        recipe: the external source file when one exists, or empty when the
+        re-import fell back to the recipe's own previous preview image (that
+        file is deleted with the old recipe, so recording it would leave a
+        dangling path that blocks future re-imports).
         """
         normalized = os.path.normpath(file_path)
         if not os.path.isfile(normalized):
@@ -2547,7 +2561,7 @@ class RecipeManagementHandler:
             "base_model": base_model,
             "loras": loras,
             "gen_params": gen_params,
-            "source_path": normalized,
+            "source_path": persisted_source_path,
         }
         if checkpoint:
             metadata["checkpoint"] = checkpoint
@@ -2610,7 +2624,7 @@ class RecipeManagementHandler:
                 "success": True,
                 "old_recipe_id": recipe_id,
                 "recipe_id": new_recipe_id,
-                "source_path": normalized,
+                "source_path": persisted_source_path,
             }
         )
 
