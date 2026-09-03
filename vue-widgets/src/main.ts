@@ -45,6 +45,23 @@ import { app } from '../../../scripts/app.js'
 import { api } from '../../../scripts/api.js'
 // @ts-ignore
 import { getPoolConfigFromConnectedNode, getActiveLorasFromNode, updateConnectedTriggerWords, updateDownstreamLoaders } from '../../web/comfyui/utils.js'
+// @ts-ignore
+import { stripAutocompleteMetadataFromPromptResult } from '../../web/comfyui/autocomplete.js'
+
+// Strip the autocomplete lastAccepted boundary from exported workflows.
+// lastAccepted carries old prompt text (insertedText/textSnapshot) and is
+// session-only state; it must not leak into exported JSON (#1093).
+// graphToPrompt is shared by workflow export, Export API and queueing.
+// Local saves go through the change-tracker snapshot (no graphToPrompt) and
+// are intentionally left untouched so cross-session caret continuity is kept.
+// Post-processing the resolved result avoids any window/race with
+// change-tracker or copy/paste serialization of live state.
+const originalGraphToPrompt = app.graphToPrompt.bind(app)
+app.graphToPrompt = async (...args: unknown[]) => {
+  const result = await originalGraphToPrompt(...args)
+  stripAutocompleteMetadataFromPromptResult(result)
+  return result
+}
 
 function forwardMiddleMouseToCanvas(container: HTMLElement) {
   if (!container) return

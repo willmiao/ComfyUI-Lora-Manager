@@ -15795,6 +15795,77 @@ function _initLoraSyntaxFormatReactive() {
   });
 }
 _initLoraSyntaxFormatReactive();
+const AUTOCOMPLETE_METADATA_WIDGET_PREFIX = "__lm_autocomplete_meta_";
+const LORA_MANAGER_WIDGET_IDS_PROPERTY$1 = "__lm_widget_ids";
+function stripAutocompleteLastAccepted(value) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return value;
+  }
+  if (!("lastAccepted" in value)) {
+    return value;
+  }
+  const stripped = { ...value };
+  delete stripped.lastAccepted;
+  return stripped;
+}
+function stripAutocompleteMetadataFromNodes(nodes) {
+  var _a2;
+  if (!Array.isArray(nodes)) {
+    return;
+  }
+  for (const node of nodes) {
+    if (!node || typeof node !== "object") {
+      continue;
+    }
+    const widgetIds = (_a2 = node.properties) == null ? void 0 : _a2[LORA_MANAGER_WIDGET_IDS_PROPERTY$1];
+    if (Array.isArray(node.widgets_values) && Array.isArray(widgetIds)) {
+      for (let i2 = 0; i2 < node.widgets_values.length && i2 < widgetIds.length; i2++) {
+        if (typeof widgetIds[i2] === "string" && widgetIds[i2].startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          node.widgets_values[i2] = stripAutocompleteLastAccepted(node.widgets_values[i2]);
+        }
+      }
+    }
+    const named = node.widgets_values_named;
+    if (named && typeof named === "object") {
+      for (const [key, value] of Object.entries(named)) {
+        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          named[key] = stripAutocompleteLastAccepted(value);
+        }
+      }
+    }
+  }
+}
+function stripAutocompleteMetadataFromPromptResult(result) {
+  var _a2;
+  if (!result || typeof result !== "object") {
+    return result;
+  }
+  const workflow = result.workflow;
+  if (workflow && typeof workflow === "object") {
+    stripAutocompleteMetadataFromNodes(workflow.nodes);
+    const subgraphs = (_a2 = workflow.definitions) == null ? void 0 : _a2.subgraphs;
+    if (Array.isArray(subgraphs)) {
+      for (const subgraph of subgraphs) {
+        stripAutocompleteMetadataFromNodes(subgraph == null ? void 0 : subgraph.nodes);
+      }
+    }
+  }
+  const output = result.output;
+  if (output && typeof output === "object") {
+    for (const nodeOutput of Object.values(output)) {
+      const inputs = nodeOutput == null ? void 0 : nodeOutput.inputs;
+      if (!inputs || typeof inputs !== "object") {
+        continue;
+      }
+      for (const [key, value] of Object.entries(inputs)) {
+        if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+          inputs[key] = stripAutocompleteLastAccepted(value);
+        }
+      }
+    }
+  }
+  return result;
+}
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
@@ -16037,6 +16108,12 @@ const AUTOCOMPLETE_TEXT_MIN_WIDTH_DEFAULT = 400;
 const AUTOCOMPLETE_TEXT_MIN_HEIGHT_DEFAULT = 300;
 const AUTOCOMPLETE_METADATA_VERSION = 1;
 const LORA_MANAGER_WIDGET_IDS_PROPERTY = "__lm_widget_ids";
+const originalGraphToPrompt = app$1.graphToPrompt.bind(app$1);
+app$1.graphToPrompt = async (...args) => {
+  const result = await originalGraphToPrompt(...args);
+  stripAutocompleteMetadataFromPromptResult(result);
+  return result;
+};
 function forwardMiddleMouseToCanvas(container) {
   if (!container) return;
   container.addEventListener("pointerdown", (event) => {

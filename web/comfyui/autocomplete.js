@@ -278,6 +278,112 @@ function createAutocompleteMetadataBase(textWidgetName = 'text') {
     };
 }
 
+const AUTOCOMPLETE_METADATA_WIDGET_PREFIX = '__lm_autocomplete_meta_';
+const LORA_MANAGER_WIDGET_IDS_PROPERTY = '__lm_widget_ids'; // Must match vue-widgets/src/main.ts
+
+/**
+ * Return a copy of an autocomplete metadata value without the lastAccepted
+ * boundary. lastAccepted carries insertedText/textSnapshot (old prompt text)
+ * and is session-only state; it must not leak into exported workflow JSON.
+ * Values without lastAccepted are returned as-is.
+ *
+ * @param {*} value - Widget metadata value (or any other widget value)
+ * @returns {*} The stripped copy, or the original value when untouched
+ */
+export function stripAutocompleteLastAccepted(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) {
+        return value;
+    }
+    if (!('lastAccepted' in value)) {
+        return value;
+    }
+    const stripped = { ...value };
+    delete stripped.lastAccepted;
+    return stripped;
+}
+
+/**
+ * Strip lastAccepted from autocomplete metadata widgets on a serialized
+ * node's widgets_values / widgets_values_named. Array entries are aligned
+ * via properties.__lm_widget_ids (written by the extension's onSerialize).
+ * Operates on graph.serialize() output, which is already a deep copy.
+ *
+ * @param {Array} nodes - Serialized node array
+ */
+function stripAutocompleteMetadataFromNodes(nodes) {
+    if (!Array.isArray(nodes)) {
+        return;
+    }
+
+    for (const node of nodes) {
+        if (!node || typeof node !== 'object') {
+            continue;
+        }
+
+        const widgetIds = node.properties?.[LORA_MANAGER_WIDGET_IDS_PROPERTY];
+        if (Array.isArray(node.widgets_values) && Array.isArray(widgetIds)) {
+            for (let i = 0; i < node.widgets_values.length && i < widgetIds.length; i++) {
+                if (typeof widgetIds[i] === 'string'
+                    && widgetIds[i].startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+                    node.widgets_values[i] = stripAutocompleteLastAccepted(node.widgets_values[i]);
+                }
+            }
+        }
+
+        const named = node.widgets_values_named;
+        if (named && typeof named === 'object') {
+            for (const [key, value] of Object.entries(named)) {
+                if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+                    named[key] = stripAutocompleteLastAccepted(value);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Strip lastAccepted from autocomplete metadata widgets in a graphToPrompt()
+ * result (both the workflow document and the API prompt). Used by the widget
+ * bundle to keep exported workflows free of old prompt text while leaving
+ * live node state untouched.
+ *
+ * @param {*} result - graphToPrompt() result: { workflow, output }
+ * @returns {*} The same result object, with metadata entries replaced in place
+ */
+export function stripAutocompleteMetadataFromPromptResult(result) {
+    if (!result || typeof result !== 'object') {
+        return result;
+    }
+
+    const workflow = result.workflow;
+    if (workflow && typeof workflow === 'object') {
+        stripAutocompleteMetadataFromNodes(workflow.nodes);
+        const subgraphs = workflow.definitions?.subgraphs;
+        if (Array.isArray(subgraphs)) {
+            for (const subgraph of subgraphs) {
+                stripAutocompleteMetadataFromNodes(subgraph?.nodes);
+            }
+        }
+    }
+
+    const output = result.output;
+    if (output && typeof output === 'object') {
+        for (const nodeOutput of Object.values(output)) {
+            const inputs = nodeOutput?.inputs;
+            if (!inputs || typeof inputs !== 'object') {
+                continue;
+            }
+            for (const [key, value] of Object.entries(inputs)) {
+                if (key.startsWith(AUTOCOMPLETE_METADATA_WIDGET_PREFIX)) {
+                    inputs[key] = stripAutocompleteLastAccepted(value);
+                }
+            }
+        }
+    }
+
+    return result;
+}
+
 function createDefaultBehavior(modelType) {
     return {
         enablePreview: false,
