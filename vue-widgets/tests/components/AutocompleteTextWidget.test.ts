@@ -240,3 +240,86 @@ describe('AutocompleteTextWidget active-filters indicator', () => {
     expect(wrapper.find('.active-filters-toggle').classes()).toContain('is-active')
   })
 })
+
+/**
+ * Tests for the vertical-scrollbar inset.
+ *
+ * When the textarea content overflows and a classic (non-overlay) scrollbar
+ * is shown, the absolutely-positioned corner buttons (clear x, active-filters
+ * filter chip) would sit on top of the scrollbar. The component measures the
+ * scrollbar gutter and exposes it as the --lm-vscrollbar-width CSS var on
+ * .input-wrapper so the buttons shift left of the scrollbar. jsdom does no
+ * layout, so overflow is simulated by overriding the scroll/dimension props.
+ */
+describe('AutocompleteTextWidget vertical scrollbar inset', () => {
+  function overrideTextareaMetrics(
+    ta: HTMLTextAreaElement,
+    metrics: { scrollHeight: number; clientHeight: number; offsetWidth: number; clientWidth: number }
+  ) {
+    Object.defineProperty(ta, 'scrollHeight', { configurable: true, value: metrics.scrollHeight })
+    Object.defineProperty(ta, 'clientHeight', { configurable: true, value: metrics.clientHeight })
+    Object.defineProperty(ta, 'offsetWidth', { configurable: true, value: metrics.offsetWidth })
+    Object.defineProperty(ta, 'clientWidth', { configurable: true, value: metrics.clientWidth })
+  }
+
+  it('exposes the scrollbar width as a CSS var when the content overflows', async () => {
+    const { wrapper } = mountWidget()
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement
+
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 200,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 305, // 15px scrollbar gutter
+    })
+    textarea.dispatchEvent(new Event('input'))
+    await nextTick()
+
+    const wrapperEl = wrapper.find('.input-wrapper').element as HTMLElement
+    expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('15px')
+  })
+
+  it('keeps the CSS var at 0px when there is no vertical scrollbar', async () => {
+    const { wrapper } = mountWidget()
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement
+
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 100,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 320,
+    })
+    textarea.dispatchEvent(new Event('input'))
+    await nextTick()
+
+    const wrapperEl = wrapper.find('.input-wrapper').element as HTMLElement
+    expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('0px')
+  })
+
+  it('clears the inset once overflowing content is removed', async () => {
+    const { wrapper } = mountWidget()
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement
+
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 200,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 305,
+    })
+    textarea.dispatchEvent(new Event('input'))
+    await nextTick()
+    const wrapperEl = wrapper.find('.input-wrapper').element as HTMLElement
+    expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('15px')
+
+    // Content now fits: no scrollbar → inset cleared
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 100,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 320,
+    })
+    textarea.dispatchEvent(new Event('input'))
+    await nextTick()
+    expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('0px')
+  })
+})
