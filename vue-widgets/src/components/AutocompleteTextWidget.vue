@@ -200,6 +200,9 @@ const onWheel = (event: WheelEvent) => {
 
 // Handle external value changes (e.g., from "send lora to workflow")
 const onExternalValueChange = () => {
+  // The DOM value was set synchronously by the caller; the new content may
+  // have toggled the vertical scrollbar on/off.
+  updateVScrollbarWidth()
   updateHasTextState()
 }
 
@@ -209,6 +212,9 @@ const setupWidgetOnSetValue = () => {
     props.widget.onSetValue = (value: string) => {
       // The DOM value is already set by setValue, just update our state
       hasText.value = value.length > 0
+      // Programmatic sets can toggle the scrollbar; re-measure so the
+      // corner clear button stays clear of it.
+      updateVScrollbarWidth()
     }
   }
 }

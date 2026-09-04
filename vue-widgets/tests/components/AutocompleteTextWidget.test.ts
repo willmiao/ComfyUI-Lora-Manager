@@ -16,7 +16,7 @@ import AutocompleteTextWidget from '@/components/AutocompleteTextWidget.vue'
 function createMockWidget() {
   return {
     callback: vi.fn(),
-    onSetValue: undefined,
+    onSetValue: undefined as ((v: string) => void) | undefined,
     inputEl: undefined,
     metadataWidget: undefined,
     name: 'text',
@@ -217,4 +217,65 @@ describe('AutocompleteTextWidget vertical scrollbar inset', () => {
     expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('0px')
   })
 
+  it('re-measures the inset when the value is set programmatically via onSetValue', async () => {
+    const { wrapper, widget } = mountWidget()
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement
+
+    // Start with no overflow
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 100,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 320,
+    })
+    await nextTick()
+
+    // Simulate an external setValue (e.g. "send lora to workflow"): the DOM
+    // value is set by the caller and widget.onSetValue fires without an
+    // input event. Content now overflows → inset must be re-measured.
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 200,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 305, // 15px scrollbar gutter
+    })
+    if (!widget.onSetValue) throw new Error('onSetValue not installed by component')
+    widget.onSetValue('long content')
+    await nextTick()
+
+    const wrapperEl = wrapper.find('.input-wrapper').element as HTMLElement
+    expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('15px')
+  })
+
+  it('re-measures the inset on external value-change events', async () => {
+    const { wrapper } = mountWidget()
+    const textarea = wrapper.find('textarea').element as HTMLTextAreaElement
+
+    // Start with no overflow
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 100,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 320,
+    })
+    await nextTick()
+
+    // The lora-manager:autocomplete-value-changed event fires when the
+    // widget value is set externally; content now overflows → re-measure.
+    overrideTextareaMetrics(textarea, {
+      scrollHeight: 200,
+      clientHeight: 100,
+      offsetWidth: 320,
+      clientWidth: 305, // 15px scrollbar gutter
+    })
+    textarea.dispatchEvent(
+      new CustomEvent('lora-manager:autocomplete-value-changed', {
+        detail: { value: 'long content' },
+      })
+    )
+    await nextTick()
+
+    const wrapperEl = wrapper.find('.input-wrapper').element as HTMLElement
+    expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('15px')
+  })
 })
