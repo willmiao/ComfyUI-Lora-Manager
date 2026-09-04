@@ -286,4 +286,93 @@ const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minC
       window.removeEventListener('lora-manager:setting-toggled', listener);
     }
   });
+
+  it('removes a stale first-run hint when the toggle is switched on while the dropdown stays open', async () => {
+    localStorage.removeItem('lm:activefilters-tip-dismissed');
+    let enabled = false;
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') return enabled;
+      if (key === 'loramanager.autocomplete_append_comma') return false;
+      if (key === 'loramanager.autocomplete_auto_format') return false;
+      if (key === 'loramanager.autocomplete_accept_key') return 'both';
+      return undefined;
+    });
+
+    fetchApiMock.mockResolvedValue({
+      json: () => Promise.resolve({ success: true, relative_paths: ['models/example.safetensors'] }),
+    });
+
+    const input = document.createElement('textarea');
+    input.value = 'example';
+    input.selectionStart = 7;
+    document.body.append(input);
+    caretHelperInstance.getBeforeCursor.mockReturnValue('example');
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', {
+      debounceDelay: 0,
+      showPreview: false,
+      minChars: 1,
+    });
+
+    const triggerShow = async () => {
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+      await vi.runOnlyPendingTimersAsync();
+      await vi.runOnlyPendingTimersAsync();
+      await Promise.resolve();
+      return autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint');
+    };
+
+    // OFF → the enable hint is shown in the suggestions dropdown.
+    expect(await triggerShow()).not.toBeNull();
+
+    // The node's filter chip toggles the setting ON while the dropdown is
+    // still open (ComfyUI can keep focus in the textarea, so no blur/hide
+    // fires). settings.js broadcasts the setting-toggled event.
+    enabled = true;
+    window.dispatchEvent(new CustomEvent('lora-manager:setting-toggled', {
+      detail: { settingId: 'loramanager.lora_active_filters_autocomplete', value: true },
+    }));
+
+    // The stale OFF hint must be gone even though the dropdown never closed.
+    expect(autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
+
+    // Further typing while ON must not resurrect the enable hint.
+    expect(await triggerShow()).toBeNull();
+  });
+
+  it('updates the command-list footer when the toggle changes while the command list is open', async () => {
+    let enabled = false;
+    settingGetMock.mockImplementation((key) => {
+      if (key === 'loramanager.lora_active_filters_autocomplete') return enabled;
+      return undefined;
+    });
+
+    const input = document.createElement('textarea');
+    input.value = '/';
+    input.selectionStart = 1;
+    document.body.append(input);
+    caretHelperInstance.getBeforeCursor.mockReturnValue('/');
+
+    const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
+    const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minChars: 1 });
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    await vi.runOnlyPendingTimersAsync();
+    await Promise.resolve();
+
+    const footer = () => autoComplete.dropdown.querySelector('.lm-autocomplete-command-footer');
+    expect(footer()).not.toBeNull();
+    expect(footer().textContent).toContain('Active Filters Search: OFF');
+    expect(footer().textContent).toContain('/activefilters to enable');
+
+    enabled = true;
+    window.dispatchEvent(new CustomEvent('lora-manager:setting-toggled', {
+      detail: { settingId: 'loramanager.lora_active_filters_autocomplete', value: true },
+    }));
+
+    expect(footer()).not.toBeNull();
+    expect(footer().textContent).toContain('Active Filters Search: ON');
+    expect(footer().textContent).toContain('/noactivefilters to disable');
+  });
+
 });

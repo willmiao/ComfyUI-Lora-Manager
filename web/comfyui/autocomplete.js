@@ -14,9 +14,11 @@ import {
     getAutocompleteAppendCommaPreference,
     getAutocompleteAutoFormatPreference,
     getAutocompleteAcceptKeyPreference,
+    LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID,
     getLoraActiveFiltersAutocompletePreference,
     getPromptTagAutocompletePreference,
     getTagSpaceReplacementPreference,
+    SETTING_TOGGLED_EVENT_NAME,
     setLoraManagerSettingValue,
 } from "./settings.js";
 import { showToast } from "./utils.js";
@@ -607,6 +609,7 @@ class AutoComplete {
         this.onBlur = null;
         this.onDocumentClick = null;
         this.onScroll = null;
+        this.onSettingToggled = null;
 
         this.init();
     }
@@ -773,6 +776,22 @@ class AutoComplete {
             }
         };
         document.addEventListener('click', this.onDocumentClick);
+
+        // React to setting changes that happen underneath an open dropdown
+        // (e.g. toggling the active-filters search from the node's filter
+        // chip can keep the dropdown open in ComfyUI). Refresh the state
+        // hints so they never show a message for the previous state.
+        if (this.onSettingToggled) {
+            window.removeEventListener(SETTING_TOGGLED_EVENT_NAME, this.onSettingToggled);
+        }
+        this.onSettingToggled = (e) => {
+            const detail = e && e.detail;
+            if (!detail || detail.settingId !== LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID) {
+                return;
+            }
+            this._refreshStateHints();
+        };
+        window.addEventListener(SETTING_TOGGLED_EVENT_NAME, this.onSettingToggled);
 
         // Mark this element as having autocomplete events bound
         this.inputElement._autocompleteEventsBound = true;
@@ -1812,14 +1831,36 @@ class AutoComplete {
     }
 
     /**
+     * Refresh state-dependent dropdown decorations (first-run Tip and the
+     * slash-command-list footer) from the live setting. Called when the
+     * active-filters toggle changes underneath an open dropdown, so the
+     * dropdown never keeps showing a message for the previous state.
+     */
+    _refreshStateHints() {
+        if (!this.isVisible || this.modelType !== 'loras') {
+            return;
+        }
+        if (this.showingCommands) {
+            // Command list: footer text carries the ON/OFF state.
+            this._renderCommandListFooter();
+        } else {
+            // Plain suggestions: the first-run Tip advertises /activefilters
+            // only while the feature is disabled.
+            this._maybeShowFirstRunHint();
+        }
+    }
+
+    /**
      * Show a one-time, dismissible hint inside the dropdown surfacing the
      * toggle commands: prompt nodes advertise /noautocomplete, loras nodes
      * advertise /activefilters. Dismissal is persisted in localStorage.
      */
     _maybeShowFirstRunHint() {
-        if (this.firstRunHint) {
-            return;
-        }
+        // Dropdown decorations can outlive a state change (the dropdown may
+        // stay open when the setting is toggled from the node, e.g. clicking
+        // the active-filters filter chip). Always recompute from the live
+        // state so a stale Tip is never kept for the previous state.
+        this._removeFirstRunHint();
 
         let hintText = null;
         let storageKey = null;
@@ -3176,6 +3217,11 @@ class AutoComplete {
         if (this.onDocumentClick) {
             document.removeEventListener('click', this.onDocumentClick);
             this.onDocumentClick = null;
+        }
+
+        if (this.onSettingToggled) {
+            window.removeEventListener(SETTING_TOGGLED_EVENT_NAME, this.onSettingToggled);
+            this.onSettingToggled = null;
         }
 
         if (this.onScroll && this.scrollContainer) {
