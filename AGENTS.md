@@ -215,6 +215,26 @@ The system runs in two modes:
 - Vanilla JS tests: `tests/frontend/**/*.test.js` with jsdom; setup in `tests/frontend/setup.js`
 - Vue widget tests: `vue-widgets/tests/**/*.test.ts` with jsdom + `@vue/test-utils`
 
+### UI Verification (manual default)
+
+UI/layout changes are verified by the user by eye — do NOT spin up a sandbox,
+standalone server, or browser automation to "prove" a visual fix. Ask the user to
+look instead. The full browser E2E ceremony (server + Chrome DevTools MCP +
+screenshots) is slow, token-heavy, and fragile; reserve it for genuine
+server+browser integration bugs, and only when the user explicitly agrees.
+
+If a cross-layer issue ever needs a live server, the sandboxed helpers live in
+`scripts/e2e/` (`start_server.py`, `wait_for_server.py`). Non-negotiable rules:
+
+- Always launch with `--settings-path <sandbox>/settings` and sandboxed
+  `folder_paths` under `/tmp` — the repo folder is the real plugin folder and a
+  `settings.json` there is read by the live instance. Never touch real config or
+  real model libraries.
+- Never kill a process you did not start; `start_server.py` tracks its own PIDs
+  via pidfile and refuses to touch unrelated processes on the port.
+- Abort after ~30 minutes or 3 consecutive tool failures; report `BLOCKED` with
+  observed state instead of retrying blindly. Clean up sandbox and server after.
+
 ## Key Integration Points
 
 - **Settings:** Stored in the user config directory (via `platformdirs`) or portable mode (`"use_portable_settings": true`)
