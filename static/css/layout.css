@@ -218,20 +218,17 @@ body.sticky-controls .sticky-topbar {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin-left: 6px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    font-size: 11px;
-    font-weight: 600;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    font-size: 10px;
+    font-weight: 500;
     line-height: 1;
     text-transform: uppercase;
     border-radius: var(--border-radius-xs);
     background-color: var(--shortcut-bg);
     border: 1px solid var(--shortcut-border);
-    box-shadow: var(--shortcut-shadow);
     color: var(--shortcut-text);
-    vertical-align: middle;
     opacity: 0.8;
     transition: var(--transition-base);
 }
@@ -242,10 +239,21 @@ body.sticky-controls .sticky-topbar {
     border-color: var(--shortcut-border-hover);
 }
 
+/* Invert the keycap on active (accent-filled) buttons for contrast.
+   Must come after the hover rule above so it wins on active+hover. */
+.control-group button.active .shortcut-key,
+.control-group button.active:hover .shortcut-key {
+    color: var(--lora-accent);
+    background: rgba(255, 255, 255, 0.92);
+    border-color: transparent;
+    opacity: 1;
+}
+
 /* Ensure correct vertical alignment for text+shortcut */
 .control-group button span {
     display: inline-flex;
     align-items: center;
+    gap: 6px;
 }
 
 /* Select dropdown styling */
