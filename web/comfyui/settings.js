@@ -450,7 +450,7 @@ app.registerExtension({
             name: "Search LoRA autocomplete within active filters",
             type: "boolean",
             defaultValue: LORA_ACTIVE_FILTERS_AUTOCOMPLETE_DEFAULT,
-            tooltip: "When enabled, LoRA autocomplete suggestions respect the active filters (folder/base model/tags) set in the LoRA Manager page. Commands /activefilters and /noactivefilters toggle this mode.",
+            tooltip: "When enabled, LoRA autocomplete suggestions respect the active filters (folder/base model/tags) set in the LoRA Manager page. You can also toggle it by typing /activefilters or /noactivefilters in the LoRA field, or from the node's right-click menu.",
             category: ["LoRA Manager", "Autocomplete", "LoRA Active Filters"],
         },
         {
