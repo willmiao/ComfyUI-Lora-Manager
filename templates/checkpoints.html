@@ -54,8 +54,10 @@
 {% endblock %}
 
 {% block content %}
+    <div class="sticky-topbar">
     {% include 'components/controls.html' %}
     {% include 'components/breadcrumb.html' %}
+    </div>
     {% include 'components/duplicates_banner.html' %}
     {% include 'components/folder_sidebar.html' %}
     

@@ -79,6 +79,9 @@
         <!-- Group by model toggle -->
         {{ sm.setting_toggle('groupByModel', 'group_by_model', 'settings.layoutSettings.groupByModel', 'settings.layoutSettings.groupByModelHelp') }}
 
+        <!-- Sticky controls toggle -->
+        {{ sm.setting_toggle('stickyControls', 'sticky_controls', 'settings.layoutSettings.stickyControls', 'settings.layoutSettings.stickyControlsHelp') }}
+
         {{ sm.setting_select('cardInfoDisplay', 'card_info_display', 'settings.layoutSettings.cardInfoDisplay', [
             ('always', 'settings.layoutSettings.cardInfoDisplayOptions.always'),
             ('hover', 'settings.layoutSettings.cardInfoDisplayOptions.hover'),

@@ -64,10 +64,12 @@
 {% block init_check_url %}/api/recipes?page=1&page_size=1{% endblock %}
 
 {% block content %}
-<!-- Recipe controls -->
+<!-- Sticky topbar: controls + breadcrumb -->
+<div class="sticky-topbar">
 {% include 'components/controls.html' %}
 <!-- Breadcrumb Navigation -->
 {% include 'components/breadcrumb.html' %}
+</div>
 
 <!-- Duplicates banner (hidden by default) -->
 <div id="duplicatesBanner" class="duplicates-banner" style="display: none;">

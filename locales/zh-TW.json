@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "按模型分組",
             "groupByModelHelp": "啟用後，每個 CivitAI 模型僅顯示最新版本的單張卡片，舊版本將被隱藏。",
+            "stickyControls": "保持操作列可見",
+            "stickyControlsHelp": "啟用後，操作列（重新整理、下載等）會在捲動時與麵包屑導覽一起固定在頁面頂端。",
             "displayDensity": "顯示密度",
             "displayDensityOptions": {
                 "default": "預設",

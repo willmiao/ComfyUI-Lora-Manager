@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "Grouper par modèle",
             "groupByModelHelp": "Lorsque activé, seule la version la plus récente de chaque modèle CivitAI s'affiche sous forme de carte unique. Les versions plus anciennes sont masquées.",
+            "stickyControls": "Garder la barre d'actions visible",
+            "stickyControlsHelp": "Lorsque activé, la barre d'actions (Actualiser, Télécharger, etc.) reste épinglée en haut lors du défilement, avec la navigation par fil d'Ariane.",
             "displayDensity": "Densité d'affichage",
             "displayDensityOptions": {
                 "default": "Par défaut",

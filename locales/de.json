@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "Nach Modell gruppieren",
             "groupByModelHelp": "Wenn aktiviert, wird nur die neueste Version jedes CivitAI-Modells als einzelne Karte angezeigt. Ältere Versionen werden ausgeblendet.",
+            "stickyControls": "Aktionsleiste sichtbar halten",
+            "stickyControlsHelp": "Wenn aktiviert, bleibt die Aktionsleiste (Aktualisieren, Herunterladen usw.) beim Scrollen zusammen mit der Breadcrumb-Navigation oben angeheftet.",
             "displayDensity": "Anzeige-Dichte",
             "displayDensityOptions": {
                 "default": "Standard",

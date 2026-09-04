@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "按模型分组",
             "groupByModelHelp": "开启后，每个 CivitAI 模型仅显示最新版本的单张卡片，旧版本将被隐藏。",
+            "stickyControls": "保持操作栏可见",
+            "stickyControlsHelp": "开启后，操作栏（刷新、下载等）会在滚动时与路径导航一起固定在页面顶部。",
             "displayDensity": "显示密度",
             "displayDensityOptions": {
                 "default": "默认",

@@ -484,6 +484,8 @@
     "layoutSettings": {
       "groupByModel": "Group by Model",
       "groupByModelHelp": "When enabled, only the latest version of each CivitAI model is shown as a single card. Older versions are hidden.",
+      "stickyControls": "Keep Action Bar Visible",
+      "stickyControlsHelp": "When enabled, the action bar (Refresh, Download, etc.) stays pinned at the top while scrolling, together with the breadcrumb navigation.",
       "displayDensity": "Display Density",
       "displayDensityOptions": {
         "default": "Default",

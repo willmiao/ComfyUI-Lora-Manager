@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "モデルでグループ化",
             "groupByModelHelp": "有効にすると、各CivitAIモデルの最新バージョンのみが1枚のカードとして表示され、古いバージョンは非表示になります。",
+            "stickyControls": "アクションバーを常に表示",
+            "stickyControlsHelp": "有効にすると、アクションバー（更新、ダウンロードなど）がスクロール時にパンくずナビゲーションと一緒に画面上部に固定されます。",
             "displayDensity": "表示密度",
             "displayDensityOptions": {
                 "default": "デフォルト",

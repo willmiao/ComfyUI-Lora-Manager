@@ -1047,6 +1047,12 @@ export class SettingsManager {
             groupByModelCheckbox.checked = !!state.global.settings.group_by_model;
         }
 
+        // Set sticky controls
+        const stickyControlsCheckbox = document.getElementById('stickyControls');
+        if (stickyControlsCheckbox) {
+            stickyControlsCheckbox.checked = !!state.global.settings.sticky_controls;
+        }
+
         // Set model name display setting
         const modelNameDisplaySelect = document.getElementById('modelNameDisplay');
         if (modelNameDisplaySelect) {
@@ -3395,6 +3401,10 @@ export class SettingsManager {
         // Apply group-by-model mode
         const groupByModel = !!state.global.settings.group_by_model;
         document.body.classList.toggle('group-by-model', groupByModel);
+
+        // Apply sticky controls mode (keeps the action bar visible while scrolling)
+        const stickyControls = !!state.global.settings.sticky_controls;
+        document.body.classList.toggle('sticky-controls', stickyControls);
 
     }
 }

@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "קיבוץ לפי מודל",
             "groupByModelHelp": "כאשר מופעל, רק הגרסה העדכנית ביותר של כל מודל CivitAI מוצגת ככרטיס בודד. גרסאות ישנות יותר מוסתרות.",
+            "stickyControls": "השארת סרגל הפעולות גלוי",
+            "stickyControlsHelp": "כאשר מופעל, סרגל הפעולות (רענון, הורדה וכו') נשאר מוצמד לחלק העליון בעת גלילה, יחד עם ניווט פירורי הלחם.",
             "displayDensity": "צפיפות תצוגה",
             "displayDensityOptions": {
                 "default": "ברירת מחדל",

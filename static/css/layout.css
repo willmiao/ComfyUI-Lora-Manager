@@ -25,6 +25,23 @@
     box-shadow: var(--shadow-xs);
 }
 
+/* Wrapper around the controls bar and breadcrumb nav. With the sticky-controls
+   setting off it is transparent to layout (display: contents), preserving the
+   original behavior (only the breadcrumb stays visible). When enabled, the whole
+   wrapper sticks as one unit so the two bars can never drift apart. */
+.sticky-topbar {
+    display: contents;
+}
+
+body.sticky-controls .sticky-topbar {
+    display: block;
+    position: sticky;
+    top: 0;
+    z-index: calc(var(--z-header) - 1);
+    background: var(--bg-color);
+    box-shadow: var(--shadow-xs);
+}
+
 /* Responsive container for larger screens */
 @media (min-width: 2150px) {
     .container {

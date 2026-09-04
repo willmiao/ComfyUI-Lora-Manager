@@ -484,6 +484,8 @@
         "layoutSettings": {
             "groupByModel": "모델별 그룹화",
             "groupByModelHelp": "활성화하면 각 CivitAI 모델의 최신 버전만 단일 카드로 표시되며, 이전 버전은 숨겨집니다.",
+            "stickyControls": "작업 표시줄 항상 표시",
+            "stickyControlsHelp": "활성화하면 작업 표시줄(새로고침, 다운로드 등)이 스크롤 시 브레드크럼 내비게이션과 함께 상단에 고정됩니다.",
             "displayDensity": "표시 밀도",
             "displayDensityOptions": {
                 "default": "기본",
