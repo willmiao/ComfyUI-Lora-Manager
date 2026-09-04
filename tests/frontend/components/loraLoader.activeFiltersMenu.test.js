@@ -54,7 +54,6 @@ const setSettingValueMock = vi.fn();
 vi.mock(SETTINGS_MODULE, () => ({
   LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID:
     "loramanager.lora_active_filters_autocomplete",
-  SETTING_TOGGLED_EVENT_NAME: "lora-manager:setting-toggled",
   getLoraActiveFiltersAutocompletePreference: getActiveFiltersPreferenceMock,
   setLoraManagerSettingValue: setSettingValueMock,
 }));

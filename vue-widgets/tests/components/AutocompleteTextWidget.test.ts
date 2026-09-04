@@ -10,7 +10,7 @@
 
 import { nextTick } from 'vue'
 import { shallowMount } from '@vue/test-utils'
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, afterEach } from 'vitest'
 import AutocompleteTextWidget from '@/components/AutocompleteTextWidget.vue'
 
 function createMockWidget() {
@@ -136,120 +136,14 @@ describe('AutocompleteTextWidget clear button', () => {
 })
 
 /**
- * Tests for the active-filters search indicator (loras mode only).
- *
- * The small filter chip in the textarea corner mirrors the
- * loramanager.lora_active_filters_autocomplete setting: it reflects the
- * current state, can toggle it, and stays in sync with slash-command /
- * context-menu toggles via the lora-manager:setting-toggled window event.
- */
-
-const settingsMocks = vi.hoisted(() => ({
-  getPreference: vi.fn(),
-  setValue: vi.fn(),
-}))
-
-vi.mock('../../../web/comfyui/settings.js', () => ({
-  LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID:
-    'loramanager.lora_active_filters_autocomplete',
-  SETTING_TOGGLED_EVENT_NAME: 'lora-manager:setting-toggled',
-  getLoraActiveFiltersAutocompletePreference: settingsMocks.getPreference,
-  setLoraManagerSettingValue: settingsMocks.setValue,
-}))
-
-const getActiveFiltersPreferenceMock = settingsMocks.getPreference
-const setSettingValueMock = settingsMocks.setValue
-
-function mountLorasWidget() {
-  const widget = createMockWidget()
-  const node = { id: 1 }
-  const wrapper = shallowMount(AutocompleteTextWidget, {
-    props: { widget, node, modelType: 'loras' },
-    attachTo: document.body,
-  })
-  return { wrapper, widget }
-}
-
-describe('AutocompleteTextWidget active-filters indicator', () => {
-  beforeEach(() => {
-    getActiveFiltersPreferenceMock.mockReset()
-    getActiveFiltersPreferenceMock.mockReturnValue(false)
-    setSettingValueMock.mockReset()
-    setSettingValueMock.mockResolvedValue(true)
-  })
-
-  it('renders only in loras mode', () => {
-    const loras = mountLorasWidget()
-    expect(loras.wrapper.find('.active-filters-toggle').exists()).toBe(true)
-
-    const widget = createMockWidget()
-    const prompt = shallowMount(AutocompleteTextWidget, {
-      props: { widget, node: { id: 2 }, modelType: 'prompt' },
-      attachTo: document.body,
-    })
-    expect(prompt.find('.active-filters-toggle').exists()).toBe(false)
-  })
-
-  it('reflects the current setting state', async () => {
-    const { wrapper } = mountLorasWidget()
-    await nextTick()
-    expect(wrapper.find('.active-filters-toggle').classes()).not.toContain('is-active')
-
-    getActiveFiltersPreferenceMock.mockReturnValue(true)
-    const wrapper2 = mountLorasWidget().wrapper
-    await nextTick()
-    expect(wrapper2.find('.active-filters-toggle').classes()).toContain('is-active')
-  })
-
-  it('toggles the setting when clicked', async () => {
-    const { wrapper } = mountLorasWidget()
-    await nextTick()
-
-    await wrapper.find('.active-filters-toggle').trigger('click')
-    expect(setSettingValueMock).toHaveBeenCalledWith(
-      'loramanager.lora_active_filters_autocomplete',
-      true
-    )
-    await nextTick()
-    expect(wrapper.find('.active-filters-toggle').classes()).toContain('is-active')
-  })
-
-  it('stays in sync with setting-toggled window events', async () => {
-    const { wrapper } = mountLorasWidget()
-    await nextTick()
-    expect(wrapper.find('.active-filters-toggle').classes()).not.toContain('is-active')
-
-    window.dispatchEvent(
-      new CustomEvent('lora-manager:setting-toggled', {
-        detail: {
-          settingId: 'loramanager.lora_active_filters_autocomplete',
-          value: true,
-        },
-      })
-    )
-    await nextTick()
-    expect(wrapper.find('.active-filters-toggle').classes()).toContain('is-active')
-
-    window.dispatchEvent(
-      new CustomEvent('lora-manager:setting-toggled', {
-        detail: { settingId: 'loramanager.some_other_setting', value: true },
-      })
-    )
-    await nextTick()
-    // Unrelated settings must not flip the indicator
-    expect(wrapper.find('.active-filters-toggle').classes()).toContain('is-active')
-  })
-})
-
-/**
  * Tests for the vertical-scrollbar inset.
  *
  * When the textarea content overflows and a classic (non-overlay) scrollbar
- * is shown, the absolutely-positioned corner buttons (clear x, active-filters
- * filter chip) would sit on top of the scrollbar. The component measures the
- * scrollbar gutter and exposes it as the --lm-vscrollbar-width CSS var on
- * .input-wrapper so the buttons shift left of the scrollbar. jsdom does no
- * layout, so overflow is simulated by overriding the scroll/dimension props.
+ * is shown, the absolutely-positioned corner clear (x) button would sit on
+ * top of the scrollbar. The component measures the scrollbar gutter and
+ * exposes it as the --lm-vscrollbar-width CSS var on .input-wrapper so the
+ * button shifts left of the scrollbar. jsdom does no layout, so overflow is
+ * simulated by overriding the scroll/dimension props.
  */
 describe('AutocompleteTextWidget vertical scrollbar inset', () => {
   function overrideTextareaMetrics(
@@ -322,4 +216,5 @@ describe('AutocompleteTextWidget vertical scrollbar inset', () => {
     await nextTick()
     expect(wrapperEl.style.getPropertyValue('--lm-vscrollbar-width')).toBe('0px')
   })
+
 })

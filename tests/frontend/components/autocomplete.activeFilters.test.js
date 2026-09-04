@@ -253,37 +253,4 @@ describe('AutoComplete active-filters flag', () => {
 
     expect(autoComplete.dropdown.querySelector('.lm-autocomplete-first-run-hint')).toBeNull();
   });
-
-  it('broadcasts a setting-toggled window event when /activefilters is accepted', async () => {
-    const events = [];
-    const listener = (event) => events.push(event.detail);
-    window.addEventListener('lora-manager:setting-toggled', listener);
-    try {
-      const input = document.createElement('textarea');
-      input.value = '/activefilters';
-      input.selectionStart = input.value.length;
-      input.focus = vi.fn();
-      input.setSelectionRange = vi.fn();
-      document.body.append(input);
-
-      caretHelperInstance.getBeforeCursor.mockReturnValue('/activefilters');
-
-      const { AutoComplete } = await import(AUTOCOMPLETE_MODULE);
-const autoComplete = new AutoComplete(input, 'loras', { showPreview: false, minChars: 1 });
-      input.dispatchEvent(new Event('input', { bubbles: true }));
-
-      // The command token is cleared after acceptance; simulate the caret
-      // helper seeing the cleared input so the synthetic input event does
-      // not re-trigger command parsing (same pattern as behavior tests).
-      caretHelperInstance.getBeforeCursor.mockReturnValue('');
-      await Promise.resolve();
-      await Promise.resolve();
-      expect(events).toContainEqual({
-        settingId: 'loramanager.lora_active_filters_autocomplete',
-        value: true,
-      });
-    } finally {
-      window.removeEventListener('lora-manager:setting-toggled', listener);
-    }
-  });
 });

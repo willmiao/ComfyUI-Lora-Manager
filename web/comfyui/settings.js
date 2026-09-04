@@ -175,40 +175,21 @@ const getPromptTagAutocompletePreference = (() => {
 /**
  * Persist a LoRA Manager setting through ComfyUI's setting API.
  * Returns true when the setting was written successfully.
- *
- * Every successful write broadcasts a "lora-manager:setting-toggled" window
- * event (see SETTING_TOGGLED_EVENT_NAME) so widgets mirroring the setting
- * (e.g. the active-filters indicator in the autocomplete text widget) stay in
- * sync with slash-command / context-menu toggles.
  */
-const SETTING_TOGGLED_EVENT_NAME = "lora-manager:setting-toggled";
-
 const setLoraManagerSettingValue = async (settingId, value) => {
     const settingManager = app?.extensionManager?.setting;
     if (settingManager && typeof settingManager.set === "function") {
         await settingManager.set(settingId, value);
-        _notifySettingToggled(settingId, value);
         return true;
     }
 
     const setting = app?.ui?.settings?.settingsById?.[settingId];
     if (setting) {
         app.ui.settings.setSettingValue(settingId, value);
-        _notifySettingToggled(settingId, value);
         return true;
     }
 
     return false;
-};
-
-const _notifySettingToggled = (settingId, value) => {
-    try {
-        window.dispatchEvent(new CustomEvent(SETTING_TOGGLED_EVENT_NAME, {
-            detail: { settingId, value },
-        }));
-    } catch (error) {
-        // Best-effort notification; ignore non-browser environments
-    }
 };
 
 const getAutocompleteAppendCommaPreference = (() => {
@@ -617,7 +598,6 @@ app.registerExtension({
 export {
     PROMPT_TAG_AUTOCOMPLETE_SETTING_ID,
     LORA_ACTIVE_FILTERS_AUTOCOMPLETE_SETTING_ID,
-    SETTING_TOGGLED_EVENT_NAME,
     getWheelSensitivity,
     getAutoPathCorrectionPreference,
     getAutocompleteAppendCommaPreference,
