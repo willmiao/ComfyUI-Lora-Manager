@@ -212,13 +212,6 @@
             "none": "Alle {typePlural} verfügen bereits über Lizenzmetadaten",
             "error": "Lizenzmetadaten für {typePlural} konnten nicht aktualisiert werden: {message}"
         },
-        "repairRecipes": {
-            "label": "Rezept-Daten reparieren",
-            "loading": "Rezept-Daten werden repariert...",
-            "success": "{count} Rezepte erfolgreich repariert.",
-            "cancelled": "Reparatur abgebrochen. {count} Rezepte wurden repariert.",
-            "error": "Rezept-Reparatur fehlgeschlagen: {message}"
-        },
         "rematchRecipes": {
             "label": "Rezepte lokalen Modellen neu zuordnen",
             "loading": "Rezepte werden lokalen Modellen neu zugeordnet...",
@@ -821,7 +814,6 @@
             "setContentRating": "Inhaltsbewertung für alle festlegen",
             "copyAll": "Alle Syntax kopieren",
             "refreshAll": "Alle Metadaten aktualisieren",
-            "repairMetadata": "Metadaten der Auswahl reparieren",
             "rematchMetadata": "Ausgewählte mit lokalen Modellen abgleichen",
             "reimportMetadata": "Aus Quelle neu importieren",
             "checkUpdates": "Auswahl auf Updates prüfen",
@@ -877,7 +869,6 @@
             "replacePreview": "Vorschau ersetzen",
             "setContentRating": "Inhaltsbewertung festlegen",
             "moveToFolder": "In Ordner verschieben",
-            "repairMetadata": "Metadaten reparieren",
             "rematchMetadata": "Mit lokalen Modellen abgleichen",
             "reimportMetadata": "Aus Quelle neu importieren",
             "excludeModel": "Modell ausschließen",
@@ -1129,13 +1120,6 @@
                 "noMissingLoras": "Keine fehlenden LoRAs zum Herunterladen",
                 "getInfoFailed": "Fehler beim Abrufen der Informationen für fehlende LoRAs",
                 "prepareError": "Fehler beim Vorbereiten der LoRAs für den Download: {message}"
-            },
-            "repair": {
-                "starting": "Rezept-Metadaten werden repariert...",
-                "success": "Rezept-Metadaten erfolgreich repariert",
-                "skipped": "Rezept bereits in der neuesten Version, keine Reparatur erforderlich",
-                "failed": "Rezept-Reparatur fehlgeschlagen: {message}",
-                "missingId": "Rezept kann nicht repariert werden: Fehlende Rezept-ID"
             },
             "reimport": {
                 "starting": "Rezept wird aus Quelle neu importiert...",
@@ -2238,9 +2222,6 @@
             "batchImportBrowseFailed": "Ordner konnte nicht durchsucht werden: {message}",
             "batchImportDirectorySelected": "Verzeichnis ausgewählt: {path}",
             "noRecipesSelected": "Keine Rezepte ausgewählt",
-            "repairBulkComplete": "Reparatur abgeschlossen: {repaired} repariert, {skipped} übersprungen (von {total})",
-            "repairBulkSkipped": "Keine Reparatur für die {total} ausgewählten Rezepte erforderlich",
-            "repairBulkFailed": "Reparatur der ausgewählten Rezepte fehlgeschlagen: {message}",
             "rematchComplete": "{entries} Einträge in {recipes} Rezepten zugeordnet",
             "rematchCompleteErrors": "{entries} Einträge in {recipes} Rezepten zugeordnet, {failures} fehlgeschlagen",
             "rematchAllFailed": "Zuordnung fehlgeschlagen für {failures} von {total} ausgewählten Rezepten",

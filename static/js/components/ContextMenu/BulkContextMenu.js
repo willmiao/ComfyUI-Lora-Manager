@@ -41,13 +41,9 @@ export class BulkContextMenu extends BaseContextMenu {
         const autoOrganizeItem = this.menu.querySelector('[data-action="auto-organize"]');
         const deleteAllItem = this.menu.querySelector('[data-action="delete-all"]');
         const downloadMissingLorasItem = this.menu.querySelector('[data-action="download-missing-loras"]');
-        const repairMetadataItem = this.menu.querySelector('[data-action="repair-metadata"]');
         const reimportMetadataItem = this.menu.querySelector('[data-action="reimport-metadata"]');
         const rematchMetadataItem = this.menu.querySelector('[data-action="rematch-metadata"]');
 
-        if (repairMetadataItem) {
-            repairMetadataItem.style.display = config.repairMetadata ? 'flex' : 'none';
-        }
         if (reimportMetadataItem) {
             reimportMetadataItem.style.display = config.reimportMetadata ? 'flex' : 'none';
         }
@@ -282,9 +278,6 @@ export class BulkContextMenu extends BaseContextMenu {
                 break;
             case 'delete-all':
                 bulkManager.showBulkDeleteModal();
-                break;
-            case 'repair-metadata':
-                bulkManager.repairSelectedRecipes();
                 break;
             case 'rematch-metadata':
                 bulkManager.rematchSelectedRecipes();

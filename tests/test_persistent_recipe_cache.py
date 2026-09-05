@@ -40,7 +40,6 @@ def sample_recipes() -> List[Dict[str, Any]]:
             "created_date": 1700000000.0,
             "modified": 1700000100.0,
             "favorite": True,
-            "repair_version": 3,
             "preview_nsfw_level": 1,
             "loras": [
                 {"hash": "hash1", "file_name": "lora1", "strength": 0.8},
@@ -60,7 +59,6 @@ def sample_recipes() -> List[Dict[str, Any]]:
             "created_date": 1700000200.0,
             "modified": 1700000300.0,
             "favorite": False,
-            "repair_version": 2,
             "preview_nsfw_level": 0,
             "loras": [{"hash": "hash3", "file_name": "lora3", "strength": 0.5}],
             "gen_params": {"prompt": "another prompt"},
@@ -101,7 +99,6 @@ class TestPersistentRecipeCache:
         assert r1["base_model"] == "SD1.5"
         assert r1["fingerprint"] == "abc123"
         assert r1["favorite"] is True
-        assert r1["repair_version"] == 3
         assert len(r1["loras"]) == 2
         assert r1["loras"][0]["hash"] == "hash1"
         assert r1["checkpoint"]["name"] == "model.safetensors"
@@ -164,7 +161,6 @@ class TestPersistentRecipeCache:
                 file_mtime REAL,
                 file_size INTEGER,
                 favorite INTEGER DEFAULT 0,
-                repair_version INTEGER DEFAULT 0,
                 preview_nsfw_level INTEGER DEFAULT 0,
                 loras_json TEXT,
                 checkpoint_json TEXT,
@@ -710,7 +706,6 @@ class TestHasWorkflowColumn:
                 file_mtime REAL,
                 file_size INTEGER,
                 favorite INTEGER DEFAULT 0,
-                repair_version INTEGER DEFAULT 0,
                 preview_nsfw_level INTEGER DEFAULT 0,
                 loras_json TEXT,
                 checkpoint_json TEXT,

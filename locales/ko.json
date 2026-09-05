@@ -212,13 +212,6 @@
             "none": "모든 {typePlural}에 이미 라이선스 메타데이터가 있습니다",
             "error": "{typePlural}의 라이선스 메타데이터를 새로고침하지 못했습니다: {message}"
         },
-        "repairRecipes": {
-            "label": "레시피 데이터 복구",
-            "loading": "레시피 데이터 복구 중...",
-            "success": "{count}개의 레시피가 성공적으로 복구되었습니다.",
-            "cancelled": "수리가 취소되었습니다. {count}개의 레시피가 수리되었습니다.",
-            "error": "레시피 복구 실패: {message}"
-        },
         "rematchRecipes": {
             "label": "레시피를 로컬 모델에 다시 매칭",
             "loading": "레시피를 로컬 모델에 다시 매칭하는 중...",
@@ -821,7 +814,6 @@
             "setContentRating": "모든 모델에 콘텐츠 등급 설정",
             "copyAll": "모든 문법 복사",
             "refreshAll": "모든 메타데이터 새로고침",
-            "repairMetadata": "선택한 레시피 메타데이터 복구",
             "rematchMetadata": "선택 항목을 로컬 모델에 다시 매칭",
             "reimportMetadata": "소스에서 다시 가져오기",
             "checkUpdates": "선택 항목 업데이트 확인",
@@ -877,7 +869,6 @@
             "replacePreview": "미리보기 교체",
             "setContentRating": "콘텐츠 등급 설정",
             "moveToFolder": "폴더로 이동",
-            "repairMetadata": "메타데이터 복구",
             "rematchMetadata": "로컬 모델에 다시 매칭",
             "reimportMetadata": "소스에서 다시 가져오기",
             "excludeModel": "모델 제외",
@@ -1129,13 +1120,6 @@
                 "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
                 "getInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",
                 "prepareError": "LoRA 다운로드 준비 중 오류: {message}"
-            },
-            "repair": {
-                "starting": "레시피 메타데이터 복구 중...",
-                "success": "레시피 메타데이터가 성공적으로 복구되었습니다",
-                "skipped": "레시피가 이미 최신 버전입니다. 복구가 필요하지 않습니다",
-                "failed": "레시피 복구 실패: {message}",
-                "missingId": "레시피를 복구할 수 없음: 레시피 ID 누락"
             },
             "reimport": {
                 "starting": "소스에서 레시피를 다시 가져오는 중...",
@@ -2238,9 +2222,6 @@
             "batchImportBrowseFailed": "폴더를 찾아보지 못했습니다: {message}",
             "batchImportDirectorySelected": "선택한 폴더: {path}",
             "noRecipesSelected": "선택한 레시피가 없습니다",
-            "repairBulkComplete": "복구 완료: {repaired}개 복구, {skipped}개 건너뜀 (총 {total}개)",
-            "repairBulkSkipped": "선택한 {total}개 레시피는 복구가 필요하지 않습니다",
-            "repairBulkFailed": "선택한 레시피 복구 실패: {message}",
             "rematchComplete": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다",
             "rematchCompleteErrors": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다. {failures}개 실패",
             "rematchAllFailed": "선택한 {total}개 레시피 중 {failures}개 재매칭 실패",

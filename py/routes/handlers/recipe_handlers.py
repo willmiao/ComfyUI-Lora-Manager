@@ -129,11 +129,6 @@ class RecipeHandlerSet:
             "get_recipes_for_checkpoint": self.query.get_recipes_for_checkpoint,
             "scan_recipes": self.query.scan_recipes,
             "move_recipe": self.management.move_recipe,
-            "repair_recipes": self.management.repair_recipes,
-            "cancel_repair": self.management.cancel_repair,
-            "repair_recipe": self.management.repair_recipe,
-            "repair_recipes_bulk": self.management.repair_recipes_bulk,
-            "get_repair_progress": self.management.get_repair_progress,
             "rematch_recipes": self.management.rematch_recipes,
             "cancel_rematch": self.management.cancel_rematch,
             "rematch_recipe": self.management.rematch_recipe,
@@ -796,157 +791,6 @@ class RecipeManagementHandler:
             self._logger.error("Error saving recipe: %s", exc, exc_info=True)
             return web.json_response({"error": str(exc)}, status=500)
 
-    async def repair_recipes(self, request: web.Request) -> web.Response:
-        try:
-            await self._ensure_dependencies_ready()
-            recipe_scanner = self._recipe_scanner_getter()
-            if recipe_scanner is None:
-                return web.json_response(
-                    {"success": False, "error": "Recipe scanner unavailable"},
-                    status=503,
-                )
-
-            # Check if already running
-            if self._ws_manager.is_recipe_repair_running():
-                return web.json_response(
-                    {"success": False, "error": "Recipe repair already in progress"},
-                    status=409,
-                )
-
-            recipe_scanner.reset_cancellation()
-
-            async def progress_callback(data):
-                await self._ws_manager.broadcast_recipe_repair_progress(data)
-
-            # Run in background to avoid timeout
-            async def run_repair():
-                try:
-                    await recipe_scanner.repair_all_recipes(
-                        progress_callback=progress_callback
-                    )
-                except Exception as e:
-                    self._logger.error(
-                        f"Error in recipe repair task: {e}", exc_info=True
-                    )
-                    await self._ws_manager.broadcast_recipe_repair_progress(
-                        {"status": "error", "error": str(e)}
-                    )
-                finally:
-                    # Keep the final status for a while so the UI can see it
-                    await asyncio.sleep(5)
-                    # Don't cleanup if it was cancelled, let the UI see the cancelled state for a bit?
-                    # Actually cleanup_recipe_repair_progress is fine as long as we waited enough.
-                    self._ws_manager.cleanup_recipe_repair_progress()
-
-            asyncio.create_task(run_repair())
-
-            return web.json_response(
-                {"success": True, "message": "Recipe repair started"}
-            )
-        except Exception as exc:
-            self._logger.error("Error starting recipe repair: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
-
-    async def cancel_repair(self, request: web.Request) -> web.Response:
-        try:
-            await self._ensure_dependencies_ready()
-            recipe_scanner = self._recipe_scanner_getter()
-            if recipe_scanner is None:
-                return web.json_response(
-                    {"success": False, "error": "Recipe scanner unavailable"},
-                    status=503,
-                )
-
-            recipe_scanner.cancel_task()
-            return web.json_response(
-                {"success": True, "message": "Cancellation requested"}
-            )
-        except Exception as exc:
-            self._logger.error("Error cancelling recipe repair: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
-
-    async def repair_recipes_bulk(self, request: web.Request) -> web.Response:
-        """Bulk repair metadata for multiple recipes by their IDs.
-
-        Accepts a JSON body with a "recipe_ids" array and iterates
-        repair_recipe_by_id over each entry, collecting statistics.
-        """
-        try:
-            await self._ensure_dependencies_ready()
-            recipe_scanner = self._recipe_scanner_getter()
-            if recipe_scanner is None:
-                return web.json_response(
-                    {"success": False, "error": "Recipe scanner unavailable"},
-                    status=503,
-                )
-
-            data = await request.json()
-            recipe_ids = data.get("recipe_ids", [])
-            if not recipe_ids:
-                return web.json_response(
-                    {"success": False, "error": "recipe_ids are required"},
-                    status=400,
-                )
-
-            total = len(recipe_ids)
-            repaired = 0
-            skipped = 0
-            errors = 0
-            recipes = []
-
-            for recipe_id in recipe_ids:
-                try:
-                    result = await recipe_scanner.repair_recipe_by_id(recipe_id)
-                    if result.get("success"):
-                        repaired += result.get("repaired", 0)
-                        skipped += result.get("skipped", 0)
-                        if result.get("recipe"):
-                            recipes.append(result["recipe"])
-                    else:
-                        errors += 1
-                except RecipeNotFoundError:
-                    skipped += 1
-                except Exception as exc:
-                    self._logger.error(
-                        "Error repairing recipe %s: %s", recipe_id, exc
-                    )
-                    errors += 1
-
-            return web.json_response({
-                "success": True,
-                "total": total,
-                "repaired": repaired,
-                "skipped": skipped,
-                "errors": errors,
-                "recipes": recipes,
-            })
-        except Exception as exc:
-            self._logger.error(
-                "Error performing bulk repair: %s", exc, exc_info=True
-            )
-            return web.json_response(
-                {"success": False, "error": str(exc)}, status=500
-            )
-
-    async def repair_recipe(self, request: web.Request) -> web.Response:
-        try:
-            await self._ensure_dependencies_ready()
-            recipe_scanner = self._recipe_scanner_getter()
-            if recipe_scanner is None:
-                return web.json_response(
-                    {"success": False, "error": "Recipe scanner unavailable"},
-                    status=503,
-                )
-
-            recipe_id = request.match_info["recipe_id"]
-            result = await recipe_scanner.repair_recipe_by_id(recipe_id)
-            return web.json_response(result)
-        except RecipeNotFoundError as exc:
-            return web.json_response({"success": False, "error": str(exc)}, status=404)
-        except Exception as exc:
-            self._logger.error("Error repairing single recipe: %s", exc, exc_info=True)
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
-
     async def rematch_recipes(self, request: web.Request) -> web.Response:
         try:
             await self._ensure_dependencies_ready()
@@ -958,12 +802,9 @@ class RecipeManagementHandler:
                 )
 
             # Mutual exclusion: a global rematch cannot start while a rematch
-            # OR a repair is already running — both mutate recipes under the
-            # same mutation lock.
-            if (
-                self._ws_manager.is_recipe_rematch_running()
-                or self._ws_manager.is_recipe_repair_running()
-            ):
+            # is already running — both mutate recipes under the same
+            # mutation lock.
+            if self._ws_manager.is_recipe_rematch_running():
                 return web.json_response(
                     {"success": False, "error": "Recipe rematch already in progress"},
                     status=409,
@@ -1229,18 +1070,6 @@ class RecipeManagementHandler:
             self._logger.error(
                 "Error reimporting recipe: %s", exc, exc_info=True
             )
-            return web.json_response({"success": False, "error": str(exc)}, status=500)
-
-    async def get_repair_progress(self, request: web.Request) -> web.Response:
-        try:
-            progress = self._ws_manager.get_recipe_repair_progress()
-            if progress:
-                return web.json_response({"success": True, "progress": progress})
-            return web.json_response(
-                {"success": False, "message": "No repair in progress"}, status=404
-            )
-        except Exception as exc:
-            self._logger.error("Error getting repair progress: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
     async def import_remote_recipe(self, request: web.Request) -> web.Response:

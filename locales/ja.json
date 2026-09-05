@@ -212,13 +212,6 @@
             "none": "すべての{typePlural}には既にライセンスメタデータがあります",
             "error": "{typePlural}のライセンスメタデータを更新できませんでした: {message}"
         },
-        "repairRecipes": {
-            "label": "レシピデータの修復",
-            "loading": "レシピデータを修復中...",
-            "success": "{count} 件のレシピを正常に修復しました。",
-            "cancelled": "修復がキャンセルされました。{count}件のレシピが修復されました。",
-            "error": "レシピの修復に失敗しました: {message}"
-        },
         "rematchRecipes": {
             "label": "レシピをローカルモデルに再マッチング",
             "loading": "レシピをローカルモデルに再マッチングしています...",
@@ -821,7 +814,6 @@
             "setContentRating": "すべてのモデルのコンテンツレーティングを設定",
             "copyAll": "すべての構文をコピー",
             "refreshAll": "すべてのメタデータを更新",
-            "repairMetadata": "選択したレシピのメタデータを修復",
             "rematchMetadata": "選択したモデルをローカルモデルに再マッチング",
             "reimportMetadata": "ソースから再インポート",
             "checkUpdates": "選択項目の更新を確認",
@@ -877,7 +869,6 @@
             "replacePreview": "プレビューを置換",
             "setContentRating": "コンテンツレーティングを設定",
             "moveToFolder": "フォルダに移動",
-            "repairMetadata": "メタデータを修復",
             "rematchMetadata": "ローカルモデルに再マッチング",
             "reimportMetadata": "ソースから再インポート",
             "excludeModel": "モデルを除外",
@@ -1129,13 +1120,6 @@
                 "noMissingLoras": "ダウンロードする不足LoRAがありません",
                 "getInfoFailed": "不足LoRAの情報取得に失敗しました",
                 "prepareError": "ダウンロード用LoRAの準備中にエラー：{message}"
-            },
-            "repair": {
-                "starting": "レシピのメタデータを修復中...",
-                "success": "レシピのメタデータが正常に修復されました",
-                "skipped": "レシピはすでに最新バージョンです。修復は不要です",
-                "failed": "レシピの修復に失敗しました: {message}",
-                "missingId": "レシピを修復できません: レシピIDがありません"
             },
             "reimport": {
                 "starting": "ソースからレシピを再インポート中...",
@@ -2238,9 +2222,6 @@
             "batchImportBrowseFailed": "フォルダを参照できませんでした: {message}",
             "batchImportDirectorySelected": "選択されたフォルダ: {path}",
             "noRecipesSelected": "レシピが選択されていません",
-            "repairBulkComplete": "修復完了：{repaired} 件修復、{skipped} 件スキップ（合計 {total} 件）",
-            "repairBulkSkipped": "選択した {total} 件のレシピは修復不要です",
-            "repairBulkFailed": "選択したレシピの修復に失敗しました：{message}",
             "rematchComplete": "{recipes} 件のレシピで {entries} エントリをマッチングしました",
             "rematchCompleteErrors": "{recipes} 件のレシピで {entries} エントリをマッチングしました（{failures} 件失敗）",
             "rematchAllFailed": "選択した {total} 件中 {failures} 件のレシピの再マッチングに失敗しました",

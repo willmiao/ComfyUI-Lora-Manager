@@ -212,13 +212,6 @@
       "none": "All {typePlural} already have license metadata",
       "error": "Failed to refresh license metadata for {typePlural}: {message}"
     },
-    "repairRecipes": {
-      "label": "Repair recipes data",
-      "loading": "Repairing recipe data...",
-      "success": "Successfully repaired {count} recipes.",
-      "cancelled": "Repair cancelled. {count} recipes were repaired.",
-      "error": "Recipe repair failed: {message}"
-    },
     "rematchRecipes": {
       "label": "Rematch recipes to local models",
       "loading": "Rematching recipes to local models...",
@@ -821,7 +814,6 @@
       "setContentRating": "Set Content Rating for Selected",
       "copyAll": "Copy Selected Syntax",
       "refreshAll": "Refresh Selected Metadata",
-      "repairMetadata": "Repair Metadata for Selected",
       "rematchMetadata": "Rematch Selected to Local Models",
       "reimportMetadata": "Re-import from Source",
       "checkUpdates": "Check Updates for Selected",
@@ -877,7 +869,6 @@
       "replacePreview": "Replace Preview",
       "setContentRating": "Set Content Rating",
       "moveToFolder": "Move to Folder",
-      "repairMetadata": "Repair metadata",
       "rematchMetadata": "Rematch to local models",
       "reimportMetadata": "Re-import from Source",
       "excludeModel": "Exclude Model",
@@ -1129,13 +1120,6 @@
         "noMissingLoras": "No missing LoRAs to download",
         "getInfoFailed": "Failed to get information for missing LoRAs",
         "prepareError": "Error preparing LoRAs for download: {message}"
-      },
-      "repair": {
-        "starting": "Repairing recipe metadata...",
-        "success": "Recipe metadata repaired successfully",
-        "skipped": "Recipe already at latest version, no repair needed",
-        "failed": "Failed to repair recipe: {message}",
-        "missingId": "Cannot repair recipe: Missing recipe ID"
       },
       "reimport": {
         "starting": "Re-importing recipe from source...",
@@ -2238,9 +2222,6 @@
       "batchImportBrowseFailed": "Failed to browse directory: {message}",
       "batchImportDirectorySelected": "Directory selected: {path}",
       "noRecipesSelected": "No recipes selected",
-      "repairBulkComplete": "Repair complete: {repaired} repaired, {skipped} skipped (of {total})",
-      "repairBulkSkipped": "No repair needed for any of the {total} selected recipes",
-      "repairBulkFailed": "Failed to repair selected recipes: {message}",
       "rematchComplete": "Matched {entries} entries across {recipes} recipes",
       "rematchCompleteErrors": "Matched {entries} entries across {recipes} recipes, {failures} failed",
       "rematchAllFailed": "Rematch failed for {failures} of {total} selected recipes",

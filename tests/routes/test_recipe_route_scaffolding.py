@@ -226,29 +226,12 @@ _REMATCH_ROUTE_DEFS = {
     ("GET", "/api/lm/recipes/rematch-progress", "get_rematch_progress"),
 }
 
-_REPAIR_ROUTE_DEFS = {
-    ("POST", "/api/lm/recipes/repair", "repair_recipes"),
-    ("POST", "/api/lm/recipes/cancel-repair", "cancel_repair"),
-    ("POST", "/api/lm/recipe/{recipe_id}/repair", "repair_recipe"),
-    ("POST", "/api/lm/recipes/repair-bulk", "repair_recipes_bulk"),
-    ("GET", "/api/lm/recipes/repair-progress", "get_repair_progress"),
-}
-
-
 def test_rematch_route_definitions_registered():
     registered = {
         (d.method, d.path, d.handler_name)
         for d in recipe_route_registrar.ROUTE_DEFINITIONS
     }
     assert _REMATCH_ROUTE_DEFS <= registered
-
-
-def test_repair_route_definitions_still_registered():
-    registered = {
-        (d.method, d.path, d.handler_name)
-        for d in recipe_route_registrar.ROUTE_DEFINITIONS
-    }
-    assert _REPAIR_ROUTE_DEFS <= registered
 
 
 def test_rematch_handler_names_resolve_in_to_route_mapping(monkeypatch: pytest.MonkeyPatch):

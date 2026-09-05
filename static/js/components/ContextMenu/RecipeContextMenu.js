@@ -93,10 +93,6 @@ export class RecipeContextMenu extends BaseContextMenu {
                 // Download missing LoRAs
                 this.downloadMissingLoRAs(recipeId);
                 break;
-            case 'repair':
-                // Repair recipe metadata
-                this.repairRecipe(recipeId);
-                break;
             case 'rematch':
                 // Rematch recipe resources to local models
                 this.rematchRecipe(recipeId);
@@ -294,44 +290,6 @@ export class RecipeContextMenu extends BaseContextMenu {
             if (state.loadingManager) {
                 state.loadingManager.hide();
             }
-        }
-    }
-
-    // Repair recipe metadata
-    async repairRecipe(recipeId) {
-        if (!recipeId) {
-            showToast('recipes.contextMenu.repair.missingId', {}, 'error');
-            return;
-        }
-
-        try {
-            showToast('recipes.contextMenu.repair.starting', {}, 'info');
-
-            const response = await fetch(`/api/lm/recipe/${recipeId}/repair`, {
-                method: 'POST'
-            });
-            const result = await response.json();
-
-            if (result.success) {
-                if (result.repaired > 0) {
-                    showToast('recipes.contextMenu.repair.success', {}, 'success');
-                    const detailResponse = await fetch(`/api/lm/recipe/${recipeId}`);
-                    if (detailResponse.ok) {
-                        const updatedRecipe = await detailResponse.json();
-                        const filePath = this.currentCard?.dataset?.filepath;
-                        if (filePath && state.virtualScroller) {
-                            state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
-                        }
-                    }
-                } else {
-                    showToast('recipes.contextMenu.repair.skipped', {}, 'info');
-                }
-            } else {
-                throw new Error(result.error || 'Repair failed');
-            }
-        } catch (error) {
-            console.error('Error repairing recipe:', error);
-            showToast('recipes.contextMenu.repair.failed', { message: error.message }, 'error');
         }
     }
 

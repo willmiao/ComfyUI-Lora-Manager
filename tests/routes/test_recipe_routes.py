@@ -1874,18 +1874,12 @@ async def test_create_from_example_does_not_recompute_stored_autov3(
 def _clean_recipe_run_progress_state():
     """Keep the shared WS manager run-state isolated between tests."""
     ws_manager._recipe_rematch_progress = None
-    ws_manager._recipe_repair_progress = None
     yield
     ws_manager._recipe_rematch_progress = None
-    ws_manager._recipe_repair_progress = None
 
 
 def _set_rematch_running(status: str = "processing") -> None:
     ws_manager._recipe_rematch_progress = {"status": status}
-
-
-def _set_repair_running(status: str = "processing") -> None:
-    ws_manager._recipe_repair_progress = {"status": status}
 
 
 async def test_rematch_recipes_starts_background_run(monkeypatch, tmp_path: Path) -> None:
@@ -1910,15 +1904,6 @@ async def test_rematch_recipes_409_when_rematch_running(monkeypatch, tmp_path: P
         assert payload["success"] is False
         assert "already in progress" in payload["error"].lower()
 
-
-async def test_rematch_recipes_409_when_repair_running(monkeypatch, tmp_path: Path) -> None:
-    async with recipe_harness(monkeypatch, tmp_path) as harness:
-        _set_repair_running()
-        response = await harness.client.post("/api/lm/recipes/rematch")
-        payload = await response.json()
-        assert response.status == 409
-        assert payload["success"] is False
-        assert "already in progress" in payload["error"].lower()
 
 
 async def test_rematch_recipe_409_when_rematch_running(monkeypatch, tmp_path: Path) -> None:

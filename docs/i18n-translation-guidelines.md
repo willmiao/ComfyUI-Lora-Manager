@@ -137,7 +137,7 @@ and must be normalized. `en` = keep the English word as-is.
 
 | Term | Use | Fix |
 |---|---|---|
-| recipe | Rezept/Rezepte | 5 leftover English "Recipe" keys → Rezept (e.g. `globalContextMenu.repairRecipes.label`, `toast.recipes.recipeSaved`) |
+| recipe | Rezept/Rezepte | leftover English "Recipe" keys → Rezept (e.g. `toast.recipes.recipeSaved`) |
 | base model | pick Basis-Modell or Basismodell | currently 27× hyphenated vs 15× closed |
 | metadata | Metadaten | 4 keys use "Modelldaten" (`onboarding.steps.fetch.title/content`) → Metadaten |
 | bulk | pick Massen- or Sammelmodus | `loras.controls.bulk.action` = "Massen" reads as "crowds" — use "Massenbearbeitung"/"Mehrfachauswahl" |
@@ -193,7 +193,7 @@ and must be normalized. `en` = keep the English word as-is.
 | Checkpoint | Checkpoint or チェックポイント (pick one) | 3 variants: Checkpoint (~14), checkpoint lowercase (4), チェックポイント (4, e.g. `settings.priorityTags.modelTypes.checkpoint`) |
 | Embedding | Embedding | 4 keys lowercase "embedding" mid-sentence |
 | bulk | 一括 | `modals.checkUpdates.tip` "バルクモード" → 一括モード |
-| recipe counter | 件 or 個 | `repairRecipes.success` uses 件, `.cancelled` uses 個 — unify |
+| recipe counter | 件 or 個 | `globalContextMenu.rematchRecipes.success` uses 件, `.cancelled` uses 個 — unify |
 
 ### ko
 

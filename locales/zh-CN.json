@@ -212,13 +212,6 @@
             "none": "所有 {typePlural} 都已具备许可证元数据",
             "error": "刷新 {typePlural} 的许可证元数据失败：{message}"
         },
-        "repairRecipes": {
-            "label": "修复配方数据",
-            "loading": "正在修复配方数据...",
-            "success": "成功修复了 {count} 个配方。",
-            "cancelled": "修复已取消。已修复 {count} 个配方。",
-            "error": "配方修复失败：{message}"
-        },
         "rematchRecipes": {
             "label": "将配方重新匹配到本地模型",
             "loading": "正在将配方重新匹配到本地模型...",
@@ -821,7 +814,6 @@
             "setContentRating": "为所选中设置内容评级",
             "copyAll": "复制所选中语法",
             "refreshAll": "刷新所选中元数据",
-            "repairMetadata": "修复所选中元数据",
             "rematchMetadata": "将所选中重新匹配到本地模型",
             "reimportMetadata": "从源重新导入",
             "checkUpdates": "检查所选更新",
@@ -877,7 +869,6 @@
             "replacePreview": "替换预览",
             "setContentRating": "设置内容评级",
             "moveToFolder": "移动到文件夹",
-            "repairMetadata": "修复元数据",
             "rematchMetadata": "重新匹配到本地模型",
             "reimportMetadata": "从源重新导入",
             "excludeModel": "排除模型",
@@ -1129,13 +1120,6 @@
                 "noMissingLoras": "没有缺失的 LoRA 可下载",
                 "getInfoFailed": "获取缺失 LoRA 信息失败",
                 "prepareError": "准备下载 LoRA 时出错：{message}"
-            },
-            "repair": {
-                "starting": "正在修复配方元数据...",
-                "success": "配方元数据修复成功",
-                "skipped": "配方已是最新版本，无需修复",
-                "failed": "修复配方失败：{message}",
-                "missingId": "无法修复配方：缺少配方 ID"
             },
             "reimport": {
                 "starting": "正在从源重新导入配方...",
@@ -2238,9 +2222,6 @@
             "batchImportBrowseFailed": "浏览目录失败：{message}",
             "batchImportDirectorySelected": "已选择目录：{path}",
             "noRecipesSelected": "未选择任何配方",
-            "repairBulkComplete": "修复完成：{repaired} 个已修复，{skipped} 个已跳过（共 {total} 个）",
-            "repairBulkSkipped": "所选 {total} 个配方无需修复",
-            "repairBulkFailed": "修复所选配方失败：{message}",
             "rematchComplete": "已匹配 {entries} 个条目，涉及 {recipes} 个配方",
             "rematchCompleteErrors": "已匹配 {entries} 个条目，涉及 {recipes} 个配方，{failures} 个失败",
             "rematchAllFailed": "{failures}/{total} 个所选配方重新匹配失败",

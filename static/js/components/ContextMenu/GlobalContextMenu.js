@@ -23,7 +23,6 @@ export class GlobalContextMenu extends BaseContextMenu {
         const downloadExamplesItem = this.menu.querySelector('[data-action="download-example-images"]');
         const cleanupExamplesItem = this.menu.querySelector('[data-action="cleanup-example-images-folders"]');
         const excludedModelsItem = this.menu.querySelector('[data-action="manage-excluded-models"]');
-        const repairRecipesItem = this.menu.querySelector('[data-action="repair-recipes"]');
         const rematchRecipesItem = this.menu.querySelector('[data-action="rematch-recipes"]');
         const groupByModelItem = this.menu.querySelector('[data-action="toggle-group-by-model"]');
         const groupByModelCheck = groupByModelItem?.querySelector('.check-indicator');
@@ -41,7 +40,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             cleanupExamplesItem?.classList.add('hidden');
             excludedModelsItem?.classList.add('hidden');
             groupByModelItem?.classList.add('hidden');
-            repairRecipesItem?.classList.remove('hidden');
             rematchRecipesItem?.classList.remove('hidden');
         } else {
             modelUpdateItem?.classList.remove('hidden');
@@ -50,7 +48,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             cleanupExamplesItem?.classList.remove('hidden');
             excludedModelsItem?.classList.remove('hidden');
             groupByModelItem?.classList.remove('hidden');
-            repairRecipesItem?.classList.add('hidden');
             rematchRecipesItem?.classList.add('hidden');
         }
 
@@ -93,11 +90,6 @@ export class GlobalContextMenu extends BaseContextMenu {
             case 'fetch-missing-licenses':
                 this.fetchMissingLicenses(menuItem).catch((error) => {
                     console.error('Failed to refresh missing license metadata:', error);
-                });
-                break;
-            case 'repair-recipes':
-                this.repairRecipes(menuItem).catch((error) => {
-                    console.error('Failed to repair recipes:', error);
                 });
                 break;
             case 'rematch-recipes':
@@ -369,99 +361,6 @@ export class GlobalContextMenu extends BaseContextMenu {
         }
 
         return `${displayName}s`;
-    }
-
-    async repairRecipes(menuItem) {
-        if (this._repairInProgress) {
-            return;
-        }
-
-        this._repairInProgress = true;
-        menuItem?.classList.add('disabled');
-
-        const loadingMessage = translate(
-            'globalContextMenu.repairRecipes.loading',
-            {},
-            'Repairing recipe data...'
-        );
-
-        const progressUI = state.loadingManager?.showEnhancedProgress(loadingMessage);
-        progressUI?.showCancelButton(() => this.cancelRepair());
-
-        try {
-            const response = await fetch('/api/lm/recipes/repair', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-            });
-
-            const result = await response.json();
-            if (!response.ok || !result.success) {
-                throw new Error(result.error || 'Failed to start repair');
-            }
-
-            // Poll for progress (or wait for WebSocket if preferred, but polling is simpler for this implementation)
-            let isComplete = false;
-            while (!isComplete && this._repairInProgress) {
-                const progressResponse = await fetch('/api/lm/recipes/repair-progress');
-                if (progressResponse.ok) {
-                    const progressResult = await progressResponse.json();
-                    if (progressResult.success && progressResult.progress) {
-                        const p = progressResult.progress;
-                        if (p.status === 'processing') {
-                            const percent = (p.current / p.total) * 100;
-                            progressUI?.updateProgress(percent, p.recipe_name, `${loadingMessage} (${p.current}/${p.total})`);
-                        } else if (p.status === 'completed') {
-                            isComplete = true;
-                            progressUI?.complete(translate(
-                                'globalContextMenu.repairRecipes.success',
-                                { count: p.repaired },
-                                `Repaired ${p.repaired} recipes.`
-                            ));
-                            showToast('globalContextMenu.repairRecipes.success', { count: p.repaired }, 'success');
-                            // Refresh recipes page if active
-                            if (window.recipesPage) {
-                                window.recipesPage.refresh();
-                            }
-                        } else if (p.status === 'error') {
-                            throw new Error(p.error || 'Repair failed');
-                        } else if (p.status === 'cancelled') {
-                            isComplete = true;
-                            progressUI?.complete(translate(
-                                'globalContextMenu.repairRecipes.cancelled',
-                                { count: p.repaired },
-                                `Repair cancelled. ${p.repaired} recipes were repaired.`
-                            ));
-                            showToast('globalContextMenu.repairRecipes.cancelled', { count: p.repaired }, 'info');
-                        }
-                    } else if (progressResponse.status === 404) {
-                        // Progress might have finished quickly and been cleaned up
-                        isComplete = true;
-                        progressUI?.complete();
-                    }
-                }
-
-                if (!isComplete) {
-                    await new Promise(resolve => setTimeout(resolve, 1000));
-                }
-            }
-        } catch (error) {
-            console.error('Recipe repair failed:', error);
-            progressUI?.complete(translate('globalContextMenu.repairRecipes.error', { message: error.message }, 'Repair failed: {message}'));
-            showToast('globalContextMenu.repairRecipes.error', { message: error.message }, 'error');
-        } finally {
-            this._repairInProgress = false;
-            menuItem?.classList.remove('disabled');
-        }
-    }
-
-    async cancelRepair() {
-        try {
-            await fetch('/api/lm/recipes/cancel-repair', {
-                method: 'POST',
-            });
-        } catch (error) {
-            console.error('Failed to cancel recipe repair:', error);
-        }
     }
 
     async rematchRecipes(menuItem) {

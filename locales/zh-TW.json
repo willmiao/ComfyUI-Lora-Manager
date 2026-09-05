@@ -212,13 +212,6 @@
             "none": "所有 {typePlural} 已具備授權中繼資料",
             "error": "重新整理 {typePlural} 授權中繼資料失敗：{message}"
         },
-        "repairRecipes": {
-            "label": "修復配方資料",
-            "loading": "正在修復配方資料...",
-            "success": "成功修復 {count} 個配方。",
-            "cancelled": "修復已取消。已修復 {count} 個配方。",
-            "error": "配方修復失敗：{message}"
-        },
         "rematchRecipes": {
             "label": "將配方重新匹配到本地模型",
             "loading": "正在將配方重新匹配到本地模型...",
@@ -821,7 +814,6 @@
             "setContentRating": "為全部設定內容分級",
             "copyAll": "複製全部語法",
             "refreshAll": "刷新全部 metadata",
-            "repairMetadata": "修復所選中元數據",
             "rematchMetadata": "將所選中重新匹配到本地模型",
             "reimportMetadata": "從來源重新匯入",
             "checkUpdates": "檢查所選更新",
@@ -877,7 +869,6 @@
             "replacePreview": "更換預覽圖",
             "setContentRating": "設定內容分級",
             "moveToFolder": "移動到資料夾",
-            "repairMetadata": "修復元數據",
             "rematchMetadata": "重新匹配到本地模型",
             "reimportMetadata": "從來源重新匯入",
             "excludeModel": "排除模型",
@@ -1129,13 +1120,6 @@
                 "noMissingLoras": "無缺少的 LoRA 可下載",
                 "getInfoFailed": "取得缺少 LoRA 資訊失敗",
                 "prepareError": "準備下載 LoRA 時發生錯誤：{message}"
-            },
-            "repair": {
-                "starting": "正在修復配方元數據...",
-                "success": "配方元數據修復成功",
-                "skipped": "配方已是最新版本，無需修復",
-                "failed": "修復配方失敗：{message}",
-                "missingId": "無法修復配方：缺少配方 ID"
             },
             "reimport": {
                 "starting": "正在從來源重新匯入配方...",
@@ -2238,9 +2222,6 @@
             "batchImportBrowseFailed": "瀏覽目錄失敗：{message}",
             "batchImportDirectorySelected": "已選擇目錄：{path}",
             "noRecipesSelected": "未選取任何配方",
-            "repairBulkComplete": "修復完成：{repaired} 個已修復，{skipped} 個已跳過（共 {total} 個）",
-            "repairBulkSkipped": "所選 {total} 個配方無需修復",
-            "repairBulkFailed": "修復所選配方失敗：{message}",
             "rematchComplete": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
             "rematchCompleteErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
             "rematchAllFailed": "{failures}/{total} 個所選配方重新匹配失敗",

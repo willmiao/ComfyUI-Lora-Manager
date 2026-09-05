@@ -20,8 +20,6 @@ class WebSocketManager:
         self._last_init_progress: Dict[str, Dict[str, Any]] = {}
         # Add auto-organize progress tracking
         self._auto_organize_progress: Optional[Dict[str, Any]] = None
-        # Add recipe repair progress tracking
-        self._recipe_repair_progress: Optional[Dict[str, Any]] = None
         # Add recipe rematch progress tracking
         self._recipe_rematch_progress: Optional[Dict[str, Any]] = None
         self._auto_organize_lock = asyncio.Lock()
@@ -193,14 +191,6 @@ class WebSocketManager:
         # Broadcast via WebSocket
         await self.broadcast(data)
     
-    async def broadcast_recipe_repair_progress(self, data: Dict[str, Any]):
-        """Broadcast recipe repair progress to connected clients"""
-        # Store progress data in memory
-        self._recipe_repair_progress = data
-        
-        # Broadcast via WebSocket
-        await self.broadcast(data)
-    
     def get_auto_organize_progress(self) -> Optional[Dict[str, Any]]:
         """Get current auto-organize progress"""
         return self._auto_organize_progress
@@ -208,22 +198,6 @@ class WebSocketManager:
     def cleanup_auto_organize_progress(self):
         """Clear auto-organize progress data"""
         self._auto_organize_progress = None
-    
-    def get_recipe_repair_progress(self) -> Optional[Dict[str, Any]]:
-        """Get current recipe repair progress"""
-        return self._recipe_repair_progress
-    
-    def cleanup_recipe_repair_progress(self):
-        """Clear recipe repair progress data if it is in a finished state"""
-        if self._recipe_repair_progress and self._recipe_repair_progress.get('status') in ['completed', 'cancelled', 'error']:
-            self._recipe_repair_progress = None
-    
-    def is_recipe_repair_running(self) -> bool:
-        """Check if recipe repair is currently running"""
-        if not self._recipe_repair_progress:
-            return False
-        status = self._recipe_repair_progress.get('status')
-        return status in ['started', 'processing']
     
     async def broadcast_recipe_rematch_progress(self, data: Dict[str, Any]):
         """Broadcast recipe rematch progress to connected clients"""

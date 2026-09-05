@@ -242,22 +242,14 @@ async def test_is_recipe_rematch_running_by_status(manager, status, expected):
     assert manager.is_recipe_rematch_running() is expected
 
 
-async def test_rematch_and_repair_channels_are_independent(manager):
-    # Rematch progress must not leak into the repair channel
+async def test_rematch_progress_channel_updates_and_cleans_up(manager):
+    # Rematch progress is stored and reported as running while processing.
     await manager.broadcast_recipe_rematch_progress({"status": "processing", "current": 1})
-    assert manager.is_recipe_rematch_running() is True
-    assert manager.is_recipe_repair_running() is False
-    assert manager.get_recipe_repair_progress() is None
-
-    # Repair progress must not overwrite the rematch state
-    await manager.broadcast_recipe_repair_progress({"status": "processing", "current": 1})
-    assert manager.is_recipe_repair_running() is True
     assert manager.is_recipe_rematch_running() is True
     assert manager.get_recipe_rematch_progress() == {"status": "processing", "current": 1}
 
-    # Cleaning the rematch channel must leave the repair channel untouched
+    # Finished states clear on cleanup.
     await manager.broadcast_recipe_rematch_progress({"status": "completed"})
     manager.cleanup_recipe_rematch_progress()
     assert manager.get_recipe_rematch_progress() is None
-    assert manager.get_recipe_repair_progress() == {"status": "processing", "current": 1}
-    assert manager.is_recipe_repair_running() is True
+    assert manager.is_recipe_rematch_running() is False

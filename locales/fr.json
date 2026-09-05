@@ -212,13 +212,6 @@
             "none": "Tous les {typePlural} possèdent déjà des métadonnées de licence",
             "error": "Échec de l'actualisation des métadonnées de licence pour les {typePlural} : {message}"
         },
-        "repairRecipes": {
-            "label": "Réparer les données de Recipes",
-            "loading": "Réparation des données de Recipes...",
-            "success": "{count} Recipes réparées avec succès.",
-            "cancelled": "Réparation annulée. {count} Recipes ont été réparées.",
-            "error": "Échec de la réparation des Recipes : {message}"
-        },
         "rematchRecipes": {
             "label": "Réassocier les Recipes aux modèles locaux",
             "loading": "Réassociation des Recipes aux modèles locaux...",
@@ -821,7 +814,6 @@
             "setContentRating": "Définir la classification du contenu pour tous",
             "copyAll": "Copier toute la syntaxe",
             "refreshAll": "Actualiser toutes les métadonnées",
-            "repairMetadata": "Réparer les métadonnées de la sélection",
             "rematchMetadata": "Réassocier la sélection aux modèles locaux",
             "reimportMetadata": "Ré-importer depuis la source",
             "checkUpdates": "Vérifier les mises à jour pour la sélection",
@@ -877,7 +869,6 @@
             "replacePreview": "Remplacer l'aperçu",
             "setContentRating": "Définir la classification du contenu",
             "moveToFolder": "Déplacer vers un dossier",
-            "repairMetadata": "Réparer les métadonnées",
             "rematchMetadata": "Réassocier aux modèles locaux",
             "reimportMetadata": "Ré-importer depuis la source",
             "excludeModel": "Exclure le modèle",
@@ -1129,13 +1120,6 @@
                 "noMissingLoras": "Aucun LoRA manquant à télécharger",
                 "getInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",
                 "prepareError": "Erreur lors de la préparation des LoRAs pour le téléchargement : {message}"
-            },
-            "repair": {
-                "starting": "Réparation des métadonnées de la Recipe...",
-                "success": "Métadonnées de la Recipe réparées avec succès",
-                "skipped": "Recette déjà à la version la plus récente, aucune réparation nécessaire",
-                "failed": "Échec de la réparation de la Recipe : {message}",
-                "missingId": "Impossible de réparer la Recipe : ID de Recipe manquant"
             },
             "reimport": {
                 "starting": "Ré-import de la Recipe depuis la source...",
@@ -2238,9 +2222,6 @@
             "batchImportBrowseFailed": "Échec de la navigation dans le dossier : {message}",
             "batchImportDirectorySelected": "Dossier sélectionné : {path}",
             "noRecipesSelected": "Aucune Recipe sélectionnée",
-            "repairBulkComplete": "Réparation terminée : {repaired} réparée(s), {skipped} ignorée(s) (sur {total})",
-            "repairBulkSkipped": "Aucune réparation nécessaire parmi les {total} Recipes sélectionnées",
-            "repairBulkFailed": "Échec de la réparation des Recipes sélectionnées : {message}",
             "rematchComplete": "{entries} entrées associées dans {recipes} Recipes",
             "rematchCompleteErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
             "rematchAllFailed": "Échec de la réassociation de {failures} Recipes sélectionnées sur {total}",
