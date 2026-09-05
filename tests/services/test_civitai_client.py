@@ -148,6 +148,114 @@ async def test_get_model_by_hash_propagates_rate_limit(monkeypatch, downloader):
     assert exc_info.value.provider == "civitai_api"
 
 
+async def test_get_model_by_name_matches_and_enriches(monkeypatch, downloader):
+    search_payload = {
+        "items": [
+            {
+                "id": 456,
+                "name": "Anything2Real",
+                "type": "LORA",
+                "nsfw": False,
+                "poi": False,
+                "description": "desc",
+                "tags": ["style"],
+                "creator": {"username": "creator"},
+                "modelVersions": [
+                    {
+                        "id": 789,
+                        "name": "v1.0",
+                        "images": [{"url": "https://example.invalid/p.webp"}],
+                    }
+                ],
+            },
+            {
+                "id": 999,
+                "name": "Unrelated",
+                "type": "LORA",
+                "modelVersions": [{"id": 111, "name": "x", "images": []}],
+            },
+        ]
+    }
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        if url.endswith("/models") and kwargs.get("params", {}).get("query") == "anything2real_a":
+            return True, search_payload
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("anything2real_a")
+
+    assert error is None
+    assert result["modelId"] == 456
+    assert result["id"] == 789
+    assert result["model"]["name"] == "Anything2Real"
+    assert result["model"]["description"] == "desc"
+    assert result["model"]["tags"] == ["style"]
+    assert result["images"]  # the version with images was preferred
+
+
+async def test_get_model_by_name_filters_by_type(monkeypatch, downloader):
+    search_payload = {
+        "items": [
+            {
+                "id": 1,
+                "name": "Workflow only",
+                "type": "Workflows",
+                "modelVersions": [{"id": 11, "name": "v1", "images": []}],
+            },
+            {
+                "id": 2,
+                "name": "A LORA",
+                "type": "LORA",
+                "modelVersions": [{"id": 22, "name": "v1", "images": [{}]}],
+            },
+        ]
+    }
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, search_payload
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("anything", model_types=("LORA", "Checkpoint"))
+
+    assert error is None
+    assert result["modelId"] == 2
+
+
+async def test_get_model_by_name_not_found(monkeypatch, downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, {"items": []}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("missing_model")
+
+    assert result is None
+    assert error == "Model not found"
+
+
+async def test_get_model_by_name_offline_cooldown(downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, OFFLINE_COOLDOWN_ERROR
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("anything")
+
+    assert result is None
+    assert error == OFFLINE_FRIENDLY_MESSAGE
+
+
 async def test_download_preview_image_writes_file(tmp_path, downloader):
     client = await CivitaiClient.get_instance()
     target = tmp_path / "preview" / "image.jpg"

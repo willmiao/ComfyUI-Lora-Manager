@@ -118,6 +118,28 @@ def _isolate_settings_dir(tmp_path_factory, monkeypatch, request):
             settings_dir.mkdir(exist_ok=True)
         return str(settings_dir)
 
+    # ``ensure_settings_file()`` checks the *legacy* project-root settings.json
+    # first.  If a developer's real file carries ``use_portable_settings: true``,
+    # it would be returned (and then overwritten / migrated away) by tests.
+    # Redirect the legacy path into the isolated directory so tests can never
+    # touch the real file.  IMPORTANT: this must stay a *dynamic* wrapper that
+    # delegates to the real derivation, because ``get_legacy_settings_path``
+    # follows the (possibly test-patched) ``get_project_root``.  Only the real
+    # repo-root file is redirected; fake roots created by tests keep working.
+    from py.utils import settings_paths as _settings_paths
+
+    _real_get_legacy_settings_path = _settings_paths.get_legacy_settings_path
+
+    def fake_get_legacy_settings_path() -> str:
+        legacy_path = _real_get_legacy_settings_path()
+        if Path(legacy_path).resolve() == (REPO_ROOT / "settings.json").resolve():
+            return str(settings_dir / "settings.json")
+        return legacy_path
+
+    monkeypatch.setattr(
+        "py.utils.settings_paths.get_legacy_settings_path",
+        fake_get_legacy_settings_path,
+    )
     monkeypatch.setattr("py.utils.settings_paths.get_settings_dir", fake_get_settings_dir)
     monkeypatch.setattr(
         "py.utils.settings_paths.user_config_dir",
@@ -129,6 +151,33 @@ def _isolate_settings_dir(tmp_path_factory, monkeypatch, request):
     settings_manager_module.reset_settings_manager()
     yield
     settings_manager_module.reset_settings_manager()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _guard_project_settings_file():
+    """Snapshot the developer's real project settings.json; restore it after the run.
+
+    The project-root settings.json is developer configuration that is not under
+    version control.  Tests must never modify it; if anything slips through the
+    per-test isolation anyway, this guard restores the exact original bytes.
+    """
+
+    from py.utils.settings_paths import get_legacy_settings_path
+
+    real_path = Path(get_legacy_settings_path())
+    original: Optional[bytes] = None
+    existed = real_path.exists()
+    if existed:
+        original = real_path.read_bytes()
+
+    yield
+
+    if original is not None:
+        if not real_path.exists() or real_path.read_bytes() != original:
+            real_path.write_bytes(original)
+    elif real_path.exists():
+        # No file existed before the session; a test must have created one.
+        real_path.unlink()
 
 
 @dataclass

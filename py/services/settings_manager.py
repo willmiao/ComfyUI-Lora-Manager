@@ -73,6 +73,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "rate_limit_gate_enabled": True,
     "rate_limit_max_wait_seconds": 300,
     "rate_limit_min_interval_seconds": 0.75,
+    "civitai_name_fallback": True,
     "proxy_enabled": False,
     "proxy_host": "",
     "proxy_port": "",
