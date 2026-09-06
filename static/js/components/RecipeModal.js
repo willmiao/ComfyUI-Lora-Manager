@@ -2877,12 +2877,14 @@ class RecipeModal {
 
     canDownloadLora(lora) {
         if (!lora) return false;
-        const modelId = lora.modelId || lora.modelID || lora.model_id;
         const versionId = lora.id || lora.modelVersionId;
-        // Direct download needs both identifiers; a hash alone is enough
-        // because downloadRecipeLora resolves it to a version on demand —
-        // the same fallback the bulk "download missing" flow uses.
-        return !!((modelId && versionId) || lora.hash);
+        // A bare CivitAI version id is enough: it uniquely pins the exact
+        // file, and downloadRecipeLora resolves the owning model id from the
+        // version on demand (the same fallback the bulk "download missing"
+        // flow uses). A hash alone is likewise sufficient. A model id without
+        // an exact version id is NOT enough — downloading the model's latest
+        // version could silently mismatch the recipe's pinned version.
+        return !!(versionId || lora.hash);
     }
 
     renderCivitaiLink(url) {
@@ -2991,6 +2993,9 @@ class RecipeModal {
      * Resolve the Civitai model/version identifiers needed for download.
      * Recipe LoRAs parsed from PNG metadata often carry only a hash; resolve
      * it through the same endpoint the bulk "download missing" flow uses.
+     * Version-only entries (page-imported recipes whose CivitAI version has
+     * no sha256) are resolved through the version endpoint, which returns
+     * the owning model id.
      */
     async resolveLoraDownloadIdentifiers(lora) {
         let modelId = lora.modelId || lora.modelID || lora.model_id;
@@ -3001,21 +3006,41 @@ class RecipeModal {
             return { modelId, versionId, versionName };
         }
 
-        if (!lora.hash) {
-            return null;
+        // Hash-only entries (PNG/recipe-JSON imports): resolve the owning
+        // model/version through the same endpoint the bulk "download
+        // missing" flow uses.
+        if (lora.hash) {
+            const response = await fetch(`/api/lm/loras/civitai/model/hash/${lora.hash}`);
+            const versionInfo = await response.json();
+            if (versionInfo?.error) {
+                return null;
+            }
+
+            modelId = versionInfo.modelId || versionInfo.model?.id;
+            versionId = versionInfo.id;
+            versionName = versionInfo.name || versionName;
+
+            return modelId && versionId ? { modelId, versionId, versionName } : null;
         }
 
-        const response = await fetch(`/api/lm/loras/civitai/model/hash/${lora.hash}`);
-        const versionInfo = await response.json();
-        if (versionInfo?.error) {
-            return null;
+        // Version-only entries (page-imported recipes whose CivitAI versions
+        // expose no sha256): the version id still pins the exact file, so
+        // resolve the owning model id from the version endpoint on demand.
+        if (versionId) {
+            const response = await fetch(`/api/lm/loras/civitai/model/version/${versionId}`);
+            const versionInfo = await response.json();
+            if (!versionInfo || versionInfo?.error === 'Model not found') {
+                return null;
+            }
+
+            modelId = versionInfo.modelId || versionInfo.model?.id;
+            versionId = versionInfo.id || versionId;
+            versionName = versionInfo.name || versionName;
+
+            return modelId && versionId ? { modelId, versionId, versionName } : null;
         }
 
-        modelId = versionInfo.modelId || versionInfo.model?.id;
-        versionId = versionInfo.id;
-        versionName = versionInfo.name || versionName;
-
-        return modelId && versionId ? { modelId, versionId, versionName } : null;
+        return null;
     }
 
     /**
