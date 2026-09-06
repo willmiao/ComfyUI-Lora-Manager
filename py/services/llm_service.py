@@ -58,7 +58,7 @@ async def _load_model_catalog() -> Dict[str, List[str]]:
                     logger.warning("Model catalog returned HTTP %s", resp.status)
                     return _catalog_cache or {}
                 data = await resp.json()
-    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
+    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
         logger.warning("Failed to fetch model catalog: %s", exc)
         return _catalog_cache or {}
 
@@ -131,7 +131,7 @@ async def fetch_ollama_models(api_base: str) -> List[str]:
                     logger.debug("Ollama API returned HTTP %s from %s", resp.status, api_base)
                     return []
                 data = await resp.json()
-    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError) as exc:
+    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
         logger.debug("Ollama not reachable at %s: %s", api_base, exc)
         return []
 

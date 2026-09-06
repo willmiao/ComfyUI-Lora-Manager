@@ -8,8 +8,9 @@ from unittest import mock
 
 import pytest
 
-from py.services.llm_service import LLMService
+from py.services import llm_service as llm_module
 from py.services.errors import LLMNotConfiguredError, LLMRateLimitError, LLMResponseError
+from py.services.llm_service import LLMService, fetch_ollama_models
 
 
 class MockSettings:
@@ -314,3 +315,61 @@ class TestLLMServiceChatCompletionJson:
                     system_prompt="test",
                     user_prompt="test",
                 )
+
+
+class MockGetSession:
+    """Minimal aiohttp session mock supporting get() for catalog tests."""
+
+    def __init__(self, response):
+        self._response = response
+
+    def get(self, url):
+        return self._response
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
+class CorruptJsonResponse(MockResponse):
+    """Response whose body cannot be decoded as UTF-8 (like the issue's 0x9a byte)."""
+
+    async def json(self):
+        raise UnicodeDecodeError("utf-8", b"\x9a", 0, 1, "invalid start byte")
+
+
+class TestModelCatalog:
+    """Tests for _load_model_catalog / fetch_ollama_models error handling."""
+
+    @pytest.fixture(autouse=True)
+    def _reset_catalog_cache(self):
+        """Reset the module-level catalog cache around each test."""
+        llm_module._catalog_cache = None
+        llm_module._model_output_limits = {}
+        yield
+        llm_module._catalog_cache = None
+        llm_module._model_output_limits = {}
+
+    @pytest.mark.asyncio
+    async def test_load_model_catalog_falls_back_on_unicode_decode_error(self):
+        """Corrupted catalog body must not raise — fall back to an empty dict."""
+        response = CorruptJsonResponse(200)
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            catalog = await llm_module._load_model_catalog()
+
+        assert catalog == {}
+
+    @pytest.mark.asyncio
+    async def test_fetch_ollama_models_falls_back_on_unicode_decode_error(self):
+        """Corrupted Ollama response must not raise — fall back to an empty list."""
+        response = CorruptJsonResponse(200)
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            models = await fetch_ollama_models("http://localhost:11434/v1")
+
+        assert models == []
