@@ -169,6 +169,17 @@ class ModelMetadataProvider(ABC):
         """Published model count for the user; None when unsupported."""
         return None
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch raw stored file info via CivitAI's model-versions/mini endpoint.
+
+        Only the CivitAI provider implements this (#1100); other providers
+        already serve raw file names (CivArchive) or cannot resolve this
+        lookup (SQLite), so the default is None.
+        """
+        return None
+
 class CivitaiModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses Civitai API for metadata"""
     
@@ -202,6 +213,11 @@ class CivitaiModelMetadataProvider(ModelMetadataProvider):
 
     async def get_creator_model_count(self, username: str) -> Optional[int]:
         return await self.client.get_creator_model_count(username)
+
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        return await self.client.get_version_file_mini(version_id, file_id)
 
 class CivArchiveModelMetadataProvider(ModelMetadataProvider):
     """Provider that uses CivArchive API for metadata"""
@@ -700,6 +716,37 @@ class FallbackMetadataProvider(ModelMetadataProvider):
                 continue
         return None
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        rate_limited = False
+        for provider, label in self._iter_providers():
+            if rate_limited and label not in _LOCAL_PROVIDER_LABELS:
+                continue
+            try:
+                result = await self._call_with_rate_limit(
+                    label,
+                    provider.get_version_file_mini,
+                    version_id,
+                    file_id,
+                )
+                if result:
+                    return result
+            except RateLimitError as exc:
+                rate_limited = True
+                logger.warning(
+                    "Provider %s is rate-limited (retry_after=%.0fs); not failing over to other network providers",
+                    label,
+                    exc.retry_after or 0,
+                )
+                continue
+            except Exception as e:
+                logger.debug(
+                    "Provider %s failed for get_version_file_mini: %s", label, e
+                )
+                continue
+        return None
+
     def _iter_providers(self):
         return zip(self.providers, self._provider_labels)
 
@@ -790,6 +837,16 @@ class RateLimitRetryingProvider(ModelMetadataProvider):
 
     async def get_creator_model_count(self, username: str) -> Optional[int]:
         return await self._provider.get_creator_model_count(username)
+
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        return await self._rate_limit_helper.run(
+            self._label,
+            self._provider.get_version_file_mini,
+            version_id,
+            file_id,
+        )
 
 class ModelMetadataProviderManager:
     """Manager for selecting and using model metadata providers"""

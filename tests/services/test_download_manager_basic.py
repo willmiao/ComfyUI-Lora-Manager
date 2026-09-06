@@ -2098,3 +2098,174 @@ async def test_discard_cleared_downloads_stops_tracking_and_preserves_files(
     # Partial files are preserved for a future resume from disk.
     assert save_path.exists()
     assert control_path.exists()
+
+
+@pytest.mark.asyncio
+async def test_download_uses_raw_file_name_from_mini_endpoint(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """#1100: when the REST name is rewritten ("{model}_{version}"), the raw
+    stored filename from the mini endpoint wins for the on-disk name."""
+    manager = DownloadManager()
+    get_settings_manager().settings["default_unet_root"] = str(tmp_path / "unet")
+    metadata_provider.payload = {
+        "id": 3284136,
+        "model": {"type": "Checkpoint", "tags": ["realistic"]},
+        "baseModel": "ZImageTurbo",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 3168412,
+                "type": "Model",
+                "primary": True,
+                "name": "cyberrealisticZImage_v80.safetensors",
+                "downloadUrl": "https://civitai.com/api/download/models/3284136?fileId=3168412",
+            }
+        ],
+    }
+    metadata_provider.get_version_file_mini = AsyncMock(
+        return_value={"fileName": "CyberRealistic_zit_v8.0_bf16.safetensors"}
+    )
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["download_urls"] = kwargs["download_urls"]
+        captured["file_path"] = kwargs["metadata"].file_path
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=3284136,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True, result
+    metadata_provider.get_version_file_mini.assert_awaited_once_with(3284136, 3168412)
+    assert captured["file_path"].endswith("CyberRealistic_zit_v8.0_bf16.safetensors")
+    # The file's own pinned downloadUrl is untouched.
+    assert captured["download_urls"] == [
+        "https://civitai.com/api/download/models/3284136?fileId=3168412"
+    ]
+
+
+@pytest.mark.asyncio
+async def test_download_falls_back_to_rest_name_when_mini_fails(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """A failed/absent mini lookup must keep the previous behavior."""
+    manager = DownloadManager()
+    metadata_provider.payload = {
+        "id": 42,
+        "model": {"type": "Checkpoint", "tags": ["fantasy"]},
+        "baseModel": "BaseModel",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 1001,
+                "type": "Model",
+                "primary": True,
+                "name": "rewritten_v10.safetensors",
+                "downloadUrl": "https://example.invalid/file.safetensors",
+            }
+        ],
+    }
+    metadata_provider.get_version_file_mini = AsyncMock(return_value=None)
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["file_path"] = kwargs["metadata"].file_path
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True
+    assert captured["file_path"].endswith("rewritten_v10.safetensors")
+
+
+@pytest.mark.asyncio
+async def test_download_skips_mini_lookup_for_civarchive_source(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """CivArchive already serves raw stored names — no mini call."""
+    manager = DownloadManager()
+    mini_mock = AsyncMock(return_value={"fileName": "should_not_be_used.safetensors"})
+    metadata_provider.get_version_file_mini = mini_mock
+
+    monkeypatch.setattr(
+        download_manager,
+        "get_metadata_provider",
+        AsyncMock(return_value=metadata_provider),
+    )
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["file_path"] = kwargs["metadata"].file_path
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=99,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source="civarchive",
+    )
+
+    assert result["success"] is True
+    mini_mock.assert_not_called()
+    assert captured["file_path"].endswith("file.safetensors")
+
+
+@pytest.mark.asyncio
+async def test_fetch_raw_file_name_edge_cases():
+    """_fetch_raw_file_name never raises and strips path components."""
+    manager = DownloadManager()
+
+    provider = SimpleNamespace()
+
+    # Missing version id / file id short-circuit before any provider call.
+    provider.get_version_file_mini = AsyncMock()
+    assert await manager._fetch_raw_file_name(provider, None, 1) is None
+    assert await manager._fetch_raw_file_name(provider, 1, None) is None
+    provider.get_version_file_mini.assert_not_called()
+
+    # Provider without the method (older mocks / non-CivitAI providers).
+    assert await manager._fetch_raw_file_name(object(), 1, 2) is None
+
+    # Non-dict payload, empty fileName.
+    provider.get_version_file_mini = AsyncMock(return_value="oops")
+    assert await manager._fetch_raw_file_name(provider, 1, 2) is None
+    provider.get_version_file_mini = AsyncMock(return_value={"fileName": "  "})
+    assert await manager._fetch_raw_file_name(provider, 1, 2) is None
+
+    # Path components are stripped defensively.
+    provider.get_version_file_mini = AsyncMock(
+        return_value={"fileName": "../evil/model.safetensors"}
+    )
+    assert await manager._fetch_raw_file_name(provider, 1, 2) == "model.safetensors"
+
+    # Provider exceptions degrade to None.
+    provider.get_version_file_mini = AsyncMock(side_effect=RuntimeError("boom"))
+    assert await manager._fetch_raw_file_name(provider, 1, 2) is None

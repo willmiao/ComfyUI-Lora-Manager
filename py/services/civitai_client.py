@@ -505,6 +505,50 @@ class CivitaiClient:
         logger.warning(f"Failed to fetch version by id {version_id}")
         return None
 
+    async def get_version_file_mini(
+        self, version_id: int, file_id: int
+    ) -> Optional[Dict[str, Any]]:
+        """Fetch raw stored file info via the model-versions/mini endpoint.
+
+        The public REST API rewrites ``files[].name`` to
+        ``"{model}_{version}"`` for non-LoRA model types, so every
+        precision variant of a multi-file version shares one name (#1100).
+        The mini endpoint returns the raw ``ModelFile.name`` in
+        ``fileName``. ``file_id`` is mandatory: without it mini picks a
+        file via its own primary-file logic, which can disagree with the
+        REST ``primary`` flag.
+
+        Returns the mini payload dict on success, None on any failure.
+        """
+        try:
+            success, data = await self._make_request(
+                "GET",
+                f"{self.base_url}/model-versions/mini/{version_id}",
+                params={"modelFileId": file_id},
+                use_auth=True,
+            )
+            if success and isinstance(data, dict):
+                return data
+            if is_expected_offline_error(data):
+                return None
+            logger.debug(
+                "Mini endpoint lookup failed for version %s file %s: %s",
+                version_id,
+                file_id,
+                data,
+            )
+            return None
+        except RateLimitError:
+            raise
+        except Exception as exc:
+            logger.debug(
+                "Error fetching mini info for version %s file %s: %s",
+                version_id,
+                file_id,
+                exc,
+            )
+            return None
+
     async def _fetch_version_by_hash(self, model_hash: Optional[str]) -> Optional[Dict[str, Any]]:
         if not model_hash:
             return None

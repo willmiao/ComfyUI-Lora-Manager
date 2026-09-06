@@ -35,6 +35,7 @@ from .service_registry import ServiceRegistry
 from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider, get_metadata_provider
 from .downloader import get_downloader, DownloadProgress, DownloadStreamControl
+from .errors import RateLimitError
 from .aria2_downloader import Aria2Error, get_aria2_downloader
 from .aria2_transfer_state import Aria2TransferStateStore
 from .download_queue_service import DownloadQueueService
@@ -928,6 +929,42 @@ class DownloadManager:
                     download_urls.append(normalized_url)
 
         return download_urls
+
+    async def _fetch_raw_file_name(
+        self,
+        metadata_provider,
+        version_id: Optional[int],
+        file_id: Any,
+    ) -> Optional[str]:
+        """Best-effort lookup of the raw stored filename via the CivitAI
+        model-versions/mini endpoint (#1100). Returns None on any failure so
+        the caller can fall back to the (possibly rewritten) REST name."""
+        if version_id is None or file_id is None:
+            return None
+        fetch = getattr(metadata_provider, "get_version_file_mini", None)
+        if fetch is None:
+            return None
+        try:
+            mini_info = await fetch(int(version_id), int(file_id))
+        except (TypeError, ValueError):
+            return None
+        except RateLimitError:
+            raise
+        except Exception as exc:
+            logger.debug(
+                "Mini endpoint lookup failed for version %s file %s: %s",
+                version_id,
+                file_id,
+                exc,
+            )
+            return None
+        if not isinstance(mini_info, dict):
+            return None
+        raw_name = mini_info.get("fileName")
+        if not isinstance(raw_name, str) or not raw_name.strip():
+            return None
+        # Defensive: never let a path component slip into the filename.
+        return os.path.basename(raw_name.strip()) or None
 
     def _build_metadata_for_resume(
         self,
@@ -1857,6 +1894,24 @@ class DownloadManager:
 
             if not download_urls:
                 return {"success": False, "error": "No mirror URL found"}
+
+            # The public REST API rewrites files[].name to
+            # "{model}_{version}" for non-LoRA model types, so every
+            # precision variant of a multi-file version shares one name and
+            # lands on disk with a random short-hash suffix. The mini
+            # endpoint returns the raw stored filename (#1100). CivArchive
+            # already serves raw names.
+            if source != "civarchive":
+                raw_file_name = await self._fetch_raw_file_name(
+                    metadata_provider, resolved_version_id, file_info.get("id")
+                )
+                if raw_file_name and raw_file_name != file_info.get("name"):
+                    logger.info(
+                        "[download] Using raw stored filename '%s' instead of REST name '%s'",
+                        raw_file_name,
+                        file_info.get("name"),
+                    )
+                    file_info = {**file_info, "name": raw_file_name}
 
             # 3. Prepare download
             file_name = file_info.get("name", "")
