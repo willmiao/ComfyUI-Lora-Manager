@@ -170,6 +170,10 @@ The system runs in two modes:
 - Route registrars organize endpoints by domain: `ModelRouteRegistrar`, `RecipeRouteRegistrar`, etc.
 - Request handlers in `py/routes/handlers/` implement route logic
 - All routes use aiohttp, return `web.json_response` or `web.Response`
+- Endpoints consumed by the companion browser extension (lm-civitai-extension)
+  MUST also accept `GET` with query-string params: the extension is GET-only by
+  convention (see its AGENTS.md), even for state-changing operations such as
+  `GET /api/lm/recipe/{recipe_id}/reimport`
 
 ### Recipe System
 

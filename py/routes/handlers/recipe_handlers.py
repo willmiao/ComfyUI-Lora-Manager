@@ -1020,12 +1020,55 @@ class RecipeManagementHandler:
                     persisted_source_path=persisted_source_path,
                 )
 
-            async with self._import_semaphore:
-                import_response = await self._do_import_from_url(
-                    source_path,
-                    recipe_scanner,
-                    target_dir=old_folder,
-                )
+            # Optional caller-supplied metadata payload (companion browser
+            # extension re-import). Only honored for CivitAI image page
+            # sources; everything else uses the native URL import below.
+            params = request.rel_url.query
+            payload_image_url = params.get("image_url")
+            payload_name = params.get("name")
+            payload_resources = params.get("resources")
+            has_import_payload = bool(
+                payload_image_url and payload_name and payload_resources
+            )
+
+            import_response: web.Response | None = None
+            if has_import_payload and image_id:
+                try:
+                    async with self._import_semaphore:
+                        import_response = await self._import_remote_recipe_impl(
+                            image_url=payload_image_url,
+                            name=payload_name,
+                            resources_raw=payload_resources,
+                            gen_params_raw=params.get("gen_params"),
+                            tags_raw=params.get("tags"),
+                            base_model=params.get("base_model", "") or "",
+                            source_path=source_path,
+                            target_dir=old_folder,
+                        )
+                except RecipeValidationError as exc:
+                    # Malformed resources/gen_params JSON: treat as "no
+                    # payload" and use the legacy URL re-import.
+                    self._logger.warning(
+                        "Ignoring malformed re-import payload for recipe %s "
+                        "(%s); falling back to source URL re-import",
+                        recipe_id,
+                        exc,
+                    )
+                except Exception as exc:
+                    self._logger.warning(
+                        "Payload-based re-import failed for recipe %s: %s; "
+                        "falling back to source URL re-import",
+                        recipe_id,
+                        exc,
+                    )
+
+            if import_response is None:
+                async with self._import_semaphore:
+                    import_response = await self._do_import_from_url(
+                        source_path,
+                        recipe_scanner,
+                        target_dir=old_folder,
+                    )
 
             await self._persistence_service.delete_recipe(
                 recipe_scanner=recipe_scanner, recipe_id=recipe_id
@@ -1052,14 +1095,19 @@ class RecipeManagementHandler:
                         exc,
                     )
 
-            return web.json_response(
-                {
-                    "success": True,
-                    "old_recipe_id": recipe_id,
-                    "recipe_id": new_recipe_id,
-                    "source_path": source_path,
-                }
+            response_body: Dict[str, Any] = {
+                "success": True,
+                "old_recipe_id": recipe_id,
+                "recipe_id": new_recipe_id,
+                "source_path": source_path,
+            }
+            loras_count = await self._count_recipe_loras(
+                recipe_scanner, new_recipe_id
             )
+            if loras_count is not None:
+                response_body["loras_count"] = loras_count
+
+            return web.json_response(response_body)
         except RecipeNotFoundError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=404)
         except RecipeValidationError as exc:
@@ -1092,31 +1140,14 @@ class RecipeManagementHandler:
             if not resources_raw:
                 raise RecipeValidationError("Missing required field: resources")
 
-            checkpoint_entry, lora_entries = self._parse_resources_payload(
-                resources_raw
-            )
-            gen_params_request = self._parse_gen_params(params.get("gen_params"))
-
-            self._logger.info(
-                "Remote recipe import received: url=%s, lora_count=%d",
-                image_url,
-                len(lora_entries),
-            )
-            self._logger.debug(
-                "  gen_params_keys=%s, checkpoint_keys=%s",
-                sorted(gen_params_request.keys()) if gen_params_request else [],
-                sorted(checkpoint_entry.keys()) if isinstance(checkpoint_entry, dict) else [],
-            )
-
             # Throttle concurrent imports to avoid starving ComfyUI's event loop
             async with self._import_semaphore:
-                return await self._do_import_remote_recipe(
+                return await self._import_remote_recipe_impl(
                     image_url=image_url,
                     name=name,
-                    lora_entries=lora_entries,
-                    checkpoint_entry=checkpoint_entry,
-                    gen_params_request=gen_params_request,
-                    tags=self._parse_tags(params.get("tags")),
+                    resources_raw=resources_raw,
+                    gen_params_raw=params.get("gen_params"),
+                    tags_raw=params.get("tags"),
                     base_model=params.get("base_model", "") or "",
                     source_path=params.get("source_path") or image_url,
                 )
@@ -1130,6 +1161,52 @@ class RecipeManagementHandler:
             )
             return web.json_response({"error": str(exc)}, status=500)
 
+    async def _import_remote_recipe_impl(
+        self,
+        *,
+        image_url: str,
+        name: str,
+        resources_raw: str,
+        gen_params_raw: Optional[str],
+        tags_raw: Optional[str],
+        base_model: str,
+        source_path: str,
+        target_dir: str | None = None,
+    ) -> web.Response:
+        """Payload-based remote import engine shared by import-remote and the
+        extension-driven re-import path.
+
+        Parses the caller-supplied payloads and delegates to
+        :meth:`_do_import_remote_recipe`. Raises ``RecipeValidationError`` on
+        malformed payloads so callers can decide how to handle them (the
+        re-import path falls back to the legacy URL import).
+        """
+        checkpoint_entry, lora_entries = self._parse_resources_payload(resources_raw)
+        gen_params_request = self._parse_gen_params(gen_params_raw)
+
+        self._logger.info(
+            "Remote recipe import received: url=%s, lora_count=%d",
+            image_url,
+            len(lora_entries),
+        )
+        self._logger.debug(
+            "  gen_params_keys=%s, checkpoint_keys=%s",
+            sorted(gen_params_request.keys()) if gen_params_request else [],
+            sorted(checkpoint_entry.keys()) if isinstance(checkpoint_entry, dict) else [],
+        )
+
+        return await self._do_import_remote_recipe(
+            image_url=image_url,
+            name=name,
+            lora_entries=lora_entries,
+            checkpoint_entry=checkpoint_entry,
+            gen_params_request=gen_params_request,
+            tags=self._parse_tags(tags_raw),
+            base_model=base_model,
+            source_path=source_path,
+            target_dir=target_dir,
+        )
+
     async def _do_import_remote_recipe(
         self,
         *,
@@ -1141,6 +1218,7 @@ class RecipeManagementHandler:
         tags: list[Any],
         base_model: str,
         source_path: str,
+        target_dir: str | None = None,
     ) -> web.Response:
         recipe_scanner = self._recipe_scanner_getter()
         if recipe_scanner is None:
@@ -1304,6 +1382,7 @@ class RecipeManagementHandler:
             tags=tags,
             metadata=metadata,
             extension=extension,
+            target_dir=target_dir,
         )
         return web.json_response(result.payload, status=result.status)
 
@@ -1767,6 +1846,25 @@ class RecipeManagementHandler:
         if not tag_text:
             return []
         return [tag.strip() for tag in tag_text.split(",") if tag.strip()]
+
+    async def _count_recipe_loras(
+        self, recipe_scanner: Any, recipe_id: Optional[str]
+    ) -> Optional[int]:
+        """Best-effort LoRA count for a freshly saved recipe (for the
+        re-import response). Returns None when the recipe cannot be read."""
+        if not recipe_id:
+            return None
+        try:
+            recipe = await recipe_scanner.get_recipe_by_id(recipe_id)
+        except Exception as exc:
+            self._logger.debug(
+                "Could not read new recipe %s for loras_count: %s",
+                recipe_id,
+                exc,
+            )
+            return None
+        loras = (recipe or {}).get("loras")
+        return len(loras) if isinstance(loras, list) else None
 
     def _parse_gen_params(self, payload: Optional[str]) -> Optional[Dict[str, Any]]:
         if payload is None:

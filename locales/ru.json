@@ -2229,6 +2229,7 @@
             "rematchSkipped": "Ни один из {total} выбранных рецептов не требует сопоставления",
             "rematchFailed": "Не удалось сопоставить выбранные рецепты: {message}",
             "reimporting": "Переимпорт рецепта из источника...",
+            "reimportingViaExtension": "Переимпорт рецепта {current}/{total} через расширение браузера...",
             "reimportSuccess": "Рецепт успешно переимпортирован",
             "reimportBulkComplete": "Переимпорт завершён: {completed} переимпортировано, {failed} ошибок (из {total})",
             "reimportBulkFailed": "Не удалось переимпортировать некоторые рецепты",

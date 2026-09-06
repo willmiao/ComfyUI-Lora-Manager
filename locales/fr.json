@@ -2229,6 +2229,7 @@
             "rematchSkipped": "Aucune des {total} Recipes sélectionnées ne nécessite de réassociation",
             "rematchFailed": "Échec de la réassociation des Recipes sélectionnées : {message}",
             "reimporting": "Ré-import de la Recipe depuis la source...",
+            "reimportingViaExtension": "Ré-import de la Recipe {current}/{total} via l’extension du navigateur...",
             "reimportSuccess": "Recette ré-importée avec succès",
             "reimportBulkComplete": "Ré-import terminé : {completed} ré-importé(s), {failed} échec(s) (sur {total})",
             "reimportBulkFailed": "Échec du ré-import de certaines Recipes",

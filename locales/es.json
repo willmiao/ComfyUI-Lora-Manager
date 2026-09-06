@@ -2229,6 +2229,7 @@
             "rematchSkipped": "Ninguna de las {total} recetas seleccionadas necesita reasociación",
             "rematchFailed": "Falló la reasociación de las recetas seleccionadas: {message}",
             "reimporting": "Reimportando receta desde origen...",
+            "reimportingViaExtension": "Reimportando receta {current}/{total} mediante la extensión del navegador...",
             "reimportSuccess": "Receta reimportada exitosamente",
             "reimportBulkComplete": "Reimportación completa: {completed} reimportadas, {failed} fallidas (de {total})",
             "reimportBulkFailed": "Error al reimportar algunas recetas",

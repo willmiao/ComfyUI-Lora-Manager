@@ -2341,3 +2341,147 @@ async def test_get_recipe_detail_includes_recipe_json_path(
         assert response.status == 200
         payload = await response.json()
         assert "recipe_json_path" not in payload
+
+
+async def test_reimport_with_extension_payload_uses_payload_path(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """A re-import carrying the companion extension's metadata payload must
+    use the payload-based import engine (caller-supplied LoRAs) instead of
+    the legacy CivitAI image URL import, and report loras_count."""
+    provider_calls: list[str | int] = []
+
+    class Provider:
+        async def get_model_version_info(self, model_version_id):
+            provider_calls.append(model_version_id)
+            return {}, None
+
+    async def fake_get_default_metadata_provider():
+        return Provider()
+
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        old_file = harness.tmp_dir / "recipes" / "sub" / "rec-ext.webp"
+        harness.scanner.recipes["rec-ext"] = {
+            "id": "rec-ext",
+            "title": "Old title",
+            "file_path": str(old_file),
+            "tags": ["tag1"],
+            "source_path": "https://civitai.com/images/12345",
+        }
+        harness.civitai.image_info["12345"] = {
+            "id": 12345,
+            "url": "https://image.civitai.com/x/y/original=true/pic.png",
+            "type": "image",
+        }
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "new-rec-ext"}, status=200
+        )
+        # The freshly saved recipe as the scanner would see it (for loras_count).
+        harness.scanner.recipes["new-rec-ext"] = {
+            "id": "new-rec-ext",
+            "loras": [{"file_name": "Painterly"}],
+        }
+
+        resources = [
+            {
+                "type": "lora",
+                "modelId": 20,
+                "modelVersionId": 44,
+                "modelName": "Painterly",
+                "modelVersionName": "v2",
+                "weight": 0.5,
+            },
+        ]
+        # The extension only issues GET requests (per its API convention).
+        response = await harness.client.get(
+            "/api/lm/recipe/rec-ext/reimport",
+            params={
+                "image_url": "https://civitai.com/images/12345",
+                "name": "Extension Recipe",
+                "resources": json.dumps(resources),
+                "gen_params": json.dumps({"prompt": "from extension"}),
+                "base_model": "Flux",
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["old_recipe_id"] == "rec-ext"
+        assert payload["recipe_id"] == "new-rec-ext"
+        assert payload["loras_count"] == 1
+
+        save_call = harness.persistence.save_calls[-1]
+        # Caller-supplied payload data wins: name, LoRAs, gen params.
+        assert save_call["name"] == "Extension Recipe"
+        assert save_call["metadata"]["loras"][0]["file_name"] == "Painterly"
+        assert save_call["metadata"]["loras"][0]["weight"] == 0.5
+        assert save_call["metadata"]["gen_params"]["prompt"] == "from extension"
+        # Reimport semantics: original source_path and folder are preserved.
+        assert save_call["metadata"]["source_path"] == "https://civitai.com/images/12345"
+        assert save_call["target_dir"] == str(harness.tmp_dir / "recipes" / "sub")
+        # The old recipe is deleted and user edits carried over.
+        assert harness.persistence.delete_calls == ["rec-ext"]
+        assert harness.persistence.update_calls[-1]["recipe_id"] == "new-rec-ext"
+        assert harness.persistence.update_calls[-1]["updates"]["title"] == "Old title"
+        assert harness.persistence.update_calls[-1]["updates"]["tags"] == ["tag1"]
+
+
+async def test_reimport_with_malformed_payload_falls_back_to_legacy(
+    monkeypatch, tmp_path: Path
+) -> None:
+    """Malformed resources JSON must be treated as "no payload": the legacy
+    source-URL import runs and the request still succeeds."""
+    async def fake_get_default_metadata_provider():
+        return SimpleNamespace(get_model_version_info=lambda id: ({}, None))
+
+    monkeypatch.setattr(
+        "py.recipes.enrichment.get_default_metadata_provider",
+        fake_get_default_metadata_provider,
+    )
+
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.recipes["rec-bad"] = {
+            "id": "rec-bad",
+            "title": "Broken payload",
+            "file_path": str(harness.tmp_dir / "recipes" / "rec-bad.webp"),
+            "tags": [],
+            "source_path": "https://civitai.com/images/12345",
+        }
+        harness.civitai.image_info["12345"] = {
+            "id": 12345,
+            "url": "https://image.civitai.com/x/y/original=true/pic.png",
+            "type": "image",
+        }
+        harness.persistence.save_result = SimpleNamespace(
+            payload={"success": True, "recipe_id": "legacy-new"}, status=200
+        )
+        harness.scanner.recipes["legacy-new"] = {"id": "legacy-new", "loras": []}
+
+        response = await harness.client.get(
+            "/api/lm/recipe/rec-bad/reimport",
+            params={
+                "image_url": "https://civitai.com/images/12345",
+                "name": "Ignored Name",
+                "resources": "{not valid json",
+            },
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["success"] is True
+        assert payload["recipe_id"] == "legacy-new"
+        assert payload["loras_count"] == 0
+
+        save_call = harness.persistence.save_calls[-1]
+        # Legacy URL path: the payload name is ignored and the title is
+        # derived from the (empty) metadata, and no caller LoRAs are used.
+        assert save_call["name"] == "Civitai Image 12345"
+        assert save_call["metadata"]["loras"] == []
+        assert save_call["metadata"]["source_path"] == "https://civitai.com/images/12345"
+        assert harness.persistence.delete_calls == ["rec-bad"]

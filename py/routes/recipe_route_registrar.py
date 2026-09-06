@@ -110,6 +110,11 @@ ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "POST", "/api/lm/recipe/{recipe_id}/reimport", "reimport_recipe"
     ),
+    # The companion browser extension only ever issues GET requests, so the
+    # payload-based re-import variant must also be reachable via GET.
+    RouteDefinition(
+        "GET", "/api/lm/recipe/{recipe_id}/reimport", "reimport_recipe"
+    ),
     RouteDefinition(
         "POST", "/api/lm/recipe/{recipe_id}/send-workflow", "send_recipe_workflow"
     ),

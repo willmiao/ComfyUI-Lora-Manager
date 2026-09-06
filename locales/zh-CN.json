@@ -2229,6 +2229,7 @@
             "rematchSkipped": "{total} 个所选配方均无需重新匹配",
             "rematchFailed": "重新匹配所选配方失败：{message}",
             "reimporting": "正在从源重新导入配方...",
+            "reimportingViaExtension": "正在通过浏览器扩展重新导入配方 {current}/{total}...",
             "reimportSuccess": "配方已从源重新导入成功",
             "reimportBulkComplete": "重新导入完成：{completed} 个已导入，{failed} 个失败（共 {total} 个）",
             "reimportBulkFailed": "重新导入某些配方失败",

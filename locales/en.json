@@ -2229,6 +2229,7 @@
       "rematchSkipped": "No rematch needed for any of the {total} selected recipes",
       "rematchFailed": "Failed to rematch selected recipes: {message}",
       "reimporting": "Re-importing recipe from source...",
+      "reimportingViaExtension": "Re-importing recipe {current}/{total} via browser extension...",
       "reimportSuccess": "Recipe re-imported successfully",
       "reimportBulkComplete": "Re-import complete: {completed} re-imported, {failed} failed (of {total})",
       "reimportBulkFailed": "Failed to re-import some recipes",

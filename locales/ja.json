@@ -2229,6 +2229,7 @@
             "rematchSkipped": "選択した {total} 件のレシピは再マッチングの必要がありませんでした",
             "rematchFailed": "選択したレシピの再マッチングに失敗しました：{message}",
             "reimporting": "ソースからレシピを再インポート中...",
+            "reimportingViaExtension": "ブラウザ拡張機能経由でレシピを再インポート中 ({current}/{total})...",
             "reimportSuccess": "レシピの再インポートが完了しました",
             "reimportBulkComplete": "再インポート完了：{completed} 件成功、{failed} 件失敗（合計 {total} 件）",
             "reimportBulkFailed": "一部のレシピの再インポートに失敗しました",

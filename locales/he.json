@@ -2229,6 +2229,7 @@
             "rematchSkipped": "אין צורך בהתאמה עבור {total} המתכונים שנבחרו",
             "rematchFailed": "ההתאמה מחדש של המתכונים שנבחרו נכשלה: {message}",
             "reimporting": "מייבא מתכון מחדש מהמקור...",
+            "reimportingViaExtension": "מייבא מתכון מחדש {current}/{total} דרך תוסף הדפדפן...",
             "reimportSuccess": "המתכון יובא מחדש בהצלחה",
             "reimportBulkComplete": "ייבוא מחדש הושלם: {completed} יובאו, {failed} נכשלו (מתוך {total})",
             "reimportBulkFailed": "ייבוא מחדש של חלק מהמתכונים נכשל",

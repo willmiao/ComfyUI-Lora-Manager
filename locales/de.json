@@ -2229,6 +2229,7 @@
             "rematchSkipped": "Keine Zuordnung für die {total} ausgewählten Rezepte erforderlich",
             "rematchFailed": "Zuordnung der ausgewählten Rezepte fehlgeschlagen: {message}",
             "reimporting": "Rezept wird aus Quelle neu importiert...",
+            "reimportingViaExtension": "Rezept {current}/{total} wird über die Browser-Erweiterung neu importiert...",
             "reimportSuccess": "Rezept erfolgreich neu importiert",
             "reimportBulkComplete": "Neuimport abgeschlossen: {completed} importiert, {failed} fehlgeschlagen (von {total})",
             "reimportBulkFailed": "Neuimport einiger Rezepte fehlgeschlagen",

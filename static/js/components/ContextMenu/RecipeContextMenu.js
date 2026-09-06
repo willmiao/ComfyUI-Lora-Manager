@@ -6,6 +6,7 @@ import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
 import { state } from '../../state/index.js';
 import { moveManager } from '../../managers/MoveManager.js';
+import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../../utils/extensionReimportBridge.js';
 
 export class RecipeContextMenu extends BaseContextMenu {
     constructor() {
@@ -355,6 +356,24 @@ export class RecipeContextMenu extends BaseContextMenu {
             return;
         }
 
+        // Recipes imported from a CivitAI image page can carry incomplete
+        // metadata (0 LoRAs); the companion browser extension can re-import
+        // them with the full page data. Fall back to the native path whenever
+        // the extension is absent, unlicensed, or the delegation fails.
+        const recipeItem = state.virtualScroller?.items?.find(item => item?.id === recipeId);
+        const civitaiImage = getCivitaiImageInfo(recipeItem?.source_path);
+        if (civitaiImage) {
+            try {
+                const probe = await probeExtension();
+                if (probe?.supported && probe?.licenseValid) {
+                    await this.reimportViaExtension(recipeId, civitaiImage, recipeItem?.title || '');
+                    return;
+                }
+            } catch (error) {
+                console.warn('Extension re-import unavailable, using native path:', error);
+            }
+        }
+
         state.loadingManager.showSimpleLoading('Re-importing recipe from source...');
 
         try {
@@ -375,6 +394,34 @@ export class RecipeContextMenu extends BaseContextMenu {
             console.error('Error reimporting recipe:', error);
             state.loadingManager.hide();
             showToast('recipes.contextMenu.reimport.failed', { message: error.message }, 'error');
+        }
+    }
+
+    // Re-import a single CivitAI-image recipe through the companion browser
+    // extension. Throws on delegation failure so the caller can fall back to
+    // the native path.
+    async reimportViaExtension(recipeId, civitaiImage, title) {
+        state.loadingManager.showSimpleLoading('Re-importing recipe via browser extension...');
+
+        try {
+            const { failed } = await delegateReimport([{
+                recipeId,
+                imageId: civitaiImage.imageId,
+                imageUrl: civitaiImage.imageUrl,
+                title,
+            }]);
+
+            state.loadingManager.hide();
+            if (failed > 0) {
+                showToast('recipes.contextMenu.reimport.failed', { message: 'Extension re-import failed' }, 'error');
+            } else {
+                showToast('toast.recipes.reimportSuccess', {}, 'success');
+            }
+            const { resetAndReload } = await import('../../api/recipeApi.js');
+            resetAndReload(false, { preserveScroll: false });
+        } catch (error) {
+            state.loadingManager.hide();
+            throw error;
         }
     }
 }
