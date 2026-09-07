@@ -100,7 +100,7 @@ def evaluate_model(
     flagged issues.
     """
     civitai = metadata.get("civitai") or {}
-    trained_words: List[str] = civitai.get("trainedWords") or metadata.get("trainedWords") or []
+    trained_words: List[str] = civitai.get("trainedWords") or []
     short_desc: str = civitai.get("description") or ""
     tags: List[str] = metadata.get("tags") or []
     notes: str = metadata.get("notes") or ""

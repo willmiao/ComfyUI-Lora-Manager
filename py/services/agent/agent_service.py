@@ -407,7 +407,6 @@ class AgentService:
             "base_model": metadata.get("base_model", ""),
             "tags": metadata.get("tags", []),
             "modelDescription": metadata.get("modelDescription", ""),
-            "trainedWords": metadata.get("trainedWords", []),
             "sha256": (metadata.get("sha256") or "")[:16] + "..." if metadata.get("sha256") else "",
             "size": metadata.get("size", 0),
         }

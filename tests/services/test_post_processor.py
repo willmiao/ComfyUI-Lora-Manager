@@ -164,7 +164,7 @@ class TestEnrichHfMetadata:
                 skill_name="enrich_hf_metadata",
                 model_path="/p.safetensors",
                 llm_output=llm,
-                metadata={"trainedWords": []},
+                metadata={},
             )
         applied = mock_apply.call_args[0][1]
         assert applied["civitai"]["trainedWords"] == ["trigger1", "trigger2"]

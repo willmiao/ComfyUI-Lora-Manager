@@ -77,9 +77,6 @@ class BaseModelMetadata:
     last_checked_at: float = 0  # Last checked timestamp
     hash_status: str = "completed"  # Hash calculation status: pending | calculating | completed | failed
     autov3: Optional[str] = None  # CivitAI AutoV3 hash (12-char lowercase hex); "" = checked but unavailable, None = not checked
-    trainedWords: List[str] = field(
-        default_factory=list
-    )  # Trigger words / activation prompts (source-agnostic)
     _unknown_fields: Dict[str, Any] = field(
         default_factory=dict, repr=False, compare=False
     )  # Store unknown fields
@@ -91,9 +88,6 @@ class BaseModelMetadata:
 
         if self.tags is None:
             self.tags = []
-
-        if self.trainedWords is None:
-            self.trainedWords = []
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "BaseModelMetadata":
