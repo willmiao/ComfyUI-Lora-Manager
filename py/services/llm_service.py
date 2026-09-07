@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from typing import Any, Dict, List, Optional
 
 import aiohttp
@@ -31,6 +32,16 @@ _catalog_cache: Optional[Dict[str, List[str]]] = None
 # Per-model max output token limits parsed from the catalog.
 # ``{provider_id: {model_id: max_output_tokens}}``.
 _model_output_limits: Dict[str, Dict[str, int]] = {}
+
+# Monotonic timestamp of the last failed catalog fetch (None = no failure
+# yet).  Failed fetches are negatively cached: further calls return the
+# empty fallback without hitting the network until the cooldown elapses,
+# so users on broken networks don't stall on every settings-modal open.
+_catalog_last_failure: Optional[float] = None
+_CATALOG_FAILURE_COOLDOWN = 600.0  # seconds
+
+# Serializes catalog fetches so concurrent callers don't duplicate requests.
+_catalog_lock = asyncio.Lock()
 
 _CATALOG_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
@@ -54,61 +65,85 @@ async def _load_model_catalog() -> Dict[str, List[str]]:
     value has a ``models`` sub-dict keyed by model ID.  The result is cached
     in memory after the first successful fetch.
     Subsequent calls return the cached data immediately.
+
+    Failed fetches are negatively cached: further calls return an empty
+    dict without hitting the network until ``_CATALOG_FAILURE_COOLDOWN``
+    has elapsed, so a broken network does not stall every settings-modal
+    open.  Concurrent callers are serialized behind :data:`_catalog_lock`
+    so only one request is ever in flight.
     """
-    global _catalog_cache, _model_output_limits
+    global _catalog_cache, _model_output_limits, _catalog_last_failure
     if _catalog_cache is not None:
         return _catalog_cache
 
-    try:
-        async with aiohttp.ClientSession(timeout=_CATALOG_TIMEOUT) as session:
-            async with session.get(_MODEL_CATALOG_URL, headers=_NO_BROTLI_HEADERS) as resp:
-                if resp.status != 200:
-                    logger.warning("Model catalog returned HTTP %s", resp.status)
-                    return _catalog_cache or {}
-                data = await resp.json()
-    except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
-        logger.warning("Failed to fetch model catalog: %s", exc)
-        return _catalog_cache or {}
+    async with _catalog_lock:
+        # Re-check under the lock: another caller may have fetched (or
+        # failed) while we were waiting.
+        if _catalog_cache is not None:
+            return _catalog_cache
+        if (
+            _catalog_last_failure is not None
+            and time.monotonic() - _catalog_last_failure < _CATALOG_FAILURE_COOLDOWN
+        ):
+            logger.debug(
+                "Skipping model catalog fetch: last attempt failed %.0fs ago",
+                time.monotonic() - _catalog_last_failure,
+            )
+            return {}
 
-    if not isinstance(data, dict):
-        logger.warning("Model catalog is not a dict, got %s", type(data).__name__)
-        return _catalog_cache or {}
+        try:
+            async with aiohttp.ClientSession(timeout=_CATALOG_TIMEOUT) as session:
+                async with session.get(_MODEL_CATALOG_URL, headers=_NO_BROTLI_HEADERS) as resp:
+                    if resp.status != 200:
+                        logger.warning("Model catalog returned HTTP %s", resp.status)
+                        _catalog_last_failure = time.monotonic()
+                        return {}
+                    data = await resp.json()
+        except (aiohttp.ClientError, asyncio.TimeoutError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+            logger.warning("Failed to fetch model catalog: %s", exc)
+            _catalog_last_failure = time.monotonic()
+            return {}
 
-    result: Dict[str, List[str]] = {}
-    output_limits: Dict[str, Dict[str, int]] = {}
-    for provider_id, provider_info in data.items():
-        if not isinstance(provider_info, dict):
-            continue
-        models_dict = provider_info.get("models")
-        if not isinstance(models_dict, dict):
-            continue
-        model_ids: List[str] = []
-        provider_limits: Dict[str, int] = {}
-        for mid, model_info in models_dict.items():
-            if not isinstance(mid, str):
+        if not isinstance(data, dict):
+            logger.warning("Model catalog is not a dict, got %s", type(data).__name__)
+            _catalog_last_failure = time.monotonic()
+            return {}
+
+        result: Dict[str, List[str]] = {}
+        output_limits: Dict[str, Dict[str, int]] = {}
+        for provider_id, provider_info in data.items():
+            if not isinstance(provider_info, dict):
                 continue
-            model_ids.append(mid)
-            if isinstance(model_info, dict):
-                limit = model_info.get("limit")
-                if isinstance(limit, dict):
-                    output = limit.get("output")
-                    if isinstance(output, (int, float)) and output > 0:
-                        provider_limits[mid] = int(output)
-        if model_ids:
-            result[provider_id] = model_ids
-        if provider_limits:
-            output_limits[provider_id] = provider_limits
+            models_dict = provider_info.get("models")
+            if not isinstance(models_dict, dict):
+                continue
+            model_ids: List[str] = []
+            provider_limits: Dict[str, int] = {}
+            for mid, model_info in models_dict.items():
+                if not isinstance(mid, str):
+                    continue
+                model_ids.append(mid)
+                if isinstance(model_info, dict):
+                    limit = model_info.get("limit")
+                    if isinstance(limit, dict):
+                        output = limit.get("output")
+                        if isinstance(output, (int, float)) and output > 0:
+                            provider_limits[mid] = int(output)
+            if model_ids:
+                result[provider_id] = model_ids
+            if provider_limits:
+                output_limits[provider_id] = provider_limits
 
-    _catalog_cache = result
-    _model_output_limits = output_limits
-    logger.debug(
-        "Loaded model catalog: %d providers, %d total models "
-        "(%d providers have output limits)",
-        len(result),
-        sum(len(m) for m in result.values()),
-        len(output_limits),
-    )
-    return result
+        _catalog_cache = result
+        _model_output_limits = output_limits
+        logger.debug(
+            "Loaded model catalog: %d providers, %d total models "
+            "(%d providers have output limits)",
+            len(result),
+            sum(len(m) for m in result.values()),
+            len(output_limits),
+        )
+        return result
 
 
 def _get_model_max_output(provider: str, model: str) -> Optional[int]:
