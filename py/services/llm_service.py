@@ -34,6 +34,14 @@ _model_output_limits: Dict[str, Dict[str, int]] = {}
 
 _CATALOG_TIMEOUT = aiohttp.ClientTimeout(total=30)
 
+# Cloudflare serves brotli when the client advertises it, and brotli is a
+# required dependency here — a corrupted br stream can crash the native
+# decoder with a Windows access violation (issue #1099).  Request gzip
+# instead; zlib decompression is not affected and corrupt gzip data only
+# raises ContentEncodingError (an aiohttp.ClientError subclass), which the
+# exception handlers below already catch.
+_NO_BROTLI_HEADERS = {"Accept-Encoding": "gzip, deflate"}
+
 
 async def _load_model_catalog() -> Dict[str, List[str]]:
     """Fetch and parse the model catalog.
@@ -53,7 +61,7 @@ async def _load_model_catalog() -> Dict[str, List[str]]:
 
     try:
         async with aiohttp.ClientSession(timeout=_CATALOG_TIMEOUT) as session:
-            async with session.get(_MODEL_CATALOG_URL) as resp:
+            async with session.get(_MODEL_CATALOG_URL, headers=_NO_BROTLI_HEADERS) as resp:
                 if resp.status != 200:
                     logger.warning("Model catalog returned HTTP %s", resp.status)
                     return _catalog_cache or {}
@@ -126,7 +134,7 @@ async def fetch_ollama_models(api_base: str) -> List[str]:
     url = f"{api_base.rstrip('/')}/models"
     try:
         async with aiohttp.ClientSession(timeout=_OLLAMA_API_TIMEOUT) as session:
-            async with session.get(url) as resp:
+            async with session.get(url, headers=_NO_BROTLI_HEADERS) as resp:
                 if resp.status != 200:
                     logger.debug("Ollama API returned HTTP %s from %s", resp.status, api_base)
                     return []

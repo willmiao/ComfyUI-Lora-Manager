@@ -322,8 +322,12 @@ class MockGetSession:
 
     def __init__(self, response):
         self._response = response
+        self.last_url = None
+        self.last_headers = None
 
-    def get(self, url):
+    def get(self, url, headers=None):
+        self.last_url = url
+        self.last_headers = headers
         return self._response
 
     async def __aenter__(self):
@@ -373,3 +377,27 @@ class TestModelCatalog:
             models = await fetch_ollama_models("http://localhost:11434/v1")
 
         assert models == []
+
+    @pytest.mark.asyncio
+    async def test_catalog_request_disables_brotli_encoding(self):
+        """The catalog request must not advertise br — a corrupt brotli stream
+        can crash the native decoder (Windows access violation, issue #1099)."""
+        response = MockResponse(200, json_data={})
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            await llm_module._load_model_catalog()
+
+        assert session.last_headers == {"Accept-Encoding": "gzip, deflate"}
+
+    @pytest.mark.asyncio
+    async def test_ollama_request_disables_brotli_encoding(self):
+        """The Ollama models request must not advertise br either."""
+        response = MockResponse(200, json_data={"data": [{"id": "llama3"}]})
+        session = MockGetSession(response)
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            models = await fetch_ollama_models("http://localhost:11434/v1")
+
+        assert models == ["llama3"]
+        assert session.last_headers == {"Accept-Encoding": "gzip, deflate"}
