@@ -227,8 +227,20 @@ function formatAutocompleteInsertion(text = '') {
     return getAutocompleteAppendCommaPreference() ? `${trimmed},` : `${trimmed} `;
 }
 
+// Matches a complete <lora:name:strength[:clip_strength]> tag. Kept
+// permissive on the strength fields (mirrors the backend parser) so tags
+// are still protected while the user is mid-edit.
+const LORA_TAG_PATTERN = /(<lora:[^:>]+:[^:>]+(?::[^:>]+)?>)/gi;
+
 function normalizeAutocompleteSegment(segment = '') {
-    return segment.replace(/\s+/g, ' ').trim();
+    // Collapse whitespace only outside <lora:...> tags: names inside the tags
+    // may legitimately contain repeated spaces (e.g. "test -  0021"), and
+    // collapsing them breaks file resolution at runtime.
+    return segment
+        .split(LORA_TAG_PATTERN)
+        .map((part, index) => (index % 2 === 1 ? part : part.replace(/\s+/g, ' ')))
+        .join('')
+        .trim();
 }
 
 export function formatAutocompleteTextOnBlur(text = '') {

@@ -40,6 +40,15 @@ describe("applyLoraValuesToText", () => {
 
     expect(result).toBe("<lora:Expanded:1.00:1.00>");
   });
+
+  it("preserves repeated spaces inside LoRA names", () => {
+    const original = "<lora:test -  0021:1.00>";
+    const result = applyLoraValuesToText(original, [
+      { name: "test -  0021", strength: 0.5 }
+    ]);
+
+    expect(result).toBe("<lora:test -  0021:0.50>");
+  });
 });
 
 describe("normalizeStrengthValue", () => {
@@ -73,6 +82,18 @@ describe("shouldIncludeClipStrength", () => {
 describe("cleanupLoraSyntax", () => {
   it("collapses whitespace and stray commas", () => {
     expect(cleanupLoraSyntax("  <lora:A:1.00>  , ," )).toBe("<lora:A:1.00>");
+  });
+
+  it("preserves repeated spaces inside LoRA names", () => {
+    expect(cleanupLoraSyntax("<lora:test -  0021:1.00>  , ,")).toBe(
+      "<lora:test -  0021:1.00>"
+    );
+  });
+
+  it("still normalizes whitespace between entries", () => {
+    expect(
+      cleanupLoraSyntax("  <lora:A:1.00>   <lora:test -  0021:0.50>  ")
+    ).toBe("<lora:A:1.00> <lora:test -  0021:0.50>");
   });
 });
 
