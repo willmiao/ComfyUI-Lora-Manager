@@ -44,6 +44,13 @@
     pointer-events: auto !important;
 }
 
+/* Keep the fixed-position sidebar anchored when highlighted, otherwise
+   .onboarding-target-highlight's position: relative would pull it into
+   normal flow and it would move away from the spotlight cutout */
+.folder-sidebar.onboarding-target-highlight {
+    position: fixed;
+}
+
 .onboarding-popup {
     position: absolute;
     background: var(--lora-surface);
