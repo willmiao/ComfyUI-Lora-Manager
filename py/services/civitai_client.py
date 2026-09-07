@@ -280,17 +280,23 @@ class CivitaiClient:
             version_entry = None
             model_versions = model_data.get("modelVersions") or []
             if model_versions:
-                # Prefer the newest version that has preview images, otherwise
-                # the first version.
+                # CivitAI returns versions newest-first.  When we fall back to a
+                # name-based match (e.g. Draw Things converted checkpoints whose
+                # SHA256 no longer matches the original), we cannot know which
+                # version the user actually has.  Picking the newest version
+                # would suppress ALL update notifications, because the stored
+                # version_id would equal the latest one on CivitAI.
+                #
+                # Instead, pick the OLDEST version so that every newer version
+                # shows up as an available update.  This is the conservative
+                # choice: it may show an update when none is needed, but it
+                # never hides one.  Preview images are a secondary concern and
+                # can be resolved by the UI from the model's other versions.
+                reversed_versions = [v for v in reversed(model_versions) if isinstance(v, dict)]
                 version_entry = next(
-                    (v for v in model_versions if isinstance(v, dict) and v.get("images")),
+                    (v for v in reversed_versions),
                     None,
                 )
-                if version_entry is None:
-                    version_entry = next(
-                        (v for v in model_versions if isinstance(v, dict)),
-                        None,
-                    )
 
             if version_entry is None:
                 return None, "Model has no versions"
