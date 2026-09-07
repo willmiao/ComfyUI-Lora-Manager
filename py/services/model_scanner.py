@@ -331,6 +331,9 @@ class ModelScanner:
 
         civitai_full = get_value('civitai')
         civitai_slim = self._slim_civitai_payload(civitai_full)
+        trained_words = get_value('trainedWords')
+        if not isinstance(trained_words, list):
+            trained_words = []
         usage_tips = get_value('usage_tips', '') or ''
         if not isinstance(usage_tips, str):
             usage_tips = str(usage_tips)
@@ -377,6 +380,9 @@ class ModelScanner:
             'db_checked': bool(get_value('db_checked', False)),
             'last_checked_at': float(get_value('last_checked_at', 0.0) or 0.0),
             'tags': tags_list,
+            # Local and Hugging Face models can declare activation words without
+            # a Civitai payload. Keep these independent of provider metadata.
+            'trainedWords': list(trained_words),
             'civitai': civitai_slim,
             'civitai_deleted': bool(get_value('civitai_deleted', False)),
             'skip_metadata_refresh': bool(get_value('skip_metadata_refresh', False)),

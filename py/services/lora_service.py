@@ -64,6 +64,7 @@ class LoraService(BaseModelService):
             "modified": model_data.get("modified", ""),
             "tags": model_data.get("tags", []),
             "from_civitai": model_data.get("from_civitai", True),
+            "trainedWords": model_data.get("trainedWords", []),
             "usage_count": model_data.get("usage_count", 0),
             "usage_tips": model_data.get("usage_tips", ""),
             "notes": model_data.get("notes", ""),
@@ -282,7 +283,7 @@ class LoraService(BaseModelService):
             file_name = lora.get("file_name", "")
             if file_name == lora_name or lora_name.endswith("/" + file_name) or lora_name.endswith("\\" + file_name):
                 civitai_data = lora.get("civitai") or {}
-                return civitai_data.get("trainedWords", [])
+                return lora.get("trainedWords") or civitai_data.get("trainedWords", [])
 
         return []
 

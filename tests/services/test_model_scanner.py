@@ -97,6 +97,23 @@ class MultiRootDummyScanner(DummyScanner):
         return list(self._roots)
 
 
+@pytest.mark.parametrize("as_metadata_object", [False, True])
+@pytest.mark.asyncio
+async def test_cache_entry_preserves_source_independent_trigger_words(tmp_path: Path, as_metadata_object: bool) -> None:
+    source = {
+        "file_name": "local", "model_name": "Local model", "file_path": str(tmp_path / "local.txt"),
+        "size": 1, "modified": 0.0, "sha256": "abc", "base_model": "Unknown", "preview_url": "",
+        "from_civitai": False, "trainedWords": ["local subject", "style"], "civitai": {},
+    }
+    metadata = BaseModelMetadata.from_dict(source) if as_metadata_object else source
+    scanner = DummyScanner(tmp_path)
+    entry = scanner._build_cache_entry(metadata)
+    assert entry["trainedWords"] == ["local subject", "style"]
+    assert not entry["civitai"]
+    entry["trainedWords"].append("cache-only change")
+    assert source["trainedWords"] == ["local subject", "style"]
+
+
 @pytest.fixture(autouse=True)
 def reset_model_scanner_singletons():
     ModelScanner._instances.clear()
@@ -837,6 +854,7 @@ def _make_cache_entry(**overrides) -> Dict[str, Any]:
         "db_checked": False,
         "last_checked_at": 0.0,
         "tags": ["alpha"],
+        "trainedWords": [],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "civitai_deleted": False,
         "skip_metadata_refresh": False,

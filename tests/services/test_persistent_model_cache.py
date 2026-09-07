@@ -1,9 +1,36 @@
 from pathlib import Path
 from typing import Any, Dict
+import sqlite3
 
 import pytest
 
 from py.services.persistent_model_cache import PersistentModelCache, DEFAULT_LICENSE_FLAGS
+
+
+def test_source_independent_trigger_words_survive_restart_and_migration(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv('LORA_MANAGER_DISABLE_PERSISTENT_CACHE', '0')
+    db_path = str(tmp_path / 'cache.sqlite')
+    store = PersistentModelCache(db_path=db_path)
+    path = (tmp_path / 'local.safetensors').as_posix()
+    item = {'file_path': path, 'trainedWords': ['local subject'], 'from_civitai': False, 'civitai': None}
+    store.save_cache('lora', [item], {}, [])
+    restored = PersistentModelCache(db_path=db_path).load_cache('lora').raw_data[0]
+    assert restored['trainedWords'] == ['local subject']
+    assert restored['civitai'] is None
+
+    # Provider words and local words must not overwrite or masquerade as one another.
+    item['civitai'] = {'id': 123, 'trainedWords': ['provider style']}
+    store.update_single_model('lora', item)
+    restored = PersistentModelCache(db_path=db_path).load_cache('lora').raw_data[0]
+    assert restored['trainedWords'] == ['local subject']
+    assert restored['civitai']['trainedWords'] == ['provider style']
+
+    # Simulate the previous schema: migration keeps existing rows/provider words.
+    with sqlite3.connect(db_path) as connection:
+        connection.execute('ALTER TABLE models DROP COLUMN model_trained_words')
+    restored = PersistentModelCache(db_path=db_path).load_cache('lora').raw_data[0]
+    assert restored['trainedWords'] == []
+    assert restored['civitai']['trainedWords'] == ['provider style']
 
 
 def test_persistent_cache_roundtrip(tmp_path: Path, monkeypatch) -> None:

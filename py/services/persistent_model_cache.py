@@ -52,6 +52,7 @@ class PersistentModelCache:
         "civitai_name",
         "civitai_creator_username",
         "trained_words",
+        "model_trained_words",
         "license_flags",
         "civitai_deleted",
         "skip_metadata_refresh",
@@ -170,6 +171,13 @@ class PersistentModelCache:
             if license_value is None:
                 license_value = DEFAULT_LICENSE_FLAGS
 
+            try:
+                model_trained_words = json.loads(row["model_trained_words"] or "[]")
+            except (json.JSONDecodeError, TypeError):
+                model_trained_words = []
+            if not isinstance(model_trained_words, list):
+                model_trained_words = []
+
             item = {
                 "file_path": file_path,
                 "file_name": row["file_name"] or "",
@@ -190,6 +198,7 @@ class PersistentModelCache:
                 "db_checked": bool(row["db_checked"]),
                 "last_checked_at": row["last_checked_at"] or 0.0,
                 "tags": tags.get(file_path, []),
+                "trainedWords": model_trained_words,
                 "civitai": civitai,
                 "civitai_deleted": bool(row["civitai_deleted"]),
                 "skip_metadata_refresh": bool(row["skip_metadata_refresh"]),
@@ -519,6 +528,7 @@ class PersistentModelCache:
                             civitai_name TEXT,
                             civitai_creator_username TEXT,
                             trained_words TEXT,
+                            model_trained_words TEXT DEFAULT '[]',
                             civitai_deleted INTEGER,
                             exclude INTEGER,
                             db_checked INTEGER,
@@ -573,6 +583,7 @@ class PersistentModelCache:
 
         required_columns = {
             "metadata_source": "TEXT",
+            "model_trained_words": "TEXT DEFAULT '[]'",
             "civitai_creator_username": "TEXT",
             "civitai_model_type": "TEXT",
             "civitai_deleted": "INTEGER DEFAULT 0",
@@ -657,6 +668,7 @@ class PersistentModelCache:
             civitai.get("name"),
             creator_username,
             trained_words_json,
+            json.dumps(item.get("trainedWords") or []),
             int(license_flags),
             1 if item.get("civitai_deleted") else 0,
             1 if item.get("skip_metadata_refresh") else 0,
