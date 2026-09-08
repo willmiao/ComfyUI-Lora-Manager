@@ -1501,6 +1501,22 @@
             "note": "檔案將使用預設路徑模板下載。根據 LoRAs 的數量，這可能需要一些時間。",
             "downloadButton": "下載 {count} 個 LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "[TODO: Translate] Rematch Recipes",
+            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
+            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
+            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
+            "relaxedLabel": "[TODO: Translate] Relaxed matching",
+            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
+            "confirmButton": "[TODO: Translate] Rematch"
+        },
+        "rematchResults": {
+            "title": "[TODO: Translate] Rematch Results — Filename Matches",
+            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
+            "undo": "[TODO: Translate] Undo",
+            "undone": "[TODO: Translate] Undone",
+            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+        },
         "exampleAccess": {
             "title": "本機範例圖片",
             "message": "此模型未找到本機範例圖片。可選擇：",
@@ -2168,6 +2184,7 @@
             "createMissingData": "缺少建立配方所需的資料",
             "created": "配方建立成功",
             "noMissingLoras": "無缺少的 LoRA 可下載",
+            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
             "noPreviousRecipe": "沒有上一個配方",
             "noNextRecipe": "沒有下一個配方",
             "missingLorasInfoFailed": "取得缺少 LoRA 資訊失敗",

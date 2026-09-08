@@ -60,6 +60,9 @@ class StubRecipeScanner:
         self.rematch_all_calls: List[Any] = []
         self.rematch_by_id_calls: List[str] = []
         self.rematch_bulk_calls: List[List[str]] = []
+        self.rematch_all_relaxed: List[bool] = []
+        self.rematch_by_id_relaxed: List[bool] = []
+        self.rematch_bulk_relaxed: List[bool] = []
         self.rematch_results: Dict[str, Dict[str, Any]] = {}
 
         async def _noop_get_cached_data(force_refresh: bool = False) -> None:  # noqa: ARG001 - signature mirrors real scanner
@@ -131,7 +134,7 @@ class StubRecipeScanner:
     def reset_cancellation(self) -> None:
         self.reset_calls += 1
 
-    async def rematch_all_recipes(self, progress_callback=None):
+    async def rematch_all_recipes(self, progress_callback=None, *, relaxed: bool = False):
         """Run a canned rematch-all run, mirroring the real progress events."""
         if progress_callback:
             await progress_callback({"status": "started"})
@@ -142,6 +145,7 @@ class StubRecipeScanner:
                 {"status": "completed", "rematched": 1, "skipped": 0, "errors": 0, "total": 1}
             )
         self.rematch_all_calls.append(progress_callback)
+        self.rematch_all_relaxed.append(relaxed)
         return {
             "success": True,
             "status": "completed",
@@ -151,14 +155,20 @@ class StubRecipeScanner:
             "total": 1,
         }
 
-    async def rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+    async def rematch_recipe_by_id(
+        self, recipe_id: str, *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         self.rematch_by_id_calls.append(recipe_id)
+        self.rematch_by_id_relaxed.append(relaxed)
         if recipe_id not in self.rematch_results:
             raise RecipeNotFoundError(f"Recipe not found: {recipe_id}")
         return self.rematch_results[recipe_id]
 
-    async def rematch_recipes_bulk(self, recipe_ids: List[str]) -> Dict[str, Any]:
+    async def rematch_recipes_bulk(
+        self, recipe_ids: List[str], *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         self.rematch_bulk_calls.append(list(recipe_ids))
+        self.rematch_bulk_relaxed.append(relaxed)
         total = len(recipe_ids)
         rematched = 0
         skipped = 0
@@ -1990,6 +2000,82 @@ async def test_rematch_recipe_maps_not_found_to_404(monkeypatch, tmp_path: Path)
         assert response.status == 404
         assert payload["success"] is False
         assert harness.scanner.rematch_by_id_calls == ["ghost"]
+
+
+async def test_rematch_recipes_passes_relaxed_flag_from_body(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch", json={"relaxed": True}
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_relaxed == [True]
+
+
+async def test_rematch_recipes_relaxed_defaults_to_false(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/rematch")
+        payload = await response.json()
+        assert response.status == 200, payload
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_relaxed == [False]
+
+
+async def test_rematch_recipes_relaxed_query_param_fallback(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/rematch?relaxed=true")
+        payload = await response.json()
+        assert response.status == 200, payload
+        await asyncio.sleep(0.1)
+        assert harness.scanner.rematch_all_relaxed == [True]
+
+
+async def test_rematch_recipes_bulk_passes_relaxed_flag_from_body(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk",
+            json={"recipe_ids": ["r1"], "relaxed": True},
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert harness.scanner.rematch_bulk_relaxed == [True]
+
+
+async def test_rematch_recipes_bulk_relaxed_query_param_fallback(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post(
+            "/api/lm/recipes/rematch-bulk?relaxed=true",
+            json={"recipe_ids": ["r1"]},
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert harness.scanner.rematch_bulk_relaxed == [True]
+
+
+async def test_rematch_recipe_passes_relaxed_flag_from_query(
+    monkeypatch, tmp_path: Path
+) -> None:
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        harness.scanner.rematch_results = {
+            "abc123": {"success": True, "rematched": 1},
+        }
+        response = await harness.client.post(
+            "/api/lm/recipe/abc123/rematch?relaxed=true"
+        )
+        payload = await response.json()
+        assert response.status == 200, payload
+        assert harness.scanner.rematch_by_id_relaxed == [True]
 
 
 async def test_get_rematch_progress_404_when_no_progress(

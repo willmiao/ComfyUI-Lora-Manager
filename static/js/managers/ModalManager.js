@@ -347,6 +347,32 @@ export class ModalManager {
             });
         }
 
+        // Register rematchOptionsModal
+        const rematchOptionsModal = document.getElementById('rematchOptionsModal');
+        if (rematchOptionsModal) {
+            this.registerModal('rematchOptionsModal', {
+                element: rematchOptionsModal,
+                onClose: () => {
+                    this.getModal('rematchOptionsModal').element.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
+        // Register rematchResultsModal
+        const rematchResultsModal = document.getElementById('rematchResultsModal');
+        if (rematchResultsModal) {
+            this.registerModal('rematchResultsModal', {
+                element: rematchResultsModal,
+                onClose: () => {
+                    this.getModal('rematchResultsModal').element.style.display = 'none';
+                    document.body.classList.remove('modal-open');
+                },
+                closeOnOutsideClick: true
+            });
+        }
+
         document.addEventListener('keydown', this.boundHandleEscape);
         this.initialized = true;
     }

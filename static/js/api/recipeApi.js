@@ -677,7 +677,7 @@ export class RecipeSidebarApiClient {
         };
     }
 
-    async rematchBulkModels(filePaths) {
+    async rematchBulkModels(filePaths, options = {}) {
         if (!filePaths || filePaths.length === 0) {
             throw new Error('No file paths provided');
         }
@@ -690,14 +690,19 @@ export class RecipeSidebarApiClient {
             throw new Error('No recipe IDs could be derived from file paths');
         }
 
+        const body = { recipe_ids: recipeIds };
+        // Only sent when opted in — the strict body stays exactly
+        // {recipe_ids} for backward compatibility.
+        if (options.relaxed === true) {
+            body.relaxed = true;
+        }
+
         const response = await fetch(this.apiConfig.endpoints.rematchBulk, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                recipe_ids: recipeIds,
-            }),
+            body: JSON.stringify(body),
         });
 
         const result = await response.json();

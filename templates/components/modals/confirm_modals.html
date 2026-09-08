@@ -126,3 +126,53 @@
         </div>
     </div>
 </div>
+
+<!-- Recipe Rematch Options Modal -->
+<div id="rematchOptionsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>{{ t('modals.rematchOptions.title') }}</h2>
+            <span class="close" onclick="rematchModalManager.cancelOptions()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p class="confirmation-message" id="rematchOptionsMessage"></p>
+            <label class="rematch-option-card" for="rematchOptionsRelaxed">
+                <input type="checkbox" id="rematchOptionsRelaxed">
+                <span class="rematch-option-checkmark" aria-hidden="true"></span>
+                <span class="rematch-option-text">
+                    <span class="rematch-option-title">{{ t('modals.rematchOptions.relaxedLabel') }}</span>
+                    <span class="rematch-option-caveat">
+                        <i class="fas fa-info-circle" aria-hidden="true"></i>
+                        {{ t('modals.rematchOptions.relaxedDescription') }}
+                    </span>
+                </span>
+            </label>
+        </div>
+        <div class="modal-actions">
+            <button class="secondary-btn" onclick="rematchModalManager.cancelOptions()">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" id="rematchOptionsConfirmBtn" onclick="rematchModalManager.confirmOptions()">
+                <i class="fas fa-sync-alt"></i>
+                {{ t('modals.rematchOptions.confirmButton') }}
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Recipe Rematch L4 Results Modal -->
+<div id="rematchResultsModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>{{ t('modals.rematchResults.title') }}</h2>
+            <span class="close" onclick="modalManager.closeModal('rematchResultsModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p class="confirmation-message">{{ t('modals.rematchResults.message') }}</p>
+            <div class="rematch-results-preview">
+                <ul class="rematch-results-list" id="rematchResultsList"></ul>
+            </div>
+        </div>
+        <div class="modal-actions">
+            <button class="secondary-btn" onclick="modalManager.closeModal('rematchResultsModal')">{{ t('common.actions.close') }}</button>
+        </div>
+    </div>
+</div>

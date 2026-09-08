@@ -483,32 +483,43 @@ class RecipeScanner:
         suggestions.sort(key=lambda s: (-s["score"], s["file_name"].lower()))
         return suggestions[:limit]
 
-    def _is_rematch_candidate(self, entry: dict[str, Any]) -> bool:
+    def _is_rematch_candidate(
+        self, entry: dict[str, Any], relaxed: bool = False
+    ) -> bool:
         """Return True when a recipe entry is eligible for local re-matching.
 
         An entry counts as unresolved when its identity is known to be
         broken (``isDeleted`` or ``hashInvalid``) or when it is missing
         identity fields (``hash``/``file_name``). A healthy entry whose
-        hash is simply not present in the local library is NOT a candidate:
-        it may be a recipe imported without downloading the model yet, and
-        its CivitAI-valid hash must never be overwritten by the imprecise
-        filename fallback.
+        hash is simply not present in the local library is NOT a candidate
+        in the default strict mode: it may be a recipe imported without
+        downloading the model yet, and its CivitAI-valid hash must never be
+        overwritten by the imprecise filename fallback.
+
+        With ``relaxed=True`` any entry carrying an identifier is a
+        candidate, including healthy ones — the caller opted into trying to
+        reconnect "Not in Library" entries by file name. Entries without
+        any identifier are never candidates in either mode.
         """
         if not isinstance(entry, dict):
             return False
-        unresolved = (
-            entry.get("isDeleted")
-            or entry.get("hashInvalid")
-            or not entry.get("hash")
-            or not entry.get("file_name")
-        )
         has_identifier = (
             entry.get("hash")
             or entry.get("modelVersionId")
             or entry.get("id")
             or entry.get("file_name")
         )
-        return bool(unresolved and has_identifier)
+        if not has_identifier:
+            return False
+        if relaxed:
+            return True
+        unresolved = (
+            entry.get("isDeleted")
+            or entry.get("hashInvalid")
+            or not entry.get("hash")
+            or not entry.get("file_name")
+        )
+        return bool(unresolved)
 
     async def _build_rematch_autov3_cache(self) -> dict[str, dict[str, Any]]:
         """Build a version-cached map of computed AutoV3 hashes to local items.
@@ -809,7 +820,9 @@ class RecipeScanner:
         """Check if cancellation has been requested."""
         return self._cancel_requested
 
-    async def rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+    async def rematch_recipe_by_id(
+        self, recipe_id: str, *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         """Rematch a single recipe's deleted lora/checkpoint entries locally.
 
         Logs one INFO summary line for this run and delegates the per-recipe
@@ -817,12 +830,14 @@ class RecipeScanner:
 
         Args:
             recipe_id: ID of the recipe to rematch
+            relaxed: When True, healthy entries are rematch candidates too
+                (see ``_rematch_single_recipe``).
 
         Returns:
             Dict summary of the rematch result (see ``_rematch_recipe_by_id``).
             Raises RecipeNotFoundError when the recipe is missing.
         """
-        result = await self._rematch_recipe_by_id(recipe_id)
+        result = await self._rematch_recipe_by_id(recipe_id, relaxed=relaxed)
         recipe_name = (result.get("recipe") or {}).get("name") or recipe_id
         logger.info(
             "Recipe rematch %s (%s): success=%s, %d entries matched, %d unresolved, %d errors",
@@ -835,7 +850,9 @@ class RecipeScanner:
         )
         return result
 
-    async def _rematch_recipe_by_id(self, recipe_id: str) -> Dict[str, Any]:
+    async def _rematch_recipe_by_id(
+        self, recipe_id: str, *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         """Rematch a single recipe's deleted lora/checkpoint entries locally.
 
         Match snapshots (local hash cache, computed autov3 cache, filename
@@ -846,12 +863,16 @@ class RecipeScanner:
 
         Args:
             recipe_id: ID of the recipe to rematch
+            relaxed: When True, healthy entries are rematch candidates too
+                (see ``_rematch_single_recipe``).
 
         Returns:
             Dict summary of the rematch result with unified counters
             (matched_recipes, matched_entries, unresolved_recipes,
             unresolved_entries plus the legacy rematched/skipped/errors
-            fields) and a per-entry ``details`` report. The legacy ``skipped``
+            fields) and a per-entry ``details`` report plus a flattened
+            ``l4_matches`` list (filename-level matches for review/undo,
+            consistent with the bulk/global paths). The legacy ``skipped``
             field means "recipe not updated" and overlaps
             ``unresolved_recipes`` (a recipe with unmatched candidates counts
             as both). Raises RecipeNotFoundError when the recipe is missing.
@@ -872,7 +893,8 @@ class RecipeScanner:
 
             try:
                 rematched, _errors, details = await self._rematch_single_recipe(
-                    recipe, local_cache, autov3_cache, filename_cache
+                    recipe, local_cache, autov3_cache, filename_cache,
+                    relaxed=relaxed,
                 )
             except RecipePersistenceError as exc:
                 logger.error(
@@ -891,12 +913,16 @@ class RecipeScanner:
                     "unresolved_recipes": 0,
                     "unresolved_entries": 0,
                     "details": {"matched": [], "unresolved": []},
+                    "l4_matches": [],
                     "recipe": recipe,
                     "error": str(exc),
                 }
 
             unresolved_entries = len(details["unresolved"])
             unresolved_recipes = 1 if unresolved_entries > 0 else 0
+            # Flattened L4 matches for the results modal, consistent with
+            # the bulk/global paths.
+            l4_matches = self._collect_l4_matches(recipe_id, details)
 
             if rematched == 0:
                 return {
@@ -908,6 +934,7 @@ class RecipeScanner:
                     "unresolved_recipes": unresolved_recipes,
                     "unresolved_entries": unresolved_entries,
                     "details": details,
+                    "l4_matches": l4_matches,
                     "recipe": recipe,
                 }
 
@@ -921,6 +948,7 @@ class RecipeScanner:
                 "unresolved_recipes": unresolved_recipes,
                 "unresolved_entries": unresolved_entries,
                 "details": details,
+                "l4_matches": l4_matches,
                 "recipe": await self.get_recipe_by_id(recipe_id),
             }
 
@@ -930,6 +958,8 @@ class RecipeScanner:
         local_cache: dict[str, dict[str, Any]],
         autov3_cache: dict[str, dict[str, Any]],
         filename_cache: Optional[dict[str, list[dict[str, Any]]]] = None,
+        *,
+        relaxed: bool = False,
     ) -> Tuple[int, int, Dict[str, Any]]:
         """Rematch a single recipe's lora/checkpoint entries against local models.
 
@@ -945,16 +975,24 @@ class RecipeScanner:
             autov3_cache: L3 computed-autov3 cache snapshot
             filename_cache: L4 filename cache snapshot, or None to disable
                 the filename fallback
+            relaxed: When True, healthy entries ("Not in Library") are also
+                rematch candidates. Anti-churn rule: an entry that is a
+                candidate ONLY because of relaxed mode is skipped when its
+                hash already resolves in the L1 ``local_cache`` — it is
+                already correctly linked and rematching would only add noise
+                and a pointless snapshot.
 
         Returns:
             Tuple of (rematched_entries, errors, details). The errors element
             is always 0 on a normal return — a persistence failure RAISES
             ``RecipePersistenceError`` so callers can count it. ``details``
             carries the per-entry outcome:
-            ``{"matched": [{type, entry, file_name, match_level}],
+            ``{"matched": [{type, entry, file_name, match_level, lora_index?}],
               "unresolved": [{type, entry}]}`` where an unresolved entry is a
             rematch candidate that found no local match — an expected outcome
             (the model may simply not exist locally), not an error.
+            ``lora_index`` is only present for lora entries (the checkpoint
+            restore endpoint needs no index).
 
         Raises:
             RecipePersistenceError: when the recipe changed but
@@ -963,11 +1001,23 @@ class RecipeScanner:
         rematched = 0
         details: Dict[str, Any] = {"matched": [], "unresolved": []}
 
+        def is_actionable_candidate(entry: Dict[str, Any]) -> bool:
+            """Apply candidacy plus the relaxed-mode anti-churn rule."""
+            if self._is_rematch_candidate(entry):
+                return True
+            if not relaxed or not self._is_rematch_candidate(entry, relaxed=True):
+                return False
+            # Relaxed-only candidate: skip when the stored hash already
+            # resolves in the L1 local cache — the entry is already correctly
+            # linked and rematching would just add noise and a snapshot.
+            entry_hash = (entry.get("hash") or "").lower()
+            return local_cache.get(entry_hash) is None
+
         # Lora entries
         loras = recipe.get("loras", [])
         if isinstance(loras, list):
-            for entry in loras:
-                if not self._is_rematch_candidate(entry):
+            for lora_index, entry in enumerate(loras):
+                if not is_actionable_candidate(entry):
                     continue
                 item, level = await self._match_rematch_entry_with_level(
                     entry,
@@ -991,6 +1041,7 @@ class RecipeScanner:
                         "entry": self._entry_identifier(entry),
                         "file_name": item.get("file_name") or "",
                         "match_level": level,
+                        "lora_index": lora_index,
                     }
                 )
                 self._write_rematch_lora_entry(entry, item)
@@ -1000,7 +1051,7 @@ class RecipeScanner:
         # silently since ``entry.get`` on a str would raise AttributeError).
         checkpoint = recipe.get("checkpoint")
         if isinstance(checkpoint, dict):
-            if self._is_rematch_candidate(checkpoint):
+            if is_actionable_candidate(checkpoint):
                 item, level = await self._match_rematch_entry_with_level(
                     checkpoint,
                     local_cache,
@@ -1065,8 +1116,36 @@ class RecipeScanner:
         self._update_fts_index_for_recipe(recipe, "update")
         return (rematched, 0, details)
 
+    @staticmethod
+    def _collect_l4_matches(
+        recipe_id: Any, details: Dict[str, Any]
+    ) -> List[Dict[str, Any]]:
+        """Flatten a recipe's L4 (filename-level) matches for review.
+
+        Returns ``[{recipe_id, type, entry, file_name, lora_index?}]`` rows —
+        one per matched detail at level L4. ``lora_index`` is only present
+        for lora entries (checkpoint restore needs no index).
+        """
+        rows: List[Dict[str, Any]] = []
+        for match in details.get("matched", []):
+            if match.get("match_level") != "L4":
+                continue
+            row: Dict[str, Any] = {
+                "recipe_id": recipe_id,
+                "type": match.get("type"),
+                "entry": match.get("entry"),
+                "file_name": match.get("file_name"),
+            }
+            if "lora_index" in match:
+                row["lora_index"] = match["lora_index"]
+            rows.append(row)
+        return rows
+
     async def rematch_all_recipes(
-        self, progress_callback: Optional[Callable[[Dict[str, Any]], Any]] = None
+        self,
+        progress_callback: Optional[Callable[[Dict[str, Any]], Any]] = None,
+        *,
+        relaxed: bool = False,
     ) -> Dict[str, Any]:
         """Rematch every recipe's deleted lora/checkpoint entries locally.
 
@@ -1080,14 +1159,19 @@ class RecipeScanner:
 
         Args:
             progress_callback: Optional callback for progress updates
-                (started/processing/cancelled/completed events).
+                (started/processing/cancelled/completed events). The
+                completed/cancelled payloads carry ``l4_matches``, a
+                flattened list of filename-level matches for review/undo.
+            relaxed: When True, healthy entries are rematch candidates too
+                (see ``_rematch_single_recipe``).
 
         Returns:
             Dict summary of the rematch run with unified counters
             (matched_recipes/matched_entries/unresolved_recipes/unresolved_
             entries plus the legacy success/status/rematched/skipped/errors/
-            total fields). ``rematched`` (legacy) counts updated recipes —
-            use ``matched_entries`` for the entry-level total.
+            total fields) and ``l4_matches``. ``rematched`` (legacy) counts
+            updated recipes — use ``matched_entries`` for the entry-level
+            total.
         """
         start_time = time.perf_counter()
 
@@ -1109,6 +1193,7 @@ class RecipeScanner:
             unresolved_entries = 0
             skipped_count = 0
             errors_count = 0
+            l4_matches: List[Dict[str, Any]] = []
 
             for i, recipe in enumerate(all_recipes):
                 if self.is_cancelled():
@@ -1137,6 +1222,7 @@ class RecipeScanner:
                                 "matched_entries": matched_entries,
                                 "unresolved_recipes": unresolved_recipes,
                                 "unresolved_entries": unresolved_entries,
+                                "l4_matches": l4_matches,
                             }
                         )
                     return {
@@ -1150,6 +1236,7 @@ class RecipeScanner:
                         "matched_entries": matched_entries,
                         "unresolved_recipes": unresolved_recipes,
                         "unresolved_entries": unresolved_entries,
+                        "l4_matches": l4_matches,
                     }
 
                 try:
@@ -1165,11 +1252,15 @@ class RecipeScanner:
                         )
 
                     rematched, _errors, details = await self._rematch_single_recipe(
-                        recipe, local_cache, autov3_cache, filename_cache
+                        recipe, local_cache, autov3_cache, filename_cache,
+                        relaxed=relaxed,
                     )
                     if rematched > 0:
                         matched_recipes += 1
                         matched_entries += rematched
+                        l4_matches.extend(
+                            self._collect_l4_matches(recipe.get("id"), details)
+                        )
                     else:
                         skipped_count += 1
 
@@ -1215,6 +1306,7 @@ class RecipeScanner:
                         "matched_entries": matched_entries,
                         "unresolved_recipes": unresolved_recipes,
                         "unresolved_entries": unresolved_entries,
+                        "l4_matches": l4_matches,
                     }
                 )
 
@@ -1228,9 +1320,12 @@ class RecipeScanner:
                 "matched_entries": matched_entries,
                 "unresolved_recipes": unresolved_recipes,
                 "unresolved_entries": unresolved_entries,
+                "l4_matches": l4_matches,
             }
 
-    async def rematch_recipes_bulk(self, recipe_ids: List[str]) -> Dict[str, Any]:
+    async def rematch_recipes_bulk(
+        self, recipe_ids: List[str], *, relaxed: bool = False
+    ) -> Dict[str, Any]:
         """Rematch a set of recipes by their IDs.
 
         Iterates ``_rematch_recipe_by_id`` over each id: not-found ids are
@@ -1241,14 +1336,18 @@ class RecipeScanner:
 
         Args:
             recipe_ids: List of recipe ids to rematch.
+            relaxed: When True, healthy entries are rematch candidates too
+                (see ``_rematch_single_recipe``).
 
         Returns:
             Dict summary of the bulk run with unified counters
             (matched_recipes, matched_entries, unresolved_recipes,
             unresolved_entries plus the legacy total/rematched/skipped/errors
-            fields) and a per-recipe ``details`` list. The legacy ``rematched``
-            field is the total entry count (same as ``matched_entries``) —
-            unlike ``rematch_all_recipes`` where it counts updated recipes.
+            fields), a per-recipe ``details`` list, and ``l4_matches`` — a
+            flattened list of filename-level matches for review/undo. The
+            legacy ``rematched`` field is the total entry count (same as
+            ``matched_entries``) — unlike ``rematch_all_recipes`` where it
+            counts updated recipes.
         """
         total = len(recipe_ids)
         matched_recipes = 0
@@ -1259,10 +1358,13 @@ class RecipeScanner:
         errors = 0
         recipes: List[Dict[str, Any]] = []
         details_list: List[Dict[str, Any]] = []
+        l4_matches: List[Dict[str, Any]] = []
 
         for recipe_id in recipe_ids:
             try:
-                result = await self._rematch_recipe_by_id(recipe_id)
+                result = await self._rematch_recipe_by_id(
+                    recipe_id, relaxed=relaxed
+                )
                 if result.get("success"):
                     matched_recipes += result.get("matched_recipes", 0)
                     matched_entries += result.get("matched_entries", 0)
@@ -1274,6 +1376,9 @@ class RecipeScanner:
                     if result.get("details"):
                         details_list.append(
                             {"recipe_id": recipe_id, **result["details"]}
+                        )
+                        l4_matches.extend(
+                            self._collect_l4_matches(recipe_id, result["details"])
                         )
                 else:
                     errors += result.get("errors", 0)
@@ -1309,12 +1414,22 @@ class RecipeScanner:
             "unresolved_entries": unresolved_entries,
             "recipes": recipes,
             "details": details_list,
+            "l4_matches": l4_matches,
         }
 
     def _write_rematch_lora_entry(
         self, entry: Dict[str, Any], item: Dict[str, Any]
     ) -> None:
         """Write back a matched local model to a lora recipe entry."""
+        # Snapshot the pre-rematch state so the association can be restored
+        # later (undo), mirroring the manual reconnect flow in
+        # ``update_lora_entry``. Never nest snapshots.
+        snapshot = {
+            key: copy.deepcopy(value)
+            for key, value in entry.items()
+            if key != "reconnectSnapshot"
+        }
+
         entry["isDeleted"] = False
         entry["hashInvalid"] = False
 
@@ -1338,6 +1453,8 @@ class RecipeScanner:
             if civitai.get("name"):
                 entry["modelVersionName"] = civitai["name"]
 
+        entry["reconnectSnapshot"] = snapshot
+
     def _write_rematch_checkpoint_entry(
         self, entry: Dict[str, Any], item: Dict[str, Any]
     ) -> None:
@@ -1349,6 +1466,15 @@ class RecipeScanner:
         when they already exist on the entry (or written fresh for the
         identifier key when neither identifier form exists).
         """
+        # Snapshot the pre-rematch state so the association can be restored
+        # later (undo), mirroring the manual reconnect flow. Never nest
+        # snapshots.
+        snapshot = {
+            key: copy.deepcopy(value)
+            for key, value in entry.items()
+            if key != "reconnectSnapshot"
+        }
+
         entry["isDeleted"] = False
         entry["hashInvalid"] = False
 
@@ -1388,6 +1514,8 @@ class RecipeScanner:
                 entry["id"] = civ_id
             else:
                 entry["modelVersionId"] = civ_id
+
+        entry["reconnectSnapshot"] = snapshot
 
     async def _save_recipe_persistently(self, recipe: Dict[str, Any]) -> bool:
         """Helper to save a recipe to both JSON and EXIF metadata."""

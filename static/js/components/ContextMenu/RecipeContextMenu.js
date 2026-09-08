@@ -6,6 +6,7 @@ import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js
 import { updateRecipeMetadata } from '../../api/recipeApi.js';
 import { state } from '../../state/index.js';
 import { moveManager } from '../../managers/MoveManager.js';
+import { rematchModalManager } from '../../managers/RematchModalManager.js';
 import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../../utils/extensionReimportBridge.js';
 
 export class RecipeContextMenu extends BaseContextMenu {
@@ -303,11 +304,22 @@ export class RecipeContextMenu extends BaseContextMenu {
         // Capture before any await: the menu's click handler nulls currentCard
         const filePath = this.currentCard?.dataset?.filepath;
 
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            scope: 'single',
+            onConfirm: ({ relaxed }) => this._startRematchRecipe(recipeId, filePath, relaxed),
+        });
+    }
+
+    async _startRematchRecipe(recipeId, filePath, relaxed = false) {
         try {
             showToast('Rematching recipe to local models...', {}, 'info');
 
             const response = await fetch(`/api/lm/recipe/${recipeId}/rematch`, {
-                method: 'POST'
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ relaxed: !!relaxed }),
             });
             const result = await response.json();
 
@@ -329,6 +341,11 @@ export class RecipeContextMenu extends BaseContextMenu {
                         if (filePath && state.virtualScroller) {
                             state.virtualScroller.updateSingleItem(filePath, updatedRecipe);
                         }
+                    }
+                    // Filename-level (L4) matches are imprecise — always
+                    // surface them for review/undo.
+                    if (Array.isArray(result.l4_matches) && result.l4_matches.length > 0) {
+                        rematchModalManager.showResultsModal(result.l4_matches);
                     }
                 } else if (result.unresolved_entries > 0) {
                     // Entries existed but have no local model — expected for

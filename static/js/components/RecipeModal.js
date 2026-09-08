@@ -1,5 +1,5 @@
 // Recipe Modal Component
-import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow } from '../utils/uiHelpers.js';
+import { showToast, copyToClipboard, sendLoraToWorkflow, sendModelPathToWorkflow, stripLoraTags, sendPromptToWorkflow, sendGenParamsToWorkflow, isUnresolvableDownloadError } from '../utils/uiHelpers.js';
 import { isModelWeightFile } from '../utils/modelFileTypes.js';
 import { buildCivitaiUrl } from '../utils/civitaiUtils.js';
 import { translate } from '../utils/i18nHelpers.js';
@@ -1078,8 +1078,9 @@ class RecipeModal {
 
                 // Mirror the checkpoint "broken" rule: deleted, an
                 // unresolvable hash, or a name-only remnant with no CivitAI
-                // identifiers at all cannot be fixed by downloading —
-                // reconnecting a local LoRA is the only remediation.
+                // identifiers at all cannot be fixed by downloading, so no
+                // download button is offered. Reconnect is always available
+                // for missing entries (see renderLoraItemActions).
                 const needsReconnect = !existsLocally
                     && (isDeleted || lora.hashInvalid || !this.canDownloadLora(lora));
 
@@ -1180,7 +1181,7 @@ class RecipeModal {
                             </div>
                             ${actionsRow}
                         </div>
-                        ${needsReconnect ? `
+                        ${!existsLocally ? `
                         <div class="lora-reconnect-container" data-lora-index="${loraIndex}">
                             <div class="reconnect-instructions">
                                 <p>${escapeHtml(translate('recipes.resources.reconnectInstructions', {}, 'Enter LoRA syntax or name to reconnect:'))}</p>
@@ -2853,11 +2854,7 @@ class RecipeModal {
      * the model cannot be resolved — never for transient transport errors.
      */
     _isUnresolvableDownloadError(message) {
-        if (!message) {
-            return false;
-        }
-        const text = String(message).toLowerCase();
-        return /(not found|no longer available|deleted|removed|404|410|gone)/.test(text);
+        return isUnresolvableDownloadError(message);
     }
 
     getResourceCivitaiUrl(resource) {
@@ -2915,19 +2912,9 @@ class RecipeModal {
         }
 
         const controls = [];
-        if (needsReconnect) {
-            const reconnectLabel = translate('recipes.resources.reconnect', {}, 'Reconnect');
-            const reconnectTooltip = translate('recipes.resources.reconnectTooltip', {}, 'Reconnect with a local LoRA');
-            controls.push(`
-                <button type="button" class="resource-action ghost compact lora-reconnect" data-lora-index="${loraIndex}"
-                    title="${escapeHtml(reconnectTooltip)}" aria-label="${escapeHtml(reconnectTooltip)}">
-                    <i class="fas fa-link" aria-hidden="true"></i>
-                    <span>${escapeHtml(reconnectLabel)}</span>
-                </button>
-            `);
-        } else {
+        if (!needsReconnect) {
             // needsReconnect already implies canDownloadLora() here, so the
-            // download action is unconditional.
+            // download action is unconditional in this branch.
             const downloadLabel = translate('recipes.resources.download', {}, 'Download');
             const downloadTooltip = translate('recipes.resources.downloadLoraTooltip', {}, 'Download this LoRA');
             controls.push(`
@@ -2938,6 +2925,18 @@ class RecipeModal {
                 </button>
             `);
         }
+        // Reconnect is always offered for missing entries — when the LoRA
+        // already exists locally under a different hash, downloading first
+        // just to flip the button would be a waste.
+        const reconnectLabel = translate('recipes.resources.reconnect', {}, 'Reconnect');
+        const reconnectTooltip = translate('recipes.resources.reconnectTooltip', {}, 'Reconnect with a local LoRA');
+        controls.push(`
+            <button type="button" class="resource-action ghost compact lora-reconnect" data-lora-index="${loraIndex}"
+                title="${escapeHtml(reconnectTooltip)}" aria-label="${escapeHtml(reconnectTooltip)}">
+                <i class="fas fa-link" aria-hidden="true"></i>
+                <span>${escapeHtml(reconnectLabel)}</span>
+            </button>
+        `);
 
         return `<div class="recipe-lora-actions">${controls.join('')}</div>`;
     }

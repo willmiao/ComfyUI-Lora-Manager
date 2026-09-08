@@ -309,6 +309,21 @@ describe('RecipeSidebarApiClient bulk operations', () => {
     expect(global.fetch).not.toHaveBeenCalled();
   });
 
+  it('includes relaxed in the bulk rematch body only when opted in', async () => {
+    const api = new RecipeSidebarApiClient();
+    global.fetch.mockResolvedValue({
+      ok: true,
+      json: async () => ({ success: true, total: 1, rematched: 1, skipped: 0, errors: 0, recipes: [] }),
+    });
+
+    await api.rematchBulkModels(['/recipes/a.webp'], { relaxed: true });
+
+    expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+      recipe_ids: ['a'],
+      relaxed: true,
+    });
+  });
+
   it('throws the backend error when bulk rematch fails', async () => {
     const api = new RecipeSidebarApiClient();
     global.fetch.mockResolvedValue({

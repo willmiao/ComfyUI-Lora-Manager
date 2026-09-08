@@ -3,6 +3,7 @@ import { showToast, showActionToast, copyToClipboard, sendLoraToWorkflow, sendEm
 import { handleUndoDelete } from '../utils/undoHelpers.js';
 import { updateCardsForBulkMode } from '../components/shared/ModelCard.js';
 import { modalManager } from './ModalManager.js';
+import { rematchModalManager } from './RematchModalManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
 import { RecipeSidebarApiClient, updateRecipeMetadata, extractRecipeId } from '../api/recipeApi.js';
 import { MODEL_TYPES, MODEL_CONFIG } from '../api/apiConfig.js';
@@ -978,6 +979,15 @@ export class BulkManager {
             return;
         }
 
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            recipeCount: state.selectedModels.size,
+            onConfirm: ({ relaxed }) => this._startRematchSelectedRecipes(relaxed),
+        });
+    }
+
+    async _startRematchSelectedRecipes(relaxed = false) {
         try {
             const apiClient = this.getActiveApiClient();
             const filePaths = Array.from(state.selectedModels);
@@ -989,7 +999,7 @@ export class BulkManager {
 
             state.loadingManager.showSimpleLoading('Rematching recipes to local models...');
 
-            const result = await apiClient.rematchBulkModels(filePaths);
+            const result = await apiClient.rematchBulkModels(filePaths, { relaxed: !!relaxed });
 
             if (result.success) {
                 const total = result.total || filePaths.length;
@@ -1050,6 +1060,12 @@ export class BulkManager {
                 }
 
                 if (state.bulkMode) this.toggleBulkMode();
+
+                // Filename-level (L4) matches are imprecise — always surface
+                // them for review/undo.
+                if (Array.isArray(result.l4_matches) && result.l4_matches.length > 0) {
+                    rematchModalManager.showResultsModal(result.l4_matches);
+                }
             } else {
                 throw new Error(result.error || 'Bulk rematch failed');
             }

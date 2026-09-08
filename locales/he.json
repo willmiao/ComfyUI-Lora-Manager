@@ -1501,6 +1501,22 @@
             "note": "הקבצים יורדו באמצעות תבניות נתיב ברירת מחדל. זה עשוי לקחת זמן בהתאם למספר ה-LoRAs.",
             "downloadButton": "הורד {count} LoRA(s)"
         },
+        "rematchOptions": {
+            "title": "[TODO: Translate] Rematch Recipes",
+            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
+            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
+            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
+            "relaxedLabel": "[TODO: Translate] Relaxed matching",
+            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
+            "confirmButton": "[TODO: Translate] Rematch"
+        },
+        "rematchResults": {
+            "title": "[TODO: Translate] Rematch Results — Filename Matches",
+            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
+            "undo": "[TODO: Translate] Undo",
+            "undone": "[TODO: Translate] Undone",
+            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+        },
         "exampleAccess": {
             "title": "תמונות דוגמה מקומיות",
             "message": "לא נמצאו תמונות דוגמה מקומיות למודל זה. אפשרויות צפייה:",
@@ -2168,6 +2184,7 @@
             "createMissingData": "חסרים נתונים נדרשים ליצירת המתכון",
             "created": "המתכון נוצר בהצלחה",
             "noMissingLoras": "אין LoRAs חסרים להורדה",
+            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
             "noPreviousRecipe": "אין מתכון קודם זמין",
             "noNextRecipe": "אין מתכון נוסף זמין",
             "missingLorasInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",

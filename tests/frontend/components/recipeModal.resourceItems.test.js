@@ -51,6 +51,10 @@ vi.mock('../../../static/js/utils/uiHelpers.js', () => ({
   stripLoraTags: vi.fn((text) => text),
   sendPromptToWorkflow: vi.fn(),
   sendGenParamsToWorkflow: vi.fn(),
+  // Keep the real predicate: the download-failure tests assert on its
+  // unresolvable-error classification.
+  isUnresolvableDownloadError: (message) =>
+    !!message && /(not found|no longer available|deleted|removed|404|410|gone)/.test(String(message).toLowerCase()),
 }));
 
 vi.mock('../../../static/js/utils/i18nHelpers.js', () => ({
@@ -292,7 +296,7 @@ describe('RecipeModal resource item interactions', () => {
     );
   });
 
-  it('renders a download action (not reconnect) for a version-only LoRA', async () => {
+  it('renders a download action alongside reconnect for a version-only LoRA', async () => {
     const recipeModal = await createRecipeModal();
     recipeModal.showRecipeDetails(recipeWithResources);
     await flushWiring();
@@ -301,10 +305,12 @@ describe('RecipeModal resource item interactions', () => {
     expect(item).not.toBeNull();
     expect(item.classList.contains('missing-locally')).toBe(true);
     // Missing from the local library (badge) but still downloadable by its
-    // exact CivitAI version id, so the row offers Download, not Reconnect.
+    // exact CivitAI version id, so the row offers Download as the primary
+    // action; Reconnect stays available for entries the user already has
+    // locally under a different hash.
     expect(item.querySelector('.missing-badge')).not.toBeNull();
     expect(item.querySelector('.lora-download')).not.toBeNull();
-    expect(item.querySelector('.lora-reconnect')).toBeNull();
+    expect(item.querySelector('.lora-reconnect')).not.toBeNull();
   });
 
   it('downloads a version-only LoRA by resolving the model id from the version endpoint', async () => {
@@ -588,10 +594,12 @@ describe('RecipeModal resource item interactions', () => {
     await new Promise(resolve => setTimeout(resolve, 50));
     expect(requests.some(r => r.url.includes('mark-hash-invalid'))).toBe(false);
 
-    // The entry keeps the download action and never flips to reconnect
+    // The entry keeps the download action and never flips to hash-invalid
+    // (reconnect is always present for missing entries now; the signal here
+    // is that the download action survives and no invalid badge appears)
     const item = document.querySelector('[data-lora-index="1"]');
     expect(item.querySelector('.lora-download')).not.toBeNull();
-    expect(item.querySelector('.lora-reconnect')).toBeNull();
+    expect(item.querySelector('.invalid-hash-badge')).toBeNull();
   });
 
   it('offers download for hash-only LoRAs and resolves identifiers on demand', async () => {

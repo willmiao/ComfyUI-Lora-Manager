@@ -325,6 +325,23 @@ export function isTypingContext(target) {
   return target.isContentEditable || tagName === 'input' || tagName === 'textarea' || tagName === 'select';
 }
 
+/**
+ * Decide whether a download failure means the model is unrecoverable.
+ *
+ * The hash-invalid flag (and the resulting rematch/reconnect candidacy) is
+ * only set when CivitAI explicitly says the model cannot be resolved — never
+ * for transient transport errors (network, 5xx).
+ * @param {*} message - The error message carried by the failed download
+ * @returns {boolean}
+ */
+export function isUnresolvableDownloadError(message) {
+  if (!message) {
+    return false;
+  }
+  const text = String(message).toLowerCase();
+  return /(not found|no longer available|deleted|removed|404|410|gone)/.test(text);
+}
+
 export function restoreFolderFilter() {
   const activeFolder = getStorageItem('activeFolder');
   const folderTag = activeFolder && document.querySelector(`.tag[data-folder="${activeFolder}"]`);

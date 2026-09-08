@@ -74,6 +74,26 @@ async def _read_preview_dims(path: str) -> Optional[Tuple[int, int]]:
         return await asyncio.to_thread(ExifUtils.get_image_dimensions, path)
 
 
+async def _parse_relaxed_flag(request: web.Request) -> bool:
+    """Read the relaxed-rematch flag from the JSON body or query string.
+
+    The flag defaults to False (strict candidacy). A JSON body value wins;
+    ``?relaxed=true`` is honored as a fallback so GET-only clients can opt
+    in. Body parse failures (empty/invalid JSON) are treated as "no flag".
+    """
+    relaxed = False
+    if request.can_read_body:
+        try:
+            data = await request.json()
+        except Exception:  # noqa: BLE001 - any parse failure means no flag
+            data = None
+        if isinstance(data, dict):
+            relaxed = bool(data.get("relaxed"))
+    if not relaxed:
+        relaxed = request.query.get("relaxed", "").lower() == "true"
+    return relaxed
+
+
 @dataclass(frozen=True)
 class RecipeHandlerSet:
     """Group of handlers providing recipe route implementations."""
@@ -812,6 +832,8 @@ class RecipeManagementHandler:
 
             recipe_scanner.reset_cancellation()
 
+            relaxed = await _parse_relaxed_flag(request)
+
             async def progress_callback(data):
                 await self._ws_manager.broadcast_recipe_rematch_progress(data)
 
@@ -819,7 +841,8 @@ class RecipeManagementHandler:
             async def run_rematch():
                 try:
                     await recipe_scanner.rematch_all_recipes(
-                        progress_callback=progress_callback
+                        progress_callback=progress_callback,
+                        relaxed=relaxed,
                     )
                 except Exception as e:
                     self._logger.error(
@@ -892,7 +915,13 @@ class RecipeManagementHandler:
                     status=400,
                 )
 
-            result = await recipe_scanner.rematch_recipes_bulk(recipe_ids)
+            relaxed = bool(data.get("relaxed")) or (
+                request.query.get("relaxed", "").lower() == "true"
+            )
+
+            result = await recipe_scanner.rematch_recipes_bulk(
+                recipe_ids, relaxed=relaxed
+            )
             return web.json_response(result)
         except Exception as exc:
             self._logger.error(
@@ -921,7 +950,10 @@ class RecipeManagementHandler:
                 )
 
             recipe_id = request.match_info["recipe_id"]
-            result = await recipe_scanner.rematch_recipe_by_id(recipe_id)
+            relaxed = await _parse_relaxed_flag(request)
+            result = await recipe_scanner.rematch_recipe_by_id(
+                recipe_id, relaxed=relaxed
+            )
             return web.json_response(result)
         except RecipeNotFoundError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=404)

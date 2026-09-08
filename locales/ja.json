@@ -1501,6 +1501,22 @@
             "note": "ファイルはデフォルトのパステンプレートを使用してダウンロードされます。LoRA の数によっては時間がかかる場合があります。",
             "downloadButton": "{count} 個の LoRA をダウンロード"
         },
+        "rematchOptions": {
+            "title": "[TODO: Translate] Rematch Recipes",
+            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
+            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
+            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
+            "relaxedLabel": "[TODO: Translate] Relaxed matching",
+            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
+            "confirmButton": "[TODO: Translate] Rematch"
+        },
+        "rematchResults": {
+            "title": "[TODO: Translate] Rematch Results — Filename Matches",
+            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
+            "undo": "[TODO: Translate] Undo",
+            "undone": "[TODO: Translate] Undone",
+            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+        },
         "exampleAccess": {
             "title": "ローカル例画像",
             "message": "このモデルのローカル例画像が見つかりませんでした。表示オプション：",
@@ -2168,6 +2184,7 @@
             "createMissingData": "レシピ作成に必要なデータが不足しています",
             "created": "レシピを作成しました",
             "noMissingLoras": "ダウンロードする不足LoRAがありません",
+            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
             "noPreviousRecipe": "前のレシピがありません",
             "noNextRecipe": "次のレシピがありません",
             "missingLorasInfoFailed": "不足LoRAの情報取得に失敗しました",

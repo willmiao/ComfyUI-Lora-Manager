@@ -4,6 +4,7 @@ import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 import { getCompleteApiConfig, getCurrentModelType } from '../../api/apiConfig.js';
 import { performModelUpdateCheck } from '../../utils/updateCheckHelpers.js';
+import { rematchModalManager } from '../../managers/RematchModalManager.js';
 
 export class GlobalContextMenu extends BaseContextMenu {
     constructor() {
@@ -368,6 +369,18 @@ export class GlobalContextMenu extends BaseContextMenu {
             return;
         }
 
+        // Collect options (relaxed matching) before starting anything; the
+        // run only begins when the user confirms the dialog.
+        rematchModalManager.showOptionsModal({
+            onConfirm: ({ relaxed }) => this._startRematch(menuItem, relaxed),
+        });
+    }
+
+    async _startRematch(menuItem, relaxed = false) {
+        if (this._rematchInProgress) {
+            return;
+        }
+
         this._rematchInProgress = true;
         menuItem?.classList.add('disabled');
 
@@ -384,6 +397,7 @@ export class GlobalContextMenu extends BaseContextMenu {
             const response = await fetch('/api/lm/recipes/rematch', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ relaxed: !!relaxed }),
             });
 
             const result = await response.json();
@@ -457,6 +471,11 @@ export class GlobalContextMenu extends BaseContextMenu {
                             // Refresh recipes page if active
                             if (window.recipesPage) {
                                 window.recipesPage.refresh();
+                            }
+                            // Filename-level (L4) matches are imprecise —
+                            // always surface them for review/undo.
+                            if (Array.isArray(p.l4_matches) && p.l4_matches.length > 0) {
+                                rematchModalManager.showResultsModal(p.l4_matches);
                             }
                         } else if (p.status === 'error') {
                             throw new Error(p.error || 'Rematch failed');

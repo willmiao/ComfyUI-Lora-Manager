@@ -1501,6 +1501,22 @@
       "note": "Files will be downloaded using default path templates. This may take a while depending on the number of LoRAs.",
       "downloadButton": "Download {count} LoRA(s)"
     },
+    "rematchOptions": {
+      "title": "Rematch Recipes",
+      "messageGlobal": "All recipes will be scanned against your local model library.",
+      "messageSingle": "This recipe will be scanned against your local model library.",
+      "messageBulk": "{count} selected recipe(s) will be scanned against your local model library.",
+      "relaxedLabel": "Also reconnect missing models by file name",
+      "relaxedDescription": "These models could also be fixed by downloading — download is more accurate. Matches may link a different version; they'll be listed for review and can be undone.",
+      "confirmButton": "Rematch"
+    },
+    "rematchResults": {
+      "title": "Rematch Results — Filename Matches",
+      "message": "These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
+      "undo": "Undo",
+      "undone": "Undone",
+      "undoFailed": "Failed to undo rematch: {message}"
+    },
     "exampleAccess": {
       "title": "Local Example Images",
       "message": "No local example images found for this model. View options:",
@@ -2168,6 +2184,7 @@
       "createMissingData": "Missing required data to create recipe",
       "created": "Recipe created successfully",
       "noMissingLoras": "No missing LoRAs to download",
+      "unresolvableMarkedForReconnect": "{count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
       "noPreviousRecipe": "No previous recipe available",
       "noNextRecipe": "No next recipe available",
       "missingLorasInfoFailed": "Failed to get information for missing LoRAs",

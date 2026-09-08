@@ -143,6 +143,16 @@ async function flushAsyncTasks() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+// The real RematchModalManager runs against the mocked modalManager; the
+// global rematch menu action now opens the options dialog first and only
+// starts once confirmOptions() is invoked (the user clicking Rematch).
+async function getRematchModalManager() {
+  const { rematchModalManager } = await import(
+    '../../../static/js/managers/RematchModalManager.js'
+  );
+  return rematchModalManager;
+}
+
 function createDeferred() {
   let resolve;
   let reject;
@@ -2266,15 +2276,23 @@ describe('Interaction-level regression coverage', () => {
       });
 
     rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    // The click only opens the options dialog — nothing starts yet.
+    expect(global.fetch).not.toHaveBeenCalled();
+    expect(rematchItem.classList.contains('disabled')).toBe(false);
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
     expect(rematchItem.classList.contains('disabled')).toBe(true);
 
     for (let i = 0; i < 5; i++) {
       await flushAsyncTasks();
     }
+    await runPromise;
 
     expect(global.fetch).toHaveBeenNthCalledWith(1, '/api/lm/recipes/rematch', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ relaxed: false }),
     });
     expect(global.fetch).toHaveBeenNthCalledWith(2, '/api/lm/recipes/rematch-progress');
     expect(global.fetch).toHaveBeenCalledTimes(2);
@@ -2331,10 +2349,15 @@ describe('Interaction-level regression coverage', () => {
       });
 
     rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
 
     for (let i = 0; i < 5; i++) {
       await flushAsyncTasks();
     }
+    await runPromise;
 
     expect(progressUI.complete).toHaveBeenCalledWith('Matched 5 entries across 2 recipes, 2 failed.');
     expect(showToastMock).toHaveBeenCalledWith(
@@ -2384,10 +2407,15 @@ describe('Interaction-level regression coverage', () => {
       });
 
     rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
 
     for (let i = 0; i < 5; i++) {
       await flushAsyncTasks();
     }
+    await runPromise;
 
     expect(progressUI.complete).toHaveBeenCalledWith('Rematch failed for 3 of 3 recipes.');
     expect(showToastMock).toHaveBeenCalledWith(
@@ -2437,10 +2465,15 @@ describe('Interaction-level regression coverage', () => {
       });
 
     rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
 
     for (let i = 0; i < 5; i++) {
       await flushAsyncTasks();
     }
+    await runPromise;
 
     expect(progressUI.complete).toHaveBeenCalledWith('No local match found for 2 entries in 1 recipes.');
     expect(showToastMock).toHaveBeenCalledWith(
@@ -2489,10 +2522,15 @@ describe('Interaction-level regression coverage', () => {
       });
 
     rematchItem.dispatchEvent(new Event('click', { bubbles: true }));
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const rematchModalManager = await getRematchModalManager();
+    const runPromise = rematchModalManager.confirmOptions();
 
     for (let i = 0; i < 5; i++) {
       await flushAsyncTasks();
     }
+    await runPromise;
 
     expect(progressUI.complete).toHaveBeenCalledWith('Rematch cancelled. 1 recipes updated (2 entries).');
     expect(showToastMock).toHaveBeenCalledWith(

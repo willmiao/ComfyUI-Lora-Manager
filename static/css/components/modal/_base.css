@@ -592,3 +592,183 @@ button:disabled,
     margin-top: 2px;
     flex-shrink: 0;
 }
+
+/* Recipe Rematch Options Modal */
+#rematchOptionsModal .modal-body {
+    padding: var(--space-3);
+}
+
+#rematchOptionsModal .confirmation-message {
+    color: var(--text-color);
+    margin-bottom: var(--space-3);
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+/* Selectable option card — click anywhere toggles the checkbox (label wrap).
+   Checkmark follows the batch-import modal's custom checkbox pattern. */
+#rematchOptionsModal .rematch-option-card {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    padding: var(--space-3);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition-base);
+}
+
+#rematchOptionsModal .rematch-option-card:hover {
+    border-color: var(--lora-accent);
+}
+
+#rematchOptionsModal .rematch-option-card:has(input[type="checkbox"]:checked) {
+    border-color: var(--lora-accent);
+    background: oklch(from var(--lora-accent) l c h / 0.08);
+}
+
+/* Visually hidden but keyboard-focusable (focus ring lands on the card). */
+#rematchOptionsModal .rematch-option-card input[type="checkbox"] {
+    position: absolute;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+#rematchOptionsModal .rematch-option-card:has(input[type="checkbox"]:focus-visible) {
+    box-shadow: 0 0 0 2px oklch(from var(--lora-accent) l c h / 0.2);
+}
+
+#rematchOptionsModal .rematch-option-checkmark {
+    width: 18px;
+    height: 18px;
+    margin-top: 1px;
+    flex-shrink: 0;
+    border: 2px solid var(--border-color);
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    background: var(--bg-color);
+}
+
+#rematchOptionsModal .rematch-option-card input[type="checkbox"]:checked + .rematch-option-checkmark {
+    background: var(--lora-accent);
+    border-color: var(--lora-accent);
+}
+
+#rematchOptionsModal .rematch-option-card input[type="checkbox"]:checked + .rematch-option-checkmark::after {
+    content: '\f00c';
+    font-family: 'Font Awesome 6 Free', sans-serif;
+    font-weight: 900;
+    color: var(--lora-text);
+    font-size: 12px;
+}
+
+#rematchOptionsModal .rematch-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    color: var(--text-color);
+    min-width: 0;
+}
+
+#rematchOptionsModal .rematch-option-title {
+    font-weight: 600;
+    font-size: 0.95em;
+}
+
+#rematchOptionsModal .rematch-option-caveat {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font-size: 0.85em;
+    line-height: 1.4;
+    color: var(--text-muted);
+}
+
+#rematchOptionsModal .rematch-option-caveat i {
+    color: var(--lora-accent);
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+/* Recipe Rematch L4 Results Modal */
+#rematchResultsModal .modal-body {
+    padding: var(--space-3);
+}
+
+#rematchResultsModal .confirmation-message {
+    color: var(--text-color);
+    margin-bottom: var(--space-3);
+    font-size: 1em;
+    line-height: 1.5;
+}
+
+#rematchResultsModal .rematch-results-preview {
+    background: var(--surface-subtle);
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-2) var(--space-3);
+}
+
+#rematchResultsModal .rematch-results-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+#rematchResultsModal .rematch-results-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    padding: var(--space-2) 0;
+    border-bottom: 1px solid var(--border-color);
+    font-size: 0.9em;
+}
+
+#rematchResultsModal .rematch-results-row:last-child {
+    border-bottom: none;
+}
+
+#rematchResultsModal .rematch-results-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+    flex: 1;
+}
+
+#rematchResultsModal .rematch-results-entry {
+    font-weight: 500;
+    color: var(--text-color);
+    overflow-wrap: anywhere;
+}
+
+#rematchResultsModal .rematch-results-file {
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+#rematchResultsModal .rematch-results-recipe {
+    font-size: 0.85em;
+    opacity: 0.7;
+    color: var(--text-muted);
+    overflow-wrap: anywhere;
+}
+
+#rematchResultsModal .rematch-results-row.undone .rematch-results-info {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+#rematchResultsModal .rematch-results-undo {
+    flex-shrink: 0;
+}
