@@ -1502,20 +1502,20 @@
             "downloadButton": "{count} LoRA(s) herunterladen"
         },
         "rematchOptions": {
-            "title": "[TODO: Translate] Rematch Recipes",
-            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
-            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
-            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
-            "relaxedLabel": "[TODO: Translate] Relaxed matching",
-            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
-            "confirmButton": "[TODO: Translate] Rematch"
+            "title": "Rezepte neu zuordnen",
+            "messageGlobal": "Alle Rezepte werden mit Ihrer lokalen Modellbibliothek abgeglichen.",
+            "messageSingle": "Dieses Rezept wird mit Ihrer lokalen Modellbibliothek abgeglichen.",
+            "messageBulk": "{count} ausgewählte Rezepte werden mit Ihrer lokalen Modellbibliothek abgeglichen.",
+            "relaxedLabel": "Fehlende Modelle auch per Dateiname neu verbinden",
+            "relaxedDescription": "Diese Modelle könnten auch per Download behoben werden — der Download ist genauer. Übereinstimmungen verknüpfen möglicherweise eine andere Version; sie werden zur Überprüfung aufgelistet und können rückgängig gemacht werden.",
+            "confirmButton": "Neu zuordnen"
         },
         "rematchResults": {
-            "title": "[TODO: Translate] Rematch Results — Filename Matches",
-            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
-            "undo": "[TODO: Translate] Undo",
-            "undone": "[TODO: Translate] Undone",
-            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+            "title": "Ergebnisse der neuen Zuordnung — Übereinstimmungen per Dateiname",
+            "message": "Diese Einträge wurden per Dateiname neu verbunden und verknüpfen möglicherweise eine andere Version eines Modells. Überprüfen Sie sie und machen Sie falsche Zuordnungen rückgängig.",
+            "undo": "Rückgängig",
+            "undone": "Rückgängig gemacht",
+            "undoFailed": "Rückgängigmachen der Neuordnung fehlgeschlagen: {message}"
         },
         "exampleAccess": {
             "title": "Lokale Beispielbilder",
@@ -2184,7 +2184,7 @@
             "createMissingData": "Erforderliche Daten zum Erstellen des Rezepts fehlen",
             "created": "Rezept erfolgreich erstellt",
             "noMissingLoras": "Keine fehlenden LoRAs zum Herunterladen",
-            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
+            "unresolvableMarkedForReconnect": "{count} nicht auflösbare Einträge markiert — sie können jetzt mit einem lokalen LoRA neu verbunden werden.",
             "noPreviousRecipe": "Kein vorheriges Rezept verfügbar",
             "noNextRecipe": "Kein weiteres Rezept verfügbar",
             "missingLorasInfoFailed": "Fehler beim Abrufen der Informationen für fehlende LoRAs",

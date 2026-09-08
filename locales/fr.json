@@ -1502,20 +1502,20 @@
             "downloadButton": "Télécharger {count} LoRA(s)"
         },
         "rematchOptions": {
-            "title": "[TODO: Translate] Rematch Recipes",
-            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
-            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
-            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
-            "relaxedLabel": "[TODO: Translate] Relaxed matching",
-            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
-            "confirmButton": "[TODO: Translate] Rematch"
+            "title": "Réassocier les Recipes",
+            "messageGlobal": "Toutes les Recipes seront analysées par rapport à votre bibliothèque de modèles locale.",
+            "messageSingle": "Cette Recipe sera analysée par rapport à votre bibliothèque de modèles locale.",
+            "messageBulk": "{count} Recipes sélectionnées seront analysées par rapport à votre bibliothèque de modèles locale.",
+            "relaxedLabel": "Reconnecter aussi les modèles manquants par nom de fichier",
+            "relaxedDescription": "Ces modèles peuvent aussi être corrigés par téléchargement — le téléchargement est plus précis. Les correspondances peuvent associer une version différente ; elles seront listées pour vérification et peuvent être annulées.",
+            "confirmButton": "Réassocier"
         },
         "rematchResults": {
-            "title": "[TODO: Translate] Rematch Results — Filename Matches",
-            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
-            "undo": "[TODO: Translate] Undo",
-            "undone": "[TODO: Translate] Undone",
-            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+            "title": "Résultats de la réassociation — Correspondances par nom de fichier",
+            "message": "Ces entrées ont été reconnectées par nom de fichier et peuvent associer une version différente d'un modèle. Vérifiez-les et annulez celles qui sont incorrectes.",
+            "undo": "Annuler",
+            "undone": "Annulé",
+            "undoFailed": "Échec de l'annulation de la réassociation : {message}"
         },
         "exampleAccess": {
             "title": "Images d'exemple locales",
@@ -2184,7 +2184,7 @@
             "createMissingData": "Données requises manquantes pour créer le Recipe",
             "created": "Recipe créé avec succès",
             "noMissingLoras": "Aucun LoRA manquant à télécharger",
-            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
+            "unresolvableMarkedForReconnect": "{count} entrées irrésolubles marquées — elles peuvent maintenant être reconnectées à un LoRA local.",
             "noPreviousRecipe": "Aucune Recipe précédente",
             "noNextRecipe": "Aucune Recipe suivante",
             "missingLorasInfoFailed": "Échec de l'obtention des informations pour les LoRAs manquants",

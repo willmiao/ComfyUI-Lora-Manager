@@ -1502,20 +1502,20 @@
             "downloadButton": "下載 {count} 個 LoRA(s)"
         },
         "rematchOptions": {
-            "title": "[TODO: Translate] Rematch Recipes",
-            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
-            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
-            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
-            "relaxedLabel": "[TODO: Translate] Relaxed matching",
-            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
-            "confirmButton": "[TODO: Translate] Rematch"
+            "title": "重新匹配配方",
+            "messageGlobal": "所有配方將對照您的本地模型庫進行掃描。",
+            "messageSingle": "此配方將對照您的本地模型庫進行掃描。",
+            "messageBulk": "將對照您的本地模型庫掃描 {count} 個所選配方。",
+            "relaxedLabel": "同時依檔案名稱重新關聯缺少的模型",
+            "relaxedDescription": "這些模型也可以透過下載修復——下載更為準確。比對可能會連結到模型的不同版本；比對結果將列出供您檢閱，且可以撤銷。",
+            "confirmButton": "重新匹配"
         },
         "rematchResults": {
-            "title": "[TODO: Translate] Rematch Results — Filename Matches",
-            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
-            "undo": "[TODO: Translate] Undo",
-            "undone": "[TODO: Translate] Undone",
-            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+            "title": "重新匹配結果——檔案名稱匹配",
+            "message": "這些條目已依檔案名稱重新關聯，可能連結到模型的不同版本。請檢閱這些條目，並撤銷任何錯誤的項目。",
+            "undo": "撤銷",
+            "undone": "已撤銷",
+            "undoFailed": "撤銷重新匹配失敗：{message}"
         },
         "exampleAccess": {
             "title": "本機範例圖片",
@@ -2184,7 +2184,7 @@
             "createMissingData": "缺少建立配方所需的資料",
             "created": "配方建立成功",
             "noMissingLoras": "無缺少的 LoRA 可下載",
-            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
+            "unresolvableMarkedForReconnect": "已標記 {count} 個無法解析的條目——現在可以將它們重新關聯到本地 LoRA。",
             "noPreviousRecipe": "沒有上一個配方",
             "noNextRecipe": "沒有下一個配方",
             "missingLorasInfoFailed": "取得缺少 LoRA 資訊失敗",

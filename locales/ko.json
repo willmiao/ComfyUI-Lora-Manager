@@ -1502,20 +1502,20 @@
             "downloadButton": "{count}개 LoRA 다운로드"
         },
         "rematchOptions": {
-            "title": "[TODO: Translate] Rematch Recipes",
-            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
-            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
-            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
-            "relaxedLabel": "[TODO: Translate] Relaxed matching",
-            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
-            "confirmButton": "[TODO: Translate] Rematch"
+            "title": "레시피 재매칭",
+            "messageGlobal": "모든 레시피를 로컬 모델 라이브러리와 대조하여 검사합니다.",
+            "messageSingle": "이 레시피를 로컬 모델 라이브러리와 대조하여 검사합니다.",
+            "messageBulk": "선택한 레시피 {count}개를 로컬 모델 라이브러리와 대조하여 검사합니다.",
+            "relaxedLabel": "누락된 모델도 파일 이름으로 다시 연결",
+            "relaxedDescription": "이 모델들은 다운로드로도 해결할 수 있으며 다운로드가 더 정확합니다. 매칭 시 모델의 다른 버전이 연결될 수 있으며, 검토용으로 목록에 표시되고 실행 취소할 수 있습니다.",
+            "confirmButton": "재매칭"
         },
         "rematchResults": {
-            "title": "[TODO: Translate] Rematch Results — Filename Matches",
-            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
-            "undo": "[TODO: Translate] Undo",
-            "undone": "[TODO: Translate] Undone",
-            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+            "title": "재매칭 결과 — 파일 이름 매칭",
+            "message": "이 항목들은 파일 이름으로 다시 연결되었으며 모델의 다른 버전에 연결되었을 수 있습니다. 검토 후 잘못된 항목은 실행 취소하세요.",
+            "undo": "실행 취소",
+            "undone": "실행 취소됨",
+            "undoFailed": "재매칭 실행 취소 실패: {message}"
         },
         "exampleAccess": {
             "title": "로컬 예시 이미지",
@@ -2184,7 +2184,7 @@
             "createMissingData": "레시피 생성에 필요한 데이터가 없습니다",
             "created": "레시피가 생성되었습니다",
             "noMissingLoras": "다운로드할 누락된 LoRA가 없습니다",
-            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
+            "unresolvableMarkedForReconnect": "해석할 수 없는 항목 {count}개가 표시되었습니다 — 이제 로컬 LoRA에 다시 연결할 수 있습니다.",
             "noPreviousRecipe": "이전 레시피가 없습니다",
             "noNextRecipe": "다음 레시피가 없습니다",
             "missingLorasInfoFailed": "누락된 LoRA 정보를 가져오는데 실패했습니다",

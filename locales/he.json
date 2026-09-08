@@ -1502,20 +1502,20 @@
             "downloadButton": "הורד {count} LoRA(s)"
         },
         "rematchOptions": {
-            "title": "[TODO: Translate] Rematch Recipes",
-            "messageGlobal": "[TODO: Translate] All recipes will be scanned against your local model library.",
-            "messageSingle": "[TODO: Translate] This recipe will be scanned against your local model library.",
-            "messageBulk": "[TODO: Translate] {count} selected recipe(s) will be scanned against your local model library.",
-            "relaxedLabel": "[TODO: Translate] Relaxed matching",
-            "relaxedDescription": "[TODO: Translate] Also try to reconnect models marked \"Not in Library\" by matching file names. May link a different version of a model — matches will be listed for review and can be undone.",
-            "confirmButton": "[TODO: Translate] Rematch"
+            "title": "התאמה מחדש של מתכונים",
+            "messageGlobal": "כל המתכונים ייסרקו מול ספריית המודלים המקומית שלך.",
+            "messageSingle": "מתכון זה ייסרק מול ספריית המודלים המקומית שלך.",
+            "messageBulk": "{count} מתכונים שנבחרו ייסרקו מול ספריית המודלים המקומית שלך.",
+            "relaxedLabel": "חבר מחדש גם מודלים חסרים לפי שם קובץ",
+            "relaxedDescription": "אפשר לתקן את המודלים האלה גם על ידי הורדה — ההורדה מדויקת יותר. ההתאמות עשויות לקשר לגרסה אחרת; הן יוצגו לסקירה וניתן לבטל אותן.",
+            "confirmButton": "התאם מחדש"
         },
         "rematchResults": {
-            "title": "[TODO: Translate] Rematch Results — Filename Matches",
-            "message": "[TODO: Translate] These entries were reconnected by file name and may link a different version of a model. Review them and undo any that are wrong.",
-            "undo": "[TODO: Translate] Undo",
-            "undone": "[TODO: Translate] Undone",
-            "undoFailed": "[TODO: Translate] Failed to undo rematch: {message}"
+            "title": "תוצאות ההתאמה מחדש — התאמות לפי שם קובץ",
+            "message": "הפריטים האלה חוברו מחדש לפי שם קובץ וייתכן שהם מקושרים לגרסה אחרת של מודל. סקור אותם ובטל כל אחד שאינו נכון.",
+            "undo": "בטל",
+            "undone": "בוטל",
+            "undoFailed": "ביטול ההתאמה מחדש נכשל: {message}"
         },
         "exampleAccess": {
             "title": "תמונות דוגמה מקומיות",
@@ -2184,7 +2184,7 @@
             "createMissingData": "חסרים נתונים נדרשים ליצירת המתכון",
             "created": "המתכון נוצר בהצלחה",
             "noMissingLoras": "אין LoRAs חסרים להורדה",
-            "unresolvableMarkedForReconnect": "[TODO: Translate] {count} unresolvable entr(ies) marked — they can now be reconnected to a local LoRA.",
+            "unresolvableMarkedForReconnect": "{count} פריטים שלא ניתן לפתור סומנו — עכשיו ניתן לחבר אותם מחדש ל-LoRA מקומי.",
             "noPreviousRecipe": "אין מתכון קודם זמין",
             "noNextRecipe": "אין מתכון נוסף זמין",
             "missingLorasInfoFailed": "קבלת מידע עבור LoRAs חסרים נכשלה",
