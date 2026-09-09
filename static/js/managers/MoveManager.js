@@ -329,7 +329,11 @@ class MoveManager {
                 const results = await apiClient.moveBulkModels(this.bulkFilePaths, targetPath, this.useDefaultPath);
                 movedFiles = (results || [])
                     .filter(r => r.success)
-                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
+                    .map(r => ({
+                        original_file_path: r.original_file_path,
+                        new_file_path: r.new_file_path,
+                        sub_type: r.cache_entry?.sub_type
+                    }));
 
                 // Deselect moving items and exit bulk mode
                 this.bulkFilePaths.forEach(path => bulkManager.deselectItem(path));
@@ -340,7 +344,11 @@ class MoveManager {
                 if (result) {
                     movedFiles.push({
                         original_file_path: result.original_file_path || this.currentFilePath,
-                        new_file_path: result.new_file_path
+                        new_file_path: result.new_file_path,
+                        // The backend recalculates location-derived fields
+                        // (e.g. checkpoint -> diffusion_model) during the move;
+                        // carry them so the card re-renders with the new type.
+                        sub_type: result.cache_entry?.sub_type
                     });
                 }
 
@@ -379,24 +387,28 @@ class MoveManager {
                         }
 
                         if (stillVisible) {
+                            const newData = {
+                                file_path: moved.new_file_path,
+                                folder: newRelativeFolder
+                            };
+                            if (moved.sub_type) newData.sub_type = moved.sub_type;
                             pathsToUpdate.push({
                                 originalPath: moved.original_file_path,
-                                newData: {
-                                    file_path: moved.new_file_path,
-                                    folder: newRelativeFolder
-                                }
+                                newData
                             });
                         } else {
                             pathsToRemove.push(moved.original_file_path);
                         }
                     } else {
                         // No folder filter active — items remain visible, just update path
+                        const newData = {
+                            file_path: moved.new_file_path,
+                            folder: this._getRelativeFolder(moved.new_file_path)
+                        };
+                        if (moved.sub_type) newData.sub_type = moved.sub_type;
                         pathsToUpdate.push({
                             originalPath: moved.original_file_path,
-                            newData: {
-                                file_path: moved.new_file_path,
-                                folder: this._getRelativeFolder(moved.new_file_path)
-                            }
+                            newData
                         });
                     }
                 }

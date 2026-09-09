@@ -410,6 +410,10 @@ class CheckpointScanner(ModelScanner):
 
         return None
 
+    def resolve_sub_type_for_path(self, file_path: Optional[str]) -> Optional[str]:
+        """Resolve sub_type from the configured root that contains the file."""
+        return self._resolve_sub_type(self._find_root_for_file(file_path))
+
     def adjust_metadata(self, metadata, file_path, root_path):
         """Adjust metadata during scanning to set sub_type."""
         sub_type = self._resolve_sub_type(root_path)
@@ -419,9 +423,7 @@ class CheckpointScanner(ModelScanner):
 
     def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         """Adjust entries loaded from the persisted cache to ensure sub_type is set."""
-        sub_type = self._resolve_sub_type(
-            self._find_root_for_file(entry.get("file_path"))
-        )
+        sub_type = self.resolve_sub_type_for_path(entry.get("file_path"))
         if sub_type:
             entry["sub_type"] = sub_type
         return entry

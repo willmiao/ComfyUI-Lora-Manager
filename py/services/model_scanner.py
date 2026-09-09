@@ -1339,6 +1339,14 @@ class ModelScanner:
         """Hook for subclasses: adjust entries loaded from the persisted cache."""
         return entry
 
+    def resolve_sub_type_for_path(self, file_path: Optional[str]) -> Optional[str]:
+        """Hook for subclasses: resolve the location-derived sub_type for a file.
+
+        Returns ``None`` when the model type has no location-derived sub-types
+        (the default), in which case any stored value is left untouched.
+        """
+        return None
+
     @staticmethod
     def _normalize_path_value(path: Optional[str]) -> str:
         if not path:
@@ -1869,6 +1877,20 @@ class ModelScanner:
                 except Exception as e:
                     logger.error(f"Error moving metadata file: {e}")
             
+            if metadata is not None:
+                # sub_type is derived from the model's location (e.g. a file
+                # moved from a checkpoints root into a unet root becomes a
+                # diffusion_model). Persist the recalculated value into the
+                # moved metadata file so later metadata-driven cache syncs
+                # do not revert the cache entry to the stale sub_type.
+                new_sub_type = self.resolve_sub_type_for_path(target_file)
+                if new_sub_type and metadata.get('sub_type') != new_sub_type:
+                    metadata['sub_type'] = new_sub_type
+                    try:
+                        await MetadataManager.save_metadata(moved_metadata_path, metadata)
+                    except Exception as e:
+                        logger.error(f"Error persisting sub_type for moved model: {e}")
+
             update_result = await self.update_single_model_cache(source_path, target_file, metadata, recalculate_type=True)
             
             return {
@@ -2063,6 +2085,11 @@ class ModelScanner:
             folder=folder_value,
             file_path_override=file_path,
         )
+
+        # Location-derived fields (e.g. the checkpoint sub_type) must be
+        # re-resolved from the file path rather than trusting the on-disk
+        # metadata snapshot, which may predate a cross-root move.
+        desired_entry = self.adjust_cached_entry(desired_entry)
 
         # Ensure sha256 is populated (defensive — metadata should have it)
         if (

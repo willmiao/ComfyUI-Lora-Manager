@@ -17,7 +17,8 @@ vi.mock('../../../static/js/state/index.js', () => ({
                 }
             }
         }
-    }
+    },
+    getCurrentPageState: vi.fn(() => ({ activeFolder: null, searchOptions: {} }))
 }));
 
 vi.mock('../../../static/js/managers/ModalManager.js', () => ({
@@ -161,5 +162,76 @@ describe('MoveManager', () => {
             '/models/loras',
             true
         );
+    });
+
+    it('should propagate the recalculated sub_type from the move response to the card', async () => {
+        // Setup state: moving a checkpoint into the unet root
+        moveManager.useDefaultPath = false;
+        moveManager.bulkFilePaths = null;
+        moveManager.currentFilePath = '/models/checkpoints/model.safetensors';
+        moveManager.modelRoots = ['/models/checkpoints', '/models/unet'];
+        document.getElementById('moveModelRoot').innerHTML = '<option value="/models/unet">/models/unet</option>';
+        document.getElementById('moveModelRoot').value = '/models/unet';
+        moveManager.folderTreeManager.selectedPath = '';
+
+        const updateSingleItem = vi.fn();
+        state.virtualScroller = {
+            updateSingleItem,
+            removeMultipleItemsByFilePath: vi.fn()
+        };
+
+        mockApiClient.moveSingleModel = vi.fn().mockResolvedValue({
+            success: true,
+            original_file_path: '/models/checkpoints/model.safetensors',
+            new_file_path: '/models/unet/model.safetensors',
+            cache_entry: { sub_type: 'diffusion_model' }
+        });
+
+        try {
+            await moveManager.moveModel();
+
+            expect(updateSingleItem).toHaveBeenCalledWith(
+                '/models/checkpoints/model.safetensors',
+                expect.objectContaining({
+                    file_path: '/models/unet/model.safetensors',
+                    sub_type: 'diffusion_model'
+                })
+            );
+        } finally {
+            delete state.virtualScroller;
+        }
+    });
+
+    it('should omit sub_type from the card update when the response has no cache entry', async () => {
+        moveManager.useDefaultPath = false;
+        moveManager.bulkFilePaths = null;
+        moveManager.currentFilePath = '/models/loras/a.safetensors';
+        moveManager.modelRoots = ['/models/loras'];
+        document.getElementById('moveModelRoot').innerHTML = '<option value="/models/loras">/models/loras</option>';
+        document.getElementById('moveModelRoot').value = '/models/loras';
+        moveManager.folderTreeManager.selectedPath = '';
+
+        const updateSingleItem = vi.fn();
+        state.virtualScroller = {
+            updateSingleItem,
+            removeMultipleItemsByFilePath: vi.fn()
+        };
+
+        mockApiClient.moveSingleModel = vi.fn().mockResolvedValue({
+            success: true,
+            original_file_path: '/models/loras/a.safetensors',
+            new_file_path: '/models/loras/b/a.safetensors'
+        });
+
+        try {
+            await moveManager.moveModel();
+
+            expect(updateSingleItem).toHaveBeenCalledWith(
+                '/models/loras/a.safetensors',
+                expect.not.objectContaining({ sub_type: expect.anything() })
+            );
+        } finally {
+            delete state.virtualScroller;
+        }
     });
 });
