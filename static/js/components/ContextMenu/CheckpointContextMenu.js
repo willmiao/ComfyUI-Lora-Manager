@@ -25,6 +25,7 @@ export class CheckpointContextMenu extends BaseContextMenu {
     showMenu(x, y, card) {
         super.showMenu(x, y, card);
         this.updateExcludeMenuItem();
+        this.updateEnrichMenuItem(card);
 
         // Update the "Move to other root" label based on current model type
         const moveOtherItem = this.menu.querySelector('[data-action="move-other"]');
