@@ -55,6 +55,18 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
         });
     });
 
+    it('detects HF blob (web preview) URL as resolve', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://huggingface.co/Comfy-Org/z_image_turbo/blob/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors'
+        );
+        expect(result).toEqual({
+            type: 'hf-resolve',
+            repo: 'Comfy-Org/z_image_turbo',
+            revision: 'main',
+            filename: 'split_files/diffusion_models/z_image_turbo_bf16.safetensors',
+        });
+    });
+
     it('detects CivitAI URL', () => {
         const result = DownloadManager.detectUrlType(
             'https://civitai.com/models/123/some-model'

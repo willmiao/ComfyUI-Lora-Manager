@@ -489,8 +489,9 @@ export class DownloadManager {
             return { type: 'civitai' };
         }
 
-        // Hugging Face resolve URL → direct file
-        const hfResolveMatch = trimmed.match(/huggingface\.co\/([^/\s]+\/[^/\s]+)\/resolve\/([^/\s]+)\/(.+)/i);
+        // Hugging Face resolve/blob URL → direct file
+        // "blob" is the web preview page; it maps 1:1 to the "resolve" download URL
+        const hfResolveMatch = trimmed.match(/huggingface\.co\/([^/\s]+\/[^/\s]+)\/(?:resolve|blob)\/([^/\s]+)\/(.+)/i);
         if (hfResolveMatch) {
             return {
                 type: 'hf-resolve',
