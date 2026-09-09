@@ -216,9 +216,6 @@
             "label": "Reasociar recetas con modelos locales",
             "loading": "Reasociando recetas con modelos locales...",
             "success": "{entries} entradas asociadas en {recipes} recetas",
-            "successErrors": "{entries} entradas asociadas en {recipes} recetas, {failures} fallidas",
-            "allFailed": "Falló la reasociación de {failures} de {total} recetas",
-            "noMatch": "No se encontró coincidencia local para {entries} entradas en {recipes} recetas",
             "cancelled": "Reasociación cancelada. {recipes} recetas actualizadas ({entries} entradas)",
             "error": "Falló la reasociación de recetas: {message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "Reasociar"
         },
         "rematchResults": {
-            "title": "Resultados de la reasociación — Coincidencias por nombre de archivo",
-            "message": "Estas entradas se reconectaron por nombre de archivo y pueden enlazar una versión diferente de un modelo. Revísalas y deshaz las que sean incorrectas.",
             "undo": "Deshacer",
             "undone": "Deshecho",
             "undoFailed": "No se pudo deshacer la reasociación: {message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "Imágenes de ejemplo locales",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "No se pudo examinar el directorio: {message}",
             "batchImportDirectorySelected": "Directorio seleccionado: {path}",
             "noRecipesSelected": "No se han seleccionado recetas",
-            "rematchComplete": "{entries} entradas asociadas en {recipes} recetas",
-            "rematchCompleteErrors": "{entries} entradas asociadas en {recipes} recetas, {failures} fallidas",
-            "rematchAllFailed": "Falló la reasociación de {failures} de {total} recetas seleccionadas",
-            "rematchUnmatched": "No se encontró coincidencia local para {entries} entradas en {recipes} recetas",
             "rematchSkipped": "Ninguna de las {total} recetas seleccionadas necesita reasociación",
             "rematchFailed": "Falló la reasociación de las recetas seleccionadas: {message}",
             "reimporting": "Reimportando receta desde origen...",

@@ -216,9 +216,6 @@
             "label": "레시피를 로컬 모델에 다시 매칭",
             "loading": "레시피를 로컬 모델에 다시 매칭하는 중...",
             "success": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다",
-            "successErrors": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다. {failures}개 실패",
-            "allFailed": "{total}개 레시피 중 {failures}개 재매칭 실패",
-            "noMatch": "{recipes}개 레시피에서 {entries}개 항목의 로컬 매칭을 찾지 못했습니다",
             "cancelled": "재매칭이 취소되었습니다. {recipes}개 레시피 업데이트됨({entries}개 항목)",
             "error": "레시피 재매칭 실패: {message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "재매칭"
         },
         "rematchResults": {
-            "title": "재매칭 결과 — 파일 이름 매칭",
-            "message": "이 항목들은 파일 이름으로 다시 연결되었으며 모델의 다른 버전에 연결되었을 수 있습니다. 검토 후 잘못된 항목은 실행 취소하세요.",
             "undo": "실행 취소",
             "undone": "실행 취소됨",
             "undoFailed": "재매칭 실행 취소 실패: {message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "로컬 예시 이미지",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "폴더를 찾아보지 못했습니다: {message}",
             "batchImportDirectorySelected": "선택한 폴더: {path}",
             "noRecipesSelected": "선택한 레시피가 없습니다",
-            "rematchComplete": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다",
-            "rematchCompleteErrors": "{recipes}개 레시피에서 {entries}개 항목이 매칭되었습니다. {failures}개 실패",
-            "rematchAllFailed": "선택한 {total}개 레시피 중 {failures}개 재매칭 실패",
-            "rematchUnmatched": "{recipes}개 레시피에서 {entries}개 항목의 로컬 매칭을 찾지 못했습니다",
             "rematchSkipped": "선택한 {total}개 레시피는 재매칭이 필요하지 않습니다",
             "rematchFailed": "선택한 레시피 재매칭 실패: {message}",
             "reimporting": "소스에서 레시피를 다시 가져오는 중...",

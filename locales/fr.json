@@ -216,9 +216,6 @@
             "label": "Réassocier les Recipes aux modèles locaux",
             "loading": "Réassociation des Recipes aux modèles locaux...",
             "success": "{entries} entrées associées dans {recipes} Recipes",
-            "successErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
-            "allFailed": "Échec de la réassociation de {failures} Recipes sur {total}",
-            "noMatch": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} Recipes",
             "cancelled": "Réassociation annulée. {recipes} Recipes mises à jour ({entries} entrées)",
             "error": "Échec de la réassociation des Recipes : {message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "Réassocier"
         },
         "rematchResults": {
-            "title": "Résultats de la réassociation — Correspondances par nom de fichier",
-            "message": "Ces entrées ont été reconnectées par nom de fichier et peuvent associer une version différente d'un modèle. Vérifiez-les et annulez celles qui sont incorrectes.",
             "undo": "Annuler",
             "undone": "Annulé",
             "undoFailed": "Échec de l'annulation de la réassociation : {message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "Images d'exemple locales",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "Échec de la navigation dans le dossier : {message}",
             "batchImportDirectorySelected": "Dossier sélectionné : {path}",
             "noRecipesSelected": "Aucune Recipe sélectionnée",
-            "rematchComplete": "{entries} entrées associées dans {recipes} Recipes",
-            "rematchCompleteErrors": "{entries} entrées associées dans {recipes} Recipes, {failures} échecs",
-            "rematchAllFailed": "Échec de la réassociation de {failures} Recipes sélectionnées sur {total}",
-            "rematchUnmatched": "Aucune correspondance locale trouvée pour {entries} entrées dans {recipes} Recipes",
             "rematchSkipped": "Aucune des {total} Recipes sélectionnées ne nécessite de réassociation",
             "rematchFailed": "Échec de la réassociation des Recipes sélectionnées : {message}",
             "reimporting": "Ré-import de la Recipe depuis la source...",

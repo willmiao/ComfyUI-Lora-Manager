@@ -2233,7 +2233,7 @@ describe('Interaction-level regression coverage', () => {
     expect(downloadExampleImagesApiMock).toHaveBeenCalledWith(['abc123hash'], null, { force: true });
   });
 
-  it('runs global recipe rematch with polling and toasts the rematched count', async () => {
+  it('runs global recipe rematch with polling and opens the summary modal', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="rematch-recipes"></div>
@@ -2298,13 +2298,22 @@ describe('Interaction-level regression coverage', () => {
     expect(global.fetch).toHaveBeenCalledTimes(2);
 
     expect(progressUI.showCancelButton).toHaveBeenCalledTimes(1);
-    expect(progressUI.complete).toHaveBeenCalledWith('Matched 5 entries across 2 recipes.');
-    // Oracle R4-F1 pin: count comes from `rematched`, a blind `repaired` mirror renders undefined
-    expect(showToastMock).toHaveBeenCalledWith(
+    // A non-noop run opens the summary modal instead of toasting; the
+    // progress overlay completes without a message.
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    expect(showToastMock).not.toHaveBeenCalledWith(
       'globalContextMenu.rematchRecipes.success',
-      { count: 2, recipes: 2, entries: 5, failures: 0 },
-      'success'
+      expect.anything(),
+      expect.anything()
     );
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    // unresolved_entries > 0 forces the warning header
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-success .stat-card-value').textContent).toBe('5');
+    expect(summaryModal.querySelector('.stat-card-skipped .stat-card-value').textContent).toBe('0');
+    expect(summaryModal.querySelector('.stat-card-total .stat-card-value').textContent).toBe('1');
+    expect(summaryModal.querySelector('.stat-card-failure .stat-card-value').textContent).toBe('0');
     expect(window.recipesPage.refresh).toHaveBeenCalledTimes(1);
     expect(rematchItem.classList.contains('disabled')).toBe(false);
     expect(menu._rematchInProgress).toBe(false);
@@ -2313,7 +2322,7 @@ describe('Interaction-level regression coverage', () => {
     delete stateStub.currentPageType;
   });
 
-  it('uses the warning toast variant when a global rematch completes with failures', async () => {
+  it('opens the summary modal with a warning header when a global rematch completes with failures', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="rematch-recipes"></div>
@@ -2359,19 +2368,18 @@ describe('Interaction-level regression coverage', () => {
     }
     await runPromise;
 
-    expect(progressUI.complete).toHaveBeenCalledWith('Matched 5 entries across 2 recipes, 2 failed.');
-    expect(showToastMock).toHaveBeenCalledWith(
-      'globalContextMenu.rematchRecipes.successErrors',
-      { count: 2, recipes: 2, entries: 5, failures: 2 },
-      'warning'
-    );
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-failure .stat-card-value').textContent).toBe('2');
     expect(menu._rematchInProgress).toBe(false);
 
     delete window.recipesPage;
     delete stateStub.currentPageType;
   });
 
-  it('toasts an error when every recipe in a global rematch failed', async () => {
+  it('opens the summary modal with an error header when every recipe in a global rematch failed', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="rematch-recipes"></div>
@@ -2417,19 +2425,18 @@ describe('Interaction-level regression coverage', () => {
     }
     await runPromise;
 
-    expect(progressUI.complete).toHaveBeenCalledWith('Rematch failed for 3 of 3 recipes.');
-    expect(showToastMock).toHaveBeenCalledWith(
-      'globalContextMenu.rematchRecipes.allFailed',
-      { total: 3, recipes: 0, entries: 0, failures: 3 },
-      'error'
-    );
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('error')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-failure .stat-card-value').textContent).toBe('3');
     expect(menu._rematchInProgress).toBe(false);
 
     delete window.recipesPage;
     delete stateStub.currentPageType;
   });
 
-  it('toasts an info message when a global rematch found no local matches', async () => {
+  it('opens the summary modal listing unresolved entries when a global rematch found no local matches', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="rematch-recipes"></div>
@@ -2475,19 +2482,18 @@ describe('Interaction-level regression coverage', () => {
     }
     await runPromise;
 
-    expect(progressUI.complete).toHaveBeenCalledWith('No local match found for 2 entries in 1 recipes.');
-    expect(showToastMock).toHaveBeenCalledWith(
-      'globalContextMenu.rematchRecipes.noMatch',
-      { entries: 2, recipes: 1, total: 3, failures: 0 },
-      'info'
-    );
+    expect(progressUI.complete).toHaveBeenCalledWith();
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-total .stat-card-value').textContent).toBe('2');
     expect(menu._rematchInProgress).toBe(false);
 
     delete window.recipesPage;
     delete stateStub.currentPageType;
   });
 
-  it('toasts the rematched count when a global rematch is cancelled', async () => {
+  it('opens the summary modal marked as cancelled when a global rematch is cancelled', async () => {
     document.body.innerHTML = `
       <div id="globalContextMenu" class="context-menu">
         <div class="context-menu-item" data-action="rematch-recipes"></div>
@@ -2533,11 +2539,11 @@ describe('Interaction-level regression coverage', () => {
     await runPromise;
 
     expect(progressUI.complete).toHaveBeenCalledWith('Rematch cancelled. 1 recipes updated (2 entries).');
-    expect(showToastMock).toHaveBeenCalledWith(
-      'globalContextMenu.rematchRecipes.cancelled',
-      { count: 1, recipes: 1, entries: 2 },
-      'info'
-    );
+    const summaryModal = document.getElementById('rematchSummaryModal');
+    expect(summaryModal).not.toBeNull();
+    expect(summaryModal.querySelector('.rematch-cancelled-note')).not.toBeNull();
+    expect(summaryModal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+    expect(summaryModal.querySelector('.stat-card-success .stat-card-value').textContent).toBe('2');
     expect(menu._rematchInProgress).toBe(false);
 
     delete stateStub.currentPageType;

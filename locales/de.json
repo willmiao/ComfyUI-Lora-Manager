@@ -216,9 +216,6 @@
             "label": "Rezepte lokalen Modellen neu zuordnen",
             "loading": "Rezepte werden lokalen Modellen neu zugeordnet...",
             "success": "{entries} Einträge in {recipes} Rezepten zugeordnet",
-            "successErrors": "{entries} Einträge in {recipes} Rezepten zugeordnet, {failures} fehlgeschlagen",
-            "allFailed": "Zuordnung fehlgeschlagen für {failures} von {total} Rezepten",
-            "noMatch": "Keine lokale Übereinstimmung für {entries} Einträge in {recipes} Rezepten gefunden",
             "cancelled": "Zuordnung abgebrochen. {recipes} Rezepte aktualisiert ({entries} Einträge)",
             "error": "Zuordnung der Rezepte fehlgeschlagen: {message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "Neu zuordnen"
         },
         "rematchResults": {
-            "title": "Ergebnisse der neuen Zuordnung — Übereinstimmungen per Dateiname",
-            "message": "Diese Einträge wurden per Dateiname neu verbunden und verknüpfen möglicherweise eine andere Version eines Modells. Überprüfen Sie sie und machen Sie falsche Zuordnungen rückgängig.",
             "undo": "Rückgängig",
             "undone": "Rückgängig gemacht",
             "undoFailed": "Rückgängigmachen der Neuordnung fehlgeschlagen: {message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "Lokale Beispielbilder",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "Ordner konnte nicht durchsucht werden: {message}",
             "batchImportDirectorySelected": "Verzeichnis ausgewählt: {path}",
             "noRecipesSelected": "Keine Rezepte ausgewählt",
-            "rematchComplete": "{entries} Einträge in {recipes} Rezepten zugeordnet",
-            "rematchCompleteErrors": "{entries} Einträge in {recipes} Rezepten zugeordnet, {failures} fehlgeschlagen",
-            "rematchAllFailed": "Zuordnung fehlgeschlagen für {failures} von {total} ausgewählten Rezepten",
-            "rematchUnmatched": "Keine lokale Übereinstimmung für {entries} Einträge in {recipes} Rezepten gefunden",
             "rematchSkipped": "Keine Zuordnung für die {total} ausgewählten Rezepte erforderlich",
             "rematchFailed": "Zuordnung der ausgewählten Rezepte fehlgeschlagen: {message}",
             "reimporting": "Rezept wird aus Quelle neu importiert...",

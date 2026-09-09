@@ -216,9 +216,6 @@
             "label": "レシピをローカルモデルに再マッチング",
             "loading": "レシピをローカルモデルに再マッチングしています...",
             "success": "{recipes} 件のレシピで {entries} エントリをマッチングしました",
-            "successErrors": "{recipes} 件のレシピで {entries} エントリをマッチングしました（{failures} 件失敗）",
-            "allFailed": "{total} 件中 {failures} 件のレシピの再マッチングに失敗しました",
-            "noMatch": "{recipes} 件のレシピで {entries} エントリのローカルマッチが見つかりませんでした",
             "cancelled": "再マッチングをキャンセルしました。{recipes} 件のレシピを更新（{entries} エントリ）",
             "error": "レシピの再マッチングに失敗しました：{message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "再マッチング"
         },
         "rematchResults": {
-            "title": "再マッチング結果 — ファイル名によるマッチ",
-            "message": "これらのエントリはファイル名で再接続されたため、モデルの別バージョンに関連付けられている可能性があります。内容を確認し、誤っているものは元に戻してください。",
             "undo": "元に戻す",
             "undone": "元に戻しました",
             "undoFailed": "再マッチングを元に戻せませんでした：{message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "ローカル例画像",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "フォルダを参照できませんでした: {message}",
             "batchImportDirectorySelected": "選択されたフォルダ: {path}",
             "noRecipesSelected": "レシピが選択されていません",
-            "rematchComplete": "{recipes} 件のレシピで {entries} エントリをマッチングしました",
-            "rematchCompleteErrors": "{recipes} 件のレシピで {entries} エントリをマッチングしました（{failures} 件失敗）",
-            "rematchAllFailed": "選択した {total} 件中 {failures} 件のレシピの再マッチングに失敗しました",
-            "rematchUnmatched": "{recipes} 件のレシピで {entries} エントリのローカルマッチが見つかりませんでした",
             "rematchSkipped": "選択した {total} 件のレシピは再マッチングの必要がありませんでした",
             "rematchFailed": "選択したレシピの再マッチングに失敗しました：{message}",
             "reimporting": "ソースからレシピを再インポート中...",

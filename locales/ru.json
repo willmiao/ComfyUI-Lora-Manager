@@ -216,9 +216,6 @@
             "label": "Повторное сопоставление рецептов с локальными моделями",
             "loading": "Повторное сопоставление рецептов с локальными моделями...",
             "success": "Сопоставлено записей: {entries} в рецептах: {recipes}",
-            "successErrors": "Сопоставлено записей: {entries} в рецептах: {recipes}, ошибок: {failures}",
-            "allFailed": "Не удалось сопоставить: {failures} из {total} рецептов",
-            "noMatch": "Не найдено локального сопоставления для {entries} записей в {recipes} рецептах",
             "cancelled": "Сопоставление отменено. Обновлено рецептов: {recipes} (записей: {entries})",
             "error": "Не удалось выполнить сопоставление рецептов: {message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "Сопоставить"
         },
         "rematchResults": {
-            "title": "Результаты сопоставления — совпадения по имени файла",
-            "message": "Эти записи были переподключены по имени файла и могут ссылаться на другую версию модели. Проверьте их и отмените неверные.",
             "undo": "Отменить",
             "undone": "Отменено",
             "undoFailed": "Не удалось отменить сопоставление: {message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "Локальные примеры изображений",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "Не удалось открыть папку: {message}",
             "batchImportDirectorySelected": "Выбрана папка: {path}",
             "noRecipesSelected": "Рецепты не выбраны",
-            "rematchComplete": "Сопоставлено записей: {entries} в рецептах: {recipes}",
-            "rematchCompleteErrors": "Сопоставлено записей: {entries} в рецептах: {recipes}, ошибок: {failures}",
-            "rematchAllFailed": "Не удалось сопоставить: {failures} из {total} выбранных рецептов",
-            "rematchUnmatched": "Не найдено локального сопоставления для {entries} записей в {recipes} рецептах",
             "rematchSkipped": "Ни один из {total} выбранных рецептов не требует сопоставления",
             "rematchFailed": "Не удалось сопоставить выбранные рецепты: {message}",
             "reimporting": "Переимпорт рецепта из источника...",

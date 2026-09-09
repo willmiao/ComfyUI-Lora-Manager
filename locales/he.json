@@ -216,9 +216,6 @@
             "label": "התאמה מחדש של מתכונים למודלים מקומיים",
             "loading": "מתבצעת התאמה מחדש של מתכונים למודלים מקומיים...",
             "success": "הותאמו {entries} פריטים ב־{recipes} מתכונים",
-            "successErrors": "הותאמו {entries} פריטים ב־{recipes} מתכונים, {failures} נכשלו",
-            "allFailed": "ההתאמה נכשלה עבור {failures} מתוך {total} מתכונים",
-            "noMatch": "לא נמצאה התאמה מקומית עבור {entries} פריטים ב־{recipes} מתכונים",
             "cancelled": "ההתאמה בוטלה. עודכנו {recipes} מתכונים ({entries} פריטים)",
             "error": "ההתאמה מחדש של המתכונים נכשלה: {message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "התאם מחדש"
         },
         "rematchResults": {
-            "title": "תוצאות ההתאמה מחדש — התאמות לפי שם קובץ",
-            "message": "הפריטים האלה חוברו מחדש לפי שם קובץ וייתכן שהם מקושרים לגרסה אחרת של מודל. סקור אותם ובטל כל אחד שאינו נכון.",
             "undo": "בטל",
             "undone": "בוטל",
             "undoFailed": "ביטול ההתאמה מחדש נכשל: {message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "תמונות דוגמה מקומיות",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "לא ניתן היה לעיין בתיקייה: {message}",
             "batchImportDirectorySelected": "נבחרה תיקייה: {path}",
             "noRecipesSelected": "לא נבחרו מתכונים",
-            "rematchComplete": "הותאמו {entries} פריטים ב־{recipes} מתכונים",
-            "rematchCompleteErrors": "הותאמו {entries} פריטים ב־{recipes} מתכונים, {failures} נכשלו",
-            "rematchAllFailed": "ההתאמה נכשלה עבור {failures} מתוך {total} מתכונים שנבחרו",
-            "rematchUnmatched": "לא נמצאה התאמה מקומית עבור {entries} פריטים ב־{recipes} מתכונים",
             "rematchSkipped": "אין צורך בהתאמה עבור {total} המתכונים שנבחרו",
             "rematchFailed": "ההתאמה מחדש של המתכונים שנבחרו נכשלה: {message}",
             "reimporting": "מייבא מתכון מחדש מהמקור...",

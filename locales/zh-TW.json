@@ -216,9 +216,6 @@
             "label": "將配方重新匹配到本地模型",
             "loading": "正在將配方重新匹配到本地模型...",
             "success": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
-            "successErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
-            "allFailed": "{failures}/{total} 個配方重新匹配失敗",
-            "noMatch": "在 {recipes} 個配方中找不到 {entries} 個條目的本地匹配",
             "cancelled": "已取消重新匹配。{recipes} 個配方已更新（{entries} 個條目）。",
             "error": "配方重新匹配失敗：{message}"
         },
@@ -1511,11 +1508,30 @@
             "confirmButton": "重新匹配"
         },
         "rematchResults": {
-            "title": "重新匹配結果——檔案名稱匹配",
-            "message": "這些條目已依檔案名稱重新關聯，可能連結到模型的不同版本。請檢閱這些條目，並撤銷任何錯誤的項目。",
             "undo": "撤銷",
             "undone": "已撤銷",
             "undoFailed": "撤銷重新匹配失敗：{message}"
+        },
+        "rematchSummary": {
+            "title": "[TODO: Translate] Rematch Summary",
+            "successMessage": "[TODO: Translate] Matched {entries} entries",
+            "failed": "[TODO: Translate] Rematch failed",
+            "completedWithWarnings": "[TODO: Translate] Rematch completed — review recommended",
+            "cancelledNote": "[TODO: Translate] Run cancelled before completion — counts are partial.",
+            "statMatched": "[TODO: Translate] Matched entries",
+            "statReview": "[TODO: Translate] Needs review",
+            "statUnresolved": "[TODO: Translate] Unresolved",
+            "statErrors": "[TODO: Translate] Errors",
+            "reviewSection": "[TODO: Translate] Filename matches to review ({count})",
+            "columnRecipe": "[TODO: Translate] Recipe",
+            "columnEntry": "[TODO: Translate] Entry",
+            "columnFile": "[TODO: Translate] Matched file",
+            "columnUndo": "[TODO: Translate] Undo",
+            "copyReport": "[TODO: Translate] Copy Report",
+            "close": "[TODO: Translate] Close",
+            "scope_global": "[TODO: Translate] All recipes",
+            "scope_bulk": "[TODO: Translate] Selected recipes",
+            "scope_single": "[TODO: Translate] Single recipe"
         },
         "exampleAccess": {
             "title": "本機範例圖片",
@@ -2239,10 +2255,6 @@
             "batchImportBrowseFailed": "瀏覽目錄失敗：{message}",
             "batchImportDirectorySelected": "已選擇目錄：{path}",
             "noRecipesSelected": "未選取任何配方",
-            "rematchComplete": "已匹配 {entries} 個條目，涉及 {recipes} 個配方",
-            "rematchCompleteErrors": "已匹配 {entries} 個條目，涉及 {recipes} 個配方，{failures} 個失敗",
-            "rematchAllFailed": "{failures}/{total} 個所選配方重新匹配失敗",
-            "rematchUnmatched": "在 {recipes} 個配方中找不到 {entries} 個條目的本地匹配",
             "rematchSkipped": "{total} 個所選配方均無需重新匹配",
             "rematchFailed": "重新匹配所選配方失敗：{message}",
             "reimporting": "正在從來源重新匯入配方...",
