@@ -890,6 +890,215 @@ async def test_cancel_download_tolerates_missing_gid(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_register_transfer_tracks_gid_before_state_persist_completes(
+    tmp_path, monkeypatch
+):
+    """A cancel arriving while the state store write is still in flight must
+    already find the transfer — otherwise the gid leaks and the daemon keeps
+    downloading."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    rpc_calls = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        rpc_calls.append((method, params))
+        if method == "aria2.addUri":
+            return "gid-1"
+        if method == "aria2.forceRemove":
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    persist_started = asyncio.Event()
+    persist_release = asyncio.Event()
+
+    class BlockingStore:
+        async def upsert(self, download_id, payload):
+            persist_started.set()
+            await persist_release.wait()
+
+        async def remove(self, download_id):
+            return None
+
+    monkeypatch.setattr(downloader, "_state_store", BlockingStore())
+
+    register_task = asyncio.create_task(
+        downloader._register_transfer(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(persist_started.wait(), timeout=1.0)
+
+    transfer = downloader._transfers.get("download-1")
+    assert transfer is not None and transfer.gid == "gid-1"
+
+    result = await downloader.cancel_download("download-1")
+    assert result["success"] is True
+    assert ("aria2.forceRemove", ["gid-1"]) in rpc_calls
+
+    persist_release.set()
+    registered = await register_task
+    assert registered.gid == "gid-1"
+
+
+@pytest.mark.asyncio
+async def test_schedule_download_removes_gid_accepted_while_cancelled(
+    tmp_path, monkeypatch
+):
+    """Cancelling while the addUri RPC is in flight must remove the gid the
+    daemon accepted, instead of leaking an untracked download."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    add_uri_started = asyncio.Event()
+    force_removed = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            add_uri_started.set()
+            # The daemon processes the request while the client is cancelled.
+            await asyncio.sleep(0.05)
+            return "gid-leaked"
+        if method == "aria2.forceRemove":
+            force_removed.append(params[0])
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    schedule_task = asyncio.create_task(
+        downloader._schedule_download(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(add_uri_started.wait(), timeout=1.0)
+    schedule_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await schedule_task
+
+    assert force_removed == ["gid-leaked"]
+    assert "download-1" not in downloader._transfers
+
+
+@pytest.mark.asyncio
+async def test_register_transfer_cancelled_during_persist_removes_active_gid(
+    tmp_path, monkeypatch
+):
+    """Cancellation landing after the gid is registered but before the state
+    store write finishes must remove the still-active daemon transfer."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    persist_started = asyncio.Event()
+    force_removed = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            return "gid-2"
+        if method == "aria2.tellStatus":
+            return {"gid": "gid-2", "status": "active"}
+        if method == "aria2.forceRemove":
+            force_removed.append(params[0])
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    class BlockingStore:
+        async def upsert(self, download_id, payload):
+            persist_started.set()
+            await asyncio.Event().wait()
+
+        async def remove(self, download_id):
+            return None
+
+    monkeypatch.setattr(downloader, "_state_store", BlockingStore())
+
+    register_task = asyncio.create_task(
+        downloader._register_transfer(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(persist_started.wait(), timeout=1.0)
+    register_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await register_task
+
+    assert force_removed == ["gid-2"]
+    assert "download-1" not in downloader._transfers
+
+
+@pytest.mark.asyncio
+async def test_register_transfer_cancelled_during_persist_preserves_paused_gid(
+    tmp_path, monkeypatch
+):
+    """skip_download pauses the daemon transfer before cancelling the task;
+    the unwind cleanup must not remove a deliberately paused gid."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    persist_started = asyncio.Event()
+    force_removed = []
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        if method == "aria2.addUri":
+            return "gid-3"
+        if method == "aria2.tellStatus":
+            return {"gid": "gid-3", "status": "paused"}
+        if method == "aria2.forceRemove":
+            force_removed.append(params[0])
+            return "OK"
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+
+    class BlockingStore:
+        async def upsert(self, download_id, payload):
+            persist_started.set()
+            await asyncio.Event().wait()
+
+        async def remove(self, download_id):
+            return None
+
+    monkeypatch.setattr(downloader, "_state_store", BlockingStore())
+
+    register_task = asyncio.create_task(
+        downloader._register_transfer(
+            "https://example.com/model.safetensors",
+            str(save_path),
+            download_id="download-1",
+        )
+    )
+    await asyncio.wait_for(persist_started.wait(), timeout=1.0)
+    register_task.cancel()
+
+    with pytest.raises(asyncio.CancelledError):
+        await register_task
+
+    assert force_removed == []
+    assert downloader._transfers["download-1"].gid == "gid-3"
+
+
+@pytest.mark.asyncio
 async def test_rpc_call_suppresses_error_log_when_log_errors_false(
     monkeypatch, caplog
 ):

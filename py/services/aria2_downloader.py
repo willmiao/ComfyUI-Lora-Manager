@@ -161,6 +161,11 @@ class Aria2Downloader:
         (typically an expired CivitAI signed URL): a fresh URL is resolved
         and the partial download continues.  Recovery is bounded by
         ``MAX_TRANSFER_RECOVERY_ATTEMPTS``.
+
+        Cancellation never leaks daemon transfers: the gid is tracked in
+        ``_transfers`` before any post-``addUri`` await, and a gid accepted
+        by the daemon while the caller is being cancelled is removed again
+        before the ``CancelledError`` propagates.
         """
 
         await self._ensure_process()
@@ -251,7 +256,11 @@ class Aria2Downloader:
                 await asyncio.sleep(self._poll_interval)
         finally:
             current = self._transfers.get(download_id)
-            if current is not None and current.gid == transfer.gid:
+            if (
+                transfer is not None
+                and current is not None
+                and current.gid == transfer.gid
+            ):
                 self._transfers.pop(download_id, None)
 
     async def _get_status_with_retry(
@@ -339,21 +348,43 @@ class Aria2Downloader:
             resolved_url != url,
         )
 
+        # Shield the addUri RPC from cancellation: the daemon may accept the
+        # download even when the caller is cancelled while the request is in
+        # flight.  On cancellation, wait for the RPC result so the freshly
+        # created gid can be removed instead of leaking an untracked
+        # download that keeps running in the daemon.
+        add_task = asyncio.ensure_future(
+            self._rpc_call("aria2.addUri", [[resolved_url], options])
+        )
         try:
-            gid = await self._rpc_call("aria2.addUri", [[resolved_url], options])
+            gid = await asyncio.shield(add_task)
+        except asyncio.CancelledError:
+            leaked_gid: Any = None
+            try:
+                leaked_gid = await add_task
+            except Exception:
+                leaked_gid = None
+            if isinstance(leaked_gid, str) and leaked_gid:
+                logger.info(
+                    "Removing aria2 gid %s accepted while download %s was "
+                    "being cancelled",
+                    leaked_gid,
+                    download_id,
+                )
+                try:
+                    await self._rpc_call("aria2.forceRemove", [leaked_gid])
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to remove leaked aria2 gid %s for download %s: %s",
+                        leaked_gid,
+                        download_id,
+                        exc,
+                    )
+            raise
         except Exception as exc:
             raise Aria2Error(f"Failed to schedule aria2 download: {exc}") from exc
 
         logger.debug("aria2 accepted download %s with gid %s", download_id, gid)
-        await self._state_store.upsert(
-            download_id,
-            {
-                "gid": gid,
-                "save_path": save_path,
-                "status": "downloading",
-                "url": url,
-            },
-        )
         return gid
 
     async def _register_transfer(
@@ -372,7 +403,46 @@ class Aria2Downloader:
             headers=headers,
         )
         transfer = Aria2Transfer(gid=gid, save_path=os.path.abspath(save_path))
+        # Register the transfer before any further await: once the daemon
+        # holds the gid, cancel_download() must be able to find it.  An await
+        # in between would open a window where a concurrent cancel reports
+        # "Download task not found" and the daemon keeps downloading
+        # untracked.
         self._transfers[download_id] = transfer
+        try:
+            await self._state_store.upsert(
+                download_id,
+                {
+                    "gid": gid,
+                    "save_path": transfer.save_path,
+                    "status": "downloading",
+                    "url": url,
+                },
+            )
+        except asyncio.CancelledError:
+            # The task was cancelled while persisting state and the
+            # coordinator's cancel ran before the transfer was registered
+            # above.  Remove the daemon transfer unless it was deliberately
+            # paused (skip_download preserves paused transfers for resume).
+            status = None
+            try:
+                status = await self.get_status(download_id)
+            except Exception:
+                status = None
+            if status is not None and status.get("status") != "paused":
+                try:
+                    await self._rpc_call("aria2.forceRemove", [gid])
+                except Exception as exc:
+                    logger.warning(
+                        "Failed to remove aria2 gid %s for cancelled download %s: %s",
+                        gid,
+                        download_id,
+                        exc,
+                    )
+                current = self._transfers.get(download_id)
+                if current is not None and current.gid == gid:
+                    self._transfers.pop(download_id, None)
+            raise
         return transfer
 
     async def get_status(self, download_id: str) -> Optional[Dict[str, Any]]:
