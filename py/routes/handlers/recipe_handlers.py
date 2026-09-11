@@ -3124,6 +3124,12 @@ class RecipeWorkflowHandler:
 class BatchImportHandler:
     """Handle batch import operations for recipes."""
 
+    # Virtual path token for the Windows drive list. Browsing up from a drive
+    # root (e.g. C:\) lands here so users can switch drives without typing a
+    # path. Only meaningful on Windows; elsewhere it falls through to normal
+    # path handling and fails the existence check.
+    WINDOWS_DRIVES_TOKEN = "__drives__"
+
     def __init__(
         self,
         *,
@@ -3297,31 +3303,27 @@ class BatchImportHandler:
             data = await request.json()
             directory_path = data.get("path", "")
 
+            if os.name == "nt" and directory_path == self.WINDOWS_DRIVES_TOKEN:
+                return self._windows_drives_response()
+
+            # Default to the user's home directory. The frontend previously
+            # sent "/" as the initial path, which is POSIX-only: on Windows it
+            # resolves to the current drive root and then fails the access
+            # check below.
             if not directory_path:
-                return web.json_response(
-                    {"success": False, "error": "Directory path is required"},
-                    status=400,
-                )
+                path = Path.home()
+            else:
+                path = Path(directory_path).expanduser().resolve()
 
-            # Normalize the path
-            path = Path(directory_path).expanduser().resolve()
-
-            # Security check: ensure path is within allowed directories
-            # Allow common image/model directories
-            allowed_roots = [
-                Path.home(),
-                Path("/"),  # Allow browsing from root for flexibility
-            ]
-
-            # Check if path is within any allowed root
-            is_allowed = False
-            for root in allowed_roots:
-                try:
-                    path.relative_to(root)
-                    is_allowed = True
-                    break
-                except ValueError:
-                    continue
+            # Access check: browsing intentionally covers the whole server
+            # filesystem (the server operator browses their own machine). On
+            # POSIX every absolute path is under "/", but Path("/") has no
+            # drive letter on Windows and can never anchor a drive-qualified
+            # path in relative_to(), so test for a drive there instead.
+            if os.name == "nt":
+                is_allowed = bool(path.drive)
+            else:
+                is_allowed = path.is_absolute()
 
             if not is_allowed:
                 return web.json_response(
@@ -3388,15 +3390,24 @@ class BatchImportHandler:
                 directories.sort(key=lambda x: x["name"].lower())
                 image_files.sort(key=lambda x: x["name"].lower())
 
-                # Add parent directory if not at root
-                parent_path = path.parent
-                show_parent = str(path) != str(path.root)
+                # Parent directory. A filesystem root is its own parent
+                # (parent == path): POSIX "/" gets no parent, while a Windows
+                # drive root (C:\) links up to the virtual drive list so users
+                # can switch drives. The previous str(path) != str(path.root)
+                # check misfired on Windows, where a drive root's parent is
+                # itself, producing an infinite self-loop.
+                if path.parent == path:
+                    parent_path = (
+                        self.WINDOWS_DRIVES_TOKEN if os.name == "nt" else None
+                    )
+                else:
+                    parent_path = str(path.parent)
 
                 return web.json_response(
                     {
                         "success": True,
                         "current_path": str(path),
-                        "parent_path": str(parent_path) if show_parent else None,
+                        "parent_path": parent_path,
                         "directories": directories,
                         "image_files": image_files,
                         "image_count": len(image_files),
@@ -3423,3 +3434,30 @@ class BatchImportHandler:
         except Exception as exc:
             self._logger.error("Error browsing directory: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    def _windows_drives_response(self) -> web.Response:
+        """List available drive letters as a virtual directory (Windows only)."""
+        try:
+            drives = os.listdrives()
+        except AttributeError:  # Python < 3.12
+            drives = [
+                f"{letter}:\\"
+                for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+                if os.path.exists(f"{letter}:\\")
+            ]
+        directories = [
+            {"name": drive, "path": drive, "is_parent": False} for drive in drives
+        ]
+        return web.json_response(
+            {
+                "success": True,
+                # Empty current_path marks the virtual level; the frontend
+                # disables folder selection there.
+                "current_path": "",
+                "parent_path": None,
+                "directories": directories,
+                "image_files": [],
+                "image_count": 0,
+                "directory_count": len(directories),
+            }
+        )

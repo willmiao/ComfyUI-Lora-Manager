@@ -18,6 +18,7 @@ export class BatchImportManager {
         this.results = null;
         this.isCancelled = false;
         this.isImporting = false;
+        this.currentParentPath = null;
     }
 
     /**
@@ -718,9 +719,10 @@ export class BatchImportManager {
             browser.style.display = isVisible ? 'none' : 'block';
             
             if (!isVisible) {
-                // Load initial directory when opening
+                // Load initial directory when opening. An empty path lets the
+                // server pick its default (user home); "/" would be POSIX-only.
                 const currentPath = document.getElementById('batchDirectoryInput').value;
-                this.loadDirectory(currentPath || '/');
+                this.loadDirectory(currentPath || '');
             }
         }
     }
@@ -760,6 +762,10 @@ export class BatchImportManager {
         const fileList = document.getElementById('batchFileList');
         const directoryCount = document.getElementById('batchDirectoryCount');
         const imageCount = document.getElementById('batchImageCount');
+
+        // Remember the server-computed parent path so the "up" navigation
+        // works with Windows paths too (they cannot be split on "/").
+        this.currentParentPath = data.parent_path || null;
 
         if (currentPathEl) {
             currentPathEl.textContent = data.current_path;
@@ -811,11 +817,9 @@ export class BatchImportManager {
         `;
         
         item.addEventListener('click', () => {
-            if (isParent) {
-                this.navigateToParentDirectory();
-            } else {
-                this.loadDirectory(path);
-            }
+            // The parent entry uses the server-provided parent_path (or the
+            // Windows drive-list token) directly — both are plain load targets.
+            this.loadDirectory(path);
         });
         
         return item;
@@ -839,15 +843,12 @@ export class BatchImportManager {
     }
 
     /**
-     * Navigate to parent directory
+     * Navigate to parent directory using the path reported by the server.
+     * Deriving it client-side by splitting on "/" breaks Windows paths.
      */
     navigateToParentDirectory() {
-        const currentPath = document.getElementById('batchCurrentPath')?.textContent;
-        if (currentPath) {
-            // Get parent path using path manipulation
-            const lastSeparator = currentPath.lastIndexOf('/');
-            const parentPath = lastSeparator > 0 ? currentPath.substring(0, lastSeparator) : currentPath;
-            this.loadDirectory(parentPath);
+        if (this.currentParentPath) {
+            this.loadDirectory(this.currentParentPath);
         }
     }
 
@@ -857,8 +858,14 @@ export class BatchImportManager {
     selectCurrentDirectory() {
         const currentPath = document.getElementById('batchCurrentPath')?.textContent;
         const directoryInput = document.getElementById('batchDirectoryInput');
-        
-        if (currentPath && directoryInput) {
+
+        if (!currentPath) {
+            // Virtual levels (e.g. the Windows drive list) have no path.
+            showToast('toast.recipes.batchImportNoDirectory', {}, 'error');
+            return;
+        }
+
+        if (directoryInput) {
             directoryInput.value = currentPath;
             this.toggleDirectoryBrowser(); // Close browser
             showToast('toast.recipes.batchImportDirectorySelected', { path: currentPath }, 'success');
