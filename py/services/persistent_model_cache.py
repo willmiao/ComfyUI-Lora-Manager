@@ -19,6 +19,9 @@ class PersistedCacheData:
     hash_rows: List[Tuple[str, str]]
     excluded_models: List[str]
     autov3_hash_rows: List[Tuple[str, str]] = field(default_factory=list)
+    # Every directory under the model roots (including empty ones), or None
+    # when the snapshot predates folder recording.
+    all_folders: Optional[List[str]] = None
 
 
 DEFAULT_LICENSE_FLAGS = 127  # 127 (0b1111111) encodes default CivitAI permissions with all commercial modes enabled.
@@ -128,6 +131,14 @@ class PersistentModelCache:
                         "SELECT file_path FROM excluded_models WHERE model_type = ?",
                         (model_type,),
                     ).fetchall()
+                    folder_rows = conn.execute(
+                        "SELECT path FROM folders WHERE model_type = ?",
+                        (model_type,),
+                    ).fetchall()
+                    folders_recorded = conn.execute(
+                        "SELECT value FROM cache_meta WHERE key = ?",
+                        (f"folders_recorded:{model_type}",),
+                    ).fetchone()
                 finally:
                     conn.close()
         except Exception as exc:
@@ -216,14 +227,20 @@ class PersistentModelCache:
         ]
 
         excluded_paths = [row["file_path"] for row in excluded]
+        all_folders: Optional[List[str]] = None
+        if folders_recorded is not None:
+            all_folders = sorted(
+                (row["path"] for row in folder_rows), key=lambda x: x.lower()
+            )
         return PersistedCacheData(
             raw_data=raw_data,
             hash_rows=hash_pairs,
             excluded_models=excluded_paths,
             autov3_hash_rows=autov3_pairs,
+            all_folders=all_folders,
         )
 
-    def save_cache(self, model_type: str, raw_data: Sequence[Dict[str, Any]], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None) -> None:
+    def save_cache(self, model_type: str, raw_data: Sequence[Dict[str, Any]], hash_index: Dict[str, List[str]], excluded_models: Sequence[str], autov3_hash_index: Optional[Dict[str, List[str]]] = None, all_folders: Optional[Sequence[str]] = None) -> None:
         if not self.is_enabled():
             return
         if not self._schema_initialized:
@@ -469,6 +486,27 @@ class PersistentModelCache:
                             excluded_inserts,
                         )
 
+                    if all_folders is not None:
+                        conn.execute(
+                            "DELETE FROM folders WHERE model_type = ?",
+                            (model_type,),
+                        )
+                        folder_inserts = [
+                            (model_type, path) for path in all_folders if path
+                        ]
+                        if folder_inserts:
+                            conn.executemany(
+                                "INSERT OR IGNORE INTO folders (model_type, path) VALUES (?, ?)",
+                                folder_inserts,
+                            )
+                        # Mark the snapshot as having folder data even when the
+                        # library has no subfolders, so an empty list is not
+                        # mistaken for "never recorded" on load.
+                        conn.execute(
+                            "INSERT OR REPLACE INTO cache_meta (key, value) VALUES (?, ?)",
+                            (f"folders_recorded:{model_type}", "1"),
+                        )
+
                     conn.commit()
                 finally:
                     conn.close()
@@ -553,6 +591,17 @@ class PersistentModelCache:
                             model_type TEXT NOT NULL,
                             file_path TEXT NOT NULL,
                             PRIMARY KEY (model_type, file_path)
+                        );
+
+                        CREATE TABLE IF NOT EXISTS folders (
+                            model_type TEXT NOT NULL,
+                            path TEXT NOT NULL,
+                            PRIMARY KEY (model_type, path)
+                        );
+
+                        CREATE TABLE IF NOT EXISTS cache_meta (
+                            key TEXT PRIMARY KEY,
+                            value TEXT
                         );
                         """
                     )

@@ -33,6 +33,11 @@ class ModelCache:
 
     raw_data: List[Dict[str, Any]]
     folders: List[str]
+    # Every directory under the model roots (including empty ones), as
+    # recorded by the last scan/hydration. ``None`` means "never recorded"
+    # (e.g. a persisted snapshot predating this field) and triggers a
+    # background filesystem backfill in the scanner.
+    all_folders: Optional[List[str]] = None
     version_index: Dict[int, Dict[str, Any]] = field(default_factory=dict)
     model_id_index: Dict[int, List[Dict[str, Any]]] = field(default_factory=dict)
     # Multi-valued companion to version_index: every local file entry of a
