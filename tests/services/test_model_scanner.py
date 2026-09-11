@@ -733,6 +733,130 @@ async def test_reconcile_cache_removes_duplicate_alias_when_same_real_file_seen_
 
 
 @pytest.mark.asyncio
+async def test_reconcile_cache_keeps_cached_path_when_walk_yields_a_live_alias(
+    tmp_path: Path,
+):
+    """A root-order / symlink change can make the walk produce a *different but
+    still live* business path for a file already in the cache. The realpath
+    alias map must keep the cached entry instead of re-processing the file and
+    swapping the path (which would re-read metadata and re-hash the weights)."""
+    loras_root = tmp_path / "loras"
+    loras_root.mkdir()
+    extra_root = tmp_path / "extra"
+    extra_root.mkdir()
+    (extra_root / "one.txt").write_text("one", encoding="utf-8")
+    (loras_root / "link").symlink_to(extra_root, target_is_directory=True)
+
+    # `extra_root` comes first, so the cache entry is stored under its path.
+    scanner = MultiRootDummyScanner([extra_root, loras_root])
+    await scanner._initialize_cache()
+
+    cached_before = {item["file_path"] for item in scanner._cache.raw_data}
+    assert cached_before == {_normalize_path(extra_root / "one.txt")}
+
+    # The symlinked path now wins the walk; the file itself is unchanged.
+    scanner._roots = [str(loras_root), str(extra_root)]
+    processed: List[str] = []
+
+    async def _record_process(file_path: str, root_path: str, *args, **kwargs):
+        processed.append(file_path)
+        return await DummyScanner._process_model_file(
+            scanner, file_path, root_path, *args, **kwargs
+        )
+
+    scanner._process_model_file = _record_process  # type: ignore[method-assign]
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert {item["file_path"] for item in cache.raw_data} == cached_before
+    assert processed == []
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_defers_realpath_to_cache_misses(
+    tmp_path: Path, monkeypatch
+):
+    """A no-change reconcile must not call realpath for unchanged files or for
+    every cached entry: both the alias map and the per-file realpath are only
+    needed for cache misses (they dominate the cost of a Refresh otherwise)."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    for i in range(5):
+        (root / f"model{i}.txt").write_text("x", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    real_realpath = model_scanner.os.path.realpath
+    realpath_args: List[str] = []
+
+    def _recording_realpath(path, *args, **kwargs):
+        realpath_args.append(os.fspath(path))
+        return real_realpath(path, *args, **kwargs)
+
+    monkeypatch.setattr(model_scanner.os.path, "realpath", _recording_realpath)
+
+    await scanner._reconcile_cache()
+
+    model_files = {_normalize_path(path) for path in root.glob("*.txt")}
+    assert not (set(realpath_args) & model_files)
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_cleans_pre_existing_duplicate_paths(tmp_path: Path):
+    """External code rewrites raw_data directly, so a reconcile must still drop
+    duplicate business paths even when nothing changed on disk: the O(1)
+    integrity check may only skip the pass for a provably clean cache."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    (root / "one.txt").write_text("one", encoding="utf-8")
+    (root / "two.txt").write_text("two", encoding="utf-8")
+
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    first_path = _normalize_path(root / "one.txt")
+    duplicate = dict(next(i for i in scanner._cache.raw_data if i["file_path"] == first_path))
+    duplicate["model_name"] = "duplicate-wins"
+    scanner._cache.raw_data.append(duplicate)
+
+    await scanner._reconcile_cache()
+
+    cache = await scanner.get_cached_data()
+    assert len(cache.raw_data) == 2
+    survivor = next(i for i in cache.raw_data if i["file_path"] == first_path)
+    assert survivor["model_name"] == "duplicate-wins"
+
+
+@pytest.mark.asyncio
+async def test_reconcile_cache_reads_model_roots_once_per_phase(tmp_path: Path, monkeypatch):
+    """get_model_roots() must be snapshotted once for the walk and once for the
+    new-file pass, not re-read for every new file."""
+    root = tmp_path / "loras"
+    root.mkdir()
+    scanner = DummyScanner(root)
+    await scanner._initialize_cache()
+
+    calls = 0
+    real_get_model_roots = scanner.get_model_roots
+
+    def _counting_get_model_roots() -> List[str]:
+        nonlocal calls
+        calls += 1
+        return real_get_model_roots()
+
+    monkeypatch.setattr(scanner, "get_model_roots", _counting_get_model_roots)
+
+    for i in range(3):
+        (root / f"new{i}.txt").write_text("x", encoding="utf-8")
+
+    await scanner._reconcile_cache()
+
+    assert calls == 2
+
+
+@pytest.mark.asyncio
 async def test_log_duplicate_filename_summary_logs_warning(tmp_path: Path, caplog):
     """When duplicate filenames exist, _log_duplicate_filename_summary should emit
     a single warning log with the conflict count and total file count."""

@@ -1005,14 +1005,29 @@ class ModelScanner:
             await self._broadcast_scan_progress('started', 'reconcile_scan', 0, False)
             
             # Get current cached file paths
+            cached_size_before = len(self._cache.raw_data)
             cached_paths = {item['file_path'] for item in self._cache.raw_data}
             path_to_item = {item['file_path']: item for item in self._cache.raw_data}
-            cached_real_paths = {}
-            for cached_path in cached_paths:
-                try:
-                    cached_real_paths.setdefault(os.path.realpath(cached_path), cached_path)
-                except Exception:
-                    continue
+
+            # physical path -> cached business path, for the alias case where the
+            # same file is reachable under a different path than the cached one
+            # (overlapping roots / symlink layout changes): keep the existing
+            # entry instead of delete + re-add (which would re-read metadata and
+            # re-hash every file). Built lazily on the first miss, because a
+            # realpath per cached entry is ~half the cost of a no-change
+            # reconcile and the map is only ever consulted for misses.
+            cached_real_paths: Optional[Dict[str, str]] = None
+
+            def lookup_cached_real_path(real_path: str) -> Optional[str]:
+                nonlocal cached_real_paths
+                if cached_real_paths is None:
+                    cached_real_paths = {}
+                    for cached_path in cached_paths:
+                        try:
+                            cached_real_paths.setdefault(os.path.realpath(cached_path), cached_path)
+                        except Exception:
+                            continue
+                return cached_real_paths.get(real_path)
             
             # Track found files and new files
             found_paths = set()
@@ -1038,14 +1053,18 @@ class ModelScanner:
                         if ext in self.file_extensions:
                             # Construct paths exactly as they would be in cache
                             file_path = os.path.join(root, file).replace(os.sep, '/')
-                            real_file_path = os.path.realpath(os.path.join(root, file))
-                            
+
                             # Check if this file is already in cache
                             if file_path in cached_paths:
                                 found_paths.add(file_path)
                                 continue
 
-                            cached_real_match = cached_real_paths.get(real_file_path)
+                            # Only a cache miss needs the physical path, so the
+                            # realpath syscalls are paid per changed file rather
+                            # than per file in the library.
+                            real_file_path = os.path.realpath(os.path.join(root, file))
+
+                            cached_real_match = lookup_cached_real_path(real_file_path)
                             if cached_real_match:
                                 found_paths.add(cached_real_match)
                                 continue
@@ -1090,6 +1109,9 @@ class ModelScanner:
                 total_new = len(new_files)
                 processed_new = 0
                 last_progress_time = time.time()
+                # Snapshot the roots once: this matches the walk above (which
+                # also snapshots them) and avoids a config read per new file.
+                model_roots = self.get_model_roots()
                 for i in range(0, total_new, batch_size):
                     batch = new_files[i:i+batch_size]
                     for path in batch:
@@ -1098,12 +1120,10 @@ class ModelScanner:
                         try:
                             # Find the appropriate root path for this file
                             root_path = None
-                            model_roots = self.get_model_roots()
+                            normalized_path = os.path.normpath(path)
                             for potential_root in model_roots:
                                 # Normalize both paths for comparison
-                                normalized_path = os.path.normpath(path)
-                                normalized_root = os.path.normpath(potential_root)
-                                if normalized_path.startswith(normalized_root):
+                                if normalized_path.startswith(os.path.normpath(potential_root)):
                                     root_path = potential_root
                                     break
                             
@@ -1200,24 +1220,32 @@ class ModelScanner:
                 # Update cache data
                 self._cache.raw_data = [item for item in self._cache.raw_data if item['file_path'] not in missing_files]
             
-            dedup_removed = 0
-            seen_paths: set[str] = set()
-            deduped: list[Dict[str, Any]] = []
-            for item in reversed(self._cache.raw_data):
-                path = item.get('file_path', '')
-                if path not in seen_paths:
-                    seen_paths.add(path)
-                    deduped.append(item)
-                else:
-                    for tag in item.get('tags', []):
-                        if tag in self._tags_count:
-                            self._tags_count[tag] = max(0, self._tags_count[tag] - 1)
-                            if self._tags_count[tag] == 0:
-                                del self._tags_count[tag]
-                    dedup_removed += 1
-            if dedup_removed > 0:
-                self._cache.raw_data = list(reversed(deduped))
-                total_removed += dedup_removed
+            # Defensive integrity pass: drop entries sharing a business path.
+            # Duplicates can only be introduced by external code rewriting
+            # raw_data directly or by this pass's own appends, so an unchanged
+            # filesystem walk over a clean cache has nothing to clean. The size
+            # mismatch is an O(1) tell that the snapshot already contained
+            # duplicates; skipping the O(N) pass when it is provably clean is
+            # what keeps a no-change Refresh cheap.
+            if cached_size_before != len(cached_paths) or total_added > 0:
+                dedup_removed = 0
+                seen_paths: set[str] = set()
+                deduped: list[Dict[str, Any]] = []
+                for item in reversed(self._cache.raw_data):
+                    path = item.get('file_path', '')
+                    if path not in seen_paths:
+                        seen_paths.add(path)
+                        deduped.append(item)
+                    else:
+                        for tag in item.get('tags', []):
+                            if tag in self._tags_count:
+                                self._tags_count[tag] = max(0, self._tags_count[tag] - 1)
+                                if self._tags_count[tag] == 0:
+                                    del self._tags_count[tag]
+                        dedup_removed += 1
+                if dedup_removed > 0:
+                    self._cache.raw_data = list(reversed(deduped))
+                    total_removed += dedup_removed
             
             # Resort cache if changes were made
             if total_added > 0 or total_removed > 0:
