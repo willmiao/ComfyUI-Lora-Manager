@@ -103,6 +103,10 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/hf-repo-files", "get_hf_repo_files"
     ),
+    # Download target routing decision (checkpoint vs diffusion model roots)
+    RouteDefinition(
+        "POST", "/api/lm/download/routing", "get_download_routing"
+    ),
     RouteDefinition(
         "POST", "/api/lm/download-hf-model", "download_hf_model"
     ),

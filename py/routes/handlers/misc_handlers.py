@@ -56,6 +56,7 @@ from ...utils.constants import (
 )
 from .hf_handlers import HfHandler
 from .agent_handlers import AgentHandler
+from .download_routing_handlers import DownloadRoutingHandler
 from .model_handlers import ModelCivitaiHandler
 from ...utils.civitai_utils import rewrite_preview_url
 from ...utils.example_images_paths import (
@@ -3884,6 +3885,7 @@ class MiscHandlerSet:
         base_model: BaseModelHandlerSet,
         hf_handler: Any = None,
         agent_handler: Any = None,
+        download_routing: Any = None,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -3904,6 +3906,7 @@ class MiscHandlerSet:
         self.base_model = base_model
         self.hf_handler = hf_handler
         self.agent_handler = agent_handler
+        self.download_routing = download_routing
 
     def to_route_mapping(
         self,
@@ -3962,6 +3965,8 @@ class MiscHandlerSet:
             "get_agent_skills": self.agent_handler.get_agent_skills,
             "execute_agent_skill": self.agent_handler.execute_agent_skill,
             "cancel_agent_skill": self.agent_handler.cancel_agent_skill,
+            # Download routing handler
+            "get_download_routing": self.download_routing.get_download_routing,
             # Base model handlers
             "get_base_models": self.base_model.get_base_models,
             "refresh_base_models": self.base_model.refresh_base_models,

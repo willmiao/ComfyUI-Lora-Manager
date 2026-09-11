@@ -184,6 +184,7 @@ export const DOWNLOAD_ENDPOINTS = {
     downloadGet: '/api/lm/download-model-get',
     cancelGet: '/api/lm/cancel-download-get',
     progress: '/api/lm/download-progress',
+    routing: '/api/lm/download/routing',
     exampleImages: '/api/lm/force-download-example-images', // Re-process example images ignoring previous status
     exampleImagesMissing: '/api/lm/download-example-images' // Download only missing example images
 };

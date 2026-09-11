@@ -41,6 +41,7 @@ from .handlers.misc_handlers import (
 from .handlers.base_model_handlers import BaseModelHandlerSet
 from .handlers.hf_handlers import HfHandler
 from .handlers.agent_handlers import AgentHandler
+from .handlers.download_routing_handlers import DownloadRoutingHandler
 from .misc_route_registrar import MiscRouteRegistrar
 
 logger = logging.getLogger(__name__)
@@ -140,6 +141,7 @@ class MiscRoutes:
         base_model = BaseModelHandlerSet()
         hf_handler = HfHandler()
         agent_handler = AgentHandler()
+        download_routing = DownloadRoutingHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -161,6 +163,7 @@ class MiscRoutes:
             base_model=base_model,
             hf_handler=hf_handler,
             agent_handler=agent_handler,
+            download_routing=download_routing,
         )
 
 

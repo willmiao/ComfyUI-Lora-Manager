@@ -1390,8 +1390,22 @@ export function initVersionsTab({
 
         try {
             const client = ensureClient();
-            const rootsData = await client.fetchModelRoots();
-            const roots = rootsData?.roots;
+            // On the checkpoints page a diffusion model lives under the unet
+            // roots, so both root sets are needed to locate the current file.
+            let roots;
+            if (modelType === 'checkpoints') {
+                const [checkpointRoots, unetRoots] = await Promise.all([
+                    client.fetchModelRoots(),
+                    client.fetchModelRoots('diffusion_model'),
+                ]);
+                roots = [
+                    ...(checkpointRoots?.roots || []),
+                    ...(unetRoots?.roots || []),
+                ];
+            } else {
+                const rootsData = await client.fetchModelRoots();
+                roots = rootsData?.roots;
+            }
             if (!Array.isArray(roots) || roots.length === 0) {
                 return null;
             }

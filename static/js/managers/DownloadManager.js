@@ -3,6 +3,7 @@ import { showToast, setupAutoNewlineOnPaste } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { LoadingManager } from './LoadingManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
+import { DOWNLOAD_ENDPOINTS } from '../api/apiConfig.js';
 import { isModelWeightFile } from '../utils/modelFileTypes.js';
 import { getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { FolderTreeManager } from '../components/FolderTreeManager.js';
@@ -954,12 +955,7 @@ export class DownloadManager {
     async proceedToLocationContent() {
 
         try {
-            const _isDiffusionModel = this.selectedFile
-                ? (this.selectedFile.type === 'UNet' || this.selectedFile.type === 'Diffusion Model')
-                : (this.currentVersion?.files || []).some(
-                    f => f.type === 'UNet' || f.type === 'Diffusion Model'
-                );
-            this._isDiffusionModel = _isDiffusionModel;
+            this._isDiffusionModel = await this._resolveIsDiffusionModel();
 
             let rootsData;
             if (this._isDiffusionModel && this.apiClient.modelType === 'checkpoints') {
@@ -1018,6 +1014,55 @@ export class DownloadManager {
         } catch (error) {
             showToast('toast.downloads.loadError', { message: error.message }, 'error');
         }
+    }
+
+    /**
+     * Decide whether this download routes to the diffusion model (unet)
+     * roots rather than the checkpoint roots. The backend owns the routing
+     * rule (file type first, baseModel fallback), so the location step asks
+     * it; if the endpoint is unavailable we degrade to the local file-type
+     * signal, which matches the backend for well-annotated models.
+     */
+    async _resolveIsDiffusionModel() {
+        const localFileTypeCheck = this.selectedFile
+            ? (this.selectedFile.type === 'UNet' || this.selectedFile.type === 'Diffusion Model')
+            : (this.currentVersion?.files || []).some(
+                f => f.type === 'UNet' || f.type === 'Diffusion Model'
+            );
+
+        // Only checkpoint downloads can route to the diffusion model roots;
+        // without version metadata (e.g. Hugging Face downloads) the local
+        // signal is all we have.
+        if (this.apiClient.modelType !== 'checkpoints'
+            || (!this.selectedFile && !this.currentVersion)) {
+            return localFileTypeCheck;
+        }
+
+        try {
+            const fileTypes = this.selectedFile
+                ? [this.selectedFile.type]
+                : (this.currentVersion?.files || []).map(f => f.type);
+            const response = await fetch(DOWNLOAD_ENDPOINTS.routing, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    model_type: 'checkpoint',
+                    base_model: this.currentVersion?.baseModel || '',
+                    file_types: fileTypes,
+                }),
+            });
+            if (!response.ok) {
+                throw new Error(`routing endpoint returned ${response.status}`);
+            }
+            const data = await response.json();
+            if (typeof data.is_diffusion_model === 'boolean') {
+                return data.is_diffusion_model;
+            }
+        } catch (error) {
+            console.warn('[download] routing endpoint unavailable, '
+                + 'falling back to local file-type check:', error);
+        }
+        return localFileTypeCheck;
     }
 
     loadDefaultPathSetting() {

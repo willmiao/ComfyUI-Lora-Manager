@@ -20,7 +20,6 @@ from urllib.parse import urlparse
 from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
-    DIFFUSION_MODEL_BASE_MODELS,
     MODEL_WEIGHT_FILE_TYPES,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
@@ -32,6 +31,7 @@ from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
+from .download_routing import is_diffusion_model_download
 from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider, get_metadata_provider
 from .downloader import get_downloader, DownloadProgress, DownloadStreamControl
@@ -1621,27 +1621,13 @@ class DownloadManager:
                 }
 
             # Check if this checkpoint should be treated as a diffusion model
-            # Priority: (1) any file has type "UNet" or "Diffusion Model",
-            #            (2) baseModel is in DIFFUSION_MODEL_BASE_MODELS
-            is_diffusion_model = False
-            if model_type == "checkpoint":
-                # Check file types first (more direct signal from CivitAI)
-                version_files = version_info.get("files", [])
-                for f in version_files:
-                    f_type = f.get("type", "")
-                    if f_type in ("UNet", "Diffusion Model"):
-                        is_diffusion_model = True
-                        logger.info(
-                            f"File type '{f_type}' detected, routing checkpoint to unet folder"
-                        )
-                        break
-
-                # Fallback to baseModel name check
-                if not is_diffusion_model and base_model_value in DIFFUSION_MODEL_BASE_MODELS:
-                    is_diffusion_model = True
-                    logger.info(
-                        f"baseModel '{base_model_value}' is a known diffusion model, routing to unet folder"
-                    )
+            # (shared with the download routing endpoint so the UI location
+            # step and the actual download agree on the target roots).
+            is_diffusion_model = is_diffusion_model_download(
+                model_type,
+                file_types=(f.get("type", "") for f in version_info.get("files", [])),
+                base_model=base_model_value,
+            )
 
             # Existence check after the metadata fetch (#1058):
             # - An explicit file selection only blocks when THIS file is
