@@ -517,3 +517,153 @@ def test_png_does_not_pass_webp_method_or_jpeg_subsampling(monkeypatch, tmp_path
 
     assert "method" not in captured
     assert "subsampling" not in captured
+
+
+def _sample_prompt():
+    return {
+        "1": {
+            "class_type": "CheckpointLoaderSimple",
+            "inputs": {"ckpt_name": "DasiwaIl.safetensors"},
+            "_meta": {"title": "CheckpointLoaderSimple"},
+        },
+        "2": {
+            "class_type": "LoraLoader",
+            "inputs": {"lora_name": "anime_style_v2.safetensors"},
+            "_meta": {"title": "Lora"},
+        },
+    }
+
+
+def test_resolve_cross_node_placeholders_by_title(monkeypatch, tmp_path):
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    captured_prefix = []
+    monkeypatch.setattr(
+        "folder_paths.get_save_image_path",
+        lambda prefix, *_: captured_prefix.append(prefix) or (str(tmp_path), "sample", 1, "", "sample"),
+        raising=False,
+    )
+
+    node = SaveImageLM()
+    node.save_images(
+        [_make_image()],
+        "samples/%Lora.lora_name%",
+        "png",
+        id="node-1",
+        prompt=_sample_prompt(),
+    )
+
+    assert captured_prefix == ["samples/anime_style_v2.safetensors"]
+
+
+def test_resolve_cross_node_placeholders_falls_back_to_class_type():
+    node = SaveImageLM.__new__(SaveImageLM)
+
+    result = node._resolve_cross_node_placeholders(
+        "%LoraLoader.lora_name%",
+        _sample_prompt(),
+    )
+    assert result == "anime_style_v2.safetensors"
+
+    result = node._resolve_cross_node_placeholders(
+        "%Missing.node%_%Lora.unknown_field%",
+        _sample_prompt(),
+    )
+    assert result == "%Missing.node%_%Lora.unknown_field%"
+
+
+def test_resolve_cross_node_placeholders_sanitizes_and_skips_linked_inputs():
+    node = SaveImageLM.__new__(SaveImageLM)
+    prompt = {
+        "3": {
+            "class_type": "Text",
+            "inputs": {
+                "text": "a/b\\c:d",
+                # Linked inputs carry [origin_node, origin_slot] and must be skipped
+                "linked_text": [1, 2],
+            },
+            "_meta": {"title": "My Text"},
+        }
+    }
+
+    assert node._resolve_cross_node_placeholders("%My Text.text%", prompt) == "a_b_c_d"
+    assert node._resolve_cross_node_placeholders("%My Text.linked_text%", prompt) == (
+        "%My Text.linked_text%"
+    )
+
+
+def test_resolve_cross_node_placeholders_strips_percent_from_value():
+    """A resolved value must not introduce segments for the later format pass."""
+    node = SaveImageLM.__new__(SaveImageLM)
+    prompt = {
+        "3": {
+            "class_type": "Text",
+            "inputs": {"text": "100%seed%done"},
+            "_meta": {"title": "My Text"},
+        }
+    }
+
+    resolved = node._resolve_cross_node_placeholders("%My Text.text%", prompt)
+    assert resolved == "100_seed_done"
+    assert node.format_filename(resolved, {"seed": 123}) == "100_seed_done"
+
+
+def test_resolve_cross_node_placeholders_prefers_title_over_class_type():
+    node = SaveImageLM.__new__(SaveImageLM)
+    prompt = {
+        # Class-type match comes first in graph order but must lose to the title match.
+        "1": {
+            "class_type": "LoraLoader",
+            "inputs": {"lora_name": "by_class.safetensors"},
+            "_meta": {"title": "Style"},
+        },
+        "2": {
+            "class_type": "LoraLoaderModelOnly",
+            "inputs": {"lora_name": "by_title.safetensors"},
+            "_meta": {"title": "LoraLoader"},
+        },
+    }
+
+    assert node._resolve_cross_node_placeholders("%LoraLoader.lora_name%", prompt) == (
+        "by_title.safetensors"
+    )
+
+
+def test_resolve_cross_node_placeholders_survives_malformed_prompt():
+    node = SaveImageLM.__new__(SaveImageLM)
+
+    for prompt in (None, [], "not-a-graph", {"1": "not-a-node"}, {"1": {"inputs": None}}):
+        assert node._resolve_cross_node_placeholders("%Lora.lora_name%", prompt) == (
+            "%Lora.lora_name%"
+        )
+
+
+def test_save_images_tolerates_placeholder_resolution_failure(monkeypatch, tmp_path):
+    """Placeholder resolution must never block the actual save."""
+    _configure_save_paths(monkeypatch, tmp_path)
+    _configure_metadata(monkeypatch, {"prompt": "prompt text", "seed": 123})
+
+    def _boom(*_args, **_kwargs):
+        raise RuntimeError("prompt graph exploded")
+
+    monkeypatch.setattr(SaveImageLM, "_lookup_node_widget_value", _boom)
+
+    captured_prefix = []
+    monkeypatch.setattr(
+        "folder_paths.get_save_image_path",
+        lambda prefix, *_: captured_prefix.append(prefix) or (str(tmp_path), "sample", 1, "", "sample"),
+        raising=False,
+    )
+
+    node = SaveImageLM()
+    result = node.save_images(
+        [_make_image()],
+        "samples/%Lora.lora_name%",
+        "png",
+        id="node-1",
+        prompt=_sample_prompt(),
+    )
+
+    assert captured_prefix == ["samples/%Lora.lora_name%"]
+    assert len(result) == 1
