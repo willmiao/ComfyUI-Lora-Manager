@@ -17,6 +17,10 @@ import types as _types
 import time
 
 from .utils.cache_paths import CacheType, get_cache_file_path, get_legacy_cache_paths
+from .utils.constants import (
+    DEFAULT_OTHER_MODEL_FOLDERS,
+    OTHER_MODEL_FOLDER_SUBTYPES,
+)
 from .utils.settings_paths import (
     ensure_settings_file,
     get_settings_dir,
@@ -172,6 +176,13 @@ class Config:
         self.embeddings_roots = None
         self.base_models_roots = self._init_checkpoint_paths()
         self.embeddings_roots = self._init_embedding_paths()
+        # Other-model roots (VAE, upscalers, text encoders, ...): flat deduped
+        # list plus a normalized root -> sub_type map and per-folder_paths-key
+        # roots for settings persistence.
+        self.other_roots: Optional[List[str]] = None
+        self.other_root_subtypes: Dict[str, str] = {}
+        self.other_folder_roots: Dict[str, List[str]] = {}
+        self.other_roots = self._init_other_paths()
         # Extra paths (only for LoRA Manager, not shared with ComfyUI)
         self.extra_loras_roots: List[str] = []
         self.extra_checkpoints_roots: List[str] = []
@@ -336,6 +347,10 @@ class Config:
                 "unet": list(self.unet_roots or []),
                 "embeddings": list(self.embeddings_roots or []),
             }
+            # Persist the other-model roots under their original folder_paths
+            # keys so library switching round-trips them.
+            for key, roots in (self.other_folder_roots or {}).items():
+                target_folder_paths[key] = list(roots)
 
             normalized_target_paths = _normalize_folder_paths_for_comparison(
                 target_folder_paths
@@ -522,6 +537,7 @@ class Config:
         roots.extend(self.loras_roots or [])
         roots.extend(self.base_models_roots or [])
         roots.extend(self.embeddings_roots or [])
+        roots.extend(self.other_roots or [])
         # Include extra paths for scanning symlinks
         roots.extend(self.extra_loras_roots or [])
         roots.extend(self.extra_checkpoints_roots or [])
@@ -862,6 +878,8 @@ class Config:
             preview_roots.update(self._expand_preview_root(root))
         for root in self.embeddings_roots or []:
             preview_roots.update(self._expand_preview_root(root))
+        for root in self.other_roots or []:
+            preview_roots.update(self._expand_preview_root(root))
         # Include extra paths for preview access
         for root in self.extra_loras_roots or []:
             preview_roots.update(self._expand_preview_root(root))
@@ -882,7 +900,7 @@ class Config:
             path for path in preview_roots if path.is_absolute()
         }
         logger.debug(
-            "Preview roots rebuilt: %d paths from %d lora roots (%d extra), %d checkpoint roots (%d extra), %d embedding roots (%d extra), %d symlink mappings",
+            "Preview roots rebuilt: %d paths from %d lora roots (%d extra), %d checkpoint roots (%d extra), %d embedding roots (%d extra), %d other roots, %d symlink mappings",
             len(self._preview_root_paths),
             len(self.loras_roots or []),
             len(self.extra_loras_roots or []),
@@ -890,6 +908,7 @@ class Config:
             len(self.extra_checkpoints_roots or []),
             len(self.embeddings_roots or []),
             len(self.extra_embeddings_roots or []),
+            len(self.other_roots or []),
             len(self._path_mappings),
         )
 
@@ -1128,6 +1147,102 @@ class Config:
 
         return unique_paths
 
+    def _get_enabled_other_folder_keys(self) -> List[str]:
+        """Return the OTHER_MODEL_FOLDER_SUBTYPES keys that are enabled.
+
+        Default-enabled categories come from DEFAULT_OTHER_MODEL_FOLDERS;
+        opt-in categories (e.g. controlnet) are added via the
+        ``enabled_other_folders`` setting (a list of folder_paths keys).
+        """
+        keys = list(DEFAULT_OTHER_MODEL_FOLDERS)
+        try:
+            from .services.settings_manager import get_settings_manager
+
+            extra = get_settings_manager().get("enabled_other_folders", [])
+        except Exception:
+            extra = []
+        if isinstance(extra, str):
+            extra = [extra]
+        if isinstance(extra, Iterable):
+            for key in extra:
+                if (
+                    isinstance(key, str)
+                    and key in OTHER_MODEL_FOLDER_SUBTYPES
+                    and key not in keys
+                ):
+                    keys.append(key)
+        return keys
+
+    def _prepare_other_paths(
+        self, folder_path_map: Mapping[str, Iterable[str]]
+    ) -> Tuple[List[str], Dict[str, str], Dict[str, List[str]]]:
+        """Prepare other-model paths from a folder_paths-key -> raw paths map.
+
+        Returns:
+            Tuple of (all_unique_roots, business_root -> sub_type map,
+            folder_paths key -> business roots). This method does NOT modify
+            instance variables - callers must set them.
+        """
+        unique_paths: List[str] = []
+        sub_type_map: Dict[str, str] = {}
+        per_key_roots: Dict[str, List[str]] = {}
+        seen_real_paths: Dict[str, str] = {}  # real path -> business path
+
+        # Cross-scanner overlap detection: warn when an "other" root is
+        # already covered by the checkpoints/unet or embeddings scanners.
+        # Kept (not dropped) on purpose - duplicate cards across pages are
+        # cosmetic, while dropping would silently unmanage the files.
+        covered_real_paths = {
+            os.path.normpath(os.path.realpath(path)).replace(os.sep, "/"): path
+            for path in [
+                *(self.base_models_roots or []),
+                *(self.embeddings_roots or []),
+            ]
+            if isinstance(path, str) and path.strip() and os.path.exists(path)
+        }
+
+        for key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items():
+            raw_paths = folder_path_map.get(key)
+            if not raw_paths:
+                continue
+            path_map = self._dedupe_existing_paths(raw_paths)
+            key_roots: List[str] = []
+            for real_path, business_path in sorted(
+                path_map.items(), key=lambda item: item[1].lower()
+            ):
+                if real_path in seen_real_paths:
+                    logger.warning(
+                        "Detected the same folder '%s' under multiple other-model "
+                        "categories ('%s' is already mapped). Keeping the first "
+                        "category; please fix your path configuration.",
+                        business_path,
+                        seen_real_paths[real_path],
+                    )
+                    continue
+                seen_real_paths[real_path] = business_path
+                unique_paths.append(business_path)
+                key_roots.append(business_path)
+                sub_type_map[business_path] = sub_type
+
+                if real_path != business_path:
+                    self.add_path_mapping(business_path, real_path)
+
+                covered_by = covered_real_paths.get(real_path)
+                if covered_by:
+                    logger.warning(
+                        "Detected an other-model root ('%s', category '%s') that "
+                        "overlaps an existing checkpoints/embeddings root ('%s'). "
+                        "The same files will appear on both pages; please review "
+                        "your path configuration.",
+                        business_path,
+                        key,
+                        covered_by,
+                    )
+            if key_roots:
+                per_key_roots[key] = key_roots
+
+        return unique_paths, sub_type_map, per_key_roots
+
     def _apply_library_paths(
         self,
         folder_paths: Mapping[str, Any],
@@ -1150,6 +1265,16 @@ class Config:
             self.unet_roots,
         ) = self._prepare_checkpoint_paths(checkpoint_paths, unet_paths)
         self.embeddings_roots = self._prepare_embedding_paths(embedding_paths)
+
+        other_path_map = {
+            key: folder_paths.get(key, []) or []
+            for key in self._get_enabled_other_folder_keys()
+        }
+        (
+            self.other_roots,
+            self.other_root_subtypes,
+            self.other_folder_roots,
+        ) = self._prepare_other_paths(other_path_map)
 
         # Process extra paths (only for LoRA Manager, not shared with ComfyUI)
         extra_paths = extra_folder_paths or {}
@@ -1265,6 +1390,41 @@ class Config:
             return unique_paths
         except Exception as e:
             logger.warning(f"Error initializing embedding paths: {e}")
+            return []
+
+    def _init_other_paths(self) -> List[str]:
+        """Initialize and validate other-model paths from ComfyUI settings.
+
+        Iterates the enabled OTHER_MODEL_FOLDER_SUBTYPES keys and pulls each
+        from ``folder_paths.get_folder_paths(key)`` (in standalone mode the
+        mock serves arbitrary keys from ``settings.json.folder_paths``).
+        """
+        try:
+            folder_path_map: Dict[str, List[str]] = {}
+            for key in self._get_enabled_other_folder_keys():
+                try:
+                    folder_path_map[key] = folder_paths.get_folder_paths(key)
+                except Exception as exc:
+                    logger.debug("Error reading folder paths for '%s': %s", key, exc)
+
+            (
+                unique_paths,
+                self.other_root_subtypes,
+                self.other_folder_roots,
+            ) = self._prepare_other_paths(folder_path_map)
+
+            logger.info(
+                "Found other model roots:"
+                + ("\n - " + "\n - ".join(unique_paths) if unique_paths else "[]")
+            )
+
+            if not unique_paths:
+                logger.info("No valid other-model folders found in configuration")
+                return []
+
+            return unique_paths
+        except Exception as e:
+            logger.warning(f"Error initializing other model paths: {e}")
             return []
 
     def get_preview_static_url(self, preview_path: str) -> str:

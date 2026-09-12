@@ -35,6 +35,7 @@ _MODEL_TYPE_GETTER_NAMES: Dict[str, str] = {
     "loras": "get_lora_scanner",
     "checkpoints": "get_checkpoint_scanner",
     "embeddings": "get_embedding_scanner",
+    "other": "get_other_scanner",
 }
 
 # Staged batch ids are ``uuid.uuid4().hex`` (32 lowercase hex chars). The id is

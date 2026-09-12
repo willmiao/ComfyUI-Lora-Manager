@@ -2,7 +2,7 @@ from dataclasses import dataclass, asdict, field
 from typing import Callable, Dict, Optional, List, Any
 from datetime import datetime
 import os
-from .constants import INVALID_AUTOV3_EMPTY_HASH
+from .constants import CIVITAI_TYPE_TO_OTHER_SUB_TYPE, INVALID_AUTOV3_EMPTY_HASH
 from .model_utils import determine_base_model
 
 
@@ -288,6 +288,60 @@ class CheckpointMetadata(BaseModelMetadata):
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "checkpoint")
+
+        # Extract tags and description if available
+        tags = []
+        description = ""
+        model_data = version_info.get("model") or {}
+        if "tags" in model_data:
+            tags = model_data["tags"]
+        if "description" in model_data:
+            description = model_data["description"]
+
+        return cls(
+            file_name=os.path.splitext(file_name)[0],
+            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_path=save_path.replace(os.sep, "/"),
+            size=file_info.get("sizeKB", 0) * 1024,
+            modified=datetime.now().timestamp(),
+            sha256=sha256_value,
+            base_model=base_model,
+            preview_url="",  # Will be updated after preview download
+            preview_nsfw_level=0,
+            from_civitai=True,
+            civitai=version_info,
+            sub_type=sub_type,
+            tags=tags,
+            modelDescription=description,
+            # Direct read: the downloaded file IS file_info, no SHA256 matching.
+            autov3=normalize_autov3((file_info.get("hashes") or {}).get("AutoV3")),
+        )
+
+
+@dataclass
+class OtherModelMetadata(BaseModelMetadata):
+    """Represents the metadata structure for an "other" model (VAE, upscaler,
+    text encoder, CLIP vision, ControlNet, ...).
+
+    The sub_type is location-derived: the OtherScanner sets it from the
+    folder_paths category whose root contains the file. The dataclass default
+    is only a placeholder.
+    """
+
+    sub_type: str = "vae"  # Placeholder; overridden by the scanner hooks
+
+    @classmethod
+    def from_civitai_info(
+        cls, version_info: Dict[str, Any], file_info: Dict[str, Any], save_path: str
+    ) -> "OtherModelMetadata":
+        """Create OtherModelMetadata instance from Civitai version info"""
+        file_name = file_info.get("name", "")
+        base_model = determine_base_model(version_info.get("baseModel", ""))
+        sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
+        # Map the CivitAI model type onto our sub_types; unknown types keep the
+        # placeholder until the scanner re-derives sub_type from the location.
+        civitai_type = str(version_info.get("type", "") or "").lower()
+        sub_type = CIVITAI_TYPE_TO_OTHER_SUB_TYPE.get(civitai_type, "vae")
 
         # Extract tags and description if available
         tags = []

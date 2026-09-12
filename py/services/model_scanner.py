@@ -68,6 +68,7 @@ PAGE_TYPE_MAP = {
     'lora': 'loras',
     'checkpoint': 'checkpoints',
     'embedding': 'embeddings',
+    'other': 'other',
 }
 
 

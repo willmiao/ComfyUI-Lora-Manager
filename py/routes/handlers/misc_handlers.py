@@ -658,6 +658,7 @@ class HealthCheckHandler:
             "lora": ServiceRegistry.get_lora_scanner,
             "checkpoint": ServiceRegistry.get_checkpoint_scanner,
             "embedding": ServiceRegistry.get_embedding_scanner,
+            "other": ServiceRegistry.get_other_scanner,
             "recipe": ServiceRegistry.get_recipe_scanner,
         }
 
@@ -757,6 +758,7 @@ class DoctorHandler:
                 ("lora", "LoRAs", ServiceRegistry.get_lora_scanner),
                 ("checkpoint", "Checkpoints", ServiceRegistry.get_checkpoint_scanner),
                 ("embedding", "Embeddings", ServiceRegistry.get_embedding_scanner),
+                ("other", "Other Models", ServiceRegistry.get_other_scanner),
             )
         )
         self._app_version_getter = app_version_getter

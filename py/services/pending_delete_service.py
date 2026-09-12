@@ -59,6 +59,7 @@ _MODEL_TYPE_PAGE_MAP = {
     "lora": "loras",
     "checkpoint": "checkpoints",
     "embedding": "embeddings",
+    "other": "other",
 }
 
 # Module-level alias so tests can spy on timer task creation without patching
@@ -983,6 +984,7 @@ class PendingDeleteService:
             "get_lora_scanner",
             "get_checkpoint_scanner",
             "get_embedding_scanner",
+            "get_other_scanner",
         ):
             getter = getattr(ServiceRegistry, getter_name, None)
             if not callable(getter):
