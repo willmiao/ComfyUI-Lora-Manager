@@ -2,6 +2,7 @@
 import { PageControls } from './PageControls.js';
 import { getModelApiClient, resetAndReload } from '../../api/modelApiFactory.js';
 import { showToast } from '../../utils/uiHelpers.js';
+import { downloadManager } from '../../managers/DownloadManager.js';
 
 /**
  * OtherControls class - Extends PageControls for the Other Models page
@@ -37,6 +38,11 @@ export class OtherControls extends PageControls {
             // Add fetch from Civitai functionality for other models
             fetchFromCivitai: async () => {
                 return await getModelApiClient().fetchCivitaiMetadata();
+            },
+
+            // Add show download modal functionality
+            showDownloadModal: () => {
+                downloadManager.showDownloadModal();
             },
 
             toggleBulkMode: () => {

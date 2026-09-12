@@ -24,6 +24,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     default_lora_root: '',
     default_checkpoint_root: '',
     default_embedding_root: '',
+    default_other_roots: {},
     recipes_path: '',
     base_model_path_mappings: {},
     download_path_templates: {},
@@ -72,6 +73,7 @@ export function createDefaultSettings() {
         base_model_path_mappings: {},
         download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
         priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
+        default_other_roots: {},
     };
 }
 

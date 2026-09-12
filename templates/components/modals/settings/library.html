@@ -38,6 +38,34 @@
         {{ sm.setting_select('defaultUnetRoot', 'default_unet_root', 'settings.folderSettings.defaultUnetRoot', [], 'settings.folderSettings.defaultUnetRootHelp') }}
 
         {{ sm.setting_select('defaultEmbeddingRoot', 'default_embedding_root', 'settings.folderSettings.defaultEmbeddingRoot', [], 'settings.folderSettings.defaultEmbeddingRootHelp') }}
+
+        {% set other_root_selects = [
+            ('vae', 'defaultOtherRootVae', 'settings.folderSettings.defaultVaeRoot', 'settings.folderSettings.defaultVaeRootHelp'),
+            ('upscaler', 'defaultOtherRootUpscaler', 'settings.folderSettings.defaultUpscalerRoot', 'settings.folderSettings.defaultUpscalerRootHelp'),
+            ('text_encoder', 'defaultOtherRootTextEncoder', 'settings.folderSettings.defaultTextEncoderRoot', 'settings.folderSettings.defaultTextEncoderRootHelp'),
+            ('clip_vision', 'defaultOtherRootClipVision', 'settings.folderSettings.defaultClipVisionRoot', 'settings.folderSettings.defaultClipVisionRootHelp'),
+        ] %}
+        {% if 'controlnet' in (settings.get('enabled_other_folders') or []) %}
+            {% set other_root_selects = other_root_selects + [
+                ('controlnet', 'defaultOtherRootControlnet', 'settings.folderSettings.defaultControlnetRoot', 'settings.folderSettings.defaultControlnetRootHelp'),
+            ] %}
+        {% endif %}
+        {% for sub_type, select_id, label_key, help_key in other_root_selects %}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="{{ select_id }}">
+                        {{ t(label_key) }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t(help_key) }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="{{ select_id }}" data-other-root-subtype="{{ sub_type }}" onchange="settingsManager.saveOtherRootSetting('{{ sub_type }}', this.value)">
+                    </select>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 
     <!-- Recipe Settings -->

@@ -56,6 +56,7 @@ vi.mock(SUMMARY_MODULE, () => ({
 }));
 
 const { DownloadManager } = await import(DOWNLOAD_MANAGER_MODULE);
+const { state } = await import(STATE_MODULE);
 
 describe('DownloadManager._resolveIsDiffusionModel', () => {
   let manager;
@@ -142,5 +143,187 @@ describe('DownloadManager._resolveIsDiffusionModel', () => {
   it('never calls the endpoint without version metadata (e.g. Hugging Face)', async () => {
     expect(await manager._resolveIsDiffusionModel()).toBe(false);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('DownloadManager._resolveOtherSubType', () => {
+  let manager;
+  let fetchMock;
+
+  beforeEach(() => {
+    manager = new DownloadManager();
+    manager.apiClient = { modelType: 'other' };
+    manager.selectedFile = null;
+    manager.selectedFiles = [];
+    manager.currentVersion = null;
+    fetchMock = vi.fn();
+    vi.stubGlobal('fetch', fetchMock);
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  function mockRoutingResponse(data, ok = true) {
+    fetchMock.mockResolvedValue({
+      ok,
+      status: ok ? 200 : 500,
+      json: async () => data,
+    });
+  }
+
+  it('returns the backend sub_type for other downloads', async () => {
+    manager.currentVersion = { baseModel: 'Flux.1 D', files: [{ type: 'VAE' }] };
+    mockRoutingResponse({ success: true, root_kind: 'other', sub_type: 'vae' });
+
+    expect(await manager._resolveOtherSubType()).toBe('vae');
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/lm/download/routing', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model_type: 'other',
+        base_model: 'Flux.1 D',
+        file_types: ['VAE'],
+      }),
+    });
+  });
+
+  it('sends selected_file_type plus all version file types when a file is selected', async () => {
+    manager.currentVersion = { baseModel: 'Flux.1 D', files: [{ type: 'Model' }, { type: 'VAE' }] };
+    manager.selectedFile = { type: 'VAE' };
+    mockRoutingResponse({ success: true, root_kind: 'other', sub_type: 'vae' });
+
+    expect(await manager._resolveOtherSubType()).toBe('vae');
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(body.selected_file_type).toBe('VAE');
+    expect(body.file_types).toEqual(['Model', 'VAE']);
+  });
+
+  it('omits selected_file_type when no file is selected', async () => {
+    manager.currentVersion = { baseModel: 'Flux.1 D', files: [{ type: 'Model' }, { type: 'VAE' }] };
+    mockRoutingResponse({ success: true, root_kind: 'other', sub_type: 'vae' });
+
+    await manager._resolveOtherSubType();
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect('selected_file_type' in body).toBe(false);
+    expect(body.file_types).toEqual(['Model', 'VAE']);
+  });
+
+  it('returns null when the backend cannot decide a sub_type', async () => {
+    manager.currentVersion = { baseModel: 'SDXL 1.0', files: [{ type: 'Model' }] };
+    mockRoutingResponse({ success: true, root_kind: 'other', sub_type: null });
+
+    expect(await manager._resolveOtherSubType()).toBeNull();
+  });
+
+  it('returns null when the endpoint fails', async () => {
+    manager.currentVersion = { baseModel: 'SDXL 1.0', files: [{ type: 'VAE' }] };
+    fetchMock.mockRejectedValue(new Error('network down'));
+
+    expect(await manager._resolveOtherSubType()).toBeNull();
+  });
+
+  it('returns null on a non-ok response', async () => {
+    manager.currentVersion = { baseModel: 'SDXL 1.0', files: [{ type: 'VAE' }] };
+    mockRoutingResponse({}, false);
+
+    expect(await manager._resolveOtherSubType()).toBeNull();
+  });
+
+  it('never calls the endpoint for non-other pages', async () => {
+    manager.apiClient = { modelType: 'loras' };
+    manager.currentVersion = { baseModel: 'SDXL 1.0', files: [{ type: 'VAE' }] };
+
+    expect(await manager._resolveOtherSubType()).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('never calls the endpoint without version metadata (e.g. Hugging Face)', async () => {
+    expect(await manager._resolveOtherSubType()).toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('DownloadManager.proceedToLocationContent (other page)', () => {
+  let manager;
+
+  beforeEach(() => {
+    document.body.innerHTML = `
+      <select id="modelRoot"></select>
+      <label id="modelRootLabel"></label>
+      <input id="folderPath" />
+    `;
+    state.global.settings = {};
+
+    manager = new DownloadManager();
+    manager.apiClient = {
+      modelType: 'other',
+      apiConfig: { config: { displayName: 'Other Model' } },
+      fetchModelRoots: vi.fn(),
+    };
+    manager.selectedFile = null;
+    manager.selectedFiles = [];
+    manager.currentVersion = { baseModel: 'Flux.1 D', files: [{ type: 'VAE' }] };
+    manager.initializeFolderTree = vi.fn().mockResolvedValue();
+    manager.folderTreeManager = { init: vi.fn() };
+    manager.loadDefaultPathSetting = vi.fn();
+    manager.updateTargetPath = vi.fn();
+    vi.spyOn(manager, '_resolveIsDiffusionModel').mockResolvedValue(false);
+  });
+
+  it('fetches sub_type roots and preselects the configured default root', async () => {
+    vi.spyOn(manager, '_resolveOtherSubType').mockResolvedValue('vae');
+    manager.apiClient.fetchModelRoots.mockResolvedValue({
+      success: true,
+      roots: ['/models/vae-a', '/models/vae-b'],
+    });
+    state.global.settings.default_other_roots = { vae: '/models/vae-b' };
+
+    await manager.proceedToLocationContent();
+
+    expect(manager.apiClient.fetchModelRoots).toHaveBeenCalledWith('vae');
+    const modelRoot = document.getElementById('modelRoot');
+    expect(Array.from(modelRoot.options).map(o => o.value)).toEqual([
+      '/models/vae-a',
+      '/models/vae-b',
+    ]);
+    expect(modelRoot.value).toBe('/models/vae-b');
+  });
+
+  it('lists all other roots for manual selection when the sub_type is undecidable', async () => {
+    vi.spyOn(manager, '_resolveOtherSubType').mockResolvedValue(null);
+    manager.apiClient.fetchModelRoots.mockResolvedValue({
+      success: true,
+      roots: ['/models/vae', '/models/upscale'],
+    });
+    state.global.settings.default_other_roots = { vae: '/models/upscale' };
+
+    await manager.proceedToLocationContent();
+
+    // No argument: the merged /api/lm/other/roots list
+    expect(manager.apiClient.fetchModelRoots).toHaveBeenCalledWith();
+    const modelRoot = document.getElementById('modelRoot');
+    expect(Array.from(modelRoot.options).map(o => o.value)).toEqual([
+      '/models/vae',
+      '/models/upscale',
+    ]);
+    // Without a resolved sub_type no default_other_roots entry applies,
+    // so the first option stays selected even though a vae default exists.
+    expect(modelRoot.value).toBe('/models/vae');
+  });
+
+  it('leaves the first root selected when no default is configured for the sub_type', async () => {
+    vi.spyOn(manager, '_resolveOtherSubType').mockResolvedValue('upscaler');
+    manager.apiClient.fetchModelRoots.mockResolvedValue({
+      success: true,
+      roots: ['/models/upscale'],
+    });
+    state.global.settings.default_other_roots = { vae: '/models/vae-a' };
+
+    await manager.proceedToLocationContent();
+
+    expect(manager.apiClient.fetchModelRoots).toHaveBeenCalledWith('upscaler');
+    expect(document.getElementById('modelRoot').value).toBe('/models/upscale');
   });
 });

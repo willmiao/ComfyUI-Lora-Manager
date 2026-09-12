@@ -146,6 +146,7 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
     },
     [MODEL_TYPES.OTHER]: {
         metadata: `/api/lm/${MODEL_TYPES.OTHER}/metadata`,
+        roots_by_subtype: `/api/lm/${MODEL_TYPES.OTHER}/roots_by_subtype`,
     }
 };
 
