@@ -106,6 +106,12 @@ export const MODEL_SUBTYPE_DISPLAY_NAMES = {
     diffusion_model: "Diffusion Model",
     // Embedding sub-types
     embedding: "Embedding",
+    // Other model sub-types
+    vae: "VAE",
+    upscaler: "Upscaler",
+    text_encoder: "Text Encoder",
+    clip_vision: "CLIP Vision",
+    controlnet: "ControlNet",
 };
 
 // Backward compatibility alias
@@ -119,6 +125,11 @@ export const MODEL_SUBTYPE_ABBREVIATIONS = {
     checkpoint: "CKPT",
     diffusion_model: "DM",
     embedding: "EMB",
+    vae: "VAE",
+    upscaler: "UPS",
+    text_encoder: "TE",
+    clip_vision: "CV",
+    controlnet: "CN",
 };
 
 export function getSubTypeAbbreviation(subType) {

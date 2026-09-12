@@ -1133,11 +1133,22 @@ async def test_get_civitai_user_models_marks_library_versions():
         },
         {
             "id": 4,
-            "name": "Unsupported",
-            "type": "Other",
+            "name": "VAE Model",
+            "type": "VAE",
             "modelVersions": [
                 {
                     "id": 400,
+                    "name": "v1",
+                }
+            ],
+        },
+        {
+            "id": 5,
+            "name": "Unsupported",
+            "type": "Wildcard",
+            "modelVersions": [
+                {
+                    "id": 500,
                     "name": "v1",
                 }
             ],
@@ -1152,6 +1163,7 @@ async def test_get_civitai_user_models_marks_library_versions():
     lora_scanner = FakeExistenceScanner({101})
     checkpoint_scanner = FakeExistenceScanner()
     embedding_scanner = FakeExistenceScanner({202})
+    other_scanner = FakeExistenceScanner({400})
 
     async def lora_factory():
         return lora_scanner
@@ -1162,11 +1174,15 @@ async def test_get_civitai_user_models_marks_library_versions():
     async def embedding_factory():
         return embedding_scanner
 
+    async def other_factory():
+        return other_scanner
+
     handler = ModelLibraryHandler(
         ServiceRegistryAdapter(
             get_lora_scanner=lora_factory,
             get_checkpoint_scanner=checkpoint_factory,
             get_embedding_scanner=embedding_factory,
+            get_other_scanner=other_factory,
             get_downloaded_version_history_service=lambda: fake_download_history_service_factory(),
         ),
         metadata_provider_factory=provider_factory,
@@ -1238,6 +1254,18 @@ async def test_get_civitai_user_models_marks_library_versions():
             "baseModel": "SDXL",
             "thumbnailUrl": None,
             "inLibrary": False,
+            "hasBeenDownloaded": False,
+        },
+        {
+            "modelId": 4,
+            "versionId": 400,
+            "modelName": "VAE Model",
+            "versionName": "v1",
+            "type": "VAE",
+            "tags": [],
+            "baseModel": None,
+            "thumbnailUrl": None,
+            "inLibrary": True,
             "hasBeenDownloaded": False,
         },
     ]
@@ -1351,7 +1379,7 @@ async def test_get_civitai_user_models_returns_pagination_fields():
         {
             "id": 2,
             "name": "Unsupported",
-            "type": "Other",
+            "type": "Wildcard",
             "modelVersions": [{"id": 200, "name": "v1"}],
         },
     ]

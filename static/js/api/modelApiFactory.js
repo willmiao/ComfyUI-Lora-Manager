@@ -1,6 +1,7 @@
 import { LoraApiClient } from './loraApi.js';
 import { CheckpointApiClient } from './checkpointApi.js';
 import { EmbeddingApiClient } from './embeddingApi.js';
+import { OtherApiClient } from './otherApi.js';
 import { MODEL_TYPES, isValidModelType } from './apiConfig.js';
 import { state } from '../state/index.js';
 
@@ -12,6 +13,8 @@ export function createModelApiClient(modelType) {
             return new CheckpointApiClient(MODEL_TYPES.CHECKPOINT);
         case MODEL_TYPES.EMBEDDING:
             return new EmbeddingApiClient(MODEL_TYPES.EMBEDDING);
+        case MODEL_TYPES.OTHER:
+            return new OtherApiClient(MODEL_TYPES.OTHER);
         default:
             throw new Error(`Unsupported model type: ${modelType}`);
     }

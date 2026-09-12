@@ -36,6 +36,7 @@ SCANNER_TYPE_MAP: dict[str, str] = {
     "get_lora_scanner": "lora",
     "get_checkpoint_scanner": "checkpoint",
     "get_embedding_scanner": "embedding",
+    "get_other_scanner": "other",
 }
 
 SCANNER_GETTER_NAMES = tuple(SCANNER_TYPE_MAP.keys())
@@ -80,8 +81,8 @@ async def _find_scanner_for_model(
 
 
 async def identify_model_type(model_path: str) -> str:
-    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``, or
-    ``\"embedding\"``) for *model_path*.
+    """Determine the model type (``\"lora\"``, ``\"checkpoint\"``,
+    ``\"embedding\"``, or ``\"other\"``) for *model_path*.
 
     Falls back to ``\"lora\"`` when unknown.
     """

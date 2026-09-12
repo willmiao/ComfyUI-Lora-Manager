@@ -24,6 +24,7 @@ vi.mock('../../../static/js/state/index.js', () => {
         },
         createDefaultSettings: () => ({
             language: 'en',
+            default_other_roots: {},
         }),
     };
 });
@@ -499,6 +500,182 @@ describe('SettingsManager library controls', () => {
         manager.updateExampleImagesOpenSettingsVisibility();
         expect(document.getElementById('exampleImagesLocalRootSetting').style.display).toBe('none');
         expect(document.getElementById('exampleImagesUriTemplateSetting').style.display).toBe('none');
+    });
+});
+
+describe('SettingsManager other-model root selects', () => {
+    const appendOtherRootSelects = (...subTypes) => {
+        const selects = {};
+        subTypes.forEach((subType) => {
+            const select = document.createElement('select');
+            select.dataset.otherRootSubtype = subType;
+            document.body.appendChild(select);
+            selects[subType] = select;
+        });
+        return selects;
+    };
+
+    describe('loadOtherRoots', () => {
+        it('populates each sub_type select from the grouped roots and preselects defaults', async () => {
+            const manager = createManager();
+            const selects = appendOtherRootSelects('vae', 'upscaler');
+            selects.vae.disabled = true;
+
+            state.global.settings = {
+                default_other_roots: { vae: '/models/vae-b' },
+            };
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    success: true,
+                    roots_by_subtype: {
+                        vae: ['/models/vae-a', '/models/vae-b'],
+                        upscaler: ['/models/upscale'],
+                    },
+                }),
+            });
+
+            await manager.loadOtherRoots();
+
+            expect(global.fetch).toHaveBeenCalledWith('/api/lm/other/roots_by_subtype');
+            expect(Array.from(selects.vae.options).map(o => o.value)).toEqual([
+                '/models/vae-a',
+                '/models/vae-b',
+            ]);
+            expect(selects.vae.value).toBe('/models/vae-b');
+            expect(selects.vae.disabled).toBe(false);
+            expect(Array.from(selects.upscaler.options).map(o => o.value)).toEqual([
+                '/models/upscale',
+            ]);
+            // No configured default: first root wins
+            expect(selects.upscaler.value).toBe('/models/upscale');
+            expect(showToast).not.toHaveBeenCalled();
+        });
+
+        it('shows a placeholder on selects whose sub_type has no roots', async () => {
+            const manager = createManager();
+            const selects = appendOtherRootSelects('vae', 'controlnet');
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    success: true,
+                    roots_by_subtype: { vae: ['/models/vae-a'] },
+                }),
+            });
+
+            await manager.loadOtherRoots();
+
+            expect(selects.controlnet.options).toHaveLength(1);
+            expect(selects.controlnet.options[0].value).toBe('');
+            expect(selects.controlnet.options[0].textContent).toBe('No Default');
+            expect(selects.controlnet.disabled).toBe(true);
+            expect(selects.vae.disabled).toBe(false);
+            expect(showToast).not.toHaveBeenCalled();
+        });
+
+        it('shows an error toast and placeholders when the request fails', async () => {
+            const manager = createManager();
+            const selects = appendOtherRootSelects('vae', 'upscaler');
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: false,
+                status: 500,
+            });
+
+            await manager.loadOtherRoots();
+
+            expect(selects.vae.disabled).toBe(true);
+            expect(selects.upscaler.disabled).toBe(true);
+            expect(showToast).toHaveBeenCalledWith(
+                'toast.settings.otherRootsFailed',
+                expect.objectContaining({ message: expect.any(String) }),
+                'error',
+            );
+        });
+
+        it('does not call the API when no sub_type selects exist', async () => {
+            const manager = createManager();
+            global.fetch = vi.fn();
+
+            await manager.loadOtherRoots();
+
+            expect(global.fetch).not.toHaveBeenCalled();
+        });
+    });
+
+    describe('saveOtherRootSetting', () => {
+        it('read-modify-writes the default_other_roots dict and posts it whole', async () => {
+            const manager = createManager();
+            state.global.settings = {
+                default_other_roots: { vae: '/models/vae-a' },
+            };
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ success: true }),
+            });
+
+            await manager.saveOtherRootSetting('upscaler', '/models/upscale');
+
+            expect(state.global.settings.default_other_roots).toEqual({
+                vae: '/models/vae-a',
+                upscaler: '/models/upscale',
+            });
+            expect(global.fetch).toHaveBeenCalledWith('/api/lm/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    default_other_roots: {
+                        vae: '/models/vae-a',
+                        upscaler: '/models/upscale',
+                    },
+                }),
+            });
+            expect(showToast).toHaveBeenCalledWith(
+                'toast.settings.settingsUpdated',
+                expect.objectContaining({ setting: expect.any(String) }),
+                'success',
+            );
+        });
+
+        it('removes the sub_type key when the value is empty', async () => {
+            const manager = createManager();
+            state.global.settings = {
+                default_other_roots: { vae: '/models/vae-a' },
+            };
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ success: true }),
+            });
+
+            await manager.saveOtherRootSetting('vae', '');
+
+            expect(state.global.settings.default_other_roots).toEqual({});
+            expect(JSON.parse(global.fetch.mock.calls[0][1].body)).toEqual({
+                default_other_roots: {},
+            });
+        });
+
+        it('shows an error toast when the backend save fails', async () => {
+            const manager = createManager();
+            state.global.settings = { default_other_roots: {} };
+
+            global.fetch = vi.fn().mockResolvedValue({
+                ok: false,
+                status: 500,
+            });
+
+            await manager.saveOtherRootSetting('vae', '/models/vae-a');
+
+            expect(showToast).toHaveBeenCalledWith(
+                'toast.settings.settingSaveFailed',
+                expect.objectContaining({ message: expect.any(String) }),
+                'error',
+            );
+        });
     });
 });
 

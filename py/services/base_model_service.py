@@ -7,7 +7,7 @@ import logging
 import os
 import time
 
-from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES
+from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES, VALID_OTHER_SUB_TYPES
 from ..utils.models import BaseModelMetadata
 from ..utils.metadata_manager import MetadataManager
 from ..utils.usage_stats import UsageStats
@@ -902,6 +902,11 @@ class BaseModelService(ABC):
             if (
                 self.model_type == "checkpoint"
                 and normalized_type not in VALID_CHECKPOINT_SUB_TYPES
+            ):
+                continue
+            if (
+                self.model_type == "other"
+                and normalized_type not in VALID_OTHER_SUB_TYPES
             ):
                 continue
 

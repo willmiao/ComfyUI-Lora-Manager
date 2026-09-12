@@ -8,7 +8,7 @@ const STORAGE_PREFIX = 'lora_manager_';
 
 // Matches keys that carry the manager page's active filter state
 // (e.g. 'loras_activeFolder', 'checkpoints_filters').
-const ACTIVE_FILTER_KEY_PATTERN = /^(loras|checkpoints|embeddings)_(activeFolder|recursiveSearch|filters)$/;
+const ACTIVE_FILTER_KEY_PATTERN = /^(loras|checkpoints|embeddings|other)_(activeFolder|recursiveSearch|filters)$/;
 
 let activeFiltersListener = null;
 

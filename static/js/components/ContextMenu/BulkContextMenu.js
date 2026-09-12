@@ -139,8 +139,8 @@ export class BulkContextMenu extends BaseContextMenu {
 
         const downloadExampleImagesSubmenu = this.menu.querySelector('[data-has-submenu="download-example-images"]');
         if (downloadExampleImagesSubmenu) {
-            // Show on model pages (loras, checkpoints, embeddings), hide on recipes
-            downloadExampleImagesSubmenu.style.display = ['loras', 'checkpoints', 'embeddings'].includes(currentModelType) ? 'flex' : 'none';
+            // Show on model pages (loras, checkpoints, embeddings, other), hide on recipes
+            downloadExampleImagesSubmenu.style.display = ['loras', 'checkpoints', 'embeddings', 'other'].includes(currentModelType) ? 'flex' : 'none';
         }
 
         const skipMetadataRefreshItem = this.menu.querySelector('[data-action="skip-metadata-refresh"]');

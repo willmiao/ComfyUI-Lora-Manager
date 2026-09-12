@@ -27,7 +27,9 @@ from platformdirs import user_config_dir
 from ..utils.constants import (
     DEFAULT_HASH_CHUNK_SIZE_MB,
     DEFAULT_PRIORITY_TAG_CONFIG,
+    OTHER_MODEL_FOLDER_SUBTYPES,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
+    VALID_OTHER_SUB_TYPES,
 )
 from ..utils.preview_selection import VALID_MATURE_BLUR_LEVELS
 from ..utils.settings_paths import (
@@ -83,6 +85,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "default_checkpoint_root": "",
     "default_unet_root": "",
     "default_embedding_root": "",
+    "default_other_roots": {},
     "recipes_path": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
@@ -309,6 +312,7 @@ class SettingsManager:
                 default_checkpoint_root=merged.get("default_checkpoint_root"),
                 default_unet_root=merged.get("default_unet_root"),
                 default_embedding_root=merged.get("default_embedding_root"),
+                default_other_roots=merged.get("default_other_roots"),
                 recipes_path=merged.get("recipes_path"),
             )
         }
@@ -443,6 +447,7 @@ class SettingsManager:
                 ),
                 default_unet_root=self.settings.get("default_unet_root", ""),
                 default_embedding_root=self.settings.get("default_embedding_root", ""),
+                default_other_roots=self.settings.get("default_other_roots"),
                 recipes_path=self.settings.get("recipes_path", ""),
             )
             libraries = {library_name: library_payload}
@@ -494,6 +499,7 @@ class SettingsManager:
                 default_checkpoint_root=data.get("default_checkpoint_root"),
                 default_unet_root=data.get("default_unet_root"),
                 default_embedding_root=data.get("default_embedding_root"),
+                default_other_roots=data.get("default_other_roots"),
                 recipes_path=data.get("recipes_path"),
                 metadata=data.get("metadata"),
                 base=data,
@@ -541,6 +547,9 @@ class SettingsManager:
         self.settings["default_embedding_root"] = active_library.get(
             "default_embedding_root", ""
         )
+        self.settings["default_other_roots"] = self._normalize_default_other_roots(
+            active_library.get("default_other_roots", {})
+        )
         self.settings["recipes_path"] = active_library.get("recipes_path", "")
 
         if save:
@@ -558,6 +567,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        default_other_roots: Optional[Mapping[str, str]] = None,
         recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         base: Optional[Mapping[str, Any]] = None,
@@ -597,6 +607,15 @@ class SettingsManager:
         else:
             payload.setdefault("default_embedding_root", "")
 
+        if default_other_roots is not None:
+            payload["default_other_roots"] = self._normalize_default_other_roots(
+                default_other_roots
+            )
+        else:
+            payload["default_other_roots"] = self._normalize_default_other_roots(
+                payload.get("default_other_roots", {})
+            )
+
         if recipes_path is not None:
             payload["recipes_path"] = recipes_path
         else:
@@ -630,6 +649,35 @@ class SettingsManager:
                     cleaned.append(stripped)
                     seen.add(stripped)
             normalized[key] = cleaned
+        return normalized
+
+    def _normalize_default_other_roots(
+        self, value: Any, *, strict: bool = False
+    ) -> Dict[str, str]:
+        """Normalize a ``default_other_roots`` mapping ({sub_type: root path}).
+
+        Unknown sub_type keys and non-string/empty paths are dropped; with
+        ``strict=True`` unknown sub_type keys raise instead (used by ``set()``
+        so typos in API payloads surface as errors).
+        """
+        if not isinstance(value, Mapping):
+            if strict and value is not None:
+                raise ValueError("default_other_roots must be a mapping")
+            return {}
+        normalized: Dict[str, str] = {}
+        for sub_type, path in value.items():
+            if sub_type not in VALID_OTHER_SUB_TYPES:
+                if strict:
+                    raise ValueError(
+                        f"Unknown other-model sub-type '{sub_type}'; "
+                        f"expected one of {sorted(VALID_OTHER_SUB_TYPES)}"
+                    )
+                continue
+            if not isinstance(path, str):
+                continue
+            stripped = path.strip()
+            if stripped:
+                normalized[sub_type] = stripped
         return normalized
 
     def _has_configured_paths(self, folder_paths: Any) -> bool:
@@ -744,6 +792,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        default_other_roots: Optional[Mapping[str, str]] = None,
         recipes_path: Optional[str] = None,
     ) -> bool:
         libraries = self.settings.get("libraries", {})
@@ -793,6 +842,14 @@ class SettingsManager:
         ):
             library["default_embedding_root"] = default_embedding_root
             changed = True
+
+        if default_other_roots is not None:
+            normalized_other_roots = self._normalize_default_other_roots(
+                default_other_roots
+            )
+            if library.get("default_other_roots") != normalized_other_roots:
+                library["default_other_roots"] = normalized_other_roots
+                changed = True
 
         if recipes_path is not None and library.get("recipes_path") != recipes_path:
             library["recipes_path"] = recipes_path
@@ -894,12 +951,53 @@ class SettingsManager:
         updated = _check_and_auto_set("unet", "default_unet_root") or updated
         updated = _check_and_auto_set("embeddings", "default_embedding_root") or updated
 
+        # Other-model default roots: one entry per sub_type; candidates are the
+        # union of that sub_type's folder_paths keys (text_encoder merges the
+        # legacy 'clip' key with 'text_encoders').
+        sub_type_folder_keys: Dict[str, List[str]] = {}
+        for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items():
+            sub_type_folder_keys.setdefault(sub_type, []).append(folder_key)
+
+        other_roots = self._normalize_default_other_roots(
+            self.settings.get("default_other_roots")
+        )
+        for sub_type in VALID_OTHER_SUB_TYPES:
+            candidates: List[str] = []
+            candidate_identities: set[str] = set()
+            for folder_key in sub_type_folder_keys.get(sub_type, []):
+                for candidate in self._get_valid_root_candidates(folder_key):
+                    identity = _normalize_root_identity(candidate)
+                    if identity in candidate_identities:
+                        continue
+                    candidate_identities.add(identity)
+                    candidates.append(candidate)
+            if not candidates:
+                continue
+            current = other_roots.get(sub_type, "")
+            if current and _normalize_root_identity(current) in candidate_identities:
+                continue
+            other_roots[sub_type] = candidates[0]
+            if current:
+                logger.info(
+                    "Repaired stale default_other_roots[%s] from '%s' to '%s' because it is not present in primary or extra roots",
+                    sub_type,
+                    current,
+                    candidates[0],
+                )
+            else:
+                logger.info(
+                    "Auto-set default_other_roots[%s] to '%s'", sub_type, candidates[0]
+                )
+            updated = True
+
         if updated:
+            self.settings["default_other_roots"] = other_roots
             self._update_active_library_entry(
                 default_lora_root=self.settings.get("default_lora_root"),
                 default_checkpoint_root=self.settings.get("default_checkpoint_root"),
                 default_unet_root=self.settings.get("default_unet_root"),
                 default_embedding_root=self.settings.get("default_embedding_root"),
+                default_other_roots=other_roots,
             )
             if self._bootstrap_reason == "missing":
                 self._needs_initial_save = True
@@ -1599,6 +1697,8 @@ class SettingsManager:
             value = self.normalize_download_skip_base_models(value)
         elif key == "mature_blur_level":
             value = self.normalize_mature_blur_level(value)
+        elif key == "default_other_roots":
+            value = self._normalize_default_other_roots(value, strict=True)
         elif key == "recipes_path":
             current_recipes_dir = self._get_effective_recipes_dir()
             value = self._normalize_recipes_path_value(value)
@@ -1626,6 +1726,8 @@ class SettingsManager:
             self._update_active_library_entry(default_unet_root=str(value))
         elif key == "default_embedding_root":
             self._update_active_library_entry(default_embedding_root=str(value))
+        elif key == "default_other_roots":
+            self._update_active_library_entry(default_other_roots=value)
         elif key == "recipes_path":
             self._update_active_library_entry(recipes_path=str(value))
         elif key == "model_name_display":
@@ -1796,6 +1898,7 @@ class SettingsManager:
             "lora_scanner",
             "checkpoint_scanner",
             "embedding_scanner",
+            "other_scanner",
             "recipe_scanner",
         ):
             service = ServiceRegistry.get_service_sync(service_name)
@@ -1960,6 +2063,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        default_other_roots: Optional[Mapping[str, str]] = None,
         recipes_path: Optional[str] = None,
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
@@ -2004,6 +2108,11 @@ class SettingsManager:
                 if default_embedding_root is not None
                 else existing.get("default_embedding_root")
             ),
+            default_other_roots=(
+                default_other_roots
+                if default_other_roots is not None
+                else existing.get("default_other_roots")
+            ),
             recipes_path=(
                 recipes_path
                 if recipes_path is not None
@@ -2036,6 +2145,7 @@ class SettingsManager:
         default_checkpoint_root: str = "",
         default_unet_root: str = "",
         default_embedding_root: str = "",
+        default_other_roots: Optional[Mapping[str, str]] = None,
         recipes_path: str = "",
         metadata: Optional[Mapping[str, Any]] = None,
         activate: bool = False,
@@ -2054,6 +2164,7 @@ class SettingsManager:
             default_checkpoint_root=default_checkpoint_root,
             default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
+            default_other_roots=default_other_roots,
             recipes_path=recipes_path,
             metadata=metadata,
             activate=activate,
@@ -2114,6 +2225,7 @@ class SettingsManager:
         default_checkpoint_root: Optional[str] = None,
         default_unet_root: Optional[str] = None,
         default_embedding_root: Optional[str] = None,
+        default_other_roots: Optional[Mapping[str, str]] = None,
         recipes_path: Optional[str] = None,
     ) -> None:
         """Update folder paths for the active library."""
@@ -2127,6 +2239,7 @@ class SettingsManager:
             default_checkpoint_root=default_checkpoint_root,
             default_unet_root=default_unet_root,
             default_embedding_root=default_embedding_root,
+            default_other_roots=default_other_roots,
             recipes_path=recipes_path,
             activate=True,
         )
@@ -2151,6 +2264,7 @@ class SettingsManager:
                 "lora_scanner",
                 "checkpoint_scanner",
                 "embedding_scanner",
+                "other_scanner",
                 "recipe_scanner",
                 "model_update_service",
             ):

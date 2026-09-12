@@ -424,12 +424,13 @@ class BannerService {
 
     /**
      * Get the current page type from the URL
-     * @returns {string} Page type (loras, checkpoints, embeddings, recipes)
+     * @returns {string} Page type (loras, checkpoints, embeddings, other, recipes)
      */
     getCurrentPageType() {
         const path = window.location.pathname;
         if (path.includes('/checkpoints')) return 'checkpoints';
         if (path.includes('/embeddings')) return 'embeddings';
+        if (path.includes('/other')) return 'other';
         if (path.includes('/recipes')) return 'recipes';
         return 'loras';
     }
@@ -443,7 +444,8 @@ class BannerService {
         const endpoints = {
             'loras': '/api/lm/loras/reload?rebuild=true',
             'checkpoints': '/api/lm/checkpoints/reload?rebuild=true',
-            'embeddings': '/api/lm/embeddings/reload?rebuild=true'
+            'embeddings': '/api/lm/embeddings/reload?rebuild=true',
+            'other': '/api/lm/other/reload?rebuild=true'
         };
         return endpoints[pageType] || endpoints['loras'];
     }

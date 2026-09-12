@@ -149,6 +149,7 @@
       "copyCheckpointName": "Copy checkpoint name",
       "copyEmbeddingName": "Copy embedding name",
       "embeddingNameCopied": "Embedding syntax copied",
+      "modelNameCopied": "Model name copied",
       "sendCheckpointToWorkflow": "Send to ComfyUI",
       "sendEmbeddingToWorkflow": "Send to ComfyUI"
     },
@@ -233,6 +234,7 @@
       "recipes": "Recipes",
       "checkpoints": "Checkpoints",
       "embeddings": "Embeddings",
+      "other": "Other",
       "statistics": "Stats"
     },
     "search": {
@@ -533,6 +535,16 @@
       "defaultUnetRootHelp": "Set default diffusion model (UNET) root directory for downloads, imports and moves",
       "defaultEmbeddingRoot": "Embedding Root",
       "defaultEmbeddingRootHelp": "Set default embedding root directory for downloads, imports and moves",
+      "defaultVaeRoot": "VAE Root",
+      "defaultVaeRootHelp": "Set default VAE root directory for downloads, imports and moves",
+      "defaultUpscalerRoot": "Upscaler Root",
+      "defaultUpscalerRootHelp": "Set default upscaler root directory for downloads, imports and moves",
+      "defaultTextEncoderRoot": "Text Encoder Root",
+      "defaultTextEncoderRootHelp": "Set default text encoder root directory for downloads, imports and moves",
+      "defaultClipVisionRoot": "CLIP Vision Root",
+      "defaultClipVisionRootHelp": "Set default CLIP vision root directory for downloads, imports and moves",
+      "defaultControlnetRoot": "ControlNet Root",
+      "defaultControlnetRootHelp": "Set default ControlNet root directory for downloads, imports and moves",
       "recipesPath": "Recipes Storage Path",
       "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
       "recipesPathPlaceholder": "/path/to/recipes",
@@ -1200,6 +1212,9 @@
   },
   "embeddings": {
     "title": "Embedding Models"
+  },
+  "other": {
+    "title": "Other Models"
   },
   "sidebar": {
     "modelRoot": "Root",
@@ -1878,6 +1893,10 @@
       "title": "Initializing Embedding Manager",
       "message": "Scanning and building embedding cache. This may take a few minutes..."
     },
+    "other": {
+      "title": "Initializing Other Models Manager",
+      "message": "Scanning and building model cache. This may take a few minutes..."
+    },
     "recipes": {
       "title": "Initializing Recipe Manager",
       "message": "Loading and processing recipes. This may take a few minutes..."
@@ -2333,6 +2352,7 @@
       "checkpointRootsFailed": "Failed to load checkpoint roots: {message}",
       "unetRootsFailed": "Failed to load diffusion model roots: {message}",
       "embeddingRootsFailed": "Failed to load embedding roots: {message}",
+      "otherRootsFailed": "Failed to load other model roots: {message}",
       "mappingsUpdated": "Base model path mappings updated ({count} mapping{plural})",
       "mappingsCleared": "Base model path mappings cleared",
       "mappingSaveFailed": "Failed to save base model mappings: {message}",

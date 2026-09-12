@@ -149,6 +149,7 @@
             "copyCheckpointName": "Checkpoint-Name kopieren",
             "copyEmbeddingName": "Embedding-Name kopieren",
             "embeddingNameCopied": "Embedding-Syntax kopiert",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
             "sendEmbeddingToWorkflow": "An ComfyUI senden"
         },
@@ -233,6 +234,7 @@
             "recipes": "Rezepte",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "[TODO: Translate] Other",
             "statistics": "Statistiken"
         },
         "search": {
@@ -533,6 +535,16 @@
             "defaultUnetRootHelp": "Legen Sie den Standard-Diffusion-Modell-(UNET)-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultEmbeddingRoot": "Embedding-Stammordner",
             "defaultEmbeddingRootHelp": "Legen Sie den Standard-Embedding-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "defaultVaeRoot": "[TODO: Translate] VAE Root",
+            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
+            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
+            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
+            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
+            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
+            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
+            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
+            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
+            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
             "recipesPath": "Rezepte-Speicherpfad",
             "recipesPathHelp": "Optionales benutzerdefiniertes Verzeichnis für gespeicherte Rezepte. Leer lassen, um den recipes-Ordner im ersten LoRA-Stammverzeichnis zu verwenden.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1200,6 +1212,9 @@
     },
     "embeddings": {
         "title": "Embedding-Modelle"
+    },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
     },
     "sidebar": {
         "modelRoot": "Stammverzeichnis",
@@ -1878,6 +1893,10 @@
             "title": "Embedding Manager wird initialisiert",
             "message": "Embedding-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
         },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+        },
         "recipes": {
             "title": "Rezept Manager wird initialisiert",
             "message": "Rezepte werden geladen und verarbeitet. Dies kann einige Minuten dauern..."
@@ -2333,6 +2352,7 @@
             "checkpointRootsFailed": "Fehler beim Laden der Checkpoint-Stammverzeichnisse: {message}",
             "unetRootsFailed": "Fehler beim Laden der Diffusion-Modell-Stammverzeichnisse: {message}",
             "embeddingRootsFailed": "Fehler beim Laden der Embedding-Stammverzeichnisse: {message}",
+            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
             "mappingsUpdated": "Basismodell-Pfad-Zuordnungen aktualisiert ({count})",
             "mappingsCleared": "Basismodell-Pfad-Zuordnungen gelöscht",
             "mappingSaveFailed": "Fehler beim Speichern der Basismodell-Zuordnungen: {message}",

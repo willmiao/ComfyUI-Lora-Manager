@@ -83,6 +83,63 @@ VALID_LORA_SUB_TYPES = ["lora", "locon", "dora"]
 VALID_CHECKPOINT_SUB_TYPES = ["checkpoint", "diffusion_model"]
 VALID_EMBEDDING_SUB_TYPES = ["embedding"]
 
+# folder_paths key -> sub_type; single source of truth for extensibility.
+# Adding support for a new ComfyUI folder category is a one-line change here.
+OTHER_MODEL_FOLDER_SUBTYPES = {
+    "vae": "vae",
+    "upscale_models": "upscaler",
+    "text_encoders": "text_encoder",
+    "clip": "text_encoder",  # legacy ComfyUI key
+    "clip_vision": "clip_vision",
+    "controlnet": "controlnet",
+}
+# folder_paths keys scanned by default; anything else in
+# OTHER_MODEL_FOLDER_SUBTYPES (e.g. controlnet) is opt-in via the
+# "enabled_other_folders" setting.
+DEFAULT_OTHER_MODEL_FOLDERS = (
+    "vae",
+    "upscale_models",
+    "text_encoders",
+    "clip",
+    "clip_vision",
+)
+VALID_OTHER_SUB_TYPES = ["vae", "upscaler", "text_encoder", "clip_vision", "controlnet"]
+# CivitAI model.type values accepted by the "other" page's fetch-metadata
+# validation (lowercased). CLIP/CLIPVision are retired upstream but still
+# appear on grandfathered models.
+VALID_OTHER_CIVITAI_TYPES = {
+    "vae",
+    "upscaler",
+    "textencoder",
+    "clip",
+    "clipvision",
+    "controlnet",
+    "other",
+}
+# CivitAI model.type -> internal sub_type for the "other" model page.
+CIVITAI_TYPE_TO_OTHER_SUB_TYPE = {
+    "vae": "vae",
+    "upscaler": "upscaler",
+    "textencoder": "text_encoder",
+    "clip": "text_encoder",
+    "clipvision": "clip_vision",
+    "controlnet": "controlnet",
+}
+
+# CivitAI ModelFile.type values -> internal sub_type for the "other" model
+# page. Used for download routing only, and strictly as an explicit user file
+# pick or a fallback when model.type maps to nothing — checkpoint models
+# routinely bundle VAE/Text Encoder component files, so file types must never
+# override a mapped model.type.
+CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE = {
+    "VAE": "vae",
+    "Upscaler": "upscaler",
+    "Text Encoder": "text_encoder",
+    "Vision Encoder": "clip_vision",
+    "CLIPVision": "clip_vision",
+    "ControlNet": "controlnet",
+}
+
 # Backward compatibility alias
 VALID_LORA_TYPES = VALID_LORA_SUB_TYPES
 
@@ -91,6 +148,7 @@ CIVITAI_USER_MODEL_TYPES = [
     *VALID_LORA_TYPES,
     "textualinversion",
     "checkpoint",
+    *sorted(VALID_OTHER_CIVITAI_TYPES),
 ]
 
 # Default chunk size in megabytes used for hashing large files.

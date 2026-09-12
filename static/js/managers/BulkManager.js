@@ -93,6 +93,20 @@ export class BulkManager {
                 setFavorite: true,
                 unfavorite: true
             },
+            [MODEL_TYPES.OTHER]: {
+                addTags: true,
+                sendToWorkflow: false,
+                copyAll: false,
+                refreshAll: true,
+                checkUpdates: true,
+                moveAll: true,
+                autoOrganize: true,
+                deleteAll: true,
+                setContentRating: true,
+                skipMetadataRefresh: true,
+                setFavorite: true,
+                unfavorite: true
+            },
             recipes: {
                 addTags: true,
                 sendToWorkflow: false,

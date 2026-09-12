@@ -58,6 +58,8 @@ class InitializationManager {
             this.pageType = 'recipes';
         } else if (path.includes('/checkpoints')) {
             this.pageType = 'checkpoints';
+        } else if (path.includes('/other')) {
+            this.pageType = 'other';
         } else if (path.includes('/loras')) {
             this.pageType = 'loras';
         } else if (path.includes('/embeddings')) {
@@ -221,6 +223,7 @@ class InitializationManager {
                 'lora': 'loras',
                 'checkpoint': 'checkpoints',
                 'embedding': 'embeddings',
+                'other': 'other',
                 'recipe': 'recipes'
             };
             

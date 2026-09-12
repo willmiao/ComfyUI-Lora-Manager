@@ -149,6 +149,7 @@
             "copyCheckpointName": "复制 Checkpoint 名称",
             "copyEmbeddingName": "复制 Embedding 名称",
             "embeddingNameCopied": "已复制 Embedding 语法",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "发送到 ComfyUI",
             "sendEmbeddingToWorkflow": "发送到 ComfyUI"
         },
@@ -233,6 +234,7 @@
             "recipes": "配方",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "other": "[TODO: Translate] Other",
             "statistics": "统计"
         },
         "search": {
@@ -533,6 +535,16 @@
             "defaultUnetRootHelp": "设置下载、导入和移动时的默认 Diffusion Model (UNET) 根目录",
             "defaultEmbeddingRoot": "Embedding 根目录",
             "defaultEmbeddingRootHelp": "设置下载、导入和移动时的默认 Embedding 根目录",
+            "defaultVaeRoot": "[TODO: Translate] VAE Root",
+            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
+            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
+            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
+            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
+            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
+            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
+            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
+            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
+            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
             "recipesPath": "配方存储路径",
             "recipesPathHelp": "已保存配方的可选自定义目录。留空则使用第一个 LoRA 根目录下的 recipes 文件夹。",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1200,6 +1212,9 @@
     },
     "embeddings": {
         "title": "Embedding 模型"
+    },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
     },
     "sidebar": {
         "modelRoot": "根目录",
@@ -1878,6 +1893,10 @@
             "title": "初始化 Embedding 管理器",
             "message": "正在扫描并构建 Embedding 缓存。这可能需要几分钟..."
         },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+        },
         "recipes": {
             "title": "初始化配方管理器",
             "message": "正在加载和处理配方。这可能需要几分钟..."
@@ -2333,6 +2352,7 @@
             "checkpointRootsFailed": "加载 Checkpoint 根目录失败：{message}",
             "unetRootsFailed": "加载 Diffusion Model 根目录失败：{message}",
             "embeddingRootsFailed": "加载 Embedding 根目录失败：{message}",
+            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
             "mappingsUpdated": "基础模型路径映射已更新（{count} 条映射）",
             "mappingsCleared": "基础模型路径映射已清除",
             "mappingSaveFailed": "保存基础模型映射失败：{message}",

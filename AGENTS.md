@@ -166,7 +166,7 @@ The system runs in two modes:
 
 ### Model Types & Routes
 
-- API endpoints follow `/loras/*`, `/checkpoints/*`, `/embeddings/*` patterns
+- API endpoints follow `/loras/*`, `/checkpoints/*`, `/embeddings/*`, `/other/*` patterns
 - Route registrars organize endpoints by domain: `ModelRouteRegistrar`, `RecipeRouteRegistrar`, etc.
 - Request handlers in `py/routes/handlers/` implement route logic
 - All routes use aiohttp, return `web.json_response` or `web.Response`

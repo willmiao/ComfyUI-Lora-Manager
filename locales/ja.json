@@ -149,6 +149,7 @@
             "copyCheckpointName": "Checkpoint名をコピー",
             "copyEmbeddingName": "embedding名をコピー",
             "embeddingNameCopied": "Embedding構文をコピーしました",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "ComfyUIに送信",
             "sendEmbeddingToWorkflow": "ComfyUIに送信"
         },
@@ -233,6 +234,7 @@
             "recipes": "レシピ",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "other": "[TODO: Translate] Other",
             "statistics": "統計"
         },
         "search": {
@@ -533,6 +535,16 @@
             "defaultUnetRootHelp": "ダウンロード、インポート、移動用のデフォルトDiffusion Model (UNET)ルートディレクトリを設定",
             "defaultEmbeddingRoot": "Embeddingルート",
             "defaultEmbeddingRootHelp": "ダウンロード、インポート、移動用のデフォルトembeddingルートディレクトリを設定",
+            "defaultVaeRoot": "[TODO: Translate] VAE Root",
+            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
+            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
+            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
+            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
+            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
+            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
+            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
+            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
+            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
             "recipesPath": "レシピ保存先",
             "recipesPathHelp": "保存済みレシピ用の任意のカスタムディレクトリです。空欄にすると最初のLoRAルートのrecipesフォルダーを使用します。",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1200,6 +1212,9 @@
     },
     "embeddings": {
         "title": "Embeddingモデル"
+    },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
     },
     "sidebar": {
         "modelRoot": "ルート",
@@ -1878,6 +1893,10 @@
             "title": "Embedding Managerを初期化中",
             "message": "embeddingキャッシュをスキャンして構築中。数分かかる場合があります..."
         },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+        },
         "recipes": {
             "title": "レシピマネージャーを初期化中",
             "message": "レシピを読み込んで処理中。数分かかる場合があります..."
@@ -2333,6 +2352,7 @@
             "checkpointRootsFailed": "Checkpointルートの読み込みに失敗しました：{message}",
             "unetRootsFailed": "Diffusion Modelルートの読み込みに失敗しました：{message}",
             "embeddingRootsFailed": "embeddingルートの読み込みに失敗しました：{message}",
+            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
             "mappingsUpdated": "ベースモデルパスマッピングが更新されました（{count} マッピング）",
             "mappingsCleared": "ベースモデルパスマッピングがクリアされました",
             "mappingSaveFailed": "ベースモデルマッピングの保存に失敗しました：{message}",

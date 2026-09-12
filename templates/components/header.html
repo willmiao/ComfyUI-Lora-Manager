@@ -15,6 +15,8 @@
       {% set current_page = 'checkpoints' %}
       {% elif current_path.startswith('/embeddings') %}
       {% set current_page = 'embeddings' %}
+      {% elif current_path.startswith('/other') %}
+      {% set current_page = 'other' %}
       {% elif current_path.startswith('/statistics') %}
       {% set current_page = 'statistics' %}
       {% else %}
@@ -35,6 +37,10 @@
         <a href="/embeddings" class="nav-item{% if current_path.startswith('/embeddings') %} active{% endif %}"
           id="embeddingsNavItem">
           <i class="fas fa-code"></i> <span>{{ t('header.navigation.embeddings') }}</span>
+        </a>
+        <a href="/other" class="nav-item{% if current_path.startswith('/other') %} active{% endif %}"
+          id="otherNavItem">
+          <i class="fas fa-cubes"></i> <span>{{ t('header.navigation.other') }}</span>
         </a>
         <a href="/statistics" class="nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
           id="statisticsNavItem">
@@ -208,7 +214,7 @@
       <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
       <div class="search-option-tag" data-option="creator">{{ t('header.search.filters.creator') }}</div>
       <div class="search-option-tag" data-option="hash">{{ t('header.search.filters.hash') }}</div>
-      {% elif request.path == '/embeddings' %}
+      {% elif request.path == '/embeddings' or request.path == '/other' %}
       <div class="search-option-tag active" data-option="filename">{{ t('header.search.filters.filename') }}</div>
       <div class="search-option-tag active" data-option="modelname">{{ t('header.search.filters.modelname') }}</div>
       <div class="search-option-tag active" data-option="tags">{{ t('header.search.filters.tags') }}</div>
@@ -295,7 +301,7 @@
     </div>
   </div>
   {% endif %}
-  {% if current_page == 'loras' or current_page == 'checkpoints' %}
+  {% if current_page == 'loras' or current_page == 'checkpoints' or current_page == 'other' %}
   <div class="filter-section">
     <h4>{{ t('header.filter.modelTypes') }}</h4>
     <div class="filter-tags" id="modelTypeTags">
