@@ -146,6 +146,71 @@ def test_calculate_relative_path_sanitizes_double_slashes(isolated_settings):
     assert relative_path == "no tags/Author"
 
 
+def test_calculate_relative_path_preserves_original_folder(isolated_settings, tmp_path):
+    isolated_settings["download_path_templates"]["lora"] = (
+        "{base_model}/{original_path}"
+    )
+    root = tmp_path / "loras"
+    model_data = {
+        "file_path": str(root / "People" / "Portraits" / "model.safetensors"),
+        "base_model": "SDXL",
+        "tags": [],
+    }
+
+    relative_path = calculate_relative_path_for_model(
+        model_data, "lora", [str(root)]
+    )
+
+    assert relative_path == "SDXL/People/Portraits"
+
+
+def test_calculate_relative_path_uses_most_specific_root(isolated_settings, tmp_path):
+    isolated_settings["download_path_templates"]["lora"] = "{original_path}"
+    root = tmp_path / "models"
+    nested_root = root / "loras"
+    model_data = {
+        "file_path": str(nested_root / "Styles" / "model.safetensors"),
+        "tags": [],
+    }
+
+    relative_path = calculate_relative_path_for_model(
+        model_data, "lora", [str(root), str(nested_root)]
+    )
+
+    assert relative_path == "Styles"
+
+
+def test_calculate_relative_path_at_root_is_empty(isolated_settings, tmp_path):
+    isolated_settings["download_path_templates"]["lora"] = "{original_path}"
+    root = tmp_path / "loras"
+    model_data = {
+        "file_path": str(root / "model.safetensors"),
+        "tags": [],
+    }
+
+    relative_path = calculate_relative_path_for_model(
+        model_data, "lora", [str(root)]
+    )
+
+    assert relative_path == ""
+
+
+def test_calculate_relative_path_ignores_unrelated_roots(isolated_settings, tmp_path):
+    isolated_settings["download_path_templates"]["lora"] = (
+        "archive/{original_path}"
+    )
+    model_data = {
+        "file_path": str(tmp_path / "outside" / "model.safetensors"),
+        "tags": [],
+    }
+
+    relative_path = calculate_relative_path_for_model(
+        model_data, "lora", [str(tmp_path / "loras")]
+    )
+
+    assert relative_path == "archive"
+
+
 def test_calculate_recipe_fingerprint_filters_and_sorts():
     loras = [
         {"hash": "ABC", "strength": 0.1234},

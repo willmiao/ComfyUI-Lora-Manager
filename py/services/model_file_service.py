@@ -429,7 +429,9 @@ class ModelFileService:
             return current_root
         else:
             # Calculate new relative path based on settings
-            new_relative_path = calculate_relative_path_for_model(model, self.model_type)
+            new_relative_path = calculate_relative_path_for_model(
+                model, self.model_type, self.get_model_roots()
+            )
             
             if not new_relative_path:
                 return None  # Signal to skip
@@ -506,7 +508,9 @@ class ModelMoveService:
                 
                 if model_data:
                     from ..utils.utils import calculate_relative_path_for_model
-                    relative_path = calculate_relative_path_for_model(model_data, self.model_type)
+                    relative_path = calculate_relative_path_for_model(
+                        model_data, self.model_type, self.scanner.get_model_roots()
+                    )
                     if relative_path:
                         target_path = os.path.join(target_path, relative_path).replace(os.sep, '/')
                     elif not get_settings_manager().get_download_path_template(self.model_type):
