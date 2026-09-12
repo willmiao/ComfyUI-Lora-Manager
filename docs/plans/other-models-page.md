@@ -1,6 +1,6 @@
 # Plan: "Other Models" Page — Unified Management for VAE / Upscaler / Text Encoder / etc.
 
-**Status:** v2 — **Phase 1 implemented** (2026-09-12, commits `27da7b3c` backend + `fa7ce725` frontend; verified live against a running ComfyUI instance: scan/hash/sub_type-derivation/fetch/previews all green). **Phase 2 designed** (§9, decisions pending owner sign-off).
+**Status:** v2 — **Phase 1 implemented** (2026-09-12, commits `27da7b3c` backend + `fa7ce725` frontend; verified live against a running ComfyUI instance: scan/hash/sub_type-derivation/fetch/previews all green). **Phase 2 implemented** (2026-09-12, per §9 design; full pytest + vitest green).
 **Scope (Phase 1):** scan + manage (list, search, filter, tags, folders, preview, rename, move, delete/exclude, CivitAI metadata fetch) for a new model type `other`, exposed as a new web page. **Phase 2 (§9):** one-click download from CivitAI for these types.
 
 ## 1. Goal
