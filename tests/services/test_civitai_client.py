@@ -148,6 +148,206 @@ async def test_get_model_by_hash_propagates_rate_limit(monkeypatch, downloader):
     assert exc_info.value.provider == "civitai_api"
 
 
+async def test_get_model_by_name_matches_and_enriches(monkeypatch, downloader):
+    search_payload = {
+        "items": [
+            {
+                "id": 456,
+                "name": "Anything2Real",
+                "type": "LORA",
+                "nsfw": False,
+                "poi": False,
+                "description": "desc",
+                "tags": ["style"],
+                "creator": {"username": "creator"},
+                "modelVersions": [
+                    {
+                        "id": 789,
+                        "name": "v1.0",
+                        "images": [{"url": "https://example.invalid/p.webp"}],
+                    }
+                ],
+            },
+            {
+                "id": 999,
+                "name": "Unrelated",
+                "type": "LORA",
+                "modelVersions": [{"id": 111, "name": "x", "images": []}],
+            },
+        ]
+    }
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        if url.endswith("/models") and kwargs.get("params", {}).get("query") == "anything2real_a":
+            return True, search_payload
+        return False, "unexpected"
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("anything2real_a")
+
+    assert error is None
+    assert result["modelId"] == 456
+    assert result["id"] == 789
+    assert result["model"]["name"] == "Anything2Real"
+    assert result["model"]["description"] == "desc"
+    assert result["model"]["tags"] == ["style"]
+    assert result["images"]  # the version with images was preferred
+
+
+async def test_get_model_by_name_prefers_oldest_version_for_update_detection(monkeypatch, downloader):
+    """When the hash-based lookup fails (e.g. Draw Things converted checkpoints),
+    the name fallback cannot know which version the user actually has.  It must
+    pick the OLDEST version so that newer versions still show up as updates.
+    Picking the newest would suppress all update notifications."""
+    # CivitAI returns versions newest-first
+    search_payload = {
+        "items": [
+            {
+                "id": 100,
+                "name": "Test LoRA",
+                "type": "LORA",
+                "modelVersions": [
+                    {
+                        "id": 300,
+                        "name": "v3.0",
+                        "images": [{"url": "https://example.invalid/v3.webp"}],
+                    },
+                    {
+                        "id": 200,
+                        "name": "v2.0",
+                        "images": [{"url": "https://example.invalid/v2.webp"}],
+                    },
+                    {
+                        "id": 100,
+                        "name": "v1.0",
+                        "images": [{"url": "https://example.invalid/v1.webp"}],
+                    },
+                ],
+            },
+        ]
+    }
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, search_payload
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("test_lora")
+
+    assert error is None
+    # The OLDEST version (v1.0, id=100) must be selected so that v2.0 and v3.0
+    # are detected as available updates.
+    assert result["id"] == 100
+    assert result["name"] == "v1.0"
+    assert result["modelId"] == 100
+
+
+async def test_get_model_by_name_prefers_oldest_with_images_fallback_to_oldest(monkeypatch, downloader):
+    """If only the newest version has images, we still pick the oldest version
+    (without images) rather than the newest — update detection must not be
+    suppressed."""
+    search_payload = {
+        "items": [
+            {
+                "id": 200,
+                "name": "Test LoRA 2",
+                "type": "LORA",
+                "modelVersions": [
+                    {
+                        "id": 30,
+                        "name": "v3.0",
+                        "images": [{"url": "https://example.invalid/v3.webp"}],
+                    },
+                    {
+                        "id": 10,
+                        "name": "v1.0",
+                        "images": [],
+                    },
+                ],
+            },
+        ]
+    }
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, search_payload
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("test_lora_2")
+
+    assert error is None
+    # Oldest version (v1.0, id=10) is chosen even though it has no images,
+    # so that v3.0 shows as an available update.
+    assert result["id"] == 10
+    assert result["name"] == "v1.0"
+
+
+async def test_get_model_by_name_filters_by_type(monkeypatch, downloader):
+    search_payload = {
+        "items": [
+            {
+                "id": 1,
+                "name": "Workflow only",
+                "type": "Workflows",
+                "modelVersions": [{"id": 11, "name": "v1", "images": []}],
+            },
+            {
+                "id": 2,
+                "name": "A LORA",
+                "type": "LORA",
+                "modelVersions": [{"id": 22, "name": "v1", "images": [{}]}],
+            },
+        ]
+    }
+
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, search_payload
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("anything", model_types=("LORA", "Checkpoint"))
+
+    assert error is None
+    assert result["modelId"] == 2
+
+
+async def test_get_model_by_name_not_found(monkeypatch, downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return True, {"items": []}
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("missing_model")
+
+    assert result is None
+    assert error == "Model not found"
+
+
+async def test_get_model_by_name_offline_cooldown(downloader):
+    async def fake_make_request(method, url, use_auth=True, **kwargs):
+        return False, OFFLINE_COOLDOWN_ERROR
+
+    downloader.make_request = fake_make_request
+
+    client = await CivitaiClient.get_instance()
+
+    result, error = await client.get_model_by_name("anything")
+
+    assert result is None
+    assert error == OFFLINE_FRIENDLY_MESSAGE
+
+
 async def test_download_preview_image_writes_file(tmp_path, downloader):
     client = await CivitaiClient.get_instance()
     target = tmp_path / "preview" / "image.jpg"

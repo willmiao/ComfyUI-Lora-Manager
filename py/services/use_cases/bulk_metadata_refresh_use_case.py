@@ -44,6 +44,7 @@ class BulkMetadataRefreshUseCase:
         total_models = len(cache.raw_data)
 
         enable_metadata_archive_db = self._settings.get("enable_metadata_archive_db", False)
+        enable_name_fallback = self._settings.get("civitai_name_fallback", True)
         skip_paths = self._settings.get("metadata_refresh_skip_paths", [])
         to_process: Sequence[Dict[str, Any]] = [
             model
@@ -56,12 +57,16 @@ class BulkMetadataRefreshUseCase:
             # via the right-click context menu.
             and not model.get("hf_url", "")
             and not (
-                # Skip models confirmed not on CivitAI when no need to retry
+                # Skip models confirmed not on CivitAI when no need to retry.
+                # When the name-based fallback is enabled, models previously
+                # marked civitai_deleted (e.g. Draw Things converted checkpoints
+                # whose hash is unknown to CivitAI) are NOT skipped unless the
+                # name fallback already reached a definitive miss.
                 model.get("from_civitai") is False
                 and model.get("civitai_deleted") is True
                 and (
-                    not enable_metadata_archive_db
-                    or model.get("db_checked", False)
+                    (not enable_metadata_archive_db or model.get("db_checked", False))
+                    and (not enable_name_fallback or model.get("name_fallback_checked", False))
                 )
             )
         ]

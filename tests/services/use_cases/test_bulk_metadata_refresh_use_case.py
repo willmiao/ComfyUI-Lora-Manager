@@ -402,3 +402,114 @@ async def test_model_without_hash_skipped(use_case, mock_service, mock_metadata_
 
     assert result["processed"] == 1
     assert result["updated"] == 0
+
+
+@pytest.mark.asyncio
+async def test_deleted_model_not_skipped_when_name_fallback_pending(
+    mock_service, mock_metadata_sync, mock_settings
+):
+    """A model previously marked civitai_deleted (e.g. Draw Things converted
+    checkpoint) is NOT skipped when the name-based fallback is enabled and has
+    not yet reached a definitive miss — it must be retried via the name search."""
+    mock_settings.get = MagicMock(
+        side_effect=lambda key, default=None: {
+            "enable_metadata_archive_db": False,
+            "civitai_name_fallback": True,
+        }.get(key, default)
+    )
+    use_case = BulkMetadataRefreshUseCase(
+        service=mock_service,
+        metadata_sync=mock_metadata_sync,
+        settings_service=mock_settings,
+    )
+    deleted_model = {
+        "file_path": "/models/anything2real_a_lora_f16.ckpt",
+        "sha256": "converted-hash",
+        "model_name": "anything2real_a_lora_f16",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": True,
+    }
+
+    cache = SimpleNamespace(raw_data=[deleted_model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    # The model must be processed via the name fallback, not skipped.
+    mock_metadata_sync.fetch_and_update_model.assert_awaited_once()
+    assert result["processed"] == 1
+
+
+@pytest.mark.asyncio
+async def test_deleted_model_skipped_when_name_fallback_definitive(
+    mock_service, mock_metadata_sync, mock_settings
+):
+    """A model whose name fallback already reached a definitive miss IS skipped
+    to avoid re-hitting the search endpoint on every refresh."""
+    mock_settings.get = MagicMock(
+        side_effect=lambda key, default=None: {
+            "enable_metadata_archive_db": False,
+            "civitai_name_fallback": True,
+        }.get(key, default)
+    )
+    use_case = BulkMetadataRefreshUseCase(
+        service=mock_service,
+        metadata_sync=mock_metadata_sync,
+        settings_service=mock_settings,
+    )
+    deleted_model = {
+        "file_path": "/models/some_unknown_model.ckpt",
+        "sha256": "converted-hash",
+        "model_name": "some_unknown_model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": True,
+        "name_fallback_checked": True,
+    }
+
+    cache = SimpleNamespace(raw_data=[deleted_model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_not_awaited()
+    assert result["processed"] == 0
+    assert result["updated"] == 0
+    assert result["skipped_count"] == 1
+
+
+@pytest.mark.asyncio
+async def test_deleted_model_skipped_when_name_fallback_disabled(
+    mock_service, mock_metadata_sync, mock_settings
+):
+    """When the name fallback is disabled, deleted models behave as before."""
+    mock_settings.get = MagicMock(
+        side_effect=lambda key, default=None: {
+            "enable_metadata_archive_db": False,
+            "civitai_name_fallback": False,
+        }.get(key, default)
+    )
+    use_case = BulkMetadataRefreshUseCase(
+        service=mock_service,
+        metadata_sync=mock_metadata_sync,
+        settings_service=mock_settings,
+    )
+    deleted_model = {
+        "file_path": "/models/some_deleted_model.ckpt",
+        "sha256": "hash",
+        "model_name": "some_deleted_model",
+        "civitai": {},
+        "from_civitai": False,
+        "civitai_deleted": True,
+    }
+
+    cache = SimpleNamespace(raw_data=[deleted_model], resort=AsyncMock())
+    mock_service.scanner.get_cached_data.return_value = cache
+
+    result = await use_case.execute()
+
+    mock_metadata_sync.fetch_and_update_model.assert_not_awaited()
+    assert result["processed"] == 0
+    assert result["updated"] == 0
+    assert result["skipped_count"] == 1
