@@ -1,6 +1,6 @@
 # Plan: "Other Models" Page — Unified Management for VAE / Upscaler / Text Encoder / etc.
 
-**Status:** v2 — **Phase 1 implemented** (2026-09-12, commits `27da7b3c` backend + `fa7ce725` frontend; verified live against a running ComfyUI instance: scan/hash/sub_type-derivation/fetch/previews all green). **Phase 2 implemented** (2026-09-12, per §9 design; full pytest + vitest green).
+**Status:** v2 — **Phase 1 implemented** (2026-09-12, commits `27da7b3c` backend + `fa7ce725` frontend; verified live against a running ComfyUI instance: scan/hash/sub_type-derivation/fetch/previews all green). **Phase 2 implemented** (2026-09-12, per §9 design; full pytest + vitest green). **Phase 3 implemented** (§11: opt-in management toggles; default off).
 **Scope (Phase 1):** scan + manage (list, search, filter, tags, folders, preview, rename, move, delete/exclude, CivitAI metadata fetch) for a new model type `other`, exposed as a new web page. **Phase 2 (§9):** one-click download from CivitAI for these types.
 
 ## 1. Goal
@@ -250,3 +250,83 @@ Frontend/templates: `templates/components/controls.html`, `static/js/components/
 - **Undecidable sub_type** (model.type `Other` + unknown file types): must error and ask, never silently default to the vae folder.
 - **Lazy hash after download**: downloads carry CivitAI SHA256 (no recompute needed) — ensure the post-download cache write doesn't leave `hash_status="pending"`, or the next metadata fetch re-hashes a 10 GB file.
 - **CivArchive source**: same `_execute_original_download` path, same payload shape — cover it once in tests.
+
+## 11. Phase 3 — Opt-in Management Toggles (implemented)
+
+Designed 2026-09-13 against the Phase-1/2 code. Other Models is **opt-in**: after
+Phase 3 the feature ships disabled, so no other-model folder is scanned and the
+page shows an "enable" empty state until the user turns it on.
+
+### 11.1 Settings (global, not per-library)
+
+| key | type | default | meaning |
+|---|---|---|---|
+| `enable_other_models` | bool | `false` | master switch |
+| `enabled_other_sub_types` | list[str] | `["vae","upscaler","text_encoder","clip_vision"]` | allow-list; controlnet still opt-in |
+
+`enabled_other_folders` (the unreleased, additive, no-UI backend key) was removed
+and replaced by the sub_type-level allow-list; there is no migration because the
+feature never shipped. `text_encoder` expands to `text_encoders` + legacy `clip`
+via `OTHER_SUB_TYPE_FOLDER_KEYS`.
+
+`settings.json.example` intentionally stays minimal (only `use_portable_settings`,
+`civitai_api_key`, and the four core `folder_paths` keys: `loras`, `checkpoints`,
+`unet`, `embeddings`). Optional keys — including the other-model folder paths and
+`enable_other_models` — are NOT documented there; they live in `DEFAULT_SETTINGS`
+and reach the user's `settings.json` on demand. This supersedes the Phase-1/Phase-2
+notes that proposed adding the other-model folder keys to the example.
+
+### 11.2 Behaviour matrix
+
+| state | scan | nav / `/other` | other downloads | `default_other_roots` | Doctor / refresh-all |
+|---|---|---|---|---|---|
+| master off | nothing (`other_roots == []`) | nav entry hidden (`nav-item--hidden`); `/other` still renders the disabled empty state + Enable button; one-time dismissible announcement banner on first visit | rejected | preserved, never auto-set | scanner skipped |
+| sub_type off | that sub_type's folder keys excluded | page keeps working, type disappears from data | auto-routing refused (manual folder still allowed) | preserved, not preselected | normal |
+| all on (after enabling) | Phase-1/2 behaviour | normal | normal | normal | normal |
+
+### 11.3 Backend touch points
+
+- `py/utils/constants.py` — `DEFAULT_ENABLED_OTHER_SUB_TYPES`, `OTHER_SUB_TYPE_FOLDER_KEYS`, `normalize_other_sub_types`.
+- `py/config.py` — `_get_enabled_other_folder_keys()` is the single scan gate (master switch + allow-list); new `refresh_other_roots()` rebuilds roots + preview roots on toggle.
+- `py/services/settings_manager.py` — new defaults, `set()` normalization, `is_other_models_enabled()` / `get_enabled_other_sub_types()` / `is_other_sub_type_enabled()`, and `_apply_other_model_settings_change()` which reapplies config and calls `other_scanner.on_library_changed(reconcile=True)`.
+- `py/services/model_scanner.py` — `_should_keep_cached_entry()` hydration hook (default keep) plus `on_library_changed(reconcile=...)` / `initialize_in_background(reconcile=...)`; the hook filters `raw_data` and the hash/autov3 index rows.
+- `py/services/other_scanner.py` — drops persisted entries whose folder is no longer a managed root (sub_type is location-derived, so config is the source of truth).
+- `py/routes/other_routes.py` — `_validate_civitai_model_type` rejects everything while off / mapped-but-disabled sub_types; `_get_page_context_provider()` injects `other_disabled` into the template.
+- `py/routes/handlers/model_handlers.py` + `base_model_routes.py` — optional `page_context_provider` hook on `ModelPageView`.
+- `py/routes/handlers/download_routing_handlers.py` — returns `{sub_type: None, disabled: true, reason}` instead of guessing.
+- `py/services/download_manager.py` — rejects other-type downloads while off; disabled sub_type refuses default-path routing with a "pick a folder" error.
+- `py/routes/handlers/misc_handlers.py` — Doctor / init-status / refresh-all skip the other scanner while off (`_active_scanner_factories` / `_active_scanner_getters`).
+- `py/services/pending_delete_service.py` — deliberately untouched: the scanner stays registered so staged deletes still merge.
+
+### 11.4 Frontend
+
+Discoverability: the nav entry is hidden while the feature is off, and three
+lightweight surfaces replace it — a one-time announcement banner, the download
+toast, and the settings toggle itself.
+
+- `templates/components/header.html` + `static/css/components/header.css` — `nav-item--hidden` class (server-rendered when off, client-toggled after enabling) and the `fa-shapes` icon.
+- `templates/other.html` — `other_disabled` branch in `content` + `main_script`; page-scoped CSS for the empty state.
+- `static/js/other_disabled.js` — boots `appCore` (shared header) and delegates to the shared enable helper.
+- `static/js/utils/otherModels.js` — shared `enableOtherModels()` (POST settings + reload) and `openOtherModelsSettings()` (settings modal on the Library section); used by the disabled page, the banner and the download modal.
+- `static/js/managers/BannerService.js` — `other-models-announcement` banner (only when off and not dismissed; `priority: 0`, dismissal persisted via `dismissed_banners`) with Enable / Open Settings actions; `removeOtherModelsAnnouncement()` drops it without persisting a dismissal.
+- `templates/components/modals/settings/library.html` + `SettingsManager.updateOtherModelsControls()` / `saveEnabledOtherSubTypes()` / `updateOtherModelsNavVisibility()` — master toggle + five sub_type checkboxes; unchecked/disabled sub_types have their default-root select disabled.
+- `static/js/managers/DownloadManager.js` — a disabled routing answer surfaces a `showActionToast` with an "Enable Other Models" action (opening settings) and falls back to manual selection.
+- i18n: `settings.folderSettings.*`, `other.disabled.*` and `banners.otherModels.*` keys in `locales/en.json` + `scripts/sync_translation_keys.py` (other locales keep `[TODO: Translate]`).
+
+### 11.5 Cache consistency
+
+- Disabling purges rows from the in-memory view at hydration time (the
+  `_should_keep_cached_entry` hook) and from SQLite on the reconcile triggered by
+  the toggle; the `.metadata.json` sidecars survive, so re-enabling rescans
+  without recomputing hashes (critical for multi-GB text encoders).
+- Enabling triggers a reconcile so newly managed roots are scanned immediately.
+- Editing `settings.json` while the server is stopped is still covered by the
+  hydration hook, so disabled types never appear after a restart.
+
+### 11.6 Tests
+
+Backend: opt-in fixtures added to the other-related suites; new coverage for
+"default off scans nothing", per-sub_type gating, routing/download rejection,
+`_should_keep_cached_entry`, settings normalization and `other_disabled` page
+context. Frontend: `updateOtherModelsControls` / `saveEnabledOtherSubTypes` and
+the disabled-page enable flow.
