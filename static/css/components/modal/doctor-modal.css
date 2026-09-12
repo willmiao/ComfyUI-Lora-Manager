@@ -1,13 +1,3 @@
-.doctor-trigger {
-    min-width: 120px;
-    position: relative;
-    border-color: color-mix(in srgb, var(--lora-accent) 24%, var(--border-color));
-}
-
-.doctor-trigger i {
-    color: var(--lora-accent);
-}
-
 .doctor-status-badge {
     display: inline-flex;
     align-items: center;
@@ -247,15 +237,6 @@
 }
 
 @media (max-width: 760px) {
-    .doctor-trigger {
-        min-width: auto;
-        padding-inline: 10px;
-    }
-
-    .doctor-trigger span:not(.doctor-status-badge) {
-        display: none;
-    }
-
     .doctor-hero,
     .doctor-footer {
         flex-direction: column;

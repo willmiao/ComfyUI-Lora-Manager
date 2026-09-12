@@ -12,7 +12,7 @@
 }
 
 .header-container {
-  max-width: 1400px;
+  max-width: none;
   margin: 0 auto;
   padding: 0 15px;
   display: flex;
@@ -36,19 +36,6 @@
   align-items: center;
   gap: 1rem;
   flex-shrink: 0;
-}
-
-/* Responsive header container for larger screens */
-@media (min-width: 2150px) {
-  .header-container {
-    max-width: 1800px;
-  }
-}
-
-@media (min-width: 3000px) {
-  .header-container {
-    max-width: 2400px;
-  }
 }
 
 /* Logo and title styling */
@@ -354,6 +341,27 @@
   background: var(--lora-accent);
   color: white;
   transform: translateY(-2px);
+}
+
+/* Doctor trigger in the header: accent-tinted icon with the status badge
+   pinned to the corner like the other header badges. */
+.header-controls .doctor-toggle i {
+  color: var(--lora-accent);
+}
+
+.header-controls .doctor-toggle:hover i {
+  color: inherit;
+}
+
+.header-controls .doctor-status-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 10px;
+  border: 2px solid var(--card-bg);
 }
 
 .theme-toggle {
@@ -715,11 +723,6 @@
 
   .header-controls {
     gap: 6px;
-  }
-
-  .header-controls > div {
-    width: 30px;
-    height: 30px;
   }
 }
 

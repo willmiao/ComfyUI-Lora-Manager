@@ -49,6 +49,18 @@ export class HeaderManager {
     initializeCommonElements() {
       this.initializeThemePopover();
 
+      // Header icon buttons are divs with role="button"; make Enter/Space activate them
+      const headerControls = document.getElementById('headerControls');
+      if (headerControls) {
+        headerControls.addEventListener('keydown', (e) => {
+          if (e.key !== 'Enter' && e.key !== ' ') return;
+          const target = e.target.closest('[role="button"]');
+          if (!target || !headerControls.contains(target)) return;
+          e.preventDefault();
+          target.click();
+        });
+      }
+
       const settingsToggle = document.querySelector('.settings-toggle');
       if (settingsToggle) {
         settingsToggle.addEventListener('click', () => {
@@ -295,6 +307,13 @@ export class HeaderManager {
         case 'notifications':
           updateService.toggleUpdateModal();
           break;
+        case 'doctor': {
+          const doctorToggle = document.getElementById('doctorTriggerBtn');
+          if (doctorToggle) {
+            doctorToggle.click();
+          }
+          break;
+        }
         case 'support':
           if (window.modalManager) {
             window.modalManager.toggleModal('supportModal');

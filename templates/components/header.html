@@ -68,23 +68,34 @@
     <!-- Right section: Controls -->
     <div class="header-right">
       <div class="header-controls" id="headerControls">
-        <div class="theme-toggle" title="{{ t('header.theme.toggle') }}">
+        <div class="doctor-toggle" id="doctorTriggerBtn" role="button" tabindex="0"
+          title="{{ t('doctor.buttonTitle', default='Run diagnostics and common fixes') }}"
+          aria-label="{{ t('doctor.title', default='Doctor') }}">
+          <i class="fas fa-stethoscope"></i>
+          <span id="doctorStatusBadge" class="doctor-status-badge hidden" aria-hidden="true"></span>
+        </div>
+        <div class="theme-toggle" role="button" tabindex="0" title="{{ t('header.theme.toggle') }}"
+          aria-label="{{ t('header.theme.toggle') }}">
           <i class="fas fa-moon dark-icon"></i>
           <i class="fas fa-sun light-icon"></i>
           <i class="fas fa-adjust auto-icon"></i>
         </div>
-        <div class="settings-toggle" title="{{ t('common.actions.settings') }}">
+        <div class="settings-toggle" role="button" tabindex="0" title="{{ t('common.actions.settings') }}"
+          aria-label="{{ t('common.actions.settings') }}">
           <i class="fas fa-cog"></i>
         </div>
-        <div class="help-toggle" id="helpToggleBtn" title="{{ t('common.actions.help') }}">
+        <div class="help-toggle" id="helpToggleBtn" role="button" tabindex="0" title="{{ t('common.actions.help') }}"
+          aria-label="{{ t('common.actions.help') }}">
           <i class="fas fa-question-circle"></i>
           <span class="update-badge"></span>
         </div>
-        <div class="update-toggle" id="updateToggleBtn" title="{{ t('header.actions.notifications') }}">
+        <div class="update-toggle" id="updateToggleBtn" role="button" tabindex="0"
+          title="{{ t('header.actions.notifications') }}" aria-label="{{ t('header.actions.notifications') }}">
           <i class="fas fa-bell"></i>
           <span class="update-badge"></span>
         </div>
-        <div class="support-toggle" id="supportToggleBtn" title="{{ t('header.actions.support') }}">
+        <div class="support-toggle" id="supportToggleBtn" role="button" tabindex="0"
+          title="{{ t('header.actions.support') }}" aria-label="{{ t('header.actions.support') }}">
           <i class="fas fa-heart"></i>
         </div>
       </div>
@@ -109,6 +120,10 @@
         <div class="dropdown-item" data-action="notifications">
           <i class="fas fa-bell"></i>
           <span>{{ t('header.actions.notifications') }}</span>
+        </div>
+        <div class="dropdown-item" data-action="doctor">
+          <i class="fas fa-stethoscope"></i>
+          <span>{{ t('doctor.title', default='Doctor') }}</span>
         </div>
         <div class="dropdown-divider"></div>
         <div class="dropdown-item" data-action="support">
