@@ -334,7 +334,8 @@ export const PATH_TEMPLATE_PLACEHOLDERS = [
     '{author}',
     '{first_tag}',
     '{model_name}',
-    '{version_name}'
+    '{version_name}',
+    '{original_path}'
 ];
 
 // Default templates for each model type
