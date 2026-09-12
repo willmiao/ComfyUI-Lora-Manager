@@ -420,6 +420,10 @@ class DownloadManager:
                 embedding_scanner = await ServiceRegistry.get_embedding_scanner()
                 scanners.append(("embedding", embedding_scanner))
 
+            if "other" in model_types:
+                other_scanner = await ServiceRegistry.get_other_scanner()
+                scanners.append(("other", other_scanner))
+
             # Load progress file to check processed models (async to avoid blocking)
             settings_manager = get_settings_manager()
             active_library = settings_manager.get_active_library_name()
@@ -599,6 +603,10 @@ class DownloadManager:
             if "embedding" in model_types:
                 embedding_scanner = await ServiceRegistry.get_embedding_scanner()
                 scanners.append(("embedding", embedding_scanner))
+
+            if "other" in model_types:
+                other_scanner = await ServiceRegistry.get_other_scanner()
+                scanners.append(("other", other_scanner))
 
             # Get all models
             all_models = []
@@ -1097,6 +1105,10 @@ class DownloadManager:
             if "embedding" in model_types:
                 embedding_scanner = await ServiceRegistry.get_embedding_scanner()
                 scanners.append(("embedding", embedding_scanner))
+
+            if "other" in model_types:
+                other_scanner = await ServiceRegistry.get_other_scanner()
+                scanners.append(("other", other_scanner))
 
             # Find the specified models
             models_to_process = []

@@ -31,5 +31,6 @@
       "C:/path/to/your/clip_vision_folder"
     ]
   },
+  "default_other_roots": {},
   "auto_organize_exclusions": []
 }

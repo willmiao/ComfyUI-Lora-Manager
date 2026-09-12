@@ -126,6 +126,20 @@ CIVITAI_TYPE_TO_OTHER_SUB_TYPE = {
     "controlnet": "controlnet",
 }
 
+# CivitAI ModelFile.type values -> internal sub_type for the "other" model
+# page. Used for download routing only, and strictly as an explicit user file
+# pick or a fallback when model.type maps to nothing — checkpoint models
+# routinely bundle VAE/Text Encoder component files, so file types must never
+# override a mapped model.type.
+CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE = {
+    "VAE": "vae",
+    "Upscaler": "upscaler",
+    "Text Encoder": "text_encoder",
+    "Vision Encoder": "clip_vision",
+    "CLIPVision": "clip_vision",
+    "ControlNet": "controlnet",
+}
+
 # Backward compatibility alias
 VALID_LORA_TYPES = VALID_LORA_SUB_TYPES
 
@@ -134,6 +148,7 @@ CIVITAI_USER_MODEL_TYPES = [
     *VALID_LORA_TYPES,
     "textualinversion",
     "checkpoint",
+    *sorted(VALID_OTHER_CIVITAI_TYPES),
 ]
 
 # Default chunk size in megabytes used for hashing large files.

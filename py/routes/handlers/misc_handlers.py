@@ -53,6 +53,7 @@ from ...utils.constants import (
     PREVIEW_EXTENSIONS,
     SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
+    VALID_OTHER_CIVITAI_TYPES,
 )
 from .hf_handlers import HfHandler
 from .agent_handlers import AgentHandler
@@ -2068,6 +2069,7 @@ class ServiceRegistryAdapter:
     get_embedding_scanner: Callable[[], Awaitable[Any]]
     get_downloaded_version_history_service: Callable[[], Awaitable[Any]]
     get_backup_service: Callable[[], Awaitable[Any]] = _noop_backup_service
+    get_other_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_other_scanner
 
 
 class ModelLibraryHandler:
@@ -2789,12 +2791,30 @@ class ModelLibraryHandler:
                 model_type.lower() for model_type in CIVITAI_USER_MODEL_TYPES
             }
             lora_type_aliases = {model_type.lower() for model_type in VALID_LORA_TYPES}
+            other_type_aliases = {
+                model_type.lower() for model_type in VALID_OTHER_CIVITAI_TYPES
+            }
+
+            # Acquire the other scanner lazily so adapters without it only
+            # fail when the payload actually contains other-type models.
+            needs_other_scanner = any(
+                isinstance(model, dict)
+                and str(model.get("type", "")).lower() in other_type_aliases
+                for model in models
+            )
+            other_scanner = None
+            if needs_other_scanner:
+                other_scanner = await self._service_registry.get_other_scanner()
 
             type_scanner_map: Dict[str, Any] = {
                 **{alias: lora_scanner for alias in lora_type_aliases},
                 "checkpoint": checkpoint_scanner,
                 "textualinversion": embedding_scanner,
             }
+            if other_scanner is not None:
+                type_scanner_map.update(
+                    {alias: other_scanner for alias in other_type_aliases}
+                )
 
             versions: list[dict[str, Any]] = []
             history_service = await self._get_download_history_service()
@@ -2818,12 +2838,17 @@ class ModelLibraryHandler:
                 "embedding",
                 model_ids,
             )
+            other_downloaded = await history_service.get_downloaded_version_ids_bulk(
+                "other",
+                model_ids,
+            )
             downloaded_version_map: Dict[str, Dict[int, set[int]]] = {
                 "lora": lora_downloaded,
                 "locon": lora_downloaded,
                 "dora": lora_downloaded,
                 "checkpoint": checkpoint_downloaded,
                 "textualinversion": embedding_downloaded,
+                **{alias: other_downloaded for alias in VALID_OTHER_CIVITAI_TYPES},
             }
             for model in models:
                 if not isinstance(model, dict):
@@ -3982,6 +4007,7 @@ def build_service_registry_adapter() -> ServiceRegistryAdapter:
         get_lora_scanner=ServiceRegistry.get_lora_scanner,
         get_checkpoint_scanner=ServiceRegistry.get_checkpoint_scanner,
         get_embedding_scanner=ServiceRegistry.get_embedding_scanner,
+        get_other_scanner=ServiceRegistry.get_other_scanner,
         get_downloaded_version_history_service=ServiceRegistry.get_downloaded_version_history_service,
         get_backup_service=ServiceRegistry.get_backup_service,
     )

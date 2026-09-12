@@ -91,3 +91,61 @@ async def test_invalid_json_rejected():
         FakeRequest(json.JSONDecodeError("bad", "", 0))
     )
     assert response.status == 400
+
+
+@pytest.mark.asyncio
+async def test_other_model_type_returns_sub_type():
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "TextEncoder", "file_types": ["Model"]})
+    )
+    payload = json.loads(response.text)
+    assert response.status == 200
+    assert payload == {"success": True, "root_kind": "other", "sub_type": "text_encoder"}
+
+
+@pytest.mark.asyncio
+async def test_other_explicit_file_pick_wins():
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {
+                "model_type": "Other",
+                "file_types": ["Model"],
+                "selected_file_type": "VAE",
+            }
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["root_kind"] == "other"
+    assert payload["sub_type"] == "vae"
+
+
+@pytest.mark.asyncio
+async def test_other_file_type_fallback_when_model_type_unmapped():
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "Other", "file_types": ["Model", "Upscaler"]})
+    )
+    payload = json.loads(response.text)
+    assert payload["sub_type"] == "upscaler"
+
+
+@pytest.mark.asyncio
+async def test_other_undecidable_sub_type_is_none():
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "Other", "file_types": ["Model"]})
+    )
+    payload = json.loads(response.text)
+    assert response.status == 200
+    assert payload == {"success": True, "root_kind": "other", "sub_type": None}
+
+
+@pytest.mark.asyncio
+async def test_other_invalid_selected_file_type_rejected():
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest({"model_type": "VAE", "selected_file_type": 123})
+    )
+    assert response.status == 400

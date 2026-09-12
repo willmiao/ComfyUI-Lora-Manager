@@ -116,3 +116,50 @@ async def test_initialize_services_builds_other_model_service(monkeypatch):
     assert isinstance(handler.service, OtherModelService)
     assert handler.service.model_type == "other"
     assert handler.service.scanner is sentinel_scanner
+
+
+def test_roots_by_subtype_route_registered():
+    app = web.Application()
+    OtherRoutes().setup_routes(app)
+
+    registered = {(route.method, route.resource.canonical) for route in app.router.routes()}
+
+    assert ("GET", "/api/lm/other/roots_by_subtype") in registered
+
+
+async def test_get_roots_by_subtype_aggregates_folder_keys(monkeypatch):
+    """text_encoders and the legacy clip key both land under text_encoder."""
+    from py.config import config
+
+    monkeypatch.setattr(
+        config,
+        "other_folder_roots",
+        {
+            "vae": ["/models/vae", "/models/vae2"],
+            "text_encoders": ["/models/text_encoders"],
+            "clip": ["/models/clip_legacy"],
+            "upscale_models": ["/models/upscale"],
+            "unknown_key": ["/models/ignored"],
+        },
+    )
+
+    response = await OtherRoutes().get_roots_by_subtype(DummyRequest())
+    payload = json.loads(response.text)
+
+    assert payload["success"] is True
+    assert payload["roots_by_subtype"] == {
+        "vae": ["/models/vae", "/models/vae2"],
+        "text_encoder": ["/models/text_encoders", "/models/clip_legacy"],
+        "upscaler": ["/models/upscale"],
+    }
+
+
+async def test_get_roots_by_subtype_empty_config(monkeypatch):
+    from py.config import config
+
+    monkeypatch.setattr(config, "other_folder_roots", {})
+
+    response = await OtherRoutes().get_roots_by_subtype(DummyRequest())
+    payload = json.loads(response.text)
+
+    assert payload == {"success": True, "roots_by_subtype": {}}

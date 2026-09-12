@@ -303,9 +303,13 @@ class TestOtherModelMetadataFromCivitai:
     def _build(self, civitai_type: str) -> OtherModelMetadata:
         return OtherModelMetadata.from_civitai_info(
             {
-                "type": civitai_type,
                 "baseModel": "SDXL",
-                "model": {"name": "Model", "tags": ["tag"], "description": "desc"},
+                "model": {
+                    "name": "Model",
+                    "tags": ["tag"],
+                    "description": "desc",
+                    "type": civitai_type,
+                },
             },
             {"name": "model.safetensors", "sizeKB": 1, "hashes": {"SHA256": "AB"}},
             "/tmp/model.safetensors",
@@ -328,6 +332,20 @@ class TestOtherModelMetadataFromCivitai:
         assert metadata.sub_type == expected
         assert metadata.sha256 == "ab"
         assert metadata.tags == ["tag"]
+
+    def test_top_level_type_key_is_ignored(self):
+        """Regression: the CivitAI type lives at version["model"]["type"]; a
+        top-level version["type"] key must not drive the mapping (#Phase-1 bug)."""
+        metadata = OtherModelMetadata.from_civitai_info(
+            {
+                "type": "Upscaler",
+                "baseModel": "SDXL",
+                "model": {"name": "Model", "type": "VAE"},
+            },
+            {"name": "model.safetensors", "sizeKB": 1, "hashes": {"SHA256": "AB"}},
+            "/tmp/model.safetensors",
+        )
+        assert metadata.sub_type == "vae"
 
 
 def test_page_type_maps_to_other():

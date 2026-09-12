@@ -1,12 +1,13 @@
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 from aiohttp import web
 
 from .base_model_routes import BaseModelRoutes
 from .model_route_registrar import ModelRouteRegistrar
+from ..config import config
 from ..services.other_model_service import OtherModelService
 from ..services.service_registry import ServiceRegistry
-from ..utils.constants import VALID_OTHER_CIVITAI_TYPES
+from ..utils.constants import OTHER_MODEL_FOLDER_SUBTYPES, VALID_OTHER_CIVITAI_TYPES
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +42,9 @@ class OtherRoutes(BaseModelRoutes):
         """Setup Other-model-specific routes"""
         # Other-model info by name
         registrar.add_prefixed_route('GET', '/api/lm/{prefix}/info/{name}', prefix, self.get_other_model_info)
+        # Other-model roots grouped by sub_type (text_encoders + legacy clip
+        # are aggregated under text_encoder)
+        registrar.add_prefixed_route('GET', '/api/lm/{prefix}/roots_by_subtype', prefix, self.get_roots_by_subtype)
 
     def _validate_civitai_model_type(self, model_type: str) -> bool:
         """Validate CivitAI model type for other models.
@@ -57,6 +61,32 @@ class OtherRoutes(BaseModelRoutes):
     def _parse_specific_params(self, request: web.Request) -> Dict[str, Any]:
         """Parse other-model-specific parameters (none in Phase 1)."""
         return {}
+
+    async def get_roots_by_subtype(self, request: web.Request) -> web.Response:
+        """Return other-model roots grouped by sub_type.
+
+        Aggregates the per-folder_paths-key roots from config
+        (``text_encoders`` and the legacy ``clip`` key both land under
+        ``text_encoder``).
+        """
+        try:
+            roots_by_subtype: Dict[str, List[str]] = {}
+            for key, roots in (config.other_folder_roots or {}).items():
+                sub_type = OTHER_MODEL_FOLDER_SUBTYPES.get(key)
+                if not sub_type:
+                    continue
+                bucket = roots_by_subtype.setdefault(sub_type, [])
+                for root in roots:
+                    if root and root not in bucket:
+                        bucket.append(root)
+            return web.json_response(
+                {"success": True, "roots_by_subtype": roots_by_subtype}
+            )
+        except Exception as e:
+            logger.error(f"Error getting other roots by sub_type: {e}", exc_info=True)
+            return web.json_response(
+                {"success": False, "error": str(e)}, status=500
+            )
 
     async def get_other_model_info(self, request: web.Request) -> web.Response:
         """Get detailed information for a specific other model by name"""

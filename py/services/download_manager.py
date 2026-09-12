@@ -17,12 +17,18 @@ from dataclasses import dataclass, field
 import uuid
 from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, cast
 from urllib.parse import urlparse
-from ..utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
+from ..utils.models import (
+    LoraMetadata,
+    CheckpointMetadata,
+    EmbeddingMetadata,
+    OtherModelMetadata,
+)
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
     MODEL_WEIGHT_FILE_TYPES,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
+    VALID_OTHER_CIVITAI_TYPES,
 )
 from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
 from ..utils.file_utils import calculate_sha256, calculate_autov3
@@ -31,7 +37,7 @@ from ..utils.utils import sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
-from .download_routing import is_diffusion_model_download
+from .download_routing import is_diffusion_model_download, resolve_other_download_sub_type
 from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider, get_metadata_provider
 from .downloader import get_downloader, DownloadProgress, DownloadStreamControl
@@ -228,12 +234,21 @@ class DownloadManager:
             return False
 
     async def _get_scanner_for_model_type(self, model_type: str):
-        """Return the scanner responsible for the given model type."""
+        """Return the scanner responsible for the given model type.
+
+        Every supported type resolves explicitly — an unknown type must never
+        fall through to the lora scanner (an "other" download would silently
+        dedupe against the lora library).
+        """
         if model_type == "checkpoint":
             return await self._get_checkpoint_scanner()
         if model_type == "embedding":
             return await ServiceRegistry.get_embedding_scanner()
-        return await self._get_lora_scanner()
+        if model_type == "other":
+            return await ServiceRegistry.get_other_scanner()
+        if model_type == "lora":
+            return await self._get_lora_scanner()
+        raise ValueError(f'Unknown model type "{model_type}"')
 
     @staticmethod
     def _resolve_target_file(
@@ -978,6 +993,8 @@ class DownloadManager:
             return CheckpointMetadata.from_civitai_info(version_info, file_info, save_path)
         if model_type == "embedding":
             return EmbeddingMetadata.from_civitai_info(version_info, file_info, save_path)
+        if model_type == "other":
+            return OtherModelMetadata.from_civitai_info(version_info, file_info, save_path)
         return LoraMetadata.from_civitai_info(version_info, file_info, save_path)
 
     def _resolve_save_path_from_persisted_record(self, record: Dict[str, Any]) -> Optional[str]:
@@ -1438,6 +1455,7 @@ class DownloadManager:
                 lora_scanner = await self._get_lora_scanner()
                 checkpoint_scanner = await self._get_checkpoint_scanner()
                 embedding_scanner = await ServiceRegistry.get_embedding_scanner()
+                other_scanner = await ServiceRegistry.get_other_scanner()
 
                 # Check lora scanner first
                 if await lora_scanner.check_model_version_exists(model_version_id):
@@ -1460,6 +1478,13 @@ class DownloadManager:
                     return {
                         "success": False,
                         "error": "Model version already exists in embedding library",
+                    }
+
+                # Check other scanner
+                if await other_scanner.check_model_version_exists(model_version_id):
+                    return {
+                        "success": False,
+                        "error": "Model version already exists in other library",
                     }
 
             # Use CivArchive provider directly when source is 'civarchive'
@@ -1500,6 +1525,8 @@ class DownloadManager:
                 model_type = "lora"
             elif model_type_from_info == "textualinversion":
                 model_type = "embedding"
+            elif model_type_from_info in VALID_OTHER_CIVITAI_TYPES:
+                model_type = "other"
             else:
                 return {
                     "success": False,
@@ -1686,6 +1713,13 @@ class DownloadManager:
                             "success": False,
                             "error": "Model version already exists in embedding library",
                         }
+                elif model_type == "other":
+                    other_scanner = await ServiceRegistry.get_other_scanner()
+                    if await other_scanner.check_model_version_exists(version_id):
+                        return {
+                            "success": False,
+                            "error": "Model version already exists in other library",
+                        }
 
             # Handle use_default_paths
             if use_default_paths:
@@ -1723,6 +1757,45 @@ class DownloadManager:
                             return {
                                 "success": False,
                                 "error": "Default embedding root path not set in settings",
+                            }
+                        save_dir = default_path
+                    elif model_type == "other":
+                        other_sub_type = resolve_other_download_sub_type(
+                            model_type_from_info,
+                            file_types=(
+                                f.get("type", "")
+                                for f in version_info.get("files", [])
+                                if isinstance(f, dict)
+                            ),
+                            selected_file_type=(
+                                target_file.get("type") if explicit_file else None
+                            ),
+                        )
+                        default_other_roots = (
+                            settings_manager.get("default_other_roots") or {}
+                        )
+                        default_path = (
+                            default_other_roots.get(other_sub_type)
+                            if other_sub_type
+                            else None
+                        )
+                        if not isinstance(default_path, str) or not default_path:
+                            if other_sub_type:
+                                detail = (
+                                    f"No default root configured for other-model "
+                                    f"sub-type '{other_sub_type}'"
+                                )
+                            else:
+                                detail = (
+                                    "Could not determine the other-model sub-type "
+                                    "from the model metadata"
+                                )
+                            return {
+                                "success": False,
+                                "error": (
+                                    f"{detail}. Please pick a destination folder "
+                                    f"explicitly instead of using default paths."
+                                ),
                             }
                         save_dir = default_path
 
@@ -1921,6 +1994,11 @@ class DownloadManager:
                     version_info, file_info, save_path
                 )
                 logger.info(f"Creating EmbeddingMetadata for {file_name}")
+            elif model_type == "other":
+                metadata = OtherModelMetadata.from_civitai_info(
+                    version_info, file_info, save_path
+                )
+                logger.info(f"Creating OtherModelMetadata for {file_name}")
             else:
                 return {
                     "success": False,
@@ -2133,6 +2211,8 @@ class DownloadManager:
                 scanner = await self._get_checkpoint_scanner()
             elif model_type == "embedding":
                 scanner = await ServiceRegistry.get_embedding_scanner()
+            elif model_type == "other":
+                scanner = await ServiceRegistry.get_other_scanner()
         except Exception as exc:
             logger.debug("Failed to acquire scanner for %s models: %s", model_type, exc)
 
@@ -2629,6 +2709,9 @@ class DownloadManager:
             elif model_type == "embedding":
                 scanner = await ServiceRegistry.get_embedding_scanner()
                 logger.info(f"Updating embedding cache for {actual_file_paths[0]}")
+            elif model_type == "other":
+                scanner = await ServiceRegistry.get_other_scanner()
+                logger.info(f"Updating other-model cache for {actual_file_paths[0]}")
 
             adjust_cached_entry = (
                 getattr(scanner, "adjust_cached_entry", None)
@@ -2718,7 +2801,7 @@ class DownloadManager:
             return {"success": False, "error": str(e)}
 
     def _get_supported_extensions_for_type(self, model_type: str) -> Set[str]:
-        if model_type == "checkpoint":
+        if model_type in ("checkpoint", "other"):
             return {
                 ".ckpt",
                 ".pt",

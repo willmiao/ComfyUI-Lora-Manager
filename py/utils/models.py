@@ -340,7 +340,8 @@ class OtherModelMetadata(BaseModelMetadata):
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         # Map the CivitAI model type onto our sub_types; unknown types keep the
         # placeholder until the scanner re-derives sub_type from the location.
-        civitai_type = str(version_info.get("type", "") or "").lower()
+        # The type lives at version["model"]["type"], not version["type"].
+        civitai_type = str((version_info.get("model") or {}).get("type", "") or "").lower()
         sub_type = CIVITAI_TYPE_TO_OTHER_SUB_TYPE.get(civitai_type, "vae")
 
         # Extract tags and description if available
