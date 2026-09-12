@@ -1744,3 +1744,39 @@ input:checked + .toggle-slider:before {
     font-style: italic;
     user-select: none;
 }
+
+/* Other Models opt-in: sub_type checkbox row */
+.other-subtype-checkboxes {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px 14px;
+}
+
+.other-subtype-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.9em;
+    color: var(--text-color);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.other-subtype-checkbox input[type="checkbox"] {
+    cursor: pointer;
+}
+
+.other-subtype-toggles.is-disabled {
+    opacity: 0.5;
+}
+
+.other-subtype-toggles.is-disabled .other-subtype-checkbox {
+    cursor: default;
+}
+
+/* Disabled default-root selects for switched-off sub_types / feature */
+.select-control select:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

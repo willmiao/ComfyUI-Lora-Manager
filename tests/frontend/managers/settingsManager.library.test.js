@@ -62,6 +62,7 @@ vi.mock('../../../static/js/components/shared/ModelCard.js', () => ({
 }));
 
 import { SettingsManager } from '../../../static/js/managers/SettingsManager.js';
+import { bannerService } from '../../../static/js/managers/BannerService.js';
 import { showToast } from '../../../static/js/utils/uiHelpers.js';
 import { state } from '../../../static/js/state/index.js';
 
@@ -605,6 +606,93 @@ describe('SettingsManager other-model root selects', () => {
         });
     });
 
+    describe('updateOtherModelsControls', () => {
+        const appendToggles = (...subTypes) => {
+            const container = document.createElement('div');
+            container.id = 'otherSubTypeToggles';
+            document.body.appendChild(container);
+            subTypes.forEach((subType) => {
+                const input = document.createElement('input');
+                input.type = 'checkbox';
+                input.value = subType;
+                input.dataset.otherSubtypeToggle = subType;
+                container.appendChild(input);
+            });
+            return container;
+        };
+
+        it('disables every toggle and select while the feature is off', () => {
+            const manager = createManager();
+            const container = appendToggles('vae', 'upscaler');
+            const selects = appendOtherRootSelects('vae', 'upscaler');
+
+            state.global.settings = {
+                enable_other_models: false,
+                enabled_other_sub_types: ['vae'],
+            };
+
+            manager.updateOtherModelsControls();
+
+            const vaeToggle = document.querySelector('[data-other-subtype-toggle="vae"]');
+            const upscalerToggle = document.querySelector('[data-other-subtype-toggle="upscaler"]');
+            expect(vaeToggle.checked).toBe(true);
+            expect(upscalerToggle.checked).toBe(false);
+            expect(vaeToggle.disabled).toBe(true);
+            expect(upscalerToggle.disabled).toBe(true);
+            expect(selects.vae.disabled).toBe(true);
+            expect(selects.upscaler.disabled).toBe(true);
+            expect(container.classList.contains('is-disabled')).toBe(true);
+        });
+
+        it('leaves enabled sub_types interactive and disables the rest', () => {
+            const manager = createManager();
+            const container = appendToggles('vae', 'upscaler');
+            const selects = appendOtherRootSelects('vae', 'upscaler');
+
+            state.global.settings = {
+                enable_other_models: true,
+                enabled_other_sub_types: ['vae'],
+            };
+
+            manager.updateOtherModelsControls();
+
+            const vaeToggle = document.querySelector('[data-other-subtype-toggle="vae"]');
+            const upscalerToggle = document.querySelector('[data-other-subtype-toggle="upscaler"]');
+            expect(vaeToggle.disabled).toBe(false);
+            expect(upscalerToggle.disabled).toBe(false);
+            expect(selects.vae.disabled).toBe(false);
+            expect(selects.upscaler.disabled).toBe(true);
+            expect(container.classList.contains('is-disabled')).toBe(false);
+        });
+
+        it('persists the checked sub_types as the whole allow-list', async () => {
+            const manager = createManager();
+            appendToggles('vae', 'upscaler', 'controlnet');
+            document.querySelector('[data-other-subtype-toggle="vae"]').checked = true;
+            document.querySelector('[data-other-subtype-toggle="controlnet"]').checked = true;
+
+            state.global.settings = {
+                enable_other_models: true,
+                enabled_other_sub_types: [],
+            };
+            const saveSpy = vi.spyOn(manager, 'saveSetting').mockResolvedValue();
+            const loadSpy = vi.spyOn(manager, 'loadOtherRoots').mockResolvedValue();
+
+            await manager.saveEnabledOtherSubTypes();
+
+            expect(saveSpy).toHaveBeenCalledWith('enabled_other_sub_types', [
+                'vae',
+                'controlnet',
+            ]);
+            expect(loadSpy).toHaveBeenCalled();
+            expect(showToast).toHaveBeenCalledWith(
+                'toast.settings.settingsUpdated',
+                expect.objectContaining({ setting: 'other model types' }),
+                'success',
+            );
+        });
+    });
+
     describe('saveOtherRootSetting', () => {
         it('read-modify-writes the default_other_roots dict and posts it whole', async () => {
             const manager = createManager();
@@ -676,6 +764,36 @@ describe('SettingsManager other-model root selects', () => {
                 'error',
             );
         });
+    });
+});
+
+describe('SettingsManager Other Models nav and banner sync', () => {
+    it('shows or hides the Other Models nav entry', () => {
+        const manager = createManager();
+        const navItem = document.createElement('a');
+        navItem.id = 'otherNavItem';
+        document.body.appendChild(navItem);
+
+        manager.updateOtherModelsNavVisibility(false);
+        expect(navItem.classList.contains('nav-item--hidden')).toBe(true);
+
+        manager.updateOtherModelsNavVisibility(true);
+        expect(navItem.classList.contains('nav-item--hidden')).toBe(false);
+    });
+
+    it('drops the announcement banner only when enabling', () => {
+        const manager = createManager();
+        const spy = vi
+            .spyOn(bannerService, 'removeOtherModelsAnnouncement')
+            .mockImplementation(() => {});
+
+        manager.removeOtherModelsAnnouncement(false);
+        expect(spy).not.toHaveBeenCalled();
+
+        manager.removeOtherModelsAnnouncement(true);
+        expect(spy).toHaveBeenCalledTimes(1);
+
+        spy.mockRestore();
     });
 });
 

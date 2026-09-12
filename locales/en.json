@@ -545,6 +545,15 @@
       "defaultClipVisionRootHelp": "Set default CLIP vision root directory for downloads, imports and moves",
       "defaultControlnetRoot": "ControlNet Root",
       "defaultControlnetRootHelp": "Set default ControlNet root directory for downloads, imports and moves",
+      "enableOtherModels": "Other Models Management",
+      "enableOtherModelsHelp": "When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
+      "otherSubTypes": "Managed Types",
+      "otherSubTypesHelp": "Choose which other-model categories are scanned and shown on the Other Models page.",
+      "subTypeVae": "VAE",
+      "subTypeUpscaler": "Upscaler",
+      "subTypeTextEncoder": "Text Encoder",
+      "subTypeClipVision": "CLIP Vision",
+      "subTypeControlnet": "ControlNet",
       "recipesPath": "Recipes Storage Path",
       "recipesPathHelp": "Optional custom directory for stored recipes. Leave empty to use the first LoRA root's recipes folder.",
       "recipesPathPlaceholder": "/path/to/recipes",
@@ -1214,7 +1223,16 @@
     "title": "Embedding Models"
   },
   "other": {
-    "title": "Other Models"
+    "title": "Other Models",
+    "disabled": {
+      "title": "Other Models management is off",
+      "description": "Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
+      "enableButton": "Enable Other Models",
+      "hint": "You can change the managed model types later in Settings > Library.",
+      "enableFailed": "Failed to enable Other Models",
+      "downloadBlocked": "Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
+      "enableAction": "Enable Other Models"
+    }
   },
   "sidebar": {
     "modelRoot": "Root",
@@ -2615,6 +2633,12 @@
       "rebuilding": "Rebuilding cache...",
       "rebuildFailed": "Failed to rebuild cache: {error}",
       "retry": "Retry"
+    },
+    "otherModels": {
+      "title": "Other Models Management is available",
+      "content": "Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
+      "enable": "Enable Other Models",
+      "openSettings": "Open Settings"
     }
   }
 }

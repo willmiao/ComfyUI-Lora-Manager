@@ -7,6 +7,53 @@
 {% block init_message %}{{ t('initialization.other.message') }}{% endblock %}
 {% block init_check_url %}/api/other/list?page=1&page_size=1{% endblock %}
 
+{% block page_css %}
+<style>
+    .other-disabled {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        text-align: center;
+        padding: 64px 24px;
+        color: var(--text-color, #e0e0e0);
+    }
+    .other-disabled > i {
+        font-size: 48px;
+        opacity: 0.6;
+    }
+    .other-disabled h2 {
+        margin: 0;
+        font-size: 20px;
+    }
+    .other-disabled p {
+        margin: 0;
+        max-width: 520px;
+        line-height: 1.6;
+        opacity: 0.8;
+    }
+    .other-disabled .other-disabled-hint {
+        font-size: 13px;
+        opacity: 0.6;
+    }
+    .other-disabled button {
+        margin-top: 8px;
+        padding: 10px 20px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        color: #fff;
+        background: var(--primary-color, #4a7dff);
+    }
+    .other-disabled button:disabled {
+        opacity: 0.6;
+        cursor: default;
+    }
+</style>
+{% endblock %}
+
 {% block additional_components %}
 
 <div id="otherContextMenu" class="context-menu" style="display: none;">
@@ -52,6 +99,17 @@
 {% endblock %}
 
 {% block content %}
+    {% if other_disabled %}
+    <div class="other-disabled">
+        <i class="fas fa-shapes"></i>
+        <h2>{{ t('other.disabled.title') }}</h2>
+        <p>{{ t('other.disabled.description') }}</p>
+        <button id="enableOtherModelsBtn" type="button">
+            <i class="fas fa-toggle-on"></i> {{ t('other.disabled.enableButton') }}
+        </button>
+        <p class="other-disabled-hint">{{ t('other.disabled.hint') }}</p>
+    </div>
+    {% else %}
     <div class="sticky-topbar">
     {% include 'components/controls.html' %}
     {% include 'components/breadcrumb.html' %}
@@ -63,6 +121,7 @@
     <div class="card-grid" id="modelGrid">
         <!-- Cards will be dynamically inserted here -->
     </div>
+    {% endif %}
 {% endblock %}
 
 {% block overlay %}
@@ -70,5 +129,9 @@
 {% endblock %}
 
 {% block main_script %}
+{% if other_disabled %}
+<script type="module" src="/loras_static/js/other_disabled.js?v={{ version }}"></script>
+{% else %}
 <script type="module" src="/loras_static/js/other.js?v={{ version }}"></script>
+{% endif %}
 {% endblock %}

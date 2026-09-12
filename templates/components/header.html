@@ -38,9 +38,9 @@
           id="embeddingsNavItem">
           <i class="fas fa-code"></i> <span>{{ t('header.navigation.embeddings') }}</span>
         </a>
-        <a href="/other" class="nav-item{% if current_path.startswith('/other') %} active{% endif %}"
+        <a href="/other" class="nav-item{% if current_path.startswith('/other') %} active{% endif %}{% if not settings.get('enable_other_models') %} nav-item--hidden{% endif %}"
           id="otherNavItem">
-          <i class="fas fa-cubes"></i> <span>{{ t('header.navigation.other') }}</span>
+          <i class="fas fa-shapes"></i> <span>{{ t('header.navigation.other') }}</span>
         </a>
         <a href="/statistics" class="nav-item{% if current_path.startswith('/statistics') %} active{% endif %}"
           id="statisticsNavItem">

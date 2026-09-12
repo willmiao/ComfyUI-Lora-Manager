@@ -11,6 +11,7 @@ const {
   FOLDER_TREE_MANAGER_MODULE,
   I18N_HELPERS_MODULE,
   SUMMARY_MODULE,
+  OTHER_MODELS_MODULE,
 } = vi.hoisted(() => ({
   DOWNLOAD_MANAGER_MODULE: new URL('../../../static/js/managers/DownloadManager.js', import.meta.url).pathname,
   MODAL_MANAGER_MODULE: new URL('../../../static/js/managers/ModalManager.js', import.meta.url).pathname,
@@ -22,6 +23,7 @@ const {
   FOLDER_TREE_MANAGER_MODULE: new URL('../../../static/js/components/FolderTreeManager.js', import.meta.url).pathname,
   I18N_HELPERS_MODULE: new URL('../../../static/js/utils/i18nHelpers.js', import.meta.url).pathname,
   SUMMARY_MODULE: new URL('../../../static/js/components/DownloadBatchSummaryModal.js', import.meta.url).pathname,
+  OTHER_MODELS_MODULE: new URL('../../../static/js/utils/otherModels.js', import.meta.url).pathname,
 }));
 
 vi.mock(MODAL_MANAGER_MODULE, () => ({
@@ -29,6 +31,7 @@ vi.mock(MODAL_MANAGER_MODULE, () => ({
 }));
 vi.mock(UI_HELPERS_MODULE, () => ({
   showToast: vi.fn(),
+  showActionToast: vi.fn(),
   setupAutoNewlineOnPaste: vi.fn(),
 }));
 vi.mock(STATE_MODULE, () => ({
@@ -54,9 +57,15 @@ vi.mock(I18N_HELPERS_MODULE, () => ({
 vi.mock(SUMMARY_MODULE, () => ({
   showDownloadBatchSummary: vi.fn(),
 }));
+vi.mock(OTHER_MODELS_MODULE, () => ({
+  enableOtherModels: vi.fn(),
+  openOtherModelsSettings: vi.fn(),
+}));
 
 const { DownloadManager } = await import(DOWNLOAD_MANAGER_MODULE);
 const { state } = await import(STATE_MODULE);
+const { showActionToast } = await import(UI_HELPERS_MODULE);
+const { openOtherModelsSettings } = await import(OTHER_MODELS_MODULE);
 
 describe('DownloadManager._resolveIsDiffusionModel', () => {
   let manager;
@@ -215,6 +224,35 @@ describe('DownloadManager._resolveOtherSubType', () => {
     mockRoutingResponse({ success: true, root_kind: 'other', sub_type: null });
 
     expect(await manager._resolveOtherSubType()).toBeNull();
+  });
+
+  it('offers the settings shortcut when the feature is disabled for this type', async () => {
+    showActionToast.mockClear();
+    openOtherModelsSettings.mockClear();
+
+    manager.currentVersion = { baseModel: 'SDXL 1.0', files: [{ type: 'VAE' }] };
+    mockRoutingResponse({
+      success: true,
+      root_kind: 'other',
+      sub_type: null,
+      disabled: true,
+      reason: 'other_sub_type_disabled',
+    });
+
+    expect(await manager._resolveOtherSubType()).toBeNull();
+
+    expect(showActionToast).toHaveBeenCalledWith(
+      'other.disabled.downloadBlocked',
+      {},
+      'warning',
+      expect.objectContaining({
+        actionText: expect.any(String),
+        onAction: expect.any(Function),
+      }),
+    );
+
+    showActionToast.mock.calls.at(-1)[3].onAction();
+    expect(openOtherModelsSettings).toHaveBeenCalledTimes(1);
   });
 
   it('returns null when the endpoint fails', async () => {

@@ -1,5 +1,5 @@
 import { modalManager } from './ModalManager.js';
-import { showToast, setupAutoNewlineOnPaste } from '../utils/uiHelpers.js';
+import { showToast, showActionToast, setupAutoNewlineOnPaste } from '../utils/uiHelpers.js';
 import { state } from '../state/index.js';
 import { LoadingManager } from './LoadingManager.js';
 import { getModelApiClient, resetAndReload } from '../api/modelApiFactory.js';
@@ -12,6 +12,7 @@ import { MODEL_SUBTYPE_DISPLAY_NAMES } from '../utils/constants.js';
 import { buildCivitaiUrl, extractCivitaiModelUrlParts, normalizeCivitaiPageHost } from '../utils/civitaiUtils.js';
 import { formatFileSize } from '../utils/formatters.js';
 import { showDownloadBatchSummary } from '../components/DownloadBatchSummaryModal.js';
+import { openOtherModelsSettings } from '../utils/otherModels.js';
 
 export class DownloadManager {
     constructor() {
@@ -1118,6 +1119,16 @@ export class DownloadManager {
                 throw new Error(`routing endpoint returned ${response.status}`);
             }
             const data = await response.json();
+            if (data.disabled) {
+                // The matching sub_type (or the whole Other Models feature) is
+                // switched off: auto-routing is refused, so offer the settings
+                // shortcut while the user's intent is clear.
+                showActionToast('other.disabled.downloadBlocked', {}, 'warning', {
+                    actionText: translate('other.disabled.enableAction', {}, 'Enable Other Models'),
+                    onAction: () => openOtherModelsSettings(),
+                });
+                return null;
+            }
             return data.sub_type || null;
         } catch (error) {
             console.warn('[download] other routing endpoint unavailable, '

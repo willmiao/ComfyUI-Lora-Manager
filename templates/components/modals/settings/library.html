@@ -39,17 +39,44 @@
 
         {{ sm.setting_select('defaultEmbeddingRoot', 'default_embedding_root', 'settings.folderSettings.defaultEmbeddingRoot', [], 'settings.folderSettings.defaultEmbeddingRootHelp') }}
 
+        {{ sm.setting_toggle('enableOtherModels', 'enable_other_models', 'settings.folderSettings.enableOtherModels', 'settings.folderSettings.enableOtherModelsHelp') }}
+
+        {% set enabled_other_sub_types = settings.get('enabled_other_sub_types') or ['vae', 'upscaler', 'text_encoder', 'clip_vision'] %}
+        <div class="setting-item other-subtype-toggles" id="otherSubTypeToggles">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.folderSettings.otherSubTypes') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.folderSettings.otherSubTypesHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control other-subtype-checkboxes">
+                    {% for sub_type, label_key in [
+                        ('vae', 'settings.folderSettings.subTypeVae'),
+                        ('upscaler', 'settings.folderSettings.subTypeUpscaler'),
+                        ('text_encoder', 'settings.folderSettings.subTypeTextEncoder'),
+                        ('clip_vision', 'settings.folderSettings.subTypeClipVision'),
+                        ('controlnet', 'settings.folderSettings.subTypeControlnet'),
+                    ] %}
+                    <label class="other-subtype-checkbox">
+                        <input type="checkbox" value="{{ sub_type }}"
+                               data-other-subtype-toggle="{{ sub_type }}"
+                               {% if sub_type in enabled_other_sub_types %}checked{% endif %}
+                               onchange="settingsManager.saveEnabledOtherSubTypes()">
+                        <span>{{ t(label_key) }}</span>
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
         {% set other_root_selects = [
             ('vae', 'defaultOtherRootVae', 'settings.folderSettings.defaultVaeRoot', 'settings.folderSettings.defaultVaeRootHelp'),
             ('upscaler', 'defaultOtherRootUpscaler', 'settings.folderSettings.defaultUpscalerRoot', 'settings.folderSettings.defaultUpscalerRootHelp'),
             ('text_encoder', 'defaultOtherRootTextEncoder', 'settings.folderSettings.defaultTextEncoderRoot', 'settings.folderSettings.defaultTextEncoderRootHelp'),
             ('clip_vision', 'defaultOtherRootClipVision', 'settings.folderSettings.defaultClipVisionRoot', 'settings.folderSettings.defaultClipVisionRootHelp'),
+            ('controlnet', 'defaultOtherRootControlnet', 'settings.folderSettings.defaultControlnetRoot', 'settings.folderSettings.defaultControlnetRootHelp'),
         ] %}
-        {% if 'controlnet' in (settings.get('enabled_other_folders') or []) %}
-            {% set other_root_selects = other_root_selects + [
-                ('controlnet', 'defaultOtherRootControlnet', 'settings.folderSettings.defaultControlnetRoot', 'settings.folderSettings.defaultControlnetRootHelp'),
-            ] %}
-        {% endif %}
         {% for sub_type, select_id, label_key, help_key in other_root_selects %}
         <div class="setting-item">
             <div class="setting-row">
@@ -60,7 +87,7 @@
                     </label>
                 </div>
                 <div class="setting-control select-control">
-                    <select id="{{ select_id }}" data-other-root-subtype="{{ sub_type }}" onchange="settingsManager.saveOtherRootSetting('{{ sub_type }}', this.value)">
+                    <select id="{{ select_id }}" data-other-root-subtype="{{ sub_type }}" {% if sub_type not in enabled_other_sub_types %}disabled{% endif %} onchange="settingsManager.saveOtherRootSetting('{{ sub_type }}', this.value)">
                     </select>
                 </div>
             </div>

@@ -83,6 +83,12 @@
   white-space: nowrap;
 }
 
+/* Opt-in pages (e.g. Other Models) hide their nav entry until enabled.
+   A class is used instead of [hidden] because .nav-item sets display: flex. */
+.nav-item--hidden {
+  display: none;
+}
+
 .nav-item:hover,
 .nav-item:focus-visible {
   background-color: var(--lora-surface-hover, oklch(95% 0.02 256));

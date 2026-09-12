@@ -1155,6 +1155,7 @@ export class SettingsManager {
 
         // Load default other-model roots (per sub_type)
         await this.loadOtherRoots();
+        this.updateOtherModelsControls();
 
         // Load extra folder paths
         this.loadExtraFolderPaths();
@@ -2304,6 +2305,16 @@ export class SettingsManager {
                 await this.updateBackupStatus();
             }
 
+            if (settingKey === 'enable_other_models') {
+                // Roots only exist while the feature is on, so re-fetch them
+                // after the backend rebuilt the other-model root set.
+                this.updateOtherModelsControls();
+                await this.loadOtherRoots();
+                this.updateOtherModelsControls();
+                this.updateOtherModelsNavVisibility(value);
+                this.removeOtherModelsAnnouncement(value);
+            }
+
             showToast('toast.settings.settingsUpdated', { setting: settingKey.replace(/_/g, ' ') }, 'success');
 
             // Apply frontend settings immediately
@@ -2406,6 +2417,82 @@ export class SettingsManager {
         } catch (error) {
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
+    }
+
+    /**
+     * Reflect the opt-in Other Models state in the settings UI: the master
+     * toggle gates every sub_type checkbox, and a switched-off sub_type has
+     * its default-root select disabled. Never force-enables a select (the
+     * no-roots placeholder owns that state).
+     */
+    updateOtherModelsControls() {
+        const enableOtherModels = !!state.global.settings.enable_other_models;
+        const enabledSubTypes = new Set(
+            state.global.settings.enabled_other_sub_types
+            || ['vae', 'upscaler', 'text_encoder', 'clip_vision']
+        );
+
+        document.querySelectorAll('[data-other-subtype-toggle]').forEach((input) => {
+            input.checked = enabledSubTypes.has(input.value);
+            input.disabled = !enableOtherModels;
+        });
+
+        const container = document.getElementById('otherSubTypeToggles');
+        if (container) {
+            container.classList.toggle('is-disabled', !enableOtherModels);
+        }
+
+        document.querySelectorAll('select[data-other-root-subtype]').forEach((select) => {
+            const subType = select.dataset.otherRootSubtype;
+            if (!enableOtherModels || !enabledSubTypes.has(subType)) {
+                select.disabled = true;
+            }
+        });
+    }
+
+    /**
+     * Persist the whole enabled_other_sub_types list (the backend stores an
+     * allow-list) and refresh the per-sub_type default-root selects.
+     */
+    async saveEnabledOtherSubTypes() {
+        const values = Array.from(
+            document.querySelectorAll('[data-other-subtype-toggle]')
+        )
+            .filter((input) => input.checked)
+            .map((input) => input.value);
+
+        try {
+            await this.saveSetting('enabled_other_sub_types', values);
+            this.updateOtherModelsControls();
+            await this.loadOtherRoots();
+            this.updateOtherModelsControls();
+
+            showToast('toast.settings.settingsUpdated', { setting: 'other model types' }, 'success');
+        } catch (error) {
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    /**
+     * Show or hide the Other Models nav entry. The nav is server-rendered, so
+     * toggling the class here keeps it in sync when the switch is flipped from
+     * the settings modal (no reload needed).
+     */
+    updateOtherModelsNavVisibility(enabled) {
+        const navItem = document.getElementById('otherNavItem');
+        if (navItem) {
+            navItem.classList.toggle('nav-item--hidden', !enabled);
+        }
+    }
+
+    /**
+     * Drop the Other Models announcement banner once the feature is on.
+     */
+    removeOtherModelsAnnouncement(enabled) {
+        if (!enabled) {
+            return;
+        }
+        bannerService.removeOtherModelsAnnouncement();
     }
 
     /**

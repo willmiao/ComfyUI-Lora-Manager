@@ -545,6 +545,15 @@
             "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
             "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
             "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
+            "enableOtherModels": "[TODO: Translate] Other Models Management",
+            "enableOtherModelsHelp": "[TODO: Translate] When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
+            "otherSubTypes": "[TODO: Translate] Managed Types",
+            "otherSubTypesHelp": "[TODO: Translate] Choose which other-model categories are scanned and shown on the Other Models page.",
+            "subTypeVae": "[TODO: Translate] VAE",
+            "subTypeUpscaler": "[TODO: Translate] Upscaler",
+            "subTypeTextEncoder": "[TODO: Translate] Text Encoder",
+            "subTypeClipVision": "[TODO: Translate] CLIP Vision",
+            "subTypeControlnet": "[TODO: Translate] ControlNet",
             "recipesPath": "Ruta de almacenamiento de recetas",
             "recipesPathHelp": "Directorio personalizado opcional para las recetas guardadas. Déjalo vacío para usar la carpeta recipes del primer directorio raíz de LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1214,7 +1223,16 @@
         "title": "Modelos embedding"
     },
     "other": {
-        "title": "[TODO: Translate] Other Models"
+        "title": "[TODO: Translate] Other Models",
+        "disabled": {
+            "title": "[TODO: Translate] Other Models management is off",
+            "description": "[TODO: Translate] Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
+            "enableButton": "[TODO: Translate] Enable Other Models",
+            "hint": "[TODO: Translate] You can change the managed model types later in Settings > Library.",
+            "enableFailed": "[TODO: Translate] Failed to enable Other Models",
+            "downloadBlocked": "[TODO: Translate] Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
+            "enableAction": "[TODO: Translate] Enable Other Models"
+        }
     },
     "sidebar": {
         "modelRoot": "Raíz",
@@ -2615,6 +2633,12 @@
             "rebuilding": "Reconstruyendo caché...",
             "rebuildFailed": "Error al reconstruir la caché: {error}",
             "retry": "Reintentar"
+        },
+        "otherModels": {
+            "title": "[TODO: Translate] Other Models Management is available",
+            "content": "[TODO: Translate] Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
+            "enable": "[TODO: Translate] Enable Other Models",
+            "openSettings": "[TODO: Translate] Open Settings"
         }
     }
 }
