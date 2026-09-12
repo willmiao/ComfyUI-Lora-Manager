@@ -190,6 +190,8 @@ The system runs in two modes:
 
 - `py/config.py` manages folder paths for models and handles symlink mappings
 - Auto-saves paths to `settings.json` in ComfyUI mode
+- `settings.json.example` is intentionally minimal (see Important Notes); all
+  other defaults live in `DEFAULT_SETTINGS` (`py/services/settings_manager.py`)
 
 ### Frontend UI Architecture
 
@@ -250,6 +252,12 @@ If a cross-layer issue ever needs a live server, the sandboxed helpers live in
 ## Important Notes
 
 - ALWAYS use English for comments (per copilot-instructions.md)
+- **`settings.json.example` must stay minimal**: only `use_portable_settings`,
+  `civitai_api_key`, and the four core `folder_paths` keys (`loras`,
+  `checkpoints`, `unet`, `embeddings`). Do NOT add optional/default keys
+  (model-category folders, `default_*_root`, `auto_organize_exclusions`, etc.)
+  to this file unless the user explicitly asks for it. Defaults belong in
+  `DEFAULT_SETTINGS` in `py/services/settings_manager.py`.
 - Run `python scripts/sync_translation_keys.py` after adding UI strings to `locales/en.json`
 - Symlinks require normalized paths.
   **Business paths vs real paths**: All stored paths and operation routing use the

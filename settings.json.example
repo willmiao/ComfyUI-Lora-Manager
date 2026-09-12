@@ -17,20 +17,6 @@
     "embeddings": [
       "C:/path/to/your/embeddings_folder",
       "C:/path/to/another/embeddings_folder"
-    ],
-    "vae": [
-      "C:/path/to/your/vae_folder"
-    ],
-    "upscale_models": [
-      "C:/path/to/your/upscale_models_folder"
-    ],
-    "text_encoders": [
-      "C:/path/to/your/text_encoders_folder"
-    ],
-    "clip_vision": [
-      "C:/path/to/your/clip_vision_folder"
     ]
-  },
-  "default_other_roots": {},
-  "auto_organize_exclusions": []
+  }
 }
