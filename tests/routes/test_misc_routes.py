@@ -61,6 +61,12 @@ class DummySettings:
     def get(self, key, default=None):
         return self.data.get(key, default)
 
+    def is_other_models_enabled(self):
+        return bool(self.data.get("enable_other_models", False))
+
+    def get_enabled_other_sub_types(self):
+        return list(self.data.get("enabled_other_sub_types") or [])
+
     def set(self, key, value):
         self.data[key] = value
 

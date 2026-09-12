@@ -26,6 +26,14 @@ def _make_config(**overrides) -> config_module.Config:
     return config
 
 
+@pytest.fixture(autouse=True)
+def enable_other_models():
+    """Other Models is opt-in; enable it for the enabled-state tests."""
+    manager = get_settings_manager()
+    manager.set("enable_other_models", True)
+    yield
+
+
 class TestPrepareOtherPaths:
     """Unit tests for Config._prepare_other_paths."""
 
@@ -196,7 +204,7 @@ class TestInitOtherPaths:
         controlnet_dir.mkdir()
 
         self._stub_folder_paths(monkeypatch, {"controlnet": str(controlnet_dir)})
-        get_settings_manager().set("enabled_other_folders", ["controlnet"])
+        get_settings_manager().set("enabled_other_sub_types", ["controlnet"])
 
         config = _make_config()
         roots = config._init_other_paths()
@@ -207,12 +215,45 @@ class TestInitOtherPaths:
             == "controlnet"
         )
 
+    def test_disabled_sub_type_is_not_scanned(self, monkeypatch, tmp_path):
+        vae_dir = tmp_path / "vae"
+        upscaler_dir = tmp_path / "upscale_models"
+        vae_dir.mkdir()
+        upscaler_dir.mkdir()
+
+        self._stub_folder_paths(
+            monkeypatch, {"vae": str(vae_dir), "upscale_models": str(upscaler_dir)}
+        )
+        get_settings_manager().set("enabled_other_sub_types", ["vae"])
+
+        config = _make_config()
+        roots = config._init_other_paths()
+
+        assert roots == [_normalize(str(vae_dir))]
+        assert _normalize(str(upscaler_dir)) not in config.other_root_subtypes
+
+    def test_feature_disabled_scans_nothing(self, monkeypatch, tmp_path):
+        vae_dir = tmp_path / "vae"
+        vae_dir.mkdir()
+
+        self._stub_folder_paths(monkeypatch, {"vae": str(vae_dir)})
+        get_settings_manager().set("enable_other_models", False)
+
+        config = _make_config()
+        roots = config._init_other_paths()
+
+        assert roots == []
+        assert config.other_root_subtypes == {}
+        assert config.other_folder_roots == {}
+
     def test_unknown_opt_in_keys_are_ignored(self, monkeypatch, tmp_path):
         vae_dir = tmp_path / "vae"
         vae_dir.mkdir()
 
         self._stub_folder_paths(monkeypatch, {"vae": str(vae_dir)})
-        get_settings_manager().set("enabled_other_folders", ["not_a_real_key", 42])
+        get_settings_manager().set(
+            "enabled_other_sub_types", ["vae", "not_a_real_key", 42]
+        )
 
         config = _make_config()
         roots = config._init_other_paths()

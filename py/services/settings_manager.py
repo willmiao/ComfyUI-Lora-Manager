@@ -25,11 +25,13 @@ from typing import (
 from platformdirs import user_config_dir
 
 from ..utils.constants import (
+    DEFAULT_ENABLED_OTHER_SUB_TYPES,
     DEFAULT_HASH_CHUNK_SIZE_MB,
     DEFAULT_PRIORITY_TAG_CONFIG,
-    OTHER_MODEL_FOLDER_SUBTYPES,
+    OTHER_SUB_TYPE_FOLDER_KEYS,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_OTHER_SUB_TYPES,
+    normalize_other_sub_types,
 )
 from ..utils.preview_selection import VALID_MATURE_BLUR_LEVELS
 from ..utils.settings_paths import (
@@ -86,6 +88,10 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "default_unet_root": "",
     "default_embedding_root": "",
     "default_other_roots": {},
+    # Other Models management is opt-in: nothing is scanned, shown or offered
+    # for download until the user turns the feature on.
+    "enable_other_models": False,
+    "enabled_other_sub_types": list(DEFAULT_ENABLED_OTHER_SUB_TYPES),
     "recipes_path": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
@@ -680,6 +686,42 @@ class SettingsManager:
                 normalized[sub_type] = stripped
         return normalized
 
+    def is_other_models_enabled(self) -> bool:
+        """Return True when the opt-in Other Models management is enabled."""
+        return bool(self.settings.get("enable_other_models", False))
+
+    def get_enabled_other_sub_types(self) -> List[str]:
+        """Return the enabled other-model sub_types (empty when the feature is off)."""
+        if not self.is_other_models_enabled():
+            return []
+        return normalize_other_sub_types(self.settings.get("enabled_other_sub_types"))
+
+    def is_other_sub_type_enabled(self, sub_type: Optional[str]) -> bool:
+        """Return True when ``sub_type`` is currently managed."""
+        if not sub_type:
+            return False
+        return sub_type in self.get_enabled_other_sub_types()
+
+    def _apply_other_model_settings_change(self) -> None:
+        """Rebuild other-model roots and refresh the other scanner after a toggle."""
+        try:
+            from ..config import config  # Local import to avoid circular dependency
+
+            config.refresh_other_roots()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Failed to refresh other-model roots: %s", exc)
+
+        try:
+            from .service_registry import ServiceRegistry  # pyright: ignore[reportImportCycles]
+
+            scanner = ServiceRegistry.get_service_sync("other_scanner")
+            if scanner is not None and hasattr(scanner, "on_library_changed"):
+                # reconcile=True lets the scanner pick up newly enabled roots and
+                # purge rows for folders that are no longer managed.
+                scanner.on_library_changed(reconcile=True)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug("Failed to refresh other scanner after settings change: %s", exc)
+
     def _has_configured_paths(self, folder_paths: Any) -> bool:
         if not isinstance(folder_paths, Mapping):
             return False
@@ -951,44 +993,44 @@ class SettingsManager:
         updated = _check_and_auto_set("unet", "default_unet_root") or updated
         updated = _check_and_auto_set("embeddings", "default_embedding_root") or updated
 
-        # Other-model default roots: one entry per sub_type; candidates are the
-        # union of that sub_type's folder_paths keys (text_encoder merges the
-        # legacy 'clip' key with 'text_encoders').
-        sub_type_folder_keys: Dict[str, List[str]] = {}
-        for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items():
-            sub_type_folder_keys.setdefault(sub_type, []).append(folder_key)
-
+        # Other-model default roots: one entry per enabled sub_type; candidates
+        # are the union of that sub_type's folder_paths keys (text_encoder
+        # merges the legacy 'clip' key with 'text_encoders'). When the opt-in
+        # feature is off the existing mapping is left untouched.
         other_roots = self._normalize_default_other_roots(
             self.settings.get("default_other_roots")
         )
-        for sub_type in VALID_OTHER_SUB_TYPES:
-            candidates: List[str] = []
-            candidate_identities: set[str] = set()
-            for folder_key in sub_type_folder_keys.get(sub_type, []):
-                for candidate in self._get_valid_root_candidates(folder_key):
-                    identity = _normalize_root_identity(candidate)
-                    if identity in candidate_identities:
-                        continue
-                    candidate_identities.add(identity)
-                    candidates.append(candidate)
-            if not candidates:
-                continue
-            current = other_roots.get(sub_type, "")
-            if current and _normalize_root_identity(current) in candidate_identities:
-                continue
-            other_roots[sub_type] = candidates[0]
-            if current:
-                logger.info(
-                    "Repaired stale default_other_roots[%s] from '%s' to '%s' because it is not present in primary or extra roots",
-                    sub_type,
-                    current,
-                    candidates[0],
-                )
-            else:
-                logger.info(
-                    "Auto-set default_other_roots[%s] to '%s'", sub_type, candidates[0]
-                )
-            updated = True
+        if self.is_other_models_enabled():
+            for sub_type in self.get_enabled_other_sub_types():
+                candidates: List[str] = []
+                candidate_identities: set[str] = set()
+                for folder_key in OTHER_SUB_TYPE_FOLDER_KEYS.get(sub_type, []):
+                    for candidate in self._get_valid_root_candidates(folder_key):
+                        identity = _normalize_root_identity(candidate)
+                        if identity in candidate_identities:
+                            continue
+                        candidate_identities.add(identity)
+                        candidates.append(candidate)
+                if not candidates:
+                    continue
+                current = other_roots.get(sub_type, "")
+                if current and _normalize_root_identity(current) in candidate_identities:
+                    continue
+                other_roots[sub_type] = candidates[0]
+                if current:
+                    logger.info(
+                        "Repaired stale default_other_roots[%s] from '%s' to '%s' because it is not present in primary or extra roots",
+                        sub_type,
+                        current,
+                        candidates[0],
+                    )
+                else:
+                    logger.info(
+                        "Auto-set default_other_roots[%s] to '%s'",
+                        sub_type,
+                        candidates[0],
+                    )
+                updated = True
 
         if updated:
             self.settings["default_other_roots"] = other_roots
@@ -1699,6 +1741,10 @@ class SettingsManager:
             value = self.normalize_mature_blur_level(value)
         elif key == "default_other_roots":
             value = self._normalize_default_other_roots(value, strict=True)
+        elif key == "enabled_other_sub_types":
+            value = normalize_other_sub_types(value)
+        elif key == "enable_other_models":
+            value = bool(value)
         elif key == "recipes_path":
             current_recipes_dir = self._get_effective_recipes_dir()
             value = self._normalize_recipes_path_value(value)
@@ -1735,6 +1781,8 @@ class SettingsManager:
         self._save_settings()
         if key == "recipes_path":
             self._notify_library_change(self.get_active_library_name())
+        if key in ("enable_other_models", "enabled_other_sub_types"):
+            self._apply_other_model_settings_change()
         if portable_switch_pending:
             self._finalize_portable_switch()
 

@@ -210,8 +210,14 @@ class ModelScanner:
         """
         self._cache_version += 1
 
-    def on_library_changed(self) -> None:
-        """Reset caches when the active library changes."""
+    def on_library_changed(self, reconcile: bool = False) -> None:
+        """Reset caches when the active library changes.
+
+        When ``reconcile`` is True an incremental reconcile runs right after
+        the cache is re-hydrated, so newly configured roots are scanned and
+        entries for removed roots are purged. Used when scanner-affecting
+        settings (e.g. the Other Models toggles) change.
+        """
         self._persistent_cache = get_persistent_cache()
         self._cache = None
         self._hash_index = ModelHashIndex()
@@ -229,7 +235,7 @@ class ModelScanner:
         if loop and not loop.is_closed():
             self._loop = loop
             self.loop = loop
-            loop.create_task(self.initialize_in_background())
+            loop.create_task(self.initialize_in_background(reconcile=reconcile))
 
     def _resolve_name_display_mode(self) -> str:
         """Return the configured display mode for name sorting."""
@@ -460,8 +466,14 @@ class ModelScanner:
         _, license_flags = resolve_license_info(license_source)
         entry['license_flags'] = license_flags
 
-    async def initialize_in_background(self) -> None:
-        """Initialize cache in background using thread pool"""
+    async def initialize_in_background(self, reconcile: bool = False) -> None:
+        """Initialize cache in background using thread pool
+
+        Args:
+            reconcile: When True and a persisted snapshot is hydrated, run an
+                incremental reconcile afterwards so the cache matches the
+                current root configuration.
+        """
         try:
             # Set initial empty cache to avoid None reference errors
             if self._cache is None:
@@ -501,6 +513,11 @@ class ModelScanner:
                 logger.info(
                     f"{self.model_type.capitalize()} cache hydrated from persisted snapshot with {len(self._cache.raw_data)} models"
                 )
+                if reconcile:
+                    # Root configuration changed (e.g. Other Models toggles):
+                    # pick up newly enabled folders and drop rows for folders
+                    # that are no longer managed.
+                    await self.get_cached_data(force_refresh=True)
                 return
 
             # Persistent load failed; fall back to a full scan
@@ -663,21 +680,33 @@ class ModelScanner:
         if not persisted or not persisted.raw_data:
             return None
 
+        # Drop entries the scanner no longer manages (e.g. an other-model
+        # sub_type the user just disabled) before rebuilding the indexes, so
+        # hash/autov3 lookups cannot resolve to unmanaged files either.
+        kept_items = [
+            item
+            for item in persisted.raw_data
+            if self._should_keep_cached_entry(item)
+        ]
+        kept_paths = {
+            item.get("file_path") for item in kept_items if item.get("file_path")
+        }
+
         hash_index = ModelHashIndex()
         for sha_value, path in persisted.hash_rows:
-            if sha_value and path:
+            if sha_value and path and path in kept_paths:
                 hash_index.add_entry(sha_value.lower(), path)
 
         # Rebuild the AutoV3 index from the persisted autov3_index rows. These
         # cover every known autov3 -> path mapping regardless of whether a
         # sha256 row also exists for the same file.
         for autov3_value, path in persisted.autov3_hash_rows:
-            if autov3_value and path:
+            if autov3_value and path and path in kept_paths:
                 hash_index.add_autov3(autov3_value.lower(), path)
 
         tags_count: Dict[str, int] = {}
         adjusted_raw_data: List[Dict[str, Any]] = []
-        for item in persisted.raw_data:
+        for item in kept_items:
             # load_cache builds a fresh dict per row, and validate_batch below
             # works on its own per-entry copy when auto_repair=True, so no
             # additional dict copy is needed here.
@@ -1434,6 +1463,15 @@ class ModelScanner:
     def adjust_cached_entry(self, entry: Dict[str, Any]) -> Dict[str, Any]:
         """Hook for subclasses: adjust entries loaded from the persisted cache."""
         return entry
+
+    def _should_keep_cached_entry(self, entry: Dict[str, Any]) -> bool:
+        """Hook for subclasses: decide whether a persisted entry is still managed.
+
+        Entries rejected here are dropped (with their hash/autov3 index rows)
+        while hydrating the persisted cache, so a scanner whose configured
+        roots shrank does not surface stale models before the next reconcile.
+        """
+        return True
 
     def resolve_sub_type_for_path(self, file_path: Optional[str]) -> Optional[str]:
         """Hook for subclasses: resolve the location-derived sub_type for a file.

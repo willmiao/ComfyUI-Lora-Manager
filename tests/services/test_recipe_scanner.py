@@ -2513,7 +2513,7 @@ async def test_on_library_changed_bumps_cache_version(tmp_path: Path, monkeypatc
     scanner = DummyScanner(str(tmp_path))
     assert scanner.cache_version == 0
 
-    async def _noop_initialize() -> None:
+    async def _noop_initialize(reconcile: bool = False) -> None:
         pass
 
     monkeypatch.setattr(scanner, "initialize_in_background", _noop_initialize)

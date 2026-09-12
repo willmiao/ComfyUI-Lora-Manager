@@ -18,7 +18,6 @@ import time
 
 from .utils.cache_paths import CacheType, get_cache_file_path, get_legacy_cache_paths
 from .utils.constants import (
-    DEFAULT_OTHER_MODEL_FOLDERS,
     OTHER_MODEL_FOLDER_SUBTYPES,
 )
 from .utils.settings_paths import (
@@ -1150,28 +1149,25 @@ class Config:
     def _get_enabled_other_folder_keys(self) -> List[str]:
         """Return the OTHER_MODEL_FOLDER_SUBTYPES keys that are enabled.
 
-        Default-enabled categories come from DEFAULT_OTHER_MODEL_FOLDERS;
-        opt-in categories (e.g. controlnet) are added via the
-        ``enabled_other_folders`` setting (a list of folder_paths keys).
+        Other Models management is opt-in: while ``enable_other_models`` is
+        off (the default) no other-model folder is scanned at all. When it is
+        on, only the folder keys of the enabled sub_types are scanned
+        (text_encoder merges ``text_encoders`` with the legacy ``clip`` key).
         """
-        keys = list(DEFAULT_OTHER_MODEL_FOLDERS)
         try:
             from .services.settings_manager import get_settings_manager
 
-            extra = get_settings_manager().get("enabled_other_folders", [])
+            enabled_sub_types = get_settings_manager().get_enabled_other_sub_types()
         except Exception:
-            extra = []
-        if isinstance(extra, str):
-            extra = [extra]
-        if isinstance(extra, Iterable):
-            for key in extra:
-                if (
-                    isinstance(key, str)
-                    and key in OTHER_MODEL_FOLDER_SUBTYPES
-                    and key not in keys
-                ):
-                    keys.append(key)
-        return keys
+            enabled_sub_types = []
+        if not enabled_sub_types:
+            return []
+        allowed = set(enabled_sub_types)
+        return [
+            key
+            for key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items()
+            if sub_type in allowed
+        ]
 
     def _prepare_other_paths(
         self, folder_path_map: Mapping[str, Iterable[str]]
@@ -1426,6 +1422,16 @@ class Config:
         except Exception as e:
             logger.warning(f"Error initializing other model paths: {e}")
             return []
+
+    def refresh_other_roots(self) -> None:
+        """Rebuild other-model roots after the management toggles changed.
+
+        Called when ``enable_other_models`` / ``enabled_other_sub_types`` are
+        updated so the scanner immediately reflects the new folder set without
+        a full application restart.
+        """
+        self.other_roots = self._init_other_paths()
+        self._rebuild_preview_roots()
 
     def get_preview_static_url(self, preview_path: str) -> str:
         if not preview_path:

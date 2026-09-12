@@ -30,6 +30,20 @@ def routes():
     return handler
 
 
+@pytest.fixture(autouse=True)
+def enable_other_models():
+    """Other Models is opt-in; these tests exercise the enabled state."""
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    manager.set("enable_other_models", True)
+    manager.set(
+        "enabled_other_sub_types",
+        ["vae", "upscaler", "text_encoder", "clip_vision", "controlnet"],
+    )
+    yield
+
+
 def test_common_and_specific_routes_registered():
     """Registration smoke test: /api/lm/other/* surface plus the /other page."""
     app = web.Application()
@@ -62,6 +76,39 @@ def test_validate_civitai_model_type_accepts_other_types(model_type):
 @pytest.mark.parametrize("model_type", ["Lora", "Checkpoint", "TextualInversion"])
 def test_validate_civitai_model_type_rejects_foreign_types(model_type):
     assert OtherRoutes()._validate_civitai_model_type(model_type) is False
+
+
+def test_validate_rejects_everything_when_feature_disabled():
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_other_models", False)
+
+    handler = OtherRoutes()
+    for model_type in ("VAE", "Upscaler", "TextEncoder", "CLIPVision", "Other"):
+        assert handler._validate_civitai_model_type(model_type) is False
+
+
+def test_validate_rejects_switched_off_sub_type():
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enabled_other_sub_types", ["vae"])
+
+    handler = OtherRoutes()
+    assert handler._validate_civitai_model_type("VAE") is True
+    assert handler._validate_civitai_model_type("Upscaler") is False
+
+
+def test_page_context_reports_feature_state():
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    handler = OtherRoutes()
+    provider = handler._get_page_context_provider()
+
+    assert provider(None) == {"other_disabled": False}
+
+    manager.set("enable_other_models", False)
+    assert provider(None) == {"other_disabled": True}
 
 
 def test_get_expected_model_types_mentions_supported_types():

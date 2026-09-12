@@ -56,11 +56,38 @@ class DownloadRoutingHandler:
             )
 
         if model_type.lower() in VALID_OTHER_CIVITAI_TYPES:
+            from ...services.settings_manager import get_settings_manager
+
+            settings = get_settings_manager()
+            if not settings.is_other_models_enabled():
+                # Opt-in feature is off: never auto-route, the UI falls back to
+                # manual folder selection and the download manager rejects it.
+                return web.json_response(
+                    {
+                        "success": True,
+                        "root_kind": "other",
+                        "sub_type": None,
+                        "disabled": True,
+                        "reason": "other_models_disabled",
+                    }
+                )
+
             sub_type = resolve_other_download_sub_type(
                 model_type,
                 file_types=(str(t) for t in file_types),
                 selected_file_type=selected_file_type,
             )
+            if sub_type and not settings.is_other_sub_type_enabled(sub_type):
+                return web.json_response(
+                    {
+                        "success": True,
+                        "root_kind": "other",
+                        "sub_type": None,
+                        "disabled": True,
+                        "reason": "other_sub_type_disabled",
+                        "requested_sub_type": sub_type,
+                    }
+                )
             return web.json_response(
                 {
                     "success": True,

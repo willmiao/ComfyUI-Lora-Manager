@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Dict, List
 
 NSFW_LEVELS = {
     "PG": 1,
@@ -93,17 +93,51 @@ OTHER_MODEL_FOLDER_SUBTYPES = {
     "clip_vision": "clip_vision",
     "controlnet": "controlnet",
 }
-# folder_paths keys scanned by default; anything else in
-# OTHER_MODEL_FOLDER_SUBTYPES (e.g. controlnet) is opt-in via the
-# "enabled_other_folders" setting.
-DEFAULT_OTHER_MODEL_FOLDERS = (
-    "vae",
-    "upscale_models",
-    "text_encoders",
-    "clip",
-    "clip_vision",
-)
 VALID_OTHER_SUB_TYPES = ["vae", "upscaler", "text_encoder", "clip_vision", "controlnet"]
+# Sub-types managed when the (opt-in) Other Models feature is switched on.
+# The feature itself defaults to off (``enable_other_models`` = False), so
+# nothing here is scanned until the user enables it.
+DEFAULT_ENABLED_OTHER_SUB_TYPES: List[str] = [
+    "vae",
+    "upscaler",
+    "text_encoder",
+    "clip_vision",
+]
+
+
+def other_sub_type_folder_keys() -> Dict[str, List[str]]:
+    """Invert OTHER_MODEL_FOLDER_SUBTYPES into sub_type -> folder_paths keys.
+
+    ``text_encoder`` maps to two folder keys (``text_encoders`` and the legacy
+    ``clip``), so every consumer that resolves a sub_type back to folders must
+    merge both.
+    """
+    mapping: Dict[str, List[str]] = {}
+    for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items():
+        mapping.setdefault(sub_type, []).append(folder_key)
+    return mapping
+
+
+# Precomputed inverse of OTHER_MODEL_FOLDER_SUBTYPES, keeping the table order.
+OTHER_SUB_TYPE_FOLDER_KEYS: Dict[str, List[str]] = other_sub_type_folder_keys()
+
+
+def normalize_other_sub_types(value: Any) -> List[str]:
+    """Normalize a stored/requested enabled-sub_type list.
+
+    Unknown values and duplicates are dropped; the result follows the
+    canonical VALID_OTHER_SUB_TYPES order so the stored setting and the UI
+    stay stable. Non-list input falls back to the defaults.
+    """
+    if isinstance(value, str):
+        candidates: Any = [value]
+    elif isinstance(value, (list, tuple, set)):
+        candidates = value
+    else:
+        return list(DEFAULT_ENABLED_OTHER_SUB_TYPES)
+
+    allowed = {item for item in candidates if isinstance(item, str)}
+    return [sub_type for sub_type in VALID_OTHER_SUB_TYPES if sub_type in allowed]
 # CivitAI model.type values accepted by the "other" page's fetch-metadata
 # validation (lowercased). CLIP/CLIPVision are retired upstream but still
 # appear on grandfathered models.

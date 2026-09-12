@@ -1222,7 +1222,33 @@ def test_default_other_roots_stay_empty_without_other_folders(manager):
     assert manager.get("default_other_roots") == {}
 
 
+def test_other_models_disabled_by_default(manager):
+    assert manager.is_other_models_enabled() is False
+    assert manager.get_enabled_other_sub_types() == []
+    assert manager.is_other_sub_type_enabled("vae") is False
+
+
+def test_auto_set_default_other_roots_skipped_when_feature_off(manager):
+    manager.settings["enable_other_models"] = False
+    manager.settings["default_other_roots"] = {}
+    manager.settings["folder_paths"] = {"vae": ["/vae"]}
+
+    manager._auto_set_default_roots()
+
+    assert manager.get("default_other_roots") == {}
+
+
+def test_set_enabled_other_sub_types_normalizes(manager):
+    manager.settings["enable_other_models"] = True
+    manager.set("enabled_other_sub_types", ["controlnet", "vae", "nope", "vae", 42])
+
+    assert manager.get("enabled_other_sub_types") == ["vae", "controlnet"]
+    assert manager.is_other_sub_type_enabled("vae") is True
+    assert manager.is_other_sub_type_enabled("upscaler") is False
+
+
 def test_auto_set_default_other_roots(manager):
+    manager.settings["enable_other_models"] = True
     manager.settings["default_other_roots"] = {}
     manager.settings["folder_paths"] = {
         "vae": ["/vae"],
@@ -1243,6 +1269,7 @@ def test_auto_set_default_other_roots(manager):
 
 def test_auto_set_default_other_roots_text_encoder_dual_key_union(manager):
     """text_encoder candidates merge text_encoders and the legacy clip key."""
+    manager.settings["enable_other_models"] = True
     manager.settings["default_other_roots"] = {}
     manager.settings["folder_paths"] = {
         "clip": ["/legacy-clip"],
@@ -1261,6 +1288,7 @@ def test_auto_set_default_other_roots_text_encoder_dual_key_union(manager):
 
 
 def test_auto_set_default_other_roots_repairs_stale(manager):
+    manager.settings["enable_other_models"] = True
     manager.settings["default_other_roots"] = {"vae": "/stale-vae"}
     manager.settings["folder_paths"] = {"vae": ["/vae"]}
 
@@ -1270,6 +1298,7 @@ def test_auto_set_default_other_roots_repairs_stale(manager):
 
 
 def test_auto_set_default_other_roots_uses_extra_folder_paths(manager):
+    manager.settings["enable_other_models"] = True
     manager.settings["default_other_roots"] = {}
     manager.settings["folder_paths"] = {"vae": []}
     manager.settings["extra_folder_paths"] = {"vae": ["/extra-vae"]}

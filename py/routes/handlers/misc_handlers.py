@@ -663,6 +663,17 @@ class HealthCheckHandler:
             "recipe": ServiceRegistry.get_recipe_scanner,
         }
 
+    def _active_scanner_getters(
+        self,
+    ) -> Mapping[str, Callable[[], Awaitable[Any]]]:
+        """Drop the opt-in other scanner while Other Models is disabled."""
+        getters = self._scanner_getters
+        if "other" not in getters:
+            return getters
+        if get_settings_manager().is_other_models_enabled():
+            return getters
+        return {name: getter for name, getter in getters.items() if name != "other"}
+
     async def health_check(self, request: web.Request) -> web.Response:
         return web.json_response({"status": "ok"})
 
@@ -674,7 +685,7 @@ class HealthCheckHandler:
         page accepts the update and only reloads once all scanners are done.
         """
         pending: list[str] = []
-        for name, getter in self._scanner_getters.items():
+        for name, getter in self._active_scanner_getters().items():
             try:
                 scanner = await getter()
             except Exception:
@@ -764,6 +775,14 @@ class DoctorHandler:
         )
         self._app_version_getter = app_version_getter
 
+    def _active_scanner_factories(
+        self,
+    ) -> Sequence[tuple[str, str, Callable[[], Awaitable[Any]]]]:
+        """Drop the opt-in other scanner while Other Models is disabled."""
+        if self._settings.is_other_models_enabled():
+            return self._scanner_factories
+        return tuple(entry for entry in self._scanner_factories if entry[0] != "other")
+
     async def get_doctor_diagnostics(self, request: web.Request) -> web.Response:
         try:
             client_version = (request.query.get("clientVersion") or "").strip()
@@ -811,7 +830,7 @@ class DoctorHandler:
         repaired: list[dict[str, Any]] = []
         failures: list[dict[str, str]] = []
 
-        for model_type, label, factory in self._scanner_factories:
+        for model_type, label, factory in self._active_scanner_factories():
             try:
                 scanner = await factory()
                 await scanner.get_cached_data(force_refresh=True, rebuild_cache=True)
@@ -843,7 +862,7 @@ class DoctorHandler:
         renamed: list[dict[str, Any]] = []
 
         try:
-            for model_type, label, factory in self._scanner_factories:
+            for model_type, label, factory in self._active_scanner_factories():
                 try:
                     scanner = await factory()
                     hash_index = getattr(scanner, "_hash_index", None)
@@ -1075,7 +1094,7 @@ class DoctorHandler:
         overall_status = "ok"
         summary = "All model caches look healthy."
 
-        for model_type, label, factory in self._scanner_factories:
+        for model_type, label, factory in self._active_scanner_factories():
             try:
                 scanner = await factory()
                 persisted = None
@@ -1160,7 +1179,7 @@ class DoctorHandler:
         total_conflict_groups = 0
         total_conflict_files = 0
 
-        for model_type, label, factory in self._scanner_factories:
+        for model_type, label, factory in self._active_scanner_factories():
             # Duplicate filename detection targets LoRAs which use basename-only
             # syntax (<lora:name:strength>). Checkpoints/embeddings reference
             # models via relative paths with extensions, so conflicts there would
@@ -2797,6 +2816,8 @@ class ModelLibraryHandler:
 
             # Acquire the other scanner lazily so adapters without it only
             # fail when the payload actually contains other-type models.
+            # While the opt-in feature is off the scanner still exists (its
+            # cache is empty), so other types simply report inLibrary=False.
             needs_other_scanner = any(
                 isinstance(model, dict)
                 and str(model.get("type", "")).lower() in other_type_aliases

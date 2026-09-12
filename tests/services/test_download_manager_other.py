@@ -43,6 +43,14 @@ def isolate_settings(monkeypatch, tmp_path):
                 "text_encoder": str(tmp_path / "text_encoders"),
                 "clip_vision": str(tmp_path / "clip_vision"),
             },
+            "enable_other_models": True,
+            "enabled_other_sub_types": [
+                "vae",
+                "upscaler",
+                "text_encoder",
+                "clip_vision",
+                "controlnet",
+            ],
             "download_path_templates": {
                 "lora": "{base_model}/{first_tag}",
                 "checkpoint": "{base_model}/{first_tag}",
@@ -229,6 +237,40 @@ async def test_download_rejects_unknown_model_type(
 
     assert result["success"] is False
     assert result["error"].startswith("Model type")
+
+
+@pytest.mark.asyncio
+async def test_download_rejects_other_when_feature_disabled(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """The opt-in feature is off: no other-type download is accepted."""
+    metadata_provider.payload = _other_payload("VAE")
+    get_settings_manager().settings["enable_other_models"] = False
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=99, save_dir=str(tmp_path)
+    )
+
+    assert result["success"] is False
+    assert "disabled" in result["error"].lower()
+
+
+@pytest.mark.asyncio
+async def test_default_paths_reject_switched_off_sub_type(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """A disabled sub_type refuses default-path routing (manual pick still works)."""
+    metadata_provider.payload = _other_payload("VAE")
+    get_settings_manager().settings["enabled_other_sub_types"] = ["upscaler"]
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+
+    assert result["success"] is False
+    assert "disabled" in result["error"].lower()
 
 
 @pytest.mark.asyncio

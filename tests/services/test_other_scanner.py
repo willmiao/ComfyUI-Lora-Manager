@@ -173,6 +173,51 @@ class TestOtherScannerRoots:
         assert result["sub_type"] == "upscaler"
 
 
+class TestOtherScannerHydrationFilter:
+    """Persisted entries for roots that are no longer managed are dropped."""
+
+    def test_keeps_entries_under_enabled_roots(self, other_config):
+        scanner = _make_scanner()
+        assert (
+            scanner._should_keep_cached_entry(
+                {"file_path": f"{other_config['vae']}/model.safetensors"}
+            )
+            is True
+        )
+
+    def test_drops_entries_under_disabled_root(self, other_config, monkeypatch):
+        scanner = _make_scanner()
+        # Only vae stays managed; the upscaler root disappeared from the map.
+        monkeypatch.setattr(
+            config_module.config,
+            "other_root_subtypes",
+            {other_config["vae"]: "vae"},
+        )
+
+        assert (
+            scanner._should_keep_cached_entry(
+                {"file_path": f"{other_config['upscaler']}/model.safetensors"}
+            )
+            is False
+        )
+        assert (
+            scanner._should_keep_cached_entry(
+                {"file_path": f"{other_config['vae']}/model.safetensors"}
+            )
+            is True
+        )
+
+    def test_drops_everything_when_feature_off(self, monkeypatch):
+        monkeypatch.setattr(config_module.config, "other_root_subtypes", {})
+        scanner = _make_scanner()
+        assert (
+            scanner._should_keep_cached_entry(
+                {"file_path": "/models/vae/model.safetensors"}
+            )
+            is False
+        )
+
+
 class TestOtherScannerLazyHash:
     """Lazy hashing: pending by default, singleflight on-demand calculation."""
 

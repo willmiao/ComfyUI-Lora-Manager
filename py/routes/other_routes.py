@@ -7,7 +7,11 @@ from .model_route_registrar import ModelRouteRegistrar
 from ..config import config
 from ..services.other_model_service import OtherModelService
 from ..services.service_registry import ServiceRegistry
-from ..utils.constants import OTHER_MODEL_FOLDER_SUBTYPES, VALID_OTHER_CIVITAI_TYPES
+from ..utils.constants import (
+    CIVITAI_TYPE_TO_OTHER_SUB_TYPE,
+    OTHER_MODEL_FOLDER_SUBTYPES,
+    VALID_OTHER_CIVITAI_TYPES,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -50,9 +54,28 @@ class OtherRoutes(BaseModelRoutes):
         """Validate CivitAI model type for other models.
 
         Accepts retired CivitAI types (CLIP, CLIPVision) as well — grandfathered
-        models on CivitAI still carry them.
+        models on CivitAI still carry them. Types whose sub_type is currently
+        disabled (or every type while the opt-in feature is off) are rejected.
         """
-        return model_type.lower() in VALID_OTHER_CIVITAI_TYPES
+        normalized = (model_type or "").strip().lower()
+        if normalized not in VALID_OTHER_CIVITAI_TYPES:
+            return False
+        if not self._settings.is_other_models_enabled():
+            return False
+
+        sub_type = CIVITAI_TYPE_TO_OTHER_SUB_TYPE.get(normalized)
+        if sub_type is None:
+            # CivitAI "Other" has no sub_type of its own; it is only usable
+            # while at least one sub_type is enabled.
+            return bool(self._settings.get_enabled_other_sub_types())
+        return self._settings.is_other_sub_type_enabled(sub_type)
+
+    def _get_page_context_provider(self):
+        """Expose the opt-in feature state to the Other Models page template."""
+        return self._page_context_for_other
+
+    def _page_context_for_other(self, request: web.Request) -> Dict[str, Any]:
+        return {"other_disabled": not self._settings.is_other_models_enabled()}
 
     def _get_expected_model_types(self) -> str:
         """Get expected model types string for error messages"""

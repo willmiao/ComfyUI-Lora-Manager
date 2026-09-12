@@ -90,6 +90,7 @@ class ModelPageView:
         settings_service: SettingsManager,
         server_i18n,
         logger: logging.Logger,
+        page_context_provider: Callable[[web.Request], Dict[str, Any]] | None = None,
     ) -> None:
         self._template_env = template_env
         self._template_name = template_name
@@ -97,6 +98,7 @@ class ModelPageView:
         self._settings = settings_service
         self._server_i18n = server_i18n
         self._logger = logger
+        self._page_context_provider = page_context_provider
 
     def _load_supporters(self) -> dict[str, Any]:
         """Load supporters data from JSON file."""
@@ -209,6 +211,16 @@ class ModelPageView:
                 except Exception as cache_error:  # pragma: no cover - logging path
                     self._logger.error("Error loading cache data: %s", cache_error)
                     template_context["is_initializing"] = True
+
+            if self._page_context_provider is not None:
+                try:
+                    extra_context = self._page_context_provider(request)
+                    if isinstance(extra_context, dict):
+                        template_context.update(extra_context)
+                except Exception as context_error:  # pragma: no cover - logging path
+                    self._logger.error(
+                        "Error building page context: %s", context_error
+                    )
 
             rendered = self._template_env.get_template(self._template_name).render(
                 **template_context

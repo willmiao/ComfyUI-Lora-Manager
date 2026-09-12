@@ -149,6 +149,7 @@ class BaseModelRoutes(ABC):
             settings_service=self._settings,
             server_i18n=self._server_i18n,
             logger=logger,
+            page_context_provider=self._get_page_context_provider(),
         )
         listing = ModelListingHandler(
             service=service,
@@ -249,6 +250,10 @@ class BaseModelRoutes(ABC):
     def _get_expected_model_types(self) -> str:
         """Get expected model types string for error messages - to be overridden by subclasses."""
         return "any model type"
+
+    def _get_page_context_provider(self):
+        """Optional hook returning extra template context for the page view."""
+        return None
 
     def _find_model_file(self, files):
         """Find the appropriate model file from the files list - can be overridden by subclasses."""

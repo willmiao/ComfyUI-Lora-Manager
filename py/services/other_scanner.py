@@ -454,6 +454,16 @@ class OtherScanner(ModelScanner):
             entry["sub_type"] = sub_type
         return entry
 
+    def _should_keep_cached_entry(self, entry: Dict[str, Any]) -> bool:
+        """Drop persisted entries whose folder is no longer a managed root.
+
+        sub_type is location-derived and config only maps enabled roots, so a
+        file under a disabled sub_type - or under any other root while the
+        feature is off - resolves to None here and is filtered out while the
+        persisted cache is hydrated.
+        """
+        return self.resolve_sub_type_for_path(entry.get("file_path")) is not None
+
     def get_model_roots(self) -> List[str]:
         """Get other-model root directories"""
         roots: List[str] = []

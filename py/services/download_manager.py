@@ -1526,6 +1526,15 @@ class DownloadManager:
             elif model_type_from_info == "textualinversion":
                 model_type = "embedding"
             elif model_type_from_info in VALID_OTHER_CIVITAI_TYPES:
+                if not get_settings_manager().is_other_models_enabled():
+                    return {
+                        "success": False,
+                        "error": (
+                            "Other Models management is disabled. Enable it in "
+                            "Settings > Library before downloading VAE, upscaler, "
+                            "text encoder or CLIP files."
+                        ),
+                    }
                 model_type = "other"
             else:
                 return {
@@ -1774,6 +1783,17 @@ class DownloadManager:
                         default_other_roots = (
                             settings_manager.get("default_other_roots") or {}
                         )
+                        if other_sub_type and not settings_manager.is_other_sub_type_enabled(
+                            other_sub_type
+                        ):
+                            return {
+                                "success": False,
+                                "error": (
+                                    f"Other-model sub-type '{other_sub_type}' is "
+                                    f"disabled in settings. Please pick a destination "
+                                    f"folder explicitly instead of using default paths."
+                                ),
+                            }
                         default_path = (
                             default_other_roots.get(other_sub_type)
                             if other_sub_type
