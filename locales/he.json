@@ -149,6 +149,7 @@
             "copyCheckpointName": "העתק שם Checkpoint",
             "copyEmbeddingName": "העתק שם Embedding",
             "embeddingNameCopied": "תחביר Embedding הועתק",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "שלח ל-ComfyUI",
             "sendEmbeddingToWorkflow": "שלח ל-ComfyUI"
         },
@@ -233,6 +234,7 @@
             "recipes": "מתכונים",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "[TODO: Translate] Other",
             "statistics": "סטטיסטיקה"
         },
         "search": {
@@ -1201,6 +1203,9 @@
     "embeddings": {
         "title": "מודלי Embedding"
     },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
+    },
     "sidebar": {
         "modelRoot": "שורש",
         "collapseAll": "כווץ את כל התיקיות",
@@ -1877,6 +1882,10 @@
         "embeddings": {
             "title": "מאתחל מנהל Embedding",
             "message": "סורק ובונה מטמון embedding. זה עשוי לקחת מספר דקות..."
+        },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
         },
         "recipes": {
             "title": "מאתחל מנהל מתכונים",

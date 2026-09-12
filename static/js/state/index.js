@@ -79,6 +79,7 @@ export function createDefaultSettings() {
 const loraPreviewVersions = getMapFromStorage('loras_preview_versions');
 const checkpointPreviewVersions = getMapFromStorage('checkpoints_preview_versions');
 const embeddingPreviewVersions = getMapFromStorage('embeddings_preview_versions');
+const otherPreviewVersions = getMapFromStorage('other_preview_versions');
 
 export const state = {
     // Global state
@@ -213,6 +214,44 @@ export const state = {
                 creator: false,
                 hash: false,
                 recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
+            },
+            filters: {
+                baseModel: [],
+                tags: {},
+                license: {},
+                modelTypes: [],
+                search: '',
+                tagLogic: 'any',
+            },
+            bulkMode: false,
+            selectedModels: new Set(),
+            metadataCache: new Map(),
+            showFavoritesOnly: false,
+            showUpdateAvailableOnly: false,
+            duplicatesMode: false,
+            viewMode: 'active',
+            excludedViewState: {
+                sortBy: 'name:asc',
+                search: '',
+            },
+            activeViewSnapshot: null,
+        },
+
+        [MODEL_TYPES.OTHER]: {
+            currentPage: 1,
+            isLoading: false,
+            hasMore: true,
+            sortBy: 'name',
+            activeFolder: getStorageItem(`${MODEL_TYPES.OTHER}_activeFolder`),
+            previewVersions: otherPreviewVersions,
+            searchManager: null,
+            searchOptions: {
+                filename: true,
+                modelname: true,
+                tags: false,
+                creator: false,
+                hash: false,
+                recursive: getStorageItem(`${MODEL_TYPES.OTHER}_recursiveSearch`, true),
             },
             filters: {
                 baseModel: [],

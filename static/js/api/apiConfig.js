@@ -9,7 +9,8 @@ import { state } from '../state/index.js';
 export const MODEL_TYPES = {
     LORA: 'loras',
     CHECKPOINT: 'checkpoints',
-    EMBEDDING: 'embeddings' // Future model type
+    EMBEDDING: 'embeddings',
+    OTHER: 'other'
 };
 
 // Base API configuration for each model type
@@ -40,6 +41,15 @@ export const MODEL_CONFIG = {
         supportsBulkOperations: true,
         supportsMove: true,
         templateName: 'embeddings.html'
+    },
+    [MODEL_TYPES.OTHER]: {
+        displayName: 'Other Model',
+        singularName: 'other',
+        defaultPageSize: 100,
+        supportsLetterFilter: false,
+        supportsBulkOperations: true,
+        supportsMove: true,
+        templateName: 'other.html'
     }
 };
 
@@ -133,6 +143,9 @@ export const MODEL_SPECIFIC_ENDPOINTS = {
     },
     [MODEL_TYPES.EMBEDDING]: {
         metadata: `/api/lm/${MODEL_TYPES.EMBEDDING}/metadata`,
+    },
+    [MODEL_TYPES.OTHER]: {
+        metadata: `/api/lm/${MODEL_TYPES.OTHER}/metadata`,
     }
 };
 

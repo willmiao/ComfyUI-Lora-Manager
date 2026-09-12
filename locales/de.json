@@ -149,6 +149,7 @@
             "copyCheckpointName": "Checkpoint-Name kopieren",
             "copyEmbeddingName": "Embedding-Name kopieren",
             "embeddingNameCopied": "Embedding-Syntax kopiert",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
             "sendEmbeddingToWorkflow": "An ComfyUI senden"
         },
@@ -233,6 +234,7 @@
             "recipes": "Rezepte",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
+            "other": "[TODO: Translate] Other",
             "statistics": "Statistiken"
         },
         "search": {
@@ -1201,6 +1203,9 @@
     "embeddings": {
         "title": "Embedding-Modelle"
     },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
+    },
     "sidebar": {
         "modelRoot": "Stammverzeichnis",
         "collapseAll": "Alle Ordner einklappen",
@@ -1877,6 +1882,10 @@
         "embeddings": {
             "title": "Embedding Manager wird initialisiert",
             "message": "Embedding-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
+        },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
         },
         "recipes": {
             "title": "Rezept Manager wird initialisiert",

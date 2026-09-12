@@ -149,6 +149,7 @@
             "copyCheckpointName": "复制 Checkpoint 名称",
             "copyEmbeddingName": "复制 Embedding 名称",
             "embeddingNameCopied": "已复制 Embedding 语法",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "发送到 ComfyUI",
             "sendEmbeddingToWorkflow": "发送到 ComfyUI"
         },
@@ -233,6 +234,7 @@
             "recipes": "配方",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "other": "[TODO: Translate] Other",
             "statistics": "统计"
         },
         "search": {
@@ -1201,6 +1203,9 @@
     "embeddings": {
         "title": "Embedding 模型"
     },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
+    },
     "sidebar": {
         "modelRoot": "根目录",
         "collapseAll": "折叠所有文件夹",
@@ -1877,6 +1882,10 @@
         "embeddings": {
             "title": "初始化 Embedding 管理器",
             "message": "正在扫描并构建 Embedding 缓存。这可能需要几分钟..."
+        },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
         },
         "recipes": {
             "title": "初始化配方管理器",

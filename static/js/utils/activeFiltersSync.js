@@ -53,7 +53,7 @@ export function syncActiveFilters(pageType) {
  * Register the storage listener and push the current (restored) state once.
  * The initial push covers server restarts, where the backend store is empty
  * until the manager page re-publishes its localStorage-restored filters.
- * @param {string} pageType - 'loras' | 'checkpoints' | 'embeddings'
+ * @param {string} pageType - 'loras' | 'checkpoints' | 'embeddings' | 'other'
  */
 export function initActiveFiltersSync(pageType) {
     setActiveFiltersListener((changedPageType) => syncActiveFilters(changedPageType));

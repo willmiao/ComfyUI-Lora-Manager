@@ -37,6 +37,18 @@ export function renderEmbeddingsPage() {
 }
 
 /**
+ * Renders the Other Models page template with expected dataset attributes.
+ * @returns {Element}
+ */
+export function renderOtherPage() {
+  return renderTemplate('other.html', {
+    dataset: {
+      page: 'other',
+    },
+  });
+}
+
+/**
  * Renders the Recipes page template with expected dataset attributes.
  * @returns {Element}
  */

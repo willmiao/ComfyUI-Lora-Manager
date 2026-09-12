@@ -36,7 +36,7 @@
                         <option value="size:asc">{{ t('loras.controls.sort.sizeAsc') }}</option>
                     </optgroup>
                     {% endif %}
-                    {% if page_id != 'embeddings' and page_id != 'recipes' %}
+                    {% if page_id != 'embeddings' and page_id != 'recipes' and page_id != 'other' %}
                         <optgroup label="{{ t('loras.controls.sort.usage', default='Usage') }}">
                             <option value="usage:desc">{{ t('loras.controls.sort.usageDesc', default='Times used (high to low)') }}</option>
                             <option value="usage:asc">{{ t('loras.controls.sort.usageAsc', default='Times used (low to high)') }}</option>
@@ -80,11 +80,13 @@
             <div class="control-group">
                 <button data-action="fetch" title="{{ t('loras.controls.fetch.title') }}"><i class="fas fa-download"></i> <span><span>{{ t('loras.controls.fetch.action') }}</span> <kbd class="shortcut-key">F</kbd></span></button>
             </div>
+            {% if page_id != 'other' %}
             <div class="control-group">
                 <button data-action="download" title="{{ t('loras.controls.download.title') }}">
                     <i class="fas fa-cloud-download-alt"></i> <span><span>{{ t('loras.controls.download.action') }}</span> <kbd class="shortcut-key">D</kbd></span>
                 </button>
             </div>
+            {% endif %}
             {% endif %}
             {% if page_id == 'recipes' %}
             <div title="{{ t('recipes.controls.import.title') }}" class="control-group">

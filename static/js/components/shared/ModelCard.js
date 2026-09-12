@@ -250,6 +250,11 @@ function handleCopyAction(card, modelType) {
         const embeddingCode = folder ? `embedding:${folder}/${name}` : `embedding:${name}`;
         const message = translate('modelCard.actions.embeddingNameCopied', {}, 'Embedding syntax copied');
         copyToClipboard(embeddingCode, message);
+    } else {
+        // Other model types (VAE, upscalers, ...) - copy the file name
+        const fileName = card.dataset.file_name;
+        const message = translate('modelCard.actions.modelNameCopied', {}, 'Model name copied');
+        copyToClipboard(fileName, message);
     }
 }
 

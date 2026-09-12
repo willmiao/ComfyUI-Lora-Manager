@@ -1126,6 +1126,7 @@ export class SidebarManager {
             recipes: 'Recipes',
             checkpoints: 'Checkpoints',
             embeddings: 'Embeddings',
+            other: 'Other Models',
         };
         return names[this.pageType] || this.pageType;
     }
@@ -1804,7 +1805,7 @@ export class SidebarManager {
     _migrateOldSettings() {
         if (getStorageItem('_sidebar_migration_done')) return;
 
-        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings'];
+        const PAGES = ['loras', 'recipes', 'checkpoints', 'embeddings', 'other'];
 
         // 1. Migrate global hide setting to per-page
         if (state?.global?.settings?.show_folder_sidebar === false) {

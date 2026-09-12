@@ -60,7 +60,6 @@ class MoveManager {
         this.bulkFilePaths = null;
 
         const apiClient = this._getApiClient(modelType);
-        const currentPageType = state.currentPageType;
         const modelConfig = apiClient.apiConfig.config;
 
         // Handle bulk mode
@@ -113,7 +112,7 @@ class MoveManager {
             ).join('');
 
             // Set default root if available
-            const settingsKey = `default_${currentPageType.slice(0, -1)}_root`;
+            const settingsKey = `default_${modelConfig.singularName}_root`;
             const defaultRoot = state.global.settings[settingsKey];
             if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
                 modelRootSelect.value = defaultRoot;
@@ -228,13 +227,12 @@ class MoveManager {
         if (modelRoot) {
             if (this.useDefaultPath) {
                 // Show actual template path
-                try {
-                    const singularType = apiClient.modelType.replace(/s$/, '');
-                    const templates = state.global.settings.download_path_templates;
-                    const template = templates[singularType];
+                const singularType = config.singularName || apiClient.modelType.replace(/s$/, '');
+                const templates = state.global.settings.download_path_templates;
+                const template = templates[singularType];
+                if (template) {
                     fullPath += `/${template}`;
-                } catch (error) {
-                    console.error('Failed to fetch template:', error);
+                } else {
                     fullPath += '/' + translate('modals.download.autoOrganizedPath');
                 }
             } else {

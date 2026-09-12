@@ -3360,6 +3360,9 @@ export class SettingsManager {
         } else if (this.currentPage === 'embeddings') {
             // Reload the embeddings without updating folders
             await resetAndReload(false);
+        } else if (this.currentPage === 'other') {
+            // Reload the other models without updating folders
+            await resetAndReload(false);
         }
     }
 

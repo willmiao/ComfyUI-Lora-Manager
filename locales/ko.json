@@ -149,6 +149,7 @@
             "copyCheckpointName": "Checkpoint 이름 복사",
             "copyEmbeddingName": "Embedding 이름 복사",
             "embeddingNameCopied": "Embedding 구문 복사됨",
+            "modelNameCopied": "[TODO: Translate] Model name copied",
             "sendCheckpointToWorkflow": "ComfyUI로 전송",
             "sendEmbeddingToWorkflow": "ComfyUI로 전송"
         },
@@ -233,6 +234,7 @@
             "recipes": "레시피",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
+            "other": "[TODO: Translate] Other",
             "statistics": "통계"
         },
         "search": {
@@ -1201,6 +1203,9 @@
     "embeddings": {
         "title": "Embedding 모델"
     },
+    "other": {
+        "title": "[TODO: Translate] Other Models"
+    },
     "sidebar": {
         "modelRoot": "루트",
         "collapseAll": "모든 폴더 접기",
@@ -1877,6 +1882,10 @@
         "embeddings": {
             "title": "Embedding Manager 초기화 중",
             "message": "Embedding 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
+        },
+        "other": {
+            "title": "[TODO: Translate] Initializing Other Models Manager",
+            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
         },
         "recipes": {
             "title": "레시피 매니저 초기화 중",
