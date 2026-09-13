@@ -308,13 +308,6 @@ export class HeaderManager {
         case 'notifications':
           updateService.toggleUpdateModal();
           break;
-        case 'doctor': {
-          const doctorToggle = document.getElementById('doctorTriggerBtn');
-          if (doctorToggle) {
-            doctorToggle.click();
-          }
-          break;
-        }
         case 'support':
           if (window.modalManager) {
             window.modalManager.toggleModal('supportModal');

@@ -74,12 +74,6 @@
     <!-- Right section: Controls -->
     <div class="header-right">
       <div class="header-controls" id="headerControls">
-        <div class="doctor-toggle" id="doctorTriggerBtn" role="button" tabindex="0"
-          title="{{ t('doctor.buttonTitle', default='Run diagnostics and common fixes') }}"
-          aria-label="{{ t('doctor.title', default='Doctor') }}">
-          <i class="fas fa-stethoscope"></i>
-          <span id="doctorStatusBadge" class="doctor-status-badge hidden" aria-hidden="true"></span>
-        </div>
         <div class="theme-toggle" role="button" tabindex="0" title="{{ t('header.theme.toggle') }}"
           aria-label="{{ t('header.theme.toggle') }}">
           <i class="fas fa-moon dark-icon"></i>
@@ -126,10 +120,6 @@
         <div class="dropdown-item" data-action="notifications">
           <i class="fas fa-bell"></i>
           <span>{{ t('header.actions.notifications') }}</span>
-        </div>
-        <div class="dropdown-item" data-action="doctor">
-          <i class="fas fa-stethoscope"></i>
-          <span>{{ t('doctor.title', default='Doctor') }}</span>
         </div>
         <div class="dropdown-divider"></div>
         <div class="dropdown-item" data-action="support">

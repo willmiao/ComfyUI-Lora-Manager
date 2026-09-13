@@ -349,27 +349,6 @@
   transform: translateY(-2px);
 }
 
-/* Doctor trigger in the header: accent-tinted icon with the status badge
-   pinned to the corner like the other header badges. */
-.header-controls .doctor-toggle i {
-  color: var(--lora-accent);
-}
-
-.header-controls .doctor-toggle:hover i {
-  color: inherit;
-}
-
-.header-controls .doctor-status-badge {
-  position: absolute;
-  top: -6px;
-  right: -6px;
-  min-width: 16px;
-  height: 16px;
-  padding: 0 4px;
-  font-size: 10px;
-  border: 2px solid var(--card-bg);
-}
-
 .theme-toggle {
   position: relative;
 }
