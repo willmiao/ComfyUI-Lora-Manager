@@ -1395,9 +1395,9 @@
         "download": {
             "title": "הורד מודל מכתובת URL",
             "titleWithType": "הורד {type} מכתובת URL",
-            "civitaiUrl": "כתובת URL של CivitAI:",
+            "civitaiUrl": "כתובת URL של מודל:",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "יש להזין כתובת URL אחת של CivitAI, CivArchive או Hugging Face בכל שורה. תומך במספר כתובות URL להורדה בקבוצה.",
+            "urlHint": "יש להזין כתובת URL אחת של CivitAI, CivArchive, Hugging Face או ModelScope בכל שורה. תומך במספר כתובות URL להורדה בקבוצה.",
             "selectHfFiles": "בחר קבצים להורדה ממאגר זה:",
             "selectAll": "בחר הכל",
             "fetchingRepoFiles": "מביא קבצים מהמאגר...",
@@ -1430,9 +1430,9 @@
                 "inLibrary": "בספרייה"
             },
             "errors": {
-                "invalidUrl": "פורמט URL של CivitAI לא חוקי",
+                "invalidUrl": "פורמט URL של מודל לא חוקי",
                 "noVersions": "אין גרסאות זמינות למודל זה",
-                "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face באותה קבוצה.",
+                "mixedSources": "לא ניתן לערבב כתובות URL של CivitAI ו-Hugging Face / ModelScope באותה קבוצה.",
                 "noModelFiles": "לא נמצאו קבצי מודל במאגר זה."
             },
             "status": {

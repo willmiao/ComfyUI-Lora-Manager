@@ -1395,9 +1395,9 @@
         "download": {
             "title": "從網址下載模型",
             "titleWithType": "從網址下載 {type}",
-            "civitaiUrl": "CivitAI 網址：",
+            "civitaiUrl": "模型網址：",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "每行輸入一個 CivitAI、CivArchive 或 Hugging Face URL。支援批量下載多個 URL。",
+            "urlHint": "每行輸入一個 CivitAI、CivArchive、Hugging Face 或 ModelScope URL。支援批量下載多個 URL。",
             "selectHfFiles": "選擇從此倉庫下載的檔案：",
             "selectAll": "全選",
             "fetchingRepoFiles": "正在獲取倉庫檔案...",
@@ -1430,9 +1430,9 @@
                 "inLibrary": "已在庫中"
             },
             "errors": {
-                "invalidUrl": "CivitAI 網址格式無效",
+                "invalidUrl": "模型網址格式無效",
                 "noVersions": "此模型無可用版本",
-                "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face URL。",
+                "mixedSources": "無法在同一批次中混合使用 CivitAI 和 Hugging Face / ModelScope URL。",
                 "noModelFiles": "在此倉庫中未找到模型檔案。"
             },
             "status": {

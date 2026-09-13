@@ -1395,9 +1395,9 @@
         "download": {
             "title": "Modell von URL herunterladen",
             "titleWithType": "{type} von URL herunterladen",
-            "civitaiUrl": "CivitAI URL:",
+            "civitaiUrl": "Modell-URL:",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "Geben Sie eine CivitAI-, CivArchive- oder Hugging Face-URL pro Zeile ein. Unterstützt mehrere URLs für den Batch-Download.",
+            "urlHint": "Geben Sie eine CivitAI-, CivArchive-, Hugging Face- oder ModelScope-URL pro Zeile ein. Unterstützt mehrere URLs für den Batch-Download.",
             "selectHfFiles": "Datei(en) zum Herunterladen aus diesem Repository auswählen:",
             "selectAll": "Alle auswählen",
             "fetchingRepoFiles": "Repository-Dateien werden abgerufen...",
@@ -1430,9 +1430,9 @@
                 "inLibrary": "In Bibliothek"
             },
             "errors": {
-                "invalidUrl": "Ungültiges CivitAI URL-Format",
+                "invalidUrl": "Ungültiges Modell-URL-Format",
                 "noVersions": "Keine Versionen für dieses Modell verfügbar",
-                "mixedSources": "CivitAI- und Hugging Face-URLs können nicht in derselben Charge gemischt werden.",
+                "mixedSources": "CivitAI- und Hugging Face-/ModelScope-URLs können nicht in derselben Charge gemischt werden.",
                 "noModelFiles": "In diesem Repository wurden keine Modelldateien gefunden."
             },
             "status": {

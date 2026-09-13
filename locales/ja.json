@@ -1395,9 +1395,9 @@
         "download": {
             "title": "URLからモデルをダウンロード",
             "titleWithType": "URLから{type}をダウンロード",
-            "civitaiUrl": "CivitAI URL：",
+            "civitaiUrl": "モデル URL：",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "1行に1つのCivitAI、CivArchive、またはHugging Face URLを入力してください。複数のURLを一括ダウンロードできます。",
+            "urlHint": "1行に1つのCivitAI、CivArchive、Hugging Face、またはModelScope URLを入力してください。複数のURLを一括ダウンロードできます。",
             "selectHfFiles": "このリポジトリからダウンロードするファイルを選択してください：",
             "selectAll": "すべて選択",
             "fetchingRepoFiles": "リポジトリのファイルを取得中...",
@@ -1430,9 +1430,9 @@
                 "inLibrary": "ライブラリ内"
             },
             "errors": {
-                "invalidUrl": "無効なCivitAI URL形式",
+                "invalidUrl": "無効なモデル URL 形式",
                 "noVersions": "このモデルの利用可能なバージョンがありません",
-                "mixedSources": "同じバッチ内でCivitAIとHugging FaceのURLを混在させることはできません。",
+                "mixedSources": "同じバッチ内でCivitAIとHugging Face / ModelScopeのURLを混在させることはできません。",
                 "noModelFiles": "このリポジトリにモデルファイルが見つかりませんでした。"
             },
             "status": {

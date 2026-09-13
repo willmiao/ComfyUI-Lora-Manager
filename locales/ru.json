@@ -1395,9 +1395,9 @@
         "download": {
             "title": "Скачать модель по URL",
             "titleWithType": "Скачать {type} по URL",
-            "civitaiUrl": "CivitAI URL:",
+            "civitaiUrl": "URL модели:",
             "placeholder": "https://civitai.com/models/...",
-            "urlHint": "Введите один URL CivitAI, CivArchive или Hugging Face в каждой строке. Поддерживает несколько URL для пакетной загрузки.",
+            "urlHint": "Введите один URL CivitAI, CivArchive, Hugging Face или ModelScope в каждой строке. Поддерживает несколько URL для пакетной загрузки.",
             "selectHfFiles": "Выберите файл(ы) для загрузки из этого репозитория:",
             "selectAll": "Выбрать все",
             "fetchingRepoFiles": "Получение файлов репозитория...",
@@ -1430,9 +1430,9 @@
                 "inLibrary": "В библиотеке"
             },
             "errors": {
-                "invalidUrl": "Неверный формат URL CivitAI",
+                "invalidUrl": "Неверный формат URL модели",
                 "noVersions": "Нет доступных версий для этой модели",
-                "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face в одном пакете.",
+                "mixedSources": "Нельзя смешивать URL-адреса CivitAI и Hugging Face / ModelScope в одном пакете.",
                 "noModelFiles": "В этом репозитории не найдено файлов моделей."
             },
             "status": {
