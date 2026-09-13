@@ -113,6 +113,9 @@
   display: flex;
   justify-content: center;
   max-width: 600px;
+  /* No hard floor: the field shrinks with the available space instead of parking
+     at a fixed width and crowding its own placeholder (see the 1366px query). */
+  min-width: 0;
   margin: 0 auto;
   transition: opacity 0.2s ease;
 }
@@ -121,6 +124,7 @@
 .header-search .search-container {
   width: 100%;
   max-width: 600px;
+  min-width: 0;
   position: relative;
   display: flex;
   align-items: center;
@@ -142,7 +146,12 @@
   width: 100%;
   padding: 0.5rem 0.75rem;
   padding-left: 2.25rem !important;
-  padding-right: 6.75rem !important; /* clear room for options + filter + clear/cue toggles */
+  /* Reserve exactly the inline chrome so typed text never runs under it:
+     cue(58) + clear(28) + toggles(28 + 28 + 4 gap) + edges(8 + 8) = 126px.
+     Below 1366px the cue is hidden and the reservation drops to 68px.
+     !important is required: search-filter.css loads later and sets its own
+     right padding at equal specificity (.search-container input). */
+  padding-right: 7.875rem !important;
   border: none;
   background: transparent;
   color: var(--text-color);
@@ -690,6 +699,20 @@
   margin: 0.25rem 0;
 }
 
+/* Responsive: the Ctrl+F cue is pure decoration and, above 950px, the widest
+   thing inside the field. Below 1366px the header (branding + full nav) leaves
+   too little room for it, so it steps aside and the field reclaims its 58px.
+   The shortcut itself keeps working - only the visual hint is dropped. */
+@media (max-width: 1366px) {
+  .header-search .search-shortcut-cue {
+    display: none;
+  }
+
+  .header-search input {
+    padding-right: 4.25rem !important;
+  }
+}
+
 /* Responsive: Early optimization at 1200px - reduce gaps and padding */
 @media (max-width: 1200px) {
   .header-container {
@@ -785,13 +808,12 @@
   }
 }
 
-/* For very small screens - switch nav to icons only */
-@media (max-width: 600px) {
-  .header-container {
-    padding: 0 8px;
-    gap: 0.4rem;
-  }
-
+/* For narrower screens - switch nav to icons only.
+   A labelled nav needs ~383px and a readable search field needs ~300px, so the
+   two cannot coexist below ~700px: at 601-700px the search input was previously
+   squeezed to 200px, leaving only ~96px of text room and overlapping the
+   placeholder with the inline toggles. Labels therefore collapse here. */
+@media (max-width: 700px) {
   .main-nav {
     display: flex;
     gap: 0.15rem;
@@ -799,8 +821,7 @@
   }
 
   .nav-item {
-    padding: 0.25rem;
-    font-size: 0.75rem;
+    padding: 0.25rem 0.4rem;
   }
 
   .nav-item span {
@@ -809,6 +830,22 @@
 
   .nav-item i {
     display: block;
+  }
+}
+
+/* For very small screens - tighten container spacing */
+@media (max-width: 600px) {
+  .header-container {
+    padding: 0 8px;
+    gap: 0.4rem;
+  }
+
+  .nav-item {
+    padding: 0.25rem;
+    font-size: 0.75rem;
+  }
+
+  .nav-item i {
     font-size: 1rem;
   }
 }
