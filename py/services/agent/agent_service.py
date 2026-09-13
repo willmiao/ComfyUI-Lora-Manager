@@ -19,16 +19,18 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
 
-import aiohttp
-
-import os
-
 from ...config import config
 from ..llm_service import LLMService
+from ..model_sources import (
+    get_source,
+    resolve_source_ref,
+    source_label,
+)
 from ..websocket_manager import ws_manager
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
@@ -267,14 +269,17 @@ class AgentService:
                 from ...metadata_ops import read_metadata
                 metadata = await read_metadata(model_path)
 
-                # Fast-fail: enrich_hf_metadata requires hf_url to have HF README context
-                if skill_name == "enrich_hf_metadata" and not metadata.get("hf_url", ""):
-                    logger.info(
-                        "[%s] SKIP %s — no hf_url in metadata",
-                        skill_name, model_filename,
-                    )
-                    skipped_count += 1
-                    skip_model = True
+                # Fast-fail: enrich_hf_metadata needs an external model source
+                # that exposes an accessible model card.
+                if skill_name == "enrich_hf_metadata":
+                    skip_reason = self._enrichment_skip_reason(metadata)
+                    if skip_reason:
+                        logger.info(
+                            "[%s] SKIP %s — %s",
+                            skill_name, model_filename, skip_reason,
+                        )
+                        skipped_count += 1
+                        skip_model = True
 
                 if not skip_model:
                     prompt_vars: Dict[str, Any] = {"model_path": model_path}
@@ -359,6 +364,28 @@ class AgentService:
     # ------------------------------------------------------------------
 
     @staticmethod
+    def _enrichment_skip_reason(metadata: Dict[str, Any]) -> str:
+        """Return why ``enrich_hf_metadata`` cannot run, or ``""`` if it can.
+
+        Distinguishes the three cases the user can act on: no source linked,
+        a source we don't know, and a known source whose model card is not
+        reachable from the backend (TensorArt).
+        """
+
+        ref = resolve_source_ref(metadata)
+        if ref is None:
+            return "no model source linked (source_url missing)"
+        source = get_source(ref.platform)
+        if source is None:
+            return f"unsupported model source platform '{ref.platform}'"
+        if not source.supports_enrichment:
+            return (
+                f"{source.label} does not expose a model card to the backend; "
+                "AI metadata enrichment is not available for this source"
+            )
+        return ""
+
+    @staticmethod
     def _format_base_models(models: List[str]) -> str:
         """Format the base model list as a flat, one-per-line list.
 
@@ -388,6 +415,14 @@ class AgentService:
         context: Dict[str, Any] = {
             "model_path": model_path,
             "model_basename": "",
+            # Canonical external-source variables
+            "source_url": "",
+            "source_id": "",
+            "source_platform": "",
+            "source_label": "",
+            "asset_base_url": "",
+            # Legacy Hugging Face aliases (kept so older prompt templates and
+            # third-party skills keep rendering)
             "hf_url": "",
             "repo": "",
             "readme_content": "",
@@ -411,12 +446,20 @@ class AgentService:
             "size": metadata.get("size", 0),
         }
 
-        hf_url = metadata.get("hf_url", "")
-        context["hf_url"] = hf_url
-        repo = self._extract_repo_from_url(hf_url) if hf_url else ""
-        context["repo"] = repo or ""
-        if repo:
-            readme = await self._fetch_readme(repo)
+        ref = resolve_source_ref(metadata)
+        if ref is not None:
+            context["source_url"] = ref.url
+            context["source_id"] = ref.source_id
+            context["source_platform"] = ref.platform
+            context["source_label"] = source_label(ref.platform, ref.platform)
+            if ref.platform == "huggingface":
+                context["hf_url"] = ref.url
+            context["repo"] = ref.source_id
+
+        source = get_source(ref.platform) if ref is not None else None
+        if ref is not None and source is not None and source.supports_enrichment:
+            context["asset_base_url"] = source.asset_base_url(ref.source_id)
+            readme = await source.fetch_model_card(ref.source_id)
             # Trim README to the section relevant to this model file
             # (collection repos often have multiple models in one README).
             if readme and raw_basename:
@@ -458,20 +501,14 @@ class AgentService:
 
     @staticmethod
     async def _fetch_readme(repo: str) -> str:
-        """Fetch README.md from HuggingFace (tries ``main``, then ``master``)."""
-        async with aiohttp.ClientSession(
-            headers={"User-Agent": "ComfyUI-LoRA-Manager/1.0"},
-            timeout=aiohttp.ClientTimeout(total=30),
-        ) as session:
-            for branch in ("main", "master"):
-                url = f"https://huggingface.co/{repo}/raw/{branch}/README.md"
-                try:
-                    async with session.get(url) as resp:
-                        if resp.status == 200:
-                            return await resp.text()
-                except Exception as exc:
-                    logger.debug("Failed to fetch README from %s: %s", url, exc)
-        return ""
+        """Fetch a Hugging Face README (tries ``main``, then ``master``).
+
+        Kept for backward compatibility; new code should go through the
+        model-source registry so every supported site works.
+        """
+        from ..model_sources import HuggingFaceSource
+
+        return await HuggingFaceSource().fetch_model_card(repo)
 
     async def _emit_progress(
         self,

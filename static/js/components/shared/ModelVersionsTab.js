@@ -5,6 +5,7 @@ import { openCivitaiUrl, showToast } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { state } from '../../state/index.js';
 import { buildCivitaiModelUrl } from '../../utils/civitaiUtils.js';
+import { parseModelSourceGroupKey } from '../../utils/modelSourceHelpers.js';
 import { formatFileSize } from './utils.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
 
@@ -993,22 +994,23 @@ export function initVersionsTab({
             renderErrorState(container, translate('modals.model.versions.missingModelId', {}, 'This model is missing a Civitai model id.'));
             return;
         }
-        // HF group keys (e.g. "hf:user/repo") are not real CivitAI model IDs —
-        // skip the remote API call and show a helpful message instead.
-        const isHfGroupKey = typeof modelId === 'string' && modelId.startsWith('hf:');
-        if (isHfGroupKey) {
+        // External source group keys (e.g. "hf:user/repo", "ms:user/repo",
+        // "ta:8278...") are not real CivitAI model IDs — skip the remote API
+        // call and show a helpful message instead.
+        const sourceGroup = parseModelSourceGroupKey(modelId);
+        if (sourceGroup) {
             controller.isLoading = false;
             controller.hasLoaded = true;
             controller.record = null;
-            const hfMsg = translate(
-                'modals.model.versions.hfGroupInfo',
-                {},
-                'This is a HuggingFace model group. Open the library to see all versions in the grid.'
+            const sourceMsg = translate(
+                'modals.model.versions.sourceGroupInfo',
+                { source: sourceGroup.label },
+                `This is a ${sourceGroup.label} model group. Open the library to see all versions in the grid.`
             );
             container.innerHTML = `
                 <div class="versions-empty-state">
                     <i class="fas fa-info-circle"></i>
-                    <p>${escapeHtml(hfMsg)}</p>
+                    <p>${escapeHtml(sourceMsg)}</p>
                 </div>
             `;
             return;

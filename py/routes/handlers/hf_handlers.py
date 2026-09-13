@@ -22,6 +22,11 @@ from ...services.downloader import (
     get_downloader,
 )
 from ...services.aria2_downloader import Aria2Downloader
+from ...services.model_sources import (
+    detect_source,
+    list_sources,
+    normalize_metadata_source,
+)
 from ...services.settings_manager import get_settings_manager
 from ...services.service_registry import ServiceRegistry
 from ...services.websocket_manager import ws_manager
@@ -120,6 +125,8 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
 
         # 2. Overlay HF-specific fields
         metadata._unknown_fields["hf_url"] = hf_url
+        metadata._unknown_fields["source_url"] = hf_url
+        metadata._unknown_fields["source_platform"] = "huggingface"
         metadata.from_civitai = False  # HF models are not from CivitAI
 
         # 3. Save metadata atomically
@@ -189,27 +196,72 @@ async def _add_to_scanner_cache(dest_path: str, metadata: dict[str, Any]) -> Non
 class HfHandler:
     """Handle Hugging Face model browsing and download."""
 
+    async def get_model_sources(self, request: web.Request) -> web.Response:
+        """List the external model sites the UI can link a model to.
+
+        Used by the "Link Model" dialog to validate URLs client-side and to
+        explain which sites support AI metadata enrichment.
+        """
+
+        return web.json_response([
+            {
+                "platform": source.platform,
+                "label": source.label,
+                "supports_enrichment": source.supports_enrichment,
+                "supports_download": source.supports_download,
+                "example_url": source.canonical_url(
+                    "user/repo" if source.platform != "tensorart" else "827823520299086029"
+                ),
+            }
+            for source in list_sources()
+        ])
+
     async def set_hf_url(self, request: web.Request) -> web.Response:
+        """Link a model file to its page on an external model site.
+
+        Accepts ``source_url`` (preferred) or the legacy ``hf_url`` /
+        ``url`` payload key.  Hugging Face, ModelScope, and TensorArt URLs
+        are recognised; the platform is stored alongside the canonical URL.
+        TensorArt models can be linked and browsed, but not AI-enriched.
+        """
+
         try:
             payload: dict[str, Any] = await request.json()
         except json.JSONDecodeError:
             return web.json_response({"success": False, "error": "Invalid JSON"}, status=400)
 
         file_path = (payload.get("file_path") or "").strip()
-        hf_url = (payload.get("hf_url") or "").strip()
+        raw_url = (
+            payload.get("source_url")
+            or payload.get("hf_url")
+            or payload.get("url")
+            or ""
+        )
+        source_url = raw_url.strip() if isinstance(raw_url, str) else ""
 
-        if not file_path or not hf_url:
-            return web.json_response(
-                {"success": False, "error": "Missing required fields: 'file_path' and 'hf_url'"},
-                status=400,
-            )
-
-        m = re.match(r"^https?://huggingface\.co/([^/]+/[^/]+)/?$", hf_url)
-        if not m:
+        if not file_path or not source_url:
             return web.json_response(
                 {
                     "success": False,
-                    "error": "Invalid HuggingFace URL. Expected format: https://huggingface.co/user/repo",
+                    "error": "Missing required fields: 'file_path' and 'source_url'",
+                },
+                status=400,
+            )
+
+        ref = detect_source(source_url, strict=True)
+        if ref is None:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": (
+                        "Unsupported model URL. Supported formats: "
+                        + ", ".join(
+                            f"{s.label} ({s.canonical_url('user/repo')})"
+                            if s.platform != "tensorart"
+                            else f"{s.label} (https://tensor.art/models/<id>)"
+                            for s in list_sources()
+                        )
+                    ),
                 },
                 status=400,
             )
@@ -225,37 +277,61 @@ class HfHandler:
             return web.json_response(
                 {
                     "success": False,
-                    "error": "File is not within any configured model directory. Cannot link to HuggingFace.",
+                    "error": "File is not within any configured model directory. Cannot link to a model source.",
                 },
                 status=400,
             )
 
         try:
             existing = await MetadataManager.load_metadata_payload(file_path)
-            if existing.get("hf_url") == hf_url:
+
+            already_linked = (
+                (existing.get("source_url") or "").strip() == ref.url
+                and (existing.get("source_platform") or "").strip().lower()
+                == ref.platform
+            ) or (
+                not existing.get("source_url")
+                and ref.platform == "huggingface"
+                and (existing.get("hf_url") or "").strip() == ref.url
+            )
+            if already_linked:
                 return web.json_response({
                     "success": True,
-                    "message": "hf_url already set",
-                    "hf_url": hf_url,
+                    "message": "source_url already set",
+                    "source_url": ref.url,
+                    "source_platform": ref.platform,
+                    "hf_url": ref.url if ref.platform == "huggingface" else "",
                 })
 
-            existing["hf_url"] = hf_url
+            existing["source_url"] = ref.url
+            existing["source_platform"] = ref.platform
+            if ref.platform == "huggingface":
+                existing["hf_url"] = ref.url
+            else:
+                existing.pop("hf_url", None)
+            normalize_metadata_source(existing)
+
             # NOTE: deliberately do NOT touch `from_civitai` here. It records
             # where the metadata came from, and the UI must show the CivitAI
-            # link whenever CivitAI data is present — linking HuggingFace must
-            # not hide it (#1094). HF provenance is tracked via `hf_url`.
+            # link whenever CivitAI data is present — linking an external
+            # source must not hide it (#1094). Source provenance is tracked
+            # via `source_platform` / `source_url`.
             await MetadataManager.save_metadata(file_path, existing)
 
             await _add_to_scanner_cache(file_path, existing)
 
-            logger.info("Set hf_url=%s for %s", hf_url, file_path)
+            logger.info(
+                "Linked %s to %s source (%s)", file_path, ref.platform, ref.url
+            )
             return web.json_response({
                 "success": True,
-                "message": f"hf_url set to {hf_url}",
-                "hf_url": hf_url,
+                "message": f"Linked to {ref.url}",
+                "source_url": ref.url,
+                "source_platform": ref.platform,
+                "hf_url": existing.get("hf_url", ""),
             })
         except Exception as exc:
-            logger.error("Failed to set hf_url for %s: %s", file_path, exc)
+            logger.error("Failed to link %s to a model source: %s", file_path, exc)
             return web.json_response(
                 {"success": False, "error": str(exc)},
                 status=500,

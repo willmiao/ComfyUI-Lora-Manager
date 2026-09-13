@@ -139,6 +139,7 @@
             "viewOnCivitai": "在 CivitAI 查看",
             "notAvailableFromCivitai": "CivitAI 不提供",
             "viewOnHuggingFace": "在 Hugging Face 查看",
+            "viewOnSource": "[TODO: Translate] View on {source}",
             "sendToWorkflow": "傳送到 ComfyUI（點擊：附加，Shift+點擊：取代）",
             "copyLoRASyntax": "複製 LoRA 語法",
             "checkpointNameCopied": "Checkpoint 名稱已複製",
@@ -874,7 +875,7 @@
             "checkUpdates": "檢查更新",
             "linkModel": "連結模型",
             "linkCivitai": "連結到 CivitAI",
-            "linkHuggingFace": "連結到 HuggingFace",
+            "linkModelSource": "[TODO: Translate] Link to Model Source",
             "copySyntax": "複製 LoRA 語法",
             "copyFilename": "複製模型檔名",
             "copyRecipeSyntax": "複製配方語法",
@@ -1596,13 +1597,17 @@
             "pathPlaceholder": "輸入資料夾路徑或從下方樹狀結構選擇...",
             "root": "根目錄"
         },
-        "linkHuggingFace": {
-            "title": "連結到 HuggingFace",
-            "infoText": "貼上 HuggingFace 倉庫 URL 以關聯此模型。關聯後可啟用 AI 中繼資料增強功能。",
-            "urlLabel": "HuggingFace 倉庫 URL：",
-            "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "請輸入完整的 HuggingFace 倉庫 URL。",
-            "confirmAction": "儲存並連結"
+        "linkModelSource": {
+            "title": "[TODO: Translate] Link to Model Source",
+            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
+            "urlLabel": "[TODO: Translate] Model Page URL:",
+            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
+            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
+            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
+            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
+            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
+            "linking": "[TODO: Translate] Linking model source...",
+            "confirmAction": "[TODO: Translate] Save & Link"
         },
         "relinkCivitai": {
             "title": "重新連結至 CivitAI",
@@ -1847,7 +1852,7 @@
                 "empty": "此模型尚無版本歷史。",
                 "error": "載入版本失敗。",
                 "missingModelId": "此模型缺少 CivitAI 模型 ID。",
-                "hfGroupInfo": "這是一個 HuggingFace 模型組。打開庫頁面即可在網格中查看所有版本。",
+                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
                 "confirm": {
                     "delete": "要從庫中刪除此版本嗎？"
                 },
@@ -2483,7 +2488,9 @@
             "linkCivArchSuccess": "模型已成功透過 CivitArchive 重新連結",
             "fetchMetadataFirst": "請先從 CivitAI 取得 metadata",
             "noCivitaiInfo": "無 CivitAI 資訊",
-            "missingHash": "模型雜湊不可用"
+            "missingHash": "模型雜湊不可用",
+            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
+            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
         },
         "exampleImages": {
             "pathUpdated": "範例圖片路徑已更新",

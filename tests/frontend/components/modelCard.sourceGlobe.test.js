@@ -191,4 +191,60 @@ describe('ModelCard source globe (#1094)', () => {
     expect(openHuggingFace).toHaveBeenCalledWith('https://huggingface.co/user/repo');
     expect(openCivitai).not.toHaveBeenCalled();
   });
+
+  it('points the globe at ModelScope for a ModelScope-linked model', () => {
+    const card = mountCard(
+      createModelCard,
+      makeModel({
+        from_civitai: false,
+        civitai: {},
+        source_platform: 'modelscope',
+        source_url: 'https://modelscope.cn/models/user/repo',
+      })
+    );
+
+    expect(card.dataset.has_civitai).toBe('false');
+    expect(card.dataset.source_platform).toBe('modelscope');
+    expect(card.dataset.hf_url).toBe('');
+    expect(card.querySelector('.fa-globe').getAttribute('title')).toBe('View on ModelScope');
+  });
+
+  it('opens the ModelScope page when the globe is clicked', () => {
+    const openSpy = vi.spyOn(window, 'open').mockImplementation(() => {});
+    const card = mountCard(
+      createModelCard,
+      makeModel({
+        from_civitai: false,
+        civitai: {},
+        source_platform: 'modelscope',
+        source_url: 'https://modelscope.cn/models/user/repo',
+      })
+    );
+    setupModelCardEventDelegation('loras');
+
+    card.querySelector('.fa-globe').dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(openSpy).toHaveBeenCalledWith(
+      'https://modelscope.cn/models/user/repo',
+      '_blank',
+      'noopener,noreferrer'
+    );
+    expect(openCivitai).not.toHaveBeenCalled();
+    expect(openHuggingFace).not.toHaveBeenCalled();
+    openSpy.mockRestore();
+  });
+
+  it('points the globe at TensorArt for a TensorArt-linked model', () => {
+    const card = mountCard(
+      createModelCard,
+      makeModel({
+        from_civitai: false,
+        civitai: {},
+        source_platform: 'tensorart',
+        source_url: 'https://tensor.art/models/827823520299086029',
+      })
+    );
+
+    expect(card.querySelector('.fa-globe').getAttribute('title')).toBe('View on TensorArt');
+  });
 });

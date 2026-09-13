@@ -62,13 +62,23 @@ Environment variable overrides: `LLM_API_KEY`, `LLM_MODEL`, `LLM_API_BASE`, `LLM
 
 ### enrich_hf_metadata
 
-Enriches HuggingFace-downloaded models with metadata extracted by an LLM from the HF model card.
+Enriches models linked to an external model site with metadata extracted by an LLM from the site's model card (README).
 
-**Entry point**: Right-click context menu → "Enrich Metadata (Agent)"
+**Entry point**: Right-click context menu → "Enrich Metadata with AI"
+
+**Supported model sources**:
+
+| Platform | Link | AI enrichment | Direct download |
+| --- | --- | --- | --- |
+| Hugging Face | yes | yes | yes |
+| ModelScope | yes | yes | no |
+| TensorArt | yes | no (see below) | no |
+
+TensorArt is link-only: `tensor.art` sits behind a Cloudflare managed challenge and its internal API requires session authorization, so the backend cannot read its model pages. Linking still stores the canonical page URL and the "View on TensorArt" link works.
 
 **What it does**:
-1. Reads the model's `.metadata.json` to get the `hf_url`
-2. Fetches the README.md from the HuggingFace repository
+1. Reads the model's `.metadata.json` to get the source (`source_platform` + `source_url`, or the legacy `hf_url`)
+2. Fetches the model card through the provider in `py/services/model_sources/`
 3. Sends the README + local metadata to the LLM for structured extraction
 4. Writes extracted fields to `.metadata.json`:
    - `base_model` — only if current value is empty
@@ -80,6 +90,8 @@ Enriches HuggingFace-downloaded models with metadata extracted by an LLM from th
 5. Downloads and optimizes preview image (if LLM found one in the README)
 6. Updates the scanner cache
 7. Broadcasts WebSocket progress events
+
+Models with no source, an unknown source, or a source without model-card access (TensorArt) are skipped with an explicit reason and counted in the run summary.
 
 **Model types**: LoRA, Checkpoint, Embedding
 
@@ -129,7 +141,7 @@ Use `{{variable}}` placeholders that will be replaced with data from the `prepar
 ```markdown
 You are an expert assistant...
 
-Model URL: {{hf_url}}
+Model URL: {{source_url}}
 README content:
 {{readme_content}}
 

@@ -139,6 +139,7 @@
       "viewOnCivitai": "View on CivitAI",
       "notAvailableFromCivitai": "Not available from CivitAI",
       "viewOnHuggingFace": "View on Hugging Face",
+      "viewOnSource": "View on {source}",
       "sendToWorkflow": "Send to ComfyUI (Click: Append, Shift+Click: Replace)",
       "copyLoRASyntax": "Copy LoRA Syntax",
       "checkpointNameCopied": "Checkpoint name copied",
@@ -867,14 +868,14 @@
         "complete": "Auto-organize complete",
         "error": "Error: {error}"
       },
-      "enrichHfAgent": "Enrich HF Metadata (AI)"
+      "enrichHfAgent": "Enrich Metadata with AI"
     },
     "contextMenu": {
       "refreshMetadata": "Refresh CivitAI Data",
       "checkUpdates": "Check Updates",
       "linkModel": "Link Model",
       "linkCivitai": "Link to CivitAI",
-      "linkHuggingFace": "Link to HuggingFace",
+      "linkModelSource": "Link to Model Source",
       "copySyntax": "Copy LoRA Syntax",
       "copyFilename": "Copy Model Filename",
       "copyRecipeSyntax": "Copy Recipe Syntax",
@@ -896,7 +897,7 @@
       "viewAllLoras": "View All LoRAs",
       "downloadMissingLoras": "Download Missing LoRAs",
       "deleteRecipe": "Delete Recipe",
-      "enrichHfAgent": "Enrich HF Metadata (AI)"
+      "enrichHfAgent": "Enrich Metadata with AI"
     }
   },
   "recipes": {
@@ -1596,12 +1597,16 @@
       "pathPlaceholder": "Type folder path or select from tree below...",
       "root": "Root"
     },
-    "linkHuggingFace": {
-      "title": "Link to HuggingFace",
-      "infoText": "Paste the HuggingFace repository URL to associate this model with its source. This enables AI-powered metadata enrichment.",
-      "urlLabel": "HuggingFace Repository URL:",
+    "linkModelSource": {
+      "title": "Link to Model Source",
+      "infoText": "Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
+      "urlLabel": "Model Page URL:",
       "urlPlaceholder": "https://huggingface.co/user/repo",
-      "helpText": "Enter the full URL of the HuggingFace repository.",
+      "helpText": "Enter the full URL of the model page. Supported sites:",
+      "enrichNote": "AI enrichment needs a readable model card. Sites that don't expose one (currently TensorArt) can only be linked.",
+      "urlRequired": "Please enter a model page URL.",
+      "invalidUrl": "Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
+      "linking": "Linking model source...",
       "confirmAction": "Save & Link"
     },
     "relinkCivitai": {
@@ -1847,7 +1852,7 @@
         "empty": "No version history available for this model yet.",
         "error": "Failed to load versions.",
         "missingModelId": "This model is missing a CivitAI model id.",
-        "hfGroupInfo": "This is a HuggingFace model group. Open the library to see all versions in the grid.",
+        "sourceGroupInfo": "This is a {source} model group. Open the library to see all versions in the grid.",
         "confirm": {
           "delete": "Delete this version from your library?"
         },
@@ -2478,12 +2483,14 @@
       "contentRatingFailed": "Failed to set content rating: {message}",
       "relinkSuccess": "Model successfully re-linked to CivitAI",
       "relinkFailed": "Error: {message}",
-      "linkHfSuccess": "Model successfully linked to HuggingFace",
+      "linkHfSuccess": "Model successfully linked to its model source",
       "linkHfFailed": "Error: {message}",
       "linkCivArchSuccess": "Model successfully re-linked via CivitArchive",
       "fetchMetadataFirst": "Please fetch metadata from CivitAI first",
       "noCivitaiInfo": "No CivitAI information available",
-      "missingHash": "Model hash not available"
+      "missingHash": "Model hash not available",
+      "enrichNeedsSource": "Link this model to a model source first (Link Model → Link to Model Source)",
+      "enrichUnsupportedSource": "AI enrichment is not available for {source} models"
     },
     "exampleImages": {
       "pathUpdated": "Example images path updated successfully",

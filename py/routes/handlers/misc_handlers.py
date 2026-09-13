@@ -4079,6 +4079,7 @@ class MiscHandlerSet:
             "get_hf_repo_files": self.hf_handler.get_hf_repo_files,
             "download_hf_model": self.hf_handler.download_hf_model,
             "set_hf_url": self.hf_handler.set_hf_url,
+            "get_model_sources": self.hf_handler.get_model_sources,
             # Agent skill handlers
             "get_agent_skills": self.agent_handler.get_agent_skills,
             "execute_agent_skill": self.agent_handler.execute_agent_skill,

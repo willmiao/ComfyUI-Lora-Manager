@@ -21,6 +21,7 @@ from .model_query import (
     resolve_sub_type,
 )
 from .settings_manager import get_settings_manager
+from .model_sources import source_group_key
 from ..utils.civitai_utils import build_civitai_model_page_url
 
 logger = logging.getLogger(__name__)
@@ -742,29 +743,32 @@ class BaseModelService(ABC):
     @staticmethod
     def _extract_hf_group_key(item: Dict[str, Any]) -> Optional[str]:
         """Extract `hf:{owner}/{repo}` from item's ``hf_url``, or None."""
-        hf_url = item.get("hf_url") if isinstance(item, dict) else None
-        if not hf_url or not isinstance(hf_url, str):
-            return None
-        m = re.match(
-            r"https?://huggingface\.co/([^/]+/[^/]+)", hf_url.strip()
-        )
-        if not m:
-            return None
-        return f"hf:{m.group(1)}"
+        key = BaseModelService._extract_source_group_key(item)
+        return key if key and key.startswith("hf:") else None
+
+    @staticmethod
+    def _extract_source_group_key(item: Dict[str, Any]) -> Optional[str]:
+        """Return the external-source group key for *item*, or None.
+
+        Hugging Face keeps the historical ``hf:{owner}/{repo}`` shape; other
+        platforms use their own short prefix (``ms:`` / ``ta:``).
+        """
+        return source_group_key(item)
 
     @staticmethod
     def _extract_group_key(item: Dict[str, Any]) -> Union[int, str, None]:
-        """Return the group identity key: CivitAI modelId (int) or HF repo (str).
+        """Return the group identity key.
 
         Preference order:
         1. CivitAI ``modelId`` (int)
-        2. HF repo identity ``hf:{owner}/{repo}`` (str)
+        2. External model source identity, e.g. ``hf:{owner}/{repo}``,
+           ``ms:{owner}/{repo}``, ``ta:{model_id}`` (str)
         3. ``None`` (no known grouping source)
         """
         mid = BaseModelService._extract_model_id(item)
         if mid is not None:
             return mid
-        return BaseModelService._extract_hf_group_key(item)
+        return BaseModelService._extract_source_group_key(item)
 
     @staticmethod
     def _extract_model_id(item: Dict[str, Any]) -> Optional[int]:

@@ -7,6 +7,8 @@ import { MODEL_CONFIG } from '../../api/apiConfig.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getNsfwLevelSelector } from '../shared/NsfwLevelSelector.js';
 import { classifyModelRelinkUrl } from '../../utils/civitaiUtils.js';
+import { parseModelSourceUrl, getModelSourceInfo } from '../../utils/modelSourceHelpers.js';
+import { escapeHtml } from '../shared/utils.js';
 
 // Mixin with shared functionality for LoraContextMenu and CheckpointContextMenu
 export const ModelContextMenuMixin = {
@@ -211,7 +213,7 @@ export const ModelContextMenuMixin = {
         setTimeout(() => urlInput.focus(), 50);
     },
 
-    // HuggingFace linking methods
+    // External model source linking (Hugging Face / ModelScope / TensorArt)
     showLinkHfModal() {
         const filePath = this.currentCard.dataset.filepath;
         if (!filePath) return;
@@ -225,15 +227,23 @@ export const ModelContextMenuMixin = {
         }
 
         this._boundLinkHfHandler = async () => {
-            const hfUrl = urlInput.value.trim();
-            if (!hfUrl) {
-                errorDiv.textContent = 'Please enter a HuggingFace repository URL.';
+            const rawUrl = urlInput.value.trim();
+            if (!rawUrl) {
+                errorDiv.textContent = translate(
+                    'modals.linkModelSource.urlRequired',
+                    {},
+                    'Please enter a model page URL.'
+                );
                 return;
             }
 
-            const hfPattern = /^https?:\/\/huggingface\.co\/([^/]+\/[^/]+)\/?$/;
-            if (!hfPattern.test(hfUrl)) {
-                errorDiv.textContent = 'Invalid URL format. Expected: https://huggingface.co/user/repo';
+            const sourceInfo = parseModelSourceUrl(rawUrl);
+            if (!sourceInfo) {
+                errorDiv.textContent = translate(
+                    'modals.linkModelSource.invalidUrl',
+                    {},
+                    'Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.'
+                );
                 return;
             }
 
@@ -241,12 +251,14 @@ export const ModelContextMenuMixin = {
             modalManager.closeModal('linkHfModal');
 
             try {
-                state.loadingManager.showSimpleLoading('Linking to HuggingFace...');
+                state.loadingManager.showSimpleLoading(
+                    translate('modals.linkModelSource.linking', {}, 'Linking model source...')
+                );
 
                 const response = await fetch('/api/lm/set-hf-url', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ file_path: filePath, hf_url: hfUrl }),
+                    body: JSON.stringify({ file_path: filePath, source_url: sourceInfo.url }),
                 });
 
                 if (!response.ok) {
@@ -262,7 +274,7 @@ export const ModelContextMenuMixin = {
                     throw new Error(data.error || 'Failed to link model');
                 }
             } catch (error) {
-                console.error('Error linking model to HuggingFace:', error);
+                console.error('Error linking model source:', error);
                 showToast('toast.contextMenu.linkHfFailed', { message: error.message }, 'error');
             } finally {
                 state.loadingManager.hide();
@@ -276,18 +288,68 @@ export const ModelContextMenuMixin = {
 
         modalManager.showModal('linkHfModal');
 
+        this._renderSupportedSources();
+
         setTimeout(() => urlInput.focus(), 50);
     },
 
-    // HF metadata enrichment (AI agent) methods
+    /**
+     * Refresh the supported-site hints from the server so the dialog reflects
+     * whatever sources this backend build actually knows about. Falls back to
+     * the static markup in the template when the request fails.
+     */
+    async _renderSupportedSources() {
+        const container = document.getElementById('hfSupportedSources');
+        if (!container) return;
+
+        try {
+            const response = await fetch('/api/lm/model-sources');
+            if (!response.ok) return;
+            const sources = await response.json();
+            if (!Array.isArray(sources) || sources.length === 0) return;
+
+            const examples = sources
+                .map((source) => source?.example_url)
+                .filter((url) => typeof url === 'string' && url);
+            if (examples.length === 0) return;
+
+            container.innerHTML = examples
+                .map((url) => `<strong>${escapeHtml(url)}</strong>`)
+                .join('<br>');
+        } catch (error) {
+            console.debug('Failed to load supported model sources:', error);
+        }
+    },
+
+    // Model metadata enrichment (AI agent) methods
     updateEnrichMenuItem(card) {
         const enrichItem = this.menu?.querySelector('[data-action="enrich-hf-llm"]');
         if (!enrichItem) return;
-        const hasHfUrl = !!card.dataset.hf_url;
-        enrichItem.classList.toggle('disabled', !hasHfUrl);
-        enrichItem.title = hasHfUrl
-            ? ''
-            : 'Link this model to a HuggingFace repo first (Link Model → Link to HuggingFace)';
+
+        const model = {
+            source_url: card.dataset.source_url || '',
+            source_platform: card.dataset.source_platform || '',
+            hf_url: card.dataset.hf_url || '',
+        };
+        const sourceInfo = getModelSourceInfo(model);
+        const canEnrich = Boolean(sourceInfo && sourceInfo.supportsEnrichment);
+
+        enrichItem.classList.toggle('disabled', !canEnrich);
+        if (canEnrich) {
+            enrichItem.title = '';
+        } else if (!sourceInfo) {
+            enrichItem.title = translate(
+                'toast.contextMenu.enrichNeedsSource',
+                {},
+                'Link this model to a model source first (Link Model → Link to Model Source)'
+            );
+        } else {
+            enrichItem.title = translate(
+                'toast.contextMenu.enrichUnsupportedSource',
+                { source: sourceInfo.label },
+                `AI enrichment is not available for ${sourceInfo.label} models`
+            );
+        }
     },
 
     async enrichWithAgent(filePath) {

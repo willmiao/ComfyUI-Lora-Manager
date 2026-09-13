@@ -1,4 +1,5 @@
 import { showToast, openCivitai, sendLoraToWorkflow, sendEmbeddingToWorkflow, sendModelPathToWorkflow, buildLoraSyntax, copyToClipboard } from '../../utils/uiHelpers.js';
+import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, openModelSource } from '../../utils/modelSourceHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import {
@@ -397,10 +398,13 @@ export async function showModelModal(model, modelType) {
 <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${escapedFilePathAttr}">
     <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
 </div>`.trim() : '';
-    const escapedHfUrl = modelWithFullData.hf_url ? escapeAttribute(modelWithFullData.hf_url) : '';
-    const viewOnHuggingFaceAction = escapedHfUrl ? `
-<div class="civitai-view" title="${translate('modals.model.actions.viewOnHuggingFace', {}, 'View on Hugging Face')}" data-action="view-huggingface" data-hf-url="${escapedHfUrl}">
-    <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnHuggingFaceText', {}, 'View on Hugging Face')}
+    const sourceInfo = getModelSourceInfo(modelWithFullData);
+    const escapedSourceUrl = sourceInfo?.url ? escapeAttribute(sourceInfo.url) : '';
+    const isHuggingFaceSource = sourceInfo?.platform === 'huggingface';
+    const sourceTitle = sourceInfo ? getModelSourceViewTitle(sourceInfo) : '';
+    const viewOnHuggingFaceAction = escapedSourceUrl ? `
+<div class="civitai-view" title="${escapeAttribute(sourceTitle)}" data-action="${isHuggingFaceSource ? 'view-huggingface' : 'view-model-source'}" ${isHuggingFaceSource ? 'data-hf-url' : 'data-source-url'}="${escapedSourceUrl}">
+    <i class="fas fa-globe"></i> ${escapeHtml(sourceTitle)}
 </div>`.trim() : '';
     const creatorInfoAction = modelWithFullData.civitai?.creator ? `
 <div class="creator-info" data-username="${modelWithFullData.civitai.creator.username}" data-action="view-creator" title="${translate('modals.model.actions.viewCreatorProfile', {}, 'View Creator Profile')}">
@@ -520,12 +524,12 @@ export async function showModelModal(model, modelType) {
     const loadingExamplesText = translate('modals.model.loading.examples', {}, 'Loading examples...');
 
     const loadingVersionsText = translate('modals.model.loading.versions', {}, 'Loading versions...');
-    // Use CivitAI modelId, or derive HF group key for HF-only models
+    // Use CivitAI modelId, or derive a source group key for externally-linked models
     let civitaiModelId = modelWithFullData.civitai?.modelId || '';
-    if (!civitaiModelId && modelWithFullData.hf_url) {
-        const match = modelWithFullData.hf_url.match(/https?:\/\/huggingface\.co\/([^/]+\/[^/]+)/);
-        if (match) {
-            civitaiModelId = 'hf:' + match[1];
+    if (!civitaiModelId) {
+        const sourceGroupKey = getModelSourceGroupKey(modelWithFullData);
+        if (sourceGroupKey) {
+            civitaiModelId = sourceGroupKey;
         }
     }
     const civitaiVersionId = modelWithFullData.civitai?.id || '';
@@ -937,6 +941,11 @@ function setupEventHandlers(filePath, modelType) {
             case 'view-huggingface':
                 if (target.dataset.hfUrl) {
                     window.open(target.dataset.hfUrl, '_blank', 'noopener,noreferrer');
+                }
+                break;
+            case 'view-model-source':
+                if (target.dataset.sourceUrl) {
+                    openModelSource(target.dataset.sourceUrl);
                 }
                 break;
             case 'view-creator':

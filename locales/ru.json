@@ -139,6 +139,7 @@
             "viewOnCivitai": "Посмотреть на CivitAI",
             "notAvailableFromCivitai": "Недоступно на CivitAI",
             "viewOnHuggingFace": "Открыть Hugging Face",
+            "viewOnSource": "[TODO: Translate] View on {source}",
             "sendToWorkflow": "Отправить в ComfyUI (Клик: Добавить, Shift+Клик: Заменить)",
             "copyLoRASyntax": "Копировать синтаксис LoRA",
             "checkpointNameCopied": "Имя checkpoint скопировано",
@@ -874,7 +875,7 @@
             "checkUpdates": "Проверить обновления",
             "linkModel": "Связать модель",
             "linkCivitai": "Пересвязать с CivitAI",
-            "linkHuggingFace": "Связать с HuggingFace",
+            "linkModelSource": "[TODO: Translate] Link to Model Source",
             "copySyntax": "Копировать синтаксис LoRA",
             "copyFilename": "Копировать имя файла модели",
             "copyRecipeSyntax": "Копировать синтаксис рецепта",
@@ -1596,13 +1597,17 @@
             "pathPlaceholder": "Введите путь к папке или выберите из дерева ниже...",
             "root": "Корень"
         },
-        "linkHuggingFace": {
-            "title": "Связать с HuggingFace",
-            "infoText": "Вставьте URL репозитория HuggingFace, чтобы связать эту модель с её источником. Это позволит обогащать метаданные с помощью ИИ.",
-            "urlLabel": "URL репозитория HuggingFace:",
-            "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "Введите полный URL репозитория HuggingFace.",
-            "confirmAction": "Сохранить и связать"
+        "linkModelSource": {
+            "title": "[TODO: Translate] Link to Model Source",
+            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
+            "urlLabel": "[TODO: Translate] Model Page URL:",
+            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
+            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
+            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
+            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
+            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
+            "linking": "[TODO: Translate] Linking model source...",
+            "confirmAction": "[TODO: Translate] Save & Link"
         },
         "relinkCivitai": {
             "title": "Пересвязать с CivitAI",
@@ -1847,7 +1852,7 @@
                 "empty": "Для этой модели пока нет истории версий.",
                 "error": "Не удалось загрузить версии.",
                 "missingModelId": "У этой модели отсутствует идентификатор модели CivitAI.",
-                "hfGroupInfo": "Это группа моделей HuggingFace. Откройте библиотеку, чтобы увидеть все версии в сетке.",
+                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
                 "confirm": {
                     "delete": "Удалить эту версию из библиотеки?"
                 },
@@ -2483,7 +2488,9 @@
             "linkCivArchSuccess": "Модель успешно пересвязана через CivitArchive",
             "fetchMetadataFirst": "Пожалуйста, сначала получите метаданные с CivitAI",
             "noCivitaiInfo": "Информация CivitAI недоступна",
-            "missingHash": "Хеш модели недоступен"
+            "missingHash": "Хеш модели недоступен",
+            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
+            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
         },
         "exampleImages": {
             "pathUpdated": "Путь к примерам изображений успешно обновлен",

@@ -15,6 +15,7 @@ from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
 from .model_lifecycle_service import delete_model_artifacts, _require_path_in_library_roots
+from .model_sources import normalize_metadata_source
 from .service_registry import ServiceRegistry
 from .websocket_manager import ws_manager
 from .persistent_model_cache import get_persistent_cache
@@ -387,8 +388,14 @@ class ModelScanner:
             'civitai': civitai_slim,
             'civitai_deleted': bool(get_value('civitai_deleted', False)),
             'skip_metadata_refresh': bool(get_value('skip_metadata_refresh', False)),
+            # External model source (Hugging Face / ModelScope / TensorArt).
+            # `source_url` + `source_platform` are canonical; `hf_url` stays in
+            # sync as a legacy alias (normalised below).
+            'source_platform': get_value('source_platform', '') or '',
+            'source_url': get_value('source_url', '') or '',
             'hf_url': get_value('hf_url', '') or '',
         }
+        normalize_metadata_source(entry)
 
         license_source: Dict[str, Any] = {}
         if isinstance(civitai_full, Mapping):

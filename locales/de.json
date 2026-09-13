@@ -139,6 +139,7 @@
             "viewOnCivitai": "Auf CivitAI anzeigen",
             "notAvailableFromCivitai": "Nicht auf CivitAI verfügbar",
             "viewOnHuggingFace": "Auf Hugging Face ansehen",
+            "viewOnSource": "[TODO: Translate] View on {source}",
             "sendToWorkflow": "An ComfyUI senden (Klick: Anhängen, Shift+Klick: Ersetzen)",
             "copyLoRASyntax": "LoRA-Syntax kopieren",
             "checkpointNameCopied": "Checkpoint-Name kopiert",
@@ -874,7 +875,7 @@
             "checkUpdates": "Updates prüfen",
             "linkModel": "Modell verknüpfen",
             "linkCivitai": "Mit CivitAI neu verknüpfen",
-            "linkHuggingFace": "Mit HuggingFace verknüpfen",
+            "linkModelSource": "[TODO: Translate] Link to Model Source",
             "copySyntax": "LoRA-Syntax kopieren",
             "copyFilename": "Modell-Dateiname kopieren",
             "copyRecipeSyntax": "Rezept-Syntax kopieren",
@@ -1596,13 +1597,17 @@
             "pathPlaceholder": "Ordnerpfad eingeben oder aus Baum unten auswählen...",
             "root": "Stammverzeichnis"
         },
-        "linkHuggingFace": {
-            "title": "Mit HuggingFace verknüpfen",
-            "infoText": "Fügen Sie die HuggingFace-Repository-URL ein, um dieses Modell zuzuordnen. Dies ermöglicht die KI-gestützte Metadatenanreicherung.",
-            "urlLabel": "HuggingFace-Repository-URL:",
-            "urlPlaceholder": "https://huggingface.co/user/repo",
-            "helpText": "Geben Sie die vollständige URL des HuggingFace-Repositorys ein.",
-            "confirmAction": "Speichern & Verknüpfen"
+        "linkModelSource": {
+            "title": "[TODO: Translate] Link to Model Source",
+            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
+            "urlLabel": "[TODO: Translate] Model Page URL:",
+            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
+            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
+            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
+            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
+            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
+            "linking": "[TODO: Translate] Linking model source...",
+            "confirmAction": "[TODO: Translate] Save & Link"
         },
         "relinkCivitai": {
             "title": "Mit CivitAI neu verknüpfen",
@@ -1847,7 +1852,7 @@
                 "empty": "Noch keine Versionshistorie für dieses Modell vorhanden.",
                 "error": "Versionen konnten nicht geladen werden.",
                 "missingModelId": "Für dieses Modell ist keine CivitAI-Model-ID vorhanden.",
-                "hfGroupInfo": "Dies ist eine HuggingFace-Modellgruppe. Öffnen Sie die Bibliothek, um alle Versionen im Raster zu sehen.",
+                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
                 "confirm": {
                     "delete": "Diese Version aus Ihrer Bibliothek löschen?"
                 },
@@ -2483,7 +2488,9 @@
             "linkCivArchSuccess": "Modell erfolgreich über CivitArchive neu verknüpft",
             "fetchMetadataFirst": "Bitte rufen Sie zuerst Metadaten von CivitAI ab",
             "noCivitaiInfo": "Keine CivitAI-Informationen verfügbar",
-            "missingHash": "Modell-Hash nicht verfügbar"
+            "missingHash": "Modell-Hash nicht verfügbar",
+            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
+            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
         },
         "exampleImages": {
             "pathUpdated": "Beispielbilder-Pfad erfolgreich aktualisiert",

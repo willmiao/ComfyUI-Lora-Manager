@@ -7,6 +7,7 @@ import time
 from typing import Any, Dict, List, Optional, Protocol, Sequence
 
 from ..metadata_sync_service import MetadataSyncService
+from ..model_sources import has_external_source
 from ...utils.metadata_manager import MetadataManager
 
 
@@ -51,10 +52,11 @@ class BulkMetadataRefreshUseCase:
             if not model.get("skip_metadata_refresh", False)
             and not self._is_in_skip_path(model.get("folder", ""), skip_paths)
             and (not model.get("civitai") or not model["civitai"].get("id"))
-            # Skip models downloaded from Hugging Face — they are not on
-            # CivitAI / CivArchive.  Users can still refresh them individually
-            # via the right-click context menu.
-            and not model.get("hf_url", "")
+            # Skip models linked to an external model site (Hugging Face /
+            # ModelScope / TensorArt) — they are not on CivitAI / CivArchive.
+            # Users can still refresh them individually via the right-click
+            # context menu.
+            and not has_external_source(model)
             and not (
                 # Skip models confirmed not on CivitAI when no need to retry
                 model.get("from_civitai") is False

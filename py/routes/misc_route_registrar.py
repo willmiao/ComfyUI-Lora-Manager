@@ -113,6 +113,10 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "POST", "/api/lm/set-hf-url", "set_hf_url"
     ),
+    # Supported external model sites (Hugging Face / ModelScope / TensorArt)
+    RouteDefinition(
+        "GET", "/api/lm/model-sources", "get_model_sources"
+    ),
     # Agent skill endpoints
     RouteDefinition(
         "GET", "/api/lm/agent/skills", "get_agent_skills"

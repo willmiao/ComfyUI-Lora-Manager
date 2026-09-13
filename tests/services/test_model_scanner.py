@@ -964,6 +964,8 @@ def _make_cache_entry(**overrides) -> Dict[str, Any]:
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "civitai_deleted": False,
         "skip_metadata_refresh": False,
+        "source_platform": "",
+        "source_url": "",
         "hf_url": "",
         "license_flags": 113,
         "hash_status": "completed",

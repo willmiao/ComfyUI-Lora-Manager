@@ -14,6 +14,7 @@ from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import RateLimitError
+from .model_sources import has_external_source
 
 logger = logging.getLogger(__name__)
 
@@ -222,9 +223,10 @@ class MetadataSyncService:
                         error_msg = "CivitAI model is deleted and no archive provider is available"
                     return False, error_msg
             else:
-                is_hf_source = bool(model_data.get("hf_url"))
+                is_hf_source = has_external_source(model_data)
                 if is_hf_source:
-                    # HF-sourced model: only check CivitAI API directly.
+                    # External-source model (Hugging Face / ModelScope /
+                    # TensorArt): only check CivitAI API directly.
                     # CivArchive is almost guaranteed to have no record, and
                     # hitting it wastes rate-limit budget.
                     # Use a distinct provider name ("civitai_api" not None) so

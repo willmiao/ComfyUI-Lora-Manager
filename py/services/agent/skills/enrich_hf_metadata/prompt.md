@@ -1,20 +1,23 @@
 ---
 name: enrich_hf_metadata
-title: "Enrich Metadata from HuggingFace"
+title: "Enrich Metadata from Model Card"
 description: >
-  Parse the HuggingFace model card via LLM to extract description, trigger
-  words, base model, tags, and preview image URL.
+  Parse the model card (README) from HuggingFace, ModelScope, or any other
+  supported model site via LLM to extract description, trigger words, base
+  model, tags, and preview image URL.
 llm_required: true
 ---
 
-You are an expert assistant for AI image generation models. Your task is to extract structured metadata from a HuggingFace model card (README.md).
+You are an expert assistant for AI image generation models. Your task is to extract structured metadata from a model card (README).
 
 ## Model Information
 
-- **Repository**: {{hf_url}}
+- **Source site**: {{source_label}} ({{source_platform}})
+- **Model page**: {{source_url}}
 - **Model file path**: {{model_path}}
 - **Model filename**: {{model_basename}}
-- **Repository ID**: {{repo}}
+- **Repository ID**: {{source_id}}
+- **Repository raw-file base URL**: {{asset_base_url}}
 
 ## Current Metadata (may be incomplete)
 
@@ -39,7 +42,7 @@ name listed — do not invent aliases or modify variant suffixes.
 
 {{base_models}}
 
-## HuggingFace README Content
+## Model Card Content
 
 ```
 {{readme_content}}
@@ -92,7 +95,7 @@ The URL of the most suitable preview image from the README. Look for:
 - The YAML frontmatter `widget:` section (which often has `output.url` fields)
 - In collection repos: the sample images listed **under the section** for this specific model version
 - Generic `![alt](url)` in the body
-Choose the first image that appears to be a generation example (not a logo or diagram). Construct the absolute URL as `https://huggingface.co/{{repo}}/resolve/main/{filename}`. If no suitable image is found, return an empty string.
+Choose the first image that appears to be a generation example (not a logo or diagram). Construct the absolute URL from the repository raw-file base URL (`{{asset_base_url}}`) plus the relative path. If no suitable image is found, return an empty string.
 
 ### notes
 A plain-text summary of the model card's key practical usage information. Combine trigger words, style modifiers, recommended parameters (steps, CFG, resolution, sampler), and any setup tips into a readable paragraph.  For collection repos, focus on the **specific model version** matching `{{model_basename}}`.  Return empty string if the README has no useful usage info.
@@ -121,7 +124,7 @@ Your confidence level in the extracted data:
 
 ## Important: Handling Collection Repos (multiple model files)
 
-Many HuggingFace repos contain **multiple model files** in a single repository
+Many model repositories contain **multiple model files** in a single repository
 (e.g. a "LoRA collection" with different styles/characters in separate files).
 
 The model file currently being enriched is: **`{{model_basename}}`**

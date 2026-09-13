@@ -78,6 +78,7 @@ class PostProcessor:
             download_preview,
             refresh_cache,
         )
+        from ..model_sources import get_source, has_external_source, resolve_source_ref
         from .skills.enrich_hf_metadata.readme_processor import (
             convert_readme_to_html,
             extract_gallery_images,
@@ -85,17 +86,25 @@ class PostProcessor:
             extract_relevant_section,
             extract_simple_markdown_images,
             extract_html_img_tags,
-            extract_repo_from_hf_url,
         )
 
         updated_fields: List[str] = []
         preview_downloaded = False
 
-        # -- Determine whether this is an HF-sourced model -----------------
-        # Key off `hf_url` directly: `from_civitai` records provenance and can
-        # be true for a model that is also linked to HuggingFace (both sources
-        # coexist, see #1094), so it must not gate HF enrichment.
-        is_hf_model = bool(metadata.get("hf_url", ""))
+        # -- Determine whether this is an externally-sourced model ---------
+        # Key off the source fields directly: `from_civitai` records provenance
+        # and can be true for a model that is also linked to an external site
+        # (both sources coexist, see #1094), so it must not gate enrichment.
+        is_source_model = has_external_source(metadata)
+
+        source_ref = resolve_source_ref(metadata)
+        source = get_source(source_ref.platform) if source_ref else None
+        source_id = source_ref.source_id if source_ref else ""
+        asset_base_url = (
+            source.asset_base_url(source_id)
+            if source is not None and source_id
+            else None
+        )
 
         # -- Collect updates -----------------------------------------------
         updates: Dict[str, Any] = {}
@@ -103,7 +112,7 @@ class PostProcessor:
         # base_model
         new_base = (llm_output.get("base_model") or "").strip()
         current_base = metadata.get("base_model", "") or ""
-        if new_base and self._should_overwrite(current_base, is_hf_model):
+        if new_base and self._should_overwrite(current_base, is_source_model):
             updates["base_model"] = new_base
 
         # trigger words → civitai.trainedWords
@@ -115,7 +124,7 @@ class PostProcessor:
             trigger_words_empty = not cleaned
             current_civitai = metadata.get("civitai") or {}
             current_triggers = current_civitai.get("trainedWords") or []
-            if self._should_overwrite_list(current_triggers, is_hf_model):
+            if self._should_overwrite_list(current_triggers, is_source_model):
                 trig_civitai = dict(current_civitai)
                 if "civitai" in updates and isinstance(updates["civitai"], dict):
                     trig_civitai.update(updates["civitai"])
@@ -123,14 +132,14 @@ class PostProcessor:
                 updates["civitai"] = trig_civitai
 
         # modelDescription — from raw README content (converted to HTML)
-        if readme_content and is_hf_model:
+        if readme_content and is_source_model:
             converted = convert_readme_to_html(readme_content)
             if converted:
                 updates["modelDescription"] = converted
 
         # short_description → civitai.description (for "About this version")
         short_desc = (llm_output.get("short_description") or "").strip()
-        if short_desc and is_hf_model:
+        if short_desc and is_source_model:
             current_civitai = metadata.get("civitai") or {}
             desc_civitai = dict(current_civitai)
             if "civitai" in updates and isinstance(updates["civitai"], dict):
@@ -141,9 +150,8 @@ class PostProcessor:
         # gallery images → civitai.images (from YAML frontmatter widget entries
         # and Sample Gallery markdown tables in the README body)
         gallery_images: List[Dict[str, Any]] = []
-        if readme_content and is_hf_model:
-            hf_url = metadata.get("hf_url", "") or ""
-            repo = extract_repo_from_hf_url(hf_url)
+        if readme_content and is_source_model:
+            repo = source_id
             if repo:
                 rec_w = llm_output.get("recommended_width") or 0
                 rec_h = llm_output.get("recommended_height") or 0
@@ -152,6 +160,7 @@ class PostProcessor:
                 gallery = extract_gallery_images(
                     readme_content, repo,
                     default_width=rec_w, default_height=rec_h,
+                    base_url=asset_base_url,
                 )
 
                 # 2. Sample Gallery table images (markdown body), deduplicated
@@ -160,6 +169,7 @@ class PostProcessor:
                     readme_content, repo,
                     existing_urls=existing_urls,
                     default_width=rec_w, default_height=rec_h,
+                    base_url=asset_base_url,
                 )
                 existing_urls.update(img["url"] for img in table_images if img.get("url"))
 
@@ -168,6 +178,7 @@ class PostProcessor:
                     readme_content, repo,
                     existing_urls=existing_urls,
                     default_width=rec_w, default_height=rec_h,
+                    base_url=asset_base_url,
                 )
                 existing_urls.update(img["url"] for img in simple_images if img.get("url"))
 
@@ -176,6 +187,7 @@ class PostProcessor:
                     readme_content, repo,
                     existing_urls=existing_urls,
                     default_width=rec_w, default_height=rec_h,
+                    base_url=asset_base_url,
                 )
 
                 all_images = gallery + table_images + simple_images + html_images
@@ -193,7 +205,7 @@ class PostProcessor:
         if isinstance(new_tags, list) and new_tags:
             existing_tags = metadata.get("tags") or []
             merged = self._merge_tags(existing_tags, new_tags)
-            if len(merged) > len(existing_tags) or is_hf_model:
+            if len(merged) > len(existing_tags) or is_source_model:
                 updates["tags"] = merged
 
         # metadata_source & llm_enriched_at (always set)
@@ -222,7 +234,7 @@ class PostProcessor:
         # README, find the first gallery image from the *model-specific
         # section* of the README (not the repo-wide first image, which
         # belongs to a different model in collection repos).
-        if not preview_remote_url and readme_content and is_hf_model:
+        if not preview_remote_url and readme_content and is_source_model:
             model_basename = os.path.splitext(os.path.basename(model_path))[0]
             relevant_section = extract_relevant_section(
                 readme_content, model_basename,
@@ -279,16 +291,16 @@ class PostProcessor:
     # ------------------------------------------------------------------
 
     @staticmethod
-    def _should_overwrite(current_value: str, is_hf_model: bool) -> bool:
+    def _should_overwrite(current_value: str, is_source_model: bool) -> bool:
         """Return ``True`` when a scalar field should be overwritten."""
-        return is_hf_model or not current_value or current_value.lower() in (
+        return is_source_model or not current_value or current_value.lower() in (
             "", "unknown",
         )
 
     @staticmethod
-    def _should_overwrite_list(current_list: List[str], is_hf_model: bool) -> bool:
+    def _should_overwrite_list(current_list: List[str], is_source_model: bool) -> bool:
         """Return ``True`` when a list field should be overwritten."""
-        return is_hf_model or not current_list
+        return is_source_model or not current_list
 
     @staticmethod
     def _merge_tags(existing: List[str], new: List[str]) -> List[str]:

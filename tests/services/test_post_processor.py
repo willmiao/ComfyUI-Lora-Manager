@@ -293,6 +293,61 @@ Content
         assert images[0]["meta"]["prompt"] == "a cat"
 
     @pytest.mark.asyncio
+    async def test_gallery_images_use_modelscope_asset_base_url(self, processor):
+        """A ModelScope-linked model resolves relative images against ModelScope."""
+        readme = """---
+widget:
+- text: "a cat"
+  output:
+    url: images/cat.png
+---
+Content
+"""
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.MIN_LLM_OUTPUT,
+                metadata={
+                    "from_civitai": False,
+                    "source_platform": "modelscope",
+                    "source_url": "https://modelscope.cn/models/user/repo",
+                },
+                readme_content=readme,
+            )
+        applied = mock_apply.call_args[0][1]
+        images = applied.get("civitai", {}).get("images", [])
+        assert len(images) == 1
+        assert images[0]["url"] == (
+            "https://modelscope.cn/models/user/repo/resolve/master/images/cat.png"
+        )
+
+    @pytest.mark.asyncio
+    async def test_base_model_overwrites_existing_modelscope_model(self, processor):
+        """ModelScope is an external source, so the LLM may overwrite base_model."""
+        llm = {**self.MIN_LLM_OUTPUT, "base_model": "Flux.1 D"}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata={
+                    "base_model": "SD 1.5",
+                    "source_platform": "modelscope",
+                    "source_url": "https://modelscope.cn/models/user/repo",
+                },
+            )
+        assert mock_apply.call_args[0][1]["base_model"] == "Flux.1 D"
+
+    @pytest.mark.asyncio
     async def test_gallery_images_skipped_without_hf_url(self, processor):
         """Gallery images NOT extracted when the model has no HF source."""
         with (

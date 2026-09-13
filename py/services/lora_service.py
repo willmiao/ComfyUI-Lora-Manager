@@ -79,6 +79,8 @@ class LoraService(BaseModelService):
             ),
             "auto_tags": model_data.get("auto_tags") or extract_auto_tags(model_data),
             "version_count": model_data.get("version_count"),
+            "source_platform": model_data.get("source_platform", ""),
+            "source_url": model_data.get("source_url", ""),
             "hf_url": model_data.get("hf_url", ""),
         }
 
