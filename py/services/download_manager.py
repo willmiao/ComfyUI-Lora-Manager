@@ -1534,6 +1534,9 @@ class DownloadManager:
                             "Settings > Library before downloading VAE, upscaler, "
                             "text encoder or CLIP files."
                         ),
+                        # Machine-readable failure code consumed by the companion
+                        # browser extension (docs/other-models-support.md C4).
+                        "reason": "other_models_disabled",
                     }
                 model_type = "other"
             else:
@@ -1793,6 +1796,7 @@ class DownloadManager:
                                     f"disabled in settings. Please pick a destination "
                                     f"folder explicitly instead of using default paths."
                                 ),
+                                "reason": "other_sub_type_disabled",
                             }
                         default_path = (
                             default_other_roots.get(other_sub_type)
@@ -1805,17 +1809,20 @@ class DownloadManager:
                                     f"No default root configured for other-model "
                                     f"sub-type '{other_sub_type}'"
                                 )
+                                reason = "other_no_default_root"
                             else:
                                 detail = (
                                     "Could not determine the other-model sub-type "
                                     "from the model metadata"
                                 )
+                                reason = "other_sub_type_undecidable"
                             return {
                                 "success": False,
                                 "error": (
                                     f"{detail}. Please pick a destination folder "
                                     f"explicitly instead of using default paths."
                                 ),
+                                "reason": reason,
                             }
                         save_dir = default_path
 

@@ -254,6 +254,7 @@ async def test_download_rejects_other_when_feature_disabled(
 
     assert result["success"] is False
     assert "disabled" in result["error"].lower()
+    assert result["reason"] == "other_models_disabled"
 
 
 @pytest.mark.asyncio
@@ -271,6 +272,7 @@ async def test_default_paths_reject_switched_off_sub_type(
 
     assert result["success"] is False
     assert "disabled" in result["error"].lower()
+    assert result["reason"] == "other_sub_type_disabled"
 
 
 @pytest.mark.asyncio
@@ -516,6 +518,7 @@ async def test_default_paths_errors_when_sub_type_root_unconfigured(
 
     assert result["success"] is False
     assert "controlnet" in result["error"]
+    assert result["reason"] == "other_no_default_root"
     assert execute_mock.await_count == 0
 
 
@@ -537,6 +540,7 @@ async def test_default_paths_errors_when_sub_type_undecidable(
 
     assert result["success"] is False
     assert "sub-type" in result["error"]
+    assert result["reason"] == "other_sub_type_undecidable"
     assert execute_mock.await_count == 0
 
 
@@ -557,6 +561,72 @@ async def test_civarchive_source_same_payload_shape(
 
     assert result["success"] is True
     assert captured["model_type"] == "other"
+
+
+@pytest.mark.asyncio
+async def test_other_failure_reasons_are_machine_readable(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Contract C4: every other-type default-path failure carries a ``reason``.
+
+    The companion browser extension binds to ``reason`` and only falls back to
+    substring matching for backends that predate the field, so the exact values
+    below must not drift.
+    """
+    expected_reasons = {
+        "disabled": "other_models_disabled",
+        "sub_type_disabled": "other_sub_type_disabled",
+        "no_default_root": "other_no_default_root",
+        "undecidable": "other_sub_type_undecidable",
+    }
+    reasons: dict[str, str] = {}
+
+    manager = DownloadManager()
+
+    # 1. Master switch off.
+    metadata_provider.payload = _other_payload("VAE")
+    get_settings_manager().settings["enable_other_models"] = False
+    disabled = await manager.download_from_civitai(
+        model_version_id=99, save_dir=str(tmp_path)
+    )
+    reasons["disabled"] = disabled["reason"]
+    assert disabled["error"].strip()
+
+    get_settings_manager().settings["enable_other_models"] = True
+
+    # 2. Resolved sub_type not enabled.
+    get_settings_manager().settings["enabled_other_sub_types"] = ["upscaler"]
+    sub_type_disabled = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+    reasons["sub_type_disabled"] = sub_type_disabled["reason"]
+    assert sub_type_disabled["error"].strip()
+
+    get_settings_manager().settings["enabled_other_sub_types"] = [
+        "vae",
+        "upscaler",
+        "text_encoder",
+        "clip_vision",
+        "controlnet",
+    ]
+
+    # 3. Sub_type resolved but no default root configured.
+    metadata_provider.payload = _other_payload("Controlnet")
+    no_default_root = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+    reasons["no_default_root"] = no_default_root["reason"]
+    assert no_default_root["error"].strip()
+
+    # 4. Neither model.type nor file types map to a sub_type.
+    metadata_provider.payload = _other_payload("Other")
+    undecidable = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+    reasons["undecidable"] = undecidable["reason"]
+    assert undecidable["error"].strip()
+
+    assert reasons == expected_reasons
 
 
 def test_build_metadata_for_resume_uses_other_metadata():

@@ -1775,6 +1775,279 @@ async def test_model_version_download_status_endpoints():
     }
 
 
+class OtherRecordingScanner:
+    """Other-scanner stub recording both probe kinds."""
+
+    def __init__(self, versions_by_model_id=None, version_ids=()):
+        self.versions_by_model_id = versions_by_model_id or {}
+        self.version_ids = set(version_ids)
+        self.version_calls: list[int] = []
+
+    async def get_model_versions_by_id(self, model_id):
+        self.version_calls.append(model_id)
+        return list(self.versions_by_model_id.get(model_id, []))
+
+    async def check_model_version_exists(self, version_id):
+        return version_id in self.version_ids
+
+
+def _set_other_models_enabled(enabled: bool) -> None:
+    from py.services.settings_manager import get_settings_manager
+
+    get_settings_manager().set("enable_other_models", enabled)
+
+
+@pytest.mark.asyncio
+async def test_check_model_exists_with_other_models_enabled():
+    """An other-type version resolves through the other scanner when opted in."""
+    _set_other_models_enabled(True)
+    other_scanner = OtherRecordingScanner(version_ids={400})
+
+    async def other_factory():
+        return other_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=other_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_model_exists(
+        FakeRequest(query={"modelId": "5", "modelVersionId": "400"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload == {
+        "success": True,
+        "exists": True,
+        "modelType": "other",
+        "hasBeenDownloaded": False,
+        "downloadedFiles": [],
+    }
+
+
+@pytest.mark.asyncio
+async def test_check_model_exists_skips_other_scanner_when_disabled():
+    """Opt-out stays byte-identical: no other probe, modelType stays null."""
+    _set_other_models_enabled(False)
+    other_scanner = OtherRecordingScanner(versions_by_model_id={5: [{"versionId": 400}]})
+
+    async def other_factory():
+        return other_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=other_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_model_exists(
+        FakeRequest(query={"modelId": "5"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload == {
+        "success": True,
+        "modelType": None,
+        "versions": [],
+        "downloadedVersionIds": [],
+    }
+    assert other_scanner.version_calls == []
+
+
+@pytest.mark.asyncio
+async def test_check_models_exist_resolves_other_ids():
+    """Mixed lora + vae ids resolve independently in the batch endpoint."""
+    _set_other_models_enabled(True)
+    lora_scanner = OtherRecordingScanner(
+        versions_by_model_id={5: [{"versionId": 11, "name": "v1"}]}
+    )
+    other_scanner = OtherRecordingScanner(
+        versions_by_model_id={6: [{"versionId": 400, "name": "vae-v1"}]}
+    )
+
+    async def lora_factory():
+        return lora_scanner
+
+    async def other_factory():
+        return other_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=lora_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=other_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_models_exist(
+        FakeRequest(query={"modelIds": "5,6"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+    results = {item["modelId"]: item for item in payload["results"]}
+    assert results[5]["modelType"] == "lora"
+    assert results[5]["versions"] == [
+        {"versionId": 11, "name": "v1", "hasBeenDownloaded": True}
+    ]
+    assert results[6]["modelType"] == "other"
+    assert results[6]["versions"] == [
+        {"versionId": 400, "name": "vae-v1", "hasBeenDownloaded": True}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_check_models_exist_ignores_other_scanner_when_disabled():
+    _set_other_models_enabled(False)
+    other_scanner = OtherRecordingScanner(versions_by_model_id={5: [{"versionId": 400}]})
+
+    async def other_factory():
+        return other_scanner
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=other_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.check_models_exist(
+        FakeRequest(query={"modelIds": "6"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert payload["results"] == [
+        {
+            "modelId": 6,
+            "modelType": None,
+            "versions": [],
+            "downloadedVersionIds": [],
+        }
+    ]
+    assert other_scanner.version_calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model_type", ["vae", "textencoder", "clip", "other"])
+async def test_model_version_download_status_accepts_other_types_when_enabled(
+    model_type,
+):
+    _set_other_models_enabled(True)
+    history_service = FakeDownloadHistoryService()
+
+    async def history_factory():
+        return history_service
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=history_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.get_model_version_download_status(
+        FakeRequest(  # pyright: ignore[reportArgumentType]
+            query={"modelType": model_type, "modelVersionId": "400"}
+        )
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload == {
+        "success": True,
+        "modelType": "other",
+        "modelVersionId": 400,
+        "hasBeenDownloaded": False,
+    }
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("model_type", ["vae", "textencoder", "clip", "other"])
+async def test_model_version_download_status_rejects_other_types_when_disabled(
+    model_type,
+):
+    _set_other_models_enabled(False)
+
+    async def history_factory():
+        return FakeDownloadHistoryService()
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=history_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.get_model_version_download_status(
+        FakeRequest(  # pyright: ignore[reportArgumentType]
+            query={"modelType": model_type, "modelVersionId": "400"}
+        )
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 400
+    assert payload == {
+        "success": False,
+        "error": "Parameter modelType is required",
+    }
+
+
+@pytest.mark.asyncio
+async def test_model_version_download_status_rejects_unknown_type():
+    """Regression: garbage modelType keeps the legacy 400 error."""
+    _set_other_models_enabled(True)
+
+    handler = ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=fake_scanner_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=fake_metadata_provider_factory,
+    )
+
+    response = await handler.get_model_version_download_status(
+        FakeRequest(  # pyright: ignore[reportArgumentType]
+            query={"modelType": "garbage", "modelVersionId": "400"}
+        )
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 400
+    assert payload == {
+        "success": False,
+        "error": "Parameter modelType is required",
+    }
+
+
 def test_create_handler_set_uses_provided_dependencies():
     recorded_handlers: list[dict[str, Any]] = []
 
