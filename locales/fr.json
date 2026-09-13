@@ -139,7 +139,7 @@
             "viewOnCivitai": "Voir sur CivitAI",
             "notAvailableFromCivitai": "Non disponible sur CivitAI",
             "viewOnHuggingFace": "Voir sur Hugging Face",
-            "viewOnSource": "[TODO: Translate] View on {source}",
+            "viewOnSource": "Voir sur {source}",
             "sendToWorkflow": "Envoyer vers ComfyUI (Clic: Ajouter, Maj+Clic: Remplacer)",
             "copyLoRASyntax": "Copier la syntaxe LoRA",
             "checkpointNameCopied": "Nom du checkpoint copié",
@@ -868,14 +868,14 @@
                 "complete": "Auto-organisation terminée",
                 "error": "Erreur : {error}"
             },
-            "enrichHfAgent": "Enrichir les métadonnées HF (IA)"
+            "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         },
         "contextMenu": {
             "refreshMetadata": "Actualiser les données CivitAI",
             "checkUpdates": "Vérifier les mises à jour",
             "linkModel": "Lier le modèle",
             "linkCivitai": "Relier à nouveau à CivitAI",
-            "linkModelSource": "[TODO: Translate] Link to Model Source",
+            "linkModelSource": "Lier à une source de modèle",
             "copySyntax": "Copier la syntaxe LoRA",
             "copyFilename": "Copier le nom de fichier du modèle",
             "copyRecipeSyntax": "Copier la syntaxe de la recipe",
@@ -897,7 +897,7 @@
             "viewAllLoras": "Voir tous les LoRAs",
             "downloadMissingLoras": "Télécharger les LoRAs manquants",
             "deleteRecipe": "Supprimer la recipe",
-            "enrichHfAgent": "Enrichir les métadonnées HF (IA)"
+            "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         }
     },
     "recipes": {
@@ -1598,16 +1598,16 @@
             "root": "Racine"
         },
         "linkModelSource": {
-            "title": "[TODO: Translate] Link to Model Source",
-            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
-            "urlLabel": "[TODO: Translate] Model Page URL:",
-            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
-            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
-            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
-            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
-            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
-            "linking": "[TODO: Translate] Linking model source...",
-            "confirmAction": "[TODO: Translate] Save & Link"
+            "title": "Lier à une source de modèle",
+            "infoText": "Collez l'URL de la page du modèle pour associer ce modèle à sa source. La liaison permet l'enrichissement des métadonnées par IA pour les modèles Hugging Face et ModelScope.",
+            "urlLabel": "URL de la page du modèle :",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "Entrez l'URL complète de la page du modèle. Sites pris en charge :",
+            "enrichNote": "L'enrichissement par IA nécessite une fiche de modèle lisible. Les sites qui n'en exposent pas (actuellement TensorArt) ne peuvent être que liés.",
+            "urlRequired": "Veuillez saisir l'URL de la page du modèle.",
+            "invalidUrl": "URL non prise en charge. Sites pris en charge : Hugging Face, ModelScope, TensorArt.",
+            "linking": "Liaison de la source du modèle...",
+            "confirmAction": "Enregistrer & lier"
         },
         "relinkCivitai": {
             "title": "Relier à nouveau à CivitAI",
@@ -1852,7 +1852,7 @@
                 "empty": "Aucun historique de versions n'est disponible pour ce modèle pour le moment.",
                 "error": "Échec du chargement des versions.",
                 "missingModelId": "Ce modèle ne possède pas d'identifiant de modèle CivitAI.",
-                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
+                "sourceGroupInfo": "Ceci est un groupe de modèles {source}. Ouvrez la bibliothèque pour voir toutes les versions dans la grille.",
                 "confirm": {
                     "delete": "Supprimer cette version de votre bibliothèque ?"
                 },
@@ -2489,8 +2489,8 @@
             "fetchMetadataFirst": "Veuillez d'abord récupérer les métadonnées depuis CivitAI",
             "noCivitaiInfo": "Aucune information CivitAI disponible",
             "missingHash": "Hash du modèle non disponible",
-            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
-            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
+            "enrichNeedsSource": "Liez d'abord ce modèle à une source de modèle (Lier le modèle → Lier à une source de modèle)",
+            "enrichUnsupportedSource": "L'enrichissement par IA n'est pas disponible pour les modèles {source}"
         },
         "exampleImages": {
             "pathUpdated": "Chemin des images d'exemple mis à jour avec succès",

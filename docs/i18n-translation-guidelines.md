@@ -33,6 +33,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > in the same pass. The `folder_paths` JSON snippet shown in that state lives in
 > `templates/other.html`, **not** in the locale files, so it is never translated — only the
 > surrounding prose is. Terminology added in §2.
+>
+> **Status (2026-09, model sources):** models can now be linked to ModelScope and TensorArt
+> alongside Hugging Face, which added 15 keys (`modelCard.actions.viewOnSource`,
+> `loras.contextMenu.linkModelSource`, `modals.linkModelSource.*`,
+> `modals.model.versions.sourceGroupInfo`, `toast.contextMenu.enrichNeedsSource`,
+> `toast.contextMenu.enrichUnsupportedSource`) and refreshed the two `enrichHfAgent` labels,
+> which had hardcoded "HF" for a button that now also enriches ModelScope models. The
+> `modals.linkModelSource.urlPlaceholder` value stays byte-identical to `en.json` (it is a URL,
+> the §6 exception). Terminology in §2, "Model source feature".
 
 ---
 
@@ -291,6 +300,35 @@ physically exist:
 
 `settings.json` and `ComfyUI` stay verbatim in every locale; "reload this page" / "restart
 LoRA Manager" reuse each locale's existing restart wording (`settings.extraFolderPaths.*`).
+
+### Model source feature (Hugging Face / ModelScope / TensorArt)
+
+A model file can be linked to the page of an external model site. **Hugging Face**,
+**ModelScope** and **TensorArt** are brand names and stay Latin in every locale (R3); the
+generic nouns around them are translated:
+
+| Term | Rendering |
+|---|---|
+| model source | zh-CN 模型来源 · zh-TW 模型來源 · ja モデルソース · ko 모델 소스 · fr source de modèle · de Modellquelle · es fuente de modelo · ru источник модели · he מקור מודל |
+| model page | zh-CN 模型页面 · zh-TW 模型頁面 · ja モデルページ · ko 모델 페이지 · fr page du modèle · de Modellseite · es página del modelo · ru страница модели · he עמוד המודל |
+| model card | zh-CN 模型卡 · zh-TW 模型卡 · ja モデルカード · ko 모델 카드 · fr fiche de modèle · de Modellkarte · es ficha de modelo · ru карточка модели · he כרטיס מודל |
+| AI enrichment (noun) | reuse the existing pair per locale: zh-CN 增强 · zh-TW 增強 · ja 補完 · ko 보강 · fr enrichissement (par IA) · de Anreicherung (KI-) · es enriquecimiento (con IA) · ru обогащение (с помощью ИИ) · he העשרה (AI) |
+
+`modelCard.actions.viewOnSource` ("View on {source}") follows each locale's existing
+`viewOnHuggingFace` pattern — de `Auf … ansehen`, ru `Открыть …`, he `צפייה ב-…`,
+ja `… で見る`, ko `…에서 보기`, zh `在 … 查看`, fr `Voir sur …`, es `Ver en …`. `{source}` is
+replaced at runtime with the untranslated platform name, so the brand never appears inside the
+translated text.
+
+`modals.linkModelSource.enrichNote` states the rule that only sites exposing a readable model
+card can be enriched and names TensorArt as the current exception. Keep the parenthetical
+exception in sync if another link-only source is ever added — the sentence is deliberately
+phrased as a rule, not as an apology for one site.
+
+The context-menu and bulk-operation enrichment entry points read **"Enrich Metadata with AI"**
+in `en`, not "Enrich HF Metadata": they cover ModelScope as well, so no locale may reintroduce
+an `HF` qualifier in `loras.contextMenu.enrichHfAgent` / `loras.bulkOperations.enrichHfAgent`
+(the key names keep the historical `Hf`; only the values changed).
 
 ---
 

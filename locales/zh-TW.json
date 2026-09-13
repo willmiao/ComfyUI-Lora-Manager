@@ -139,7 +139,7 @@
             "viewOnCivitai": "在 CivitAI 查看",
             "notAvailableFromCivitai": "CivitAI 不提供",
             "viewOnHuggingFace": "在 Hugging Face 查看",
-            "viewOnSource": "[TODO: Translate] View on {source}",
+            "viewOnSource": "在 {source} 查看",
             "sendToWorkflow": "傳送到 ComfyUI（點擊：附加，Shift+點擊：取代）",
             "copyLoRASyntax": "複製 LoRA 語法",
             "checkpointNameCopied": "Checkpoint 名稱已複製",
@@ -868,14 +868,14 @@
                 "complete": "自動整理完成",
                 "error": "錯誤：{error}"
             },
-            "enrichHfAgent": "AI HF 中繼資料增強"
+            "enrichHfAgent": "AI 中繼資料增強"
         },
         "contextMenu": {
             "refreshMetadata": "刷新 CivitAI 資料",
             "checkUpdates": "檢查更新",
             "linkModel": "連結模型",
             "linkCivitai": "連結到 CivitAI",
-            "linkModelSource": "[TODO: Translate] Link to Model Source",
+            "linkModelSource": "連結到模型來源",
             "copySyntax": "複製 LoRA 語法",
             "copyFilename": "複製模型檔名",
             "copyRecipeSyntax": "複製配方語法",
@@ -897,7 +897,7 @@
             "viewAllLoras": "檢視全部 LoRA",
             "downloadMissingLoras": "下載缺少的 LoRA",
             "deleteRecipe": "刪除配方",
-            "enrichHfAgent": "AI HF 中繼資料增強"
+            "enrichHfAgent": "AI 中繼資料增強"
         }
     },
     "recipes": {
@@ -1598,16 +1598,16 @@
             "root": "根目錄"
         },
         "linkModelSource": {
-            "title": "[TODO: Translate] Link to Model Source",
-            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
-            "urlLabel": "[TODO: Translate] Model Page URL:",
-            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
-            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
-            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
-            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
-            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
-            "linking": "[TODO: Translate] Linking model source...",
-            "confirmAction": "[TODO: Translate] Save & Link"
+            "title": "連結到模型來源",
+            "infoText": "貼上模型頁面 URL 以關聯此模型與其來源。關聯後可對 Hugging Face 和 ModelScope 模型啟用 AI 中繼資料增強。",
+            "urlLabel": "模型頁面 URL：",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "請輸入完整的模型頁面 URL。支援的站點：",
+            "enrichNote": "AI 增強需要可讀取的模型卡。未提供模型卡的站點（目前為 TensorArt）只能建立連結。",
+            "urlRequired": "請輸入模型頁面 URL。",
+            "invalidUrl": "URL 不受支援。支援的站點：Hugging Face、ModelScope、TensorArt。",
+            "linking": "正在連結模型來源...",
+            "confirmAction": "儲存並連結"
         },
         "relinkCivitai": {
             "title": "重新連結至 CivitAI",
@@ -1852,7 +1852,7 @@
                 "empty": "此模型尚無版本歷史。",
                 "error": "載入版本失敗。",
                 "missingModelId": "此模型缺少 CivitAI 模型 ID。",
-                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
+                "sourceGroupInfo": "這是一個 {source} 模型組。打開庫頁面即可在網格中查看所有版本。",
                 "confirm": {
                     "delete": "要從庫中刪除此版本嗎？"
                 },
@@ -2489,8 +2489,8 @@
             "fetchMetadataFirst": "請先從 CivitAI 取得 metadata",
             "noCivitaiInfo": "無 CivitAI 資訊",
             "missingHash": "模型雜湊不可用",
-            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
-            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
+            "enrichNeedsSource": "請先將此模型連結到模型來源（連結模型 → 連結到模型來源）",
+            "enrichUnsupportedSource": "{source} 模型不支援 AI 增強"
         },
         "exampleImages": {
             "pathUpdated": "範例圖片路徑已更新",

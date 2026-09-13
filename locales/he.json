@@ -139,7 +139,7 @@
             "viewOnCivitai": "הצג ב-CivitAI",
             "notAvailableFromCivitai": "לא זמין מ-CivitAI",
             "viewOnHuggingFace": "צפייה ב-Hugging Face",
-            "viewOnSource": "[TODO: Translate] View on {source}",
+            "viewOnSource": "צפייה ב-{source}",
             "sendToWorkflow": "שלח ל-ComfyUI (לחיצה: הוסף, Shift+לחיצה: החלף)",
             "copyLoRASyntax": "העתק תחביר LoRA",
             "checkpointNameCopied": "שם Checkpoint הועתק",
@@ -868,14 +868,14 @@
                 "complete": "ארגון אוטומטי הושלם",
                 "error": "שגיאה: {error}"
             },
-            "enrichHfAgent": "העשרת HF מטא-נתונים (AI)"
+            "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         },
         "contextMenu": {
             "refreshMetadata": "רענן נתוני CivitAI",
             "checkUpdates": "בדוק עדכונים",
             "linkModel": "קישור מודל",
             "linkCivitai": "קשר מחדש ל-CivitAI",
-            "linkModelSource": "[TODO: Translate] Link to Model Source",
+            "linkModelSource": "קישור למקור מודל",
             "copySyntax": "העתק תחביר LoRA",
             "copyFilename": "העתק שם קובץ מודל",
             "copyRecipeSyntax": "העתק תחביר מתכון",
@@ -897,7 +897,7 @@
             "viewAllLoras": "הצג את כל ה-LoRAs",
             "downloadMissingLoras": "הורד LoRAs חסרים",
             "deleteRecipe": "מחק מתכון",
-            "enrichHfAgent": "העשרת HF מטא-נתונים (AI)"
+            "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         }
     },
     "recipes": {
@@ -1598,16 +1598,16 @@
             "root": "שורש"
         },
         "linkModelSource": {
-            "title": "[TODO: Translate] Link to Model Source",
-            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
-            "urlLabel": "[TODO: Translate] Model Page URL:",
-            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
-            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
-            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
-            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
-            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
-            "linking": "[TODO: Translate] Linking model source...",
-            "confirmAction": "[TODO: Translate] Save & Link"
+            "title": "קישור למקור מודל",
+            "infoText": "הדבק את כתובת ה-URL של עמוד המודל כדי לשייך מודל זה למקורו. הקישור מאפשר העשרת מטא-נתונים באמצעות AI עבור מודלים של Hugging Face ו-ModelScope.",
+            "urlLabel": "כתובת URL של עמוד המודל:",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "הזן את כתובת ה-URL המלאה של עמוד המודל. אתרים נתמכים:",
+            "enrichNote": "העשרת AI דורשת כרטיס מודל קריא. אתרים שאינם חושפים אותו (נכון להיום TensorArt) ניתנים לקישור בלבד.",
+            "urlRequired": "הזן כתובת URL של עמוד המודל.",
+            "invalidUrl": "כתובת URL לא נתמכת. אתרים נתמכים: Hugging Face, ModelScope, TensorArt.",
+            "linking": "מקשר את מקור המודל...",
+            "confirmAction": "שמור וקשר"
         },
         "relinkCivitai": {
             "title": "קשר מחדש ל-CivitAI",
@@ -1852,7 +1852,7 @@
                 "empty": "אין עדיין היסטוריית גרסאות למודל זה.",
                 "error": "טעינת הגרסאות נכשלה.",
                 "missingModelId": "למודל זה אין מזהה מודל של CivitAI.",
-                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
+                "sourceGroupInfo": "זוהי קבוצת מודלים של {source}. פתח את הספרייה כדי לראות את כל הגרסאות ברשת.",
                 "confirm": {
                     "delete": "למחוק גרסה זו מהספרייה שלך?"
                 },
@@ -2489,8 +2489,8 @@
             "fetchMetadataFirst": "אנא אחזר מטא-נתונים מ-CivitAI תחילה",
             "noCivitaiInfo": "אין מידע מ-CivitAI זמין",
             "missingHash": "ה-hash של המודל אינו זמין",
-            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
-            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
+            "enrichNeedsSource": "קשר מודל זה למקור מודל תחילה (קישור מודל → קישור למקור מודל)",
+            "enrichUnsupportedSource": "העשרת AI אינה זמינה עבור מודלים של {source}"
         },
         "exampleImages": {
             "pathUpdated": "נתיב תמונות הדוגמה עודכן בהצלחה",

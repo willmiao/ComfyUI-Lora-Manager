@@ -139,7 +139,7 @@
             "viewOnCivitai": "CivitAI에서 보기",
             "notAvailableFromCivitai": "CivitAI에서 사용할 수 없음",
             "viewOnHuggingFace": "Hugging Face에서 보기",
-            "viewOnSource": "[TODO: Translate] View on {source}",
+            "viewOnSource": "{source}에서 보기",
             "sendToWorkflow": "ComfyUI로 전송 (클릭: 추가, Shift+클릭: 교체)",
             "copyLoRASyntax": "LoRA 문법 복사",
             "checkpointNameCopied": "Checkpoint 이름 복사됨",
@@ -868,14 +868,14 @@
                 "complete": "자동 정리 완료",
                 "error": "오류: {error}"
             },
-            "enrichHfAgent": "HF AI로 메타데이터 보강"
+            "enrichHfAgent": "AI로 메타데이터 보강"
         },
         "contextMenu": {
             "refreshMetadata": "CivitAI 데이터 새로고침",
             "checkUpdates": "업데이트 확인",
             "linkModel": "모델 연결",
             "linkCivitai": "CivitAI에 연결",
-            "linkModelSource": "[TODO: Translate] Link to Model Source",
+            "linkModelSource": "모델 소스에 연결",
             "copySyntax": "LoRA 문법 복사",
             "copyFilename": "모델 파일명 복사",
             "copyRecipeSyntax": "레시피 문법 복사",
@@ -897,7 +897,7 @@
             "viewAllLoras": "모든 LoRA 보기",
             "downloadMissingLoras": "누락된 LoRA 다운로드",
             "deleteRecipe": "레시피 삭제",
-            "enrichHfAgent": "HF AI로 메타데이터 보강"
+            "enrichHfAgent": "AI로 메타데이터 보강"
         }
     },
     "recipes": {
@@ -1598,16 +1598,16 @@
             "root": "루트"
         },
         "linkModelSource": {
-            "title": "[TODO: Translate] Link to Model Source",
-            "infoText": "[TODO: Translate] Paste the model page URL to associate this model with its source. Linking enables AI-powered metadata enrichment for Hugging Face and ModelScope models.",
-            "urlLabel": "[TODO: Translate] Model Page URL:",
-            "urlPlaceholder": "[TODO: Translate] https://huggingface.co/user/repo",
-            "helpText": "[TODO: Translate] Enter the full URL of the model page. Supported sites:",
-            "enrichNote": "[TODO: Translate] Note: AI metadata enrichment requires an accessible model card. TensorArt pages are not readable by the backend, so only the link is stored.",
-            "urlRequired": "[TODO: Translate] Please enter a model page URL.",
-            "invalidUrl": "[TODO: Translate] Unsupported URL. Supported sites: Hugging Face, ModelScope, TensorArt.",
-            "linking": "[TODO: Translate] Linking model source...",
-            "confirmAction": "[TODO: Translate] Save & Link"
+            "title": "모델 소스에 연결",
+            "infoText": "모델 페이지 URL을 붙여넣어 이 모델을 소스에 연결합니다. 연결하면 Hugging Face 및 ModelScope 모델에 AI 메타데이터 보강을 사용할 수 있습니다.",
+            "urlLabel": "모델 페이지 URL:",
+            "urlPlaceholder": "https://huggingface.co/user/repo",
+            "helpText": "전체 모델 페이지 URL을 입력하세요. 지원 사이트:",
+            "enrichNote": "AI 보강에는 읽을 수 있는 모델 카드가 필요합니다. 모델 카드를 제공하지 않는 사이트(현재 TensorArt)는 연결만 가능합니다.",
+            "urlRequired": "모델 페이지 URL을 입력하세요.",
+            "invalidUrl": "지원되지 않는 URL입니다. 지원 사이트: Hugging Face, ModelScope, TensorArt.",
+            "linking": "모델 소스를 연결하는 중...",
+            "confirmAction": "저장 및 연결"
         },
         "relinkCivitai": {
             "title": "CivitAI에 다시 연결",
@@ -1852,7 +1852,7 @@
                 "empty": "이 모델에는 아직 버전 기록이 없습니다.",
                 "error": "버전을 불러오지 못했습니다.",
                 "missingModelId": "이 모델에는 CivitAI 모델 ID가 없습니다.",
-                "sourceGroupInfo": "[TODO: Translate] This is a {source} model group. Open the library to see all versions in the grid.",
+                "sourceGroupInfo": "{source} 모델 그룹입니다. 라이브러리를 열어 그리드에서 모든 버전을 확인하세요.",
                 "confirm": {
                     "delete": "이 버전을 라이브러리에서 삭제하시겠습니까?"
                 },
@@ -2489,8 +2489,8 @@
             "fetchMetadataFirst": "먼저 CivitAI에서 메타데이터를 가져와주세요",
             "noCivitaiInfo": "사용 가능한 CivitAI 정보가 없습니다",
             "missingHash": "모델 해시를 사용할 수 없습니다",
-            "enrichNeedsSource": "[TODO: Translate] Link this model to a model source first (Link Model → Link to Model Source)",
-            "enrichUnsupportedSource": "[TODO: Translate] AI enrichment is not available for {source} models"
+            "enrichNeedsSource": "먼저 이 모델을 모델 소스에 연결하세요 (모델 연결 → 모델 소스에 연결)",
+            "enrichUnsupportedSource": "{source} 모델에서는 AI 보강을 사용할 수 없습니다"
         },
         "exampleImages": {
             "pathUpdated": "예시 이미지 경로가 성공적으로 업데이트되었습니다",
