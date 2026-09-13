@@ -59,7 +59,10 @@ body.sticky-controls .sticky-topbar {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-left: auto; /* Push to the right */
+    /* Push to the right of the row. Because it is also the flex item that is
+       allowed to drop to a second row, an auto margin keeps it right-aligned on
+       either row — no width: 100% / viewport breakpoint needed. */
+    margin-left: auto;
 }
 
 .actions {
@@ -67,7 +70,11 @@ body.sticky-controls .sticky-topbar {
     align-items: center;
     justify-content: space-between;
     gap: var(--space-2);
-    flex-wrap: nowrap;
+    /* Wrap only when the controls genuinely cannot fit, instead of at a fixed
+       viewport width. Viewport-based wrapping wasted space on high-DPI displays
+       (e.g. a 2560px monitor at 200% scaling reports a ~1280px CSS viewport even
+       when the window is maximized). */
+    flex-wrap: wrap;
     width: 100%;
 }
 
@@ -75,7 +82,11 @@ body.sticky-controls .sticky-topbar {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    flex-wrap: nowrap;
+    /* Let the group shrink rather than overflow so .controls-right only wraps
+       when it really has to. */
+    flex-wrap: wrap;
+    flex-shrink: 1;
+    min-width: 0;
 }
 
 /* Action button styling */
@@ -84,7 +95,9 @@ body.sticky-controls .sticky-topbar {
 }
 
 .control-group button {
-    min-width: 100px;
+    /* Keeps the toolbar visually even without forcing the row to overflow (the
+       old 100px floor pushed the total past the container on wide screens). */
+    min-width: 90px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -627,49 +640,42 @@ body.sticky-controls .sticky-topbar {
     text-align: center;
 }
 
-/* Intermediate breakpoint: wrap controls-right to prevent overflow */
+/* Intermediate breakpoint: tighten the controls so the whole bar still fits on
+   one row at common laptop/high-DPI widths. The buttons are allowed to shrink to
+   their content (min-width: 0) here, which is what reclaims the space the old
+   100px floor plus a forced wrap used to waste. .controls-right is deliberately
+   NOT forced onto its own row: it stays inline while it fits and only drops to a
+   second row (staying right-aligned through its auto margin) when it does not. */
 @media (max-width: 1500px) {
-    .actions {
-        flex-wrap: wrap;
-        gap: var(--space-2);
-    }
-
     .action-buttons {
-        flex-wrap: wrap;
         gap: var(--space-1);
     }
 
-    .controls-right {
-        width: 100%;
-        justify-content: flex-end;
-        margin-top: 8px;
-        padding-left: 0;
+    .control-group button {
+        min-width: 0;
+        padding: 4px 8px;
     }
 
-    /* Reduce button sizes to fit better */
-    .control-group button {
-        min-width: 80px;
-        padding: 4px 8px;
-        font-size: 0.8em;
+    .control-group select {
+        min-width: 0;
     }
 }
 
 @media (max-width: 768px) {
     .actions {
-        flex-wrap: wrap;
-        gap: var(--space-1);
+        gap: var(--space-2);
     }
-    
+
     .action-buttons {
-        flex-wrap: wrap;
-        gap: var(--space-1);
         width: 100%;
     }
-    
+
+    /* Narrow screens: let the right-hand group wrap below the buttons, still
+       right-aligned. */
     .controls-right {
-        width: 100%;
+        flex-wrap: wrap;
         justify-content: flex-end;
-        margin-top: 8px;
+        gap: var(--space-1);
     }
 
     .control-group button:hover {
