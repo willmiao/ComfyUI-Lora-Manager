@@ -116,6 +116,50 @@ class TestPrepareOtherPaths:
         ]
         assert len(warnings) == 1
 
+    def test_same_sub_type_duplicate_is_debug_not_warning(self, tmp_path, caplog):
+        """A sub_type spanning two folder keys legitimately sees a folder twice.
+
+        ``clip`` and ``text_encoders`` both map to ``text_encoder``, so a folder
+        reachable through both is expected and must not tell the user to fix a
+        configuration they cannot fix.
+        """
+        text_encoders_dir = tmp_path / "text_encoders"
+        legacy_clip_dir = tmp_path / "clip"
+        text_encoders_dir.mkdir()
+        legacy_clip_dir.mkdir()
+
+        config = _make_config()
+        with caplog.at_level(logging.DEBUG, logger=config_module.logger.name):
+            unique, sub_type_map, per_key = config._prepare_other_paths(
+                {
+                    "text_encoders": [str(text_encoders_dir)],
+                    "clip": [str(legacy_clip_dir), str(text_encoders_dir)],
+                }
+            )
+
+        assert set(unique) == {
+            _normalize(str(text_encoders_dir)),
+            _normalize(str(legacy_clip_dir)),
+        }
+        assert sub_type_map[_normalize(str(legacy_clip_dir))] == "text_encoder"
+        assert per_key["clip"] == [_normalize(str(legacy_clip_dir))]
+
+        warnings = [
+            record.message
+            for record in caplog.records
+            if record.levelname == "WARNING"
+            and "multiple other-model categories" in record.message
+        ]
+        assert warnings == []
+
+        debug_messages = [
+            record.message
+            for record in caplog.records
+            if record.levelname == "DEBUG"
+            and "Ignoring duplicate folder" in record.message
+        ]
+        assert len(debug_messages) == 1
+
     def test_cross_scanner_overlap_warns_but_keeps_path(self, tmp_path, caplog):
         """An other root overlapping a checkpoint root warns but stays managed."""
         shared = tmp_path / "shared_models"
@@ -175,7 +219,7 @@ class TestInitOtherPaths:
             config_module.folder_paths, "get_folder_paths", get_folder_paths
         )
 
-    def test_default_enabled_keys_exclude_controlnet(self, monkeypatch, tmp_path):
+    def test_default_enabled_keys_exclude_opt_in_types(self, monkeypatch, tmp_path):
         dirs = {}
         for key in (
             "vae",
@@ -194,25 +238,79 @@ class TestInitOtherPaths:
         config = _make_config()
         roots = config._init_other_paths()
 
-        assert _normalize(dirs["controlnet"]) not in roots
-        assert _normalize(dirs["controlnet"]) not in config.other_root_subtypes
-        for key in ("vae", "upscale_models", "text_encoders", "clip", "clip_vision"):
+        # clip_vision and controlnet are workflow-driven categories and stay
+        # opt-in; only VAE / upscaler / text encoder are managed by default.
+        for key in ("clip_vision", "controlnet"):
+            assert _normalize(dirs[key]) not in roots
+            assert _normalize(dirs[key]) not in config.other_root_subtypes
+        # This stub has no map_legacy (standalone-shaped), so the legacy clip
+        # key is queried on its own and its folder lands under text_encoder.
+        for key in ("vae", "upscale_models", "text_encoders", "clip"):
             assert _normalize(dirs[key]) in roots
 
-    def test_controlnet_opt_in_via_setting(self, monkeypatch, tmp_path):
-        controlnet_dir = tmp_path / "controlnet"
-        controlnet_dir.mkdir()
+    def test_legacy_key_is_not_queried_when_host_aliases_it(
+        self, monkeypatch, tmp_path, caplog
+    ):
+        """ComfyUI resolves clip -> text_encoders, so only the canonical key is
+        queried: its folder list already contains the legacy directory."""
+        canonical_dir = tmp_path / "text_encoders"
+        legacy_dir = tmp_path / "clip"
+        canonical_dir.mkdir()
+        legacy_dir.mkdir()
 
-        self._stub_folder_paths(monkeypatch, {"controlnet": str(controlnet_dir)})
-        get_settings_manager().set("enabled_other_sub_types", ["controlnet"])
+        queried = []
+
+        def get_folder_paths(key):
+            queried.append(key)
+            if key == "text_encoders":
+                # Mirrors ComfyUI folder_paths: both directories are registered
+                # under the canonical key.
+                return [str(canonical_dir), str(legacy_dir)]
+            return []
+
+        monkeypatch.setattr(
+            config_module.folder_paths, "get_folder_paths", get_folder_paths
+        )
+        monkeypatch.setattr(
+            config_module.folder_paths,
+            "map_legacy",
+            lambda key: {"clip": "text_encoders"}.get(key, key),
+            raising=False,
+        )
+
+        config = _make_config()
+        with caplog.at_level(logging.DEBUG, logger=config_module.logger.name):
+            roots = config._init_other_paths()
+
+        assert "clip" not in queried
+        assert _normalize(str(canonical_dir)) in roots
+        assert _normalize(str(legacy_dir)) in roots
+        assert (
+            config.other_root_subtypes[_normalize(str(legacy_dir))]
+            == "text_encoder"
+        )
+        # The reported bug: this layout used to log "please fix your path
+        # configuration" twice for aliased keys the user cannot separate.
+        assert [
+            record.message
+            for record in caplog.records
+            if record.levelname == "WARNING"
+        ] == []
+
+    @pytest.mark.parametrize("opt_in_key", ["controlnet", "clip_vision"])
+    def test_opt_in_sub_type_via_setting(self, monkeypatch, tmp_path, opt_in_key):
+        opt_in_dir = tmp_path / opt_in_key
+        opt_in_dir.mkdir()
+
+        self._stub_folder_paths(monkeypatch, {opt_in_key: str(opt_in_dir)})
+        get_settings_manager().set("enabled_other_sub_types", [opt_in_key])
 
         config = _make_config()
         roots = config._init_other_paths()
 
-        assert _normalize(str(controlnet_dir)) in roots
+        assert _normalize(str(opt_in_dir)) in roots
         assert (
-            config.other_root_subtypes[_normalize(str(controlnet_dir))]
-            == "controlnet"
+            config.other_root_subtypes[_normalize(str(opt_in_dir))] == opt_in_key
         )
 
     def test_disabled_sub_type_is_not_scanned(self, monkeypatch, tmp_path):

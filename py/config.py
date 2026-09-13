@@ -1169,6 +1169,46 @@ class Config:
             if sub_type in allowed
         ]
 
+    @staticmethod
+    def _collapse_legacy_folder_keys(keys: List[str]) -> List[str]:
+        """Drop folder keys the host already normalizes onto another queried key.
+
+        ComfyUI's ``folder_paths`` rewrites legacy names before every access
+        (``clip`` -> ``text_encoders``, ``unet`` -> ``diffusion_models``), and
+        registers both legacy directories under the canonical key, so
+        ``get_folder_paths("clip")`` returns exactly the same list as
+        ``get_folder_paths("text_encoders")``. Querying both therefore reports
+        every text-encoder folder twice and trips the overlap guard with a
+        conflict the user cannot fix.
+
+        When the host exposes ``map_legacy`` the alias is provably redundant and
+        is skipped (an empty canonical list implies an empty alias list).
+        Without it - the standalone mock, whose keys are independent
+        ``settings.json`` entries - every key is kept, because a ``clip``-only
+        configuration is then genuinely distinct.
+        """
+        map_legacy = getattr(folder_paths, "map_legacy", None)
+        if not callable(map_legacy):
+            return list(keys)
+
+        queried = set(keys)
+        collapsed: List[str] = []
+        for key in keys:
+            try:
+                canonical = map_legacy(key)
+            except Exception:
+                canonical = key
+            if canonical != key and canonical in queried:
+                logger.debug(
+                    "Skipping legacy folder key '%s'; the host resolves it to "
+                    "'%s', which is queried as well.",
+                    key,
+                    canonical,
+                )
+                continue
+            collapsed.append(key)
+        return collapsed
+
     def _prepare_other_paths(
         self, folder_path_map: Mapping[str, Iterable[str]]
     ) -> Tuple[List[str], Dict[str, str], Dict[str, List[str]]]:
@@ -1182,7 +1222,8 @@ class Config:
         unique_paths: List[str] = []
         sub_type_map: Dict[str, str] = {}
         per_key_roots: Dict[str, List[str]] = {}
-        seen_real_paths: Dict[str, str] = {}  # real path -> business path
+        # real path -> (business path, sub_type) of the category that claimed it
+        seen_real_paths: Dict[str, Tuple[str, str]] = {}
 
         # Cross-scanner overlap detection: warn when an "other" root is
         # already covered by the checkpoints/unet or embeddings scanners.
@@ -1206,16 +1247,31 @@ class Config:
             for real_path, business_path in sorted(
                 path_map.items(), key=lambda item: item[1].lower()
             ):
-                if real_path in seen_real_paths:
-                    logger.warning(
-                        "Detected the same folder '%s' under multiple other-model "
-                        "categories ('%s' is already mapped). Keeping the first "
-                        "category; please fix your path configuration.",
-                        business_path,
-                        seen_real_paths[real_path],
-                    )
+                seen = seen_real_paths.get(real_path)
+                if seen is not None:
+                    seen_business_path, seen_sub_type = seen
+                    if seen_sub_type == sub_type:
+                        # Same category reached through a second folder_paths
+                        # key (legacy alias, or a sub_type spanning two keys).
+                        # Expected, so never a "fix your configuration" warning.
+                        logger.debug(
+                            "Ignoring duplicate folder '%s' for category '%s' "
+                            "(already covered by '%s').",
+                            business_path,
+                            sub_type,
+                            seen_business_path,
+                        )
+                    else:
+                        logger.warning(
+                            "Detected the same folder '%s' under multiple other-model "
+                            "categories ('%s' is already mapped as '%s'). Keeping the "
+                            "first category; please fix your path configuration.",
+                            business_path,
+                            seen_business_path,
+                            seen_sub_type,
+                        )
                     continue
-                seen_real_paths[real_path] = business_path
+                seen_real_paths[real_path] = (business_path, sub_type)
                 unique_paths.append(business_path)
                 key_roots.append(business_path)
                 sub_type_map[business_path] = sub_type
@@ -1394,10 +1450,15 @@ class Config:
         Iterates the enabled OTHER_MODEL_FOLDER_SUBTYPES keys and pulls each
         from ``folder_paths.get_folder_paths(key)`` (in standalone mode the
         mock serves arbitrary keys from ``settings.json.folder_paths``).
+        Legacy aliases the host normalizes onto a canonical key (``clip`` ->
+        ``text_encoders``) are collapsed first so the same folders are not
+        reported twice.
         """
         try:
             folder_path_map: Dict[str, List[str]] = {}
-            for key in self._get_enabled_other_folder_keys():
+            for key in self._collapse_legacy_folder_keys(
+                self._get_enabled_other_folder_keys()
+            ):
                 try:
                     folder_path_map[key] = folder_paths.get_folder_paths(key)
                 except Exception as exc:
