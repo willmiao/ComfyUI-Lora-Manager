@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "תיקיית שורש ControlNet",
             "defaultControlnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של ControlNet להורדות, ייבוא והעברות",
             "enableOtherModels": "ניהול מודלים אחרים",
-            "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
+            "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
             "otherSubTypes": "סוגי מודלים מנוהלים",
             "otherSubTypesHelp": "בחר אילו קטגוריות של מודלים אחרים ייסרקו ויוצגו בעמוד המודלים האחרים.",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "מודלים אחרים",
         "disabled": {
             "title": "ניהול המודלים האחרים כבוי",
-            "description": "הפעל כדי לסרוק ולנהל קבצי VAE, Upscaler, Text Encoder ו-CLIP Vision, ולהוריד אותם מ-CivitAI.",
+            "description": "הפעל כדי לסרוק ולנהל קבצי VAE, Upscaler, Text Encoder, CLIP Vision ו-ControlNet, ולהוריד אותם מ-CivitAI.",
             "enableButton": "הפעל מודלים אחרים",
             "hint": "ניתן לשנות את סוגי המודלים המנוהלים מאוחר יותר בהגדרות > ספרייה.",
             "enableFailed": "הפעלת המודלים האחרים נכשלה",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "ניהול המודלים האחרים זמין",
-            "content": "סרוק ונהל קבצי VAE, Upscaler, Text Encoder ו-CLIP Vision, והורד אותם מ-CivitAI — מהעמוד הייעודי.",
+            "content": "סרוק ונהל קבצי VAE, Upscaler, Text Encoder, CLIP Vision ו-ControlNet, והורד אותם מ-CivitAI — מהעמוד הייעודי.",
             "enable": "הפעל מודלים אחרים",
             "openSettings": "פתח הגדרות"
         }

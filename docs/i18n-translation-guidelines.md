@@ -18,6 +18,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > CLIP Vision / ControlNet) and the Other Models opt-in toggles added 36 new keys; all of them
 > are now translated in all 9 locales (terminology in §2 "Other Models feature"). There are no
 > remaining `[TODO: Translate]` placeholders in any locale.
+>
+> **Status (2026-09, revision):** `other.disabled.description`, `banners.otherModels.content` and
+> `settings.folderSettings.enableOtherModelsHelp` were refreshed in `en.json` to name all five
+> sub_types (they had listed four, which read as "these are what enabling manages") and
+> re-translated in all 9 locales in the same pass. `clip_vision` and `controlnet` are now both
+> opt-in, so the first two describe **capability** and the third the **master switch**, not the
+> default set — keep all three enumerating the full five (`VAE / upscaler / text encoder /
+> CLIP vision / ControlNet` in `en`; locale slash-list casing follows each file's existing
+> `VAE / Upscaler / Text Encoder / …` style, de compounds as `CLIP-Vision- und ControlNet-Ordner`).
 
 ---
 

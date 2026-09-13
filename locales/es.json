@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "Raíz de ControlNet",
             "defaultControlnetRootHelp": "Establecer el directorio raíz predeterminado de ControlNet para descargas, importaciones y movimientos",
             "enableOtherModels": "Gestión de otros modelos",
-            "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
+            "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
             "otherSubTypes": "Tipos de modelos gestionados",
             "otherSubTypesHelp": "Elige qué categorías de otros modelos se escanean y se muestran en la página Otros modelos.",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "Otros modelos",
         "disabled": {
             "title": "La gestión de otros modelos está desactivada",
-            "description": "Actívala para escanear y gestionar archivos VAE, Upscaler, Text Encoder y CLIP Vision, y para descargarlos desde CivitAI.",
+            "description": "Actívala para escanear y gestionar archivos VAE, Upscaler, Text Encoder, CLIP Vision y ControlNet, y para descargarlos desde CivitAI.",
             "enableButton": "Activar otros modelos",
             "hint": "Puedes cambiar los tipos de modelos gestionados más adelante en Configuración > Biblioteca.",
             "enableFailed": "No se pudieron activar los otros modelos",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "La gestión de otros modelos ya está disponible",
-            "content": "Escanea y gestiona archivos VAE, Upscaler, Text Encoder y CLIP Vision, y descárgalos desde CivitAI, todo desde una página dedicada.",
+            "content": "Escanea y gestiona archivos VAE, Upscaler, Text Encoder, CLIP Vision y ControlNet, y descárgalos desde CivitAI, todo desde una página dedicada.",
             "enable": "Activar otros modelos",
             "openSettings": "Abrir configuración"
         }

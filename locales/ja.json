@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "ControlNetルート",
             "defaultControlnetRootHelp": "ダウンロード、インポート、移動用のデフォルトControlNetルートディレクトリを設定",
             "enableOtherModels": "その他のモデル管理",
-            "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
+            "enableOtherModelsHelp": "オフにすると、VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet フォルダーはスキャンされず、その他のモデルページは無効のままになり、これらのモデルタイプはダウンロードできません。",
             "otherSubTypes": "管理するモデルタイプ",
             "otherSubTypesHelp": "その他のモデルページでスキャンおよび表示するカテゴリを選択します。",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "その他のモデル",
         "disabled": {
             "title": "その他のモデル管理はオフです",
-            "description": "有効にすると VAE、Upscaler、Text Encoder、CLIP Vision の各ファイルをスキャン・管理し、CivitAI からダウンロードできます。",
+            "description": "有効にすると VAE、Upscaler、Text Encoder、CLIP Vision、ControlNet の各ファイルをスキャン・管理し、CivitAI からダウンロードできます。",
             "enableButton": "その他のモデルを有効にする",
             "hint": "管理するモデルタイプは後で「設定 > ライブラリ」で変更できます。",
             "enableFailed": "その他のモデルの有効化に失敗しました",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "その他のモデル管理が利用可能になりました",
-            "content": "専用ページで VAE、Upscaler、Text Encoder、CLIP Vision の各ファイルをスキャン・管理し、CivitAI からダウンロードできます。",
+            "content": "専用ページで VAE、Upscaler、Text Encoder、CLIP Vision、ControlNet の各ファイルをスキャン・管理し、CivitAI からダウンロードできます。",
             "enable": "その他のモデルを有効にする",
             "openSettings": "設定を開く"
         }

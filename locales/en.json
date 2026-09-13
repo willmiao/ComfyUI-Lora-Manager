@@ -546,7 +546,7 @@
       "defaultControlnetRoot": "ControlNet Root",
       "defaultControlnetRootHelp": "Set default ControlNet root directory for downloads, imports and moves",
       "enableOtherModels": "Other Models Management",
-      "enableOtherModelsHelp": "When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
+      "enableOtherModelsHelp": "When off, VAE / upscaler / text encoder / CLIP vision / ControlNet folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
       "otherSubTypes": "Managed Types",
       "otherSubTypesHelp": "Choose which other-model categories are scanned and shown on the Other Models page.",
       "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
     "title": "Other Models",
     "disabled": {
       "title": "Other Models management is off",
-      "description": "Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
+      "description": "Enable it to scan and manage VAE, upscaler, text encoder, CLIP vision and ControlNet files, and to download them from CivitAI.",
       "enableButton": "Enable Other Models",
       "hint": "You can change the managed model types later in Settings > Library.",
       "enableFailed": "Failed to enable Other Models",
@@ -2636,7 +2636,7 @@
     },
     "otherModels": {
       "title": "Other Models Management is available",
-      "content": "Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
+      "content": "Scan and manage VAE, upscaler, text encoder, CLIP vision and ControlNet files — and download them from CivitAI — from one dedicated page.",
       "enable": "Enable Other Models",
       "openSettings": "Open Settings"
     }

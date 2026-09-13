@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "ControlNet 루트",
             "defaultControlnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 ControlNet 루트 디렉토리를 설정합니다",
             "enableOtherModels": "기타 모델 관리",
-            "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
+            "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
             "otherSubTypes": "관리할 모델 유형",
             "otherSubTypesHelp": "기타 모델 페이지에서 스캔하고 표시할 카테고리를 선택합니다.",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "기타 모델",
         "disabled": {
             "title": "기타 모델 관리가 꺼져 있습니다",
-            "description": "활성화하면 VAE, Upscaler, Text Encoder, CLIP Vision 파일을 스캔하고 관리하며 CivitAI에서 다운로드할 수 있습니다.",
+            "description": "활성화하면 VAE, Upscaler, Text Encoder, CLIP Vision, ControlNet 파일을 스캔하고 관리하며 CivitAI에서 다운로드할 수 있습니다.",
             "enableButton": "기타 모델 활성화",
             "hint": "관리할 모델 유형은 나중에 설정 > 라이브러리에서 변경할 수 있습니다.",
             "enableFailed": "기타 모델 활성화 실패",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "기타 모델 관리를 사용할 수 있습니다",
-            "content": "전용 페이지에서 VAE, Upscaler, Text Encoder, CLIP Vision 파일을 스캔 및 관리하고 CivitAI에서 다운로드할 수 있습니다.",
+            "content": "전용 페이지에서 VAE, Upscaler, Text Encoder, CLIP Vision, ControlNet 파일을 스캔 및 관리하고 CivitAI에서 다운로드할 수 있습니다.",
             "enable": "기타 모델 활성화",
             "openSettings": "설정 열기"
         }

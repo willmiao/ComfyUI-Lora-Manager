@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "Корневая папка ControlNet",
             "defaultControlnetRootHelp": "Установить корневую папку ControlNet по умолчанию для загрузок, импорта и перемещений",
             "enableOtherModels": "Управление другими моделями",
-            "enableOtherModelsHelp": "Если выключено, папки VAE / Upscaler / Text Encoder / CLIP не сканируются, страница «Другие модели» остаётся отключённой, а эти типы моделей нельзя загрузить.",
+            "enableOtherModelsHelp": "Если выключено, папки VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet не сканируются, страница «Другие модели» остаётся отключённой, а эти типы моделей нельзя загрузить.",
             "otherSubTypes": "Управляемые типы моделей",
             "otherSubTypesHelp": "Выберите, какие категории других моделей сканируются и отображаются на странице «Другие модели».",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "Другие модели",
         "disabled": {
             "title": "Управление другими моделями отключено",
-            "description": "Включите, чтобы сканировать и управлять файлами VAE, Upscaler, Text Encoder и CLIP Vision, а также загружать их с CivitAI.",
+            "description": "Включите, чтобы сканировать и управлять файлами VAE, Upscaler, Text Encoder, CLIP Vision и ControlNet, а также загружать их с CivitAI.",
             "enableButton": "Включить другие модели",
             "hint": "Вы сможете изменить управляемые типы моделей позже в разделе «Настройки > Библиотека».",
             "enableFailed": "Не удалось включить другие модели",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "Управление другими моделями доступно",
-            "content": "Сканирование и управление файлами VAE, Upscaler, Text Encoder и CLIP Vision, а также загрузка их с CivitAI — всё на одной отдельной странице.",
+            "content": "Сканирование и управление файлами VAE, Upscaler, Text Encoder, CLIP Vision и ControlNet, а также загрузка их с CivitAI — всё на одной отдельной странице.",
             "enable": "Включить другие модели",
             "openSettings": "Открыть настройки"
         }

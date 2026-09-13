@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "ControlNet-Stammordner",
             "defaultControlnetRootHelp": "Legen Sie den Standard-ControlNet-Stammordner für Downloads, Importe und Verschiebungen fest",
             "enableOtherModels": "Verwaltung weiterer Modelle",
-            "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder- und CLIP-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
+            "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
             "otherSubTypes": "Verwaltete Modelltypen",
             "otherSubTypesHelp": "Wählen Sie, welche Kategorien weiterer Modelle gescannt und auf der Seite für weitere Modelle angezeigt werden.",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "Weitere Modelle",
         "disabled": {
             "title": "Die Verwaltung weiterer Modelle ist deaktiviert",
-            "description": "Aktivieren Sie die Option, um VAE-, Upscaler-, Text-Encoder- und CLIP-Vision-Dateien zu scannen und zu verwalten und sie von CivitAI herunterzuladen.",
+            "description": "Aktivieren Sie die Option, um VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Dateien zu scannen und zu verwalten und sie von CivitAI herunterzuladen.",
             "enableButton": "Weitere Modelle aktivieren",
             "hint": "Sie können die verwalteten Modelltypen später unter Einstellungen > Bibliothek ändern.",
             "enableFailed": "Aktivierung weiterer Modelle fehlgeschlagen",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "Die Verwaltung weiterer Modelle ist verfügbar",
-            "content": "Scannen und verwalten Sie VAE-, Upscaler-, Text-Encoder- und CLIP-Vision-Dateien und laden Sie sie von CivitAI herunter, alles auf einer eigenen Seite.",
+            "content": "Scannen und verwalten Sie VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Dateien und laden Sie sie von CivitAI herunter, alles auf einer eigenen Seite.",
             "enable": "Weitere Modelle aktivieren",
             "openSettings": "Einstellungen öffnen"
         }

@@ -546,7 +546,7 @@
             "defaultControlnetRoot": "ControlNet 根目錄",
             "defaultControlnetRootHelp": "設定下載、匯入和移動時的預設 ControlNet 根目錄",
             "enableOtherModels": "其他模型管理",
-            "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
+            "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP Vision / ControlNet 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
             "otherSubTypes": "管理的模型類型",
             "otherSubTypesHelp": "選擇要在其他模型頁面中掃描和顯示的其他模型類別。",
             "subTypeVae": "VAE",
@@ -1226,7 +1226,7 @@
         "title": "其他模型",
         "disabled": {
             "title": "其他模型管理已關閉",
-            "description": "啟用後可掃描和管理 VAE、Upscaler、Text Encoder 和 CLIP Vision 檔案，並從 CivitAI 下載。",
+            "description": "啟用後可掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
             "enableButton": "啟用其他模型",
             "hint": "您稍後可以在「設定 > 模型庫」中變更管理的模型類型。",
             "enableFailed": "啟用其他模型失敗",
@@ -2636,7 +2636,7 @@
         },
         "otherModels": {
             "title": "其他模型管理現已可用",
-            "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder 和 CLIP Vision 檔案，並從 CivitAI 下載。",
+            "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
             "enable": "啟用其他模型",
             "openSettings": "開啟設定"
         }
