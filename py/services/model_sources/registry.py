@@ -56,6 +56,21 @@ def source_label(platform: Optional[str], default: str = "") -> str:
     return source.label if source else default
 
 
+def downloadable_sources() -> list[ModelSource]:
+    """Return the sources whose repositories can be downloaded directly."""
+
+    return [source for source in _SOURCES if source.supports_download]
+
+
+def get_download_source(platform: Optional[str]) -> Optional[ModelSource]:
+    """Return the source for *platform*, but only when it supports downloads."""
+
+    source = get_source(platform)
+    if source is None or not source.supports_download:
+        return None
+    return source
+
+
 def detect_source(url: Optional[str], *, strict: bool = False) -> Optional[SourceRef]:
     """Return the :class:`SourceRef` for *url*, or ``None`` if unsupported."""
 
@@ -197,6 +212,8 @@ __all__ = [
     "SOURCE_PLATFORM_FIELD",
     "SOURCE_URL_FIELD",
     "detect_source",
+    "downloadable_sources",
+    "get_download_source",
     "get_source",
     "get_source_platform",
     "has_external_source",

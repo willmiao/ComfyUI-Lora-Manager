@@ -71,7 +71,7 @@ Enriches models linked to an external model site with metadata extracted by an L
 | Platform | Link | AI enrichment | Direct download |
 | --- | --- | --- | --- |
 | Hugging Face | yes | yes | yes |
-| ModelScope | yes | yes | no |
+| ModelScope | yes | yes | yes |
 | TensorArt | yes | no (see below) | no |
 
 TensorArt is link-only: `tensor.art` sits behind a Cloudflare managed challenge and its internal API requires session authorization, so the backend cannot read its model pages. Linking still stores the canonical page URL and the "View on TensorArt" link works.

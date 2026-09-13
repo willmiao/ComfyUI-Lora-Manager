@@ -14,10 +14,14 @@ from py.services.model_sources import (
     ModelScopeSource,
     TensorArtSource,
     detect_source,
+    downloadable_sources,
+    get_download_source,
     get_source,
     get_source_platform,
     has_external_source,
+    is_valid_source_id,
     list_sources,
+    ModelSourceError,
     normalize_metadata_source,
     resolve_source_ref,
     source_group_key,
@@ -127,11 +131,15 @@ class TestCapabilities:
         source = get_source("huggingface")
         assert source.supports_enrichment is True
         assert source.supports_download is True
+        assert source.default_revision == "main"
+        assert source.default_subdir == "huggingface"
 
-    def test_modelscope_supports_enrichment_but_not_download(self):
+    def test_modelscope_supports_enrichment_and_download(self):
         source = get_source("modelscope")
         assert source.supports_enrichment is True
-        assert source.supports_download is False
+        assert source.supports_download is True
+        assert source.default_revision == "master"
+        assert source.default_subdir == "modelscope"
 
     def test_tensorart_is_link_only(self):
         source = get_source("tensorart")
@@ -322,3 +330,177 @@ class TestAssetBaseUrl:
             ModelScopeSource().asset_base_url("u/r")
             == "https://modelscope.cn/models/u/r/resolve/master"
         )
+
+
+# ---------------------------------------------------------------------------
+# Download support
+# ---------------------------------------------------------------------------
+
+
+class TestListFiles:
+    @pytest.mark.asyncio
+    async def test_huggingface_reads_tree_api_with_lfs_sizes(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_json(url, **_kwargs):
+            captured["url"] = url
+            return 200, [
+                {"path": "README.md", "size": 120},
+                {"path": "a/model.safetensors", "size": 300},
+                {"path": "b.safetensors", "size": 0, "lfs": {"size": 200}},
+            ]
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+
+        files = await HuggingFaceSource().list_files("u/r")
+
+        assert captured["url"] == "https://huggingface.co/api/models/u/r/tree/main"
+        assert files == [
+            {"filename": "a/model.safetensors", "size": 300},
+            {"filename": "b.safetensors", "size": 200},
+        ]
+
+    @pytest.mark.asyncio
+    async def test_huggingface_honours_explicit_revision(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_json(url, **_kwargs):
+            captured["url"] = url
+            return 200, []
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+
+        await HuggingFaceSource().list_files("u/r", "v2.0")
+
+        assert captured["url"].endswith("/tree/v2.0")
+
+    @pytest.mark.asyncio
+    async def test_modelscope_reads_repo_files_api(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_json(url, **_kwargs):
+            captured["url"] = url
+            return 200, {
+                "Data": {
+                    "Files": [
+                        # directories are listed too and must be dropped
+                        {"Type": "tree", "Path": "vae", "Size": 0},
+                        {"Type": "blob", "Path": "README.md", "Size": 100},
+                        {"Type": "blob", "Path": "sub/model.safetensors", "Size": 500},
+                        {"Type": "blob", "Path": "model.ckpt", "Size": 200},
+                    ]
+                }
+            }
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        files = await ModelScopeSource().list_files("u/r")
+
+        assert captured["url"] == (
+            "https://modelscope.cn/api/v1/models/u/r/repo/files?Revision=master"
+        )
+        assert files == [
+            {"filename": "sub/model.safetensors", "size": 500},
+            {"filename": "model.ckpt", "size": 200},
+        ]
+
+    @pytest.mark.asyncio
+    async def test_missing_repo_is_reported_as_not_found(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 404, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        with pytest.raises(ModelSourceError) as excinfo:
+            await ModelScopeSource().list_files("u/r")
+
+        assert excinfo.value.status == 404
+        assert "not found" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_transport_failure_is_reported_as_bad_gateway(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 0, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+
+        with pytest.raises(ModelSourceError) as excinfo:
+            await HuggingFaceSource().list_files("u/r")
+
+        assert excinfo.value.status == 502
+
+
+class TestDownloadUrls:
+    def test_huggingface_resolve_url(self):
+        assert HuggingFaceSource().file_download_url("u/r", "sub/f.safetensors") == (
+            "https://huggingface.co/u/r/resolve/main/sub/f.safetensors"
+        )
+
+    def test_modelscope_resolve_url_defaults_to_master(self):
+        assert ModelScopeSource().file_download_url("u/r", "sub/f.safetensors") == (
+            "https://modelscope.cn/models/u/r/resolve/master/sub/f.safetensors"
+        )
+
+    def test_explicit_revision_wins(self):
+        assert ModelScopeSource().file_download_url("u/r", "f.bin", "v1") == (
+            "https://modelscope.cn/models/u/r/resolve/v1/f.bin"
+        )
+
+    def test_tensorart_refuses_to_build_a_download_url(self):
+        source = TensorArtSource()
+        assert source.supports_download is False
+        with pytest.raises(ModelSourceError):
+            source.file_download_url("123", "f.safetensors")
+
+    @pytest.mark.asyncio
+    async def test_tensorart_lists_nothing(self):
+        assert await TensorArtSource().list_files("123") == []
+
+
+class TestSourceIdValidation:
+    @pytest.mark.parametrize(
+        "source_id",
+        ["u/r", "black-forest-labs/FLUX.1-dev", "AI-ModelScope/stable-diffusion-v1-5"],
+    )
+    def test_accepts_repo_ids(self, source_id):
+        assert is_valid_source_id(source_id) is True
+
+    @pytest.mark.parametrize(
+        "source_id",
+        [
+            "",
+            "noslash",
+            "a/b/c",
+            "../etc/passwd",
+            "u/..",
+            "u/.",
+            ".hidden/r",
+            "u/r with space",
+            "/r",
+            "u/",
+        ],
+    )
+    def test_rejects_unsafe_ids(self, source_id):
+        assert is_valid_source_id(source_id) is False
+
+
+class TestDownloadSourceRegistry:
+    def test_downloadable_sources_excludes_link_only_sites(self):
+        platforms = {source.platform for source in downloadable_sources()}
+        assert platforms == {"huggingface", "modelscope"}
+
+    def test_get_download_source_rejects_link_only_platform(self):
+        assert get_download_source("tensorart") is None
+        assert get_download_source("nope") is None
+        assert get_download_source("modelscope").platform == "modelscope"
+        assert get_download_source("huggingface").platform == "huggingface"

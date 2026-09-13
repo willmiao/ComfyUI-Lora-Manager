@@ -20,11 +20,14 @@ HTTP handlers never need site-specific branching.
 from __future__ import annotations
 
 import logging
+import os
 import re
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 
 import aiohttp
+
+from ...utils.constants import MODEL_FILE_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +61,36 @@ class SourceRef:
     """Canonical URL of the model page."""
 
 
+class ModelSourceError(Exception):
+    """Raised when a model source cannot satisfy a request.
+
+    Carries the HTTP status the API handler should answer with, so the
+    handlers stay free of per-site error mapping.
+    """
+
+    def __init__(self, message: str, status: int = 502) -> None:
+        super().__init__(message)
+        self.status = status
+
+
+#: Repository ids are always exactly ``owner/name``. Components may contain
+#: dots (``black-forest-labs/FLUX.1-dev``) but must not be empty, ``.`` / ``..``,
+#: or start with a dot - the id is used as a path segment on disk.
+_SOURCE_ID_COMPONENT = re.compile(r"^[A-Za-z0-9_][A-Za-z0-9_.\-]*$")
+
+
+def is_valid_source_id(source_id: str) -> bool:
+    """Return ``True`` when *source_id* is a safe ``owner/name`` repository id."""
+
+    if not source_id or not isinstance(source_id, str) or source_id.count("/") != 1:
+        return False
+    owner, name = source_id.split("/", 1)
+    return all(
+        part and part not in (".", "..") and _SOURCE_ID_COMPONENT.match(part)
+        for part in (owner, name)
+    )
+
+
 async def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
     """Fetch *url* and return its body as text, or ``""`` on any failure.
 
@@ -80,6 +113,34 @@ async def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
     return ""
 
 
+async def fetch_json(
+    url: str, *, timeout: int = HTTP_TIMEOUT
+) -> tuple[int, Any]:
+    """Fetch *url* and return ``(status, parsed_body)``.
+
+    Unlike :func:`fetch_text` this reports the status, because callers such as
+    the file-listing endpoints need to distinguish "repo not found" (404) from
+    a transport failure.  ``parsed_body`` is ``None`` when the response is not
+    JSON or the request failed outright (status ``0``).
+    """
+
+    try:
+        async with aiohttp.ClientSession(
+            headers={"User-Agent": USER_AGENT},
+            timeout=aiohttp.ClientTimeout(total=timeout),
+        ) as session:
+            async with session.get(url) as resp:
+                if resp.status != 200:
+                    return resp.status, None
+                try:
+                    return resp.status, await resp.json(content_type=None)
+                except Exception:
+                    return resp.status, None
+    except Exception as exc:  # pragma: no cover - network dependent
+        logger.debug("Failed to fetch %s: %s", url, exc)
+        return 0, None
+
+
 class ModelSource:
     """Description and I/O for one external model hosting site."""
 
@@ -94,6 +155,12 @@ class ModelSource:
 
     #: Whether models can be downloaded directly from this site.
     supports_download: bool = False
+
+    #: Branch used when the caller does not pass an explicit revision.
+    default_revision: str = ""
+
+    #: Sub-directory the "use default paths" template places downloads in.
+    default_subdir: str = ""
 
     #: Lenient pattern used to recognise URLs already stored in metadata.
     #: Captures the site-specific source id in group ``id``.
@@ -163,6 +230,45 @@ class ModelSource:
 
         return ""
 
+    # ------------------------------------------------------------------
+    # Download support
+    # ------------------------------------------------------------------
+
+    async def list_files(
+        self, source_id: str, revision: str = ""
+    ) -> list[dict[str, Any]]:
+        """List downloadable weight files in *source_id*.
+
+        Returns ``[{"filename": <repo-relative path>, "size": <bytes>}]``,
+        largest first, filtered to :data:`MODEL_FILE_EXTENSIONS`.  Sites
+        without download support return an empty list.
+
+        Raises :class:`ModelSourceError` when the repository cannot be read,
+        so the handler can surface "not found" separately from a transport
+        failure.
+        """
+
+        return []
+
+    def file_download_url(
+        self, source_id: str, filename: str, revision: str = ""
+    ) -> str:
+        """Return the direct (redirecting) download URL for one file."""
+
+        raise ModelSourceError(
+            f"{self.label or self.platform} does not support downloads", status=400
+        )
+
+    def resolve_revision(self, revision: str = "") -> str:
+        """Return *revision*, falling back to this site's default branch."""
+
+        return revision or self.default_revision
+
+    def page_url_for_file(self, source_id: str, filename: str) -> str:
+        """Return the human-facing page for *filename* inside *source_id*."""
+
+        return self.canonical_url(source_id)
+
     def __repr__(self) -> str:  # pragma: no cover - debugging aid
         return f"<ModelSource {self.platform}>"
 
@@ -175,12 +281,33 @@ def clean_source_url(url: Any) -> str:
     return url.strip()
 
 
+def filter_weight_files(entries: Iterable[tuple[str, int]]) -> list[dict[str, Any]]:
+    """Keep model-weight files from ``(path, size)`` pairs, largest first.
+
+    Every site lists a lot more than weights (READMEs, configs, tokenizers,
+    …); the download picker only ever wants the files ComfyUI can load, which
+    is exactly :data:`MODEL_FILE_EXTENSIONS`.
+    """
+
+    files = [
+        {"filename": path, "size": int(size or 0)}
+        for path, size in entries
+        if path and os.path.splitext(path)[1].lower() in MODEL_FILE_EXTENSIONS
+    ]
+    files.sort(key=lambda entry: entry["size"], reverse=True)
+    return files
+
+
 __all__ = [
     "GROUP_PREFIXES",
     "HTTP_TIMEOUT",
     "ModelSource",
+    "ModelSourceError",
     "SourceRef",
     "USER_AGENT",
     "clean_source_url",
+    "fetch_json",
     "fetch_text",
+    "filter_weight_files",
+    "is_valid_source_id",
 ]

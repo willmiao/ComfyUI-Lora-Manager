@@ -1,8 +1,13 @@
-"""Handlers for Hugging Face model listing and download.
+"""Handlers for external model sources: linking, file listing and downloads.
 
-Minimal MVP implementation — uses direct HTTP to the HF API for file
-listing and the project's existing aiohttp-based Downloader for
-downloading.  No huggingface_hub dependency required.
+Covers every site registered in :mod:`py.services.model_sources`.  The module
+was Hugging Face only (``hf_handlers.py`` / ``HfHandler``) until ModelScope
+downloads were added; the per-site differences now live in the providers, so
+this file has no platform branches beyond the capability lookups.
+
+The historical route paths (``/api/lm/set-hf-url``, ``/api/lm/hf-repo-files``,
+``/api/lm/download-hf-model``) are still registered as aliases of the generic
+handlers, so existing callers keep working.
 """
 
 from __future__ import annotations
@@ -10,10 +15,8 @@ from __future__ import annotations
 import json
 import logging
 import os
-import re
 from typing import Any
 
-import aiohttp
 from aiohttp import web
 
 from ...config import config
@@ -23,14 +26,17 @@ from ...services.downloader import (
 )
 from ...services.aria2_downloader import Aria2Downloader
 from ...services.model_sources import (
+    ModelSourceError,
+    SourceRef,
     detect_source,
+    get_download_source,
+    is_valid_source_id,
     list_sources,
     normalize_metadata_source,
 )
 from ...services.settings_manager import get_settings_manager
 from ...services.service_registry import ServiceRegistry
 from ...services.websocket_manager import ws_manager
-from ...utils.constants import MODEL_FILE_EXTENSIONS
 from ...utils.metadata_manager import MetadataManager
 from ...utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
 
@@ -38,28 +44,6 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_MODEL_CLASS = LoraMetadata
 _DEFAULT_SCANNER_GETTER = "get_lora_scanner"
-
-# Shared aiohttp session for HF API calls (created on first use)
-_hf_api_session: aiohttp.ClientSession | None = None
-
-
-async def _get_hf_api_session() -> aiohttp.ClientSession:
-    """Get or create the shared aiohttp session for HF API calls."""
-    global _hf_api_session  # needed because we reassign the module-level name
-    if _hf_api_session is None or _hf_api_session.closed:
-        _hf_api_session = aiohttp.ClientSession(
-            headers={"User-Agent": "ComfyUI-LoRA-Manager/1.0"},
-            timeout=aiohttp.ClientTimeout(total=30),
-        )
-    return _hf_api_session
-
-
-async def close_hf_api_session() -> None:
-    """Close the shared HF API session, if it was ever created."""
-    global _hf_api_session
-    if _hf_api_session is not None and not _hf_api_session.closed:
-        await _hf_api_session.close()
-        _hf_api_session = None
 
 
 def _infer_model_type(model_root: str) -> tuple[Any, str]:
@@ -101,18 +85,19 @@ def _infer_model_type(model_root: str) -> tuple[Any, str]:
     return _DEFAULT_MODEL_CLASS, _DEFAULT_SCANNER_GETTER
 
 
-async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
+async def _save_source_metadata(
+    dest_path: str, ref: SourceRef, model_root: str
+) -> None:
     """Create a proper .metadata.json and add the model to the scanner cache.
 
     Uses ``MetadataManager.create_default_metadata()`` which computes the
     SHA256 hash, extracts safetensors header metadata (base_model), and
     produces a fully-populated ``LoraMetadata`` (or ``CheckpointMetadata`` /
-    ``EmbeddingMetadata``) object.  We then overlay HF-specific fields and
-    register the model in the in-memory scanner cache so it appears
+    ``EmbeddingMetadata``) object.  We then overlay the external-source fields
+    and register the model in the in-memory scanner cache so it appears
     immediately without a full filesystem walk.
     """
     try:
-        hf_url = f"https://huggingface.co/{repo}"
         model_class, scanner_getter_name = _infer_model_type(model_root)
 
         # 1. Create proper metadata (computes SHA256, reads safetensors headers)
@@ -123,15 +108,21 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
             logger.warning("create_default_metadata returned None for %s", dest_path)
             return
 
-        # 2. Overlay HF-specific fields
-        metadata._unknown_fields["hf_url"] = hf_url
-        metadata._unknown_fields["source_url"] = hf_url
-        metadata._unknown_fields["source_platform"] = "huggingface"
-        metadata.from_civitai = False  # HF models are not from CivitAI
+        # 2. Overlay the external-source fields (`hf_url` is written by
+        #    normalisation for Hugging Face only)
+        fields = metadata._unknown_fields
+        fields["source_url"] = ref.url
+        fields["source_platform"] = ref.platform
+        if ref.platform == "huggingface":
+            fields["hf_url"] = ref.url
+        metadata.from_civitai = False  # externally-sourced models are not from CivitAI
 
         # 3. Save metadata atomically
         await MetadataManager.save_metadata(dest_path, metadata)
-        logger.info("Saved HF metadata (with hf_url) for %s", dest_path)
+        logger.info(
+            "Saved %s metadata (source=%s) for %s",
+            ref.platform, ref.url, dest_path,
+        )
 
         # 4. Determine relative folder path for cache
         #    model_root is an absolute path; dest_path is under it
@@ -145,13 +136,12 @@ async def _save_hf_metadata(dest_path: str, repo: str, model_root: str) -> None:
         if scanner_getter is not None:
             scanner = await scanner_getter()
             if scanner is not None:
-                metadata_dict = metadata.to_dict()
-                metadata_dict["hf_url"] = hf_url
+                metadata_dict = normalize_metadata_source(metadata.to_dict())
                 await scanner.add_model_to_cache(metadata_dict, folder)
                 logger.info("Added %s to scanner cache (folder=%s)", dest_path, folder)
 
     except Exception as exc:
-        logger.warning("Failed to save HF metadata for %s: %s", dest_path, exc)
+        logger.warning("Failed to save source metadata for %s: %s", dest_path, exc)
 
 
 def _find_matching_root(dest_dir: str) -> str | None:
@@ -193,14 +183,23 @@ async def _add_to_scanner_cache(dest_path: str, metadata: dict[str, Any]) -> Non
     await scanner.update_single_model_cache(dest_path, dest_path, metadata)
 
 
-class HfHandler:
-    """Handle Hugging Face model browsing and download."""
+def _unsupported_platform_error(platform: str) -> web.Response:
+    supported = ", ".join(source.label for source in list_sources() if source.supports_download)
+    return web.json_response(
+        {"error": f"'{platform}' does not support downloads. Supported: {supported}"},
+        status=400,
+    )
+
+
+class ModelSourceHandler:
+    """Handle external model browsing, linking and downloads."""
 
     async def get_model_sources(self, request: web.Request) -> web.Response:
         """List the external model sites the UI can link a model to.
 
-        Used by the "Link Model" dialog to validate URLs client-side and to
-        explain which sites support AI metadata enrichment.
+        Used by the "Link Model" dialog to validate URLs client-side, to
+        explain which sites support AI metadata enrichment, and to pick the
+        right download endpoint/revision.
         """
 
         return web.json_response([
@@ -209,6 +208,7 @@ class HfHandler:
                 "label": source.label,
                 "supports_enrichment": source.supports_enrichment,
                 "supports_download": source.supports_download,
+                "default_revision": source.default_revision,
                 "example_url": source.canonical_url(
                     "user/repo" if source.platform != "tensorart" else "827823520299086029"
                 ),
@@ -219,10 +219,12 @@ class HfHandler:
     async def set_hf_url(self, request: web.Request) -> web.Response:
         """Link a model file to its page on an external model site.
 
-        Accepts ``source_url`` (preferred) or the legacy ``hf_url`` /
-        ``url`` payload key.  Hugging Face, ModelScope, and TensorArt URLs
-        are recognised; the platform is stored alongside the canonical URL.
-        TensorArt models can be linked and browsed, but not AI-enriched.
+        Accepts ``source_url`` (preferred) or the legacy ``hf_url`` / ``url``
+        payload key.  Every registered site is recognised and the platform is
+        stored alongside the canonical URL.  TensorArt models can be linked and
+        browsed, but not AI-enriched.
+
+        The route path keeps its historical ``set-hf-url`` name.
         """
 
         try:
@@ -337,74 +339,60 @@ class HfHandler:
                 status=500,
             )
 
-    async def get_hf_repo_files(self, request: web.Request) -> web.Response:
-        """List model-weight files from a HF repo with real file sizes.
+    async def list_model_source_files(self, request: web.Request) -> web.Response:
+        """List the downloadable weight files of an external repository.
 
-        Uses the HF tree API endpoint which returns accurate file sizes
-        (including LFS-tracked files), unlike the model info endpoint.
+        Query params: ``platform``, ``repo`` (``owner/name``), ``revision``
+        (optional; each site has its own default branch).
+
+        Returns a JSON array of ``{"filename", "size"}``, largest first —
+        the same shape the Hugging Face endpoint has always returned.
         """
-        repo = request.query.get("repo", "").strip()
-        if not repo or "/" not in repo:
+
+        platform = (request.query.get("platform") or "").strip()
+        repo = (request.query.get("repo") or "").strip()
+        revision = (request.query.get("revision") or "").strip()
+
+        source = get_download_source(platform)
+        if source is None:
+            return _unsupported_platform_error(platform)
+        if not is_valid_source_id(repo):
             return web.json_response(
-                {"error": "Missing or invalid 'repo' parameter (expected user/repo)"},
+                {"error": "Missing or invalid 'repo' parameter (expected owner/name)"},
                 status=400,
             )
 
-        url = f"https://huggingface.co/api/models/{repo}/tree/main"
-
         try:
-            session = await _get_hf_api_session()
-            async with session.get(url) as resp:
-                if resp.status == 404:
-                    return web.json_response(
-                        {"error": f"Repo '{repo}' not found"}, status=404
-                    )
-                if resp.status != 200:
-                    text = await resp.text()
-                    return web.json_response(
-                        {"error": f"HF API error {resp.status}: {text[:200]}"},
-                        status=resp.status,
-                    )
-                tree: list[dict[str, Any]] = await resp.json()
+            files = await source.list_files(repo, revision)
+        except ModelSourceError as exc:
+            return web.json_response({"error": str(exc)}, status=exc.status)
         except Exception as exc:
-            logger.error("Failed to fetch HF repo files: %s", exc)
+            logger.error("Failed to list %s files in %s: %s", platform, repo, exc)
             return web.json_response({"error": str(exc)}, status=502)
 
-        files: list[dict[str, Any]] = []
-        for entry in tree:
-            path: str = entry.get("path", "")
-            ext = os.path.splitext(path)[1].lower()
-            if ext not in MODEL_FILE_EXTENSIONS:
-                continue
-            size = entry.get("size", 0) or 0
-            if size == 0 and "lfs" in entry:
-                size = entry["lfs"].get("size", 0) or 0
-            files.append({
-                "filename": path,
-                "size": size,
-            })
-
-        files.sort(key=lambda f: f["size"], reverse=True)
         return web.json_response(files)
 
-    async def download_hf_model(self, request: web.Request) -> web.Response:
-        """Download a single file from Hugging Face into the model directory.
+    async def download_model_source(self, request: web.Request) -> web.Response:
+        """Download a single file from an external repository.
 
         POST JSON body::
 
             {
-              "repo": "dx8152/Flux2-Klein-9B-Consistency",
-              "filename": "Flux2-Klein-9B-consistency-V2.safetensors",
-              "revision": "main",
+              "platform": "modelscope",
+              "repo": "owner/name",
+              "filename": "subdir/model.safetensors",
+              "revision": "master",
               "model_root": "loras",
               "relative_path": "",
               "use_default_paths": false,
               "download_id": "optional-batch-id"
             }
 
+        ``platform`` defaults to ``huggingface`` when omitted, which keeps the
+        legacy ``/api/lm/download-hf-model`` payload working unchanged.
+
         If ``download_id`` is provided, real-time progress (bytes, speed,
-        percentage) is broadcast via the WebSocket progress system, matching
-        the CivitAI download experience.
+        percentage) is broadcast via the WebSocket progress system.
 
         Respects the ``download_backend`` setting (``aria2`` or ``default``).
         """
@@ -413,30 +401,33 @@ class HfHandler:
         except json.JSONDecodeError:
             return web.json_response({"error": "Invalid JSON"}, status=400)
 
+        platform = (payload.get("platform") or "huggingface").strip()
         repo = (payload.get("repo") or "").strip()
         filename = (payload.get("filename") or "").strip()
-        revision = (payload.get("revision") or "main").strip()
+        revision = (payload.get("revision") or "").strip()
         model_root = (payload.get("model_root") or "").strip()
         relative_path = (payload.get("relative_path") or "").strip()
         use_default_paths = bool(payload.get("use_default_paths", False))
         download_id: str | None = payload.get("download_id")
 
         logger.info(
-            "download_hf_model: repo=%s file=%s root=%s download_id=%s",
-            repo, filename, model_root, download_id,
+            "download_model_source: platform=%s repo=%s file=%s root=%s download_id=%s",
+            platform, repo, filename, model_root, download_id,
         )
+
+        source = get_download_source(platform)
+        if source is None:
+            return _unsupported_platform_error(platform)
 
         if not repo or not filename:
             return web.json_response(
                 {"error": "Missing required fields: 'repo' and 'filename'"}, status=400
             )
 
-        # Validate repo format — must be user/repo_name
-        if repo.count("/") != 1 or not re.match(r"^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$", repo):
+        # `owner/name` only; the components become path segments below.
+        if not is_valid_source_id(repo):
             return web.json_response({"error": f"Invalid repo format: {repo}"}, status=400)
-        author, repo_name = repo.split("/", 1)
-        if ".." in (author, repo_name) or "." in (author, repo_name):
-            return web.json_response({"error": f"Invalid repo format: {repo}"}, status=400)
+        owner, repo_name = repo.split("/", 1)
 
         # Validate filename — must not contain path traversal
         if ".." in filename:
@@ -455,21 +446,21 @@ class HfHandler:
         # unnecessary when the frontend sends the path from its own dropdown
         # (populated from scanner roots).  Using the "business path" directly
         # keeps dest_path consistent with scanner roots so that later folder
-        # derivation (in _save_hf_metadata) works correctly.
+        # derivation (in _save_source_metadata) works correctly.
         if os.path.isabs(model_root):
             base_dir = os.path.normpath(model_root)
         else:
             base_dir = os.path.normpath(os.path.join(os.getcwd(), "models", model_root))
 
         if use_default_paths:
-            target_dir = os.path.join(base_dir, "huggingface", author, repo_name)
+            target_dir = os.path.join(base_dir, source.default_subdir, owner, repo_name)
         elif relative_path:
             target_dir = os.path.join(base_dir, relative_path)
         else:
             target_dir = base_dir
 
-        # Strip HF repo subdirectory — "diffusion_models/xxx.safetensors"
-        # is an HF repo convention, not meaningful for local storage.
+        # Strip the repository sub-directory — "diffusion_models/xxx.safetensors"
+        # is a repository convention, not meaningful for local storage.
         file_base = os.path.basename(filename)
 
         os.makedirs(target_dir, exist_ok=True)
@@ -477,16 +468,18 @@ class HfHandler:
 
         # Check if already exists (simple skip)
         if os.path.exists(dest_path) and os.path.getsize(dest_path) > 0:
-            logger.info("download_hf_model: file already exists, skipping — %s", dest_path)
+            logger.info("download_model_source: file already exists, skipping — %s", dest_path)
             return web.json_response({
                 "success": True,
                 "message": f"File already exists: {dest_path}",
                 "path": dest_path,
             })
 
-        # Build HF resolve URL
-        resolve_url = (
-            f"https://huggingface.co/{repo}/resolve/{revision}/{filename}"
+        # Built per request: sites that redirect to a CDN hand out a
+        # time-limited token in the redirect, so the URL must never be cached.
+        resolve_url = source.file_download_url(repo, filename, revision)
+        ref = SourceRef(
+            platform=source.platform, source_id=repo, url=source.canonical_url(repo)
         )
 
         # Set up progress callback if download_id is provided
@@ -528,28 +521,27 @@ class HfHandler:
 
         if download_backend == "aria2":
             aria2 = await Aria2Downloader.get_instance()
-            aid = download_id or f"hf_{repo}_{filename}"
+            aid = download_id or f"{source.platform}_{repo}_{filename}"
             try:
-                hf_success, hf_result = await aria2.download_file(
+                ok, result = await aria2.download_file(
                     url=resolve_url,
                     save_path=dest_path,
                     download_id=aid,
                     progress_callback=progress_callback,
                 )
-                if hf_success:
-                    await _save_hf_metadata(dest_path, repo, model_root)
+                if ok:
+                    await _save_source_metadata(dest_path, ref, model_root)
                     return web.json_response({
                         "success": True,
                         "message": f"Downloaded to {dest_path}",
                         "path": dest_path,
                     })
-                else:
-                    return web.json_response(
-                        {"success": False, "error": hf_result or "aria2 download failed"},
-                        status=500,
-                    )
+                return web.json_response(
+                    {"success": False, "error": result or "aria2 download failed"},
+                    status=500,
+                )
             except Exception as exc:
-                logger.error("HF download (aria2) failed: %s", exc)
+                logger.error("%s download (aria2) failed: %s", platform, exc)
                 return web.json_response(
                     {"success": False, "error": str(exc)}, status=500
                 )
@@ -565,19 +557,18 @@ class HfHandler:
                 progress_callback=progress_callback,
             )
             if success:
-                await _save_hf_metadata(dest_path, repo, model_root)
+                await _save_source_metadata(dest_path, ref, model_root)
                 return web.json_response({
                     "success": True,
                     "message": f"Downloaded to {result}",
                     "path": result,
                 })
-            else:
-                return web.json_response(
-                    {"success": False, "error": result or "Download failed"},
-                    status=500,
-                )
+            return web.json_response(
+                {"success": False, "error": result or "Download failed"},
+                status=500,
+            )
         except Exception as exc:
-            logger.error("HF download failed: %s", exc)
+            logger.error("%s download failed: %s", platform, exc)
             return web.json_response(
                 {"success": False, "error": str(exc)}, status=500
             )

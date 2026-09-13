@@ -203,10 +203,18 @@ export const DOWNLOAD_ENDPOINTS = {
     exampleImagesMissing: '/api/lm/download-example-images' // Download only missing example images
 };
 
-// Hugging Face API endpoints
+// External model source endpoints (Hugging Face / ModelScope).
+// The hf-* paths are the historical names, kept as server-side aliases.
+export const MODEL_SOURCE_ENDPOINTS = {
+    repoFiles: '/api/lm/model-source-files',
+    download: '/api/lm/download-model-source',
+    sources: '/api/lm/model-sources',
+};
+
+/** @deprecated use MODEL_SOURCE_ENDPOINTS */
 export const HF_ENDPOINTS = {
-    repoFiles: '/api/lm/hf-repo-files',
-    download: '/api/lm/download-hf-model',
+    repoFiles: MODEL_SOURCE_ENDPOINTS.repoFiles,
+    download: MODEL_SOURCE_ENDPOINTS.download,
 };
 
 // WebSocket endpoints

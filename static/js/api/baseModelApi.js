@@ -8,6 +8,7 @@ import {
     isValidModelType,
     DOWNLOAD_ENDPOINTS,
     HF_ENDPOINTS,
+    MODEL_SOURCE_ENDPOINTS,
     WS_ENDPOINTS
 } from './apiConfig.js';
 import { resetAndReload } from './modelApiFactory.js';
@@ -1367,30 +1368,52 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchHfRepoFiles(repo, revision = 'main') {
+    /**
+     * List the downloadable weight files of an external repository.
+     * @param {string} repo - `owner/name`
+     * @param {string} [platform] - `huggingface` (default) or `modelscope`
+     * @param {string} [revision] - branch; each site has its own default
+     */
+    async fetchModelSourceFiles(repo, platform = 'huggingface', revision = '') {
         try {
-            const params = new URLSearchParams({ repo, revision });
-            const response = await fetch(`${HF_ENDPOINTS.repoFiles}?${params}`);
+            const params = new URLSearchParams({ repo, platform });
+            if (revision) params.set('revision', revision);
+            const response = await fetch(`${MODEL_SOURCE_ENDPOINTS.repoFiles}?${params}`);
             if (!response.ok) {
                 const err = await response.json().catch(() => ({}));
-                throw new Error(err.error || 'Failed to fetch HF repo files');
+                throw new Error(err.error || 'Failed to fetch repository files');
             }
             return await response.json();
         } catch (error) {
-            console.error('Error fetching HF repo files:', error);
+            console.error('Error fetching repository files:', error);
             throw error;
         }
     }
 
-    async downloadHfModel({ repo, filename, revision, modelRoot, relativePath, useDefaultPaths, download_id }) {
+    /** Backwards-compatible Hugging Face wrapper. */
+    async fetchHfRepoFiles(repo, revision = 'main') {
+        return this.fetchModelSourceFiles(repo, 'huggingface', revision);
+    }
+
+    async downloadModelSource({
+        platform = 'huggingface',
+        repo,
+        filename,
+        revision,
+        modelRoot,
+        relativePath,
+        useDefaultPaths,
+        download_id,
+    }) {
         try {
-            const response = await fetch(HF_ENDPOINTS.download, {
+            const response = await fetch(MODEL_SOURCE_ENDPOINTS.download, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    platform,
                     repo,
                     filename,
-                    revision: revision || 'main',
+                    revision: revision || '',
                     model_root: modelRoot,
                     relative_path: relativePath || '',
                     use_default_paths: useDefaultPaths || false,
@@ -1404,9 +1427,23 @@ export class BaseModelApiClient {
 
             return await response.json();
         } catch (error) {
-            console.error('Error downloading HF model:', error);
+            console.error('Error downloading model:', error);
             throw error;
         }
+    }
+
+    /** Backwards-compatible Hugging Face wrapper. */
+    async downloadHfModel({ repo, filename, revision, modelRoot, relativePath, useDefaultPaths, download_id }) {
+        return this.downloadModelSource({
+            platform: 'huggingface',
+            repo,
+            filename,
+            revision: revision || 'main',
+            modelRoot,
+            relativePath,
+            useDefaultPaths,
+            download_id,
+        });
     }
 
     _buildQueryParams(baseParams, pageState) {

@@ -13,6 +13,13 @@ import { buildCivitaiUrl, extractCivitaiModelUrlParts, normalizeCivitaiPageHost 
 import { formatFileSize } from '../utils/formatters.js';
 import { showDownloadBatchSummary } from '../components/DownloadBatchSummaryModal.js';
 import { openOtherModelsSettings } from '../utils/otherModels.js';
+import {
+    buildModelSourceFilePage,
+    detectModelSourceDownloadUrl,
+    getModelSource,
+    isExternalModelSource,
+    isValidRepoId,
+} from '../utils/modelSourceHelpers.js';
 
 export class DownloadManager {
     constructor() {
@@ -39,10 +46,11 @@ export class DownloadManager {
         this.isBatchMode = false;
         this.editingBatchIndex = -1;
 
-        // HF download state
-        this.hfRepoId = null;
-        this.hfSelectedFiles = [];
-        this.hfRepoCollapsed = {};
+        // External repository download state (Hugging Face / ModelScope)
+        this.sourcePlatform = 'huggingface';
+        this.sourceRepoId = null;
+        this.sourceSelectedFiles = [];
+        this.sourceRepoCollapsed = {};
 
         this.loadingManager = new LoadingManager();
         this.folderTreeManager = new FolderTreeManager();
@@ -186,10 +194,11 @@ export class DownloadManager {
         // Reset default path toggle
         this.loadDefaultPathSetting();
 
-        // Reset HF state
-        this.hfRepoId = null;
-        this.hfSelectedFiles = [];
-        this.hfRepoCollapsed = {};
+        // Reset external repository state
+        this.sourcePlatform = 'huggingface';
+        this.sourceRepoId = null;
+        this.sourceSelectedFiles = [];
+        this.sourceRepoCollapsed = {};
     }
 
     async retrieveVersionsForModel(modelId, source = null) {
@@ -212,10 +221,12 @@ export class DownloadManager {
 
         // Detect URL types — all URLs must share the same source type
         const urlTypes = urls.map(u => DownloadManager.detectUrlType(u));
-        const isHf = urlTypes.every(t => t && (t.type === 'hf-resolve' || t.type === 'hf-repo'));
+        const isExternalSource = urlTypes.every(
+            t => t && (t.type === 'model-source-repo' || t.type === 'model-source-file')
+        );
         const isCivitai = urlTypes.every(t => t && t.type === 'civitai');
 
-        if (!isHf && !isCivitai) {
+        if (!isExternalSource && !isCivitai) {
             const allValid = urlTypes.every(t => t !== null);
             if (!allValid) {
                 errorElement.textContent = translate('modals.download.errors.invalidUrl');
@@ -228,8 +239,8 @@ export class DownloadManager {
             }
         }
 
-        if (isHf) {
-            return this._validateAndFetchHf(urls, errorElement);
+        if (isExternalSource) {
+            return this._validateAndFetchExternalRepo(urls, errorElement);
         }
 
         // --- Original CivitAI flow below ---
@@ -327,45 +338,66 @@ export class DownloadManager {
         this.showBatchPreviewStep();
     }
 
-    // ---- Hugging Face download flow ----
+    // ---- External repository download flow (Hugging Face / ModelScope) ----
 
-    async _validateAndFetchHf(urls, errorElement) {
+    /** Rendering group key: the same repo on two sites is two groups. */
+    _externalGroupKey(item) {
+        return `${item.source}:${item.repo || 'unknown'}`;
+    }
+
+    _defaultRevisionFor(platform) {
+        const source = getModelSource(platform);
+        return (source && source.defaultRevision) || '';
+    }
+
+    _makeExternalItem(url, info, file) {
+        return {
+            url,
+            source: info.platform,
+            platform: info.platform,
+            repo: info.repo,
+            revision: file.revision || this._defaultRevisionFor(info.platform),
+            filename: file.filename,
+            displayName: file.filename,
+            fileSizeBytes: file.size,
+            selectedVersion: true,
+            versions: [],
+            checked: false,
+            error: null,
+        };
+    }
+
+    /** Fetch a repository's weight files as flat batch items. */
+    async _fetchExternalRepoItems(url, info) {
+        const revision = this._defaultRevisionFor(info.platform);
+        const files = await this.apiClient.fetchModelSourceFiles(
+            info.repo, info.platform, revision
+        );
+        if (!files || files.length === 0) {
+            throw new Error(translate('modals.download.errors.noModelFiles'));
+        }
+        return files.map(file => this._makeExternalItem(url, info, { ...file, revision }));
+    }
+
+    async _validateAndFetchExternalRepo(urls, errorElement) {
         if (urls.length === 1) {
             const info = DownloadManager.detectUrlType(urls[0]);
-            // Direct file resolve URL → skip file selection, go to location
-            if (info.type === 'hf-resolve') {
+            // Direct file URL → skip file selection, go to location
+            if (info.type === 'model-source-file') {
                 this.isBatchMode = false;
-                this.hfRepoId = info.repo;
-                this.hfSelectedFiles = [info.filename];
-                this.source = 'huggingface';
+                this.sourcePlatform = info.platform;
+                this.sourceRepoId = info.repo;
+                this.sourceSelectedFiles = [info.filename];
+                this.source = info.platform;
                 this.proceedToLocation();
                 return;
             }
             // Repo URL → fetch file list and convert to batch items
             try {
                 this.loadingManager.showSimpleLoading(translate('modals.download.fetchingRepoFiles'));
-                const files = await this.apiClient.fetchHfRepoFiles(info.repo);
-                if (!files || files.length === 0) {
-                    throw new Error(translate('modals.download.errors.noModelFiles'));
-                }
                 this.isBatchMode = true;
-                this.batchModels = [];
-                this.source = 'huggingface';
-                for (const file of files) {
-                    this.batchModels.push({
-                        url: urls[0],
-                        source: 'huggingface',
-                        repo: info.repo,
-                        filename: file.filename,
-                        revision: 'main',
-                        displayName: file.filename,
-                        fileSizeBytes: file.size,
-                        selectedVersion: true,
-                        versions: [],
-                        checked: false,
-                        error: null,
-                    });
-                }
+                this.batchModels = await this._fetchExternalRepoItems(urls[0], info);
+                this.source = info.platform;
                 this.showBatchPreviewStep();
             } catch (err) {
                 errorElement.textContent = err.message;
@@ -375,10 +407,9 @@ export class DownloadManager {
             return;
         }
 
-        // Multiple HF URLs → batch mode: flatten all files from all repos
+        // Multiple URLs → batch mode: flatten all files from all repos
         this.isBatchMode = true;
         this.batchModels = [];
-        this.source = 'huggingface';
         this.loadingManager.showSimpleLoading(translate('modals.download.fetchingRepoFiles'));
 
         for (const url of urls) {
@@ -387,42 +418,15 @@ export class DownloadManager {
                 this.batchModels.push({ url, error: 'Invalid URL', versions: [], selectedVersion: null });
                 continue;
             }
-            if (info.type === 'hf-resolve') {
-                this.batchModels.push({
-                    url,
-                    source: 'huggingface',
-                    repo: info.repo,
+            this.source = info.platform;
+            if (info.type === 'model-source-file') {
+                this.batchModels.push(this._makeExternalItem(url, info, {
                     filename: info.filename,
-                    revision: info.revision || 'main',
-                    displayName: info.filename,
-                    selectedVersion: true,
-                    versions: [],
-                    checked: false,
-                    error: null,
-                });
-            } else if (info.type === 'hf-repo') {
+                    revision: info.revision,
+                }));
+            } else if (info.type === 'model-source-repo') {
                 try {
-                    const files = await this.apiClient.fetchHfRepoFiles(info.repo);
-                    if (!files || files.length === 0) {
-                        this.batchModels.push({ url, error: 'No model files found', versions: [], selectedVersion: null });
-                        continue;
-                    }
-                    // Flatten: create one batch item per file, all checked by default
-                    for (const file of files) {
-                        this.batchModels.push({
-                            url,
-                            source: 'huggingface',
-                            repo: info.repo,
-                            filename: file.filename,
-                            revision: 'main',
-                            displayName: file.filename,
-                            fileSizeBytes: file.size,
-                            selectedVersion: true,
-                            versions: [],
-                            checked: false,
-                            error: null,
-                        });
-                    }
+                    this.batchModels.push(...await this._fetchExternalRepoItems(url, info));
                 } catch (err) {
                     this.batchModels.push({ url, error: err.message, versions: [], selectedVersion: null });
                 }
@@ -480,7 +484,8 @@ export class DownloadManager {
      * Detect the source type of a download URL.
      * @param {string} url
      * @returns {{ type: string, repo?: string, filename?: string, revision?: string } | null}
-     *   type: 'civitai' | 'civarchive' | 'hf-resolve' | 'hf-repo' | 'direct-http'
+     *   type: 'civitai' | 'civarchive' | 'model-source-file' | 'model-source-repo'
+     *         | 'direct-http'
      */
     static detectUrlType(url) {
         const trimmed = url.trim();
@@ -492,38 +497,27 @@ export class DownloadManager {
             return { type: 'civitai' };
         }
 
-        // Hugging Face resolve/blob URL → direct file
-        // "blob" is the web preview page; it maps 1:1 to the "resolve" download URL
-        const hfResolveMatch = trimmed.match(/huggingface\.co\/([^/\s]+\/[^/\s]+)\/(?:resolve|blob)\/([^/\s]+)\/(.+)/i);
-        if (hfResolveMatch) {
-            return {
-                type: 'hf-resolve',
-                repo: hfResolveMatch[1],
-                revision: hfResolveMatch[2],
-                filename: hfResolveMatch[3],
-            };
-        }
-
-        // Hugging Face repo URL (huggingface.co/user/repo or bare user/repo path)
-        // Require huggingface.co prefix for full URLs; bare user/repo only without ://
-        const hfRepoMatch = trimmed.match(
-            trimmed.includes('://')
-                ? /^https?:\/\/huggingface\.co\/([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)(?:\/?$|$)/
-                : /^([a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+)$/
-        );
-        if (hfRepoMatch) {
+        // External model sources (Hugging Face / ModelScope). Repository URLs
+        // list every weight file; resolve URLs point at one file. Both are
+        // recognised through the shared registry, so adding a site is a
+        // registry change rather than a change here.
+        const sourceInfo = detectModelSourceDownloadUrl(trimmed);
+        if (sourceInfo) {
             // Reject path-traversal patterns like "../.." or "user/.."
-            const parts = hfRepoMatch[1].split('/');
-            if (parts.some(p => p === '.' || p === '..')) {
+            if (!isValidRepoId(sourceInfo.repo)) {
                 return null;
             }
             return {
-                type: 'hf-repo',
-                repo: hfRepoMatch[1],
+                type: sourceInfo.kind === 'file' ? 'model-source-file' : 'model-source-repo',
+                platform: sourceInfo.platform,
+                repo: sourceInfo.repo,
+                ...(sourceInfo.kind === 'file'
+                    ? { revision: sourceInfo.revision, filename: sourceInfo.filename }
+                    : {}),
             };
         }
 
-        // Direct HTTP(S) URL (non-HF)
+        // Direct HTTP(S) URL (non model-source)
         if (/^https?:\/\//i.test(trimmed)) {
             return { type: 'direct-http' };
         }
@@ -931,7 +925,7 @@ export class DownloadManager {
         }
 
         // In single-URL mode, validate version selection (skip for HF)
-        if (!this.isBatchMode && this.source !== 'huggingface') {
+        if (!this.isBatchMode && !isExternalModelSource(this.source)) {
             if (!this.currentVersion) {
                 showToast('toast.loras.pleaseSelectVersion', {}, 'error');
                 return;
@@ -1164,12 +1158,15 @@ export class DownloadManager {
     /**
      * Synthesize a clickable URL for a single-download failure entry.
      * Single downloads have no pasted URL, so the modal link is derived from
-     * the model/version ids (CivitAI) or the HF repo/file (HuggingFace).
+     * the model/version ids (CivitAI) or the external repo/file.
      */
     _buildSingleItemUrl({ modelId, versionId, source, repo = null, filename = null }) {
-        if (source === 'huggingface' && repo) {
-            const base = `https://huggingface.co/${encodeURI(repo)}`;
-            return filename ? `${base}/blob/${encodeURI('main')}/${encodeURI(filename)}` : base;
+        if (isExternalModelSource(source) && repo) {
+            return buildModelSourceFilePage({
+                platform: source,
+                repo,
+                filename,
+            }) || getModelSource(source).canonical(repo);
         }
         if (modelId) {
             return buildCivitaiUrl({
@@ -1490,8 +1487,8 @@ export class DownloadManager {
      * matched card-by-card via `_reconcileViewAfterDownload`; HF
      * downloads (no CivitAI identity to match) keep the legacy reload.
      */
-    async _reconcileBatchViewAfterDownload(completedCivitaiItems = [], hfCompletedCount = 0) {
-        if (hfCompletedCount > 0) {
+    async _reconcileBatchViewAfterDownload(completedCivitaiItems = [], externalCompletedCount = 0) {
+        if (externalCompletedCount > 0) {
             await resetAndReload(true);
             return;
         }
@@ -1661,10 +1658,11 @@ export class DownloadManager {
         return failedItems.length === 0;
     }
 
-    async _downloadHfSingle({ modelRoot, targetFolder, useDefaultPaths, files = null }) {
+    async _downloadExternalRepoFiles({ modelRoot, targetFolder, useDefaultPaths, files = null }) {
         modalManager.closeModal('downloadModal');
         this.loadingManager.restoreProgressBar();
-        const filesToDownload = files || this.hfSelectedFiles;
+        const platform = this.sourcePlatform;
+        const filesToDownload = files || this.sourceSelectedFiles;
         const totalFiles = filesToDownload.length;
         const updateProgress = this.loadingManager.showDownloadProgress(totalFiles);
 
@@ -1720,10 +1718,11 @@ export class DownloadManager {
                         }
                     };
 
-                    const response = await this.apiClient.downloadHfModel({
-                        repo: this.hfRepoId,
+                    const response = await this.apiClient.downloadModelSource({
+                        platform,
+                        repo: this.sourceRepoId,
                         filename,
-                        revision: 'main',
+                        revision: this._defaultRevisionFor(platform),
                         modelRoot,
                         relativePath: targetFolder,
                         useDefaultPaths,
@@ -1738,10 +1737,10 @@ export class DownloadManager {
                     } else {
                         failedFiles.push({
                             item: {
-                                source: 'huggingface',
-                                repo: this.hfRepoId,
+                                source: platform,
+                                repo: this.sourceRepoId,
                                 filename,
-                                url: this._buildSingleItemUrl({ source: 'huggingface', repo: this.hfRepoId, filename }),
+                                url: this._buildSingleItemUrl({ source: platform, repo: this.sourceRepoId, filename }),
                             },
                             error: response?.error || 'Unknown error',
                             name: filename,
@@ -1749,13 +1748,13 @@ export class DownloadManager {
                     }
                 } catch (err) {
                     if (!cancelled) {
-                        console.error(`Failed to download HF file ${filename}:`, err);
+                        console.error(`Failed to download repo file ${filename}:`, err);
                         failedFiles.push({
                             item: {
-                                source: 'huggingface',
-                                repo: this.hfRepoId,
+                                source: platform,
+                                repo: this.sourceRepoId,
                                 filename,
-                                url: this._buildSingleItemUrl({ source: 'huggingface', repo: this.hfRepoId, filename }),
+                                url: this._buildSingleItemUrl({ source: platform, repo: this.sourceRepoId, filename }),
                             },
                             error: err?.message || 'Unknown error',
                             name: filename,
@@ -1781,7 +1780,7 @@ export class DownloadManager {
                 total: totalFiles,
                 completed: completedDownloads,
                 failedItems: failedFiles,
-                onRetry: () => this._downloadHfSingle({
+                onRetry: () => this._downloadExternalRepoFiles({
                     modelRoot,
                     targetFolder,
                     useDefaultPaths,
@@ -1831,7 +1830,7 @@ export class DownloadManager {
 
         const validCount = this.batchModels.filter(m => {
             if (m.error) return false;
-            if (m.source === 'huggingface') return m.checked !== false;
+            if (isExternalModelSource(m.source)) return m.checked !== false;
             return m.selectedVersion;
         }).length;
         document.getElementById('downloadModalTitle').textContent =
@@ -1839,7 +1838,9 @@ export class DownloadManager {
             ` (${validCount})`;
 
         const list = document.getElementById('batchPreviewList');
-        const hasHfItems = this.batchModels.some(m => m.source === 'huggingface' && !m.error);
+        const hasExternalItems = this.batchModels.some(
+            m => isExternalModelSource(m.source) && !m.error
+        );
 
         // Error items render flat, outside any group
         const errorItemsHtml = this.batchModels.map((item, index) => {
@@ -1863,7 +1864,7 @@ export class DownloadManager {
         // CivitAI items render flat, outside any group (unchanged)
         const civitaiItemsHtml = this.batchModels.map((item, index) => {
             if (item.error) return null;
-            if (item.source === 'huggingface') return null;
+            if (isExternalModelSource(item.source)) return null;
             const ver = item.selectedVersion;
             const firstImage = ver?.images?.find(img => !img.url.endsWith('.mp4'));
             const thumbnailUrl = firstImage ? firstImage.url : '/loras_static/images/no-preview.png';
@@ -1901,25 +1902,30 @@ export class DownloadManager {
             `;
         }).filter(Boolean).join('');
 
-        // Group HF items by repo (data model stays flat — only rendering groups)
-        const hfGroups = {};
+        // Group external-repository items by platform + repo so that the same
+        // `owner/name` on two sites stays in two groups (data model stays flat
+        // — only rendering groups).
+        const externalGroups = {};
         this.batchModels.forEach((item, index) => {
-            if (item.error || item.source !== 'huggingface') return;
-            const repo = item.repo || 'unknown';
-            if (!hfGroups[repo]) hfGroups[repo] = [];
-            hfGroups[repo].push({ item, index });
+            if (item.error || !isExternalModelSource(item.source)) return;
+            const groupKey = this._externalGroupKey(item);
+            if (!externalGroups[groupKey]) {
+                externalGroups[groupKey] = { repo: item.repo || 'unknown', items: [] };
+            }
+            externalGroups[groupKey].items.push({ item, index });
         });
 
-        const renderHfItem = ({ item, index }) => {
-            const hfSize = item.fileSizeBytes ? formatFileSize(item.fileSizeBytes) : '?';
+        const renderExternalItem = ({ item, index }) => {
+            const fileSize = item.fileSizeBytes ? formatFileSize(item.fileSizeBytes) : '?';
+            const badge = getModelSource(item.source)?.label || item.source;
             return `
                 <div class="batch-preview-item" data-index="${index}">
                     <input type="checkbox" class="batch-preview-checkbox"
                            data-index="${index}" ${item.checked !== false ? 'checked' : ''} />
                     <div class="batch-preview-info">
-                        <div class="batch-preview-name">${item.displayName || item.filename || `HF #${index}`} <span class="hf-badge">HF</span></div>
+                        <div class="batch-preview-name">${item.displayName || item.filename || `${badge} #${index}`} <span class="hf-badge">${badge}</span></div>
                         <div class="batch-preview-meta">
-                            <span>${hfSize}</span>
+                            <span>${fileSize}</span>
                             <span>${item.repo || ''}</span>
                         </div>
                     </div>
@@ -1930,32 +1936,32 @@ export class DownloadManager {
             `;
         };
 
-        const hfGroupsHtml = Object.keys(hfGroups).map(repo => {
-            const items = hfGroups[repo];
-            const isCollapsed = this.hfRepoCollapsed[repo] === true;
+        const externalGroupsHtml = Object.keys(externalGroups).map(groupKey => {
+            const { repo, items } = externalGroups[groupKey];
+            const isCollapsed = this.sourceRepoCollapsed[groupKey] === true;
             const allChecked = items.every(({ item }) => item.checked !== false);
             const fileCount = items.length;
             return `
-                <div class="batch-preview-group" data-repo="${repo}">
+                <div class="batch-preview-group" data-repo="${groupKey}">
                     <div class="batch-preview-group-header">
                         <i class="fas fa-chevron-right batch-preview-group-toggle ${isCollapsed ? '' : 'expanded'}"></i>
                         <span class="batch-preview-group-name">${repo}</span>
                         <span class="batch-preview-group-count">${fileCount} ${translate('modals.download.fileSelection.files', {}, 'files')}</span>
-                        <input type="checkbox" class="batch-preview-group-select-all" data-repo="${repo}" ${allChecked ? 'checked' : ''} />
+                        <input type="checkbox" class="batch-preview-group-select-all" data-repo="${groupKey}" ${allChecked ? 'checked' : ''} />
                     </div>
                     <div class="batch-preview-group-body ${isCollapsed ? '' : 'expanded'}">
-                        ${items.map(renderHfItem).join('')}
+                        ${items.map(renderExternalItem).join('')}
                     </div>
                 </div>
             `;
         }).join('');
 
-        let itemsHtml = errorItemsHtml + civitaiItemsHtml + hfGroupsHtml;
+        let itemsHtml = errorItemsHtml + civitaiItemsHtml + externalGroupsHtml;
 
-        // Prepend select-all toolbar if there are HF items with checkboxes
-        if (hasHfItems) {
+        // Prepend select-all toolbar if there are external items with checkboxes
+        if (hasExternalItems) {
             const allChecked = this.batchModels
-                .filter(m => m.source === 'huggingface' && !m.error)
+                .filter(m => isExternalModelSource(m.source) && !m.error)
                 .every(m => m.checked !== false);
             itemsHtml = `
                 <div class="batch-preview-select-all">
@@ -1980,13 +1986,18 @@ export class DownloadManager {
             // Global select-all
             const selectAll = document.getElementById('batchSelectAll');
             if (selectAll) {
-                const hfItems = this.batchModels.filter(m => m.source === 'huggingface' && !m.error);
-                selectAll.checked = hfItems.length > 0 && hfItems.every(m => m.checked !== false);
+                const externalItems = this.batchModels.filter(
+                    m => isExternalModelSource(m.source) && !m.error
+                );
+                selectAll.checked = externalItems.length > 0
+                    && externalItems.every(m => m.checked !== false);
             }
             // Per-group select-all
             list.querySelectorAll('.batch-preview-group-select-all').forEach(gsa => {
                 const repo = gsa.dataset.repo;
-                const repoItems = this.batchModels.filter(m => m.source === 'huggingface' && !m.error && m.repo === repo);
+                const repoItems = this.batchModels.filter(
+                    m => isExternalModelSource(m.source) && !m.error && this._externalGroupKey(m) === repo
+                );
                 gsa.checked = repoItems.length > 0 && repoItems.every(m => m.checked !== false);
             });
         };
@@ -1998,7 +2009,7 @@ export class DownloadManager {
                 const repo = groupSelectAll.dataset.repo;
                 const checked = groupSelectAll.checked;
                 this.batchModels.forEach((m, idx) => {
-                    if (m.source === 'huggingface' && !m.error && m.repo === repo) {
+                    if (isExternalModelSource(m.source) && !m.error && this._externalGroupKey(m) === repo) {
                         m.checked = checked;
                         const cb = list.querySelector(`.batch-preview-checkbox[data-index="${idx}"]`);
                         if (cb) cb.checked = checked;
@@ -2014,9 +2025,9 @@ export class DownloadManager {
                 const repo = group.dataset.repo;
                 const body = group.querySelector('.batch-preview-group-body');
                 const toggle = group.querySelector('.batch-preview-group-toggle');
-                const isCollapsed = this.hfRepoCollapsed[repo];
+                const isCollapsed = this.sourceRepoCollapsed[repo];
                 if (isCollapsed) {
-                    this.hfRepoCollapsed[repo] = false;
+                    this.sourceRepoCollapsed[repo] = false;
                     body.style.transition = ''; // restore in case collapse was interrupted
                     body.classList.add('expanded');
                     toggle.classList.add('expanded');
@@ -2025,13 +2036,13 @@ export class DownloadManager {
                     body.style.maxHeight = body.scrollHeight + 'px';
                     const onEnd = (e) => {
                         if (e.propertyName !== 'max-height') return;
-                        if (this.hfRepoCollapsed[repo] !== false) return;
+                        if (this.sourceRepoCollapsed[repo] !== false) return;
                         body.style.maxHeight = ''; // fall back to .expanded's 9999px
                         body.removeEventListener('transitionend', onEnd);
                     };
                     body.addEventListener('transitionend', onEnd);
                 } else {
-                    this.hfRepoCollapsed[repo] = true;
+                    this.sourceRepoCollapsed[repo] = true;
                     body.style.maxHeight = body.scrollHeight + 'px';
                     requestAnimationFrame(() => {
                         // animate only max-height; keep expanded so opacity stays 1
@@ -2040,7 +2051,7 @@ export class DownloadManager {
                         toggle.classList.remove('expanded');
                         const onEnd = (e) => {
                             if (e.propertyName !== 'max-height') return;
-                            if (this.hfRepoCollapsed[repo] !== true) return; // state changed since
+                            if (this.sourceRepoCollapsed[repo] !== true) return; // state changed since
                             body.classList.remove('expanded');
                             body.style.transition = '';
                             body.removeEventListener('transitionend', onEnd);
@@ -2119,7 +2130,7 @@ export class DownloadManager {
         // For HF items, respect the checked flag; for CivitAI items, use selectedVersion
         const validModels = this.batchModels.filter(m => {
             if (m.error) return false;
-            if (m.source === 'huggingface') return m.checked !== false;
+            if (isExternalModelSource(m.source)) return m.checked !== false;
             return m.selectedVersion;
         });
         if (validModels.length === 0) return;
@@ -2172,8 +2183,8 @@ export class DownloadManager {
         }
         if (!this.isBatchMode) {
             // Single-item download
-            if (this.source === 'huggingface') {
-                return this._downloadHfSingle({
+            if (isExternalModelSource(this.source)) {
+                return this._downloadExternalRepoFiles({
                     modelRoot,
                     targetFolder,
                     useDefaultPaths,
@@ -2228,7 +2239,7 @@ export class DownloadManager {
             if (m.error) return false;
             if (!m.selectedVersion) return false;
             // HF items have selectedVersion as a boolean marker + checked flag
-            if (m.source === 'huggingface') return m.checked !== false;
+            if (isExternalModelSource(m.source)) return m.checked !== false;
             return !m.selectedVersion.existsLocally;
         });
         if (downloadItems.length === 0) {
@@ -2255,10 +2266,11 @@ export class DownloadManager {
         let cancelled = false;
         const failedItems = [];
         // Successful CivitAI items are reconciled in place afterwards
-        // (their cards can be matched by model id); HF items keep the
-        // legacy full reload because they have no CivitAI identity (#1078).
+        // (their cards can be matched by model id); externally-sourced items
+        // keep the legacy full reload because they have no CivitAI identity
+        // (#1078).
         const completedCivitaiItems = [];
-        let hfCompletedCount = 0;
+        let externalCompletedCount = 0;
 
         loadingManager.showCancelButton(async () => {
             if (cancelled) return;
@@ -2301,15 +2313,15 @@ export class DownloadManager {
 
             const item = downloadItems[i];
             const name = item.displayName || item.filename || (item.selectedVersion?.name || `Model #${item.modelId}`);
-            const isHf = item.source === 'huggingface';
+            const isExternal = isExternalModelSource(item.source);
 
             updateProgress(0, completedDownloads, name);
             loadingManager.setStatus(`${i + 1}/${downloadItems.length}: ${name}`);
 
             try {
                 let response;
-                if (isHf) {
-                    const downloadId = Date.now().toString() + '_hf_' + i;
+                if (isExternal) {
+                    const downloadId = Date.now().toString() + '_src_' + i;
                     const wsHf = new WebSocket(`${wsProtocol}${window.location.host}/ws/download-progress?id=${downloadId}`);
                     try {
                         await new Promise((resolve, reject) => {
@@ -2329,10 +2341,11 @@ export class DownloadManager {
                             }
                         };
 
-                        response = await this.apiClient.downloadHfModel({
+                        response = await this.apiClient.downloadModelSource({
+                            platform: item.platform || item.source,
                             repo: item.repo,
                             filename: item.filename,
-                            revision: item.revision || 'main',
+                            revision: item.revision || this._defaultRevisionFor(item.platform || item.source),
                             modelRoot,
                             relativePath: targetFolder,
                             useDefaultPaths,
@@ -2363,8 +2376,8 @@ export class DownloadManager {
                 } else {
                     completedDownloads++;
                     updateProgress(100, completedDownloads, '');
-                    if (isHf) {
-                        hfCompletedCount++;
+                    if (isExternal) {
+                        externalCompletedCount++;
                     } else {
                         completedCivitaiItems.push(item);
                     }
@@ -2398,7 +2411,7 @@ export class DownloadManager {
             });
         }
 
-        await this._reconcileBatchViewAfterDownload(completedCivitaiItems, hfCompletedCount);
+        await this._reconcileBatchViewAfterDownload(completedCivitaiItems, externalCompletedCount);
     }
 
     async downloadVersionWithDefaults(modelType, modelId, versionId, { 

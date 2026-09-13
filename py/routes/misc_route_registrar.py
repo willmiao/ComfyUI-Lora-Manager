@@ -99,13 +99,20 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "GET", "/api/lm/delete-model-version", "delete_model_version"
     ),
-    # Hugging Face model endpoints
+    # External model source endpoints (Hugging Face / ModelScope).
+    # The hf-* paths are the historical names, kept as aliases.
+    RouteDefinition(
+        "GET", "/api/lm/model-source-files", "list_model_source_files"
+    ),
     RouteDefinition(
         "GET", "/api/lm/hf-repo-files", "get_hf_repo_files"
     ),
     # Download target routing decision (checkpoint vs diffusion model roots)
     RouteDefinition(
         "POST", "/api/lm/download/routing", "get_download_routing"
+    ),
+    RouteDefinition(
+        "POST", "/api/lm/download-model-source", "download_model_source"
     ),
     RouteDefinition(
         "POST", "/api/lm/download-hf-model", "download_hf_model"

@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import { DownloadManager } from '../../../static/js/managers/DownloadManager.js';
 
-describe('DownloadManager.detectUrlType — HF URL detection', () => {
+describe('DownloadManager.detectUrlType — external model source URLs', () => {
 
     it('detects HF resolve URL with file', () => {
         const result = DownloadManager.detectUrlType(
             'https://huggingface.co/dx8152/Flux2-Klein-9B-Consistency/resolve/main/Flux2-Klein-9B-consistency-V2.safetensors'
         );
         expect(result).toEqual({
-            type: 'hf-resolve',
+            type: 'model-source-file',
+            platform: 'huggingface',
             repo: 'dx8152/Flux2-Klein-9B-Consistency',
             revision: 'main',
             filename: 'Flux2-Klein-9B-consistency-V2.safetensors',
@@ -20,7 +21,8 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
             'https://huggingface.co/user/repo/resolve/main/subdir/model.safetensors'
         );
         expect(result).toEqual({
-            type: 'hf-resolve',
+            type: 'model-source-file',
+            platform: 'huggingface',
             repo: 'user/repo',
             revision: 'main',
             filename: 'subdir/model.safetensors',
@@ -32,7 +34,8 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
             'https://huggingface.co/dx8152/Flux2-Klein-9B-Consistency'
         );
         expect(result).toEqual({
-            type: 'hf-repo',
+            type: 'model-source-repo',
+            platform: 'huggingface',
             repo: 'dx8152/Flux2-Klein-9B-Consistency',
         });
     });
@@ -40,7 +43,8 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
     it('detects HF repo URL (bare user/repo)', () => {
         const result = DownloadManager.detectUrlType('dx8152/Flux2-Klein-9B-Consistency');
         expect(result).toEqual({
-            type: 'hf-repo',
+            type: 'model-source-repo',
+            platform: 'huggingface',
             repo: 'dx8152/Flux2-Klein-9B-Consistency',
         });
     });
@@ -50,7 +54,8 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
             'https://huggingface.co/user/repo/'
         );
         expect(result).toEqual({
-            type: 'hf-repo',
+            type: 'model-source-repo',
+            platform: 'huggingface',
             repo: 'user/repo',
         });
     });
@@ -60,7 +65,8 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
             'https://huggingface.co/Comfy-Org/z_image_turbo/blob/main/split_files/diffusion_models/z_image_turbo_bf16.safetensors'
         );
         expect(result).toEqual({
-            type: 'hf-resolve',
+            type: 'model-source-file',
+            platform: 'huggingface',
             repo: 'Comfy-Org/z_image_turbo',
             revision: 'main',
             filename: 'split_files/diffusion_models/z_image_turbo_bf16.safetensors',
@@ -115,7 +121,7 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
         const result = DownloadManager.detectUrlType(
             'https://huggingface.co/user/repo/resolve/main/file.safetensors'
         );
-        expect(result?.type).toBe('hf-resolve');
+        expect(result?.type).toBe('model-source-file');
     });
 
     it('prefers CivitAI over HF when both match', () => {
@@ -125,5 +131,52 @@ describe('DownloadManager.detectUrlType — HF URL detection', () => {
             'https://civitai.com/models/123?huggingface.co/test/repo'
         );
         expect(result?.type).toBe('civitai');
+    });
+
+    it('detects a ModelScope repo URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://modelscope.cn/models/jj3550945163/Krea-2-LORA'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope',
+            repo: 'jj3550945163/Krea-2-LORA',
+        });
+    });
+
+    it('detects a ModelScope file URL with revision and subdirectory', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://modelscope.cn/models/AI-ModelScope/stable-diffusion-v1-5/resolve/master/vae/diffusion_pytorch_model.bin'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'modelscope',
+            repo: 'AI-ModelScope/stable-diffusion-v1-5',
+            revision: 'master',
+            filename: 'vae/diffusion_pytorch_model.bin',
+        });
+    });
+
+    it('detects a ModelScope view sub-page as a repo URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://www.modelscope.cn/models/user/repo/summary'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope',
+            repo: 'user/repo',
+        });
+    });
+
+    it('does not treat a bare owner/name as ModelScope', () => {
+        // The shorthand has always meant Hugging Face; ModelScope needs its host.
+        const result = DownloadManager.detectUrlType('user/repo');
+        expect(result.platform).toBe('huggingface');
+    });
+
+    it('rejects path traversal in either platform', () => {
+        expect(
+            DownloadManager.detectUrlType('https://modelscope.cn/models/../etc/passwd')
+        ).toBeNull();
     });
 });
