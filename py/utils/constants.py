@@ -97,11 +97,17 @@ VALID_OTHER_SUB_TYPES = ["vae", "upscaler", "text_encoder", "clip_vision", "cont
 # Sub-types managed when the (opt-in) Other Models feature is switched on.
 # The feature itself defaults to off (``enable_other_models`` = False), so
 # nothing here is scanned until the user enables it.
+#
+# The default set is deliberately limited to the dependency-style assets every
+# pipeline needs and where "which one am I actually using" is the real problem:
+# VAE, upscalers and text encoders. ``clip_vision`` and ``controlnet`` are
+# workflow-driven instead (IPAdapter/SVD, per-workflow ControlNet variants) and
+# ControlNet libraries routinely run to dozens of files, so both stay opt-in
+# and are treated symmetrically.
 DEFAULT_ENABLED_OTHER_SUB_TYPES: List[str] = [
     "vae",
     "upscaler",
     "text_encoder",
-    "clip_vision",
 ]
 
 

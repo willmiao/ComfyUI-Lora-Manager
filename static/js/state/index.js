@@ -26,7 +26,7 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     default_embedding_root: '',
     default_other_roots: {},
     enable_other_models: false,
-    enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder', 'clip_vision'],
+    enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     recipes_path: '',
     base_model_path_mappings: {},
     download_path_templates: {},
@@ -76,7 +76,7 @@ export function createDefaultSettings() {
         download_path_templates: { ...DEFAULT_PATH_TEMPLATES },
         priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
         default_other_roots: {},
-        enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder', 'clip_vision'],
+        enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
     };
 }
 

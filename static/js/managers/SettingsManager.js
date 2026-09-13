@@ -2429,7 +2429,7 @@ export class SettingsManager {
         const enableOtherModels = !!state.global.settings.enable_other_models;
         const enabledSubTypes = new Set(
             state.global.settings.enabled_other_sub_types
-            || ['vae', 'upscaler', 'text_encoder', 'clip_vision']
+            || ['vae', 'upscaler', 'text_encoder']
         );
 
         document.querySelectorAll('[data-other-subtype-toggle]').forEach((input) => {

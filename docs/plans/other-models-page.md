@@ -1,6 +1,6 @@
 # Plan: "Other Models" Page — Unified Management for VAE / Upscaler / Text Encoder / etc.
 
-**Status:** v2 — **Phase 1 implemented** (2026-09-12, commits `27da7b3c` backend + `fa7ce725` frontend; verified live against a running ComfyUI instance: scan/hash/sub_type-derivation/fetch/previews all green). **Phase 2 implemented** (2026-09-12, per §9 design; full pytest + vitest green). **Phase 3 implemented** (§11: opt-in management toggles; default off). **i18n done** (2026-09-13): all 36 new keys translated in the 9 non-English locales — the `[TODO: Translate]` placeholders left by the sync script during development are gone (see `docs/i18n-translation-guidelines.md` §2, "Other Models feature").
+**Status:** v2 — **Phase 1 implemented** (2026-09-12, commits `27da7b3c` backend + `fa7ce725` frontend; verified live against a running ComfyUI instance: scan/hash/sub_type-derivation/fetch/previews all green). **Phase 2 implemented** (2026-09-12, per §9 design; full pytest + vitest green). **Phase 3 implemented** (§11: opt-in management toggles; default off). **i18n done** (2026-09-13): all 36 new keys translated in the 9 non-English locales — the `[TODO: Translate]` placeholders left by the sync script during development are gone (see `docs/i18n-translation-guidelines.md` §2, "Other Models feature"). **Default set revised (pre-release):** only `vae` / `upscaler` / `text_encoder` are managed by default — `clip_vision` and `controlnet` are both opt-in (§2, §11.1.1).
 **Scope (Phase 1):** scan + manage (list, search, filter, tags, folders, preview, rename, move, delete/exclude, CivitAI metadata fetch) for a new model type `other`, exposed as a new web page. **Phase 2 (§9):** one-click download from CivitAI for these types.
 
 ## 1. Goal
@@ -32,10 +32,19 @@ Add a fourth page that manages "everything else" — VAE, upscalers, text encode
    | `vae` | `vae` | `VAE` | yes |
    | `upscaler` | `upscale_models` | `Upscaler` | yes |
    | `text_encoder` | `text_encoders`, `clip` (legacy) | `TextEncoder` (CLIP is retired upstream) | yes |
-   | `clip_vision` | `clip_vision` | `CLIPVision` | yes |
+   | `clip_vision` | `clip_vision` | `CLIPVision` | no (mapping present, opt-in) |
    | `controlnet` | `controlnet` | `Controlnet` | no (mapping present, opt-in) |
 
    New folder categories = one line in the mapping table (see §4.1).
+
+   **Why only three are on by default** (revised in Phase 3, before release):
+   VAE, upscalers and text encoders are dependency-style assets every pipeline
+   needs, and "which one am I actually using" is the recurring problem they
+   solve. `clip_vision` and `controlnet` are workflow-driven instead
+   (IPAdapter/SVD image conditioning; per-workflow ControlNet variants), and
+   ControlNet libraries routinely run to dozens of files, so both are treated
+   symmetrically as opt-in. Enumerating all five as "the default set" was not
+   defensible on demand breadth alone.
 
 4. **Phase 1 = scan/manage only.** Downloads from CivitAI (`download_manager.py` type mapping, default-root settings keys, download routing) are Phase 2 (§9). CivitAI **metadata fetch** for existing files IS in Phase 1 (hash-based lookup is type-agnostic; only the type-validation hook needs new values).
 
@@ -262,12 +271,34 @@ page shows an "enable" empty state until the user turns it on.
 | key | type | default | meaning |
 |---|---|---|---|
 | `enable_other_models` | bool | `false` | master switch |
-| `enabled_other_sub_types` | list[str] | `["vae","upscaler","text_encoder","clip_vision"]` | allow-list; controlnet still opt-in |
+| `enabled_other_sub_types` | list[str] | `["vae","upscaler","text_encoder"]` | allow-list; `clip_vision` and `controlnet` are opt-in (see §2) |
 
 `enabled_other_folders` (the unreleased, additive, no-UI backend key) was removed
 and replaced by the sub_type-level allow-list; there is no migration because the
 feature never shipped. `text_encoder` expands to `text_encoders` + legacy `clip`
 via `OTHER_SUB_TYPE_FOLDER_KEYS`.
+
+The default allow-list lives on five surfaces that must stay in sync:
+`DEFAULT_ENABLED_OTHER_SUB_TYPES` (`py/utils/constants.py`), `DEFAULT_SETTINGS`
+(`py/services/settings_manager.py`), the two `DEFAULT_SETTINGS_BASE` /
+`createDefaultSettings` lists (`static/js/state/index.js`), the
+`updateOtherModelsControls()` fallback (`static/js/managers/SettingsManager.js`)
+and the server-rendered Jinja fallback
+(`templates/components/modals/settings/library.html`).
+
+### 11.1.1 Legacy key handling in `Config._init_other_paths`
+
+ComfyUI's `folder_paths` rewrites legacy names before every access (`clip` →
+`text_encoders`, `unet` → `diffusion_models`) and registers both legacy
+directories under the canonical key, so `get_folder_paths("clip")` returns
+exactly the same list as `get_folder_paths("text_encoders")`. Querying both keys
+made the overlap guard fire twice with `please fix your path configuration` for a
+configuration the user cannot fix. `Config._collapse_legacy_folder_keys()` now
+drops a key when the host exposes `map_legacy` and resolves it to another queried
+key, and `_prepare_other_paths()` downgrades a same-`sub_type` duplicate to
+`debug` (a cross-`sub_type` collision still warns). In standalone mode
+`MockFolderPaths` has no `map_legacy` and its keys are independent
+`settings.json` entries, so every key is still queried there.
 
 `settings.json.example` intentionally stays minimal (only `use_portable_settings`,
 `civitai_api_key`, and the four core `folder_paths` keys: `loras`, `checkpoints`,

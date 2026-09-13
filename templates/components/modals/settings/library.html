@@ -41,7 +41,10 @@
 
         {{ sm.setting_toggle('enableOtherModels', 'enable_other_models', 'settings.folderSettings.enableOtherModels', 'settings.folderSettings.enableOtherModelsHelp') }}
 
-        {% set enabled_other_sub_types = settings.get('enabled_other_sub_types') or ['vae', 'upscaler', 'text_encoder', 'clip_vision'] %}
+        {# 'is none' (not 'or') so an empty allow-list stays empty instead of
+           falling back to the defaults and re-checking every box. #}
+        {% set enabled_other_sub_types = settings.get('enabled_other_sub_types') %}
+        {% if enabled_other_sub_types is none %}{% set enabled_other_sub_types = ['vae', 'upscaler', 'text_encoder'] %}{% endif %}
         <div class="setting-item other-subtype-toggles" id="otherSubTypeToggles">
             <div class="setting-row">
                 <div class="setting-info">

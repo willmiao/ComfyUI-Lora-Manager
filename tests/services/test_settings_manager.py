@@ -1248,6 +1248,30 @@ def test_other_models_disabled_by_default(manager):
     assert manager.is_other_sub_type_enabled("vae") is False
 
 
+def test_default_enabled_other_sub_types_are_the_dependency_trio(manager):
+    """clip_vision and controlnet are workflow-driven, so both stay opt-in."""
+    manager.settings["enable_other_models"] = True
+
+    assert manager.get_enabled_other_sub_types() == [
+        "vae",
+        "upscaler",
+        "text_encoder",
+    ]
+    assert manager.is_other_sub_type_enabled("clip_vision") is False
+    assert manager.is_other_sub_type_enabled("controlnet") is False
+
+
+def test_enabled_other_sub_types_falls_back_to_defaults(manager):
+    manager.settings["enable_other_models"] = True
+    manager.settings["enabled_other_sub_types"] = None
+
+    assert manager.get_enabled_other_sub_types() == [
+        "vae",
+        "upscaler",
+        "text_encoder",
+    ]
+
+
 def test_auto_set_default_other_roots_skipped_when_feature_off(manager):
     manager.settings["enable_other_models"] = False
     manager.settings["default_other_roots"] = {}
@@ -1270,6 +1294,8 @@ def test_set_enabled_other_sub_types_normalizes(manager):
 def test_auto_set_default_other_roots(manager):
     manager.settings["enable_other_models"] = True
     manager.settings["default_other_roots"] = {}
+    # clip_vision is opt-in, so enable it explicitly for this iteration test.
+    manager.settings["enabled_other_sub_types"] = ["vae", "upscaler", "clip_vision"]
     manager.settings["folder_paths"] = {
         "vae": ["/vae"],
         "upscale_models": ["/upscalers"],
