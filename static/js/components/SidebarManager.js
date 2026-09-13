@@ -11,6 +11,13 @@ import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
 import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
 
+// Pages whose folder sidebar starts hidden. "other" downloads default to a flat
+// layout (no subfolders are created), so on a fresh library the tree is empty
+// there and the sidebar would only consume horizontal space. The preference is
+// still persisted per page once the user toggles it, and the edge indicator
+// makes the hidden sidebar discoverable/recoverable.
+const SIDEBAR_DEFAULT_HIDDEN_PAGES = new Set(['other']);
+
 export class SidebarManager {
     constructor() {
         this.pageControls = null;
@@ -1785,7 +1792,10 @@ export class SidebarManager {
         const expandedPaths = getStorageItem(`${this.pageType}_expandedNodes`, []);
         const displayMode = getStorageItem(`${this.pageType}_displayMode`, 'tree'); // 'tree' or 'list', default to 'tree'
         const recursiveSearchEnabled = getStorageItem(`${this.pageType}_recursiveSearch`, true);
-        this.isDisabledByPage = getStorageItem(`${this.pageType}_sidebarDisabled`, false);
+        this.isDisabledByPage = getStorageItem(
+            `${this.pageType}_sidebarDisabled`,
+            SIDEBAR_DEFAULT_HIDDEN_PAGES.has(this.pageType)
+        );
 
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
