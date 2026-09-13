@@ -149,7 +149,7 @@
             "copyCheckpointName": "Checkpoint 이름 복사",
             "copyEmbeddingName": "Embedding 이름 복사",
             "embeddingNameCopied": "Embedding 구문 복사됨",
-            "modelNameCopied": "[TODO: Translate] Model name copied",
+            "modelNameCopied": "모델 이름 복사됨",
             "sendCheckpointToWorkflow": "ComfyUI로 전송",
             "sendEmbeddingToWorkflow": "ComfyUI로 전송"
         },
@@ -234,7 +234,7 @@
             "recipes": "레시피",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
-            "other": "[TODO: Translate] Other",
+            "other": "기타",
             "statistics": "통계"
         },
         "search": {
@@ -535,25 +535,25 @@
             "defaultUnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Diffusion Model (UNET) 루트 디렉토리를 설정합니다",
             "defaultEmbeddingRoot": "Embedding 루트",
             "defaultEmbeddingRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Embedding 루트 디렉토리를 설정합니다",
-            "defaultVaeRoot": "[TODO: Translate] VAE Root",
-            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
-            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
-            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
-            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
-            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
-            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
-            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
-            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
-            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
-            "enableOtherModels": "[TODO: Translate] Other Models Management",
-            "enableOtherModelsHelp": "[TODO: Translate] When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
-            "otherSubTypes": "[TODO: Translate] Managed Types",
-            "otherSubTypesHelp": "[TODO: Translate] Choose which other-model categories are scanned and shown on the Other Models page.",
-            "subTypeVae": "[TODO: Translate] VAE",
-            "subTypeUpscaler": "[TODO: Translate] Upscaler",
-            "subTypeTextEncoder": "[TODO: Translate] Text Encoder",
-            "subTypeClipVision": "[TODO: Translate] CLIP Vision",
-            "subTypeControlnet": "[TODO: Translate] ControlNet",
+            "defaultVaeRoot": "VAE 루트",
+            "defaultVaeRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 VAE 루트 디렉토리를 설정합니다",
+            "defaultUpscalerRoot": "Upscaler 루트",
+            "defaultUpscalerRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Upscaler 루트 디렉토리를 설정합니다",
+            "defaultTextEncoderRoot": "Text Encoder 루트",
+            "defaultTextEncoderRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 Text Encoder 루트 디렉토리를 설정합니다",
+            "defaultClipVisionRoot": "CLIP Vision 루트",
+            "defaultClipVisionRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 CLIP Vision 루트 디렉토리를 설정합니다",
+            "defaultControlnetRoot": "ControlNet 루트",
+            "defaultControlnetRootHelp": "다운로드, 가져오기 및 이동을 위한 기본 ControlNet 루트 디렉토리를 설정합니다",
+            "enableOtherModels": "기타 모델 관리",
+            "enableOtherModelsHelp": "끄면 VAE / Upscaler / Text Encoder / CLIP 폴더를 스캔하지 않으며, 기타 모델 페이지가 비활성화된 상태로 유지되고 이러한 모델 유형은 다운로드할 수 없습니다.",
+            "otherSubTypes": "관리할 모델 유형",
+            "otherSubTypesHelp": "기타 모델 페이지에서 스캔하고 표시할 카테고리를 선택합니다.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "레시피 저장 경로",
             "recipesPathHelp": "저장된 레시피를 위한 선택적 사용자 지정 디렉터리입니다. 비워 두면 첫 번째 LoRA 루트의 recipes 폴더를 사용합니다.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1223,15 +1223,15 @@
         "title": "Embedding 모델"
     },
     "other": {
-        "title": "[TODO: Translate] Other Models",
+        "title": "기타 모델",
         "disabled": {
-            "title": "[TODO: Translate] Other Models management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
-            "enableButton": "[TODO: Translate] Enable Other Models",
-            "hint": "[TODO: Translate] You can change the managed model types later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Other Models",
-            "downloadBlocked": "[TODO: Translate] Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
-            "enableAction": "[TODO: Translate] Enable Other Models"
+            "title": "기타 모델 관리가 꺼져 있습니다",
+            "description": "활성화하면 VAE, Upscaler, Text Encoder, CLIP Vision 파일을 스캔하고 관리하며 CivitAI에서 다운로드할 수 있습니다.",
+            "enableButton": "기타 모델 활성화",
+            "hint": "관리할 모델 유형은 나중에 설정 > 라이브러리에서 변경할 수 있습니다.",
+            "enableFailed": "기타 모델 활성화 실패",
+            "downloadBlocked": "이 모델 유형에 대해서는 기타 모델 관리가 비활성화되어 있습니다. 이 파일을 다운로드하려면 설정 > 라이브러리에서 활성화하세요.",
+            "enableAction": "기타 모델 활성화"
         }
     },
     "sidebar": {
@@ -1912,8 +1912,8 @@
             "message": "Embedding 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
         },
         "other": {
-            "title": "[TODO: Translate] Initializing Other Models Manager",
-            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+            "title": "기타 모델 관리자 초기화 중",
+            "message": "모델 캐시를 스캔하고 구축하고 있습니다. 몇 분이 걸릴 수 있습니다..."
         },
         "recipes": {
             "title": "레시피 매니저 초기화 중",
@@ -2370,7 +2370,7 @@
             "checkpointRootsFailed": "Checkpoint 루트 로딩 실패: {message}",
             "unetRootsFailed": "Diffusion Model 루트 로딩 실패: {message}",
             "embeddingRootsFailed": "Embedding 루트 로딩 실패: {message}",
-            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
+            "otherRootsFailed": "기타 모델 루트 로딩 실패: {message}",
             "mappingsUpdated": "베이스 모델 경로 매핑이 업데이트되었습니다 ({count}개 매핑)",
             "mappingsCleared": "베이스 모델 경로 매핑이 지워졌습니다",
             "mappingSaveFailed": "베이스 모델 매핑 저장 실패: {message}",
@@ -2635,10 +2635,10 @@
             "retry": "다시 시도"
         },
         "otherModels": {
-            "title": "[TODO: Translate] Other Models Management is available",
-            "content": "[TODO: Translate] Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
-            "enable": "[TODO: Translate] Enable Other Models",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "기타 모델 관리를 사용할 수 있습니다",
+            "content": "전용 페이지에서 VAE, Upscaler, Text Encoder, CLIP Vision 파일을 스캔 및 관리하고 CivitAI에서 다운로드할 수 있습니다.",
+            "enable": "기타 모델 활성화",
+            "openSettings": "설정 열기"
         }
     }
 }

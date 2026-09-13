@@ -149,7 +149,7 @@
             "copyCheckpointName": "Checkpoint-Name kopieren",
             "copyEmbeddingName": "Embedding-Name kopieren",
             "embeddingNameCopied": "Embedding-Syntax kopiert",
-            "modelNameCopied": "[TODO: Translate] Model name copied",
+            "modelNameCopied": "Modellname kopiert",
             "sendCheckpointToWorkflow": "An ComfyUI senden",
             "sendEmbeddingToWorkflow": "An ComfyUI senden"
         },
@@ -234,7 +234,7 @@
             "recipes": "Rezepte",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
-            "other": "[TODO: Translate] Other",
+            "other": "Andere",
             "statistics": "Statistiken"
         },
         "search": {
@@ -535,25 +535,25 @@
             "defaultUnetRootHelp": "Legen Sie den Standard-Diffusion-Modell-(UNET)-Stammordner für Downloads, Importe und Verschiebungen fest",
             "defaultEmbeddingRoot": "Embedding-Stammordner",
             "defaultEmbeddingRootHelp": "Legen Sie den Standard-Embedding-Stammordner für Downloads, Importe und Verschiebungen fest",
-            "defaultVaeRoot": "[TODO: Translate] VAE Root",
-            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
-            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
-            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
-            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
-            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
-            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
-            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
-            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
-            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
-            "enableOtherModels": "[TODO: Translate] Other Models Management",
-            "enableOtherModelsHelp": "[TODO: Translate] When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
-            "otherSubTypes": "[TODO: Translate] Managed Types",
-            "otherSubTypesHelp": "[TODO: Translate] Choose which other-model categories are scanned and shown on the Other Models page.",
-            "subTypeVae": "[TODO: Translate] VAE",
-            "subTypeUpscaler": "[TODO: Translate] Upscaler",
-            "subTypeTextEncoder": "[TODO: Translate] Text Encoder",
-            "subTypeClipVision": "[TODO: Translate] CLIP Vision",
-            "subTypeControlnet": "[TODO: Translate] ControlNet",
+            "defaultVaeRoot": "VAE-Stammordner",
+            "defaultVaeRootHelp": "Legen Sie den Standard-VAE-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "defaultUpscalerRoot": "Upscaler-Stammordner",
+            "defaultUpscalerRootHelp": "Legen Sie den Standard-Upscaler-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "defaultTextEncoderRoot": "Text-Encoder-Stammordner",
+            "defaultTextEncoderRootHelp": "Legen Sie den Standard-Text-Encoder-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "defaultClipVisionRoot": "CLIP-Vision-Stammordner",
+            "defaultClipVisionRootHelp": "Legen Sie den Standard-CLIP-Vision-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "defaultControlnetRoot": "ControlNet-Stammordner",
+            "defaultControlnetRootHelp": "Legen Sie den Standard-ControlNet-Stammordner für Downloads, Importe und Verschiebungen fest",
+            "enableOtherModels": "Verwaltung weiterer Modelle",
+            "enableOtherModelsHelp": "Wenn deaktiviert, werden VAE-, Upscaler-, Text-Encoder- und CLIP-Ordner nicht gescannt, die Seite für weitere Modelle bleibt deaktiviert und diese Modelltypen können nicht heruntergeladen werden.",
+            "otherSubTypes": "Verwaltete Modelltypen",
+            "otherSubTypesHelp": "Wählen Sie, welche Kategorien weiterer Modelle gescannt und auf der Seite für weitere Modelle angezeigt werden.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "Rezepte-Speicherpfad",
             "recipesPathHelp": "Optionales benutzerdefiniertes Verzeichnis für gespeicherte Rezepte. Leer lassen, um den recipes-Ordner im ersten LoRA-Stammverzeichnis zu verwenden.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1223,15 +1223,15 @@
         "title": "Embedding-Modelle"
     },
     "other": {
-        "title": "[TODO: Translate] Other Models",
+        "title": "Weitere Modelle",
         "disabled": {
-            "title": "[TODO: Translate] Other Models management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
-            "enableButton": "[TODO: Translate] Enable Other Models",
-            "hint": "[TODO: Translate] You can change the managed model types later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Other Models",
-            "downloadBlocked": "[TODO: Translate] Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
-            "enableAction": "[TODO: Translate] Enable Other Models"
+            "title": "Die Verwaltung weiterer Modelle ist deaktiviert",
+            "description": "Aktivieren Sie die Option, um VAE-, Upscaler-, Text-Encoder- und CLIP-Vision-Dateien zu scannen und zu verwalten und sie von CivitAI herunterzuladen.",
+            "enableButton": "Weitere Modelle aktivieren",
+            "hint": "Sie können die verwalteten Modelltypen später unter Einstellungen > Bibliothek ändern.",
+            "enableFailed": "Aktivierung weiterer Modelle fehlgeschlagen",
+            "downloadBlocked": "Die Verwaltung weiterer Modelle ist für diesen Modelltyp deaktiviert. Aktivieren Sie sie unter Einstellungen > Bibliothek, um diese Datei herunterzuladen.",
+            "enableAction": "Weitere Modelle aktivieren"
         }
     },
     "sidebar": {
@@ -1912,8 +1912,8 @@
             "message": "Embedding-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
         },
         "other": {
-            "title": "[TODO: Translate] Initializing Other Models Manager",
-            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+            "title": "Manager für weitere Modelle wird initialisiert",
+            "message": "Modell-Cache wird gescannt und aufgebaut. Dies kann einige Minuten dauern..."
         },
         "recipes": {
             "title": "Rezept Manager wird initialisiert",
@@ -2370,7 +2370,7 @@
             "checkpointRootsFailed": "Fehler beim Laden der Checkpoint-Stammverzeichnisse: {message}",
             "unetRootsFailed": "Fehler beim Laden der Diffusion-Modell-Stammverzeichnisse: {message}",
             "embeddingRootsFailed": "Fehler beim Laden der Embedding-Stammverzeichnisse: {message}",
-            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
+            "otherRootsFailed": "Fehler beim Laden der Stammverzeichnisse weiterer Modelle: {message}",
             "mappingsUpdated": "Basismodell-Pfad-Zuordnungen aktualisiert ({count})",
             "mappingsCleared": "Basismodell-Pfad-Zuordnungen gelöscht",
             "mappingSaveFailed": "Fehler beim Speichern der Basismodell-Zuordnungen: {message}",
@@ -2635,10 +2635,10 @@
             "retry": "Wiederholen"
         },
         "otherModels": {
-            "title": "[TODO: Translate] Other Models Management is available",
-            "content": "[TODO: Translate] Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
-            "enable": "[TODO: Translate] Enable Other Models",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "Die Verwaltung weiterer Modelle ist verfügbar",
+            "content": "Scannen und verwalten Sie VAE-, Upscaler-, Text-Encoder- und CLIP-Vision-Dateien und laden Sie sie von CivitAI herunter, alles auf einer eigenen Seite.",
+            "enable": "Weitere Modelle aktivieren",
+            "openSettings": "Einstellungen öffnen"
         }
     }
 }

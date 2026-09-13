@@ -149,7 +149,7 @@
             "copyCheckpointName": "複製 Checkpoint 名稱",
             "copyEmbeddingName": "複製嵌入名稱",
             "embeddingNameCopied": "已複製 Embedding 語法",
-            "modelNameCopied": "[TODO: Translate] Model name copied",
+            "modelNameCopied": "模型名稱已複製",
             "sendCheckpointToWorkflow": "傳送到 ComfyUI",
             "sendEmbeddingToWorkflow": "傳送到 ComfyUI"
         },
@@ -234,7 +234,7 @@
             "recipes": "配方",
             "checkpoints": "Checkpoint",
             "embeddings": "Embedding",
-            "other": "[TODO: Translate] Other",
+            "other": "其他",
             "statistics": "統計"
         },
         "search": {
@@ -535,25 +535,25 @@
             "defaultUnetRootHelp": "設定下載、匯入和移動時的預設 Diffusion Model (UNET) 根目錄",
             "defaultEmbeddingRoot": "Embedding 根目錄",
             "defaultEmbeddingRootHelp": "設定下載、匯入和移動時的預設 Embedding 根目錄",
-            "defaultVaeRoot": "[TODO: Translate] VAE Root",
-            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
-            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
-            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
-            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
-            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
-            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
-            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
-            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
-            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
-            "enableOtherModels": "[TODO: Translate] Other Models Management",
-            "enableOtherModelsHelp": "[TODO: Translate] When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
-            "otherSubTypes": "[TODO: Translate] Managed Types",
-            "otherSubTypesHelp": "[TODO: Translate] Choose which other-model categories are scanned and shown on the Other Models page.",
-            "subTypeVae": "[TODO: Translate] VAE",
-            "subTypeUpscaler": "[TODO: Translate] Upscaler",
-            "subTypeTextEncoder": "[TODO: Translate] Text Encoder",
-            "subTypeClipVision": "[TODO: Translate] CLIP Vision",
-            "subTypeControlnet": "[TODO: Translate] ControlNet",
+            "defaultVaeRoot": "VAE 根目錄",
+            "defaultVaeRootHelp": "設定下載、匯入和移動時的預設 VAE 根目錄",
+            "defaultUpscalerRoot": "Upscaler 根目錄",
+            "defaultUpscalerRootHelp": "設定下載、匯入和移動時的預設 Upscaler 根目錄",
+            "defaultTextEncoderRoot": "Text Encoder 根目錄",
+            "defaultTextEncoderRootHelp": "設定下載、匯入和移動時的預設 Text Encoder 根目錄",
+            "defaultClipVisionRoot": "CLIP Vision 根目錄",
+            "defaultClipVisionRootHelp": "設定下載、匯入和移動時的預設 CLIP Vision 根目錄",
+            "defaultControlnetRoot": "ControlNet 根目錄",
+            "defaultControlnetRootHelp": "設定下載、匯入和移動時的預設 ControlNet 根目錄",
+            "enableOtherModels": "其他模型管理",
+            "enableOtherModelsHelp": "關閉後，不會掃描 VAE / Upscaler / Text Encoder / CLIP 資料夾，其他模型頁面會保持停用，且無法下載這些模型類型。",
+            "otherSubTypes": "管理的模型類型",
+            "otherSubTypesHelp": "選擇要在其他模型頁面中掃描和顯示的其他模型類別。",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "配方儲存路徑",
             "recipesPathHelp": "已儲存配方的可選自訂目錄。留空則使用第一個 LoRA 根目錄下的 recipes 資料夾。",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1223,15 +1223,15 @@
         "title": "Embedding 模型"
     },
     "other": {
-        "title": "[TODO: Translate] Other Models",
+        "title": "其他模型",
         "disabled": {
-            "title": "[TODO: Translate] Other Models management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
-            "enableButton": "[TODO: Translate] Enable Other Models",
-            "hint": "[TODO: Translate] You can change the managed model types later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Other Models",
-            "downloadBlocked": "[TODO: Translate] Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
-            "enableAction": "[TODO: Translate] Enable Other Models"
+            "title": "其他模型管理已關閉",
+            "description": "啟用後可掃描和管理 VAE、Upscaler、Text Encoder 和 CLIP Vision 檔案，並從 CivitAI 下載。",
+            "enableButton": "啟用其他模型",
+            "hint": "您稍後可以在「設定 > 模型庫」中變更管理的模型類型。",
+            "enableFailed": "啟用其他模型失敗",
+            "downloadBlocked": "其他模型管理已對此模型類型停用。請在「設定 > 模型庫」中啟用以下載此檔案。",
+            "enableAction": "啟用其他模型"
         }
     },
     "sidebar": {
@@ -1912,8 +1912,8 @@
             "message": "正在掃描並建立 Embedding 快取，可能需要幾分鐘..."
         },
         "other": {
-            "title": "[TODO: Translate] Initializing Other Models Manager",
-            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+            "title": "正在初始化其他模型管理器",
+            "message": "正在掃描並建立模型快取。這可能需要幾分鐘..."
         },
         "recipes": {
             "title": "初始化配方管理器",
@@ -2370,7 +2370,7 @@
             "checkpointRootsFailed": "載入 checkpoint 根目錄失敗：{message}",
             "unetRootsFailed": "載入 Diffusion Model 根目錄失敗：{message}",
             "embeddingRootsFailed": "載入 embedding 根目錄失敗：{message}",
-            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
+            "otherRootsFailed": "載入其他模型根目錄失敗：{message}",
             "mappingsUpdated": "基礎模型路徑對應已更新（{count} 個對應）",
             "mappingsCleared": "基礎模型路徑對應已清除",
             "mappingSaveFailed": "儲存基礎模型對應失敗：{message}",
@@ -2635,10 +2635,10 @@
             "retry": "重試"
         },
         "otherModels": {
-            "title": "[TODO: Translate] Other Models Management is available",
-            "content": "[TODO: Translate] Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
-            "enable": "[TODO: Translate] Enable Other Models",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "其他模型管理現已可用",
+            "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder 和 CLIP Vision 檔案，並從 CivitAI 下載。",
+            "enable": "啟用其他模型",
+            "openSettings": "開啟設定"
         }
     }
 }

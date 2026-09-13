@@ -149,7 +149,7 @@
             "copyCheckpointName": "Copiar nombre del checkpoint",
             "copyEmbeddingName": "Copiar nombre del embedding",
             "embeddingNameCopied": "Sintaxis de embedding copiada",
-            "modelNameCopied": "[TODO: Translate] Model name copied",
+            "modelNameCopied": "Nombre del modelo copiado",
             "sendCheckpointToWorkflow": "Enviar a ComfyUI",
             "sendEmbeddingToWorkflow": "Enviar a ComfyUI"
         },
@@ -234,7 +234,7 @@
             "recipes": "Recetas",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
-            "other": "[TODO: Translate] Other",
+            "other": "Otros",
             "statistics": "Estadísticas"
         },
         "search": {
@@ -535,25 +535,25 @@
             "defaultUnetRootHelp": "Establecer el directorio raíz predeterminado de Diffusion Model (UNET) para descargas, importaciones y movimientos",
             "defaultEmbeddingRoot": "Raíz de embedding",
             "defaultEmbeddingRootHelp": "Establecer el directorio raíz predeterminado de embedding para descargas, importaciones y movimientos",
-            "defaultVaeRoot": "[TODO: Translate] VAE Root",
-            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
-            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
-            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
-            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
-            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
-            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
-            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
-            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
-            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
-            "enableOtherModels": "[TODO: Translate] Other Models Management",
-            "enableOtherModelsHelp": "[TODO: Translate] When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
-            "otherSubTypes": "[TODO: Translate] Managed Types",
-            "otherSubTypesHelp": "[TODO: Translate] Choose which other-model categories are scanned and shown on the Other Models page.",
-            "subTypeVae": "[TODO: Translate] VAE",
-            "subTypeUpscaler": "[TODO: Translate] Upscaler",
-            "subTypeTextEncoder": "[TODO: Translate] Text Encoder",
-            "subTypeClipVision": "[TODO: Translate] CLIP Vision",
-            "subTypeControlnet": "[TODO: Translate] ControlNet",
+            "defaultVaeRoot": "Raíz de VAE",
+            "defaultVaeRootHelp": "Establecer el directorio raíz predeterminado de VAE para descargas, importaciones y movimientos",
+            "defaultUpscalerRoot": "Raíz de Upscaler",
+            "defaultUpscalerRootHelp": "Establecer el directorio raíz predeterminado de Upscaler para descargas, importaciones y movimientos",
+            "defaultTextEncoderRoot": "Raíz de Text Encoder",
+            "defaultTextEncoderRootHelp": "Establecer el directorio raíz predeterminado de Text Encoder para descargas, importaciones y movimientos",
+            "defaultClipVisionRoot": "Raíz de CLIP Vision",
+            "defaultClipVisionRootHelp": "Establecer el directorio raíz predeterminado de CLIP Vision para descargas, importaciones y movimientos",
+            "defaultControlnetRoot": "Raíz de ControlNet",
+            "defaultControlnetRootHelp": "Establecer el directorio raíz predeterminado de ControlNet para descargas, importaciones y movimientos",
+            "enableOtherModels": "Gestión de otros modelos",
+            "enableOtherModelsHelp": "Cuando está desactivado, las carpetas VAE / Upscaler / Text Encoder / CLIP no se escanean, la página Otros modelos permanece desactivada y estos tipos de modelos no se pueden descargar.",
+            "otherSubTypes": "Tipos de modelos gestionados",
+            "otherSubTypesHelp": "Elige qué categorías de otros modelos se escanean y se muestran en la página Otros modelos.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "Ruta de almacenamiento de recetas",
             "recipesPathHelp": "Directorio personalizado opcional para las recetas guardadas. Déjalo vacío para usar la carpeta recipes del primer directorio raíz de LoRA.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1223,15 +1223,15 @@
         "title": "Modelos embedding"
     },
     "other": {
-        "title": "[TODO: Translate] Other Models",
+        "title": "Otros modelos",
         "disabled": {
-            "title": "[TODO: Translate] Other Models management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
-            "enableButton": "[TODO: Translate] Enable Other Models",
-            "hint": "[TODO: Translate] You can change the managed model types later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Other Models",
-            "downloadBlocked": "[TODO: Translate] Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
-            "enableAction": "[TODO: Translate] Enable Other Models"
+            "title": "La gestión de otros modelos está desactivada",
+            "description": "Actívala para escanear y gestionar archivos VAE, Upscaler, Text Encoder y CLIP Vision, y para descargarlos desde CivitAI.",
+            "enableButton": "Activar otros modelos",
+            "hint": "Puedes cambiar los tipos de modelos gestionados más adelante en Configuración > Biblioteca.",
+            "enableFailed": "No se pudieron activar los otros modelos",
+            "downloadBlocked": "La gestión de otros modelos está desactivada para este tipo de modelo. Actívala en Configuración > Biblioteca para descargar este archivo.",
+            "enableAction": "Activar otros modelos"
         }
     },
     "sidebar": {
@@ -1912,8 +1912,8 @@
             "message": "Escaneando y construyendo caché de embedding. Esto puede tomar unos minutos..."
         },
         "other": {
-            "title": "[TODO: Translate] Initializing Other Models Manager",
-            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+            "title": "Inicializando el gestor de otros modelos",
+            "message": "Escaneando y construyendo la caché de modelos. Esto puede tomar unos minutos..."
         },
         "recipes": {
             "title": "Inicializando gestor de recetas",
@@ -2370,7 +2370,7 @@
             "checkpointRootsFailed": "Error al cargar raíces de checkpoint: {message}",
             "unetRootsFailed": "Error al cargar raíces de Diffusion Model: {message}",
             "embeddingRootsFailed": "Error al cargar raíces de embedding: {message}",
-            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
+            "otherRootsFailed": "Error al cargar raíces de otros modelos: {message}",
             "mappingsUpdated": "Mapeos de rutas de modelo base actualizados ({count} mapeo{plural})",
             "mappingsCleared": "Mapeos de rutas de modelo base limpiados",
             "mappingSaveFailed": "Error al guardar mapeos de modelo base: {message}",
@@ -2635,10 +2635,10 @@
             "retry": "Reintentar"
         },
         "otherModels": {
-            "title": "[TODO: Translate] Other Models Management is available",
-            "content": "[TODO: Translate] Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
-            "enable": "[TODO: Translate] Enable Other Models",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "La gestión de otros modelos ya está disponible",
+            "content": "Escanea y gestiona archivos VAE, Upscaler, Text Encoder y CLIP Vision, y descárgalos desde CivitAI, todo desde una página dedicada.",
+            "enable": "Activar otros modelos",
+            "openSettings": "Abrir configuración"
         }
     }
 }

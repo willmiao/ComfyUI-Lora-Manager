@@ -149,7 +149,7 @@
             "copyCheckpointName": "העתק שם Checkpoint",
             "copyEmbeddingName": "העתק שם Embedding",
             "embeddingNameCopied": "תחביר Embedding הועתק",
-            "modelNameCopied": "[TODO: Translate] Model name copied",
+            "modelNameCopied": "שם המודל הועתק",
             "sendCheckpointToWorkflow": "שלח ל-ComfyUI",
             "sendEmbeddingToWorkflow": "שלח ל-ComfyUI"
         },
@@ -234,7 +234,7 @@
             "recipes": "מתכונים",
             "checkpoints": "Checkpoints",
             "embeddings": "Embeddings",
-            "other": "[TODO: Translate] Other",
+            "other": "אחרים",
             "statistics": "סטטיסטיקה"
         },
         "search": {
@@ -535,25 +535,25 @@
             "defaultUnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Diffusion Model (UNET) להורדות, ייבוא והעברות",
             "defaultEmbeddingRoot": "תיקיית שורש Embedding",
             "defaultEmbeddingRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של embedding להורדות, ייבוא והעברות",
-            "defaultVaeRoot": "[TODO: Translate] VAE Root",
-            "defaultVaeRootHelp": "[TODO: Translate] Set default VAE root directory for downloads, imports and moves",
-            "defaultUpscalerRoot": "[TODO: Translate] Upscaler Root",
-            "defaultUpscalerRootHelp": "[TODO: Translate] Set default upscaler root directory for downloads, imports and moves",
-            "defaultTextEncoderRoot": "[TODO: Translate] Text Encoder Root",
-            "defaultTextEncoderRootHelp": "[TODO: Translate] Set default text encoder root directory for downloads, imports and moves",
-            "defaultClipVisionRoot": "[TODO: Translate] CLIP Vision Root",
-            "defaultClipVisionRootHelp": "[TODO: Translate] Set default CLIP vision root directory for downloads, imports and moves",
-            "defaultControlnetRoot": "[TODO: Translate] ControlNet Root",
-            "defaultControlnetRootHelp": "[TODO: Translate] Set default ControlNet root directory for downloads, imports and moves",
-            "enableOtherModels": "[TODO: Translate] Other Models Management",
-            "enableOtherModelsHelp": "[TODO: Translate] When off, VAE / upscaler / text encoder / CLIP folders are not scanned, the Other Models page stays disabled, and these model types cannot be downloaded.",
-            "otherSubTypes": "[TODO: Translate] Managed Types",
-            "otherSubTypesHelp": "[TODO: Translate] Choose which other-model categories are scanned and shown on the Other Models page.",
-            "subTypeVae": "[TODO: Translate] VAE",
-            "subTypeUpscaler": "[TODO: Translate] Upscaler",
-            "subTypeTextEncoder": "[TODO: Translate] Text Encoder",
-            "subTypeClipVision": "[TODO: Translate] CLIP Vision",
-            "subTypeControlnet": "[TODO: Translate] ControlNet",
+            "defaultVaeRoot": "תיקיית שורש VAE",
+            "defaultVaeRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של VAE להורדות, ייבוא והעברות",
+            "defaultUpscalerRoot": "תיקיית שורש Upscaler",
+            "defaultUpscalerRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Upscaler להורדות, ייבוא והעברות",
+            "defaultTextEncoderRoot": "תיקיית שורש Text Encoder",
+            "defaultTextEncoderRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של Text Encoder להורדות, ייבוא והעברות",
+            "defaultClipVisionRoot": "תיקיית שורש CLIP Vision",
+            "defaultClipVisionRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של CLIP Vision להורדות, ייבוא והעברות",
+            "defaultControlnetRoot": "תיקיית שורש ControlNet",
+            "defaultControlnetRootHelp": "הגדר את ספריית השורש המוגדרת כברירת מחדל של ControlNet להורדות, ייבוא והעברות",
+            "enableOtherModels": "ניהול מודלים אחרים",
+            "enableOtherModelsHelp": "כשהאפשרות כבויה, תיקיות VAE / Upscaler / Text Encoder / CLIP אינן נסרקות, עמוד המודלים האחרים נשאר מושבת ולא ניתן להוריד סוגי מודלים אלה.",
+            "otherSubTypes": "סוגי מודלים מנוהלים",
+            "otherSubTypesHelp": "בחר אילו קטגוריות של מודלים אחרים ייסרקו ויוצגו בעמוד המודלים האחרים.",
+            "subTypeVae": "VAE",
+            "subTypeUpscaler": "Upscaler",
+            "subTypeTextEncoder": "Text Encoder",
+            "subTypeClipVision": "CLIP Vision",
+            "subTypeControlnet": "ControlNet",
             "recipesPath": "נתיב אחסון מתכונים",
             "recipesPathHelp": "ספרייה מותאמת אישית אופציונלית למתכונים שנשמרו. השאר ריק כדי להשתמש בתיקיית recipes של שורש LoRA הראשון.",
             "recipesPathPlaceholder": "/path/to/recipes",
@@ -1223,15 +1223,15 @@
         "title": "מודלי Embedding"
     },
     "other": {
-        "title": "[TODO: Translate] Other Models",
+        "title": "מודלים אחרים",
         "disabled": {
-            "title": "[TODO: Translate] Other Models management is off",
-            "description": "[TODO: Translate] Enable it to scan and manage VAE, upscaler, text encoder and CLIP vision files, and to download them from CivitAI.",
-            "enableButton": "[TODO: Translate] Enable Other Models",
-            "hint": "[TODO: Translate] You can change the managed model types later in Settings > Library.",
-            "enableFailed": "[TODO: Translate] Failed to enable Other Models",
-            "downloadBlocked": "[TODO: Translate] Other Models management is disabled for this model type. Enable it in Settings > Library to download this file.",
-            "enableAction": "[TODO: Translate] Enable Other Models"
+            "title": "ניהול המודלים האחרים כבוי",
+            "description": "הפעל כדי לסרוק ולנהל קבצי VAE, Upscaler, Text Encoder ו-CLIP Vision, ולהוריד אותם מ-CivitAI.",
+            "enableButton": "הפעל מודלים אחרים",
+            "hint": "ניתן לשנות את סוגי המודלים המנוהלים מאוחר יותר בהגדרות > ספרייה.",
+            "enableFailed": "הפעלת המודלים האחרים נכשלה",
+            "downloadBlocked": "ניהול המודלים האחרים מושבת עבור סוג מודל זה. הפעל אותו בהגדרות > ספרייה כדי להוריד קובץ זה.",
+            "enableAction": "הפעל מודלים אחרים"
         }
     },
     "sidebar": {
@@ -1912,8 +1912,8 @@
             "message": "סורק ובונה מטמון embedding. זה עשוי לקחת מספר דקות..."
         },
         "other": {
-            "title": "[TODO: Translate] Initializing Other Models Manager",
-            "message": "[TODO: Translate] Scanning and building model cache. This may take a few minutes..."
+            "title": "מאתחל את מנהל המודלים האחרים",
+            "message": "סורק ובונה מטמון מודלים. זה עשוי לקחת מספר דקות..."
         },
         "recipes": {
             "title": "מאתחל מנהל מתכונים",
@@ -2370,7 +2370,7 @@
             "checkpointRootsFailed": "טעינת שורשי checkpoint נכשלה: {message}",
             "unetRootsFailed": "טעינת שורשי Diffusion Model נכשלה: {message}",
             "embeddingRootsFailed": "טעינת שורשי embedding נכשלה: {message}",
-            "otherRootsFailed": "[TODO: Translate] Failed to load other model roots: {message}",
+            "otherRootsFailed": "טעינת שורשי המודלים האחרים נכשלה: {message}",
             "mappingsUpdated": "מיפויי נתיבי מודל בסיס עודכנו ({count})",
             "mappingsCleared": "מיפויי נתיבי מודל בסיס נוקו",
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
@@ -2635,10 +2635,10 @@
             "retry": "נסה שוב"
         },
         "otherModels": {
-            "title": "[TODO: Translate] Other Models Management is available",
-            "content": "[TODO: Translate] Scan and manage VAE, upscaler, text encoder and CLIP vision files — and download them from CivitAI — from one dedicated page.",
-            "enable": "[TODO: Translate] Enable Other Models",
-            "openSettings": "[TODO: Translate] Open Settings"
+            "title": "ניהול המודלים האחרים זמין",
+            "content": "סרוק ונהל קבצי VAE, Upscaler, Text Encoder ו-CLIP Vision, והורד אותם מ-CivitAI — מהעמוד הייעודי.",
+            "enable": "הפעל מודלים אחרים",
+            "openSettings": "פתח הגדרות"
         }
     }
 }
