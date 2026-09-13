@@ -29,6 +29,7 @@
       'civitai_api_key_set': True,
       'language': 'en',
       'llm_api_key_set': False,
+      'other_models_paths_available': False,
       'theme': 'dark',
     }),
     'success': True,

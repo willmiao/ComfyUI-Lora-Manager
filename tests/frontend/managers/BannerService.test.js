@@ -214,6 +214,7 @@ describe('BannerService', () => {
 
         beforeEach(() => {
             state.global.settings.enable_other_models = false;
+            state.global.settings.other_models_paths_available = true;
         });
 
         it('announces the feature while it is switched off', () => {
@@ -223,6 +224,25 @@ describe('BannerService', () => {
             expect(element).not.toBeNull();
             expect(element.querySelector('.banner-title').textContent)
                 .toContain('Other Models Management is available');
+        });
+
+        it('stays silent when the host exposes no other-model folders', () => {
+            // Standalone installs without the folder_paths keys in
+            // settings.json would land on an empty page, so do not announce.
+            state.global.settings.other_models_paths_available = false;
+
+            prepareBanner();
+
+            expect(bannerElement()).toBeNull();
+            expect(bannerService.banners.has(OTHER_MODELS_BANNER_ID)).toBe(false);
+        });
+
+        it('still announces when availability is unknown (older payload)', () => {
+            delete state.global.settings.other_models_paths_available;
+
+            prepareBanner();
+
+            expect(bannerElement()).not.toBeNull();
         });
 
         it('stays silent once the feature is enabled', () => {

@@ -98,17 +98,27 @@ def test_validate_rejects_switched_off_sub_type():
     assert handler._validate_civitai_model_type("Upscaler") is False
 
 
-def test_page_context_reports_feature_state():
+def test_page_context_reports_feature_state(monkeypatch):
+    from py.config import config
     from py.services.settings_manager import get_settings_manager
 
     manager = get_settings_manager()
     handler = OtherRoutes()
     provider = handler._get_page_context_provider()
 
-    assert provider(None) == {"other_disabled": False}
+    monkeypatch.setattr(config, "other_roots", ["/models/vae"], raising=False)
+    context = provider(None)
+    assert context["other_disabled"] is False
+    assert context["other_no_paths"] is False
+
+    # Enabled but nothing resolved: the page must explain how to fix it.
+    monkeypatch.setattr(config, "other_roots", [], raising=False)
+    context = provider(None)
+    assert context["other_disabled"] is False
+    assert context["other_no_paths"] is True
 
     manager.set("enable_other_models", False)
-    assert provider(None) == {"other_disabled": True}
+    assert provider(None) == {"other_disabled": True, "other_no_paths": False}
 
 
 def test_get_expected_model_types_mentions_supported_types():

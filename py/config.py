@@ -1494,6 +1494,54 @@ class Config:
         self.other_roots = self._init_other_paths()
         self._rebuild_preview_roots()
 
+    def get_other_models_availability(self) -> Dict[str, Any]:
+        """Report the other-model folders the host can actually expose.
+
+        Independent of the opt-in ``enable_other_models`` toggle: this answers
+        "could Other Models management work here at all?". ComfyUI mode almost
+        always has these folder keys registered, while standalone mode only
+        knows the keys present in ``settings.json.folder_paths`` - so the UI
+        uses this to decide whether announcing the feature would be actionable.
+
+        Returns:
+            ``{"available": bool, "sub_types": {sub_type: [existing roots]}}``.
+            A folder only counts when it exists on disk; an empty folder still
+            counts because CivitAI downloads can target it.
+        """
+        sub_types: Dict[str, List[str]] = {}
+        try:
+            keys = self._collapse_legacy_folder_keys(
+                list(OTHER_MODEL_FOLDER_SUBTYPES.keys())
+            )
+        except Exception:  # pragma: no cover - defensive
+            keys = list(OTHER_MODEL_FOLDER_SUBTYPES.keys())
+
+        for key in keys:
+            sub_type = OTHER_MODEL_FOLDER_SUBTYPES.get(key)
+            if not sub_type:
+                continue
+            try:
+                raw_paths = folder_paths.get_folder_paths(key)
+            except Exception as exc:
+                logger.debug("Error probing folder paths for '%s': %s", key, exc)
+                continue
+
+            bucket = sub_types.setdefault(sub_type, [])
+            for root in sorted(
+                self._dedupe_existing_paths(raw_paths or []).values(),
+                key=lambda path: path.lower(),
+            ):
+                if root not in bucket:
+                    bucket.append(root)
+
+        available_sub_types = {
+            sub_type: roots for sub_type, roots in sub_types.items() if roots
+        }
+        return {
+            "available": bool(available_sub_types),
+            "sub_types": available_sub_types,
+        }
+
     def get_preview_static_url(self, preview_path: str) -> str:
         if not preview_path:
             return ""

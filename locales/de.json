@@ -1232,6 +1232,14 @@
             "enableFailed": "Aktivierung weiterer Modelle fehlgeschlagen",
             "downloadBlocked": "Die Verwaltung weiterer Modelle ist für diesen Modelltyp deaktiviert. Aktivieren Sie sie unter Einstellungen > Bibliothek, um diese Datei herunterzuladen.",
             "enableAction": "Weitere Modelle aktivieren"
+        },
+        "noPaths": {
+            "title": "Keine Ordner für weitere Modelle gefunden",
+            "descriptionStandalone": "Die Verwaltung weiterer Modelle ist aktiviert, aber keiner der konfigurierten Modellordner existiert auf dem Datenträger. Fügen Sie die unten stehenden Ordnerpfade zu settings.json hinzu und starten Sie LoRA Manager neu.",
+            "hintStandalone": "Nur die oben aufgeführten Ordnerschlüssel werden gescannt; nicht benötigte Schlüssel können weggelassen werden.",
+            "descriptionComfyUI": "Die Verwaltung weiterer Modelle ist aktiviert, aber keiner der konfigurierten Modellordner existiert auf dem Datenträger. Fügen Sie die entsprechenden Modellordner zu Ihren ComfyUI-Modellpfaden hinzu und laden Sie diese Seite neu.",
+            "hintComfyUI": "Weitere Modelle werden aus den Ordnern vae, upscale_models, text_encoders, clip_vision und controlnet von ComfyUI gelesen.",
+            "openSettings": "Einstellungen öffnen"
         }
     },
     "sidebar": {

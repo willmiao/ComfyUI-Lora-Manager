@@ -1559,6 +1559,22 @@ class SettingsHandler:
             response_data["civitai_api_key_set"] = bool(raw_key)
             raw_llm_key = self._settings.get("llm_api_key")
             response_data["llm_api_key_set"] = bool(raw_llm_key)
+            # Derived capability flag (not persisted): whether the host exposes
+            # any other-model folder at all. Standalone installs only know the
+            # folder_paths keys present in settings.json, so the announcement
+            # banner uses this to avoid promising a page that cannot list
+            # anything.
+            try:
+                availability = config.get_other_models_availability()
+                response_data["other_models_paths_available"] = bool(
+                    availability.get("available")
+                )
+            except Exception as availability_error:  # pragma: no cover - defensive
+                logger.debug(
+                    "Could not resolve Other Models availability: %s",
+                    availability_error,
+                )
+                response_data["other_models_paths_available"] = None
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file

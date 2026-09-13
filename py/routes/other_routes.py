@@ -1,4 +1,5 @@
 import logging
+import os
 from typing import Any, Dict, List
 from aiohttp import web
 
@@ -75,7 +76,18 @@ class OtherRoutes(BaseModelRoutes):
         return self._page_context_for_other
 
     def _page_context_for_other(self, request: web.Request) -> Dict[str, Any]:
-        return {"other_disabled": not self._settings.is_other_models_enabled()}
+        if not self._settings.is_other_models_enabled():
+            return {"other_disabled": True, "other_no_paths": False}
+
+        # Enabled but nothing to scan: folder paths for the managed sub_types
+        # resolved to no existing folder. Render an actionable empty state
+        # instead of an apparently broken empty grid.
+        standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+        return {
+            "other_disabled": False,
+            "other_no_paths": not bool(config.other_roots),
+            "standalone_mode": standalone_mode,
+        }
 
     def _get_expected_model_types(self) -> str:
         """Get expected model types string for error messages"""

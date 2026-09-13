@@ -553,6 +553,13 @@ class BannerService {
         if (state.global.settings.enable_other_models) {
             return;
         }
+        // Only announce when the host can actually resolve other-model folders.
+        // Standalone installs only know the folder_paths keys present in
+        // settings.json, so announcing there would land the user on an empty
+        // page. `=== false` (not falsy) keeps older payloads working.
+        if (state.global.settings.other_models_paths_available === false) {
+            return;
+        }
         if (this.isBannerDismissed(OTHER_MODELS_BANNER_ID)) {
             return;
         }

@@ -1232,6 +1232,14 @@
             "enableFailed": "啟用其他模型失敗",
             "downloadBlocked": "其他模型管理已對此模型類型停用。請在「設定 > 模型庫」中啟用以下載此檔案。",
             "enableAction": "啟用其他模型"
+        },
+        "noPaths": {
+            "title": "找不到其他模型資料夾",
+            "descriptionStandalone": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將下方的資料夾路徑加入 settings.json，然後重新啟動 LoRA Manager。",
+            "hintStandalone": "只會掃描上方列出的資料夾鍵；不需要的鍵可以省略。",
+            "descriptionComfyUI": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將對應的模型資料夾加入 ComfyUI 的模型路徑，然後重新載入此頁面。",
+            "hintComfyUI": "其他模型會從 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 資料夾讀取。",
+            "openSettings": "開啟設定"
         }
     },
     "sidebar": {

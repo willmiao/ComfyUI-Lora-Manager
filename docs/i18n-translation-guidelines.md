@@ -27,6 +27,12 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > default set — keep all three enumerating the full five (`VAE / upscaler / text encoder /
 > CLIP vision / ControlNet` in `en`; locale slash-list casing follows each file's existing
 > `VAE / Upscaler / Text Encoder / …` style, de compounds as `CLIP-Vision- und ControlNet-Ordner`).
+>
+> **Status (2026-09, "no folders found" state):** the Other Models page gained an *enabled but
+> nothing to scan* empty state with 6 new keys (`other.noPaths.*`); translated in all 9 locales
+> in the same pass. The `folder_paths` JSON snippet shown in that state lives in
+> `templates/other.html`, **not** in the locale files, so it is never translated — only the
+> surrounding prose is. Terminology added in §2.
 
 ---
 
@@ -272,6 +278,19 @@ In prose these names sit next to localized nouns the same way `Diffusion Model` 
 `settings.folderSettings.otherSubTypes` ("Managed Types") must name **model** types, matching
 each locale's `header.filter.modelTypes` rendering (zh `管理的模型类型`, ja `管理するモデルタイプ`,
 de `Verwaltete Modelltypen`, …).
+
+The "no folders found" empty state (`other.noPaths.*`) uses two phrases that must stay
+consistent whenever that copy is edited. `folder key` means the `folder_paths` key name
+(`vae`, `upscale_models`, … — Latin per the table above); `on disk` means the folder must
+physically exist:
+
+| Phrase | Rendering |
+|---|---|
+| folder key | zh-CN 文件夹键 · zh-TW 資料夾鍵 · ja フォルダーキー · ko 폴더 키 · fr clé de dossier · de Ordnerschlüssel · es clave de carpeta · ru ключ папки · he מפתח תיקייה |
+| on disk | zh-CN 在磁盘上 · zh-TW 在磁碟上 · ja ディスク上 · ko 디스크에 · fr sur le disque · de auf dem Datenträger · es en el disco · ru на диске · he בדיסק |
+
+`settings.json` and `ComfyUI` stay verbatim in every locale; "reload this page" / "restart
+LoRA Manager" reuse each locale's existing restart wording (`settings.extraFolderPaths.*`).
 
 ---
 

@@ -22,7 +22,10 @@ describe('Other Models disabled page', () => {
         vi.resetModules();
         vi.clearAllMocks();
         initializeAppMock.mockResolvedValue(undefined);
-        document.body.innerHTML = '<button id="enableOtherModelsBtn"></button>';
+        document.body.innerHTML = [
+            '<button id="enableOtherModelsBtn"></button>',
+            '<button id="openOtherModelsSettingsBtn"></button>',
+        ].join('');
 
         Object.defineProperty(window, 'location', {
             value: { ...originalLocation, reload: vi.fn() },
@@ -43,10 +46,22 @@ describe('Other Models disabled page', () => {
             writable: true,
         });
         delete global.fetch;
+        delete window.modalManager;
     });
 
     it('boots the shared app core so the header stays usable', () => {
         expect(initializeAppMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('opens the Library settings from the no-folders state', () => {
+        const showModal = vi.fn();
+        window.modalManager = { showModal };
+
+        document.getElementById('openOtherModelsSettingsBtn').dispatchEvent(
+            new MouseEvent('click', { bubbles: true }),
+        );
+
+        expect(showModal).toHaveBeenCalledWith('settingsModal');
     });
 
     it('enables Other Models through the settings API and reloads', async () => {

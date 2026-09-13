@@ -1232,6 +1232,14 @@
             "enableFailed": "Échec de l’activation des autres modèles",
             "downloadBlocked": "La gestion des autres modèles est désactivée pour ce type de modèle. Activez-la dans Paramètres > Bibliothèque pour télécharger ce fichier.",
             "enableAction": "Activer les autres modèles"
+        },
+        "noPaths": {
+            "title": "Aucun dossier d’autres modèles trouvé",
+            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les chemins de dossiers ci-dessous à settings.json, puis redémarrez LoRA Manager.",
+            "hintStandalone": "Seules les clés de dossiers listées ci-dessus sont analysées ; les clés inutiles peuvent être omises.",
+            "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
+            "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
+            "openSettings": "Ouvrir les paramètres"
         }
     },
     "sidebar": {

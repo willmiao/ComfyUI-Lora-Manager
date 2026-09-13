@@ -414,3 +414,74 @@ class TestOtherRootsWiring:
         config._rebuild_preview_roots()
 
         assert config.is_preview_path_allowed(str(vae_dir / "model.preview.png"))
+
+
+class TestOtherModelsAvailability:
+    """Config.get_other_models_availability ignores the opt-in toggle.
+
+    It answers "could Other Models work here at all?", which the settings
+    payload and the announcement banner use to avoid promising a page that
+    cannot list anything.
+    """
+
+    def _stub_folder_paths(self, monkeypatch, mapping):
+        def get_folder_paths(key):
+            value = mapping.get(key, [])
+            return [value] if isinstance(value, str) else list(value)
+
+        monkeypatch.setattr(
+            config_module.folder_paths, "get_folder_paths", get_folder_paths
+        )
+        # No host alias rewriting: every key stays independently queryable,
+        # which is what the standalone mock does.
+        monkeypatch.delattr(config_module.folder_paths, "map_legacy", raising=False)
+
+    def test_reports_available_when_a_folder_exists(self, monkeypatch, tmp_path):
+        vae_dir = tmp_path / "vae"
+        vae_dir.mkdir()
+        self._stub_folder_paths(monkeypatch, {"vae": str(vae_dir)})
+
+        # The feature stays off on purpose: availability must not depend on it.
+        get_settings_manager().set("enable_other_models", False)
+
+        availability = _make_config().get_other_models_availability()
+
+        assert availability["available"] is True
+        assert availability["sub_types"] == {"vae": [_normalize(str(vae_dir))]}
+
+    def test_counts_an_empty_but_existing_folder(self, monkeypatch, tmp_path):
+        vae_dir = tmp_path / "vae"
+        vae_dir.mkdir()
+        self._stub_folder_paths(monkeypatch, {"vae": str(vae_dir)})
+
+        availability = _make_config().get_other_models_availability()
+
+        assert availability["available"] is True
+
+    def test_ignores_missing_folders(self, monkeypatch, tmp_path):
+        self._stub_folder_paths(
+            monkeypatch, {"vae": str(tmp_path / "does-not-exist")}
+        )
+
+        availability = _make_config().get_other_models_availability()
+
+        assert availability == {"available": False, "sub_types": {}}
+
+    def test_reports_unavailable_without_any_configuration(self, monkeypatch):
+        self._stub_folder_paths(monkeypatch, {})
+
+        availability = _make_config().get_other_models_availability()
+
+        assert availability == {"available": False, "sub_types": {}}
+
+    def test_merges_legacy_clip_key_into_text_encoder(self, monkeypatch, tmp_path):
+        clip_dir = tmp_path / "clip"
+        clip_dir.mkdir()
+        self._stub_folder_paths(monkeypatch, {"clip": [str(clip_dir)]})
+
+        availability = _make_config().get_other_models_availability()
+
+        assert availability["available"] is True
+        assert availability["sub_types"] == {
+            "text_encoder": [_normalize(str(clip_dir))]
+        }
