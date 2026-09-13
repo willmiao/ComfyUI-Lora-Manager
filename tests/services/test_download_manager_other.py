@@ -428,6 +428,29 @@ async def test_default_paths_use_per_sub_type_root(
 
     assert result["success"] is True
     assert str(tmp_path / "vae") in str(captured["save_dir"])
+    assert captured["relative_path"] == ""
+
+
+@pytest.mark.asyncio
+async def test_default_paths_other_is_flat_without_configured_template(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """Regression: an unconfigured 'other' template must resolve to a flat
+    layout at the sub_type root instead of the {base_model}/{first_tag}
+    fallback (which scattered files into arbitrary CivitAI-tag folders)."""
+    get_settings_manager().settings["download_path_templates"].pop("other", None)
+
+    captured = {}
+    _capture_execute(monkeypatch, captured)
+
+    manager = DownloadManager()
+    result = await manager.download_from_civitai(
+        model_version_id=99, use_default_paths=True
+    )
+
+    assert result["success"] is True
+    assert captured["relative_path"] == ""
+    assert str(tmp_path / "vae") in str(captured["save_dir"])
 
 
 @pytest.mark.asyncio

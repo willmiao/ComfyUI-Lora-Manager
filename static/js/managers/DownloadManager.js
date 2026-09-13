@@ -2520,9 +2520,14 @@ export class DownloadManager {
                     const singularType = this._isDiffusionModel
                         ? 'unet'
                         : this.apiClient.modelType.replace(/s$/, '');
-                    const templates = state.global.settings.download_path_templates;
-                    const template = templates[singularType];
-                    fullPath += `/${template}`;
+                    const templates = state.global?.settings?.download_path_templates;
+                    const template = templates?.[singularType];
+                    // An empty or absent template means a flat layout: keep the
+                    // root as-is instead of appending "/undefined" or a
+                    // dangling slash.
+                    if (template) {
+                        fullPath += `/${template}`;
+                    }
                 } catch (error) {
                     console.error('Failed to fetch template:', error);
                     fullPath += '/' + translate('modals.download.autoOrganizedPath');

@@ -170,7 +170,7 @@ Flow: `POST /api/lm/download-model` (`py/routes/model_route_registrar.py:104`; G
 
 Hooks: `_record_downloaded_version_history` (model_type is free text — zero change); `_sync_downloaded_version` (`:1984` → scanner dispatch `:2130-2135`) add `other`; `py/utils/example_images_download_manager.py` scanner dispatch at `:411-421`, `:591-601`, `:1089+` — add `other` at all three (silent no-scanner otherwise).
 
-Path templates: `get_download_path_template("other")` already falls back to `"{base_model}/{first_tag}"` — works with zero change; optional settings-UI row (§9.4).
+Path templates: `get_download_path_template("other")` is unset, so `other` resolves to a **flat** layout (empty template) — downloads land directly under the resolved sub_type root. This is deliberate: other-model roots are already split per sub_type (`default_other_roots`), and `priority_tags` has no `other` entry, so `{first_tag}` would fall back to an arbitrary CivitAI tag and scatter files into unstable folders. Users who want nesting can still set `download_path_templates["other"]` in `settings.json`. See `DEFAULT_DOWNLOAD_PATH_TEMPLATES` (`py/utils/constants.py`) and `DEFAULT_PATH_TEMPLATES` (`static/js/utils/constants.js`).
 
 ### 9.2 File-level routing (model.type / file.type → sub_type) **[locked]**
 

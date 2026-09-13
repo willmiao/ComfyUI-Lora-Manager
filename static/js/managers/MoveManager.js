@@ -226,14 +226,13 @@ class MoveManager {
 
         if (modelRoot) {
             if (this.useDefaultPath) {
-                // Show actual template path
+                // Show actual template path; an empty/absent template means a
+                // flat layout, so keep the root as-is.
                 const singularType = config.singularName || apiClient.modelType.replace(/s$/, '');
-                const templates = state.global.settings.download_path_templates;
-                const template = templates[singularType];
+                const templates = state.global?.settings?.download_path_templates;
+                const template = templates?.[singularType];
                 if (template) {
                     fullPath += `/${template}`;
-                } else {
-                    fullPath += '/' + translate('modals.download.autoOrganizedPath');
                 }
             } else {
                 // Show manual path selection

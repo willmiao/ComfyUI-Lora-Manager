@@ -25,6 +25,7 @@ from typing import (
 from platformdirs import user_config_dir
 
 from ..utils.constants import (
+    DEFAULT_DOWNLOAD_PATH_TEMPLATES,
     DEFAULT_ENABLED_OTHER_SUB_TYPES,
     DEFAULT_HASH_CHUNK_SIZE_MB,
     DEFAULT_PRIORITY_TAG_CONFIG,
@@ -2335,10 +2336,14 @@ class SettingsManager:
         """Get download path template for specific model type
 
         Args:
-            model_type: The type of model ('lora', 'checkpoint', 'embedding')
+            model_type: The type of model ('lora', 'checkpoint', 'embedding',
+                'other')
 
         Returns:
-            Template string for the model type, defaults to '{base_model}/{first_tag}'
+            Template string for the model type. Falls back to the per-type
+            default in ``DEFAULT_DOWNLOAD_PATH_TEMPLATES``; unknown model types
+            resolve to an empty string (flat layout) rather than silently
+            nesting downloads under an unconfigured subfolder.
         """
         templates = self.settings.get("download_path_templates", {})
 
@@ -2362,27 +2367,19 @@ class SettingsManager:
                 logger.warning(
                     f"Failed to parse download_path_templates JSON string: {e}. Setting default values."
                 )
-                default_template = "{base_model}/{first_tag}"
-                templates = {
-                    "lora": default_template,
-                    "checkpoint": default_template,
-                    "embedding": default_template,
-                }
+                templates = dict(DEFAULT_DOWNLOAD_PATH_TEMPLATES)
                 self.settings["download_path_templates"] = templates
                 self._save_settings()
 
         # Ensure templates is a dictionary
         if not isinstance(templates, dict):
-            default_template = "{base_model}/{first_tag}"
-            templates = {
-                "lora": default_template,
-                "checkpoint": default_template,
-                "embedding": default_template,
-            }
+            templates = dict(DEFAULT_DOWNLOAD_PATH_TEMPLATES)
             self.settings["download_path_templates"] = templates
             self._save_settings()
 
-        return templates.get(model_type, "{base_model}/{first_tag}")
+        return templates.get(
+            model_type, DEFAULT_DOWNLOAD_PATH_TEMPLATES.get(model_type, "")
+        )
 
 
 _SETTINGS_MANAGER: Optional["SettingsManager"] = None

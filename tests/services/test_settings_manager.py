@@ -345,6 +345,26 @@ def test_download_path_template_invalid_json(manager):
     )
 
 
+def test_download_path_template_defaults_flat_for_other(manager):
+    """'other' has no settings-UI row and no priority_tags entry, so an
+    unconfigured template must resolve to a flat layout rather than the
+    {base_model}/{first_tag} fallback (which scatters files into arbitrary
+    CivitAI-tag folders)."""
+    manager.settings["download_path_templates"] = {}
+
+    assert manager.get_download_path_template("other") == ""
+
+    # An explicit user configuration still wins.
+    manager.settings["download_path_templates"] = {"other": "{base_model}"}
+    assert manager.get_download_path_template("other") == "{base_model}"
+
+
+def test_download_path_template_unknown_type_is_flat(manager):
+    manager.settings["download_path_templates"] = {}
+
+    assert manager.get_download_path_template("not-a-model-type") == ""
+
+
 def test_auto_set_default_roots(manager):
     # Clear any previously auto-set values to test fresh behavior
     manager.settings["default_lora_root"] = ""

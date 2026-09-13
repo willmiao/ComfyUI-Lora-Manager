@@ -353,7 +353,11 @@ export const DEFAULT_PATH_TEMPLATES = {
     lora: '{base_model}/{first_tag}',
     checkpoint: '{base_model}',
     unet: '{base_model}',
-    embedding: '{first_tag}'
+    embedding: '{first_tag}',
+    // Other models (VAE/upscaler/...) default to a flat layout: their root is
+    // already split per sub_type, and priority_tags has no "other" entry, so
+    // {first_tag} would resolve to an arbitrary CivitAI tag.
+    other: ''
 };
 
 // Model type labels for UI

@@ -251,6 +251,19 @@ DEFAULT_PRIORITY_TAG_CONFIG = {
     "embedding": ", ".join(CIVITAI_MODEL_TAGS),
 }
 
+# Default download path template for each model type. "other" defaults to a
+# flat layout (empty template) on purpose: other-model downloads are already
+# separated by sub_type roots (default_other_roots), and priority_tags has no
+# "other" entry, so {first_tag} would resolve to an arbitrary CivitAI tag and
+# scatter files into unstable folders. Users can still opt in to a template by
+# writing "other" into download_path_templates in settings.json.
+DEFAULT_DOWNLOAD_PATH_TEMPLATES: Dict[str, str] = {
+    "lora": "{base_model}/{first_tag}",
+    "checkpoint": "{base_model}/{first_tag}",
+    "embedding": "{base_model}/{first_tag}",
+    "other": "",
+}
+
 # baseModel values from CivitAI that should be treated as diffusion models (unet)
 # These model types are incorrectly labeled as "checkpoint" by CivitAI but are actually diffusion models
 DIFFUSION_MODEL_BASE_MODELS = frozenset(
