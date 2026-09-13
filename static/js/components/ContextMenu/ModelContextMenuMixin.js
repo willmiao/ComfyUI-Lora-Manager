@@ -446,7 +446,10 @@ export const ModelContextMenuMixin = {
                 this.downloadExampleImages(true);
                 return true;
             case 'civitai':
-                if (this.currentCard.dataset.from_civitai === 'true') {
+                // Gate on actual CivitAI data (not the `from_civitai` flag) so
+                // that linking HuggingFace does not make the model look like it
+                // has no CivitAI info (#1094).
+                if (this.currentCard.dataset.has_civitai === 'true') {
                     if (this.currentCard.querySelector('.fa-globe')) {
                         this.currentCard.querySelector('.fa-globe').click();
                     } else {

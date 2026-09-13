@@ -127,7 +127,11 @@ class TestEnrichHfMetadata:
                 skill_name="enrich_hf_metadata",
                 model_path="/p.safetensors",
                 llm_output=llm,
-                metadata={"base_model": "SD 1.5", "from_civitai": False},
+                metadata={
+                    "base_model": "SD 1.5",
+                    "from_civitai": False,
+                    "hf_url": "https://huggingface.co/user/repo",
+                },
             )
         applied = mock_apply.call_args[0][1]
         assert applied["base_model"] == "Flux.1 D"
@@ -184,14 +188,17 @@ class TestEnrichHfMetadata:
                 skill_name="enrich_hf_metadata",
                 model_path="/p.safetensors",
                 llm_output=llm,
-                metadata={"from_civitai": False},
+                metadata={
+                    "from_civitai": False,
+                    "hf_url": "https://huggingface.co/user/repo",
+                },
             )
         applied = mock_apply.call_args[0][1]
         assert applied["civitai"]["description"] == "A short summary"
 
     @pytest.mark.asyncio
-    async def test_short_description_skipped_for_civitai_model(self, processor):
-        """short_description NOT written for CivitAI models (has own description)."""
+    async def test_short_description_skipped_without_hf_url(self, processor):
+        """short_description NOT written when the model has no HF source."""
         llm = {**self.MIN_LLM_OUTPUT, "short_description": "A short summary"}
         with (
             mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
@@ -221,7 +228,10 @@ class TestEnrichHfMetadata:
                 skill_name="enrich_hf_metadata",
                 model_path="/p.safetensors",
                 llm_output=self.MIN_LLM_OUTPUT,
-                metadata={"from_civitai": False},
+                metadata={
+                    "from_civitai": False,
+                    "hf_url": "https://huggingface.co/user/repo",
+                },
                 readme_content="# Hello\n\nThis is **bold**.",
             )
         applied = mock_apply.call_args[0][1]
@@ -229,8 +239,8 @@ class TestEnrichHfMetadata:
         assert "<strong>bold</strong>" in applied.get("modelDescription", "")
 
     @pytest.mark.asyncio
-    async def test_readme_content_skipped_for_civitai_model(self, processor):
-        """README content NOT converted for CivitAI models."""
+    async def test_readme_content_skipped_without_hf_url(self, processor):
+        """README content NOT converted when the model has no HF source."""
         with (
             mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
             mock.patch("py.metadata_ops.download_preview", return_value=None),
@@ -283,8 +293,31 @@ Content
         assert images[0]["meta"]["prompt"] == "a cat"
 
     @pytest.mark.asyncio
-    async def test_gallery_images_skipped_for_civitai_model(self, processor):
-        """Gallery images NOT extracted for CivitAI models."""
+    async def test_gallery_images_skipped_without_hf_url(self, processor):
+        """Gallery images NOT extracted when the model has no HF source."""
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.MIN_LLM_OUTPUT,
+                metadata={"from_civitai": True},
+                readme_content="---\nwidget:\n- text: a\n  output:\n    url: x.png\n---\n",
+            )
+        applied = mock_apply.call_args[0][1]
+        civitai = applied.get("civitai", {})
+        assert "images" not in civitai
+
+    @pytest.mark.asyncio
+    async def test_gallery_images_extracted_for_civitai_linked_model(self, processor):
+        """A model may be on CivitAI and HuggingFace at once (#1094).
+
+        HF enrichment is gated on ``hf_url``, not on ``from_civitai``, so the
+        README gallery is still applied when both sources are present.
+        """
         with (
             mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
             mock.patch("py.metadata_ops.download_preview", return_value=None),
@@ -301,8 +334,11 @@ Content
                 readme_content="---\nwidget:\n- text: a\n  output:\n    url: x.png\n---\n",
             )
         applied = mock_apply.call_args[0][1]
-        civitai = applied.get("civitai", {})
-        assert "images" not in civitai
+        images = applied.get("civitai", {}).get("images", [])
+        assert len(images) == 1
+        assert images[0]["url"] == (
+            "https://huggingface.co/user/repo/resolve/main/x.png"
+        )
 
     # -- tags ------------------------------------------------------------
 

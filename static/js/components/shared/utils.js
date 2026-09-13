@@ -37,6 +37,24 @@ export function formatFileSize(bytes) {
 }
 
 /**
+ * Whether a model has usable CivitAI metadata to link to.
+ *
+ * CivitAI links must be gated on the presence of actual CivitAI data rather
+ * than the `from_civitai` provenance flag: linking a model to HuggingFace used
+ * to flip `from_civitai` to false, which hid the CivitAI link even though the
+ * model still had CivitAI metadata. See issue #1094.
+ *
+ * @param {Object} [civitaiData] - The model's `civitai` payload
+ * @returns {boolean} True when a CivitAI model/version id is available
+ */
+export function hasCivitaiSource(civitaiData) {
+    if (!civitaiData || typeof civitaiData !== 'object') return false;
+    return Boolean(
+        civitaiData.modelId ?? civitaiData.model_id ?? civitaiData.id
+    );
+}
+
+/**
  * Render compact tags
  * @param {Array} tags - Array of tags
  * @param {string} filePath - File path for the edit button

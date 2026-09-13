@@ -92,7 +92,10 @@ class PostProcessor:
         preview_downloaded = False
 
         # -- Determine whether this is an HF-sourced model -----------------
-        is_hf_model = not metadata.get("from_civitai", True)
+        # Key off `hf_url` directly: `from_civitai` records provenance and can
+        # be true for a model that is also linked to HuggingFace (both sources
+        # coexist, see #1094), so it must not gate HF enrichment.
+        is_hf_model = bool(metadata.get("hf_url", ""))
 
         # -- Collect updates -----------------------------------------------
         updates: Dict[str, Any] = {}

@@ -14,7 +14,7 @@ import {
 } from './ModelMetadata.js';
 import { setupTagEditMode } from './ModelTags.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
-import { renderCompactTags, setupTagTooltip, formatFileSize, escapeAttribute, escapeHtml } from './utils.js';
+import { renderCompactTags, setupTagTooltip, formatFileSize, escapeAttribute, escapeHtml, hasCivitaiSource } from './utils.js';
 import { renderTriggerWords, setupTriggerWordsEditMode } from './TriggerWords.js';
 import { parsePresets, renderPresetTags } from './PresetTags.js';
 import { initVersionsTab } from './ModelVersionsTab.js';
@@ -389,7 +389,11 @@ export async function showModelModal(model, modelType) {
     const licenseIcons = useNewIcons
         ? renderNewLicenseIcons(modelWithFullData)
         : renderLicenseIcons(modelWithFullData);
-    const viewOnCivitaiAction = modelWithFullData.from_civitai ? `
+    // Gate the CivitAI link on actual CivitAI data, not the `from_civitai`
+    // provenance flag: a model can be linked to HuggingFace and to CivitAI at
+    // the same time, and both links must coexist (#1094).
+    const hasCivitai = hasCivitaiSource(modelWithFullData.civitai);
+    const viewOnCivitaiAction = hasCivitai ? `
 <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${escapedFilePathAttr}">
     <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
 </div>`.trim() : '';

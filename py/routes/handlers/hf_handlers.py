@@ -240,7 +240,10 @@ class HfHandler:
                 })
 
             existing["hf_url"] = hf_url
-            existing["from_civitai"] = False
+            # NOTE: deliberately do NOT touch `from_civitai` here. It records
+            # where the metadata came from, and the UI must show the CivitAI
+            # link whenever CivitAI data is present — linking HuggingFace must
+            # not hide it (#1094). HF provenance is tracked via `hf_url`.
             await MetadataManager.save_metadata(file_path, existing)
 
             await _add_to_scanner_cache(file_path, existing)
