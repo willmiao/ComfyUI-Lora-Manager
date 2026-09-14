@@ -11,6 +11,7 @@ from __future__ import annotations
 from .base import (
     GROUP_PREFIXES,
     HTTP_TIMEOUT,
+    ModelCardContext,
     ModelSource,
     ModelSourceError,
     SourceRef,
@@ -45,6 +46,7 @@ __all__ = [
     "GROUP_PREFIXES",
     "HTTP_TIMEOUT",
     "LEGACY_HF_URL_FIELD",
+    "ModelCardContext",
     "ModelSource",
     "ModelSourceError",
     "HuggingFaceSource",

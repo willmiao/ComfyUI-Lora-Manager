@@ -6,12 +6,14 @@ functions and verify the business logic (conditions, merges, dispatch).
 
 from __future__ import annotations
 
+import json
 from datetime import datetime, timezone
 from unittest import mock
 
 import pytest
 
 from py.services.agent.post_processor import PostProcessor
+from py.services.model_sources import ModelCardContext
 
 
 @pytest.fixture
@@ -523,3 +525,481 @@ class TestMergeTags:
         result = PostProcessor._merge_tags(existing, new)
         # All tags are lowercased (matching TagUpdateService behaviour)
         assert result == ["anime", "flux", "lora"]
+
+
+# ======================================================================
+# enrich_hf_metadata — site-provided card extras (ModelCardContext)
+# ======================================================================
+
+
+class TestSiteProvidedContext:
+    """ModelScope keeps the author summary, the curated tags and the per-file
+    example images outside the README; these tests pin how they are applied.
+    """
+
+    MODELSCOPE_METADATA = {
+        "from_civitai": False,
+        "source_platform": "modelscope",
+        "source_url": "https://modelscope.cn/models/user/repo",
+    }
+
+    LLM_OUTPUT = {
+        "base_model": "",
+        "trigger_words": [],
+        "short_description": "",
+        "tags": [],
+        "recommended_width": 0,
+        "recommended_height": 0,
+        "preview_url": "",
+        "confidence": "medium",
+    }
+
+    @pytest.mark.asyncio
+    async def test_example_images_become_gallery_and_preview(self, processor):
+        """A boilerplate README still yields images and a downloaded preview."""
+        context = ModelCardContext(
+            example_images=[
+                "https://resources.modelscope.cn/cover-images/a.png",
+                "https://resources.modelscope.cn/cover-images/b.png",
+            ]
+        )
+        boilerplate = "### 当前模型的贡献者未提供更加详细的模型介绍。\n"
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview") as mock_dl,
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            mock_dl.return_value = "/p.webp"
+            result = await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=boilerplate,
+                source_context=context,
+            )
+
+        applied = mock_apply.call_args[0][1]
+        images = applied["civitai"]["images"]
+        assert [img["url"] for img in images] == context.example_images
+        assert images[0]["type"] == "image"
+        # The first (per-file) site image is used as the preview.
+        mock_dl.assert_awaited_once_with(
+            "/p.safetensors", "https://resources.modelscope.cn/cover-images/a.png"
+        )
+        assert applied["preview_url"] == "/p.webp"
+        assert result["preview_downloaded"] is True
+
+    @pytest.mark.asyncio
+    async def test_example_images_work_without_any_readme(self, processor):
+        """The site images alone are enough — the README may be unreachable."""
+        context = ModelCardContext(
+            example_images=["https://resources.modelscope.cn/cover-images/a.png"]
+        )
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content="",
+                source_context=context,
+            )
+
+        images = mock_apply.call_args[0][1]["civitai"]["images"]
+        assert [img["url"] for img in images] == context.example_images
+
+    @pytest.mark.asyncio
+    async def test_site_description_precedes_readme_in_model_description(self, processor):
+        context = ModelCardContext(description="权重0.5-1.2。配合滤镜lora一起使用。")
+        readme = "# 模型介绍\n\n本模型依托魔搭社区完成训练。\n"
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=readme,
+                source_context=context,
+            )
+
+        description = mock_apply.call_args[0][1]["modelDescription"]
+        assert description.startswith(f"<p>{context.description}</p>")
+        assert "<h1>模型介绍</h1>" in description
+
+    @pytest.mark.asyncio
+    async def test_site_description_is_html_escaped(self, processor):
+        context = ModelCardContext(description="a < b & c")
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content="",
+                source_context=context,
+            )
+
+        assert mock_apply.call_args[0][1]["modelDescription"] == "<p>a &lt; b &amp; c</p>"
+
+    @pytest.mark.asyncio
+    async def test_site_trigger_words_fill_in_when_llm_finds_none(self, processor):
+        context = ModelCardContext(trigger_words=["kreaface", "kreamodel"])
+        readme = "---\ninstance_prompt: yamlword\n---\nbody\n"
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=readme,
+                source_context=context,
+            )
+
+        # The per-file site value wins over the repo-wide YAML instance_prompt.
+        assert mock_apply.call_args[0][1]["civitai"]["trainedWords"] == [
+            "kreaface",
+            "kreamodel",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_yaml_instance_prompt_still_used_when_site_has_none(self, processor):
+        context = ModelCardContext(description="summary only")
+        readme = "---\ninstance_prompt: yamlword\n---\nbody\n"
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=readme,
+                source_context=context,
+            )
+
+        assert mock_apply.call_args[0][1]["civitai"]["trainedWords"] == ["yamlword"]
+
+    @pytest.mark.asyncio
+    async def test_site_images_are_skipped_for_a_model_with_no_external_source(
+        self, processor
+    ):
+        """A CivitAI-only model must not pick up ModelScope images."""
+        context = ModelCardContext(
+            example_images=["https://resources.modelscope.cn/cover-images/a.png"]
+        )
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata={"from_civitai": True},
+                readme_content="",
+                source_context=context,
+            )
+
+        assert "images" not in mock_apply.call_args[0][1].get("civitai", {})
+
+    @pytest.mark.asyncio
+    async def test_site_images_deduplicate_against_readme_images(self, processor):
+        """A URL present in both the site data and the README appears once."""
+        shared = "https://modelscope.cn/models/user/repo/resolve/master/sample.png"
+        context = ModelCardContext(example_images=[shared])
+        readme = f"![alt]({shared})\n"
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=readme,
+                source_context=context,
+            )
+
+        images = mock_apply.call_args[0][1]["civitai"]["images"]
+        assert [img["url"] for img in images] == [shared]
+
+    @pytest.mark.asyncio
+    async def test_empty_context_keeps_readme_only_behaviour(self, processor):
+        """An empty site context must not change existing HF behaviour."""
+        readme = "---\nwidget:\n- text: a cat\n  output:\n    url: images/cat.png\n---\n"
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata={
+                    "from_civitai": False,
+                    "hf_url": "https://huggingface.co/user/repo",
+                },
+                readme_content=readme,
+                source_context=ModelCardContext(),
+            )
+        images = mock_apply.call_args[0][1]["civitai"]["images"]
+        assert [img["url"] for img in images] == [
+            "https://huggingface.co/user/repo/resolve/main/images/cat.png"
+        ]
+
+
+
+# ======================================================================
+# enrich_hf_metadata — deterministic fallbacks used when the LLM is skipped
+# ======================================================================
+
+
+class TestDeterministicFallbacks:
+    """With the LLM skipped, these fields must still be produced from the API."""
+
+    MODELSCOPE_METADATA = {
+        "from_civitai": False,
+        "source_platform": "modelscope",
+        "source_url": "https://modelscope.cn/models/user/repo",
+    }
+
+    EMPTY_LLM = {
+        "base_model": "",
+        "trigger_words": [],
+        "short_description": "",
+        "tags": [],
+        "recommended_width": 0,
+        "recommended_height": 0,
+        "preview_url": "",
+        "notes": "",
+        "usage_tips": "{}",
+        "confidence": "",
+    }
+
+    @pytest.mark.asyncio
+    async def test_resolved_base_model_used_when_llm_gave_none(self, processor):
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.EMPTY_LLM,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=ModelCardContext(base_model="krea/Krea-2-Turbo"),
+                resolved_base_model="Krea 2",
+            )
+        assert mock_apply.call_args[0][1]["base_model"] == "Krea 2"
+
+    @pytest.mark.asyncio
+    async def test_llm_base_model_still_wins_over_the_resolver(self, processor):
+        llm = {**self.EMPTY_LLM, "base_model": "Flux.1 D"}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                resolved_base_model="Krea 2",
+            )
+        assert mock_apply.call_args[0][1]["base_model"] == "Flux.1 D"
+
+    @pytest.mark.asyncio
+    async def test_site_description_fills_civitai_description(self, processor):
+        context = ModelCardContext(description="一个 Krea 2 人像 LoRA。")
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.EMPTY_LLM,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=context,
+            )
+        assert (
+            mock_apply.call_args[0][1]["civitai"]["description"]
+            == "一个 Krea 2 人像 LoRA。"
+        )
+
+    @pytest.mark.asyncio
+    async def test_llm_short_description_wins_over_site_description(self, processor):
+        llm = {**self.EMPTY_LLM, "short_description": "from the LLM"}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=ModelCardContext(description="from the site"),
+            )
+        assert mock_apply.call_args[0][1]["civitai"]["description"] == "from the LLM"
+
+    @pytest.mark.asyncio
+    async def test_official_tags_are_applied_without_the_llm(self, processor):
+        context = ModelCardContext(
+            official_tags=["photography", "character-enhancement", "woman"]
+        )
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.EMPTY_LLM,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=context,
+            )
+        assert mock_apply.call_args[0][1]["tags"] == [
+            "photography",
+            "character-enhancement",
+            "woman",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_official_tags_are_kept_alongside_llm_tags(self, processor):
+        context = ModelCardContext(official_tags=["photography", "woman"])
+        llm = {**self.EMPTY_LLM, "tags": ["portrait", "photography"]}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=context,
+            )
+        # Site tags first, then the LLM's extra ones, no duplicates.
+        assert mock_apply.call_args[0][1]["tags"] == [
+            "photography",
+            "woman",
+            "portrait",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_usage_tips_recovered_from_the_author_summary(self, processor):
+        context = ModelCardContext(
+            description="权重0.5-1.2。2个一起时，权重建议都用1.0-1.1。"
+        )
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.EMPTY_LLM,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=context,
+            )
+        tips = json.loads(mock_apply.call_args[0][1]["usage_tips"])
+        assert tips == {
+            "strength_min": 0.5,
+            "strength_max": 1.2,
+            "strength_range": "0.5-1.2",
+        }
+
+    @pytest.mark.asyncio
+    async def test_llm_usage_tips_win_over_the_regex(self, processor):
+        llm = {**self.EMPTY_LLM, "usage_tips": '{"strength": 0.9}'}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=ModelCardContext(description="权重0.5-1.2"),
+            )
+        assert mock_apply.call_args[0][1]["usage_tips"] == '{"strength": 0.9}'
+
+    @pytest.mark.asyncio
+    async def test_notes_are_not_rewritten_when_the_llm_is_skipped(self, processor):
+        """Notes are LLM-only; skipping must not clobber or duplicate them."""
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.EMPTY_LLM,
+                metadata={**self.MODELSCOPE_METADATA, "notes": "existing notes"},
+                source_context=ModelCardContext(description="权重0.5-1.2"),
+            )
+        assert "notes" not in mock_apply.call_args[0][1]
+
+    @pytest.mark.asyncio
+    async def test_no_site_data_leaves_llm_only_fields_untouched(self, processor):
+        """An empty context must behave exactly like the pre-existing pipeline."""
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.EMPTY_LLM,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                source_context=ModelCardContext(),
+                resolved_base_model="",
+            )
+        applied = mock_apply.call_args[0][1]
+        assert "base_model" not in applied
+        assert "tags" not in applied
+        assert "notes" not in applied
+        assert "usage_tips" not in applied

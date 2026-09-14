@@ -333,6 +333,190 @@ class TestAssetBaseUrl:
 
 
 # ---------------------------------------------------------------------------
+# Model card context (site extras kept outside the README)
+# ---------------------------------------------------------------------------
+
+
+def _modelscope_detail_payload() -> dict:
+    """A trimmed-but-faithful ModelScope model-detail response.
+
+    Mirrors the shape of ``/api/v1/models/{id}`` for an AIGC LoRA repo whose
+    README is auto-generated boilerplate, so the author summary and the
+    per-file example images are only reachable through this API.
+    """
+
+    return {
+        "Code": 200,
+        "Data": {
+            "Name": "Krea-2-LORA",
+            "ChineseName": "krea脸模",
+            "Description": "权重0.5-1.2。配合《风格滤镜》lora一起使用。",
+            "BaseModel": ["krea/Krea-2-Turbo"],
+            "License": "Apache License 2.0",
+            "OfficialTags": [
+                {"Tag": "photography", "ChineseName": "写实摄影"},
+                {"Tag": "woman", "ChineseName": "女生"},
+                {"Tag": "photography", "ChineseName": "重复项"},
+            ],
+            "MuseInfo": {
+                "versions": [
+                    {
+                        "stats": {"fileList": ["Krea-2-LORA_c1-st8000.safetensors"]},
+                        "modelVersion": {"showName": "c1-st8000", "triggerWords": '[""]'},
+                        "coverImages": [
+                            {"url": "https://resources.modelscope.cn/cover-images/a.png"}
+                        ],
+                    },
+                    {
+                        "stats": {"fileList": ["Krea-2-LORA_c1-st1000.safetensors"]},
+                        "modelVersion": {
+                            "showName": "c1-st1000",
+                            "triggerWords": '["kreaface","kreamodel"]',
+                        },
+                        "coverImages": [
+                            {"url": "https://resources.modelscope.cn/cover-images/b.png"},
+                            {"url": "https://resources.modelscope.cn/cover-images/c.png"},
+                        ],
+                    },
+                ]
+            },
+        },
+    }
+
+
+class TestFetchModelCardContext:
+    @pytest.mark.asyncio
+    async def test_modelscope_reads_description_tags_and_base_model(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            assert url == "https://modelscope.cn/api/v1/models/u/r"
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context("u/r")
+
+        assert context.description == "权重0.5-1.2。配合《风格滤镜》lora一起使用。"
+        assert context.base_model == "krea/Krea-2-Turbo"
+        # OfficialTag values only, de-duplicated, order preserved.
+        assert context.official_tags == ["photography", "woman"]
+
+    @pytest.mark.asyncio
+    async def test_modelscope_matches_example_images_by_filename(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st1000.safetensors"
+        )
+
+        # Only the requested file's images, never a sibling checkpoint's.
+        assert context.example_images == [
+            "https://resources.modelscope.cn/cover-images/b.png",
+            "https://resources.modelscope.cn/cover-images/c.png",
+        ]
+        assert context.trigger_words == ["kreaface", "kreamodel"]
+
+    @pytest.mark.asyncio
+    async def test_modelscope_never_borrows_images_for_an_unknown_file(
+        self, monkeypatch
+    ):
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "other.safetensors"
+        )
+
+        assert context.example_images == []
+        assert context.trigger_words == []
+        # The repo-wide fields are still returned.
+        assert context.base_model == "krea/Krea-2-Turbo"
+
+    @pytest.mark.asyncio
+    async def test_modelscope_single_version_repo_without_filename(self, monkeypatch):
+        payload = _modelscope_detail_payload()
+        versions = payload["Data"]["MuseInfo"]["versions"]
+        payload["Data"]["MuseInfo"]["versions"] = versions[:1]
+
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, payload
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context("u/r")
+
+        assert context.example_images == [
+            "https://resources.modelscope.cn/cover-images/a.png"
+        ]
+
+    @pytest.mark.asyncio
+    async def test_modelscope_tolerates_failures_and_odd_payloads(self, monkeypatch):
+        payloads = (None, {"Code": 500}, {"Data": "nope"}, {"Data": {}})
+        for payload in payloads:
+
+            async def fake_fetch_json(url, _payload=payload, **_kwargs):
+                return (0 if _payload is None else 200), _payload
+
+            monkeypatch.setattr(
+                "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+            )
+            context = await ModelScopeSource().fetch_model_card_context(
+                "u/r", "a.safetensors"
+            )
+            assert context.is_empty(), payload
+
+    @pytest.mark.asyncio
+    async def test_modelscope_reads_stats_from_json_encoded_fallback(self, monkeypatch):
+        payload = {
+            "Data": {
+                "MuseInfo": {
+                    "versions": [
+                        {
+                            "modelVersion": {
+                                "showName": "v1",
+                                "stats": '{"fileList": ["model.safetensors"]}',
+                                "triggerWords": '["hi"]',
+                            },
+                            "coverImages": [{"url": "https://cdn.example/x.png"}],
+                        }
+                    ]
+                }
+            }
+        }
+
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, payload
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "model.safetensors"
+        )
+
+        assert context.example_images == ["https://cdn.example/x.png"]
+        assert context.trigger_words == ["hi"]
+
+    @pytest.mark.asyncio
+    async def test_default_context_is_empty_for_other_sources(self):
+        assert (await HuggingFaceSource().fetch_model_card_context("u/r")).is_empty()
+        assert (await TensorArtSource().fetch_model_card_context("123")).is_empty()
+
+
+# ---------------------------------------------------------------------------
 # Download support
 # ---------------------------------------------------------------------------
 

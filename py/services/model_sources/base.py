@@ -8,6 +8,8 @@ know about such a site is expressed by :class:`ModelSource`:
 * how to recognise one of its URLs (:meth:`ModelSource.parse`)
 * the canonical page URL for a source id (:meth:`ModelSource.canonical_url`)
 * how to fetch the model card (:meth:`ModelSource.fetch_model_card`)
+* how to fetch the extras that live *outside* the README
+  (:meth:`ModelSource.fetch_model_card_context`)
 * how to turn repository-relative asset paths into absolute URLs
   (:meth:`ModelSource.asset_base_url`)
 * which capabilities the site actually supports
@@ -22,7 +24,7 @@ from __future__ import annotations
 import logging
 import os
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
 import aiohttp
@@ -59,6 +61,56 @@ class SourceRef:
 
     url: str
     """Canonical URL of the model page."""
+
+
+@dataclass
+class ModelCardContext:
+    """Site-specific extras that accompany a model's README model card.
+
+    A model card is not always just ``README.md``.  ModelScope, for example,
+    keeps the author's summary, the site-curated tags, and the per-file
+    example images in its model-detail API rather than in the repository.
+    Sources with no such extras return an empty context (the default), so
+    every field here must be treated as optional by callers.
+    """
+
+    description: str = ""
+    """Author-written summary shown on the model page, outside the README."""
+
+    base_model: str = ""
+    """Base model as reported by the site (possibly a site-local id)."""
+
+    base_model_aliases: list[str] = field(default_factory=list)
+    """Other names the site uses for the same base model.
+
+    Sites often publish both a link-style id (``krea/Krea-2-Turbo``) and an
+    internal architecture enum (``KREA_2``).  The enum usually normalises
+    cleanly onto this system's canonical vocabulary, so it is the better
+    resolution hint for :mod:`py.services.agent.base_model_resolver`.
+    """
+
+    official_tags: list[str] = field(default_factory=list)
+    """Content tags curated by the site itself."""
+
+    example_images: list[str] = field(default_factory=list)
+    """Absolute URLs of example images for the requested model file."""
+
+    trigger_words: list[str] = field(default_factory=list)
+    """Trigger words the site records for the requested model file."""
+
+    def is_empty(self) -> bool:
+        """Return ``True`` when the site contributed nothing extra."""
+
+        return not any(
+            (
+                self.description,
+                self.base_model,
+                self.base_model_aliases,
+                self.official_tags,
+                self.example_images,
+                self.trigger_words,
+            )
+        )
 
 
 class ModelSourceError(Exception):
@@ -230,6 +282,22 @@ class ModelSource:
 
         return ""
 
+    async def fetch_model_card_context(
+        self, source_id: str, filename: str = ""
+    ) -> ModelCardContext:
+        """Return the card extras the site keeps outside the README.
+
+        *filename* is the model file's basename (no directory) and selects
+        the right entry when a repository holds several models.  Sites whose
+        model card is fully described by :meth:`fetch_model_card` need no
+        override and inherit this empty context.
+
+        Implementations must never raise: enrichment treats a missing
+        context as "the site had nothing extra to say".
+        """
+
+        return ModelCardContext()
+
     # ------------------------------------------------------------------
     # Download support
     # ------------------------------------------------------------------
@@ -301,6 +369,7 @@ def filter_weight_files(entries: Iterable[tuple[str, int]]) -> list[dict[str, An
 __all__ = [
     "GROUP_PREFIXES",
     "HTTP_TIMEOUT",
+    "ModelCardContext",
     "ModelSource",
     "ModelSourceError",
     "SourceRef",
