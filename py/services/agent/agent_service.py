@@ -27,11 +27,13 @@ from typing import Any, Dict, List, Optional
 from ...config import config
 from ..llm_service import LLMService
 from ..model_sources import (
+    ModelCardContext,
     get_source,
     resolve_source_ref,
     source_label,
 )
 from ..websocket_manager import ws_manager
+from .base_model_resolver import resolve_base_model
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
 from .skills.enrich_hf_metadata.readme_processor import (
@@ -282,14 +284,37 @@ class AgentService:
                         skip_model = True
 
                 if not skip_model:
-                    prompt_vars: Dict[str, Any] = {"model_path": model_path}
-                    if skill.llm_required and llm_configured:
-                        prompt_vars = await self._build_prompt_context(
-                            skill_name, model_path, metadata, registry, llm,
+                    # The site's own data is deterministic and must land whether
+                    # or not an LLM is available: a user without a key still gets
+                    # the author summary, the example images and the tags.
+                    source_vars, source_context = await self._load_source_card(
+                        model_path, metadata,
+                    )
+                    resolved_base_model = ""
+                    if skill_name == "enrich_hf_metadata" and not (
+                        metadata.get("base_model") or ""
+                    ).strip():
+                        resolved_base_model = await self._resolve_site_base_model(
+                            source_context,
                         )
 
                     llm_response: Optional[Dict[str, Any]] = None
-                    if skill.llm_required and llm_configured:
+                    if skill.llm_required and not llm_configured:
+                        # Without a provider the deterministic model-source data
+                        # still lands; the LLM-only fields simply stay untouched.
+                        logger.info(
+                            "[%s] No LLM configured for %s — applying %s data only",
+                            skill_name, model_filename,
+                            "model-source"
+                            if not source_context.is_empty()
+                            else "README",
+                        )
+                    elif skill.llm_required:
+                        prompt_vars = await self._build_prompt_context(
+                            skill_name, model_path, metadata, registry, llm,
+                            source_vars=source_vars,
+                            source_context=source_context,
+                        )
                         prompt_template = registry.load_prompt(skill_name)
                         rendered = _render_prompt(prompt_template, prompt_vars)
                         llm_response = await llm.chat_completion_json(
@@ -312,7 +337,9 @@ class AgentService:
                         model_path=model_path,
                         llm_output=llm_response or {},
                         metadata=metadata,
-                        readme_content=prompt_vars.get("readme_content_full", ""),
+                        readme_content=source_vars.get("readme_content_full", ""),
+                        source_context=source_context,
+                        resolved_base_model=resolved_base_model,
                     )
 
                     if model_result.get("success", True):
@@ -395,6 +422,77 @@ class AgentService:
         """
         return "\n".join(f"- {m}" for m in models)
 
+    async def _load_source_card(
+        self, model_path: str, metadata: Dict[str, Any]
+    ) -> tuple[Dict[str, Any], ModelCardContext]:
+        """Fetch the model card and site-published extras for one model.
+
+        Runs for every source-backed enrichment regardless of LLM
+        availability, because everything it returns is deterministic data that
+        should be applied even without a configured provider.
+        """
+
+        variables: Dict[str, Any] = {
+            "asset_base_url": "",
+            "source_description": "",
+            "source_base_model": "",
+            "source_official_tags": "",
+            "source_example_images": "",
+            "source_trigger_words": "",
+            "readme_content": "(README not available)",
+            "readme_content_full": "",
+        }
+
+        ref = resolve_source_ref(metadata)
+        source = get_source(ref.platform) if ref is not None else None
+        if ref is None or source is None or not source.supports_enrichment:
+            return variables, ModelCardContext()
+
+        raw_basename = os.path.splitext(os.path.basename(model_path))[0]
+        variables["asset_base_url"] = source.asset_base_url(ref.source_id)
+        readme = await source.fetch_model_card(ref.source_id)
+        # Sites such as ModelScope keep part of the model card outside the
+        # README (author summary, curated tags, per-file example images).
+        card_context = await source.fetch_model_card_context(
+            ref.source_id, os.path.basename(model_path)
+        )
+        variables["source_description"] = card_context.description
+        variables["source_base_model"] = card_context.base_model
+        variables["source_official_tags"] = "\n".join(
+            f"- {tag}" for tag in card_context.official_tags
+        )
+        variables["source_example_images"] = "\n".join(
+            f"- {url}" for url in card_context.example_images
+        )
+        variables["source_trigger_words"] = ", ".join(card_context.trigger_words)
+
+        # Trim README to the section relevant to this model file
+        # (collection repos often have multiple models in one README).
+        if readme and raw_basename:
+            trimmed = extract_relevant_section(readme, raw_basename)
+            cleaned = clean_readme_for_llm(trimmed) if trimmed else ""
+        else:
+            cleaned = clean_readme_for_llm(readme) if readme else ""
+        variables["readme_content"] = cleaned if cleaned else "(README not available)"
+        variables["readme_content_full"] = readme or ""
+
+        return variables, card_context
+
+    async def _resolve_site_base_model(self, source_context: ModelCardContext) -> str:
+        """Resolve the site's base-model hints to a canonical name, or ``""``."""
+
+        from ...metadata_ops import list_base_models
+
+        hints = [*source_context.base_model_aliases, source_context.base_model]
+        if not any(hints):
+            return ""
+        try:
+            known_names = await list_base_models()
+        except Exception as exc:
+            logger.debug("Failed to list base models for site resolution: %s", exc)
+            return ""
+        return resolve_base_model(hints, known_names)
+
     async def _build_prompt_context(
         self,
         skill_name: str,
@@ -402,15 +500,24 @@ class AgentService:
         metadata: Dict[str, Any],
         registry: SkillRegistry,
         llm: Any,
+        *,
+        source_vars: Optional[Dict[str, Any]] = None,
+        source_context: Optional[ModelCardContext] = None,
     ) -> Dict[str, Any]:
         """Gather variables for the skill's prompt template.
 
-        Reads metadata, fetches the HF README (if applicable), lists available
+        Reads metadata, fetches the model card (unless a pre-fetched
+        *source_vars* / *source_context* pair is supplied), lists available
         base models, loads user priority tags, and returns a dict that maps to
         ``{{variable}}`` placeholders in ``prompt.md``.
         """
         from ...metadata_ops import identify_model_type, list_base_models
         from ..settings_manager import SettingsManager
+
+        if source_vars is None or source_context is None:
+            source_vars, source_context = await self._load_source_card(
+                model_path, metadata,
+            )
 
         context: Dict[str, Any] = {
             "model_path": model_path,
@@ -421,6 +528,15 @@ class AgentService:
             "source_platform": "",
             "source_label": "",
             "asset_base_url": "",
+            # Site-provided card extras (see ModelSource.fetch_model_card_context)
+            "source_description": "",
+            "source_base_model": "",
+            "source_official_tags": "",
+            "source_example_images": "",
+            "source_trigger_words": "",
+            # Carrier for the structured context handed to the post-processor;
+            # never rendered into the prompt.
+            "source_context": ModelCardContext(),
             # Legacy Hugging Face aliases (kept so older prompt templates and
             # third-party skills keep rendering)
             "hf_url": "",
@@ -458,17 +574,17 @@ class AgentService:
 
         source = get_source(ref.platform) if ref is not None else None
         if ref is not None and source is not None and source.supports_enrichment:
-            context["asset_base_url"] = source.asset_base_url(ref.source_id)
-            readme = await source.fetch_model_card(ref.source_id)
-            # Trim README to the section relevant to this model file
-            # (collection repos often have multiple models in one README).
-            if readme and raw_basename:
-                trimmed = extract_relevant_section(readme, raw_basename)
-                cleaned = clean_readme_for_llm(trimmed) if trimmed else ""
-            else:
-                cleaned = clean_readme_for_llm(readme) if readme else ""
-            context["readme_content"] = cleaned if cleaned else "(README not available)"
-            context["readme_content_full"] = readme or ""
+            # Values fetched once by _load_source_card and shared with the
+            # post-processor, so the network is not hit twice per model.
+            context["asset_base_url"] = source_vars["asset_base_url"]
+            context["source_context"] = source_context
+            context["source_description"] = source_vars["source_description"]
+            context["source_base_model"] = source_vars["source_base_model"]
+            context["source_official_tags"] = source_vars["source_official_tags"]
+            context["source_example_images"] = source_vars["source_example_images"]
+            context["source_trigger_words"] = source_vars["source_trigger_words"]
+            context["readme_content"] = source_vars["readme_content"]
+            context["readme_content_full"] = source_vars["readme_content_full"]
 
         try:
             raw_models = await list_base_models()

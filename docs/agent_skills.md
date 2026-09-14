@@ -78,18 +78,61 @@ TensorArt is link-only: `tensor.art` sits behind a Cloudflare managed challenge 
 
 **What it does**:
 1. Reads the model's `.metadata.json` to get the source (`source_platform` + `source_url`, or the legacy `hf_url`)
-2. Fetches the model card through the provider in `py/services/model_sources/`
-3. Sends the README + local metadata to the LLM for structured extraction
+2. Fetches the model card through the provider in `py/services/model_sources/` — the README via `fetch_model_card()`, plus any extras the site keeps outside it via `fetch_model_card_context()`
+3. Sends the README + site-provided extras + local metadata to the LLM for structured extraction
 4. Writes extracted fields to `.metadata.json`:
    - `base_model` — only if current value is empty
    - `trainedWords` — trigger words (LoRA only, if none exist)
-   - `modelDescription` — concise summary (if none exists)
+   - `modelDescription` — the site's author description (if any) followed by the README rendered as HTML
    - `tags` — merged with existing tags, deduplicated
+   - `civitai.images` — example images
    - `metadata_source` — audit trail: `agent:enrich_hf_metadata`
    - `llm_enriched_at` — ISO timestamp
-5. Downloads and optimizes preview image (if LLM found one in the README)
+5. Downloads and optimizes a preview image, using the per-file example image the
+   site publishes when the README has none
 6. Updates the scanner cache
 7. Broadcasts WebSocket progress events
+
+#### Site-provided card extras (`fetch_model_card_context`)
+
+A model card is not always just `README.md`. ModelScope keeps the author's
+summary (`Description`), the site-curated tags (`OfficialTags`), and — per
+published version — the model filenames together with that file's example
+images (`MuseInfo.versions[].coverImages`) and trigger words in its
+model-detail API. AIGC repositories there often ship an auto-generated
+boilerplate README and put everything useful in `Description`, so reading only
+the README yields almost nothing.
+
+Providers opt in by overriding `ModelSource.fetch_model_card_context()`, which
+returns a `ModelCardContext`. Example images are matched to the model's
+**basename**, so each checkpoint in a collection repo gets its own images.
+Sites with no such extras inherit an empty context, and the pipeline behaves
+exactly as before.
+
+#### Deterministic data is applied whether or not an LLM is configured
+
+`AgentService._load_source_card()` runs for every source-backed enrichment, and
+the post-processor applies what it returns before the LLM output is merged. A
+user with **no** provider configured therefore still gets the author summary,
+the example images, the preview, the site-curated tags, the trigger words and
+the README rendered as the model description.
+
+The LLM is always consulted when one is configured — invoking **Enrich Metadata
+with AI** must call the provider every time, and the site data is never treated
+as a reason to skip it. The deterministic values act as fallbacks that fill
+gaps the LLM leaves behind:
+
+| Field | Deterministic source | LLM role |
+| --- | --- | --- |
+| `modelDescription` | author summary + README as HTML | — |
+| `civitai.images` | site example images, then README images | — |
+| `preview_url` | first available example image | may propose one from the README |
+| `tags` | site-curated tags, always merged in | proposes additional content tags |
+| `civitai.description` | author summary | richer 1-2 sentence summary wins |
+| `base_model` | site hints resolved against the canonical vocabulary (`py/services/agent/base_model_resolver.py`) | mapping it is the LLM's job; the resolver only fills in when the LLM returns nothing |
+| `trainedWords` | per-file site trigger words, then YAML `instance_prompt` | primary extraction |
+| `usage_tips` | regex over an explicitly stated strength range | primary extraction |
+| `notes` | — | LLM-only |
 
 Models with no source, an unknown source, or a source without model-card access (TensorArt) are skipped with an explicit reason and counted in the run summary.
 
