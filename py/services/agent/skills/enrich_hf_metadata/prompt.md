@@ -112,7 +112,7 @@ Sources to consider:
 
 2. **Cross-reference against the priority_tags reference.** Only include a tag if it meaningfully describes what the model actually creates (subject, style, character type) and is semantically close to one of the priority_tags. If none of the README's tags match meaningful categories, prefer returning a smaller set or an empty array over including low-value tags.
 
-3. **All lowercase, no spaces, no hyphens** (use single words like `"photorealistic"`, `"anime"`, `"character"`). This rule applies to Latin-script tags; when the model's own tags are in another script (e.g. Chinese), keep them verbatim instead of dropping or translating them.
+3. **All lowercase, and keep each tag's own wording.** Prefer the spelling already used by the site, the frontmatter, or the author — including hyphenated and multi-word tags such as `"sci-fi"`, `"semi-realistic"`, `"character-enhancement"` or `"art style"`. Do **not** strip separators or invent a single-word variant of a tag you are already including (e.g. do not emit both `"character-enhancement"` and `"character"`). When a tag is written in another script (e.g. Chinese), likewise keep it verbatim instead of translating it.
 
 4. **Never invent a tag** that neither the site-provided metadata, the YAML frontmatter, nor the README text supports.
 
