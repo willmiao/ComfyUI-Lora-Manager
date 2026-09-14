@@ -490,3 +490,118 @@ class TestStripFencedCodeBlocks:
     def test_pattern(self, R):
         text = "x\n```yaml\nkey: val\n```\ny"
         assert "key: val" not in R._strip_fenced_code_blocks(text)
+
+
+# ======================================================================
+# Site-generated placeholder cards
+# ======================================================================
+
+#: The card ModelScope renders when the uploader wrote no README.  Copied from
+#: a live repository so the marker strings stay honest.
+PLACEHOLDER_CARD = """---
+base_model: krea/Krea-2-Turbo
+license: Apache License 2.0
+tags:
+- LoRA
+- text-to-image
+- \u68a6\u5e7b\u5149\u5f71
+---
+### \u5f53\u524d\u6a21\u578b\u7684\u8d21\u732e\u8005\u672a\u63d0\u4f9b\u66f4\u52a0\u8be6\u7ec6\u7684\u6a21\u578b\u4ecb\u7ecd\u3002\u6a21\u578b\u6587\u4ef6\u548c\u6743\u91cd\uff0c\u53ef\u6d4f\u89c8\u201c\u6a21\u578b\u6587\u4ef6\u201d\u9875\u9762\u83b7\u53d6\u3002
+#### \u60a8\u53ef\u4ee5\u901a\u8fc7\u5982\u4e0bgit clone\u547d\u4ee4\uff0c\u6216\u8005ModelScope SDK\u6765\u4e0b\u8f7d\u6a21\u578b
+
+SDK\u4e0b\u8f7d
+```bash
+#\u5b89\u88c5ModelScope
+pip install modelscope
+```
+Git\u4e0b\u8f7d
+```
+#Git\u6a21\u578b\u4e0b\u8f7d
+git clone https://www.modelscope.cn/yan303145427/krea2-CcFQWZ-Portrait.git
+```
+
+<p style="color: lightgrey;">\u5982\u679c\u60a8\u662f\u672c\u6a21\u578b\u7684\u8d21\u732e\u8005\uff0c\u6211\u4eec\u9080\u8bf7\u60a8\u6839\u636e<a href="x">\u6a21\u578b\u8d21\u732e\u6587\u6863</a>\uff0c\u53ca\u65f6\u5b8c\u5584\u6a21\u578b\u5361\u7247\u5185\u5bb9\u3002</p>
+"""
+
+#: A real, author-written card (ModelScope AIGC training output).
+REAL_CARD = """---
+base_model: krea/Krea-2-Turbo
+---
+# krea\u8138\u6a21
+
+## \u6a21\u578b\u4ecb\u7ecd
+
+\u672c\u6a21\u578b\u4f9d\u6258\u9b54\u642d\u793e\u533a\u5b8c\u6210\u8bad\u7ec3\u3002
+
+## \u63a8\u7406\u4ee3\u7801
+
+\u5b89\u88c5 DiffSynth-Studio\uff1a
+"""
+
+
+class TestStripGeneratedCardBoilerplate:
+    def test_removes_the_whole_placeholder_body(self, R):
+        stripped = R._strip_generated_card_boilerplate(PLACEHOLDER_CARD)
+        assert "\u5f53\u524d\u6a21\u578b\u7684\u8d21\u732e\u8005" not in stripped
+        assert "SDK\u4e0b\u8f7d" not in stripped
+        assert "git clone" not in stripped
+        assert "\u9080\u8bf7\u60a8" not in stripped
+        # The frontmatter is the only thing that survives.
+        assert "base_model: krea/Krea-2-Turbo" in stripped
+
+    def test_leaves_a_real_card_untouched(self, R):
+        assert R._strip_generated_card_boilerplate(REAL_CARD) == REAL_CARD
+
+    def test_drops_a_standalone_invitation_line(self, R):
+        text = "real body\n<p>\u5982\u679c\u60a8\u662f\u672c\u6a21\u578b\u7684\u8d21\u732e\u8005\uff0c\u8bf7\u5b8c\u5584</p>\nmore body"
+        stripped = R._strip_generated_card_boilerplate(text)
+        assert "real body" in stripped
+        assert "more body" in stripped
+        assert "\u8d21\u732e\u8005" not in stripped
+
+    def test_keeps_content_added_after_the_placeholder(self, R):
+        """An author who later wrote a real section must not lose it."""
+        text = (
+            "### \u5f53\u524d\u6a21\u578b\u7684\u8d21\u732e\u8005\u672a\u63d0\u4f9b\u66f4\u52a0\u8be6\u7ec6\u7684\u6a21\u578b\u4ecb\u7ecd\u3002\n"
+            "#### \u60a8\u53ef\u4ee5\u901a\u8fc7\u5982\u4e0bgit clone\u547d\u4ee4\u4e0b\u8f7d\u6a21\u578b\n"
+            "```\ngit clone x\n```\n"
+            "## \u6211\u7684\u771f\u5b9e\u4ecb\u7ecd\n"
+            "\u8fd9\u662f\u4f5c\u8005\u540e\u6765\u8865\u5199\u7684\u5185\u5bb9\u3002\n"
+        )
+        stripped = R._strip_generated_card_boilerplate(text)
+        assert "\u6211\u7684\u771f\u5b9e\u4ecb\u7ecd" in stripped
+        assert "\u4f5c\u8005\u540e\u6765\u8865\u5199\u7684\u5185\u5bb9" in stripped
+        assert "git clone" not in stripped
+
+    def test_handles_html_headings(self, R):
+        text = (
+            "<h3>\u5f53\u524d\u6a21\u578b\u7684\u8d21\u732e\u8005\u672a\u63d0\u4f9b\u66f4\u52a0\u8be6\u7ec6\u7684\u6a21\u578b\u4ecb\u7ecd\u3002</h3>\n"
+            "<p>pip install modelscope</p>\n"
+        )
+        assert R._strip_generated_card_boilerplate(text).strip() == ""
+
+
+class TestCleanReadmeForLlmPlaceholder:
+    def test_boilerplate_is_gone_but_frontmatter_survives(self, R):
+        cleaned = R.clean_readme_for_llm(PLACEHOLDER_CARD)
+        assert "pip install modelscope" not in cleaned
+        assert "git clone" not in cleaned
+        assert "\u5f53\u524d\u6a21\u578b\u7684\u8d21\u732e\u8005" not in cleaned
+        # Metadata the LLM still needs.
+        assert "base_model: krea/Krea-2-Turbo" in cleaned
+        assert "\u68a6\u5e7b\u5149\u5f71" in cleaned
+
+    def test_a_real_card_keeps_its_body(self, R):
+        cleaned = R.clean_readme_for_llm(REAL_CARD)
+        assert "krea\u8138\u6a21" in cleaned
+        assert "\u6a21\u578b\u4ecb\u7ecd" in cleaned
+
+
+class TestConvertReadmeToHtmlPlaceholder:
+    def test_a_placeholder_card_renders_to_nothing(self, R):
+        assert R.convert_readme_to_html(PLACEHOLDER_CARD) == ""
+
+    def test_a_real_card_still_renders(self, R):
+        html = R.convert_readme_to_html(REAL_CARD)
+        assert "<h1>krea\u8138\u6a21</h1>" in html
+        assert "DiffSynth-Studio" in html

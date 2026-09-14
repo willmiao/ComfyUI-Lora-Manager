@@ -1042,3 +1042,82 @@ class TestDeterministicFallbacks:
         assert "tags" not in applied
         assert "notes" not in applied
         assert "usage_tips" not in applied
+
+
+class TestPlaceholderCardDescription:
+    """A site-generated placeholder card must not become the description."""
+
+    MODELSCOPE_METADATA = {
+        "from_civitai": False,
+        "source_platform": "modelscope",
+        "source_url": "https://modelscope.cn/models/user/repo",
+    }
+
+    PLACEHOLDER_README = """---
+base_model: krea/Krea-2-Turbo
+---
+### 当前模型的贡献者未提供更加详细的模型介绍。模型文件和权重，可浏览“模型文件”页面获取。
+#### 您可以通过如下git clone命令，或者ModelScope SDK来下载模型
+
+SDK下载
+```bash
+pip install modelscope
+```
+
+<p style="color: lightgrey;">如果您是本模型的贡献者，我们邀请您根据文档及时完善模型卡片内容。</p>
+"""
+
+    LLM_OUTPUT = {
+        "base_model": "Krea 2",
+        "trigger_words": [],
+        "short_description": "一个 Krea 2 人像 LoRA。",
+        "tags": [],
+        "recommended_width": 0,
+        "recommended_height": 0,
+        "preview_url": "",
+        "notes": "",
+        "usage_tips": "{}",
+        "confidence": "medium",
+    }
+
+    @pytest.mark.asyncio
+    async def test_description_holds_only_the_author_summary(self, processor):
+        context = ModelCardContext(description="权重0.5-1.2。")
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=self.PLACEHOLDER_README,
+                source_context=context,
+            )
+
+        description = mock_apply.call_args[0][1]["modelDescription"]
+        assert description == "<p>权重0.5-1.2。</p>"
+        assert "pip install modelscope" not in description
+        assert "git clone" not in description
+        assert "贡献者" not in description
+
+    @pytest.mark.asyncio
+    async def test_placeholder_card_alone_writes_no_description(self, processor):
+        """Without an author summary there is nothing worth storing."""
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content=self.PLACEHOLDER_README,
+                source_context=ModelCardContext(),
+            )
+
+        assert "modelDescription" not in mock_apply.call_args[0][1]

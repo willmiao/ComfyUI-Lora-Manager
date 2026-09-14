@@ -392,12 +392,18 @@ def _extract_frontmatter(text: str) -> str:
 
 
 def convert_readme_to_html(markdown_text: str | None) -> str:
-    """Convert HF README markdown to sanitised HTML."""
+    """Convert HF README markdown to sanitised HTML.
+
+    Site-generated placeholder notices are dropped here too, so a repository
+    whose author wrote nothing does not store the download instructions as its
+    model description; the result is an empty string in that case.
+    """
     if not markdown_text:
         return ""
 
     text = markdown_text
     text = _strip_frontmatter(text)
+    text = _strip_generated_card_boilerplate(text)
     text = _strip_gallery(text)
     text = _strip_badge_images(text)
     text = _strip_html_comments(text)
@@ -444,6 +450,59 @@ _MASSIVE_LIST_LINE_MIN_LEN = 150
 #: Minimum consecutive enumeration lines to trigger massive-list stripping.
 _MASSIVE_LIST_THRESHOLD = 8
 
+#: Substrings identifying text a *site* generated to fill a model card whose
+#: author wrote nothing, as opposed to the author's own content.  ModelScope
+#: renders such a card as a placeholder notice, a block of SDK/git download
+#: instructions, and a closing invitation to improve the card.
+#:
+#: Matched as substrings rather than whole headings because the notices are
+#: prose, and because non-Latin scripts are not space-delimited — the notice
+#: continues with a full-width period, so the ``title == kw`` style matching
+#: used for :data:`_BOILERPLATE_HEADERS` would never fire.
+_GENERATED_CARD_MARKERS: tuple[str, ...] = (
+    "当前模型的贡献者未提供更加详细的模型介绍",
+    "您可以通过如下",
+    "如果您是本模型的贡献者",
+)
+
+
+def _strip_generated_card_boilerplate(text: str) -> str:
+    """Remove the notices a site generates to fill an empty model card.
+
+    A repository whose uploader wrote no README still gets a card: ModelScope
+    answers with "the contributor provided no further description", the SDK
+    and git download commands, and an invitation to complete the card.  None
+    of it describes the model, yet it was landing in both the LLM prompt and
+    the stored description.
+
+    A notice that is a heading takes its whole section with it, so the
+    download block goes too; a stand-alone notice line is dropped on its own.
+    Content the author added later — under a heading of equal or higher
+    level — is kept, so an improved card is not thrown away.
+    """
+
+    lines = text.split("\n")
+    out: list[str] = []
+    skip_until_level: int | None = None
+
+    for line in lines:
+        level = _heading_level(line)
+
+        if any(marker in line for marker in _GENERATED_CARD_MARKERS):
+            if level > 0:
+                skip_until_level = level
+            continue
+
+        if skip_until_level is not None:
+            if level > 0 and level <= skip_until_level:
+                skip_until_level = None
+            else:
+                continue
+
+        out.append(line)
+
+    return "\n".join(out)
+
 
 def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> str:
     """Clean a HF README for injection into an LLM metadata-extraction prompt.
@@ -453,6 +512,8 @@ def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> s
 
     * ``widget:`` YAML block (example prompts + output URLs)
     * ``<Gallery />`` tags and wrappers
+    * Site-generated placeholder notices for a card the author never wrote
+      (see :func:`_strip_generated_card_boilerplate`)
     * Fenced code blocks (Python / bash / bibtex / yaml)
     * Standalone ``![...](...)`` image lines and ``<img>`` tags
     * Training-parameter tables
@@ -478,6 +539,7 @@ def clean_readme_for_llm(markdown_text: str | None, max_length: int = 6000) -> s
     # Order matters — broader strips first, then finer ones.
     text = _strip_gallery(text)
     text = _strip_widget_section(text)
+    text = _strip_generated_card_boilerplate(text)
     text = _strip_fenced_code_blocks(text)
     text = _strip_standalone_images(text)
     text = _strip_training_tables(text)
