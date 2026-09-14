@@ -474,9 +474,13 @@ class AgentService:
                 cache.readmes[cache_key] = readme
 
         # Sites such as ModelScope keep part of the model card outside the
-        # README (author summary, curated tags, per-file example images).
+        # README (author summary, curated tags, per-file example images).  The
+        # recorded hash identifies the file even after the user renames it.
         card_context = await source.fetch_model_card_context(
-            ref.source_id, os.path.basename(model_path), cache=cache,
+            ref.source_id,
+            os.path.basename(model_path),
+            sha256=(metadata.get("sha256") or "").strip(),
+            cache=cache,
         )
         variables["source_description"] = card_context.description
         variables["source_base_model"] = card_context.base_model

@@ -7,9 +7,12 @@ each provider's model-card fetching and capability flags.
 
 from __future__ import annotations
 
+from unittest import mock
 import pytest
 
+from py.services.agent.agent_service import AgentService
 from py.services.model_sources import (
+    ModelCardContext,
     ModelSourceCache,
     HuggingFaceSource,
     ModelScopeSource,
@@ -380,6 +383,22 @@ def _modelscope_detail_payload() -> dict:
                         ],
                     },
                 ]
+            },
+            "ModelInfos": {
+                "safetensor": {
+                    "files": [
+                        {
+                            "name": "Krea-2-LORA_c1-st8000.safetensors",
+                            "sha256": "a" * 64,
+                            "size": 234680568,
+                        },
+                        {
+                            "name": "Krea-2-LORA_c1-st1000.safetensors",
+                            "sha256": "b" * 64,
+                            "size": 234680568,
+                        },
+                    ]
+                }
             },
         },
     }
@@ -799,3 +818,141 @@ class TestCachedModelCardFetch:
             await source.fetch_model_card_context("u/r", "a.safetensors")
 
         assert len(calls) == 2
+
+
+class TestHashBasedVersionMatching:
+    """A renamed file must still find its own example images."""
+
+    ST1000_HASH = "b" * 64
+    ST8000_HASH = "a" * 64
+
+    @staticmethod
+    def _patch(monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+    @pytest.mark.asyncio
+    async def test_renamed_file_is_matched_by_sha256(self, monkeypatch):
+        self._patch(monkeypatch)
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "krea脸模-st1000-我改的名字.safetensors", sha256=self.ST1000_HASH
+        )
+
+        assert context.example_images == [
+            "https://resources.modelscope.cn/cover-images/b.png",
+            "https://resources.modelscope.cn/cover-images/c.png",
+        ]
+        assert context.trigger_words == ["kreaface", "kreamodel"]
+
+    @pytest.mark.asyncio
+    async def test_renamed_file_without_a_hash_finds_nothing(self, monkeypatch):
+        """Pins the behaviour the hash match exists to fix."""
+        self._patch(monkeypatch)
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "krea脸模-st1000-我改的名字.safetensors"
+        )
+
+        assert context.example_images == []
+        # Repo-wide fields are unaffected by the miss.
+        assert context.base_model == "krea/Krea-2-Turbo"
+
+    @pytest.mark.asyncio
+    async def test_hash_wins_over_a_filename_that_matches_another_version(
+        self, monkeypatch
+    ):
+        """An inconsistent name/hash pair trusts the content hash."""
+        self._patch(monkeypatch)
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st8000.safetensors", sha256=self.ST1000_HASH
+        )
+
+        assert context.example_images == [
+            "https://resources.modelscope.cn/cover-images/b.png",
+            "https://resources.modelscope.cn/cover-images/c.png",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_unknown_hash_falls_back_to_the_filename(self, monkeypatch):
+        """A re-encoded file still matches by name rather than losing its images."""
+        self._patch(monkeypatch)
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st1000.safetensors", sha256="f" * 64
+        )
+
+        assert context.example_images == [
+            "https://resources.modelscope.cn/cover-images/b.png",
+            "https://resources.modelscope.cn/cover-images/c.png",
+        ]
+
+    @pytest.mark.asyncio
+    async def test_hash_is_case_insensitive(self, monkeypatch):
+        self._patch(monkeypatch)
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "renamed.safetensors", sha256=self.ST1000_HASH.upper()
+        )
+
+        assert len(context.example_images) == 2
+
+    @pytest.mark.asyncio
+    async def test_blank_hash_is_ignored(self, monkeypatch):
+        self._patch(monkeypatch)
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st8000.safetensors", sha256="   "
+        )
+
+        assert context.example_images == [
+            "https://resources.modelscope.cn/cover-images/a.png"
+        ]
+
+    @pytest.mark.asyncio
+    async def test_missing_model_infos_degrades_to_filename_matching(self, monkeypatch):
+        payload = _modelscope_detail_payload()
+        del payload["Data"]["ModelInfos"]
+
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, payload
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st1000.safetensors", sha256=self.ST1000_HASH
+        )
+
+        assert len(context.example_images) == 2
+
+    @pytest.mark.asyncio
+    async def test_real_published_hashes_are_used_by_the_agent(self):
+        """The agent must pass the recorded hash, not just the filename."""
+        service = AgentService()
+        with (
+            mock.patch(
+                "py.services.model_sources.modelscope.ModelScopeSource.fetch_model_card",
+                new=mock.AsyncMock(return_value="# card"),
+            ),
+            mock.patch(
+                "py.services.model_sources.modelscope.ModelScopeSource.fetch_model_card_context",
+                new=mock.AsyncMock(return_value=ModelCardContext()),
+            ) as mock_ctx,
+        ):
+            await service._load_source_card(
+                "/models/loras/renamed.safetensors",
+                {
+                    "source_platform": "modelscope",
+                    "source_url": "https://modelscope.cn/models/u/r",
+                    "sha256": "c" * 64,
+                },
+            )
+
+        assert mock_ctx.call_args.kwargs["sha256"] == "c" * 64

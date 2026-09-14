@@ -117,6 +117,7 @@ class ModelScopeSource(ModelSource):
         source_id: str,
         filename: str = "",
         *,
+        sha256: str = "",
         cache: Optional["ModelSourceCache"] = None,
     ) -> ModelCardContext:
         """Read the model-detail API that backs the ModelScope model page.
@@ -128,10 +129,11 @@ class ModelScopeSource(ModelSource):
         no further description") and put everything useful in ``Description``,
         so enrichment that reads only the README comes back nearly empty.
 
-        Example images are matched to *filename* through each version's
-        ``stats.fileList``, which means the images returned belong to the
-        exact ``.safetensors`` being enriched — essential for collection
-        repositories, where every checkpoint has its own sample image.
+        The wanted file is identified by its sha256 when the caller knows it
+        and by *filename* otherwise; see :func:`_matching_versions`.  The
+        images and trigger words returned belong to that exact
+        ``.safetensors`` — essential for collection repositories, where every
+        checkpoint has its own sample image.
 
         The detail payload describes the whole repository and is therefore
         shared across every file in it, so it is read through *cache* when the
@@ -141,7 +143,7 @@ class ModelScopeSource(ModelSource):
         data = await self._fetch_detail(source_id, cache=cache)
         if data is None:
             return ModelCardContext()
-        return _build_card_context(data, filename)
+        return _build_card_context(data, filename, sha256)
 
     async def _fetch_detail(
         self,
@@ -245,7 +247,9 @@ def _first_string(value: Any) -> str:
     return ""
 
 
-def _build_card_context(data: dict[str, Any], filename: str) -> ModelCardContext:
+def _build_card_context(
+    data: dict[str, Any], filename: str, sha256: str = ""
+) -> ModelCardContext:
     """Turn a model-detail payload into a :class:`ModelCardContext`.
 
     Separated from the HTTP fetch so the repository-wide payload can be cached
@@ -260,7 +264,12 @@ def _build_card_context(data: dict[str, Any], filename: str) -> ModelCardContext
         official_tags=_official_tags(data.get("OfficialTags")),
     )
 
-    versions = _matching_versions(data.get("MuseInfo"), filename)
+    versions = _matching_versions(
+        data.get("MuseInfo"),
+        filename,
+        digests=_file_digests(data),
+        sha256=sha256,
+    )
     if versions:
         context.example_images = _cover_image_urls(versions)
         context.trigger_words = _version_trigger_words(versions)
@@ -350,16 +359,56 @@ def _version_show_name(version: dict[str, Any]) -> str:
     return _clean_text(model_version.get("showName")).lower()
 
 
-def _matching_versions(muse_info: Any, filename: str) -> list[dict[str, Any]]:
-    """Return the ``versions`` entries that publish *filename*.
+def _file_digests(data: dict[str, Any]) -> dict[str, str]:
+    """Return ``basename -> sha256`` for every published weight file.
 
-    Matching is by exact basename first, then by the version's ``showName``
-    appearing in the file stem (which absorbs the naming drift ModelScope
-    sometimes applies to uploaded weights).  All matches are returned so a
-    file re-published across several versions contributes all of its
-    example images.  With no *filename* only an unambiguous single-version
-    repository is used, because a per-file image must never be attributed
-    to the wrong file.
+    ``ModelInfos`` groups the repository's files by kind (``safetensor``,
+    …) and records a real sha256 for each, which is what makes it possible to
+    recognise a file the user has renamed.
+    """
+
+    digests: dict[str, str] = {}
+    model_infos = data.get("ModelInfos")
+    if not isinstance(model_infos, dict):
+        return digests
+    for info in model_infos.values():
+        files = info.get("files") if isinstance(info, dict) else None
+        if not isinstance(files, list):
+            continue
+        for entry in files:
+            if not isinstance(entry, dict):
+                continue
+            name = _clean_text(entry.get("name"))
+            digest = _clean_text(entry.get("sha256"))
+            if name and digest:
+                digests.setdefault(os.path.basename(name).lower(), digest.lower())
+    return digests
+
+
+def _matching_versions(
+    muse_info: Any,
+    filename: str,
+    *,
+    digests: dict[str, str] | None = None,
+    sha256: str = "",
+) -> list[dict[str, Any]]:
+    """Return the ``versions`` entries that publish the wanted model file.
+
+    Strategies, in order:
+
+    1. **sha256** — the file's content hash, looked up through
+       :func:`_file_digests`.  This is the only strategy that survives the
+       user renaming the weights, which is common once a model is filed away.
+    2. **Exact basename** against each version's ``stats.fileList``.
+    3. **``showName`` inside the file stem**, which absorbs the naming drift
+       ModelScope sometimes applies to uploaded weights.
+
+    A known-but-unmatched hash falls through to the filename strategies
+    rather than giving up, in case the local file was re-encoded.  All matches
+    are returned so a file re-published across several versions contributes
+    all of its example images.  With no *filename* and no *sha256*, only an
+    unambiguous single-version repository is used, because a per-file image
+    must never be attributed to the wrong file.
     """
 
     if not isinstance(muse_info, dict):
@@ -370,6 +419,18 @@ def _matching_versions(muse_info: Any, filename: str) -> list[dict[str, Any]]:
     entries = [entry for entry in versions if isinstance(entry, dict)]
     if not entries:
         return []
+
+    target_hash = (sha256 or "").strip().lower()
+    if target_hash:
+        known = digests or {}
+        by_hash: list[dict[str, Any]] = []
+        for version in entries:
+            for path in _version_files(version):
+                if known.get(os.path.basename(path).lower()) == target_hash:
+                    by_hash.append(version)
+                    break
+        if by_hash:
+            return by_hash
 
     if not filename:
         return entries if len(entries) == 1 else []

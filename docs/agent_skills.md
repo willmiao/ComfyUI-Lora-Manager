@@ -104,10 +104,12 @@ boilerplate README and put everything useful in `Description`, so reading only
 the README yields almost nothing.
 
 Providers opt in by overriding `ModelSource.fetch_model_card_context()`, which
-returns a `ModelCardContext`. Example images are matched to the model's
-**basename**, so each checkpoint in a collection repo gets its own images.
-Sites with no such extras inherit an empty context, and the pipeline behaves
-exactly as before.
+returns a `ModelCardContext`. The wanted file is identified by its sha256 when
+the caller knows it (the scanner already records one) and by **basename**
+otherwise, so each checkpoint in a collection repo gets its own images — and
+keeps getting them after the user renames the weights, which is the only
+identifier a rename cannot invalidate. Sites with no such extras inherit an
+empty context, and the pipeline behaves exactly as before.
 
 The README and the repository metadata describe the whole repository, not one
 file, so `execute_skill()` creates a `ModelSourceCache` for the duration of a

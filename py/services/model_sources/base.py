@@ -307,18 +307,23 @@ class ModelSource:
         source_id: str,
         filename: str = "",
         *,
+        sha256: str = "",
         cache: Optional["ModelSourceCache"] = None,
     ) -> ModelCardContext:
         """Return the card extras the site keeps outside the README.
 
-        *filename* is the model file's basename (no directory) and selects
-        the right entry when a repository holds several models.  Sites whose
-        model card is fully described by :meth:`fetch_model_card` need no
-        override and inherit this empty context.
+        *filename* is the model file's basename (no directory) and *sha256*
+        its content hash; between them they select the right entry when a
+        repository holds several models.  A site that records per-file hashes
+        should prefer *sha256*, because it is the only identifier that
+        survives the user renaming the weights.
 
         *cache* is an optional per-run memo (see :class:`ModelSourceCache`)
         that lets a provider avoid re-fetching repository-wide data for every
         file in a collection repository.
+
+        Sites whose model card is fully described by :meth:`fetch_model_card`
+        need no override and inherit this empty context.
 
         Implementations must never raise: enrichment treats a missing
         context as "the site had nothing extra to say".
