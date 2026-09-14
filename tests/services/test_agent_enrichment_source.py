@@ -104,8 +104,10 @@ class TestBuildPromptContext:
 
         mock_fetch.assert_awaited_once_with("jj3550945163/Krea-2-LORA")
         # The per-file lookup must receive the basename, not the full path.
-        mock_context.assert_awaited_once_with(
-            "jj3550945163/Krea-2-LORA", "krea.safetensors"
+        mock_context.assert_awaited_once()
+        assert mock_context.call_args.args == (
+            "jj3550945163/Krea-2-LORA",
+            "krea.safetensors",
         )
         assert context["source_platform"] == "modelscope"
         assert context["source_id"] == "jj3550945163/Krea-2-LORA"
@@ -444,7 +446,8 @@ class TestLoadSourceCard:
                 },
             )
 
-        mock_ctx.assert_awaited_once_with("u/r", "krea.safetensors")
+        mock_ctx.assert_awaited_once()
+        assert mock_ctx.call_args.args == ("u/r", "krea.safetensors")
         assert context is card
         assert variables["readme_content_full"] == "# card"
         assert variables["source_description"] == "作者说明"

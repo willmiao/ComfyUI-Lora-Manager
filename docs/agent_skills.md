@@ -109,6 +109,13 @@ returns a `ModelCardContext`. Example images are matched to the model's
 Sites with no such extras inherit an empty context, and the pipeline behaves
 exactly as before.
 
+The README and the repository metadata describe the whole repository, not one
+file, so `execute_skill()` creates a `ModelSourceCache` for the duration of a
+run and passes it down. Enriching the eight checkpoints of one ModelScope
+repository costs two HTTP requests instead of sixteen; only the per-file
+selection is redone for each file. Nothing is cached across runs, and download
+URLs never go through it.
+
 #### Deterministic data is applied whether or not an LLM is configured
 
 `AgentService._load_source_card()` runs for every source-backed enrichment, and

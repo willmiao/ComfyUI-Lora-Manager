@@ -25,7 +25,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional
+from typing import Any, Dict, Iterable, Optional
 
 import aiohttp
 
@@ -123,6 +123,26 @@ class ModelSourceError(Exception):
     def __init__(self, message: str, status: int = 502) -> None:
         super().__init__(message)
         self.status = status
+
+
+class ModelSourceCache:
+    """Per-run memo shared between the agent pipeline and a model source.
+
+    A collection repository publishes many model files under a single source
+    id, so enriching each file re-fetches the same README and the same
+    repository metadata.  One cache is created per enrichment run and thrown
+    away afterwards: nothing is retained across runs (a model card can change
+    at any time), and download URLs are never routed through it.
+    """
+
+    def __init__(self) -> None:
+        #: Provider-agnostic: ``"<platform>:<source_id>"`` → raw README text.
+        self.readmes: Dict[str, str] = {}
+        #: Provider-owned scratch space.  Keys must be namespaced by the
+        #: provider (``(platform, kind, source_id)``) so two providers can
+        #: never collide.  Only successful results should be stored, so a
+        #: transient failure is still retried for the next file.
+        self.provider: Dict[Any, Any] = {}
 
 
 #: Repository ids are always exactly ``owner/name``. Components may contain
@@ -283,7 +303,11 @@ class ModelSource:
         return ""
 
     async def fetch_model_card_context(
-        self, source_id: str, filename: str = ""
+        self,
+        source_id: str,
+        filename: str = "",
+        *,
+        cache: Optional["ModelSourceCache"] = None,
     ) -> ModelCardContext:
         """Return the card extras the site keeps outside the README.
 
@@ -291,6 +315,10 @@ class ModelSource:
         the right entry when a repository holds several models.  Sites whose
         model card is fully described by :meth:`fetch_model_card` need no
         override and inherit this empty context.
+
+        *cache* is an optional per-run memo (see :class:`ModelSourceCache`)
+        that lets a provider avoid re-fetching repository-wide data for every
+        file in a collection repository.
 
         Implementations must never raise: enrichment treats a missing
         context as "the site had nothing extra to say".
@@ -371,6 +399,7 @@ __all__ = [
     "HTTP_TIMEOUT",
     "ModelCardContext",
     "ModelSource",
+    "ModelSourceCache",
     "ModelSourceError",
     "SourceRef",
     "USER_AGENT",

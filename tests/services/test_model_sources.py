@@ -10,6 +10,7 @@ from __future__ import annotations
 import pytest
 
 from py.services.model_sources import (
+    ModelSourceCache,
     HuggingFaceSource,
     ModelScopeSource,
     TensorArtSource,
@@ -688,3 +689,113 @@ class TestDownloadSourceRegistry:
         assert get_download_source("nope") is None
         assert get_download_source("modelscope").platform == "modelscope"
         assert get_download_source("huggingface").platform == "huggingface"
+
+
+# ---------------------------------------------------------------------------
+# Per-run model-card cache
+# ---------------------------------------------------------------------------
+
+
+class TestModelSourceCache:
+    def test_starts_empty(self):
+        cache = ModelSourceCache()
+        assert cache.readmes == {}
+        assert cache.provider == {}
+
+
+class TestCachedModelCardFetch:
+    @pytest.mark.asyncio
+    async def test_detail_payload_is_fetched_once_per_source_id(self, monkeypatch):
+        """A collection repo's files share one detail request, not one each."""
+        calls: list[str] = []
+
+        async def fake_fetch_json(url, **_kwargs):
+            calls.append(url)
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        source = ModelScopeSource()
+        cache = ModelSourceCache()
+        filenames = [
+            "Krea-2-LORA_c1-st1000.safetensors",
+            "Krea-2-LORA_c1-st8000.safetensors",
+            "Krea-2-LORA_c1-st1000.safetensors",
+        ]
+        for name in filenames:
+            await source.fetch_model_card_context("u/r", name, cache=cache)
+
+        assert calls == ["https://modelscope.cn/api/v1/models/u/r"]
+        assert ("modelscope", "detail", "u/r") in cache.provider
+
+    @pytest.mark.asyncio
+    async def test_per_file_selection_still_runs_for_each_file(self, monkeypatch):
+        """The cached payload must not leak one file's images to another."""
+
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        source = ModelScopeSource()
+        cache = ModelSourceCache()
+
+        st1000 = await source.fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st1000.safetensors", cache=cache
+        )
+        st8000 = await source.fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st8000.safetensors", cache=cache
+        )
+
+        assert st1000.example_images == [
+            "https://resources.modelscope.cn/cover-images/b.png",
+            "https://resources.modelscope.cn/cover-images/c.png",
+        ]
+        assert st8000.example_images == [
+            "https://resources.modelscope.cn/cover-images/a.png"
+        ]
+        assert st8000.trigger_words == []
+
+    @pytest.mark.asyncio
+    async def test_failures_are_not_cached(self, monkeypatch):
+        """A transient error must be retried for the next file."""
+        calls: list[str] = []
+
+        async def fake_fetch_json(url, **_kwargs):
+            calls.append(url)
+            return 500, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        source = ModelScopeSource()
+        cache = ModelSourceCache()
+        for _ in range(2):
+            context = await source.fetch_model_card_context("u/r", "a.safetensors", cache=cache)
+            assert context.is_empty()
+
+        assert len(calls) == 2
+        assert cache.provider == {}
+
+    @pytest.mark.asyncio
+    async def test_no_cache_keeps_the_uncached_behaviour(self, monkeypatch):
+        calls: list[str] = []
+
+        async def fake_fetch_json(url, **_kwargs):
+            calls.append(url)
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        source = ModelScopeSource()
+        for _ in range(2):
+            await source.fetch_model_card_context("u/r", "a.safetensors")
+
+        assert len(calls) == 2

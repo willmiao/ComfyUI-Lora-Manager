@@ -28,6 +28,7 @@ from ...config import config
 from ..llm_service import LLMService
 from ..model_sources import (
     ModelCardContext,
+    ModelSourceCache,
     get_source,
     resolve_source_ref,
     source_label,
@@ -259,6 +260,11 @@ class AgentService:
         llm = await self._ensure_llm()
         llm_configured = llm.is_configured() if skill.llm_required else True
 
+        # A collection repository holds many model files under one source id;
+        # this memo keeps the README and the repository metadata from being
+        # re-fetched once per file.  It lives for this run only.
+        source_cache = ModelSourceCache()
+
         for model_path in model_paths:
             model_filename = os.path.basename(model_path)
             logger.info(
@@ -288,7 +294,7 @@ class AgentService:
                     # or not an LLM is available: a user without a key still gets
                     # the author summary, the example images and the tags.
                     source_vars, source_context = await self._load_source_card(
-                        model_path, metadata,
+                        model_path, metadata, cache=source_cache,
                     )
                     resolved_base_model = ""
                     if skill_name == "enrich_hf_metadata" and not (
@@ -423,13 +429,22 @@ class AgentService:
         return "\n".join(f"- {m}" for m in models)
 
     async def _load_source_card(
-        self, model_path: str, metadata: Dict[str, Any]
+        self,
+        model_path: str,
+        metadata: Dict[str, Any],
+        *,
+        cache: Optional[ModelSourceCache] = None,
     ) -> tuple[Dict[str, Any], ModelCardContext]:
         """Fetch the model card and site-published extras for one model.
 
         Runs for every source-backed enrichment regardless of LLM
         availability, because everything it returns is deterministic data that
         should be applied even without a configured provider.
+
+        *cache* is the per-run memo created by :meth:`execute_skill`.  The
+        README is repository-wide, so it is fetched once per source id; only
+        successful reads are memoised, leaving a transient failure to be
+        retried for the next file.
         """
 
         variables: Dict[str, Any] = {
@@ -450,11 +465,18 @@ class AgentService:
 
         raw_basename = os.path.splitext(os.path.basename(model_path))[0]
         variables["asset_base_url"] = source.asset_base_url(ref.source_id)
-        readme = await source.fetch_model_card(ref.source_id)
+
+        cache_key = f"{ref.platform}:{ref.source_id}"
+        readme = cache.readmes.get(cache_key) if cache is not None else None
+        if readme is None:
+            readme = await source.fetch_model_card(ref.source_id)
+            if cache is not None and readme:
+                cache.readmes[cache_key] = readme
+
         # Sites such as ModelScope keep part of the model card outside the
         # README (author summary, curated tags, per-file example images).
         card_context = await source.fetch_model_card_context(
-            ref.source_id, os.path.basename(model_path)
+            ref.source_id, os.path.basename(model_path), cache=cache,
         )
         variables["source_description"] = card_context.description
         variables["source_base_model"] = card_context.base_model

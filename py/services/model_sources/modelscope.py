@@ -24,6 +24,10 @@ which redirects to a CDN URL carrying a time-limited ``auth_key``.
 Requesting the resolve URL fresh on every attempt (which the shared
 downloader does, including for resumable Range requests) keeps that key
 valid; the CDN URL must never be cached.
+
+The README and the detail payload both describe the whole repository rather
+than one file, so a per-run ``ModelSourceCache`` keeps them from being read
+again for every checkpoint of a collection repository.
 """
 
 from __future__ import annotations
@@ -32,7 +36,7 @@ import json
 import logging
 import os
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any, Optional
 
 from .base import (
     ModelCardContext,
@@ -42,6 +46,9 @@ from .base import (
     fetch_text,
     filter_weight_files,
 )
+
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .base import ModelSourceCache
 
 logger = logging.getLogger(__name__)
 
@@ -106,7 +113,11 @@ class ModelScopeSource(ModelSource):
         return ""
 
     async def fetch_model_card_context(
-        self, source_id: str, filename: str = ""
+        self,
+        source_id: str,
+        filename: str = "",
+        *,
+        cache: Optional["ModelSourceCache"] = None,
     ) -> ModelCardContext:
         """Read the model-detail API that backs the ModelScope model page.
 
@@ -121,30 +132,44 @@ class ModelScopeSource(ModelSource):
         ``stats.fileList``, which means the images returned belong to the
         exact ``.safetensors`` being enriched — essential for collection
         repositories, where every checkpoint has its own sample image.
+
+        The detail payload describes the whole repository and is therefore
+        shared across every file in it, so it is read through *cache* when the
+        caller supplies one; only the per-file selection is redone.
         """
+
+        data = await self._fetch_detail(source_id, cache=cache)
+        if data is None:
+            return ModelCardContext()
+        return _build_card_context(data, filename)
+
+    async def _fetch_detail(
+        self,
+        source_id: str,
+        *,
+        cache: Optional["ModelSourceCache"] = None,
+    ) -> Optional[dict[str, Any]]:
+        """Fetch (or reuse) the model-detail payload for *source_id*."""
+
+        cache_key = (self.platform, "detail", source_id)
+        if cache is not None and cache_key in cache.provider:
+            return cache.provider[cache_key]
 
         status, payload = await fetch_json(
             f"https://modelscope.cn/api/v1/models/{source_id}"
         )
         if status != 200 or not isinstance(payload, dict):
-            logger.debug("ModelScope detail API returned HTTP %s for %s", status, source_id)
-            return ModelCardContext()
+            logger.debug(
+                "ModelScope detail API returned HTTP %s for %s", status, source_id
+            )
+            return None
         data = payload.get("Data")
         if not isinstance(data, dict):
-            return ModelCardContext()
+            return None
 
-        context = ModelCardContext(
-            description=_clean_text(data.get("Description")),
-            base_model=_first_string(data.get("BaseModel")),
-            base_model_aliases=_base_model_aliases(data),
-            official_tags=_official_tags(data.get("OfficialTags")),
-        )
-
-        versions = _matching_versions(data.get("MuseInfo"), filename)
-        if versions:
-            context.example_images = _cover_image_urls(versions)
-            context.trigger_words = _version_trigger_words(versions)
-        return context
+        if cache is not None:
+            cache.provider[cache_key] = data
+        return data
 
     async def list_files(
         self, source_id: str, revision: str = ""
@@ -218,6 +243,28 @@ def _first_string(value: Any) -> str:
             if text:
                 return text
     return ""
+
+
+def _build_card_context(data: dict[str, Any], filename: str) -> ModelCardContext:
+    """Turn a model-detail payload into a :class:`ModelCardContext`.
+
+    Separated from the HTTP fetch so the repository-wide payload can be cached
+    across the files of a collection repository while the per-file selection
+    is still redone for each one.
+    """
+
+    context = ModelCardContext(
+        description=_clean_text(data.get("Description")),
+        base_model=_first_string(data.get("BaseModel")),
+        base_model_aliases=_base_model_aliases(data),
+        official_tags=_official_tags(data.get("OfficialTags")),
+    )
+
+    versions = _matching_versions(data.get("MuseInfo"), filename)
+    if versions:
+        context.example_images = _cover_image_urls(versions)
+        context.trigger_words = _version_trigger_words(versions)
+    return context
 
 
 def _base_model_aliases(data: dict[str, Any]) -> list[str]:
