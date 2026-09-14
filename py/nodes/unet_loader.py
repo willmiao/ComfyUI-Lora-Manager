@@ -93,7 +93,7 @@ class UNETLoaderLM:
 
                 # Filter only diffusion_model type and format names
                 names = []
-                for item in cache.raw_data:
+                for item in list(cache.raw_data):
                     if item.get("sub_type") == "diffusion_model":
                         file_path = item.get("file_path", "")
                         # Only offer models that still exist on disk so ComfyUI
@@ -141,7 +141,7 @@ class UNETLoaderLM:
                 cache = await scanner.get_cached_data()
 
                 base_models = set()
-                for item in cache.raw_data:
+                for item in list(cache.raw_data):
                     if item.get("sub_type") != "diffusion_model":
                         continue
                     base_model = item.get("base_model")

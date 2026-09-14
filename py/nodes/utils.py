@@ -156,7 +156,7 @@ def _find_missing_loras(names: list[str]) -> list[str]:
 
         lookup = {}
         basename_candidates = {}
-        for item in cache.raw_data:
+        for item in list(cache.raw_data):
             file_path = item.get("file_path")
             if not file_path:
                 continue

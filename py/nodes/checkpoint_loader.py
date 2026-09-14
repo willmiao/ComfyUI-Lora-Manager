@@ -78,7 +78,7 @@ class CheckpointLoaderLM:
 
                 # Filter only checkpoint type (not diffusion_model) and format names
                 names = []
-                for item in cache.raw_data:
+                for item in list(cache.raw_data):
                     if item.get("sub_type") == "checkpoint":
                         file_path = item.get("file_path", "")
                         # Only offer models that still exist on disk so ComfyUI
@@ -126,7 +126,7 @@ class CheckpointLoaderLM:
                 cache = await scanner.get_cached_data()
 
                 base_models = set()
-                for item in cache.raw_data:
+                for item in list(cache.raw_data):
                     if item.get("sub_type") != "checkpoint":
                         continue
                     base_model = item.get("base_model")

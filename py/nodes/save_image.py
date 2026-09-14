@@ -601,7 +601,7 @@ class SaveImageLM:
             os.path.basename(name),
             os.path.splitext(os.path.basename(name))[0],
         ]
-        for model in getattr(cache, "raw_data", []):
+        for model in list(getattr(cache, "raw_data", [])):
             file_name = model.get("file_name")
             if file_name in candidates:
                 return model
