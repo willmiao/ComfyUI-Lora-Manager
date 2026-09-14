@@ -273,10 +273,13 @@ class PostProcessor:
         updates["metadata_source"] = "agent:enrich_hf_metadata"
         updates["llm_enriched_at"] = datetime.now(timezone.utc).isoformat()
 
-        # Store LLM confidence in metadata so it's accessible for evaluation
+        # LLM confidence, stored for the enrichment evaluation harness.  The key
+        # must NOT start with an underscore: `BaseModelMetadata.from_dict()`
+        # deliberately drops underscore-prefixed keys so they never round-trip,
+        # which silently erased this field on the next metadata write.
         raw_confidence = (llm_output.get("confidence") or "").strip()
         if raw_confidence:
-            updates["_llm_confidence"] = raw_confidence
+            updates["llm_confidence"] = raw_confidence
 
         # Fallback: use the trigger words the site records for this exact file,
         # then the README's YAML `instance_prompt`, when the LLM returned none.

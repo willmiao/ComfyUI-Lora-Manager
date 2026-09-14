@@ -108,7 +108,12 @@ def evaluate_model(
     model_description: str = metadata.get("modelDescription") or ""
     base_model: str = metadata.get("base_model") or ""
     preview_url: str = metadata.get("preview_url") or ""
-    confidence: str = metadata.get("_llm_confidence") or ""
+    # `_llm_confidence` is the legacy key: underscore-prefixed metadata keys are
+    # deliberately not persisted through `BaseModelMetadata`, so older sidecars
+    # may still carry it while current ones use `llm_confidence`.
+    confidence: str = (
+        metadata.get("llm_confidence") or metadata.get("_llm_confidence") or ""
+    )
 
     # --- base_model ---
     base_model_valid = base_model in SUPPORTED_BASE_MODELS

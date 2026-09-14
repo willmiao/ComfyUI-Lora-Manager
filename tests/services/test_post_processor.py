@@ -439,6 +439,45 @@ Content
         assert applied["metadata_source"] == "agent:enrich_hf_metadata"
         assert "llm_enriched_at" in applied
 
+    @pytest.mark.asyncio
+    async def test_confidence_is_stored_under_a_persisted_key(self, processor):
+        """`llm_confidence` must not be underscore-prefixed.
+
+        Underscore-prefixed keys are dropped by `BaseModelMetadata`, which made
+        `_llm_confidence` vanish on the next metadata write.
+        """
+        llm = {**self.MIN_LLM_OUTPUT, "confidence": "medium"}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata={},
+            )
+        applied = mock_apply.call_args[0][1]
+        assert applied["llm_confidence"] == "medium"
+        assert "_llm_confidence" not in applied
+
+    @pytest.mark.asyncio
+    async def test_confidence_absent_when_the_llm_reported_none(self, processor):
+        llm = {**self.MIN_LLM_OUTPUT, "confidence": ""}
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=False),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=llm,
+                metadata={},
+            )
+        assert "llm_confidence" not in mock_apply.call_args[0][1]
+
     # -- preview download ------------------------------------------------
 
     @pytest.mark.asyncio
