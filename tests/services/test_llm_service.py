@@ -76,6 +76,25 @@ class MockSession:
         pass
 
 
+class RecordingSession:
+    """Mock session that records each request payload and replays responses."""
+
+    def __init__(self, responses):
+        self._responses = list(responses)
+        self.payloads = []
+
+    def post(self, url, json=None, headers=None):
+        self.payloads.append(json)
+        index = min(len(self.payloads) - 1, len(self._responses) - 1)
+        return self._responses[index]
+
+    async def __aenter__(self):
+        return self
+
+    async def __aexit__(self, *args):
+        pass
+
+
 @pytest.fixture
 def llm_service():
     """Create an LLMService with mock settings."""
@@ -297,6 +316,107 @@ class TestLLMServiceChatCompletionJson:
 
         assert result == {"key": "value"}
         assert call_index == 2
+
+    @pytest.mark.asyncio
+    async def test_chat_completion_json_prefers_json_object_for_deepseek(self):
+        """DeepSeek rejects json_schema, so json_object is used first.
+
+        Regression: DeepSeek answers json_schema with
+        "This response_format type is unavailable now", which the old
+        substring check did not recognise, so enrichment failed outright.
+        """
+        settings = MockSettings(
+            llm_enabled=True,
+            llm_provider="deepseek",
+            llm_api_key="sk-test-key",
+            llm_api_base="https://api.deepseek.com/v1",
+            llm_model="deepseek-v4-flash",
+        )
+        service = LLMService(settings)
+
+        session = RecordingSession(
+            [
+                MockResponse(
+                    200,
+                    json_data={
+                        "choices": [{"message": {"content": '{"key": "value"}'}}],
+                        "usage": {},
+                    },
+                )
+            ]
+        )
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            result = await service.chat_completion_json(
+                system_prompt="You are helpful.",
+                user_prompt="Return JSON.",
+            )
+
+        assert result == {"key": "value"}
+        assert len(session.payloads) == 1
+        assert session.payloads[0]["response_format"] == {"type": "json_object"}
+
+    @pytest.mark.asyncio
+    async def test_chat_completion_json_downgrades_from_json_schema(
+        self, llm_service,
+    ):
+        """json_schema → json_object when the provider rejects json_schema."""
+        session = RecordingSession(
+            [
+                MockResponse(
+                    400,
+                    text_data=(
+                        '{"error":{"message":"This response_format type is '
+                        'unavailable now","type":"invalid_request_error"}}'
+                    ),
+                ),
+                MockResponse(
+                    200,
+                    json_data={
+                        "choices": [{"message": {"content": '{"key": "value"}'}}],
+                        "usage": {},
+                    },
+                ),
+            ]
+        )
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            result = await llm_service.chat_completion_json(
+                system_prompt="You are helpful.",
+                user_prompt="Return JSON.",
+            )
+
+        assert result == {"key": "value"}
+        assert [p.get("response_format") for p in session.payloads] == [
+            {
+                "type": "json_schema",
+                "json_schema": {"name": "metadata", "schema": {"type": "object"}},
+            },
+            {"type": "json_object"},
+        ]
+
+    @pytest.mark.asyncio
+    async def test_chat_completion_json_does_not_retry_unrelated_errors(
+        self, llm_service,
+    ):
+        """Unrelated 400s are surfaced unchanged, without format downgrades."""
+        session = RecordingSession(
+            [
+                MockResponse(
+                    400,
+                    text_data='{"error":{"message":"Model not found"}}',
+                )
+            ]
+        )
+
+        with mock.patch("aiohttp.ClientSession", return_value=session):
+            with pytest.raises(LLMResponseError, match="HTTP 400"):
+                await llm_service.chat_completion_json(
+                    system_prompt="You are helpful.",
+                    user_prompt="Return JSON.",
+                )
+
+        assert len(session.payloads) == 1
 
     @pytest.mark.asyncio
     async def test_chat_completion_json_raises_on_non_json(self, llm_service):

@@ -267,6 +267,16 @@ _PROVIDER_DEFAULTS: Dict[str, str] = {
 # Request timeout for LLM calls (seconds)
 _LLM_TIMEOUT = aiohttp.ClientTimeout(total=120)
 
+# Providers that do NOT implement ``response_format: {"type": "json_schema"}``
+# and reject it with HTTP 400.  For these the weaker, widely supported
+# ``json_object`` mode is used instead (the prompt already specifies the
+# expected JSON shape, and ``_try_salvage_json`` repairs imperfect output).
+# DeepSeek answers a json_schema request with
+# ``{"error":{"message":"This response_format type is unavailable now"}}``.
+# LM Studio and some other local OpenAI-compatible servers reject
+# ``json_object`` but accept ``json_schema``, so they are not listed here.
+_JSON_OBJECT_ONLY_PROVIDERS = frozenset({"deepseek"})
+
 
 class LLMService:
     """Centralized LLM API client.
@@ -614,47 +624,61 @@ class LLMService:
         if effective_max is None:
             effective_max = 4096
 
-        # Use json_schema (not json_object) for broader provider compatibility:
-        # LM Studio and some other OpenAI-compatible servers reject
-        # json_object but accept json_schema.  {"type": "object"} is
-        # functionally equivalent — it accepts any JSON object without
-        # constraining specific fields.
-        response_format = {
+        # Structured-output format.  ``json_schema`` is preferred because LM
+        # Studio and other local OpenAI-compatible servers reject
+        # ``json_object`` but accept ``json_schema``; ``{"type": "object"}``
+        # accepts any JSON object without constraining specific fields, so the
+        # two modes are functionally equivalent here.  Providers known to
+        # reject json_schema (see _JSON_OBJECT_ONLY_PROVIDERS) get
+        # ``json_object`` instead.
+        schema_format: Dict[str, Any] = {
             "type": "json_schema",
             "json_schema": {
                 "name": "metadata",
                 "schema": {"type": "object"},
             },
         }
+        json_object_format: Dict[str, Any] = {"type": "json_object"}
 
-        try:
-            result = await self.chat_completion(
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                response_format=response_format,
-                max_tokens=effective_max,
-            )
-        except LLMResponseError as e:
-            # Only fall back when the provider rejects the response_format
-            # type value (e.g. "'response_format.type' must be...").  Avoid
-            # catching unrelated 400 errors whose body happens to mention
-            # "response_format" (e.g. "model does not support
-            # response_format restrictions on this endpoint").
-            if "'response_format.type'" not in str(e).lower():
-                raise
-            logger.info(
-                "Provider rejected response_format, retrying without it. "
-                "Falling back to prompt-only JSON mode. Error: %s",
-                e,
-            )
-            result = await self.chat_completion(
-                messages=messages,
-                model=model,
-                temperature=temperature,
-                response_format=None,
-                max_tokens=effective_max,
-            )
+        if self._get_config()["provider"] in _JSON_OBJECT_ONLY_PROVIDERS:
+            format_chain: List[Optional[Dict[str, Any]]] = [
+                json_object_format,
+                None,
+            ]
+        else:
+            format_chain = [schema_format, json_object_format, None]
+
+        result: Optional[Dict[str, Any]] = None
+        for index, fmt in enumerate(format_chain):
+            try:
+                result = await self.chat_completion(
+                    messages=messages,
+                    model=model,
+                    temperature=temperature,
+                    response_format=fmt,
+                    max_tokens=effective_max,
+                )
+                break
+            except LLMResponseError as e:
+                message = str(e).lower()
+                if index + 1 >= len(format_chain):
+                    raise
+                # Only downgrade when the failure is about ``response_format``.
+                # Everything else (auth, unknown model, rate limits) must
+                # surface unchanged.  Matching on the bare parameter name also
+                # covers variants such as DeepSeek's "This response_format
+                # type is unavailable now" without swallowing unrelated 400s.
+                if "response_format" not in message:
+                    raise
+                logger.info(
+                    "Provider rejected response_format=%s, retrying with %s. "
+                    "Error: %s",
+                    (fmt or {}).get("type", "none"),
+                    (format_chain[index + 1] or {}).get("type", "none"),
+                    e,
+                )
+
+        assert result is not None  # non-empty chain always sets or raises
 
         content = result.get("content", "") or ""
         if not content:
