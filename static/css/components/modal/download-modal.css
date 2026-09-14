@@ -750,6 +750,32 @@
 #downloadModal .modal-content {
     display: flex;
     flex-direction: column;
+    overflow: hidden; /* The active step scrolls instead of the whole modal */
+}
+
+/* Sticky footer layout (mirrors the import modal fix): fixed header,
+   scrollable step content, pinned action buttons. Ensures Back/Download
+   buttons stay visible on short viewports (e.g. 1080p or 150% zoom). */
+#downloadModal .modal-header {
+    flex-shrink: 0;
+}
+
+#downloadModal .download-step {
+    flex: 1 1 auto;
+    min-height: 0; /* Allow the step to shrink and scroll within the flex container */
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-gutter: stable;
+}
+
+#downloadModal .download-step .modal-actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    background: var(--lora-surface);
+    border-top: 1px solid var(--lora-border);
+    padding-top: var(--space-2);
+    padding-bottom: var(--space-1);
 }
 
 #batchPreviewStep {
