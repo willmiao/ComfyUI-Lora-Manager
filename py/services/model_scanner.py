@@ -63,6 +63,15 @@ def _is_hidden_relative_path(rel_path: str) -> bool:
     return any(part.startswith(".") for part in rel_path.replace(os.sep, "/").split("/"))
 
 
+def _file_name_stem(file_path: str) -> str:
+    """Return the extension-free file name of a normalized model path.
+
+    ``file_name`` cache/sidecar fields are defined as the on-disk stem, so this
+    is the authoritative value to compare stored names against (issue #1112).
+    """
+    return os.path.splitext(os.path.basename(file_path))[0]
+
+
 # Maps a scanner model type to the manager page type used in progress
 # broadcasts (e.g. 'lora' -> 'loras').
 PAGE_TYPE_MAP = {
@@ -1076,6 +1085,26 @@ class ModelScanner:
             # Track found files and new files
             found_paths = set()
             new_files = []
+            # Cached entries whose stored file_name no longer matches the file
+            # on disk (e.g. dotted stems truncated by the legacy .civitai.info
+            # migration, issue #1112). Repaired in place after the walk; the
+            # list stays empty on a clean library, so a no-change reconcile
+            # only pays one string compare per cached file.
+            stale_paths: List[str] = []
+            stale_seen: Set[str] = set()
+
+            def mark_stale_if_needed(cached_path: str) -> None:
+                """Queue a cached path for file_name repair when it drifted."""
+                if cached_path in stale_seen:
+                    return
+                item = path_to_item.get(cached_path)
+                if item is None:
+                    return
+                if item.get("file_name") == _file_name_stem(cached_path):
+                    return
+                stale_seen.add(cached_path)
+                stale_paths.append(cached_path)
+
             visited_real_paths = set()
             discovered_real_files = set()
             discovered_folders: Set[str] = set()
@@ -1110,6 +1139,7 @@ class ModelScanner:
                             # Check if this file is already in cache
                             if file_path in cached_paths:
                                 found_paths.add(file_path)
+                                mark_stale_if_needed(file_path)
                                 continue
 
                             # Only a cache miss needs the physical path, so the
@@ -1120,6 +1150,7 @@ class ModelScanner:
                             cached_real_match = lookup_cached_real_path(real_file_path)
                             if cached_real_match:
                                 found_paths.add(cached_real_match)
+                                mark_stale_if_needed(cached_real_match)
                                 continue
 
                             if file_path in self._excluded_models:
@@ -1132,6 +1163,7 @@ class ModelScanner:
                                 for cached_path in cached_paths:
                                     if cached_path.lower() == lower_path:
                                         found_paths.add(cached_path)
+                                        mark_stale_if_needed(cached_path)
                                         matched = True
                                         break
                                 if matched:
@@ -1242,7 +1274,57 @@ class ModelScanner:
                                 elapsed_seconds=time.time() - start_time,
                             )
                             return
-            
+
+            # Repair rows whose file_name drifted from the file on disk. Only
+            # mismatching entries are re-read here, so a clean library never
+            # touches metadata during a refresh. Each repair goes through the
+            # single-row update path: load_metadata() normalizes the sidecar
+            # (MetadataManager._normalize_metadata_paths) and
+            # _sync_cache_from_metadata_impl() rewrites one targeted SQL delta
+            # instead of a full cache save, and the mismatch is gone
+            # afterwards, so the work never repeats (issue #1112).
+            total_repaired = 0
+            if stale_paths:
+                logger.info(
+                    "%s Scanner: Repairing %d cached entries whose file_name no longer matches the file on disk",
+                    self.model_type.capitalize(),
+                    len(stale_paths),
+                )
+                for path in stale_paths:
+                    if self.is_cancelled():
+                        logger.info(f"{self.model_type.capitalize()} Scanner: Reconcile repair cancelled")
+                        break
+                    try:
+                        metadata, _should_skip = await MetadataManager.load_metadata(
+                            path, self.model_class
+                        )
+                        if metadata is None:
+                            # Missing or corrupt sidecar: keep the existing row
+                            # so a full rebuild can recreate the metadata from
+                            # .civitai.info (or defaults) without losing cached
+                            # fields such as tags or civitai data.
+                            logger.debug(
+                                "%s Scanner: Leaving %s unchanged (no usable metadata to repair from)",
+                                self.model_type.capitalize(),
+                                path,
+                            )
+                            continue
+
+                        payload = metadata.to_dict()
+                        unknown_fields = getattr(metadata, "_unknown_fields", None)
+                        if isinstance(unknown_fields, dict):
+                            payload.update(unknown_fields)
+
+                        if await self._sync_cache_from_metadata_impl(path, payload):
+                            total_repaired += 1
+                    except Exception as exc:
+                        logger.warning(
+                            "%s Scanner: Failed to repair file_name for %s: %s",
+                            self.model_type.capitalize(),
+                            path,
+                            exc,
+                        )
+
             # Find missing files (in cache but not in filesystem)
             missing_files = cached_paths - found_paths
             total_removed = 0
@@ -1323,7 +1405,11 @@ class ModelScanner:
             elif folders_changed:
                 await self._persist_current_cache()
                 
-            logger.info(f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in {time.time() - start_time:.2f} seconds. Added {total_added}, removed {total_removed} models.")
+            logger.info(
+                f"{self.model_type.capitalize()} Scanner: Cache reconciliation completed in "
+                f"{time.time() - start_time:.2f} seconds. Added {total_added}, "
+                f"removed {total_removed}, repaired {total_repaired} models."
+            )
             await self._broadcast_scan_progress(
                 'completed', 'process_new', 100, False,
                 added=total_added, removed=total_removed,
@@ -1552,11 +1638,16 @@ class ModelScanner:
                     
                     file_info = next((f for f in version_info.get('files', []) if f.get('primary')), None)
                     if file_info:
-                        file_name = os.path.splitext(os.path.basename(file_path))[0]
-                        file_info['name'] = file_name
-                    
+                        local_stem = os.path.splitext(os.path.basename(file_path))[0]
+                        # from_civitai_info expects an API-shaped file entry and
+                        # strips one extension itself, so hand it the real
+                        # basename: passing the already extension-free stem made
+                        # it cut dotted names at their last dot ("lora-sd1.5-..."
+                        # became "lora-sd1", issue #1112).
+                        file_info['name'] = os.path.basename(file_path)
+
                         metadata = cast(Any, self.model_class).from_civitai_info(version_info, file_info, file_path)
-                        metadata.preview_url = find_preview_file(file_name, os.path.dirname(file_path))
+                        metadata.preview_url = find_preview_file(local_stem, os.path.dirname(file_path))
                         await MetadataManager.save_metadata(file_path, metadata)
                         logger.info(f"Created metadata from .civitai.info for {file_path} (Reason: .civitai.info was found but .metadata.json was missing)")
                 except Exception as e:

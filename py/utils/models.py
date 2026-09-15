@@ -2,7 +2,11 @@ from dataclasses import dataclass, asdict, field
 from typing import Callable, Dict, Optional, List, Any
 from datetime import datetime
 import os
-from .constants import CIVITAI_TYPE_TO_OTHER_SUB_TYPE, INVALID_AUTOV3_EMPTY_HASH
+from .constants import (
+    CIVITAI_TYPE_TO_OTHER_SUB_TYPE,
+    INVALID_AUTOV3_EMPTY_HASH,
+    MODEL_FILE_EXTENSIONS,
+)
 from .model_utils import determine_base_model
 
 
@@ -44,6 +48,24 @@ def autov3_from_civitai_files(civitai_data: Optional[Dict[str, Any]], sha256: st
         if file_sha and file_sha == target_sha:
             return normalize_autov3(hashes.get("AutoV3"))
     return None
+
+
+def strip_model_extension(file_name: str) -> str:
+    """Strip a recognized model file extension, leaving dotted stems intact.
+
+    ``os.path.splitext`` treats everything after the last dot as an extension,
+    so applying it to an already extension-free name truncates dotted stems:
+    ``lora-sd1.5-backlight_slider_v10`` becomes ``lora-sd1``. API filenames keep
+    their extension and need one strip, while migration paths (``.civitai.info``)
+    pass the local stem as-is, so only remove a suffix that is a known model
+    extension and both inputs resolve to the same stem (issue #1112).
+    """
+    if not file_name:
+        return file_name
+    stem, extension = os.path.splitext(file_name)
+    if extension.lower() in MODEL_FILE_EXTENSIONS:
+        return stem
+    return file_name
 
 
 @dataclass
@@ -241,6 +263,7 @@ class LoraMetadata(BaseModelMetadata):
     ) -> "LoraMetadata":
         """Create LoraMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
 
         # Extract tags and description if available
@@ -255,8 +278,8 @@ class LoraMetadata(BaseModelMetadata):
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
@@ -285,6 +308,7 @@ class CheckpointMetadata(BaseModelMetadata):
     ) -> "CheckpointMetadata":
         """Create CheckpointMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "checkpoint")
@@ -299,8 +323,8 @@ class CheckpointMetadata(BaseModelMetadata):
             description = model_data["description"]
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
@@ -336,6 +360,7 @@ class OtherModelMetadata(BaseModelMetadata):
     ) -> "OtherModelMetadata":
         """Create OtherModelMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         # Map the CivitAI model type onto our sub_types; unknown types keep the
@@ -354,8 +379,8 @@ class OtherModelMetadata(BaseModelMetadata):
             description = model_data["description"]
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
@@ -385,6 +410,7 @@ class EmbeddingMetadata(BaseModelMetadata):
     ) -> "EmbeddingMetadata":
         """Create EmbeddingMetadata instance from Civitai version info"""
         file_name = file_info.get("name", "")
+        base_name = strip_model_extension(file_name)
         base_model = determine_base_model(version_info.get("baseModel", ""))
         sha256_value = (file_info.get("hashes") or {}).get("SHA256", "").lower()
         sub_type = version_info.get("type", "embedding")
@@ -399,8 +425,8 @@ class EmbeddingMetadata(BaseModelMetadata):
             description = model_data["description"]
 
         return cls(
-            file_name=os.path.splitext(file_name)[0],
-            model_name=model_data.get("name", os.path.splitext(file_name)[0]),
+            file_name=base_name,
+            model_name=model_data.get("name", base_name),
             file_path=save_path.replace(os.sep, "/"),
             size=file_info.get("sizeKB", 0) * 1024,
             modified=datetime.now().timestamp(),
