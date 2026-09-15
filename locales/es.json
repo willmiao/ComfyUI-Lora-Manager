@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",
             "moveUnsupported": "El movimiento no es compatible con este elemento.",
-            "createFolderHint": "Suelta para crear una nueva carpeta",
             "newFolderName": "Nombre de la nueva carpeta",
-            "folderNameHint": "Presiona Enter para confirmar, Escape para cancelar",
             "emptyFolderName": "Por favor, introduce un nombre de carpeta",
             "invalidFolderName": "El nombre de la carpeta contiene caracteres no válidos",
             "noDragState": "No se encontró ninguna operación de arrastre pendiente"
         },
         "empty": {
             "noFolders": "No se encontraron carpetas",
-            "dragHint": "Arrastra elementos aquí para crear carpetas",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "Buscar actualizaciones en esta carpeta",

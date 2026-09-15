@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
             "moveUnsupported": "Verschieben wird für dieses Element nicht unterstützt.",
-            "createFolderHint": "Loslassen, um einen neuen Ordner zu erstellen",
             "newFolderName": "Neuer Ordnername",
-            "folderNameHint": "Eingabetaste zum Bestätigen, Escape zum Abbrechen",
             "emptyFolderName": "Bitte geben Sie einen Ordnernamen ein",
             "invalidFolderName": "Ordnername enthält ungültige Zeichen",
             "noDragState": "Kein ausstehender Ziehvorgang gefunden"
         },
         "empty": {
             "noFolders": "Keine Ordner gefunden",
-            "dragHint": "Elemente hierher ziehen, um Ordner zu erstellen",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "Auf Updates in diesem Ordner prüfen",

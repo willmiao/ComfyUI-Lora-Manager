@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
             "moveUnsupported": "Перемещение этого элемента не поддерживается.",
-            "createFolderHint": "Отпустите, чтобы создать новую папку",
             "newFolderName": "Имя новой папки",
-            "folderNameHint": "Нажмите Enter для подтверждения, Escape для отмены",
             "emptyFolderName": "Пожалуйста, введите имя папки",
             "invalidFolderName": "Имя папки содержит недопустимые символы",
             "noDragState": "Ожидающая операция перетаскивания не найдена"
         },
         "empty": {
             "noFolders": "Папки не найдены",
-            "dragHint": "Перетащите элементы сюда, чтобы создать папки",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "Проверить обновления в этой папке",

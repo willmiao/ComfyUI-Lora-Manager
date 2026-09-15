@@ -639,90 +639,40 @@
     display: inline;
 }
 
-/* Create folder drop zone */
-.sidebar-create-folder-zone {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
-    padding: 16px;
-    border: 2px dashed oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.4);
-    border-radius: var(--border-radius-xs);
-    background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.08);
+/* Create folder inline row: rendered inside the tree at the creation
+   location, styled like a regular node row with a full-width input */
+.sidebar-create-folder-row {
+    padding-top: 4px;
+    padding-bottom: 4px;
+    cursor: default;
+}
+
+.sidebar-tree-node-content.sidebar-create-folder-row:hover,
+.sidebar-node-content.sidebar-create-folder-row:hover {
+    background: transparent;
+    color: var(--text-color);
+}
+
+.sidebar-create-folder-spacer {
     opacity: 0;
-    transform: translateY(10px);
-    transition: var(--transition-base);
     pointer-events: none;
-    z-index: 10;
 }
 
-.sidebar-create-folder-zone.active {
-    opacity: 1;
-    transform: translateY(0);
-}
-
-.sidebar-create-folder-content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 8px;
+.sidebar-create-folder-row .sidebar-tree-folder-icon,
+.sidebar-create-folder-row .sidebar-folder-icon {
     color: var(--lora-accent);
-    font-size: 0.85em;
-    text-align: center;
-}
-
-.sidebar-create-folder-content i {
-    font-size: 1.5em;
-    opacity: 0.8;
-}
-
-/* Create folder input container */
-.sidebar-create-folder-input-container {
-    /* Sticky footer inside the scroll container: always visible at the
-       bottom of the viewport regardless of tree scroll position */
-    position: sticky;
-    bottom: 8px;
-    margin: 8px 16px 0;
-    padding: 12px;
-    background: var(--bg-color);
-    border: 1px solid var(--border-color);
-    border-radius: var(--border-radius-xs);
-    box-shadow: var(--shadow-lg);
-    z-index: 20;
-    animation: slideUp 0.2s ease;
-}
-
-@keyframes slideUp {
-    from {
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
-
-.sidebar-create-folder-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.sidebar-create-folder-input-wrapper > i {
-    color: var(--lora-accent);
-    font-size: 1em;
+    opacity: 0.9;
 }
 
 .sidebar-create-folder-input {
     flex: 1;
     min-width: 0; /* allow the input to shrink below its intrinsic width */
-    padding: 6px 10px;
+    padding: 4px 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
     background: var(--bg-color);
     color: var(--text-color);
-    font-size: 0.85em;
+    font-size: 1em;
     outline: none;
     transition: var(--transition-base);
 }
@@ -730,49 +680,6 @@
 .sidebar-create-folder-input:focus {
     border-color: var(--lora-accent);
     box-shadow: 0 0 0 2px oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.15);
-}
-
-.sidebar-create-folder-btn {
-    width: 28px;
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    border-radius: var(--border-radius-xs);
-    cursor: pointer;
-    transition: var(--transition-base);
-    background: transparent;
-    color: var(--text-muted);
-}
-
-.sidebar-create-folder-btn:hover,
-.sidebar-create-folder-btn:focus-visible {
-    background: var(--lora-surface);
-    color: var(--text-color);
-    outline: none;
-}
-
-.sidebar-create-folder-confirm:hover,
-.sidebar-create-folder-confirm:focus-visible {
-    background: oklch(from var(--success-color) l c h / 0.15);
-    color: var(--success-color);
-    outline: none;
-}
-
-.sidebar-create-folder-cancel:hover,
-.sidebar-create-folder-cancel:focus-visible {
-    background: oklch(from var(--error-color) l c h / 0.15);
-    color: var(--error-color);
-    outline: none;
-}
-
-.sidebar-create-folder-hint {
-    margin-top: 6px;
-    font-size: 0.75em;
-    color: var(--text-muted);
-    text-align: center;
-    opacity: 0.8;
 }
 
 /* Dragging state for sidebar */
@@ -784,11 +691,6 @@
 
 .folder-sidebar.dragging-active .sidebar-tree-container {
     background: oklch(var(--lora-accent-l) var(--lora-accent-c) var(--lora-accent-h) / 0.02);
-}
-
-/* Tree container positioning for create folder elements */
-.sidebar-tree-container {
-    position: relative;
 }
 
 /* Folder context menu - positioned relative to sidebar */

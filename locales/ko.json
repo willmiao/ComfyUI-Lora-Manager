@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다.",
             "moveUnsupported": "이 항목은 이동을 지원하지 않습니다.",
-            "createFolderHint": "놓아서 새 폴더 만들기",
             "newFolderName": "새 폴더 이름",
-            "folderNameHint": "Enter를 눌러 확인, Escape를 눌러 취소",
             "emptyFolderName": "폴더 이름을 입력하세요",
             "invalidFolderName": "폴더 이름에 잘못된 문자가 포함되어 있습니다",
             "noDragState": "보류 중인 드래그 작업을 찾을 수 없습니다"
         },
         "empty": {
             "noFolders": "폴더를 찾을 수 없습니다",
-            "dragHint": "항목을 여기로 드래그하여 폴더를 만듭니다",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "이 폴더의 업데이트 확인",

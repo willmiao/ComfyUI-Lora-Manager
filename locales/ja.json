@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "移動先のパスを特定できません。",
             "moveUnsupported": "この項目の移動はサポートされていません。",
-            "createFolderHint": "放して新しいフォルダを作成",
             "newFolderName": "新しいフォルダ名",
-            "folderNameHint": "Enterで確定、Escでキャンセル",
             "emptyFolderName": "フォルダ名を入力してください",
             "invalidFolderName": "フォルダ名に無効な文字が含まれています",
             "noDragState": "保留中のドラッグ操作が見つかりません"
         },
         "empty": {
             "noFolders": "フォルダが見つかりません",
-            "dragHint": "ここへアイテムをドラッグしてフォルダを作成します",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "このフォルダのアップデートを確認",

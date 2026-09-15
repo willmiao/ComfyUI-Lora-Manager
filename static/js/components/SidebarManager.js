@@ -36,17 +36,16 @@ export class SidebarManager {
         this.draggedRootPath = null;
         this.draggedFromBulk = false;
         this.dragHandlersInitialized = false;
-        this.sidebarDragHandlersInitialized = false;
         this.folderTreeElement = null;
         this.currentDropTarget = null;
         this.lastPageControls = null;
         this.isDisabledByPage = false;
         this.initializationPromise = null;
         this.isCreatingFolder = false;
-        this._pendingDragState = null; // 用于保存拖拽创建文件夹时的状态
         this.showEmptyFolders = false;
         this.nonEmptyFolders = null; // models-only folder set used to dim empty nodes
         this._createFolderBasePath = null;
+        this._createFolderTempChildren = null; // children container added for a leaf parent during inline creation
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -68,10 +67,6 @@ export class SidebarManager {
         this.handleFolderDragOver = this.handleFolderDragOver.bind(this);
         this.handleFolderDragLeave = this.handleFolderDragLeave.bind(this);
         this.handleFolderDrop = this.handleFolderDrop.bind(this);
-        this.handleSidebarDragEnter = this.handleSidebarDragEnter.bind(this);
-        this.handleSidebarDragOver = this.handleSidebarDragOver.bind(this);
-        this.handleSidebarDragLeave = this.handleSidebarDragLeave.bind(this);
-        this.handleSidebarDrop = this.handleSidebarDrop.bind(this);
         this.handleCreateFolderSubmit = this.handleCreateFolderSubmit.bind(this);
         this.handleCreateFolderCancel = this.handleCreateFolderCancel.bind(this);
         this.handleHideToggle = this.handleHideToggle.bind(this);
@@ -121,16 +116,6 @@ export class SidebarManager {
         this.resetDragState();
         this.hideCreateFolderInput();
 
-        // Cleanup sidebar drag handlers
-        const sidebar = document.getElementById('folderSidebar');
-        if (sidebar && this.sidebarDragHandlersInitialized) {
-            sidebar.removeEventListener('dragenter', this.handleSidebarDragEnter);
-            sidebar.removeEventListener('dragover', this.handleSidebarDragOver);
-            sidebar.removeEventListener('dragleave', this.handleSidebarDragLeave);
-            sidebar.removeEventListener('drop', this.handleSidebarDrop);
-            this.sidebarDragHandlersInitialized = false;
-        }
-
         this.hideSidebarHiddenIndicator();
 
         // Reset state
@@ -147,6 +132,7 @@ export class SidebarManager {
         this.showEmptyFolders = false;
         this.nonEmptyFolders = null;
         this._createFolderBasePath = null;
+        this._createFolderTempChildren = null;
 
         // Reset container margin
         const container = document.querySelector('.container');
@@ -233,16 +219,6 @@ export class SidebarManager {
 
             this.folderTreeElement = folderTree;
         }
-
-        // Add sidebar-level drag handlers for creating new folders
-        const sidebar = document.getElementById('folderSidebar');
-        if (sidebar && !this.sidebarDragHandlersInitialized) {
-            sidebar.addEventListener('dragenter', this.handleSidebarDragEnter);
-            sidebar.addEventListener('dragover', this.handleSidebarDragOver);
-            sidebar.addEventListener('dragleave', this.handleSidebarDragLeave);
-            sidebar.addEventListener('drop', this.handleSidebarDrop);
-            this.sidebarDragHandlersInitialized = true;
-        }
     }
 
     handleCardDragStart(event) {
@@ -303,7 +279,7 @@ export class SidebarManager {
         if (sidebar) {
             sidebar.classList.remove('dragging-active');
         }
-        
+
         this.clearAllDropHighlights();
         this.resetDragState();
     }
@@ -564,354 +540,141 @@ export class SidebarManager {
         this.draggedFromBulk = false;
     }
 
-    // Version of performDragMove that accepts state as parameters (for create folder submit)
-    async performDragMoveWithState(targetRelativePath, draggedFilePaths, draggedRootPath, draggedFromBulk) {
-        console.log('[SidebarManager] performDragMoveWithState called with:', { targetRelativePath, draggedFilePaths, draggedRootPath, draggedFromBulk });
-
-        if (!draggedFilePaths || draggedFilePaths.length === 0) {
-            console.log('[SidebarManager] performDragMoveWithState returning false - no draggedFilePaths');
-            return false;
-        }
-
-        if (!this.apiClient) {
-            this.apiClient = this.pageControls?.getSidebarApiClient?.()
-                || this.pageControls?.sidebarApiClient
-                || getModelApiClient();
-        }
-
-        if (this.apiClient?.apiConfig?.config?.supportsMove === false) {
-            console.log('[SidebarManager] performDragMoveWithState returning false - supportsMove is false');
-            showToast('toast.models.moveFailed', { message: translate('sidebar.dragDrop.moveUnsupported', {}, 'Move not supported for this page') }, 'error');
-            return false;
-        }
-
-        const rootPath = draggedRootPath ? draggedRootPath.replace(/\\/g, '/') : '';
-        console.log('[SidebarManager] rootPath:', rootPath);
-        if (!rootPath) {
-            console.log('[SidebarManager] performDragMoveWithState returning false - no rootPath');
-            showToast(
-                'toast.models.moveFailed',
-                { message: translate('sidebar.dragDrop.unableToResolveRoot', {}, 'Unable to determine destination path for move.') },
-                'error'
-            );
-            return false;
-        }
-
-        const destination = this.combineRootAndRelativePath(rootPath, targetRelativePath);
-        const useBulkMove = draggedFromBulk || draggedFilePaths.length > 1;
-
-        try {
-            console.log('[SidebarManager] calling apiClient.move, useBulkMove:', useBulkMove);
-            let movedFiles = []; // Array of { original_file_path, new_file_path }
-
-            if (useBulkMove) {
-                const results = await this.apiClient.moveBulkModels(draggedFilePaths, destination);
-                movedFiles = (results || [])
-                    .filter(r => r.success)
-                    .map(r => ({ original_file_path: r.original_file_path, new_file_path: r.new_file_path }));
-            } else {
-                const result = await this.apiClient.moveSingleModel(draggedFilePaths[0], destination);
-                if (result) {
-                    movedFiles.push({
-                        original_file_path: result.original_file_path || draggedFilePaths[0],
-                        new_file_path: result.new_file_path
-                    });
-                }
-            }
-            console.log('[SidebarManager] apiClient.move successful');
-
-            // Update VirtualScroller in-place instead of full reload
-            if (movedFiles.length > 0 && state.virtualScroller) {
-                const pageState = getCurrentPageState();
-                const normalizedActive = (pageState.activeFolder || '').replace(/\\/g, '/').replace(/\/$/, '');
-                const isRecursive = pageState.searchOptions?.recursive ?? true;
-                const isFolderFiltered = pageState.activeFolder !== null;
-
-                const normalizedTarget = targetRelativePath.replace(/\\/g, '/').replace(/\/$/, '');
-
-                // Determine if items in the target folder are visible in the current view
-                let itemsRemainVisible = true;
-                if (isFolderFiltered) {
-                    if (isRecursive) {
-                        itemsRemainVisible = normalizedActive === '' ||
-                            normalizedTarget === normalizedActive ||
-                            normalizedTarget.startsWith(normalizedActive + '/');
-                    } else {
-                        itemsRemainVisible = normalizedTarget === normalizedActive;
-                    }
-                }
-
-                if (itemsRemainVisible) {
-                    // Items stay visible — update each item's file_path to reflect new location
-                    for (const moved of movedFiles) {
-                        if (moved.original_file_path && moved.new_file_path) {
-                            state.virtualScroller.updateSingleItem(moved.original_file_path, {
-                                file_path: moved.new_file_path,
-                                folder: normalizedTarget
-                            });
-                        }
-                    }
-                } else {
-                    // Items no longer visible in current folder — remove from VirtualScroller
-                    const pathsToRemove = movedFiles
-                        .map(m => m.original_file_path)
-                        .filter(Boolean);
-                    if (pathsToRemove.length > 0) {
-                        state.virtualScroller.removeMultipleItemsByFilePath(pathsToRemove);
-                    }
-                }
-            }
-
-            // Refresh sidebar folder tree only (no model data reload)
-            await this.refresh();
-
-            if (draggedFromBulk && state.bulkMode && typeof bulkManager?.toggleBulkMode === 'function') {
-                bulkManager.toggleBulkMode();
-            }
-
-            console.log('[SidebarManager] performDragMoveWithState returning true');
-            return true;
-        } catch (error) {
-            console.error('[SidebarManager] Error moving model(s) via drag-and-drop:', error);
-            showToast('toast.models.moveFailed', { message: error.message || 'Unknown error' }, 'error');
-            console.log('[SidebarManager] performDragMoveWithState returning false due to error');
-            return false;
-        }
-    }
-
-    // ===== Sidebar-level drag handlers for creating new folders =====
-
-    handleSidebarDragEnter(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const sidebar = document.getElementById('folderSidebar');
-        if (!sidebar) return;
-
-        // Only show create folder zone if not hovering over an existing folder
-        const folderElement = this.getFolderElementFromEvent(event);
-        if (folderElement) {
-            this.hideCreateFolderZone();
-            return;
-        }
-
-        // Check if drag is within the sidebar tree container area
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (treeContainer && treeContainer.contains(event.target)) {
-            event.preventDefault();
-            this.showCreateFolderZone();
-        }
-    }
-
-    handleSidebarDragOver(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const folderElement = this.getFolderElementFromEvent(event);
-        if (folderElement) {
-            this.hideCreateFolderZone();
-            return;
-        }
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (treeContainer && treeContainer.contains(event.target)) {
-            event.preventDefault();
-            if (event.dataTransfer) {
-                event.dataTransfer.dropEffect = 'move';
-            }
-        }
-    }
-
-    handleSidebarDragLeave(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const sidebar = document.getElementById('folderSidebar');
-        if (!sidebar) return;
-
-        const relatedTarget = event.relatedTarget instanceof Element ? event.relatedTarget : null;
-
-        // Only hide if leaving the sidebar entirely
-        if (!relatedTarget || !sidebar.contains(relatedTarget)) {
-            this.hideCreateFolderZone();
-        }
-    }
-
-    async handleSidebarDrop(event) {
-        if (!this.draggedFilePaths || this.draggedFilePaths.length === 0) return;
-
-        const folderElement = this.getFolderElementFromEvent(event);
-        if (folderElement) {
-            // Let the folder drop handler take over
-            return;
-        }
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (!treeContainer || !treeContainer.contains(event.target)) {
-            return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-
-        // Show create folder input
-        this.showCreateFolderInput();
-    }
-
-    showCreateFolderZone() {
-        if (this.isCreatingFolder) return;
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (!treeContainer) return;
-
-        let zone = document.getElementById('sidebarCreateFolderZone');
-        if (!zone) {
-            zone = document.createElement('div');
-            zone.id = 'sidebarCreateFolderZone';
-            zone.className = 'sidebar-create-folder-zone';
-            zone.innerHTML = `
-                <div class="sidebar-create-folder-content">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>${translate('sidebar.dragDrop.createFolderHint', {}, 'Release to create new folder')}</span>
-                </div>
-            `;
-            treeContainer.appendChild(zone);
-        }
-
-        zone.classList.add('active');
-    }
-
-    hideCreateFolderZone() {
-        const zone = document.getElementById('sidebarCreateFolderZone');
-        if (zone) {
-            zone.classList.remove('active');
-        }
-    }
-
     showCreateFolderInput(basePath = null) {
-        console.log('[SidebarManager] showCreateFolderInput called');
+        // Remove any existing input first — hideCreateFolderInput() also
+        // clears isCreatingFolder, so it must run before the flag is set.
+        this.hideCreateFolderInput();
         this.isCreatingFolder = true;
 
         // The folder is created under the given base path; falls back to the
-        // currently selected folder (drag-and-drop flow) or the root.
+        // currently selected folder or the root.
         this._createFolderBasePath = basePath !== null ? basePath : (this.selectedPath || '');
 
-        // 立即保存拖拽状态，防止后续事件（如blur）清空状态
-        this._pendingDragState = this.draggedFilePaths && this.draggedFilePaths.length > 0 ? {
-            filePaths: [...this.draggedFilePaths],
-            rootPath: this.draggedRootPath,
-            fromBulk: this.draggedFromBulk
-        } : null;
-        console.log('[SidebarManager] saved pending drag state:', this._pendingDragState);
-        
-        this.hideCreateFolderZone();
-
-        const treeContainer = document.querySelector('.sidebar-tree-container');
-        if (!treeContainer) return;
-
-        // Remove existing input if any
-        this.hideCreateFolderInput();
-
-        const inputContainer = document.createElement('div');
-        inputContainer.id = 'sidebarCreateFolderInput';
-        inputContainer.className = 'sidebar-create-folder-input-container';
-        inputContainer.innerHTML = `
-            <div class="sidebar-create-folder-input-wrapper">
-                <i class="fas fa-folder-plus"></i>
-                <input type="text" 
-                       class="sidebar-create-folder-input" 
-                       placeholder="${translate('sidebar.dragDrop.newFolderName', {}, 'New folder name')}" 
-                       autofocus />
-                <button class="sidebar-create-folder-btn sidebar-create-folder-confirm" title="${translate('common.confirm', {}, 'Confirm')}">
-                    <i class="fas fa-check"></i>
-                </button>
-                <button class="sidebar-create-folder-btn sidebar-create-folder-cancel" title="${translate('common.cancel', {}, 'Cancel')}">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="sidebar-create-folder-hint">
-                ${translate('sidebar.dragDrop.folderNameHint', {}, 'Press Enter to confirm, Escape to cancel')}
-            </div>
-        `;
-
-        treeContainer.appendChild(inputContainer);
-
-        // Focus input
-        const input = inputContainer.querySelector('.sidebar-create-folder-input');
-        if (input) {
-            input.focus();
+        const folderTree = document.getElementById('sidebarFolderTree');
+        if (!folderTree) {
+            this.isCreatingFolder = false;
+            return;
         }
 
-        // Bind events
-        const confirmBtn = inputContainer.querySelector('.sidebar-create-folder-confirm');
-        const cancelBtn = inputContainer.querySelector('.sidebar-create-folder-cancel');
+        // Inline row at the creation location, file-explorer style: the new
+        // folder will appear exactly where the input row is shown.
+        const row = this._buildCreateFolderRow();
+        this._insertCreateFolderRow(folderTree, row);
+        row.scrollIntoView?.({ block: 'nearest' });
 
-        // Flag to prevent blur from canceling when clicking buttons
-        let isButtonClick = false;
+        const input = row.querySelector('.sidebar-create-folder-input');
+        if (!input) return;
+        input.focus();
 
-        confirmBtn?.addEventListener('mousedown', () => { 
-            isButtonClick = true; 
-            console.log('[SidebarManager] confirmBtn mousedown - isButtonClick set to true');
-        });
-        cancelBtn?.addEventListener('mousedown', () => { 
-            isButtonClick = true; 
-            console.log('[SidebarManager] cancelBtn mousedown - isButtonClick set to true');
-        });
-
-        confirmBtn?.addEventListener('click', (e) => {
-            console.log('[SidebarManager] confirmBtn click event triggered');
-            this.handleCreateFolderSubmit();
-        });
-        cancelBtn?.addEventListener('click', () => {
-            console.log('[SidebarManager] cancelBtn click event triggered');
-            this.handleCreateFolderCancel();
-        });
-        input?.addEventListener('keydown', (e) => {
-            console.log('[SidebarManager] input keydown:', e.key);
+        input.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                console.log('[SidebarManager] Enter pressed, calling handleCreateFolderSubmit');
                 this.handleCreateFolderSubmit();
             } else if (e.key === 'Escape') {
-                console.log('[SidebarManager] Escape pressed, calling handleCreateFolderCancel');
                 this.handleCreateFolderCancel();
             }
         });
-        input?.addEventListener('blur', () => {
-            console.log('[SidebarManager] input blur event - isButtonClick:', isButtonClick);
-            // Delay to allow button clicks to process first
+        // Clicking away cancels creation, mirroring file-explorer behavior
+        input.addEventListener('blur', () => {
             setTimeout(() => {
-                console.log('[SidebarManager] blur timeout - isButtonClick:', isButtonClick, 'activeElement:', document.activeElement?.className);
-                if (!isButtonClick && document.activeElement !== confirmBtn && document.activeElement !== cancelBtn) {
-                    console.log('[SidebarManager] blur timeout - calling handleCreateFolderCancel');
+                if (this.isCreatingFolder) {
                     this.handleCreateFolderCancel();
-                } else {
-                    console.log('[SidebarManager] blur timeout - NOT canceling (button click detected)');
                 }
-                isButtonClick = false;
-            }, 200);
+            }, 100);
         });
     }
 
-    hideCreateFolderInput() {
-        console.log('[SidebarManager] hideCreateFolderInput called');
-        const inputContainer = document.getElementById('sidebarCreateFolderInput');
-        console.log('[SidebarManager] inputContainer:', inputContainer);
-        if (inputContainer) {
-            inputContainer.remove();
-            console.log('[SidebarManager] inputContainer removed');
+    _buildCreateFolderRow() {
+        const isListMode = this.displayMode === 'list';
+        const row = document.createElement('div');
+        row.id = 'sidebarCreateFolderInput';
+        row.className = 'sidebar-create-folder-node';
+        row.innerHTML = `
+            <div class="${isListMode ? 'sidebar-node-content' : 'sidebar-tree-node-content'} sidebar-create-folder-row">
+                ${isListMode ? '' : `
+                <div class="sidebar-tree-expand-icon sidebar-create-folder-spacer">
+                    <i class="fas fa-chevron-right"></i>
+                </div>`}
+                <i class="fas fa-folder-plus sidebar-tree-folder-icon"></i>
+                <input type="text"
+                       class="sidebar-create-folder-input"
+                       placeholder="${translate('sidebar.dragDrop.newFolderName', {}, 'New folder name')}" />
+            </div>
+        `;
+        return row;
+    }
+
+    _insertCreateFolderRow(folderTree, row) {
+        const parentPath = this._createFolderBasePath;
+
+        if (this.displayMode === 'list') {
+            if (parentPath) {
+                const parentItem = [...folderTree.querySelectorAll('.sidebar-folder-item')]
+                    .find(item => item.dataset.path === parentPath);
+                if (parentItem) {
+                    parentItem.after(row);
+                    return;
+                }
+            }
+            folderTree.appendChild(row);
+            return;
         }
+
+        if (parentPath) {
+            // Expand the parent so the row is visible, then insert as its
+            // first child.
+            if (!this.expandedNodes.has(parentPath)) {
+                this.expandedNodes.add(parentPath);
+                this.saveExpandedState();
+                this.renderTree();
+            }
+            const parentNode = [...folderTree.querySelectorAll('.sidebar-tree-node')]
+                .find(node => node.dataset.path === parentPath);
+            if (parentNode) {
+                let children = parentNode.querySelector(':scope > .sidebar-tree-children');
+                if (!children) {
+                    // Leaf folder: renderTree() only creates a children
+                    // container for nodes with subfolders, so add one.
+                    children = document.createElement('div');
+                    children.className = 'sidebar-tree-children expanded';
+                    parentNode.appendChild(children);
+                    this._createFolderTempChildren = children;
+                }
+                children.prepend(row);
+                return;
+            }
+        }
+
+        // Root creation (or parent not currently visible): append at top level
+        folderTree.appendChild(row);
+    }
+
+    hideCreateFolderInput() {
+        // Clear the flag first so the input's blur handler does not treat
+        // removing the row as a cancel.
         this.isCreatingFolder = false;
-        console.log('[SidebarManager] isCreatingFolder set to false');
+
+        const row = document.getElementById('sidebarCreateFolderInput');
+        if (row) {
+            row.remove();
+        }
+
+        // Remove the temporary children container if it is still empty
+        if (this._createFolderTempChildren) {
+            const container = this._createFolderTempChildren;
+            this._createFolderTempChildren = null;
+            if (container.isConnected && container.children.length === 0) {
+                container.remove();
+            }
+        }
     }
 
     async handleCreateFolderSubmit() {
-        console.log('[SidebarManager] handleCreateFolderSubmit called');
         const input = document.querySelector('#sidebarCreateFolderInput .sidebar-create-folder-input');
-        console.log('[SidebarManager] input element:', input);
         if (!input) {
-            console.log('[SidebarManager] input not found, returning');
             return;
         }
 
         const folderName = input.value.trim();
-        console.log('[SidebarManager] folderName:', folderName);
         if (!folderName) {
             showToast('sidebar.dragDrop.emptyFolderName', {}, 'warning');
             return;
@@ -927,41 +690,10 @@ export class SidebarManager {
         // opened (context-menu folder or current selection), or root
         const parentPath = this._createFolderBasePath || '';
         const targetRelativePath = parentPath ? `${parentPath}/${folderName}` : folderName;
-        console.log('[SidebarManager] targetRelativePath:', targetRelativePath);
-
-        // 使用 showCreateFolderInput 时保存的拖拽状态
-        const pendingState = this._pendingDragState;
-        console.log('[SidebarManager] using pending drag state:', pendingState);
 
         this.hideCreateFolderInput();
 
-        if (!pendingState || !pendingState.filePaths || pendingState.filePaths.length === 0) {
-            // Standalone creation (header button / context menu): create an
-            // empty folder on disk instead of moving dragged models into it.
-            await this._createFolder(targetRelativePath, parentPath);
-            return;
-        }
-
-        // Perform the move with saved state
-        console.log('[SidebarManager] calling performDragMove with pending state');
-        const success = await this.performDragMoveWithState(targetRelativePath, pendingState.filePaths, pendingState.rootPath, pendingState.fromBulk);
-        console.log('[SidebarManager] performDragMove result:', success);
-
-        if (success) {
-            // Expand the parent folder to show the new folder
-            if (parentPath) {
-                this.expandedNodes.add(parentPath);
-                this.saveExpandedState();
-            }
-            // Refresh the tree to show the newly created folder
-            // restoreSelectedFolder() inside refresh() will maintain the current active folder
-            await this.refresh();
-        }
-
-        // 清理待处理的拖拽状态
-        this._pendingDragState = null;
-        this.resetDragState();
-        this.clearAllDropHighlights();
+        await this._createFolder(targetRelativePath, parentPath);
     }
 
     async _createFolder(targetRelativePath, parentPath) {
@@ -1025,10 +757,6 @@ export class SidebarManager {
 
     handleCreateFolderCancel() {
         this.hideCreateFolderInput();
-        // 清理待处理的拖拽状态
-        this._pendingDragState = null;
-        this.resetDragState();
-        this.clearAllDropHighlights();
     }
 
     saveSelectedFolder() {
@@ -1399,20 +1127,18 @@ export class SidebarManager {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
 
-        // Pages with folder management (model libraries) also offer the
-        // header create button; recipes can only create folders via drag.
-        const hintKey = this._supportsFolderManagement()
-            ? 'sidebar.empty.createHint'
-            : 'sidebar.empty.dragHint';
+        // Only pages with folder management (model libraries) offer the
+        // header create button; other pages just show the empty label.
+        const hintHtml = this._supportsFolderManagement() ? `
+                <div class="sidebar-empty-hint">
+                    <i class="fas fa-hand-pointer"></i>
+                    ${translate('sidebar.empty.createHint', {}, 'Click the New Folder button above to create folders')}
+                </div>` : '';
 
         folderTree.innerHTML = `
             <div class="sidebar-tree-placeholder">
                 <i class="fas fa-folder-open"></i>
-                <div>${translate('sidebar.empty.noFolders', {}, 'No folders found')}</div>
-                <div class="sidebar-empty-hint">
-                    <i class="fas fa-hand-pointer"></i>
-                    ${translate(hintKey, {}, 'Drag items here to create folders')}
-                </div>
+                <div>${translate('sidebar.empty.noFolders', {}, 'No folders found')}</div>${hintHtml}
             </div>
         `;
     }
@@ -1448,6 +1174,9 @@ export class SidebarManager {
     }
 
     handleTreeClick(event) {
+        // Clicks on the inline create-folder row must not select/toggle nodes
+        if (event.target.closest('.sidebar-create-folder-node')) return;
+
         if (this.displayMode === 'list') {
             this.handleFolderListClick(event);
             return;
@@ -1482,6 +1211,9 @@ export class SidebarManager {
     }
 
     handleTreeContextMenu(event) {
+        // No context menu on the inline create-folder row
+        if (event.target.closest('.sidebar-create-folder-node')) return;
+
         const nodeContent = event.target.closest('.sidebar-tree-node, .sidebar-folder-item');
         if (!nodeContent) return;
 

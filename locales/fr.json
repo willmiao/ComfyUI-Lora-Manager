@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
             "moveUnsupported": "Le déplacement n'est pas pris en charge pour cet élément.",
-            "createFolderHint": "Relâcher pour créer un nouveau dossier",
             "newFolderName": "Nom du nouveau dossier",
-            "folderNameHint": "Appuyez sur Entrée pour confirmer, Échap pour annuler",
             "emptyFolderName": "Veuillez saisir un nom de dossier",
             "invalidFolderName": "Le nom du dossier contient des caractères invalides",
             "noDragState": "Aucune opération de glissement en attente trouvée"
         },
         "empty": {
             "noFolders": "Aucun dossier trouvé",
-            "dragHint": "Faites glisser des éléments ici pour créer des dossiers",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "Vérifier les mises à jour dans ce dossier",

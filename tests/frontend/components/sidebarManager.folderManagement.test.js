@@ -332,22 +332,124 @@ describe('SidebarManager folder creation', () => {
     expect(manager.refresh).not.toHaveBeenCalled();
   });
 
-  it('opens the create-folder input for a context-menu folder', () => {
+  it('opens the create-folder input as an inline row under the context-menu folder', () => {
     const manager = createManager(createApiClient());
-    document.body.innerHTML = '<div class="sidebar-tree-container"></div>';
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    manager.treeData = { characters: {} };
+    manager.renderTree();
 
     manager._performFolderAction('create-subfolder', 'characters');
 
-    const input = document.querySelector('#sidebarCreateFolderInput .sidebar-create-folder-input');
-    expect(input).not.toBeNull();
+    const row = document.getElementById('sidebarCreateFolderInput');
+    expect(row).not.toBeNull();
+    expect(row.classList.contains('sidebar-create-folder-node')).toBe(true);
     expect(manager._createFolderBasePath).toBe('characters');
+    // The leaf parent is expanded and the row sits inside its children container
+    expect(manager.expandedNodes.has('characters')).toBe(true);
+    const parentNode = document.querySelector('.sidebar-tree-node[data-path="characters"]');
+    expect(parentNode.querySelector(':scope > .sidebar-tree-children').contains(row)).toBe(true);
+  });
+
+  it('inserts the row as the first child of an already-expanded parent', () => {
+    const manager = createManager(createApiClient());
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    manager.treeData = { characters: { anime: {} } };
+    manager.expandedNodes = new Set(['characters']);
+    manager.renderTree();
+
+    manager.showCreateFolderInput('characters');
+
+    const children = document.querySelector('.sidebar-tree-node[data-path="characters"] > .sidebar-tree-children');
+    expect(children.firstElementChild.id).toBe('sidebarCreateFolderInput');
+    // Existing children container is reused, no temporary one is tracked
+    expect(manager._createFolderTempChildren).toBeNull();
+  });
+
+  it('appends the row at the top level for root creation', () => {
+    const manager = createManager(createApiClient());
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    manager.treeData = { characters: {} };
+    manager.renderTree();
+
+    manager.showCreateFolderInput('');
+
+    const folderTree = document.getElementById('sidebarFolderTree');
+    const row = document.getElementById('sidebarCreateFolderInput');
+    expect(row.parentElement).toBe(folderTree);
+    expect(folderTree.lastElementChild).toBe(row);
+  });
+
+  it('inserts the row after the parent item in list mode', () => {
+    const manager = createManager(createApiClient(), { displayMode: 'list' });
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    manager.foldersList = ['characters', 'characters/anime'];
+    manager.renderFolderList();
+
+    manager.showCreateFolderInput('characters');
+
+    const items = [...document.querySelectorAll('#sidebarFolderTree > div')];
+    const parentIndex = items.findIndex(el => el.dataset.path === 'characters');
+    expect(items[parentIndex + 1].id).toBe('sidebarCreateFolderInput');
+    // List-mode rows use the list content styling, not the tree one
+    expect(items[parentIndex + 1].querySelector('.sidebar-node-content')).not.toBeNull();
+  });
+
+  it('removes the temporary children container when creation is canceled', () => {
+    const manager = createManager(createApiClient());
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    manager.treeData = { characters: {} };
+    manager.renderTree();
+
+    manager.showCreateFolderInput('characters');
+    manager.handleCreateFolderCancel();
+
+    expect(document.getElementById('sidebarCreateFolderInput')).toBeNull();
+    expect(manager.isCreatingFolder).toBe(false);
+    const parentNode = document.querySelector('.sidebar-tree-node[data-path="characters"]');
+    expect(parentNode.querySelector(':scope > .sidebar-tree-children')).toBeNull();
+  });
+
+  it('cancels creation when the input loses focus', () => {
+    vi.useFakeTimers();
+    try {
+      const manager = createManager(createApiClient());
+      document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+
+      manager.showCreateFolderInput('');
+      const input = document.querySelector('#sidebarCreateFolderInput .sidebar-create-folder-input');
+      input.dispatchEvent(new Event('blur'));
+      vi.advanceTimersByTime(150);
+
+      expect(document.getElementById('sidebarCreateFolderInput')).toBeNull();
+      expect(manager.isCreatingFolder).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('ignores tree clicks and context menus on the create row', () => {
+    const manager = createManager(createApiClient());
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    manager.treeData = { characters: {} };
+    manager.renderTree();
+    manager.selectFolder = vi.fn();
+    const showMenu = vi.spyOn(manager, '_showFolderContextMenu').mockImplementation(() => {});
+
+    manager.showCreateFolderInput('characters');
+    const input = document.querySelector('#sidebarCreateFolderInput .sidebar-create-folder-input');
+
+    manager.handleTreeClick({ target: input });
+    expect(manager.selectFolder).not.toHaveBeenCalled();
+
+    manager.handleTreeContextMenu({ target: input, preventDefault: vi.fn(), stopPropagation: vi.fn() });
+    expect(showMenu).not.toHaveBeenCalled();
   });
 
   it('submits a standalone folder creation when no drag is pending', async () => {
     const apiClient = createApiClient();
     const manager = createManager(apiClient);
     manager.refresh = vi.fn().mockResolvedValue(undefined);
-    document.body.innerHTML = '<div class="sidebar-tree-container"></div>';
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
 
     manager.showCreateFolderInput('characters');
     document.querySelector('#sidebarCreateFolderInput .sidebar-create-folder-input').value = 'anime';
@@ -358,3 +460,4 @@ describe('SidebarManager folder creation', () => {
     expect(document.getElementById('sidebarCreateFolderInput')).toBeNull();
   });
 });
+

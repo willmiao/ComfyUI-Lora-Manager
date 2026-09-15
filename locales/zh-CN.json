@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "无法确定移动的目标路径。",
             "moveUnsupported": "此条目不支持移动。",
-            "createFolderHint": "释放以创建新文件夹",
             "newFolderName": "新文件夹名称",
-            "folderNameHint": "按 Enter 确认，Escape 取消",
             "emptyFolderName": "请输入文件夹名称",
             "invalidFolderName": "文件夹名称包含无效字符",
             "noDragState": "未找到待处理的拖放操作"
         },
         "empty": {
             "noFolders": "未找到文件夹",
-            "dragHint": "拖拽项目到此处以创建文件夹",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "检查此文件夹的更新",

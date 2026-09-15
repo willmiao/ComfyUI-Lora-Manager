@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
             "moveUnsupported": "此項目不支援移動。",
-            "createFolderHint": "放開以建立新資料夾",
             "newFolderName": "新資料夾名稱",
-            "folderNameHint": "按 Enter 確認，Escape 取消",
             "emptyFolderName": "請輸入資料夾名稱",
             "invalidFolderName": "資料夾名稱包含無效字元",
             "noDragState": "未找到待處理的拖放操作"
         },
         "empty": {
             "noFolders": "未找到資料夾",
-            "dragHint": "將項目拖到此處以建立資料夾",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "檢查此資料夾的更新",

@@ -1266,17 +1266,14 @@
         "dragDrop": {
             "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה.",
             "moveUnsupported": "העברה אינה נתמכת עבור פריט זה.",
-            "createFolderHint": "שחרר כדי ליצור תיקייה חדשה",
             "newFolderName": "שם תיקייה חדשה",
-            "folderNameHint": "הקש Enter לאישור, Escape לביטול",
             "emptyFolderName": "אנא הזן שם תיקייה",
             "invalidFolderName": "שם התיקייה מכיל תווים לא חוקיים",
             "noDragState": "לא נמצאה פעולת גרירה ממתינה"
         },
         "empty": {
             "noFolders": "לא נמצאו תיקיות",
-            "dragHint": "גרור פריטים לכאן כדי ליצור תיקיות",
-            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
+            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
         },
         "folderUpdateCheck": {
             "label": "בדוק עדכונים בתיקייה זו",
