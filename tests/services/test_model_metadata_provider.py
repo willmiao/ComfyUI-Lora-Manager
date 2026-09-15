@@ -139,6 +139,37 @@ async def test_fallback_continues_to_next_provider_on_rate_limit(monkeypatch):
 
 
 @pytest.mark.asyncio
+async def test_fallback_get_model_by_name_uses_supporting_provider():
+    """Name lookup is delegated to the first provider exposing get_model_by_name."""
+    provider_with_name = AsyncMock()
+    provider_with_name.get_model_by_name = AsyncMock(
+        return_value=({"id": "named"}, None)
+    )
+    provider_without_name = AsyncMock()  # lacks get_model_by_name entirely
+
+    fallback = FallbackMetadataProvider(
+        [("no_search", provider_without_name), ("searchable", provider_with_name)],
+    )
+
+    result, error = await fallback.get_model_by_name(
+        "anything2real_a",
+        model_types=("LORA", "Checkpoint"),
+    )
+
+    assert error is None
+    assert result == {"id": "named"}
+    provider_with_name.get_model_by_name.assert_awaited_once()
+    assert (
+        provider_with_name.get_model_by_name.await_args.args[0]
+        == "anything2real_a"
+    )
+    assert (
+        provider_with_name.get_model_by_name.await_args.kwargs["model_types"]
+        == ("LORA", "Checkpoint")
+    )
+
+
+@pytest.mark.asyncio
 async def test_rate_limit_retrying_provider_retries(monkeypatch):
     sleep_mock = AsyncMock()
     monkeypatch.setattr(provider_module.asyncio, "sleep", sleep_mock)
