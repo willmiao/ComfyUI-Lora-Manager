@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "Корень",
         "collapseAll": "Свернуть все папки",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "Скрыть боковую панель на этой странице",
         "showSidebar": "Показать боковую панель",
         "sidebarHiddenNotification": "Боковая панель скрыта на странице {page}",
-        "switchToListView": "Переключить на вид списка",
-        "switchToTreeView": "Переключить на древовидный вид",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "Включать вложенные папки",
-        "recursiveOff": "Только текущая папка",
-        "recursiveUnavailable": "Рекурсивный поиск доступен только в режиме дерева",
-        "collapseAllDisabled": "Недоступно в виде списка",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
             "moveUnsupported": "Перемещение этого элемента не поддерживается.",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "Папки не найдены",
-            "dragHint": "Перетащите элементы сюда, чтобы создать папки"
+            "dragHint": "Перетащите элементы сюда, чтобы создать папки",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "Проверить обновления в этой папке",

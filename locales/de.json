@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "Stammverzeichnis",
         "collapseAll": "Alle Ordner einklappen",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "Seitenleiste auf dieser Seite ausblenden",
         "showSidebar": "Seitenleiste anzeigen",
         "sidebarHiddenNotification": "Seitenleiste auf der Seite {page} ausgeblendet",
-        "switchToListView": "Zur Listenansicht wechseln",
-        "switchToTreeView": "Zur Baumansicht wechseln",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "Unterordner einbeziehen",
-        "recursiveOff": "Nur aktueller Ordner",
-        "recursiveUnavailable": "Rekursive Suche ist nur in der Baumansicht verfügbar",
-        "collapseAllDisabled": "Im Listenmodus nicht verfügbar",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
             "moveUnsupported": "Verschieben wird für dieses Element nicht unterstützt.",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "Keine Ordner gefunden",
-            "dragHint": "Elemente hierher ziehen, um Ordner zu erstellen"
+            "dragHint": "Elemente hierher ziehen, um Ordner zu erstellen",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "Auf Updates in diesem Ordner prüfen",

@@ -206,8 +206,32 @@
 
 <!-- Sidebar Folder Context Menu -->
 <div id="sidebarFolderContextMenu" class="context-menu">
+    <div class="context-menu-item" data-action="create-subfolder">
+        <i class="fas fa-folder-plus"></i> <span>{{ t('sidebar.newSubfolder') }}</span>
+    </div>
     <div class="context-menu-item" data-action="check-folder-updates">
         <i class="fas fa-bell"></i> <span>{{ t('sidebar.folderUpdateCheck.label') }}</span>
+    </div>
+</div>
+
+<!-- Sidebar View Options Menu -->
+<div id="sidebarViewOptionsMenu" class="context-menu">
+    <div class="context-menu-item" data-action="view-mode-tree">
+        <i class="fas fa-sitemap"></i> <span>{{ t('sidebar.treeView') }}</span>
+        <i class="fas fa-check check-indicator" style="margin-left:auto;display:none"></i>
+    </div>
+    <div class="context-menu-item" data-action="view-mode-list">
+        <i class="fas fa-list"></i> <span>{{ t('sidebar.listView') }}</span>
+        <i class="fas fa-check check-indicator" style="margin-left:auto;display:none"></i>
+    </div>
+    <div class="context-menu-separator"></div>
+    <div class="context-menu-item" data-action="toggle-recursive">
+        <i class="fas fa-code-branch"></i> <span>{{ t('sidebar.recursiveOn') }}</span>
+        <i class="fas fa-check check-indicator" style="margin-left:auto;display:none"></i>
+    </div>
+    <div class="context-menu-item" data-action="toggle-empty-folders">
+        <i class="fas fa-folder-open"></i> <span>{{ t('sidebar.showEmptyFolders') }}</span>
+        <i class="fas fa-check check-indicator" style="margin-left:auto;display:none"></i>
     </div>
 </div>
 

@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "Raíz",
         "collapseAll": "Colapsar todas las carpetas",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "Ocultar barra lateral en esta página",
         "showSidebar": "Mostrar barra lateral",
         "sidebarHiddenNotification": "Barra lateral oculta en la página {page}",
-        "switchToListView": "Cambiar a vista de lista",
-        "switchToTreeView": "Cambiar a vista de árbol",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "Incluir subcarpetas",
-        "recursiveOff": "Solo carpeta actual",
-        "recursiveUnavailable": "La búsqueda recursiva solo está disponible en la vista en árbol",
-        "collapseAllDisabled": "No disponible en vista de lista",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",
             "moveUnsupported": "El movimiento no es compatible con este elemento.",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "No se encontraron carpetas",
-            "dragHint": "Arrastra elementos aquí para crear carpetas"
+            "dragHint": "Arrastra elementos aquí para crear carpetas",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "Buscar actualizaciones en esta carpeta",

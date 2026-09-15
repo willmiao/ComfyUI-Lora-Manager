@@ -1246,15 +1246,23 @@
   "sidebar": {
     "modelRoot": "Root",
     "collapseAll": "Collapse All Folders",
+    "collapseAllDisabled": "Not available in list view",
     "hideOnThisPage": "Hide sidebar on this page",
     "showSidebar": "Show sidebar",
     "sidebarHiddenNotification": "Folder sidebar hidden on {page} page",
-    "switchToListView": "Switch to List View",
-    "switchToTreeView": "Switch to Tree View",
+    "viewOptions": "View options",
+    "treeView": "Tree view",
+    "listView": "List view",
     "recursiveOn": "Include subfolders",
-    "recursiveOff": "Current folder only",
-    "recursiveUnavailable": "Recursive search is available in tree view only",
-    "collapseAllDisabled": "Not available in list view",
+    "createFolder": "New folder",
+    "newSubfolder": "New subfolder",
+    "showEmptyFolders": "Show empty folders",
+    "createFolderResult": {
+      "success": "Folder \"{name}\" created",
+      "failed": "Failed to create folder: {message}",
+      "unsupported": "Folder creation is not supported on this page",
+      "noRoot": "No model root is configured"
+    },
     "dragDrop": {
       "unableToResolveRoot": "Unable to determine destination path for move.",
       "moveUnsupported": "Move is not supported for this item.",
@@ -1267,7 +1275,8 @@
     },
     "empty": {
       "noFolders": "No folders found",
-      "dragHint": "Drag items here to create folders"
+      "dragHint": "Drag items here to create folders",
+      "createHint": "Click the New Folder button above, or drag items here to create folders"
     },
     "folderUpdateCheck": {
       "label": "Check for updates in this folder",

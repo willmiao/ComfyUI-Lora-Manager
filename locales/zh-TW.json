@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "根目錄",
         "collapseAll": "全部摺疊資料夾",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "隱藏此頁面側邊欄",
         "showSidebar": "顯示側邊欄",
         "sidebarHiddenNotification": "{page}頁面的資料夾側邊欄已隱藏",
-        "switchToListView": "切換至列表檢視",
-        "switchToTreeView": "切換到樹狀檢視",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "包含子資料夾",
-        "recursiveOff": "僅目前資料夾",
-        "recursiveUnavailable": "遞迴搜尋僅能在樹狀檢視中使用",
-        "collapseAllDisabled": "列表檢視下不可用",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
             "moveUnsupported": "此項目不支援移動。",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "未找到資料夾",
-            "dragHint": "將項目拖到此處以建立資料夾"
+            "dragHint": "將項目拖到此處以建立資料夾",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "檢查此資料夾的更新",

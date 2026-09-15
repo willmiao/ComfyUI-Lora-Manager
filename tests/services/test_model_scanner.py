@@ -1501,6 +1501,53 @@ async def test_get_all_folders_backfills_when_never_recorded(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_add_known_folder_records_folder_and_parents(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+
+    await scanner.add_known_folder("new/nested")
+
+    assert "new" in cache.all_folders
+    assert "new/nested" in cache.all_folders
+    # Models-only folder list is unaffected by empty directory creation
+    assert "new" not in cache.folders
+    # Idempotent: recording the same folder again keeps the list stable
+    await scanner.add_known_folder("new/nested")
+    assert cache.all_folders.count("new") == 1
+
+
+@pytest.mark.asyncio
+async def test_add_known_folder_noop_without_recorded_folders(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    # Legacy snapshot without recorded folders: the scheduled backfill walk
+    # discovers the directory from disk instead.
+    await scanner.add_known_folder("new")
+
+    assert cache.all_folders is None
+
+
+@pytest.mark.asyncio
+async def test_add_known_folder_ignores_empty_input(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    before = list(cache.all_folders)
+
+    await scanner.add_known_folder("")
+    await scanner.add_known_folder("/")
+
+    assert cache.all_folders == before
+
+
+@pytest.mark.asyncio
 async def test_get_all_folders_updated_after_move(tmp_path: Path):
     first, _, _ = _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)

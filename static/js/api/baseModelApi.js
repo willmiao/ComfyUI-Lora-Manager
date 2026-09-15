@@ -1295,9 +1295,13 @@ export class BaseModelApiClient {
         }
     }
 
-    async fetchModelFolders() {
+    async fetchModelFolders(options = {}) {
         try {
-            const response = await fetch(this.apiConfig.endpoints.folders);
+            const { includeEmpty = false } = options || {};
+            const url = includeEmpty
+                ? `${this.apiConfig.endpoints.folders}?include_empty=1`
+                : this.apiConfig.endpoints.folders;
+            const response = await fetch(url);
             if (!response.ok) {
                 throw new Error(`Failed to fetch ${this.apiConfig.config.displayName} folders`);
             }
@@ -1306,6 +1310,24 @@ export class BaseModelApiClient {
             console.error('Error fetching model folders:', error);
             throw error;
         }
+    }
+
+    async createFolder(folderPath) {
+        const response = await fetch(this.apiConfig.endpoints.createFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder_path: folderPath })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            throw new Error(result.error || `Failed to create folder`);
+        }
+
+        return result;
     }
 
     async fetchUnifiedFolderTree(options = {}) {

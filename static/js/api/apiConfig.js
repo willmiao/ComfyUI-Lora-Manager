@@ -22,6 +22,7 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: true,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'loras.html'
     },
     [MODEL_TYPES.CHECKPOINT]: {
@@ -31,6 +32,7 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: false,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'checkpoints.html'
     },
     [MODEL_TYPES.EMBEDDING]: {
@@ -40,6 +42,7 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: true,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'embeddings.html'
     },
     [MODEL_TYPES.OTHER]: {
@@ -49,6 +52,7 @@ export const MODEL_CONFIG = {
         supportsLetterFilter: false,
         supportsBulkOperations: true,
         supportsMove: true,
+        supportsFolderManagement: true,
         templateName: 'other.html'
     }
 };
@@ -79,6 +83,7 @@ export function getApiEndpoints(modelType) {
         // Move operations (now common for all model types that support move)
         moveModel: `/api/lm/${modelType}/move_model`,
         moveBulk: `/api/lm/${modelType}/move_models_bulk`,
+        createFolder: `/api/lm/${modelType}/create-folder`,
 
         // CivitAI integration
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,

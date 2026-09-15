@@ -473,17 +473,69 @@ class ModelFileService:
 
 class ModelMoveService:
     """Service for handling individual model moves"""
-    
+
     def __init__(self, scanner, model_type: str):
         """Initialize the service
-        
+
         Args:
             scanner: Model scanner instance
             model_type: Type of model (e.g., 'lora', 'checkpoint')
         """
         self.scanner = scanner
         self.model_type = model_type
-    
+
+    async def create_folder(self, folder_path: str) -> Dict[str, Any]:
+        """Create a directory inside the model library roots.
+
+        Args:
+            folder_path: Absolute path of the directory to create (business
+                path — symlinks are not resolved)
+
+        Returns:
+            Dictionary with success flag, the created path and the
+            library-relative folder name used by folder trees.
+        """
+        try:
+            if not folder_path or not str(folder_path).strip():
+                return {"success": False, "error": "Folder path is required"}
+
+            _require_path_in_library_roots(folder_path, self.scanner, label="Folder path")
+
+            absolute_path = os.path.abspath(folder_path)
+            already_exists = os.path.isdir(absolute_path)
+            os.makedirs(absolute_path, exist_ok=True)
+
+            relative_folder = self._calculate_relative_folder(absolute_path)
+            if relative_folder:
+                await self.scanner.add_known_folder(relative_folder)
+
+            return {
+                "success": True,
+                "folder_path": absolute_path.replace(os.sep, "/"),
+                "folder": relative_folder,
+                "created": not already_exists,
+            }
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+        except Exception as exc:
+            logger.error(f"Error creating folder: {exc}", exc_info=True)
+            return {"success": False, "error": str(exc)}
+
+    def _calculate_relative_folder(self, absolute_path: str) -> str:
+        """Return the library-relative folder for an absolute directory path."""
+        normalized = os.path.abspath(absolute_path)
+        for root in self.scanner.get_model_roots():
+            abs_root = os.path.abspath(root)
+            try:
+                rel = os.path.relpath(normalized, abs_root)
+            except ValueError:
+                continue
+            if rel == ".":
+                return ""
+            if not rel.startswith(".."):
+                return rel.replace(os.sep, "/")
+        return ""
+
     async def move_model(self, file_path: str, target_path: str, use_default_paths: bool = False) -> Dict[str, Any]:
         """Move a single model file
         

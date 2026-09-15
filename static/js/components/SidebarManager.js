@@ -44,6 +44,9 @@ export class SidebarManager {
         this.initializationPromise = null;
         this.isCreatingFolder = false;
         this._pendingDragState = null; // 用于保存拖拽创建文件夹时的状态
+        this.showEmptyFolders = false;
+        this.nonEmptyFolders = null; // models-only folder set used to dim empty nodes
+        this._createFolderBasePath = null;
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -56,6 +59,9 @@ export class SidebarManager {
         this.handleDisplayModeToggle = this.handleDisplayModeToggle.bind(this);
         this.handleFolderListClick = this.handleFolderListClick.bind(this);
         this.handleRecursiveToggle = this.handleRecursiveToggle.bind(this);
+        this.handleEmptyFoldersToggle = this.handleEmptyFoldersToggle.bind(this);
+        this.handleCreateFolderButton = this.handleCreateFolderButton.bind(this);
+        this.handleViewOptionsButton = this.handleViewOptionsButton.bind(this);
         this.handleCardDragStart = this.handleCardDragStart.bind(this);
         this.handleCardDragEnd = this.handleCardDragEnd.bind(this);
         this.handleFolderDragEnter = this.handleFolderDragEnter.bind(this);
@@ -138,6 +144,9 @@ export class SidebarManager {
         this.apiClient = null;
         this.isInitialized = false;
         this.recursiveSearchEnabled = true;
+        this.showEmptyFolders = false;
+        this.nonEmptyFolders = null;
+        this._createFolderBasePath = null;
 
         // Reset container margin
         const container = document.querySelector('.container');
@@ -153,16 +162,10 @@ export class SidebarManager {
     }
 
     removeEventHandlers() {
-        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         const folderTree = document.getElementById('sidebarFolderTree');
         const sidebarBreadcrumbNav = document.getElementById('sidebarBreadcrumbNav');
         const sidebarHeader = document.getElementById('sidebarHeader');
-        const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
-        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
 
-        if (collapseAllBtn) {
-            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
-        }
         if (folderTree) {
             folderTree.removeEventListener('click', this.handleTreeClick);
             folderTree.removeEventListener('contextmenu', this.handleTreeContextMenu);
@@ -181,11 +184,20 @@ export class SidebarManager {
         // Remove resize event handler
         window.removeEventListener('resize', this.updateContainerMargin);
 
-        if (displayModeToggleBtn) {
-            displayModeToggleBtn.removeEventListener('click', this.handleDisplayModeToggle);
+        const viewOptionsBtn = document.getElementById('sidebarViewOptions');
+        if (viewOptionsBtn) {
+            viewOptionsBtn.removeEventListener('click', this.handleViewOptionsButton);
         }
-        if (recursiveToggleBtn) {
-            recursiveToggleBtn.removeEventListener('click', this.handleRecursiveToggle);
+        this._closeViewOptionsMenu();
+
+        const createFolderBtn = document.getElementById('sidebarCreateFolder');
+        if (createFolderBtn) {
+            createFolderBtn.removeEventListener('click', this.handleCreateFolderButton);
+        }
+
+        const collapseAllBtn = document.getElementById('sidebarCollapseAll');
+        if (collapseAllBtn) {
+            collapseAllBtn.removeEventListener('click', this.handleCollapseAll);
         }
 
         const hideToggle = document.getElementById('sidebarHideToggle');
@@ -773,16 +785,20 @@ export class SidebarManager {
         }
     }
 
-    showCreateFolderInput() {
+    showCreateFolderInput(basePath = null) {
         console.log('[SidebarManager] showCreateFolderInput called');
         this.isCreatingFolder = true;
-        
+
+        // The folder is created under the given base path; falls back to the
+        // currently selected folder (drag-and-drop flow) or the root.
+        this._createFolderBasePath = basePath !== null ? basePath : (this.selectedPath || '');
+
         // 立即保存拖拽状态，防止后续事件（如blur）清空状态
-        this._pendingDragState = {
-            filePaths: this.draggedFilePaths ? [...this.draggedFilePaths] : null,
+        this._pendingDragState = this.draggedFilePaths && this.draggedFilePaths.length > 0 ? {
+            filePaths: [...this.draggedFilePaths],
             rootPath: this.draggedRootPath,
             fromBulk: this.draggedFromBulk
-        };
+        } : null;
         console.log('[SidebarManager] saved pending drag state:', this._pendingDragState);
         
         this.hideCreateFolderZone();
@@ -907,23 +923,24 @@ export class SidebarManager {
             return;
         }
 
-        // Build target path - use selected path as parent, or root if none selected
-        const parentPath = this.selectedPath || '';
+        // Build target path - use the base path captured when the input was
+        // opened (context-menu folder or current selection), or root
+        const parentPath = this._createFolderBasePath || '';
         const targetRelativePath = parentPath ? `${parentPath}/${folderName}` : folderName;
         console.log('[SidebarManager] targetRelativePath:', targetRelativePath);
 
         // 使用 showCreateFolderInput 时保存的拖拽状态
         const pendingState = this._pendingDragState;
         console.log('[SidebarManager] using pending drag state:', pendingState);
-        
-        if (!pendingState || !pendingState.filePaths || pendingState.filePaths.length === 0) {
-            console.log('[SidebarManager] no pending drag state found, cannot proceed');
-            showToast('sidebar.dragDrop.noDragState', {}, 'error');
-            this.hideCreateFolderInput();
-            return;
-        }
 
         this.hideCreateFolderInput();
+
+        if (!pendingState || !pendingState.filePaths || pendingState.filePaths.length === 0) {
+            // Standalone creation (header button / context menu): create an
+            // empty folder on disk instead of moving dragged models into it.
+            await this._createFolder(targetRelativePath, parentPath);
+            return;
+        }
 
         // Perform the move with saved state
         console.log('[SidebarManager] calling performDragMove with pending state');
@@ -945,6 +962,65 @@ export class SidebarManager {
         this._pendingDragState = null;
         this.resetDragState();
         this.clearAllDropHighlights();
+    }
+
+    async _createFolder(targetRelativePath, parentPath) {
+        if (!this._supportsFolderManagement() || typeof this.apiClient.createFolder !== 'function') {
+            showToast('sidebar.createFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            const rootsData = await this.apiClient.fetchModelRoots();
+            const roots = rootsData?.roots || [];
+            const root = this._resolveDefaultRoot(roots);
+            if (!root) {
+                showToast('sidebar.createFolderResult.noRoot', {}, 'error');
+                return false;
+            }
+
+            const absolutePath = this.combineRootAndRelativePath(root, targetRelativePath);
+            const result = await this.apiClient.createFolder(absolutePath);
+
+            // The new folder has no models yet — enable empty-folder display
+            // so it shows up in the tree immediately.
+            if (!this.showEmptyFolders) {
+                this.showEmptyFolders = true;
+                setStorageItem(`${this.pageType}_showEmptyFolders`, true);
+                this.updateViewOptionsMenu();
+            }
+
+            // Expand the parent folder to reveal the new node
+            if (parentPath) {
+                this.expandedNodes.add(parentPath);
+                this.saveExpandedState();
+            }
+
+            await this.refresh();
+
+            showToast('sidebar.createFolderResult.success', { name: result.folder || targetRelativePath }, 'success');
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error creating folder:', error);
+            showToast('sidebar.createFolderResult.failed', { message: error.message || 'Unknown error' }, 'error');
+            return false;
+        }
+    }
+
+    _resolveDefaultRoot(roots) {
+        if (!roots || roots.length === 0) {
+            return '';
+        }
+
+        const singularName = this.apiClient?.apiConfig?.config?.singularName;
+        const defaultRoot = singularName
+            ? state.global?.settings?.[`default_${singularName}_root`]
+            : '';
+        if (defaultRoot && roots.includes(defaultRoot)) {
+            return defaultRoot;
+        }
+
+        return roots[0];
     }
 
     handleCreateFolderCancel() {
@@ -979,16 +1055,35 @@ export class SidebarManager {
             sidebarHeader.addEventListener('click', this.handleSidebarHeaderClick);
         }
 
+        // View options menu button
+        const viewOptionsBtn = document.getElementById('sidebarViewOptions');
+        if (viewOptionsBtn) {
+            viewOptionsBtn.addEventListener('click', this.handleViewOptionsButton);
+        }
+
+        // View options menu items
+        const viewOptionsMenu = document.getElementById('sidebarViewOptionsMenu');
+        if (viewOptionsMenu) {
+            viewOptionsMenu.addEventListener('click', (e) => {
+                const item = e.target.closest('.context-menu-item');
+                if (!item || item.classList.contains('disabled')) return;
+                const action = item.dataset.action;
+                if (action) {
+                    this.handleViewOptionsAction(action);
+                }
+            });
+        }
+
+        // Create folder button
+        const createFolderBtn = document.getElementById('sidebarCreateFolder');
+        if (createFolderBtn) {
+            createFolderBtn.addEventListener('click', this.handleCreateFolderButton);
+        }
+
         // Collapse all button
         const collapseAllBtn = document.getElementById('sidebarCollapseAll');
         if (collapseAllBtn) {
             collapseAllBtn.addEventListener('click', this.handleCollapseAll);
-        }
-
-        // Recursive toggle button
-        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
-        if (recursiveToggleBtn) {
-            recursiveToggleBtn.addEventListener('click', this.handleRecursiveToggle);
         }
 
         // Tree click handler
@@ -1024,12 +1119,6 @@ export class SidebarManager {
 
         // Add dedicated resize listener for container margin updates
         window.addEventListener('resize', this.updateContainerMargin);
-
-        // Display mode toggle button
-        const displayModeToggleBtn = document.getElementById('sidebarDisplayModeToggle');
-        if (displayModeToggleBtn) {
-            displayModeToggleBtn.addEventListener('click', this.handleDisplayModeToggle);
-        }
 
         // Sidebar folder context menu click handler
         const sidebarFolderMenu = document.getElementById('sidebarFolderContextMenu');
@@ -1071,7 +1160,7 @@ export class SidebarManager {
     }
 
     handleCollapseAll(event) {
-        event.stopPropagation();
+        event?.stopPropagation();
         this.expandedNodes.clear();
         this.renderFolderDisplay();
         this.saveExpandedState();
@@ -1173,12 +1262,35 @@ export class SidebarManager {
 
     async loadFolderTree() {
         try {
+            const includeEmpty = this.showEmptyFolders && this._supportsFolderManagement();
             if (this.displayMode === 'tree') {
-                const response = await this.apiClient.fetchUnifiedFolderTree();
-                this.treeData = response.tree || {};
+                if (includeEmpty) {
+                    // Fetch the models-only folder list alongside so empty
+                    // directories can be dimmed in the tree.
+                    const [treeResponse, foldersResponse] = await Promise.all([
+                        this.apiClient.fetchUnifiedFolderTree({ includeEmpty: true }),
+                        this.apiClient.fetchModelFolders(),
+                    ]);
+                    this.treeData = treeResponse.tree || {};
+                    this.nonEmptyFolders = this._buildNonEmptyFolderSet(foldersResponse.folders || []);
+                } else {
+                    const response = await this.apiClient.fetchUnifiedFolderTree();
+                    this.treeData = response.tree || {};
+                    this.nonEmptyFolders = null;
+                }
             } else {
-                const response = await this.apiClient.fetchModelFolders();
-                this.foldersList = response.folders || [];
+                if (includeEmpty) {
+                    const [allFoldersResponse, foldersResponse] = await Promise.all([
+                        this.apiClient.fetchModelFolders({ includeEmpty: true }),
+                        this.apiClient.fetchModelFolders(),
+                    ]);
+                    this.foldersList = allFoldersResponse.folders || [];
+                    this.nonEmptyFolders = this._buildNonEmptyFolderSet(foldersResponse.folders || []);
+                } else {
+                    const response = await this.apiClient.fetchModelFolders();
+                    this.foldersList = response.folders || [];
+                    this.nonEmptyFolders = null;
+                }
             }
             this.folderTreeLoaded = true;
             this.renderFolderDisplay();
@@ -1187,6 +1299,27 @@ export class SidebarManager {
             console.error('Failed to load folder data:', error);
             this.renderEmptyState();
         }
+    }
+
+    _supportsFolderManagement() {
+        return Boolean(this.apiClient?.apiConfig?.config?.supportsFolderManagement);
+    }
+
+    // The models-only folder list only contains directories that directly
+    // hold model files. Expand it with every ancestor prefix so a folder
+    // whose subtree contains models (e.g. "a" with models in "a/b") is not
+    // dimmed as empty — the "empty" style means "no models anywhere below".
+    _buildNonEmptyFolderSet(folders) {
+        const set = new Set();
+        for (const folder of folders) {
+            set.add(folder);
+            if (!folder) continue;
+            const parts = folder.split('/');
+            for (let i = 1; i < parts.length; i++) {
+                set.add(parts.slice(0, i).join('/'));
+            }
+        }
+        return set;
     }
 
     folderExistsInTree(path) {
@@ -1236,6 +1369,7 @@ export class SidebarManager {
             const hasChildren = Object.keys(children).length > 0;
             const isExpanded = this.expandedNodes.has(currentPath);
             const isSelected = this.selectedPath === currentPath;
+            const isEmpty = this.nonEmptyFolders ? !this.nonEmptyFolders.has(currentPath) : false;
 
             const escapedPath = escapeAttribute(currentPath);
             const escapedFolderName = escapeHtml(folderName);
@@ -1243,12 +1377,12 @@ export class SidebarManager {
 
             return `
                 <div class="sidebar-tree-node" data-path="${escapedPath}">
-                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''}" data-path="${escapedPath}">
+                    <div class="sidebar-tree-node-content ${isSelected ? 'selected' : ''} ${isEmpty ? 'empty' : ''}" data-path="${escapedPath}">
                         <div class="sidebar-tree-expand-icon ${isExpanded ? 'expanded' : ''}" 
                              style="${hasChildren ? '' : 'opacity: 0; pointer-events: none;'}">
                             <i class="fas fa-chevron-right"></i>
                         </div>
-                        <i class="fas fa-folder sidebar-tree-folder-icon"></i>
+                        <i class="fas fa-folder${isEmpty ? '-open' : ''} sidebar-tree-folder-icon"></i>
                         <div class="sidebar-tree-folder-name" title="${escapedTitle}">${escapedFolderName}</div>
                     </div>
                     ${hasChildren ? `
@@ -1265,13 +1399,19 @@ export class SidebarManager {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
 
+        // Pages with folder management (model libraries) also offer the
+        // header create button; recipes can only create folders via drag.
+        const hintKey = this._supportsFolderManagement()
+            ? 'sidebar.empty.createHint'
+            : 'sidebar.empty.dragHint';
+
         folderTree.innerHTML = `
             <div class="sidebar-tree-placeholder">
                 <i class="fas fa-folder-open"></i>
                 <div>${translate('sidebar.empty.noFolders', {}, 'No folders found')}</div>
                 <div class="sidebar-empty-hint">
                     <i class="fas fa-hand-pointer"></i>
-                    ${translate('sidebar.empty.dragHint', {}, 'Drag items here to create folders')}
+                    ${translate(hintKey, {}, 'Drag items here to create folders')}
                 </div>
             </div>
         `;
@@ -1289,14 +1429,15 @@ export class SidebarManager {
         const foldersHtml = this.foldersList.map(folder => {
             const displayName = folder === '' ? '/' : folder;
             const isSelected = this.selectedPath === folder;
+            const isEmpty = this.nonEmptyFolders ? !this.nonEmptyFolders.has(folder) : false;
             const escapedPath = escapeAttribute(folder);
             const escapedDisplayName = escapeHtml(displayName);
             const escapedTitle = escapeAttribute(displayName);
 
             return `
                 <div class="sidebar-folder-item ${isSelected ? 'selected' : ''}" data-path="${escapedPath}">
-                    <div class="sidebar-node-content" data-path="${escapedPath}">
-                        <i class="fas fa-folder sidebar-folder-icon"></i>
+                    <div class="sidebar-node-content ${isEmpty ? 'empty' : ''}" data-path="${escapedPath}">
+                        <i class="fas fa-folder${isEmpty ? '-open' : ''} sidebar-folder-icon"></i>
                         <div class="sidebar-folder-name" title="${escapedTitle}">${escapedDisplayName}</div>
                     </div>
                 </div>
@@ -1355,9 +1496,17 @@ export class SidebarManager {
 
     _showFolderContextMenu(x, y, path) {
         this._closeFolderContextMenu();
+        this._closeViewOptionsMenu();
 
         const menu = document.getElementById('sidebarFolderContextMenu');
         if (!menu) return;
+
+        // Folder creation is only available on pages backed by model library
+        // roots (not recipes, which have no on-disk folder management).
+        const createItem = menu.querySelector('[data-action="create-subfolder"]');
+        if (createItem) {
+            createItem.style.display = this._supportsFolderManagement() ? '' : 'none';
+        }
 
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
@@ -1404,6 +1553,9 @@ export class SidebarManager {
 
     async _performFolderAction(action, path) {
         switch (action) {
+            case 'create-subfolder':
+                this.showCreateFolderInput(path);
+                break;
             case 'check-folder-updates':
                 try {
                     await performFolderUpdateCheck(path);
@@ -1488,18 +1640,17 @@ export class SidebarManager {
     }
 
     handleDisplayModeToggle(event) {
-        event.stopPropagation();
+        event?.stopPropagation();
         this.displayMode = this.displayMode === 'tree' ? 'list' : 'tree';
-        this.updateDisplayModeButton();
+        this.updateViewOptionsMenu();
         this.updateCollapseAllButton();
-        this.updateRecursiveToggleButton();
         this.updateSearchRecursiveOption();
         this.saveDisplayMode();
         this.loadFolderTree(); // Reload with new display mode
     }
 
     async handleRecursiveToggle(event) {
-        event.stopPropagation();
+        event?.stopPropagation();
 
         if (this.displayMode !== 'tree') {
             return;
@@ -1508,7 +1659,7 @@ export class SidebarManager {
         this.recursiveSearchEnabled = !this.recursiveSearchEnabled;
         setStorageItem(`${this.pageType}_recursiveSearch`, this.recursiveSearchEnabled);
         this.updateSearchRecursiveOption();
-        this.updateRecursiveToggleButton();
+        this.updateViewOptionsMenu();
 
         if (this.pageControls && typeof this.pageControls.resetAndReload === 'function') {
             try {
@@ -1519,59 +1670,149 @@ export class SidebarManager {
         }
     }
 
-    updateDisplayModeButton() {
-        const displayModeBtn = document.getElementById('sidebarDisplayModeToggle');
-        if (displayModeBtn) {
-            const icon = displayModeBtn.querySelector('i');
-            if (this.displayMode === 'tree') {
-                icon.className = 'fas fa-sitemap';
-                displayModeBtn.title = translate('sidebar.switchToListView');
-            } else {
-                icon.className = 'fas fa-list';
-                displayModeBtn.title = translate('sidebar.switchToTreeView');
+    handleEmptyFoldersToggle(event) {
+        event?.stopPropagation();
+
+        if (!this._supportsFolderManagement()) {
+            return;
+        }
+
+        this.showEmptyFolders = !this.showEmptyFolders;
+        setStorageItem(`${this.pageType}_showEmptyFolders`, this.showEmptyFolders);
+        this.updateViewOptionsMenu();
+        this.loadFolderTree();
+    }
+
+    handleCreateFolderButton(event) {
+        event.stopPropagation();
+
+        if (!this._supportsFolderManagement()) {
+            return;
+        }
+
+        this.showCreateFolderInput();
+    }
+
+    handleViewOptionsButton(event) {
+        event.stopPropagation();
+
+        const menu = document.getElementById('sidebarViewOptionsMenu');
+        if (!menu) return;
+
+        if (menu.style.display === 'block') {
+            this._closeViewOptionsMenu();
+            return;
+        }
+
+        this._closeFolderContextMenu();
+        this.updateViewOptionsMenu();
+
+        const anchor = event.currentTarget;
+        const rect = anchor.getBoundingClientRect();
+        menu.style.display = 'block';
+        // Right-align the menu under the button so it stays within the sidebar
+        menu.style.left = `${Math.max(8, rect.right - menu.offsetWidth)}px`;
+        menu.style.top = `${rect.bottom + 4}px`;
+
+        this._viewOptionsCloseHandler = (e) => {
+            if (!menu.contains(e.target)) {
+                this._closeViewOptionsMenu();
             }
+        };
+        setTimeout(() => {
+            document.addEventListener('click', this._viewOptionsCloseHandler);
+        }, 0);
+    }
+
+    _closeViewOptionsMenu() {
+        const menu = document.getElementById('sidebarViewOptionsMenu');
+        if (menu) {
+            menu.style.display = 'none';
+        }
+        if (this._viewOptionsCloseHandler) {
+            document.removeEventListener('click', this._viewOptionsCloseHandler);
+            this._viewOptionsCloseHandler = null;
+        }
+    }
+
+    handleViewOptionsAction(action) {
+        switch (action) {
+            case 'view-mode-tree':
+                if (this.displayMode !== 'tree') {
+                    this.handleDisplayModeToggle();
+                }
+                this._closeViewOptionsMenu();
+                break;
+            case 'view-mode-list':
+                if (this.displayMode !== 'list') {
+                    this.handleDisplayModeToggle();
+                }
+                this._closeViewOptionsMenu();
+                break;
+            case 'toggle-recursive':
+                // Keep the menu open so view preferences can be combined
+                this.handleRecursiveToggle();
+                break;
+            case 'toggle-empty-folders':
+                this.handleEmptyFoldersToggle();
+                break;
+            default:
+                console.warn('Unknown view options action:', action);
+        }
+    }
+
+    updateFolderManagementButtons() {
+        const supported = this._supportsFolderManagement();
+
+        const createFolderBtn = document.getElementById('sidebarCreateFolder');
+        if (createFolderBtn) {
+            createFolderBtn.style.display = supported ? '' : 'none';
+        }
+
+        this.updateViewOptionsMenu();
+    }
+
+    updateViewOptionsMenu() {
+        const menu = document.getElementById('sidebarViewOptionsMenu');
+        if (!menu) return;
+
+        const setCheck = (action, checked) => {
+            const check = menu.querySelector(`[data-action="${action}"] .check-indicator`);
+            if (check) {
+                check.style.display = checked ? 'block' : 'none';
+            }
+        };
+        const setDisabled = (action, disabled) => {
+            const item = menu.querySelector(`[data-action="${action}"]`);
+            if (item) {
+                item.classList.toggle('disabled', disabled);
+            }
+        };
+
+        const isTreeMode = this.displayMode === 'tree';
+        setCheck('view-mode-tree', isTreeMode);
+        setCheck('view-mode-list', !isTreeMode);
+        setCheck('toggle-recursive', isTreeMode && this.recursiveSearchEnabled);
+        setDisabled('toggle-recursive', !isTreeMode);
+        setCheck('toggle-empty-folders', this.showEmptyFolders && this._supportsFolderManagement());
+
+        // Empty-folder display requires a model library backend
+        const emptyFoldersItem = menu.querySelector('[data-action="toggle-empty-folders"]');
+        if (emptyFoldersItem) {
+            emptyFoldersItem.style.display = this._supportsFolderManagement() ? '' : 'none';
         }
     }
 
     updateCollapseAllButton() {
         const collapseAllBtn = document.getElementById('sidebarCollapseAll');
-        if (collapseAllBtn) {
-            if (this.displayMode === 'list') {
-                collapseAllBtn.disabled = true;
-                collapseAllBtn.classList.add('disabled');
-                collapseAllBtn.title = translate('sidebar.collapseAllDisabled');
-            } else {
-                collapseAllBtn.disabled = false;
-                collapseAllBtn.classList.remove('disabled');
-                collapseAllBtn.title = translate('sidebar.collapseAll');
-            }
-        }
-    }
+        if (!collapseAllBtn) return;
 
-    updateRecursiveToggleButton() {
-        const recursiveToggleBtn = document.getElementById('sidebarRecursiveToggle');
-        if (!recursiveToggleBtn) return;
-
-        const icon = recursiveToggleBtn.querySelector('i');
         const isTreeMode = this.displayMode === 'tree';
-        const isActive = isTreeMode && this.recursiveSearchEnabled;
-
-        recursiveToggleBtn.classList.toggle('active', isActive);
-        recursiveToggleBtn.classList.toggle('disabled', !isTreeMode);
-        recursiveToggleBtn.setAttribute('aria-pressed', isActive ? 'true' : 'false');
-        recursiveToggleBtn.setAttribute('aria-disabled', isTreeMode ? 'false' : 'true');
-
-        if (icon) {
-            icon.className = 'fas fa-code-branch';
-        }
-
-        if (!isTreeMode) {
-            recursiveToggleBtn.title = translate('sidebar.recursiveUnavailable');
-        } else if (this.recursiveSearchEnabled) {
-            recursiveToggleBtn.title = translate('sidebar.recursiveOn');
-        } else {
-            recursiveToggleBtn.title = translate('sidebar.recursiveOff');
-        }
+        collapseAllBtn.disabled = !isTreeMode;
+        collapseAllBtn.classList.toggle('disabled', !isTreeMode);
+        collapseAllBtn.title = isTreeMode
+            ? translate('sidebar.collapseAll')
+            : translate('sidebar.collapseAllDisabled', {}, 'Not available in list view');
     }
 
     updateSearchRecursiveOption() {
@@ -1800,11 +2041,11 @@ export class SidebarManager {
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
         this.recursiveSearchEnabled = recursiveSearchEnabled;
+        this.showEmptyFolders = getStorageItem(`${this.pageType}_showEmptyFolders`, false);
 
-        this.updateDisplayModeButton();
-        this.updateCollapseAllButton();
         this.updateSearchRecursiveOption();
-        this.updateRecursiveToggleButton();
+        this.updateFolderManagementButtons();
+        this.updateCollapseAllButton();
     }
 
     /**

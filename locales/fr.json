@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "Racine",
         "collapseAll": "Réduire tous les dossiers",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "Masquer la barre latérale sur cette page",
         "showSidebar": "Afficher la barre latérale",
         "sidebarHiddenNotification": "Barre latérale masquée sur la page {page}",
-        "switchToListView": "Passer en vue liste",
-        "switchToTreeView": "Passer en vue arborescence",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "Inclure les sous-dossiers",
-        "recursiveOff": "Dossier actuel uniquement",
-        "recursiveUnavailable": "La recherche récursive n'est disponible qu'en vue arborescente",
-        "collapseAllDisabled": "Non disponible en vue liste",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
             "moveUnsupported": "Le déplacement n'est pas pris en charge pour cet élément.",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "Aucun dossier trouvé",
-            "dragHint": "Faites glisser des éléments ici pour créer des dossiers"
+            "dragHint": "Faites glisser des éléments ici pour créer des dossiers",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "Vérifier les mises à jour dans ce dossier",

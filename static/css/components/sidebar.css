@@ -228,6 +228,18 @@
     border-left-color: var(--lora-accent);
 }
 
+/* Empty folders (no models) shown when the empty-folders toggle is on */
+.sidebar-tree-node-content.empty .sidebar-tree-folder-name,
+.sidebar-node-content.empty .sidebar-folder-name {
+    opacity: 0.55;
+    font-style: italic;
+}
+
+.sidebar-tree-node-content.empty .sidebar-tree-folder-icon,
+.sidebar-node-content.empty .sidebar-folder-icon {
+    opacity: 0.45;
+}
+
 .sidebar-tree-node-content.drop-target .sidebar-tree-folder-icon,
 .sidebar-node-content.drop-target .sidebar-folder-icon {
     color: var(--lora-accent);
@@ -666,10 +678,11 @@
 
 /* Create folder input container */
 .sidebar-create-folder-input-container {
-    position: absolute;
-    bottom: 16px;
-    left: 16px;
-    right: 16px;
+    /* Sticky footer inside the scroll container: always visible at the
+       bottom of the viewport regardless of tree scroll position */
+    position: sticky;
+    bottom: 8px;
+    margin: 8px 16px 0;
     padding: 12px;
     background: var(--bg-color);
     border: 1px solid var(--border-color);
@@ -703,6 +716,7 @@
 
 .sidebar-create-folder-input {
     flex: 1;
+    min-width: 0; /* allow the input to shrink below its intrinsic width */
     padding: 6px 10px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);

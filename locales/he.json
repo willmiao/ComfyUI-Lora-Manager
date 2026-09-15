@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "שורש",
         "collapseAll": "כווץ את כל התיקיות",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "הסתר סרגל צד בדף זה",
         "showSidebar": "הצג סרגל צד",
         "sidebarHiddenNotification": "סרגל הצד מוסתר בדף {page}",
-        "switchToListView": "עבור לתצוגת רשימה",
-        "switchToTreeView": "תצוגת עץ",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "כלול תיקיות משנה",
-        "recursiveOff": "רק התיקייה הנוכחית",
-        "recursiveUnavailable": "חיפוש רקורסיבי זמין רק בתצוגת עץ",
-        "collapseAllDisabled": "לא זמין בתצוגת רשימה",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה.",
             "moveUnsupported": "העברה אינה נתמכת עבור פריט זה.",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "לא נמצאו תיקיות",
-            "dragHint": "גרור פריטים לכאן כדי ליצור תיקיות"
+            "dragHint": "גרור פריטים לכאן כדי ליצור תיקיות",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "בדוק עדכונים בתיקייה זו",

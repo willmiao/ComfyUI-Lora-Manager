@@ -1477,6 +1477,34 @@ class ModelScanner:
 
         return sorted(folders, key=lambda x: x.lower())
 
+    async def add_known_folder(self, folder: str) -> None:
+        """Record a folder (and its parents) in the known folder list.
+
+        Called when a directory is created between scans (e.g. via the
+        create-folder API) so folder trees reflect it immediately without
+        waiting for the next reconciliation. When ``all_folders`` has not
+        been recorded yet (legacy snapshot), this is a no-op — the scheduled
+        backfill walk discovers the directory from disk instead.
+        """
+        normalized = folder.replace("\\", "/").strip("/")
+        parts = [part for part in normalized.split("/") if part]
+        if not parts:
+            return
+        cache = self._cache
+        if cache is None:
+            return
+        recorded = getattr(cache, "all_folders", None)
+        if recorded is None:
+            return
+        known = set(recorded)
+        for i in range(1, len(parts) + 1):
+            known.add("/".join(parts[:i]))
+        updated = sorted(known, key=lambda x: x.lower())
+        if updated != list(recorded):
+            cache.all_folders = updated
+            await self._persist_current_cache()
+            self.bump_cache_version()
+
     def _schedule_all_folders_backfill(self) -> None:
         """Kick off a one-shot background folder walk if none is running."""
         if self._all_folders_backfill_running:

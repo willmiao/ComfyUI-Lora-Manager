@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "루트",
         "collapseAll": "모든 폴더 접기",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "이 페이지에서 사이드바 숨기기",
         "showSidebar": "사이드바 표시",
         "sidebarHiddenNotification": "{page} 페이지에서 사이드바가 숨겨져 있습니다",
-        "switchToListView": "목록 보기로 전환",
-        "switchToTreeView": "트리 보기로 전환",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "하위 폴더 포함",
-        "recursiveOff": "현재 폴더만",
-        "recursiveUnavailable": "재귀 검색은 트리 보기에서만 사용할 수 있습니다",
-        "collapseAllDisabled": "목록 보기에서는 사용할 수 없습니다",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "이동할 대상 경로를 확인할 수 없습니다.",
             "moveUnsupported": "이 항목은 이동을 지원하지 않습니다.",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "폴더를 찾을 수 없습니다",
-            "dragHint": "항목을 여기로 드래그하여 폴더를 만듭니다"
+            "dragHint": "항목을 여기로 드래그하여 폴더를 만듭니다",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "이 폴더의 업데이트 확인",

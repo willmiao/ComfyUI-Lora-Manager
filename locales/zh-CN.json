@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "根目录",
         "collapseAll": "折叠所有文件夹",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "隐藏此页面侧边栏",
         "showSidebar": "显示侧边栏",
         "sidebarHiddenNotification": "{page}页面的文件夹侧边栏已隐藏",
-        "switchToListView": "切换到列表视图",
-        "switchToTreeView": "切换到树状视图",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "包含子文件夹",
-        "recursiveOff": "仅当前文件夹",
-        "recursiveUnavailable": "仅在树形视图中可使用递归搜索",
-        "collapseAllDisabled": "列表视图下不可用",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "无法确定移动的目标路径。",
             "moveUnsupported": "此条目不支持移动。",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "未找到文件夹",
-            "dragHint": "拖拽项目到此处以创建文件夹"
+            "dragHint": "拖拽项目到此处以创建文件夹",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "检查此文件夹的更新",

@@ -1246,15 +1246,23 @@
     "sidebar": {
         "modelRoot": "ルート",
         "collapseAll": "すべてのフォルダを折りたたむ",
+        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
         "hideOnThisPage": "このページでサイドバーを非表示",
         "showSidebar": "サイドバーを表示",
         "sidebarHiddenNotification": "{page}ページでサイドバーが非表示になっています",
-        "switchToListView": "リストビューに切り替え",
-        "switchToTreeView": "ツリー表示に切り替え",
+        "viewOptions": "[TODO: Translate] View options",
+        "treeView": "[TODO: Translate] Tree view",
+        "listView": "[TODO: Translate] List view",
         "recursiveOn": "サブフォルダーを含める",
-        "recursiveOff": "現在のフォルダーのみ",
-        "recursiveUnavailable": "再帰検索はツリービューでのみ利用できます",
-        "collapseAllDisabled": "リストビューでは利用できません",
+        "createFolder": "[TODO: Translate] New folder",
+        "newSubfolder": "[TODO: Translate] New subfolder",
+        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" created",
+            "failed": "[TODO: Translate] Failed to create folder: {message}",
+            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "移動先のパスを特定できません。",
             "moveUnsupported": "この項目の移動はサポートされていません。",
@@ -1267,7 +1275,8 @@
         },
         "empty": {
             "noFolders": "フォルダが見つかりません",
-            "dragHint": "ここへアイテムをドラッグしてフォルダを作成します"
+            "dragHint": "ここへアイテムをドラッグしてフォルダを作成します",
+            "createHint": "[TODO: Translate] Click the New Folder button above, or drag items here to create folders"
         },
         "folderUpdateCheck": {
             "label": "このフォルダのアップデートを確認",
