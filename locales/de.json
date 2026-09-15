@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "Stammverzeichnis",
         "collapseAll": "Alle Ordner einklappen",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "In der Listenansicht nicht verfügbar",
         "hideOnThisPage": "Seitenleiste auf dieser Seite ausblenden",
         "showSidebar": "Seitenleiste anzeigen",
         "sidebarHiddenNotification": "Seitenleiste auf der Seite {page} ausgeblendet",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "Ansichtsoptionen",
+        "treeView": "Baumansicht",
+        "listView": "Listenansicht",
         "recursiveOn": "Unterordner einbeziehen",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "Neuer Ordner",
+        "newSubfolder": "Neuer Unterordner",
+        "showEmptyFolders": "Leere Ordner anzeigen",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Ordner \"{name}\" erstellt",
+            "failed": "Ordner konnte nicht erstellt werden: {message}",
+            "unsupported": "Das Erstellen von Ordnern wird auf dieser Seite nicht unterstützt",
+            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "Ordner löschen",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "Ordner löschen?",
+            "message": "Der Ordner und sein gesamter Inhalt werden endgültig vom Datenträger gelöscht.",
+            "folderLabel": "Ordner",
+            "emptyNote": "Dieser Ordner enthält keine Modelle. Alle anderen darin enthaltenen Dateien werden ebenfalls gelöscht.",
+            "notEmptyTitle": "Ordner ist nicht leer",
+            "notEmptyMessage": "Dieser Ordner enthält noch Modelle. Löschen oder verschieben Sie diese zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
+            "confirm": "Ordner löschen"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Ordner \"{name}\" gelöscht",
+            "successWithFiles": "Ordner \"{name}\" sowie {count} weitere(s) Element(e) gelöscht",
+            "restored": "Ordner wiederhergestellt",
+            "failed": "Ordner konnte nicht gelöscht werden: {message}",
+            "notEmpty": "Dieser Ordner enthält noch Modelle. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
+            "unsupported": "Das Löschen von Ordnern wird auf dieser Seite nicht unterstützt",
+            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "Ordner umbenennen",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Ordner umbenannt in \"{name}\"",
+            "failed": "Ordner konnte nicht umbenannt werden: {message}",
+            "targetExists": "Ein Ordner mit diesem Namen ist hier bereits vorhanden",
+            "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
+            "unsupported": "Das Umbenennen von Ordnern wird auf dieser Seite nicht unterstützt",
+            "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"
         },
         "dragDrop": {
             "unableToResolveRoot": "Zielpfad für das Verschieben konnte nicht ermittelt werden.",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "Keine Ordner gefunden",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "Klicken Sie oben auf „Neuer Ordner“, um Ordner zu erstellen"
         },
         "folderUpdateCheck": {
             "label": "Auf Updates in diesem Ordner prüfen",

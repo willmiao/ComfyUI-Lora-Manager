@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "根目錄",
         "collapseAll": "全部摺疊資料夾",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "清單檢視下無法使用",
         "hideOnThisPage": "隱藏此頁面側邊欄",
         "showSidebar": "顯示側邊欄",
         "sidebarHiddenNotification": "{page}頁面的資料夾側邊欄已隱藏",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "檢視選項",
+        "treeView": "樹狀檢視",
+        "listView": "清單檢視",
         "recursiveOn": "包含子資料夾",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "新增資料夾",
+        "newSubfolder": "新增子資料夾",
+        "showEmptyFolders": "顯示空資料夾",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "已建立資料夾 \"{name}\"",
+            "failed": "建立資料夾失敗: {message}",
+            "unsupported": "此頁面不支援建立資料夾",
+            "noRoot": "未設定模型根目錄"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "刪除資料夾",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "刪除資料夾？",
+            "message": "該資料夾及其中的所有內容都將從磁碟上永久刪除。",
+            "folderLabel": "資料夾",
+            "emptyNote": "該資料夾中沒有模型，其中的其他檔案也會一併刪除。",
+            "notEmptyTitle": "資料夾不是空的",
+            "notEmptyMessage": "該資料夾中仍有模型，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "confirm": "刪除資料夾"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "已刪除資料夾 \"{name}\"",
+            "successWithFiles": "已刪除資料夾 \"{name}\"，同時刪除了另外 {count} 項內容",
+            "restored": "資料夾已還原",
+            "failed": "刪除資料夾失敗: {message}",
+            "notEmpty": "該資料夾中仍有模型。請重新整理側邊欄後再試。",
+            "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
+            "unsupported": "此頁面不支援刪除資料夾",
+            "noRoot": "未設定模型根目錄"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "重新命名資料夾",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "資料夾已重新命名為 \"{name}\"",
+            "failed": "重新命名資料夾失敗: {message}",
+            "targetExists": "此處已存在同名資料夾",
+            "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
+            "unsupported": "此頁面不支援重新命名資料夾",
+            "noRoot": "未設定模型根目錄"
         },
         "dragDrop": {
             "unableToResolveRoot": "無法確定移動的目標路徑。",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "未找到資料夾",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "點擊上方的新增資料夾按鈕即可建立資料夾"
         },
         "folderUpdateCheck": {
             "label": "檢查此資料夾的更新",

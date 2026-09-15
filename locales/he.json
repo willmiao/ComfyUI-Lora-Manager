@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "שורש",
         "collapseAll": "כווץ את כל התיקיות",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "לא זמין בתצוגת רשימה",
         "hideOnThisPage": "הסתר סרגל צד בדף זה",
         "showSidebar": "הצג סרגל צד",
         "sidebarHiddenNotification": "סרגל הצד מוסתר בדף {page}",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "אפשרויות תצוגה",
+        "treeView": "תצוגת עץ",
+        "listView": "תצוגת רשימה",
         "recursiveOn": "כלול תיקיות משנה",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "תיקייה חדשה",
+        "newSubfolder": "תיקיית משנה חדשה",
+        "showEmptyFolders": "הצג תיקיות ריקות",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "התיקייה \"{name}\" נוצרה",
+            "failed": "יצירת התיקייה נכשלה: {message}",
+            "unsupported": "יצירת תיקיות אינה נתמכת בדף זה",
+            "noRoot": "לא הוגדר שורש מודלים"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "מחק תיקייה",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "למחוק את התיקייה?",
+            "message": "התיקייה וכל תוכנה יימחקו לצמיתות מהדיסק.",
+            "folderLabel": "תיקייה",
+            "emptyNote": "אין מודלים בתיקייה זו. קבצים אחרים שבה יימחקו גם הם.",
+            "notEmptyTitle": "התיקייה אינה ריקה",
+            "notEmptyMessage": "בתיקייה זו עדיין יש מודלים. מחק או העבר אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
+            "confirm": "מחק תיקייה"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "התיקייה \"{name}\" נמחקה",
+            "successWithFiles": "התיקייה \"{name}\" נמחקה יחד עם {count} פריטים נוספים",
+            "restored": "התיקייה שוחזרה",
+            "failed": "מחיקת התיקייה נכשלה: {message}",
+            "notEmpty": "בתיקייה זו עדיין יש מודלים. רענן את סרגל הצד ונסה שוב.",
+            "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
+            "unsupported": "מחיקת תיקיות אינה נתמכת בדף זה",
+            "noRoot": "לא הוגדר שורש מודלים"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "שנה שם תיקייה",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "שם התיקייה שונה ל-\"{name}\"",
+            "failed": "שינוי שם התיקייה נכשל: {message}",
+            "targetExists": "תיקייה בשם זה כבר קיימת כאן",
+            "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
+            "unsupported": "שינוי שם תיקיות אינו נתמך בדף זה",
+            "noRoot": "לא הוגדר שורש מודלים"
         },
         "dragDrop": {
             "unableToResolveRoot": "לא ניתן לקבוע את נתיב היעד להעברה.",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "לא נמצאו תיקיות",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "לחץ על כפתור תיקייה חדשה למעלה כדי ליצור תיקיות"
         },
         "folderUpdateCheck": {
             "label": "בדוק עדכונים בתיקייה זו",

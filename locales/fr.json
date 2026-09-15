@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "Racine",
         "collapseAll": "Réduire tous les dossiers",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "Non disponible en vue liste",
         "hideOnThisPage": "Masquer la barre latérale sur cette page",
         "showSidebar": "Afficher la barre latérale",
         "sidebarHiddenNotification": "Barre latérale masquée sur la page {page}",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "Options d’affichage",
+        "treeView": "Vue arborescente",
+        "listView": "Vue liste",
         "recursiveOn": "Inclure les sous-dossiers",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "Nouveau dossier",
+        "newSubfolder": "Nouveau sous-dossier",
+        "showEmptyFolders": "Afficher les dossiers vides",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Dossier \"{name}\" créé",
+            "failed": "Échec de la création du dossier : {message}",
+            "unsupported": "La création de dossiers n’est pas prise en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "Supprimer le dossier",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "Supprimer le dossier ?",
+            "message": "Le dossier et tout son contenu seront définitivement supprimés du disque.",
+            "folderLabel": "Dossier",
+            "emptyNote": "Ce dossier ne contient aucun modèle. Les autres fichiers qu’il contient seront également supprimés.",
+            "notEmptyTitle": "Le dossier n’est pas vide",
+            "notEmptyMessage": "Ce dossier contient encore des modèles. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "confirm": "Supprimer le dossier"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Dossier \"{name}\" supprimé",
+            "successWithFiles": "Dossier \"{name}\" supprimé, ainsi que {count} autre(s) élément(s)",
+            "restored": "Dossier restauré",
+            "failed": "Échec de la suppression du dossier : {message}",
+            "notEmpty": "Ce dossier contient encore des modèles. Actualisez la barre latérale et réessayez.",
+            "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
+            "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "Renommer le dossier",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Dossier renommé en \"{name}\"",
+            "failed": "Échec du renommage du dossier : {message}",
+            "targetExists": "Un dossier portant ce nom existe déjà ici",
+            "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
+            "unsupported": "Le renommage de dossiers n’est pas pris en charge sur cette page",
+            "noRoot": "Aucune racine de modèle n’est configurée"
         },
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "Aucun dossier trouvé",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "Cliquez sur le bouton Nouveau dossier ci-dessus pour créer des dossiers"
         },
         "folderUpdateCheck": {
             "label": "Vérifier les mises à jour dans ce dossier",

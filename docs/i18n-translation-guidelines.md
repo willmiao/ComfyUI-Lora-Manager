@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 1982 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2022 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -42,6 +42,13 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > which had hardcoded "HF" for a button that now also enriches ModelScope models. The
 > `modals.linkModelSource.urlPlaceholder` value stays byte-identical to `en.json` (it is a URL,
 > the §6 exception). Terminology in §2, "Model source feature".
+>
+> **Status (2026-09, folder sidebar):** the model-root sidebar gained on-disk folder management
+> (create / rename / delete folders, show empty folders, tree vs list view) plus its `...`
+> view-options menu, adding 35 `sidebar.*` keys. Those were the only `[TODO: Translate]`
+> placeholders left behind by the feature series, and all 35 are now translated in all 9
+> locales, so the "no remaining placeholders" claim above holds again. Terminology in §2,
+> "Folder sidebar feature".
 
 ---
 
@@ -329,6 +336,24 @@ The context-menu and bulk-operation enrichment entry points read **"Enrich Metad
 in `en`, not "Enrich HF Metadata": they cover ModelScope as well, so no locale may reintroduce
 an `HF` qualifier in `loras.contextMenu.enrichHfAgent` / `loras.bulkOperations.enrichHfAgent`
 (the key names keep the historical `Hf`; only the values changed).
+
+### Folder sidebar feature (create / rename / delete folders, empty folders, view options)
+
+The model-root sidebar manages on-disk folders. "Folder" reuses the noun already fixed in §2
+(the `folder key` row); the rest is new surface:
+
+| Term | Rendering |
+|---|---|
+| folder | zh-CN 文件夹 · zh-TW 資料夾 · ja フォルダ · ko 폴더 · fr dossier · de Ordner · es carpeta · ru папка · he תיקייה |
+| model root (as in "no model root is configured") | zh-CN 模型根目录 · zh-TW 模型根目錄 · ja モデルルート · ko 모델 루트 · fr racine de modèle · de Modell-Stammverzeichnis · es raíz de modelo · ru корневая папка моделей · he שורש מודלים — note `sidebar.modelRoot` alone is the shorter 根目录 / 根目錄 / ルート / 루트 / Racine / Stammverzeichnis / Raíz / Корень / שורש |
+| tree view / list view | zh-CN 树形视图 / 列表视图 · zh-TW 樹狀檢視 / 清單檢視 · ja ツリー表示 / リスト表示 · ko 트리 보기 / 목록 보기 · fr Vue arborescente / Vue liste · de Baumansicht / Listenansicht · es Vista de árbol / Vista de lista · ru Дерево / Список · he תצוגת עץ / תצוגת רשימה |
+| sidebar | reuse each locale's `sidebar.hideOnThisPage` noun: zh-CN 侧边栏 · zh-TW 側邊欄 · ja サイドバー · ko 사이드바 · fr barre latérale · de Seitenleiste · es barra lateral · ru боковая панель · he סרגל צד |
+
+Deleting a folder **never cascades over model files** — the backend refuses it and
+`sidebar.deleteFolderModal.notEmptyMessage` states the rule in every locale, so keep that
+clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{message}` tokens in
+`sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
+are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
 
 ---
 

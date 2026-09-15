@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "Корень",
         "collapseAll": "Свернуть все папки",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "Недоступно в виде списка",
         "hideOnThisPage": "Скрыть боковую панель на этой странице",
         "showSidebar": "Показать боковую панель",
         "sidebarHiddenNotification": "Боковая панель скрыта на странице {page}",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "Параметры отображения",
+        "treeView": "Дерево",
+        "listView": "Список",
         "recursiveOn": "Включать вложенные папки",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "Новая папка",
+        "newSubfolder": "Новая вложенная папка",
+        "showEmptyFolders": "Показывать пустые папки",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Папка \"{name}\" создана",
+            "failed": "Не удалось создать папку: {message}",
+            "unsupported": "Создание папок не поддерживается на этой странице",
+            "noRoot": "Корневая папка моделей не настроена"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "Удалить папку",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "Удалить папку?",
+            "message": "Папка и всё её содержимое будут безвозвратно удалены с диска.",
+            "folderLabel": "Папка",
+            "emptyNote": "В этой папке нет моделей. Остальные файлы в ней тоже будут удалены.",
+            "notEmptyTitle": "Папка не пуста",
+            "notEmptyMessage": "В этой папке ещё есть модели. Сначала удалите или переместите их — удаление папки никогда не затрагивает файлы моделей.",
+            "confirm": "Удалить папку"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Папка \"{name}\" удалена",
+            "successWithFiles": "Папка \"{name}\" удалена вместе с ещё {count} элемент(ами)",
+            "restored": "Папка восстановлена",
+            "failed": "Не удалось удалить папку: {message}",
+            "notEmpty": "В этой папке ещё есть модели. Обновите боковую панель и повторите попытку.",
+            "busy": "В этой папке всё ещё есть отложенное удаление. Дождитесь окончания окна отмены.",
+            "unsupported": "Удаление папок не поддерживается на этой странице",
+            "noRoot": "Корневая папка моделей не настроена"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "Переименовать папку",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Папка переименована в \"{name}\"",
+            "failed": "Не удалось переименовать папку: {message}",
+            "targetExists": "Папка с таким именем уже существует здесь",
+            "busy": "В этой папке всё ещё есть отложенное удаление. Дождитесь окончания окна отмены.",
+            "unsupported": "Переименование папок не поддерживается на этой странице",
+            "noRoot": "Корневая папка моделей не настроена"
         },
         "dragDrop": {
             "unableToResolveRoot": "Не удалось определить путь назначения для перемещения.",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "Папки не найдены",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "Нажмите кнопку «Новая папка» вверху, чтобы создать папки"
         },
         "folderUpdateCheck": {
             "label": "Проверить обновления в этой папке",

@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "ルート",
         "collapseAll": "すべてのフォルダを折りたたむ",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "リスト表示では利用できません",
         "hideOnThisPage": "このページでサイドバーを非表示",
         "showSidebar": "サイドバーを表示",
         "sidebarHiddenNotification": "{page}ページでサイドバーが非表示になっています",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "表示オプション",
+        "treeView": "ツリー表示",
+        "listView": "リスト表示",
         "recursiveOn": "サブフォルダーを含める",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "新規フォルダ",
+        "newSubfolder": "新規サブフォルダ",
+        "showEmptyFolders": "空のフォルダを表示",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "フォルダ \"{name}\" を作成しました",
+            "failed": "フォルダの作成に失敗しました: {message}",
+            "unsupported": "このページではフォルダを作成できません",
+            "noRoot": "モデルルートが設定されていません"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "フォルダを削除",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "フォルダを削除しますか？",
+            "message": "フォルダとその内容はすべてディスクから完全に削除されます。",
+            "folderLabel": "フォルダ",
+            "emptyNote": "このフォルダにはモデルがありません。他のファイルもすべて削除されます。",
+            "notEmptyTitle": "フォルダが空ではありません",
+            "notEmptyMessage": "このフォルダにはまだモデルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
+            "confirm": "フォルダを削除"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "フォルダ \"{name}\" を削除しました",
+            "successWithFiles": "フォルダ \"{name}\" を削除し、他に {count} 件の項目も削除しました",
+            "restored": "フォルダを復元しました",
+            "failed": "フォルダの削除に失敗しました: {message}",
+            "notEmpty": "このフォルダにはまだモデルがあります。サイドバーを再読み込みしてからもう一度お試しください。",
+            "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
+            "unsupported": "このページではフォルダを削除できません",
+            "noRoot": "モデルルートが設定されていません"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "フォルダ名を変更",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "フォルダ名を \"{name}\" に変更しました",
+            "failed": "フォルダ名の変更に失敗しました: {message}",
+            "targetExists": "同じ名前のフォルダが既に存在します",
+            "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
+            "unsupported": "このページではフォルダ名を変更できません",
+            "noRoot": "モデルルートが設定されていません"
         },
         "dragDrop": {
             "unableToResolveRoot": "移動先のパスを特定できません。",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "フォルダが見つかりません",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "上部の新規フォルダボタンからフォルダを作成できます"
         },
         "folderUpdateCheck": {
             "label": "このフォルダのアップデートを確認",

@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "Raíz",
         "collapseAll": "Colapsar todas las carpetas",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "No disponible en la vista de lista",
         "hideOnThisPage": "Ocultar barra lateral en esta página",
         "showSidebar": "Mostrar barra lateral",
         "sidebarHiddenNotification": "Barra lateral oculta en la página {page}",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "Opciones de vista",
+        "treeView": "Vista de árbol",
+        "listView": "Vista de lista",
         "recursiveOn": "Incluir subcarpetas",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "Nueva carpeta",
+        "newSubfolder": "Nueva subcarpeta",
+        "showEmptyFolders": "Mostrar carpetas vacías",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Carpeta \"{name}\" creada",
+            "failed": "Error al crear la carpeta: {message}",
+            "unsupported": "La creación de carpetas no es compatible con esta página",
+            "noRoot": "No hay ninguna raíz de modelo configurada"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "Eliminar carpeta",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "¿Eliminar carpeta?",
+            "message": "La carpeta y todo su contenido se eliminarán permanentemente del disco.",
+            "folderLabel": "Carpeta",
+            "emptyNote": "Esta carpeta no contiene modelos. Los demás archivos que contenga también se eliminarán.",
+            "notEmptyTitle": "La carpeta no está vacía",
+            "notEmptyMessage": "Esta carpeta aún contiene modelos. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
+            "confirm": "Eliminar carpeta"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Carpeta \"{name}\" eliminada",
+            "successWithFiles": "Carpeta \"{name}\" eliminada junto con {count} elemento(s) más",
+            "restored": "Carpeta restaurada",
+            "failed": "Error al eliminar la carpeta: {message}",
+            "notEmpty": "Esta carpeta aún contiene modelos. Actualiza la barra lateral e inténtalo de nuevo.",
+            "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
+            "unsupported": "La eliminación de carpetas no es compatible con esta página",
+            "noRoot": "No hay ninguna raíz de modelo configurada"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "Cambiar nombre de la carpeta",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "Carpeta renombrada a \"{name}\"",
+            "failed": "Error al cambiar el nombre de la carpeta: {message}",
+            "targetExists": "Ya existe una carpeta con ese nombre aquí",
+            "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
+            "unsupported": "El cambio de nombre de carpetas no es compatible con esta página",
+            "noRoot": "No hay ninguna raíz de modelo configurada"
         },
         "dragDrop": {
             "unableToResolveRoot": "No se puede determinar la ruta de destino para el movimiento.",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "No se encontraron carpetas",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "Haz clic en el botón Nueva carpeta de arriba para crear carpetas"
         },
         "folderUpdateCheck": {
             "label": "Buscar actualizaciones en esta carpeta",

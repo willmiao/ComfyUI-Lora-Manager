@@ -1246,51 +1246,51 @@
     "sidebar": {
         "modelRoot": "根目录",
         "collapseAll": "折叠所有文件夹",
-        "collapseAllDisabled": "[TODO: Translate] Not available in list view",
+        "collapseAllDisabled": "列表视图下不可用",
         "hideOnThisPage": "隐藏此页面侧边栏",
         "showSidebar": "显示侧边栏",
         "sidebarHiddenNotification": "{page}页面的文件夹侧边栏已隐藏",
-        "viewOptions": "[TODO: Translate] View options",
-        "treeView": "[TODO: Translate] Tree view",
-        "listView": "[TODO: Translate] List view",
+        "viewOptions": "视图选项",
+        "treeView": "树形视图",
+        "listView": "列表视图",
         "recursiveOn": "包含子文件夹",
-        "createFolder": "[TODO: Translate] New folder",
-        "newSubfolder": "[TODO: Translate] New subfolder",
-        "showEmptyFolders": "[TODO: Translate] Show empty folders",
+        "createFolder": "新建文件夹",
+        "newSubfolder": "新建子文件夹",
+        "showEmptyFolders": "显示空文件夹",
         "createFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" created",
-            "failed": "[TODO: Translate] Failed to create folder: {message}",
-            "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "已创建文件夹 \"{name}\"",
+            "failed": "创建文件夹失败: {message}",
+            "unsupported": "此页面不支持创建文件夹",
+            "noRoot": "未配置模型根目录"
         },
-        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolder": "删除文件夹",
         "deleteFolderModal": {
-            "title": "[TODO: Translate] Delete folder?",
-            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
-            "folderLabel": "[TODO: Translate] Folder",
-            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
-            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
-            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
-            "confirm": "[TODO: Translate] Delete folder"
+            "title": "删除文件夹？",
+            "message": "该文件夹及其中所有内容都将从磁盘上永久删除。",
+            "folderLabel": "文件夹",
+            "emptyNote": "该文件夹中没有模型，其中的其他文件也会一并删除。",
+            "notEmptyTitle": "文件夹不为空",
+            "notEmptyMessage": "该文件夹中仍有模型，请先删除或移出这些模型 —— 删除文件夹不会级联删除模型文件。",
+            "confirm": "删除文件夹"
         },
         "deleteFolderResult": {
-            "success": "[TODO: Translate] Folder \"{name}\" deleted",
-            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
-            "restored": "[TODO: Translate] Folder restored",
-            "failed": "[TODO: Translate] Failed to delete folder: {message}",
-            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "已删除文件夹 \"{name}\"",
+            "successWithFiles": "已删除文件夹 \"{name}\"，同时删除了另外 {count} 项内容",
+            "restored": "文件夹已恢复",
+            "failed": "删除文件夹失败: {message}",
+            "notEmpty": "该文件夹中仍有模型。请刷新侧边栏后重试。",
+            "busy": "该文件夹内仍有待处理的删除操作，请等待撤销窗口结束。",
+            "unsupported": "此页面不支持删除文件夹",
+            "noRoot": "未配置模型根目录"
         },
-        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolder": "重命名文件夹",
         "renameFolderResult": {
-            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
-            "failed": "[TODO: Translate] Failed to rename folder: {message}",
-            "targetExists": "[TODO: Translate] A folder with that name already exists here",
-            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
-            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
-            "noRoot": "[TODO: Translate] No model root is configured"
+            "success": "文件夹已重命名为 \"{name}\"",
+            "failed": "重命名文件夹失败: {message}",
+            "targetExists": "此处已存在同名文件夹",
+            "busy": "该文件夹内仍有待处理的删除操作，请等待撤销窗口结束。",
+            "unsupported": "此页面不支持重命名文件夹",
+            "noRoot": "未配置模型根目录"
         },
         "dragDrop": {
             "unableToResolveRoot": "无法确定移动的目标路径。",
@@ -1302,7 +1302,7 @@
         },
         "empty": {
             "noFolders": "未找到文件夹",
-            "createHint": "[TODO: Translate] Click the New Folder button above to create folders"
+            "createHint": "点击上方的新建文件夹按钮即可创建文件夹"
         },
         "folderUpdateCheck": {
             "label": "检查此文件夹的更新",
