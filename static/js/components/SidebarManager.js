@@ -6,7 +6,8 @@ import { getModelApiClient } from '../api/modelApiFactory.js';
 import { translate } from '../utils/i18nHelpers.js';
 import { state, getCurrentPageState } from '../state/index.js';
 import { bulkManager } from '../managers/BulkManager.js';
-import { showToast } from '../utils/uiHelpers.js';
+import { modalManager } from '../managers/ModalManager.js';
+import { showToast, showActionToast } from '../utils/uiHelpers.js';
 import { performFolderUpdateCheck } from '../utils/updateCheckHelpers.js';
 import { escapeHtml, escapeAttribute } from './shared/utils.js';
 import { MODEL_CARD_DRAG_MIME_TYPE } from '../utils/constants.js';
@@ -46,6 +47,8 @@ export class SidebarManager {
         this.nonEmptyFolders = null; // models-only folder set used to dim empty nodes
         this._createFolderBasePath = null;
         this._createFolderTempChildren = null; // children container added for a leaf parent during inline creation
+        this._pendingDeleteFolderPath = null;
+        this._deleteFolderModalWired = false;
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -133,6 +136,7 @@ export class SidebarManager {
         this.nonEmptyFolders = null;
         this._createFolderBasePath = null;
         this._createFolderTempChildren = null;
+        this._pendingDeleteFolderPath = null;
 
         // Reset container margin
         const container = document.querySelector('.container');
@@ -759,6 +763,188 @@ export class SidebarManager {
         this.hideCreateFolderInput();
     }
 
+    /**
+     * Open the folder delete modal for *path*.
+     *
+     * The tree already knows whether the subtree holds models (the same
+     * models-only set that dims empty nodes), so the modal opens in one of two
+     * states without a round trip: a confirmation for a model-free folder, or
+     * an explanation when models would have to be cascaded over — a
+     * folder-level cascade would bypass the per-model lifecycle bookkeeping,
+     * so the backend refuses it and the UI says why.
+     */
+    showDeleteFolderModal(path) {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        // Defensive: the modal may have been absent when listeners were wired.
+        this._wireDeleteFolderModal();
+
+        const title = modal.querySelector('[data-role="title"]');
+        const message = modal.querySelector('[data-role="message"]');
+        const info = modal.querySelector('[data-role="info"]');
+        const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
+
+        const holdsModels = this.nonEmptyFolders ? this.nonEmptyFolders.has(path) : false;
+
+        const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(path)}`;
+
+        if (holdsModels) {
+            this._pendingDeleteFolderPath = null;
+            title.textContent = translate(
+                'sidebar.deleteFolderModal.notEmptyTitle', {}, 'Folder is not empty'
+            );
+            message.textContent = translate(
+                'sidebar.deleteFolderModal.notEmptyMessage', {},
+                'This folder still contains models. Delete or move them first.'
+            );
+            info.innerHTML = pathLine;
+            confirmBtn.style.display = 'none';
+            modal.dataset.state = 'blocked';
+        } else {
+            this._pendingDeleteFolderPath = path;
+            title.textContent = translate(
+                'sidebar.deleteFolderModal.title', {}, 'Delete folder?'
+            );
+            message.textContent = translate(
+                'sidebar.deleteFolderModal.message', {},
+                'The folder and everything inside it will be permanently removed from disk.'
+            );
+            info.innerHTML = `${pathLine}<br>${escapeHtml(translate(
+                'sidebar.deleteFolderModal.emptyNote', {}, 'This folder contains no models.'
+            ))}`;
+            confirmBtn.style.display = '';
+            modal.dataset.state = 'confirm';
+        }
+
+        modalManager.showModal('deleteFolderModal');
+    }
+
+    hideDeleteFolderModal() {
+        this._pendingDeleteFolderPath = null;
+        modalManager.closeModal('deleteFolderModal');
+    }
+
+    async handleDeleteFolderConfirm() {
+        const path = this._pendingDeleteFolderPath;
+        this.hideDeleteFolderModal();
+
+        if (!path) return false;
+
+        return this._deleteFolder(path);
+    }
+
+    async _deleteFolder(relativePath) {
+        if (!this._supportsFolderManagement() || typeof this.apiClient.deleteFolder !== 'function') {
+            showToast('sidebar.deleteFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            const rootsData = await this.apiClient.fetchModelRoots();
+            const roots = rootsData?.roots || [];
+            const root = this._resolveDefaultRoot(roots);
+            if (!root) {
+                showToast('sidebar.deleteFolderResult.noRoot', {}, 'error');
+                return false;
+            }
+
+            const absolutePath = this.combineRootAndRelativePath(root, relativePath);
+            const result = await this.apiClient.deleteFolder(absolutePath);
+
+            // Drop the node (and its subtree) from the persisted expand state
+            // before refreshing, otherwise stale keys accumulate forever. A
+            // selection inside the removed subtree is left to
+            // restoreSelectedFolder(), which falls back to the root and
+            // reloads the grid when the folder is gone from the fresh tree.
+            this._forgetRemovedFolder(relativePath);
+
+            await this.refresh();
+
+            const name = result.folder || relativePath;
+            if (result.restorable) {
+                // A truly empty folder is reproducible one-for-one, so offer
+                // the same 20s undo affordance the model delete flow uses.
+                showActionToast('sidebar.deleteFolderResult.success', { name }, 'success', {
+                    actionText: translate('toast.undo.action', {}, 'Undo'),
+                    onAction: () => this._restoreDeletedFolder(absolutePath, relativePath),
+                });
+            } else {
+                showToast(
+                    'sidebar.deleteFolderResult.successWithFiles',
+                    { name, count: (result.file_count || 0) + (result.dir_count || 0) },
+                    'success'
+                );
+            }
+
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error deleting folder:', error);
+            if (error?.code === 'not_empty') {
+                showToast('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
+            } else if (error?.code === 'busy') {
+                showToast('sidebar.deleteFolderResult.busy', {}, 'warning');
+            } else {
+                showToast(
+                    'sidebar.deleteFolderResult.failed',
+                    { message: error?.message || 'Unknown error' },
+                    'error'
+                );
+            }
+            return false;
+        }
+    }
+
+    async _restoreDeletedFolder(absolutePath, relativePath) {
+        try {
+            await this.apiClient.createFolder(absolutePath);
+            this._forgetRemovedFolder(relativePath);
+            await this.refresh();
+            showToast('sidebar.deleteFolderResult.restored', {}, 'success');
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error restoring deleted folder:', error);
+            showToast('toast.undo.failed', { error: error?.message || '' }, 'error');
+            return false;
+        }
+    }
+
+    _forgetRemovedFolder(folderPath) {
+        if (!folderPath) return;
+
+        const prefix = `${folderPath}/`;
+        let changed = false;
+        for (const node of Array.from(this.expandedNodes)) {
+            if (node === folderPath || node.startsWith(prefix)) {
+                this.expandedNodes.delete(node);
+                changed = true;
+            }
+        }
+        if (changed) {
+            this.saveExpandedState();
+        }
+    }
+
+    _wireDeleteFolderModal() {
+        if (this._deleteFolderModalWired) return;
+
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
+        modal.addEventListener('click', (event) => {
+            const item = event.target.closest('[data-action]');
+            if (!item) return;
+            const action = item.dataset.action;
+            if (action === 'cancel-delete-folder') {
+                this.hideDeleteFolderModal();
+            } else if (action === 'confirm-delete-folder') {
+                this.handleDeleteFolderConfirm();
+            }
+        });
+
+        this._deleteFolderModalWired = true;
+    }
+
     saveSelectedFolder() {
         setStorageItem(`${this.pageType}_activeFolder`, this.selectedPath);
     }
@@ -866,6 +1052,9 @@ export class SidebarManager {
         if (hideToggle) {
             hideToggle.addEventListener('click', this.handleHideToggle);
         }
+
+        // Folder delete confirmation modal buttons
+        this._wireDeleteFolderModal();
     }
 
     handleDocumentClick(event) {
@@ -1240,6 +1429,12 @@ export class SidebarManager {
             createItem.style.display = this._supportsFolderManagement() ? '' : 'none';
         }
 
+        // Deletion is gated the same way: recipes have virtual folders only.
+        const deleteItem = menu.querySelector('[data-action="delete-folder"]');
+        if (deleteItem) {
+            deleteItem.style.display = this._supportsFolderManagement() ? '' : 'none';
+        }
+
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
         menu.style.display = 'block';
@@ -1287,6 +1482,9 @@ export class SidebarManager {
         switch (action) {
             case 'create-subfolder':
                 this.showCreateFolderInput(path);
+                break;
+            case 'delete-folder':
+                this.showDeleteFolderModal(path);
                 break;
             case 'check-folder-updates':
                 try {

@@ -82,6 +82,21 @@
     </div>
 </div>
 
+<!-- Sidebar Folder Delete Confirmation Modal -->
+<!-- Shared by two states: 'confirm' (model-free folder) and 'blocked' (the
+     subtree still holds models, so a cascade delete is refused). -->
+<div id="deleteFolderModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title">{{ t('sidebar.deleteFolderModal.title') }}</h2>
+        <p class="delete-message" data-role="message">{{ t('sidebar.deleteFolderModal.message') }}</p>
+        <div class="delete-model-info" data-role="info"></div>
+        <div class="modal-actions">
+            <button class="cancel-btn" data-action="cancel-delete-folder">{{ t('common.actions.cancel') }}</button>
+            <button class="delete-btn" data-action="confirm-delete-folder">{{ t('sidebar.deleteFolderModal.confirm') }}</button>
+        </div>
+    </div>
+</div>
+
 <!-- Bulk Download Missing LoRAs Confirmation Modal -->
 <div id="bulkDownloadMissingLorasModal" class="modal">
     <div class="modal-content">

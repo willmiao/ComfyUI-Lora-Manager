@@ -84,6 +84,7 @@ export function getApiEndpoints(modelType) {
         moveModel: `/api/lm/${modelType}/move_model`,
         moveBulk: `/api/lm/${modelType}/move_models_bulk`,
         createFolder: `/api/lm/${modelType}/create-folder`,
+        deleteFolder: `/api/lm/${modelType}/delete-folder`,
 
         // CivitAI integration
         fetchCivitai: `/api/lm/${modelType}/fetch-civitai`,

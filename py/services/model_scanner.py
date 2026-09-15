@@ -1505,6 +1505,63 @@ class ModelScanner:
             await self._persist_current_cache()
             self.bump_cache_version()
 
+    async def remove_known_folder(self, folder: str) -> None:
+        """Forget a folder (and its subtree) that no longer exists on disk.
+
+        Counterpart of :meth:`add_known_folder`, called after a directory is
+        removed between scans (e.g. via the delete-folder API) so folder trees
+        and the move/download destination pickers stop offering it without a
+        full rescan. Ancestors are kept on purpose: every recorded ancestor
+        exists on disk in its own right, so only the removed subtree is dropped.
+
+        Cache entries that referenced the now-missing directory are purged as
+        well, which keeps a stale (phantom) model card from surviving the
+        deletion. When ``all_folders`` has not been recorded yet (legacy
+        snapshot) only the cache purge runs — the scheduled backfill walk
+        rebuilds the folder list from disk.
+        """
+        normalized = folder.replace("\\", "/").strip("/")
+        if not normalized:
+            return
+        cache = self._cache
+        if cache is None:
+            return
+
+        prefix = f"{normalized}/"
+
+        folders_changed = False
+        recorded = getattr(cache, "all_folders", None)
+        if recorded is not None:
+            updated = [
+                entry
+                for entry in recorded
+                if entry != normalized and not entry.startswith(prefix)
+            ]
+            if updated != list(recorded):
+                cache.all_folders = updated
+                folders_changed = True
+
+        stale_paths = [
+            item.get("file_path")
+            for item in (cache.raw_data or [])
+            if self._folder_within(item.get("folder", ""), normalized)
+        ]
+        if stale_paths:
+            # The purge persists the cache — including the already updated
+            # all_folders list — and bumps the version itself.
+            await self._batch_update_cache_for_deleted_models(stale_paths)
+            folders = set(item.get("folder", "") for item in cache.raw_data)
+            cache.folders = sorted(folders, key=lambda x: x.lower())
+        elif folders_changed:
+            await self._persist_current_cache()
+
+        self.bump_cache_version()
+
+    @staticmethod
+    def _folder_within(candidate: str, target: str) -> bool:
+        """Return True when *candidate* is *target* or lives below it."""
+        return candidate == target or candidate.startswith(f"{target}/")
+
     def _schedule_all_folders_backfill(self) -> None:
         """Kick off a one-shot background folder walk if none is running."""
         if self._all_folders_backfill_running:

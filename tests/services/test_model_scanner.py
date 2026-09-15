@@ -1548,6 +1548,68 @@ async def test_add_known_folder_ignores_empty_input(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_remove_known_folder_drops_subtree_and_keeps_ancestors(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    await scanner.add_known_folder("nested/deep/leaf")
+
+    await scanner.remove_known_folder("nested/deep")
+
+    assert "nested/deep" not in cache.all_folders
+    assert "nested/deep/leaf" not in cache.all_folders
+    # The ancestor directory still exists on disk in its own right
+    assert "nested" in cache.all_folders
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_purges_stale_cache_entries(tmp_path: Path):
+    _, second, _ = _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    assert "nested" in cache.folders
+
+    await scanner.remove_known_folder("nested")
+
+    assert "nested" not in cache.all_folders
+    assert "nested" not in cache.folders
+    assert _normalize_path(second) not in {
+        item["file_path"] for item in cache.raw_data
+    }
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_noop_without_recorded_folders(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    cache.all_folders = None
+
+    # Legacy snapshot without recorded folders: nothing to prune, and the
+    # scheduled backfill walk rebuilds the list from disk.
+    await scanner.remove_known_folder("nested")
+
+    assert cache.all_folders is None
+
+
+@pytest.mark.asyncio
+async def test_remove_known_folder_ignores_empty_input(tmp_path: Path):
+    _create_files(tmp_path)
+    scanner = DummyScanner(tmp_path)
+    await scanner._initialize_cache()
+    cache = await scanner.get_cached_data()
+    before = list(cache.all_folders)
+
+    await scanner.remove_known_folder("")
+    await scanner.remove_known_folder("/")
+
+    assert cache.all_folders == before
+
+
+@pytest.mark.asyncio
 async def test_get_all_folders_updated_after_move(tmp_path: Path):
     first, _, _ = _create_files(tmp_path)
     scanner = DummyScanner(tmp_path)

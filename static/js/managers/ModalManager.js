@@ -243,6 +243,18 @@ export class ModalManager {
             });
         }
 
+        // Add deleteFolderModal registration
+        const deleteFolderModal = document.getElementById('deleteFolderModal');
+        if (deleteFolderModal) {
+            this.registerModal('deleteFolderModal', {
+                element: deleteFolderModal,
+                onClose: () => {
+                    this.getModal('deleteFolderModal').element.classList.remove('show');
+                    document.body.classList.remove('modal-open');
+                }
+            });
+        }
+
         // Add helpModal registration
         const helpModal = document.getElementById('helpModal');
         if (helpModal) {
@@ -441,6 +453,7 @@ export class ModalManager {
           id === "clearCacheModal" ||
           id === "bulkDeleteModal" ||
           id === "checkUpdatesConfirmModal" ||
+          id === "deleteFolderModal" ||
           id === "resolveFilenameConflictsModal"
         ) {
           modal.element.classList.add("show");

@@ -9,6 +9,7 @@ const {
   UI_HELPERS_MODULE,
   UPDATE_CHECK_MODULE,
   STATE_MODULE,
+  MODAL_MANAGER_MODULE,
 } = vi.hoisted(() => ({
   SIDEBAR_MANAGER_MODULE: new URL('../../../static/js/components/SidebarManager.js', import.meta.url).pathname,
   STORAGE_HELPERS_MODULE: new URL('../../../static/js/utils/storageHelpers.js', import.meta.url).pathname,
@@ -18,17 +19,23 @@ const {
   UI_HELPERS_MODULE: new URL('../../../static/js/utils/uiHelpers.js', import.meta.url).pathname,
   UPDATE_CHECK_MODULE: new URL('../../../static/js/utils/updateCheckHelpers.js', import.meta.url).pathname,
   STATE_MODULE: new URL('../../../static/js/state/index.js', import.meta.url).pathname,
+  MODAL_MANAGER_MODULE: new URL('../../../static/js/managers/ModalManager.js', import.meta.url).pathname,
 }));
 
 vi.mock(MODEL_API_FACTORY_MODULE, () => ({ getModelApiClient: vi.fn() }));
 vi.mock(I18N_MODULE, () => ({ translate: (key, _args, fallback) => fallback || key }));
 vi.mock(BULK_MANAGER_MODULE, () => ({ bulkManager: {} }));
-vi.mock(UI_HELPERS_MODULE, () => ({ showToast: vi.fn() }));
+vi.mock(UI_HELPERS_MODULE, () => ({ showToast: vi.fn(), showActionToast: vi.fn() }));
 vi.mock(UPDATE_CHECK_MODULE, () => ({ performFolderUpdateCheck: vi.fn() }));
+vi.mock(MODAL_MANAGER_MODULE, () => ({
+  modalManager: { showModal: vi.fn(), closeModal: vi.fn() },
+}));
 
 const { SidebarManager } = await import(SIDEBAR_MANAGER_MODULE);
 const { state } = await import(STATE_MODULE);
 const { setStorageItem, getStorageItem } = await import(STORAGE_HELPERS_MODULE);
+const { showToast, showActionToast } = await import(UI_HELPERS_MODULE);
+const { modalManager } = await import(MODAL_MANAGER_MODULE);
 
 function createApiClient(overrides = {}) {
   return {
@@ -44,6 +51,14 @@ function createApiClient(overrides = {}) {
     fetchModelFolders: vi.fn().mockResolvedValue({ folders: ['', 'full'] }),
     fetchModelRoots: vi.fn().mockResolvedValue({ roots: ['/models/loras'] }),
     createFolder: vi.fn().mockResolvedValue({ success: true, folder: 'new-folder', created: true }),
+    deleteFolder: vi.fn().mockResolvedValue({
+      success: true,
+      folder: 'empty',
+      model_count: 0,
+      file_count: 0,
+      dir_count: 0,
+      restorable: true,
+    }),
     ...overrides,
   };
 }
@@ -458,6 +473,207 @@ describe('SidebarManager folder creation', () => {
 
     expect(apiClient.createFolder).toHaveBeenCalledWith('/models/loras/characters/anime');
     expect(document.getElementById('sidebarCreateFolderInput')).toBeNull();
+  });
+});
+
+describe('SidebarManager folder deletion', () => {
+  const MODAL_HTML = `
+    <div id="deleteFolderModal" class="modal delete-modal">
+      <div class="modal-content delete-modal-content">
+        <h2 data-role="title"></h2>
+        <p class="delete-message" data-role="message"></p>
+        <div class="delete-model-info" data-role="info"></div>
+        <div class="modal-actions">
+          <button class="cancel-btn" data-action="cancel-delete-folder">Cancel</button>
+          <button class="delete-btn" data-action="confirm-delete-folder">Delete folder</button>
+        </div>
+      </div>
+    </div>`;
+
+  function confirmBtn() {
+    return document.querySelector('#deleteFolderModal [data-action="confirm-delete-folder"]');
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = MODAL_HTML;
+    state.global.settings = {};
+    vi.clearAllMocks();
+  });
+
+  it('opens the confirm state for a folder whose subtree holds no models', () => {
+    const manager = createManager(createApiClient());
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    manager.showDeleteFolderModal('empty');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('confirm');
+    expect(confirmBtn().style.display).toBe('');
+    expect(manager._pendingDeleteFolderPath).toBe('empty');
+    expect(modalManager.showModal).toHaveBeenCalledWith('deleteFolderModal');
+  });
+
+  it('explains the refusal when the subtree still holds models', () => {
+    const manager = createManager(createApiClient());
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    manager.showDeleteFolderModal('full');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('blocked');
+    expect(confirmBtn().style.display).toBe('none');
+    expect(manager._pendingDeleteFolderPath).toBeNull();
+  });
+
+  it('treats an unknown folder as model-free when the models-only set is missing', () => {
+    // nonEmptyFolders is null outside the include-empty tree; the server still
+    // refuses a non-empty folder, so the client falls back to the confirm state.
+    const manager = createManager(createApiClient());
+    manager.nonEmptyFolders = null;
+
+    manager.showDeleteFolderModal('empty');
+
+    expect(document.getElementById('deleteFolderModal').dataset.state).toBe('confirm');
+  });
+
+  it('deletes the folder and offers the undo affordance for an empty one', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._deleteFolder('empty');
+
+    expect(success).toBe(true);
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith('/models/loras/empty');
+    expect(manager.refresh).toHaveBeenCalledTimes(1);
+    expect(showActionToast).toHaveBeenCalledTimes(1);
+    expect(showToast).not.toHaveBeenCalled();
+  });
+
+  it('restores a deleted empty folder through the create-folder API', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager._deleteFolder('empty');
+    const undo = showActionToast.mock.calls[0][3].onAction;
+    await undo();
+
+    expect(apiClient.createFolder).toHaveBeenCalledWith('/models/loras/empty');
+    expect(showToast).toHaveBeenCalledWith('sidebar.deleteFolderResult.restored', {}, 'success');
+  });
+
+  it('skips the undo affordance when non-model leftovers were removed', async () => {
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockResolvedValue({
+        success: true,
+        folder: 'empty',
+        file_count: 2,
+        dir_count: 1,
+        restorable: false,
+      }),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager._deleteFolder('empty');
+
+    expect(showActionToast).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.successWithFiles',
+      { name: 'empty', count: 3 },
+      'success'
+    );
+  });
+
+  it('surfaces the not_empty conflict when the tree was stale', async () => {
+    const conflict = Object.assign(new Error('still contains models'), { code: 'not_empty' });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._deleteFolder('full');
+
+    expect(success).toBe(false);
+    expect(showToast).toHaveBeenCalledWith('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
+    expect(manager.refresh).not.toHaveBeenCalled();
+  });
+
+  it('surfaces a busy folder with a staged delete', async () => {
+    const busy = Object.assign(new Error('staged delete pending'), { code: 'busy' });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(busy),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    await manager._deleteFolder('full');
+
+    expect(showToast).toHaveBeenCalledWith('sidebar.deleteFolderResult.busy', {}, 'warning');
+  });
+
+  it('drops the removed subtree from the persisted expand state', () => {
+    const manager = createManager(createApiClient());
+    manager.expandedNodes = new Set(['empty', 'empty/deep', 'other']);
+    manager.saveExpandedState = vi.fn();
+
+    manager._forgetRemovedFolder('empty');
+
+    expect([...manager.expandedNodes]).toEqual(['other']);
+    expect(manager.saveExpandedState).toHaveBeenCalledTimes(1);
+  });
+
+  it('leaves the expand state untouched when nothing matched', () => {
+    const manager = createManager(createApiClient());
+    manager.expandedNodes = new Set(['other']);
+    manager.saveExpandedState = vi.fn();
+
+    manager._forgetRemovedFolder('empty');
+
+    expect([...manager.expandedNodes]).toEqual(['other']);
+    expect(manager.saveExpandedState).not.toHaveBeenCalled();
+  });
+
+  it('routes the modal buttons to cancel and confirm', () => {
+    const manager = createManager(createApiClient());
+    manager._deleteFolder = vi.fn().mockResolvedValue(true);
+    manager._pendingDeleteFolderPath = 'empty';
+    manager._wireDeleteFolderModal();
+
+    confirmBtn().dispatchEvent(new MouseEvent('click', { bubbles: true }));
+
+    expect(modalManager.closeModal).toHaveBeenCalledWith('deleteFolderModal');
+    expect(manager._deleteFolder).toHaveBeenCalledWith('empty');
+  });
+
+  it('routes the context-menu action to the delete modal', () => {
+    const manager = createManager(createApiClient());
+    manager.showDeleteFolderModal = vi.fn();
+
+    manager._performFolderAction('delete-folder', 'empty');
+
+    expect(manager.showDeleteFolderModal).toHaveBeenCalledWith('empty');
+  });
+
+  it('hides the delete entry when folder management is unsupported', () => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="sidebarFolderContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="create-subfolder"></div>
+        <div class="context-menu-item delete-item" data-action="delete-folder"></div>
+      </div>`);
+    const apiClient = createApiClient();
+    apiClient.apiConfig.config.supportsFolderManagement = false;
+    const manager = createManager(apiClient);
+
+    manager._showFolderContextMenu(10, 10, 'empty');
+
+    const item = document.querySelector('#sidebarFolderContextMenu [data-action="delete-folder"]');
+    expect(item.style.display).toBe('none');
+
+    manager._closeFolderContextMenu();
   });
 });
 

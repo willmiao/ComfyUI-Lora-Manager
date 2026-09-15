@@ -1263,6 +1263,26 @@
             "unsupported": "[TODO: Translate] Folder creation is not supported on this page",
             "noRoot": "[TODO: Translate] No model root is configured"
         },
+        "deleteFolder": "[TODO: Translate] Delete folder",
+        "deleteFolderModal": {
+            "title": "[TODO: Translate] Delete folder?",
+            "message": "[TODO: Translate] The folder and everything inside it will be permanently removed from disk.",
+            "folderLabel": "[TODO: Translate] Folder",
+            "emptyNote": "[TODO: Translate] This folder contains no models. Any other files it holds will be deleted too.",
+            "notEmptyTitle": "[TODO: Translate] Folder is not empty",
+            "notEmptyMessage": "[TODO: Translate] This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
+            "confirm": "[TODO: Translate] Delete folder"
+        },
+        "deleteFolderResult": {
+            "success": "[TODO: Translate] Folder \"{name}\" deleted",
+            "successWithFiles": "[TODO: Translate] Folder \"{name}\" deleted along with {count} other item(s)",
+            "restored": "[TODO: Translate] Folder restored",
+            "failed": "[TODO: Translate] Failed to delete folder: {message}",
+            "notEmpty": "[TODO: Translate] This folder still contains models. Refresh the sidebar and try again.",
+            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
+            "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "移動先のパスを特定できません。",
             "moveUnsupported": "この項目の移動はサポートされていません。",

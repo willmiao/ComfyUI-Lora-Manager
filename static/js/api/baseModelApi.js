@@ -1330,6 +1330,40 @@ export class BaseModelApiClient {
         return result;
     }
 
+    /**
+     * Delete a model-free folder inside the library roots.
+     *
+     * Only model-free folders can be removed; the backend answers with a 409
+     * `not_empty`/`busy` conflict otherwise. Those codes are attached to the
+     * thrown Error (`code`, `manifest`) so callers can explain the refusal
+     * instead of showing a bare message.
+     *
+     * @param {string} folderPath Absolute business path of the folder
+     * @param {{dryRun?: boolean}} [options]
+     */
+    async deleteFolder(folderPath, options = {}) {
+        const { dryRun = false } = options || {};
+
+        const response = await fetch(this.apiConfig.endpoints.deleteFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder_path: folderPath, dry_run: dryRun })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || `Failed to delete folder`);
+            error.code = result.code || null;
+            error.manifest = result.manifest || null;
+            throw error;
+        }
+
+        return result;
+    }
+
     async fetchUnifiedFolderTree(options = {}) {
         try {
             const { includeEmpty = false } = options;
