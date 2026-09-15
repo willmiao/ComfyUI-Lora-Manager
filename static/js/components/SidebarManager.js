@@ -1635,24 +1635,18 @@ export class SidebarManager {
         const menu = document.getElementById('sidebarFolderContextMenu');
         if (!menu) return;
 
-        // Folder creation is only available on pages backed by model library
-        // roots (not recipes, which have no on-disk folder management).
-        const createItem = menu.querySelector('[data-action="create-subfolder"]');
-        if (createItem) {
-            createItem.style.display = this._supportsFolderManagement() ? '' : 'none';
+        // The folder operations are only available on pages backed by model
+        // library roots (recipes have virtual folders only). Their dividers are
+        // collapsed afterwards so such a page shows the update check alone
+        // instead of dangling separators.
+        const supportsFolderManagement = this._supportsFolderManagement();
+        for (const action of ['create-subfolder', 'rename-folder', 'delete-folder']) {
+            const item = menu.querySelector(`[data-action="${action}"]`);
+            if (item) {
+                item.style.display = supportsFolderManagement ? '' : 'none';
+            }
         }
-
-        // Deletion is gated the same way: recipes have virtual folders only.
-        const deleteItem = menu.querySelector('[data-action="delete-folder"]');
-        if (deleteItem) {
-            deleteItem.style.display = this._supportsFolderManagement() ? '' : 'none';
-        }
-
-        // Renaming an on-disk folder is likewise library-only.
-        const renameItem = menu.querySelector('[data-action="rename-folder"]');
-        if (renameItem) {
-            renameItem.style.display = this._supportsFolderManagement() ? '' : 'none';
-        }
+        this._updateContextMenuSeparators(menu);
 
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
@@ -1670,6 +1664,40 @@ export class SidebarManager {
         setTimeout(() => {
             document.addEventListener('click', this._folderContextCloseHandler);
         }, 0);
+    }
+
+    /**
+     * Hide separators that no longer divide anything.
+     *
+     * Context-menu entries are gated per page, so a divider can end up
+     * leading, trailing or doubled once its group is hidden — the recipes page,
+     * for example, keeps only "check for updates". A separator survives only
+     * when a visible entry sits on both of its sides, and a run of consecutive
+     * separators collapses to a single line.
+     */
+    _updateContextMenuSeparators(menu) {
+        const children = [...menu.children];
+        const isSeparator = (element) => element.classList.contains('context-menu-separator');
+        const visibleIndexes = children
+            .map((element, index) => (!isSeparator(element) && element.style.display !== 'none' ? index : -1))
+            .filter((index) => index !== -1);
+
+        const first = visibleIndexes[0];
+        const last = visibleIndexes[visibleIndexes.length - 1];
+        let inSeparatorRun = false;
+
+        children.forEach((element, index) => {
+            if (!isSeparator(element)) {
+                inSeparatorRun = false;
+                return;
+            }
+            const keep = visibleIndexes.length >= 2
+                && index > first
+                && index < last
+                && !inSeparatorRun;
+            element.style.display = keep ? '' : 'none';
+            inSeparatorRun = true;
+        });
     }
 
     _closeFolderContextMenu() {

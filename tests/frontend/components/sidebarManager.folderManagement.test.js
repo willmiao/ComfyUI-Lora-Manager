@@ -846,3 +846,75 @@ describe('SidebarManager folder rename', () => {
   });
 });
 
+describe('SidebarManager folder context menu layout', () => {
+  // Mirrors templates/components/context_menu.html: the update check on top,
+  // the folder operations as one group, delete last behind its own divider.
+  const MENU_HTML = `
+    <div id="sidebarFolderContextMenu" class="context-menu">
+      <div class="context-menu-item" data-action="check-folder-updates"></div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item" data-action="create-subfolder"></div>
+      <div class="context-menu-item" data-action="rename-folder"></div>
+      <div class="context-menu-separator"></div>
+      <div class="context-menu-item delete-item" data-action="delete-folder"></div>
+    </div>`;
+
+  const separators = () => [...document.querySelectorAll('#sidebarFolderContextMenu .context-menu-separator')];
+  const item = (action) => document.querySelector(`#sidebarFolderContextMenu [data-action="${action}"]`);
+  const visible = (el) => el.style.display !== 'none';
+
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = MENU_HTML;
+    state.global.settings = {};
+    vi.clearAllMocks();
+  });
+
+  it('keeps both dividers on a library page', () => {
+    const manager = createManager(createApiClient());
+
+    manager._showFolderContextMenu(10, 10, 'empty');
+
+    expect(separators().map(visible)).toEqual([true, true]);
+    expect(visible(item('create-subfolder'))).toBe(true);
+    expect(visible(item('rename-folder'))).toBe(true);
+    expect(visible(item('delete-folder'))).toBe(true);
+
+    manager._closeFolderContextMenu();
+  });
+
+  it('collapses both dividers when the page has no folder management', () => {
+    const apiClient = createApiClient();
+    apiClient.apiConfig.config.supportsFolderManagement = false;
+    const manager = createManager(apiClient);
+
+    manager._showFolderContextMenu(10, 10, 'empty');
+
+    expect(visible(item('check-folder-updates'))).toBe(true);
+    expect(visible(item('create-subfolder'))).toBe(false);
+    expect(visible(item('rename-folder'))).toBe(false);
+    expect(visible(item('delete-folder'))).toBe(false);
+    // Nothing left to divide: the update check stands alone
+    expect(separators().map(visible)).toEqual([false, false]);
+
+    manager._closeFolderContextMenu();
+  });
+
+  it('drops leading, trailing and doubled separators', () => {
+    document.body.innerHTML = `
+      <div id="sidebarFolderContextMenu" class="context-menu">
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="a"></div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-separator"></div>
+        <div class="context-menu-item" data-action="b"></div>
+        <div class="context-menu-separator"></div>
+      </div>`;
+    const manager = createManager(createApiClient());
+
+    manager._updateContextMenuSeparators(document.getElementById('sidebarFolderContextMenu'));
+
+    expect(separators().map(visible)).toEqual([false, true, false, false]);
+  });
+});
+
