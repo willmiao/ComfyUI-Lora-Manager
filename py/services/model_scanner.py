@@ -1562,6 +1562,159 @@ class ModelScanner:
         """Return True when *candidate* is *target* or lives below it."""
         return candidate == target or candidate.startswith(f"{target}/")
 
+    @staticmethod
+    def _rekey_path(value: str, old_prefix: str, new_prefix: str) -> str:
+        """Move a stored path (or URL) from *old_prefix* onto *new_prefix*."""
+        if not value:
+            return value
+        normalized = value.replace("\\", "/")
+        if normalized.startswith(old_prefix):
+            return new_prefix + normalized[len(old_prefix):]
+        return value
+
+    async def rename_known_folder(
+        self,
+        previous_folder: str,
+        new_folder: str,
+        *,
+        previous_path: str,
+        new_path: str,
+    ) -> bool:
+        """Re-key folder, cache and metadata records after a directory rename.
+
+        Counterpart of :meth:`add_known_folder` / :meth:`remove_known_folder`.
+        A rename keeps every file, so nothing may be dropped: the recorded
+        folder list, the affected cache entries (``file_path``/``folder``/
+        ``preview_url``), the hash index and the on-disk metadata sidecars are
+        all rewritten onto the new prefix. That is what lets a folder full of
+        models be renamed without a rescan and without breaking per-model
+        bookkeeping.
+
+        Args:
+            previous_folder: Library-relative folder name before the rename
+            new_folder: Library-relative folder name after the rename
+            previous_path: Absolute directory path before the rename
+            new_path: Absolute directory path after the rename
+
+        Returns:
+            True when any recorded data was rewritten.
+        """
+        previous = previous_folder.replace("\\", "/").strip("/")
+        current = new_folder.replace("\\", "/").strip("/")
+        if not previous or not current or previous == current:
+            return False
+
+        old_rel_prefix = f"{previous}/"
+        new_rel_prefix = f"{current}/"
+        old_abs_prefix = f"{str(previous_path).replace(chr(92), '/').rstrip('/')}/"
+        new_abs_prefix = f"{str(new_path).replace(chr(92), '/').rstrip('/')}/"
+
+        cache = self._cache
+        if cache is None:
+            return False
+
+        changed = False
+
+        recorded = getattr(cache, "all_folders", None)
+        if recorded is not None:
+            rekeyed = sorted(
+                (
+                    self._rekey_folder_name(entry, previous, old_rel_prefix, new_rel_prefix)
+                    for entry in recorded
+                ),
+                key=lambda entry: entry.lower(),
+            )
+            if rekeyed != list(recorded):
+                cache.all_folders = rekeyed
+                changed = True
+
+        excluded = getattr(self, "_excluded_models", None)
+        if excluded:
+            rekeyed_excluded = [
+                self._rekey_path(entry, old_abs_prefix, new_abs_prefix)
+                for entry in excluded
+            ]
+            if rekeyed_excluded != list(excluded):
+                self._excluded_models = rekeyed_excluded
+                changed = True
+
+        touched: List[Dict[str, Any]] = []
+        for item in cache.raw_data or []:
+            folder_value = item.get("folder", "") or self._calculate_folder(
+                item.get("file_path", "")
+            )
+            if not self._folder_within(folder_value, previous):
+                continue
+
+            old_file_path = item.get("file_path", "")
+            if old_file_path:
+                cache.remove_from_version_index(item)
+                item["file_path"] = self._rekey_path(
+                    old_file_path, old_abs_prefix, new_abs_prefix
+                )
+                hash_value = (item.get("sha256") or "").lower()
+                if hash_value:
+                    self._hash_index.remove_by_path(old_file_path, hash_value)
+                    self._hash_index.add_entry(
+                        hash_value, item["file_path"], item.get("autov3") or None
+                    )
+
+            item["folder"] = self._rekey_folder_name(
+                folder_value, previous, old_rel_prefix, new_rel_prefix
+            )
+            if item.get("preview_url"):
+                item["preview_url"] = self._rekey_path(
+                    item["preview_url"], old_abs_prefix, new_abs_prefix
+                )
+            touched.append(item)
+
+        if touched:
+            changed = True
+            await self._rewrite_sidecar_paths(touched)
+            folders = set(item.get("folder", "") for item in cache.raw_data)
+            cache.folders = sorted(folders, key=lambda x: x.lower())
+            cache.rebuild_version_index()
+            await cache.resort()
+
+        if changed:
+            await self._persist_current_cache()
+
+        self.bump_cache_version()
+        return changed
+
+    @staticmethod
+    def _rekey_folder_name(
+        entry: str, previous: str, old_rel_prefix: str, new_rel_prefix: str
+    ) -> str:
+        """Move a library-relative folder name (and its subtree) under a new name."""
+        if entry == previous:
+            return new_rel_prefix.rstrip("/")
+        if entry.startswith(old_rel_prefix):
+            return new_rel_prefix + entry[len(old_rel_prefix):]
+        return entry
+
+    async def _rewrite_sidecar_paths(self, entries: List[Dict[str, Any]]) -> None:
+        """Point each model's metadata sidecar at its new location.
+
+        Sidecars travel with the renamed directory, so only the recorded
+        ``file_path``/``preview_url`` inside them need rewriting. Failures are
+        logged and skipped — a stale sidecar is repaired by the next metadata
+        refresh, and must not abort the rename.
+        """
+        for item in entries:
+            file_path = item.get("file_path")
+            if not file_path:
+                continue
+            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+            if not os.path.exists(metadata_path):
+                continue
+            try:
+                await self._update_metadata_paths(metadata_path, file_path)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed to rewrite metadata sidecar %s: %s", metadata_path, exc
+                )
+
     def _schedule_all_folders_backfill(self) -> None:
         """Kick off a one-shot background folder walk if none is running."""
         if self._all_folders_backfill_running:

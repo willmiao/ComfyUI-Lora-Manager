@@ -1364,6 +1364,37 @@ export class BaseModelApiClient {
         return result;
     }
 
+    /**
+     * Rename a folder inside the library roots.
+     *
+     * Works on folders that hold models too — the backend re-keys the affected
+     * cache records instead of cascading. A name collision or a staged delete
+     * inside the subtree surfaces as a 409 conflict, attached to the thrown
+     * Error as `code`.
+     *
+     * @param {string} folderPath Absolute business path of the folder
+     * @param {string} newName New leaf name (a single path segment)
+     */
+    async renameFolder(folderPath, newName) {
+        const response = await fetch(this.apiConfig.endpoints.renameFolder, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ folder_path: folderPath, new_name: newName })
+        });
+
+        const result = await response.json().catch(() => ({}));
+
+        if (!response.ok || result.success === false) {
+            const error = new Error(result.error || `Failed to rename folder`);
+            error.code = result.code || null;
+            throw error;
+        }
+
+        return result;
+    }
+
     async fetchUnifiedFolderTree(options = {}) {
         try {
             const { includeEmpty = false } = options;

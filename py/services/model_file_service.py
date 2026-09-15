@@ -712,6 +712,131 @@ class ModelMoveService:
         if callable(remove_known_folder):
             await remove_known_folder(relative_folder)
 
+    async def rename_folder(self, folder_path: str, new_name: str) -> Dict[str, Any]:
+        """Rename a directory inside the model library roots.
+
+        Unlike :meth:`delete_folder` this works on folders that hold models.
+        A rename keeps every file, so no per-model lifecycle step is bypassed:
+        the directory is renamed on disk and the affected folder, cache, hash
+        index and metadata-sidecar records are re-keyed onto the new prefix by
+        the scanner.
+
+        Args:
+            folder_path: Absolute path of the directory to rename (business
+                path — symlinks are not resolved)
+            new_name: New leaf name; a single path segment, not a path
+
+        Returns:
+            Dictionary with the success flag, the previous/next library-relative
+            folder names and whether the directory actually moved.
+        """
+        try:
+            if not folder_path or not str(folder_path).strip():
+                return {"success": False, "error": "Folder path is required"}
+
+            new_name = str(new_name or "").strip()
+            if not new_name:
+                return {"success": False, "error": "New folder name is required"}
+            if new_name in (".", "..") or any(
+                char in new_name for char in '/\\:*?"<>|'
+            ):
+                return {"success": False, "error": "Invalid characters in folder name"}
+
+            _require_path_in_library_roots(folder_path, self.scanner, label="Folder path")
+
+            absolute_path = os.path.abspath(folder_path)
+            if os.path.islink(absolute_path):
+                return {
+                    "success": False,
+                    "error": "Symlinked folders cannot be renamed",
+                }
+            if not os.path.isdir(absolute_path):
+                return {"success": False, "error": "Folder no longer exists"}
+
+            if self._is_model_root(absolute_path):
+                return {
+                    "success": False,
+                    "error": "The library root itself cannot be renamed",
+                }
+
+            previous_relative = self._calculate_relative_folder(absolute_path)
+            target = os.path.join(os.path.dirname(absolute_path), new_name)
+
+            if os.path.normpath(target) == os.path.normpath(absolute_path):
+                return {
+                    "success": True,
+                    "renamed": False,
+                    "folder": previous_relative,
+                    "previous_folder": previous_relative,
+                    "folder_path": absolute_path.replace(os.sep, "/"),
+                }
+
+            if os.path.exists(target):
+                return {
+                    "success": False,
+                    "code": "target_exists",
+                    "error": f"A folder named \"{new_name}\" already exists here",
+                }
+
+            # A staging manifest records absolute original/staged paths, so
+            # moving a folder that holds one would break its undo and purge.
+            if self._has_pending_delete_job(absolute_path):
+                return {
+                    "success": False,
+                    "code": "busy",
+                    "error": (
+                        "A staged delete is still pending inside this folder; "
+                        "wait for the undo window to expire"
+                    ),
+                }
+
+            os.rename(absolute_path, target)
+
+            new_relative = self._calculate_relative_folder(target)
+            await self._rename_folder_records(
+                previous_relative, new_relative, absolute_path, target
+            )
+
+            return {
+                "success": True,
+                "renamed": True,
+                "folder": new_relative,
+                "previous_folder": previous_relative,
+                "folder_path": target.replace(os.sep, "/"),
+            }
+        except ValueError as exc:
+            return {"success": False, "error": str(exc)}
+        except Exception as exc:
+            logger.error(f"Error renaming folder: {exc}", exc_info=True)
+            return {"success": False, "error": str(exc)}
+
+    @staticmethod
+    def _has_pending_delete_job(absolute_path: str) -> bool:
+        """Return True when a staged-delete batch lives inside the subtree."""
+        for _dirpath, dirnames, _filenames in os.walk(absolute_path):
+            if PENDING_DELETE_DIR_NAME in dirnames:
+                return True
+        return False
+
+    async def _rename_folder_records(
+        self,
+        previous_relative: str,
+        new_relative: str,
+        previous_path: str,
+        new_path: str,
+    ) -> None:
+        """Hand the rename to the scanner so folder/cache records follow it."""
+        if not previous_relative or not new_relative:
+            return
+        rename_known_folder = getattr(self.scanner, "rename_known_folder", None)
+        if callable(rename_known_folder):
+            await rename_known_folder(
+                previous_relative,
+                new_relative,
+                previous_path=previous_path,
+                new_path=new_path,
+            )
+
     async def move_model(self, file_path: str, target_path: str, use_default_paths: bool = False) -> Dict[str, Any]:
         """Move a single model file
         

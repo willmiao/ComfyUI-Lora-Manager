@@ -11,6 +11,7 @@ class FakeMoveService:
         self._result = result
         self.received_path = None
         self.received_dry_run = None
+        self.received_new_name = None
 
     async def create_folder(self, folder_path):
         self.received_path = folder_path
@@ -19,6 +20,11 @@ class FakeMoveService:
     async def delete_folder(self, folder_path, dry_run=False):
         self.received_path = folder_path
         self.received_dry_run = dry_run
+        return self._result
+
+    async def rename_folder(self, folder_path, new_name):
+        self.received_path = folder_path
+        self.received_new_name = new_name
         return self._result
 
 
@@ -209,6 +215,119 @@ async def test_delete_folder_invalid_json_body():
     handler, _service = _make_handler({"success": True})
 
     response = await handler.delete_folder(BadJsonRequest())
+
+    assert response.status == 400
+    assert json.loads(response.text)["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_success():
+    handler, service = _make_handler(
+        {
+            "success": True,
+            "renamed": True,
+            "folder": "characters/animation",
+            "previous_folder": "characters/anime",
+        }
+    )
+
+    response = await handler.rename_folder(
+        FakeRequest(
+            {"folder_path": "/library/characters/anime", "new_name": "animation"}
+        )
+    )
+
+    assert response.status == 200
+    payload = json.loads(response.text)
+    assert payload["success"] is True
+    assert payload["folder"] == "characters/animation"
+    assert service.received_path == "/library/characters/anime"
+    assert service.received_new_name == "animation"
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_missing_path():
+    handler, service = _make_handler({"success": True})
+
+    response = await handler.rename_folder(FakeRequest({"new_name": "animation"}))
+
+    assert response.status == 400
+    assert json.loads(response.text)["success"] is False
+    assert service.received_path is None
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_missing_name():
+    handler, service = _make_handler({"success": True})
+
+    response = await handler.rename_folder(
+        FakeRequest({"folder_path": "/library/characters/anime"})
+    )
+
+    assert response.status == 400
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert service.received_new_name is None
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_target_exists_maps_to_409():
+    handler, _service = _make_handler(
+        {
+            "success": False,
+            "code": "target_exists",
+            "error": 'A folder named "animation" already exists here',
+        }
+    )
+
+    response = await handler.rename_folder(
+        FakeRequest(
+            {"folder_path": "/library/characters/anime", "new_name": "animation"}
+        )
+    )
+
+    assert response.status == 409
+    payload = json.loads(response.text)
+    assert payload["code"] == "target_exists"
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_busy_maps_to_409():
+    handler, _service = _make_handler(
+        {"success": False, "code": "busy", "error": "staged delete pending"}
+    )
+
+    response = await handler.rename_folder(
+        FakeRequest({"folder_path": "/library/full", "new_name": "renamed"})
+    )
+
+    assert response.status == 409
+    assert json.loads(response.text)["code"] == "busy"
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_invalid_name_maps_to_400():
+    handler, _service = _make_handler(
+        {"success": False, "error": "Invalid characters in folder name"}
+    )
+
+    response = await handler.rename_folder(
+        FakeRequest({"folder_path": "/library/full", "new_name": "a/b"})
+    )
+
+    assert response.status == 400
+    assert json.loads(response.text)["success"] is False
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_invalid_json_body():
+    class BadJsonRequest:
+        async def json(self):
+            raise ValueError("bad json")
+
+    handler, _service = _make_handler({"success": True})
+
+    response = await handler.rename_folder(BadJsonRequest())
 
     assert response.status == 400
     assert json.loads(response.text)["success"] is False

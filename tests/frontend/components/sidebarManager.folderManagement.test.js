@@ -59,6 +59,12 @@ function createApiClient(overrides = {}) {
       dir_count: 0,
       restorable: true,
     }),
+    renameFolder: vi.fn().mockResolvedValue({
+      success: true,
+      renamed: true,
+      folder: 'renamed',
+      previous_folder: 'empty',
+    }),
     ...overrides,
   };
 }
@@ -671,6 +677,169 @@ describe('SidebarManager folder deletion', () => {
     manager._showFolderContextMenu(10, 10, 'empty');
 
     const item = document.querySelector('#sidebarFolderContextMenu [data-action="delete-folder"]');
+    expect(item.style.display).toBe('none');
+
+    manager._closeFolderContextMenu();
+  });
+});
+
+describe('SidebarManager folder rename', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    state.global.settings = {};
+    vi.clearAllMocks();
+  });
+
+  function renameInput() {
+    return document.querySelector('#sidebarRenameFolderInput .sidebar-rename-folder-input');
+  }
+
+  it('turns the node into a prefilled inline row in tree mode', () => {
+    const manager = createManager(createApiClient());
+    manager.treeData = { characters: { anime: {} } };
+    manager.renderTree();
+
+    manager.showRenameFolderInput('characters/anime');
+
+    const row = document.getElementById('sidebarRenameFolderInput');
+    expect(row).not.toBeNull();
+    expect(renameInput().value).toBe('anime');
+    // The node is hidden in place, not removed: the row sits right before it
+    const node = document.querySelector('.sidebar-tree-node[data-path="characters/anime"]');
+    expect(node.style.display).toBe('none');
+    expect(row.nextElementSibling).toBe(node);
+    expect(manager._renameFolderPath).toBe('characters/anime');
+  });
+
+  it('inserts the row in place in list mode', () => {
+    const manager = createManager(createApiClient(), { displayMode: 'list' });
+    manager.foldersList = ['characters', 'characters/anime'];
+    manager.renderFolderList();
+
+    manager.showRenameFolderInput('characters/anime');
+
+    const row = document.getElementById('sidebarRenameFolderInput');
+    expect(row.querySelector('.sidebar-node-content')).not.toBeNull();
+    const item = document.querySelector('.sidebar-folder-item[data-path="characters/anime"]');
+    expect(row.nextElementSibling).toBe(item);
+  });
+
+  it('restores the node when the edit is canceled', () => {
+    const manager = createManager(createApiClient());
+    manager.treeData = { characters: { anime: {} } };
+    manager.renderTree();
+
+    manager.showRenameFolderInput('characters/anime');
+    manager.handleRenameFolderCancel();
+
+    expect(document.getElementById('sidebarRenameFolderInput')).toBeNull();
+    expect(manager._renameFolderPath).toBeNull();
+    const node = document.querySelector('.sidebar-tree-node[data-path="characters/anime"]');
+    expect(node.style.display).toBe('');
+  });
+
+  it('renames through the API and re-keys the persisted selection', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    manager.selectedPath = 'characters/anime';
+    manager.expandedNodes = new Set(['characters', 'characters/anime']);
+    manager.pageControls = { pageState: { activeFolder: 'characters/anime' } };
+
+    const success = await manager._renameFolder('characters/anime', 'animation');
+
+    expect(success).toBe(true);
+    expect(apiClient.renameFolder).toHaveBeenCalledWith('/models/loras/characters/anime', 'animation');
+    expect(manager.selectedPath).toBe('renamed');
+    expect(manager.pageControls.pageState.activeFolder).toBe('renamed');
+    expect(getStorageItem('loras_activeFolder')).toBe('renamed');
+    expect(manager.refresh).toHaveBeenCalledTimes(1);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.renameFolderResult.success', { name: 'animation' }, 'success'
+    );
+  });
+
+  it('re-keys the expanded subtree and the selection', () => {
+    const manager = createManager(createApiClient());
+    manager.expandedNodes = new Set(['a', 'a/b', 'a/b/c', 'x']);
+    manager.selectedPath = 'a/b/c';
+    manager.saveExpandedState = vi.fn();
+
+    manager._rekeyFolderPath('a/b', 'a/z');
+
+    expect([...manager.expandedNodes]).toEqual(['a', 'a/z', 'a/z/c', 'x']);
+    expect(manager.selectedPath).toBe('a/z/c');
+    expect(manager.saveExpandedState).toHaveBeenCalledTimes(1);
+  });
+
+  it('submits the inline edit and skips the API for an unchanged name', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+    manager.treeData = { characters: { anime: {} } };
+    manager.renderTree();
+
+    manager.showRenameFolderInput('characters/anime');
+    renameInput().value = 'anime';
+    await manager.handleRenameFolderSubmit();
+
+    expect(apiClient.renameFolder).not.toHaveBeenCalled();
+    expect(document.getElementById('sidebarRenameFolderInput')).toBeNull();
+  });
+
+  it('rejects invalid names before calling the API', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
+    manager.treeData = { characters: { anime: {} } };
+    manager.renderTree();
+
+    manager.showRenameFolderInput('characters/anime');
+    renameInput().value = 'bad/name';
+    await manager.handleRenameFolderSubmit();
+
+    expect(apiClient.renameFolder).not.toHaveBeenCalled();
+    expect(showToast).toHaveBeenCalledWith('sidebar.dragDrop.invalidFolderName', {}, 'error');
+    // The row stays open so the name can be corrected
+    expect(document.getElementById('sidebarRenameFolderInput')).not.toBeNull();
+  });
+
+  it('surfaces a name collision', async () => {
+    const conflict = Object.assign(new Error('already exists'), { code: 'target_exists' });
+    const apiClient = createApiClient({
+      renameFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._renameFolder('characters/anime', 'animation');
+
+    expect(success).toBe(false);
+    expect(showToast).toHaveBeenCalledWith('sidebar.renameFolderResult.targetExists', {}, 'warning');
+    expect(manager.refresh).not.toHaveBeenCalled();
+  });
+
+  it('routes the context-menu action to the inline rename row', () => {
+    const manager = createManager(createApiClient());
+    manager.showRenameFolderInput = vi.fn();
+
+    manager._performFolderAction('rename-folder', 'characters/anime');
+
+    expect(manager.showRenameFolderInput).toHaveBeenCalledWith('characters/anime');
+  });
+
+  it('hides the rename entry when folder management is unsupported', () => {
+    document.body.insertAdjacentHTML('beforeend', `
+      <div id="sidebarFolderContextMenu" class="context-menu">
+        <div class="context-menu-item" data-action="rename-folder"></div>
+      </div>`);
+    const apiClient = createApiClient();
+    apiClient.apiConfig.config.supportsFolderManagement = false;
+    const manager = createManager(apiClient);
+
+    manager._showFolderContextMenu(10, 10, 'empty');
+
+    const item = document.querySelector('#sidebarFolderContextMenu [data-action="rename-folder"]');
     expect(item.style.display).toBe('none');
 
     manager._closeFolderContextMenu();

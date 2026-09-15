@@ -47,6 +47,8 @@ export class SidebarManager {
         this.nonEmptyFolders = null; // models-only folder set used to dim empty nodes
         this._createFolderBasePath = null;
         this._createFolderTempChildren = null; // children container added for a leaf parent during inline creation
+        this._renameFolderPath = null;
+        this._renameFolderNode = null;
         this._pendingDeleteFolderPath = null;
         this._deleteFolderModalWired = false;
 
@@ -118,6 +120,7 @@ export class SidebarManager {
         this.clearAllDropHighlights();
         this.resetDragState();
         this.hideCreateFolderInput();
+        this.hideRenameFolderInput();
 
         this.hideSidebarHiddenIndicator();
 
@@ -136,6 +139,8 @@ export class SidebarManager {
         this.nonEmptyFolders = null;
         this._createFolderBasePath = null;
         this._createFolderTempChildren = null;
+        this._renameFolderPath = null;
+        this._renameFolderNode = null;
         this._pendingDeleteFolderPath = null;
 
         // Reset container margin
@@ -761,6 +766,214 @@ export class SidebarManager {
 
     handleCreateFolderCancel() {
         this.hideCreateFolderInput();
+    }
+
+    // ===== Folder rename (inline row, file-explorer style) =====
+
+    /**
+     * Turn the folder node at *path* into an editable row.
+     *
+     * Mirrors the create-folder inline row (Enter confirms, Escape/blur
+     * cancels) but is inserted where the node sits and hides that node while
+     * editing, so the tree does not jump.
+     */
+    showRenameFolderInput(path) {
+        if (!path) return;
+
+        this.hideRenameFolderInput();
+
+        const folderTree = document.getElementById('sidebarFolderTree');
+        if (!folderTree) return;
+
+        const node = this._findFolderNodeElement(folderTree, path);
+        if (!node) return;
+
+        const row = this._buildRenameFolderRow(this._folderLeafName(path));
+        node.parentElement.insertBefore(row, node);
+        node.style.display = 'none';
+
+        this._renameFolderNode = node;
+        this._renameFolderPath = path;
+
+        const input = row.querySelector('.sidebar-rename-folder-input');
+        if (!input) return;
+        input.focus();
+        input.select();
+
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                this.handleRenameFolderSubmit();
+            } else if (e.key === 'Escape') {
+                this.handleRenameFolderCancel();
+            }
+        });
+        // Clicking away cancels, mirroring the create-folder row
+        input.addEventListener('blur', () => {
+            setTimeout(() => {
+                if (this._renameFolderPath) {
+                    this.handleRenameFolderCancel();
+                }
+            }, 100);
+        });
+    }
+
+    _buildRenameFolderRow(currentName) {
+        const isListMode = this.displayMode === 'list';
+        const row = document.createElement('div');
+        row.id = 'sidebarRenameFolderInput';
+        row.className = 'sidebar-create-folder-node sidebar-rename-folder-node';
+        row.innerHTML = `
+            <div class="${isListMode ? 'sidebar-node-content' : 'sidebar-tree-node-content'} sidebar-create-folder-row">
+                ${isListMode ? '' : `
+                <div class="sidebar-tree-expand-icon sidebar-create-folder-spacer">
+                    <i class="fas fa-chevron-right"></i>
+                </div>`}
+                <i class="fas fa-i-cursor sidebar-tree-folder-icon"></i>
+                <input type="text"
+                       class="sidebar-create-folder-input sidebar-rename-folder-input"
+                       aria-label="${escapeAttribute(translate('sidebar.renameFolder', {}, 'Rename folder'))}"
+                       value="${escapeAttribute(currentName)}" />
+            </div>
+        `;
+        return row;
+    }
+
+    _findFolderNodeElement(folderTree, path) {
+        return [...folderTree.querySelectorAll('.sidebar-tree-node, .sidebar-folder-item')]
+            .find(element => element.dataset.path === path) || null;
+    }
+
+    _folderLeafName(path) {
+        if (!path) return '';
+        const index = path.lastIndexOf('/');
+        return index === -1 ? path : path.slice(index + 1);
+    }
+
+    hideRenameFolderInput() {
+        // Clear the flag first so the input's blur handler does not treat
+        // removing the row as a cancel.
+        this._renameFolderPath = null;
+
+        const row = document.getElementById('sidebarRenameFolderInput');
+        if (row) {
+            row.remove();
+        }
+
+        const node = this._renameFolderNode;
+        this._renameFolderNode = null;
+        if (node && node.isConnected) {
+            node.style.display = '';
+        }
+    }
+
+    handleRenameFolderCancel() {
+        this.hideRenameFolderInput();
+    }
+
+    async handleRenameFolderSubmit() {
+        const input = document.querySelector('#sidebarRenameFolderInput .sidebar-rename-folder-input');
+        const path = this._renameFolderPath;
+        if (!input || !path) {
+            return;
+        }
+
+        const newName = input.value.trim();
+        if (!newName) {
+            showToast('sidebar.dragDrop.emptyFolderName', {}, 'warning');
+            return;
+        }
+
+        if (/[\\/:*?"<>|]/.test(newName)) {
+            showToast('sidebar.dragDrop.invalidFolderName', {}, 'error');
+            return;
+        }
+
+        this.hideRenameFolderInput();
+
+        if (newName === this._folderLeafName(path)) {
+            return;
+        }
+
+        await this._renameFolder(path, newName);
+    }
+
+    async _renameFolder(relativePath, newName) {
+        if (!this._supportsFolderManagement() || typeof this.apiClient.renameFolder !== 'function') {
+            showToast('sidebar.renameFolderResult.unsupported', {}, 'error');
+            return false;
+        }
+
+        try {
+            const rootsData = await this.apiClient.fetchModelRoots();
+            const roots = rootsData?.roots || [];
+            const root = this._resolveDefaultRoot(roots);
+            if (!root) {
+                showToast('sidebar.renameFolderResult.noRoot', {}, 'error');
+                return false;
+            }
+
+            const absolutePath = this.combineRootAndRelativePath(root, relativePath);
+            const result = await this.apiClient.renameFolder(absolutePath, newName);
+
+            // Carry the user's place across the rename: the persisted
+            // selection and the expanded set would otherwise point at a folder
+            // the refreshed tree no longer contains.
+            const newPath = result.folder || this._siblingFolderPath(relativePath, newName);
+            this._rekeyFolderPath(relativePath, newPath);
+
+            await this.refresh();
+
+            showToast('sidebar.renameFolderResult.success', { name: newName }, 'success');
+            return true;
+        } catch (error) {
+            console.error('[SidebarManager] Error renaming folder:', error);
+            if (error?.code === 'target_exists') {
+                showToast('sidebar.renameFolderResult.targetExists', {}, 'warning');
+            } else if (error?.code === 'busy') {
+                showToast('sidebar.renameFolderResult.busy', {}, 'warning');
+            } else {
+                showToast(
+                    'sidebar.renameFolderResult.failed',
+                    { message: error?.message || 'Unknown error' },
+                    'error'
+                );
+            }
+            return false;
+        }
+    }
+
+    _siblingFolderPath(relativePath, newName) {
+        const index = relativePath.lastIndexOf('/');
+        const parent = index === -1 ? '' : relativePath.slice(0, index);
+        return parent ? `${parent}/${newName}` : newName;
+    }
+
+    _rekeyFolderPath(previousPath, newPath) {
+        if (!previousPath || !newPath || previousPath === newPath) return;
+
+        const prefix = `${previousPath}/`;
+        const newPrefix = `${newPath}/`;
+        const rekey = (value) => {
+            if (value === previousPath) return newPath;
+            if (value.startsWith(prefix)) return newPrefix + value.slice(prefix.length);
+            return value;
+        };
+
+        if (this.expandedNodes.size > 0) {
+            this.expandedNodes = new Set([...this.expandedNodes].map(rekey));
+            this.saveExpandedState();
+        }
+
+        if (this.selectedPath) {
+            const rekeyed = rekey(this.selectedPath);
+            if (rekeyed !== this.selectedPath) {
+                this.selectedPath = rekeyed;
+                if (this.pageControls?.pageState) {
+                    this.pageControls.pageState.activeFolder = rekeyed;
+                }
+                setStorageItem(`${this.pageType}_activeFolder`, rekeyed);
+            }
+        }
     }
 
     /**
@@ -1435,6 +1648,12 @@ export class SidebarManager {
             deleteItem.style.display = this._supportsFolderManagement() ? '' : 'none';
         }
 
+        // Renaming an on-disk folder is likewise library-only.
+        const renameItem = menu.querySelector('[data-action="rename-folder"]');
+        if (renameItem) {
+            renameItem.style.display = this._supportsFolderManagement() ? '' : 'none';
+        }
+
         menu.style.left = `${x}px`;
         menu.style.top = `${y}px`;
         menu.style.display = 'block';
@@ -1482,6 +1701,9 @@ export class SidebarManager {
         switch (action) {
             case 'create-subfolder':
                 this.showCreateFolderInput(path);
+                break;
+            case 'rename-folder':
+                this.showRenameFolderInput(path);
                 break;
             case 'delete-folder':
                 this.showDeleteFolderModal(path);

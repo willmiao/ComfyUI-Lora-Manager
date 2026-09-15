@@ -1283,6 +1283,15 @@
       "unsupported": "Folder deletion is not supported on this page",
       "noRoot": "No model root is configured"
     },
+    "renameFolder": "Rename folder",
+    "renameFolderResult": {
+      "success": "Folder renamed to \"{name}\"",
+      "failed": "Failed to rename folder: {message}",
+      "targetExists": "A folder with that name already exists here",
+      "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
+      "unsupported": "Folder renaming is not supported on this page",
+      "noRoot": "No model root is configured"
+    },
     "dragDrop": {
       "unableToResolveRoot": "Unable to determine destination path for move.",
       "moveUnsupported": "Move is not supported for this item.",

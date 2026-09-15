@@ -15,6 +15,7 @@ class FakeScanner:
         self._roots = [str(root) for root in roots]
         self.known_folders: List[str] = []
         self.removed_folders: List[str] = []
+        self.renamed_folders: List[tuple] = []
 
     def get_model_roots(self) -> List[str]:
         return list(self._roots)
@@ -24,6 +25,9 @@ class FakeScanner:
 
     async def remove_known_folder(self, folder: str) -> None:
         self.removed_folders.append(folder)
+
+    async def rename_known_folder(self, previous: str, current: str, **kwargs) -> None:
+        self.renamed_folders.append((previous, current, kwargs))
 
 
 @pytest.mark.asyncio
@@ -271,3 +275,154 @@ async def test_delete_folder_counts_nested_symlinks_without_following_them(tmp_p
     # The linked model is not part of the subtree being deleted
     assert result["model_count"] == 0
     assert (real / "model.safetensors").exists()
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_moves_directory_and_forwards_rekey(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    (target / "model.safetensors").write_text("weights", encoding="utf-8")
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(target), "animation")
+
+    renamed = tmp_path / "characters" / "animation"
+    assert result["success"] is True
+    assert result["renamed"] is True
+    assert result["folder"] == "characters/animation"
+    assert result["previous_folder"] == "characters/anime"
+    assert renamed.is_dir()
+    assert (renamed / "model.safetensors").exists()
+    assert not target.exists()
+
+    previous, current, kwargs = scanner.renamed_folders[0]
+    assert previous == "characters/anime"
+    assert current == "characters/animation"
+    assert kwargs["previous_path"] == target.as_posix()
+    assert kwargs["new_path"] == renamed.as_posix()
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_noop_when_name_is_unchanged(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(target), "anime")
+
+    assert result["success"] is True
+    assert result["renamed"] is False
+    assert target.is_dir()
+    assert scanner.renamed_folders == []
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_refuses_existing_target(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    (tmp_path / "characters" / "animation").mkdir()
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(target), "animation")
+
+    assert result["success"] is False
+    assert result["code"] == "target_exists"
+    assert target.is_dir()
+    assert scanner.renamed_folders == []
+
+
+@pytest.mark.parametrize("new_name", ["", "   ", "a/b", "..", ".", "bad:name", "back\\slash"])
+@pytest.mark.asyncio
+async def test_rename_folder_rejects_invalid_names(tmp_path: Path, new_name: str):
+    target = _make_nested(tmp_path)
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(target), new_name)
+
+    assert result["success"] is False
+    assert target.is_dir()
+    assert scanner.renamed_folders == []
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_refuses_the_library_root_itself(tmp_path: Path):
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(tmp_path), "renamed-root")
+
+    assert result["success"] is False
+    assert "root" in result["error"].lower()
+    assert tmp_path.is_dir()
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_rejects_paths_outside_roots(tmp_path: Path):
+    root = tmp_path / "library"
+    root.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    scanner = FakeScanner([root])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(outside), "renamed")
+
+    assert result["success"] is False
+    assert outside.is_dir()
+    assert scanner.renamed_folders == []
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_reports_missing_directory(tmp_path: Path):
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(tmp_path / "gone"), "renamed")
+
+    assert result["success"] is False
+    assert "no longer exists" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_refuses_symlinked_directory(tmp_path: Path):
+    real = tmp_path / "real"
+    real.mkdir()
+    link = tmp_path / "link"
+    try:
+        link.symlink_to(real, target_is_directory=True)
+    except (OSError, NotImplementedError):  # pragma: no cover - platform guard
+        pytest.skip("symlinks are not supported on this platform")
+
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(link), "renamed")
+
+    assert result["success"] is False
+    assert "symlink" in result["error"].lower()
+    assert link.is_symlink()
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_refuses_while_a_staged_delete_is_pending(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    (target / ".lm-pending-delete").mkdir()
+    scanner = FakeScanner([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.rename_folder(str(target), "animation")
+
+    assert result["success"] is False
+    assert result["code"] == "busy"
+    assert target.is_dir()
+    assert scanner.renamed_folders == []
+
+
+@pytest.mark.asyncio
+async def test_rename_folder_requires_path(tmp_path: Path):
+    service = ModelMoveService(FakeScanner([tmp_path]), "lora")
+
+    result = await service.rename_folder("", "renamed")
+
+    assert result["success"] is False

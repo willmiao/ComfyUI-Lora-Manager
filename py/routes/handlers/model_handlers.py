@@ -2530,6 +2530,39 @@ class ModelMoveHandler:
             self._logger.error("Error deleting folder: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def rename_folder(self, request: web.Request) -> web.Response:
+        try:
+            data = await request.json()
+        except Exception:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON body"}, status=400
+            )
+        try:
+            folder_path = data.get("folder_path")
+            new_name = data.get("new_name")
+            if not folder_path:
+                return web.json_response(
+                    {"success": False, "error": "Folder path is required"}, status=400
+                )
+            if not new_name:
+                return web.json_response(
+                    {"success": False, "error": "New folder name is required"}, status=400
+                )
+            result = await self._move_service.rename_folder(folder_path, new_name)
+            if result.get("success"):
+                if result.get("renamed"):
+                    _broadcast_models_changed()
+                return web.json_response(result, status=200)
+
+            # A name collision or a staged delete inside the subtree is a
+            # conflict with the state the client rendered, not a bad request.
+            code = result.get("code")
+            status = 409 if code in ("target_exists", "busy") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            self._logger.error("Error renaming folder: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def move_model(self, request: web.Request) -> web.Response:
         try:
             data = await request.json()
@@ -3482,6 +3515,7 @@ class ModelHandlerSet:
             "move_models_bulk": self.move.move_models_bulk,
             "create_folder": self.move.create_folder,
             "delete_folder": self.move.delete_folder,
+            "rename_folder": self.move.rename_folder,
             "auto_organize_models": self.auto_organize.auto_organize_models,
             "get_auto_organize_progress": self.auto_organize.get_auto_organize_progress,
             "get_model_notes": self.query.get_model_notes,

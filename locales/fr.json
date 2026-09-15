@@ -1283,6 +1283,15 @@
             "unsupported": "[TODO: Translate] Folder deletion is not supported on this page",
             "noRoot": "[TODO: Translate] No model root is configured"
         },
+        "renameFolder": "[TODO: Translate] Rename folder",
+        "renameFolderResult": {
+            "success": "[TODO: Translate] Folder renamed to \"{name}\"",
+            "failed": "[TODO: Translate] Failed to rename folder: {message}",
+            "targetExists": "[TODO: Translate] A folder with that name already exists here",
+            "busy": "[TODO: Translate] A deletion is still pending inside this folder. Wait for the undo window to expire.",
+            "unsupported": "[TODO: Translate] Folder renaming is not supported on this page",
+            "noRoot": "[TODO: Translate] No model root is configured"
+        },
         "dragDrop": {
             "unableToResolveRoot": "Impossible de déterminer le chemin de destination pour le déplacement.",
             "moveUnsupported": "Le déplacement n'est pas pris en charge pour cet élément.",
