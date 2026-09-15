@@ -747,13 +747,13 @@
 }
 
 .priority-tags-input.settings-input-error {
-    border-color: var(--danger-color, #dc2626);
-    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+    border-color: var(--lora-error);
+    box-shadow: 0 0 0 2px rgba(from var(--lora-error) r g b / 0.12);
 }
 
 .settings-input-error-message {
     font-size: 0.8em;
-    color: var(--danger-color, #dc2626);
+    color: var(--lora-error);
     display: none;
 }
 

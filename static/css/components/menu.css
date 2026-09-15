@@ -46,8 +46,20 @@
     pointer-events: none;
 }
 
+/* Destructive entries. The token used to be the nonexistent `--danger-color`,
+   which made the declaration invalid at computed-value time: the colour then
+   fell back to the menu's inherited text colour, so every "Delete …" entry in
+   the folder and model-card context menus rendered plain. */
 .context-menu-item.delete-item {
-    color: var(--danger-color);
+    color: var(--lora-error);
+}
+
+/* The shared .context-menu-item:hover paints the accent background, which the
+   red label does not read against — destructive entries get their own wash. */
+.context-menu-item.delete-item:hover,
+.context-menu-item.delete-item:focus-visible {
+    background-color: var(--lora-error-bg);
+    color: var(--lora-error);
 }
 
 .context-menu-item i {
