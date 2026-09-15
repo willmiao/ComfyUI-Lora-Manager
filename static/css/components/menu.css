@@ -67,6 +67,21 @@
     text-align: center;
 }
 
+/* Muted counter shown next to a menu label (e.g. how many empty folders the
+   "Show empty folders" toggle would reveal) */
+.context-menu-count {
+    color: var(--text-muted);
+    font-size: 12px;
+}
+
+/* The count keeps the label/tally muted even while the row is hovered, since
+   the accent background would otherwise wash the muted colour out. */
+.context-menu-item:hover .context-menu-count,
+.context-menu-item:focus-visible .context-menu-count {
+    color: var(--lora-text);
+    opacity: 0.8;
+}
+
 /* Section Headers */
 .context-menu-section-header {
     padding: 6px 12px 2px;

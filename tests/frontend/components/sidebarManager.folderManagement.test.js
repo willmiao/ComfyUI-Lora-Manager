@@ -86,28 +86,33 @@ describe('SidebarManager empty folders toggle', () => {
     document.body.innerHTML = '';
   });
 
-  it('requests the models-only tree by default', async () => {
+  it('loads the full and models-only folder lists and counts the empty folders', async () => {
     const apiClient = createApiClient();
+    apiClient.fetchUnifiedFolderTree.mockResolvedValue({ tree: { full: {}, empty: {} } });
+    apiClient.fetchModelFolders.mockResolvedValue({ folders: ['', 'full'] });
     const manager = createManager(apiClient);
-
-    await manager.loadFolderTree();
-
-    expect(apiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith();
-    expect(apiClient.fetchModelFolders).not.toHaveBeenCalled();
-    expect(manager.nonEmptyFolders).toBeNull();
-    expect(manager.treeData).toEqual({ full: {}, empty: {} });
-  });
-
-  it('includes empty folders and tracks the models-only set when enabled', async () => {
-    const apiClient = createApiClient();
-    const manager = createManager(apiClient);
-    manager.showEmptyFolders = true;
 
     await manager.loadFolderTree();
 
     expect(apiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith({ includeEmpty: true });
     expect(apiClient.fetchModelFolders).toHaveBeenCalledWith();
     expect(manager.nonEmptyFolders).toEqual(new Set(['', 'full']));
+    expect(manager.treeData).toEqual({ full: {}, empty: {} });
+    expect(manager.emptyFolderCount).toBe(1);
+  });
+
+  it('keeps the folder data loaded while empty folders are hidden', async () => {
+    const apiClient = createApiClient();
+    apiClient.fetchUnifiedFolderTree.mockResolvedValue({ tree: { full: {}, empty: {} } });
+    const manager = createManager(apiClient);
+    manager.showEmptyFolders = false;
+
+    await manager.loadFolderTree();
+
+    // The data is still fetched so the menu can report the count; only the
+    // rendering is gated by the preference.
+    expect(apiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith({ includeEmpty: true });
+    expect(manager.emptyFolderCount).toBe(1);
   });
 
   it('passes includeEmpty to the folder list in list display mode', async () => {
@@ -116,41 +121,46 @@ describe('SidebarManager empty folders toggle', () => {
       .mockResolvedValueOnce({ folders: ['', 'full', 'empty'] })
       .mockResolvedValueOnce({ folders: ['', 'full'] });
     const manager = createManager(apiClient, { displayMode: 'list' });
-    manager.showEmptyFolders = true;
 
     await manager.loadFolderTree();
 
     expect(apiClient.fetchModelFolders).toHaveBeenNthCalledWith(1, { includeEmpty: true });
+    expect(apiClient.fetchModelFolders).toHaveBeenNthCalledWith(2);
     expect(manager.foldersList).toEqual(['', 'full', 'empty']);
     expect(manager.nonEmptyFolders).toEqual(new Set(['', 'full']));
+    expect(manager.emptyFolderCount).toBe(1);
   });
 
-  it('ignores the preference when the page does not support folder management', async () => {
+  it('does not request empty folders when the page does not support folder management', async () => {
     const apiClient = createApiClient();
     apiClient.apiConfig.config.supportsFolderManagement = false;
     const manager = createManager(apiClient);
-    manager.showEmptyFolders = true;
 
     await manager.loadFolderTree();
 
     expect(apiClient.fetchUnifiedFolderTree).toHaveBeenCalledWith();
+    expect(apiClient.fetchModelFolders).not.toHaveBeenCalled();
     expect(manager.nonEmptyFolders).toBeNull();
+    expect(manager.emptyFolderCount).toBeNull();
   });
 
-  it('persists the toggle and reloads the tree', async () => {
+  it('persists the toggle and re-renders without refetching', () => {
     const apiClient = createApiClient();
     const manager = createManager(apiClient);
+    manager.showEmptyFolders = false;
     manager.loadFolderTree = vi.fn();
 
     manager.handleEmptyFoldersToggle({ stopPropagation: vi.fn() });
 
     expect(manager.showEmptyFolders).toBe(true);
     expect(getStorageItem('loras_showEmptyFolders')).toBe(true);
-    expect(manager.loadFolderTree).toHaveBeenCalledTimes(1);
+    expect(manager.loadFolderTree).not.toHaveBeenCalled();
+    expect(manager.renderFolderDisplay).toHaveBeenCalledTimes(1);
   });
 
   it('dims folders that contain no models', () => {
     const manager = createManager(createApiClient());
+    manager.showEmptyFolders = true;
     manager.treeData = { full: {}, empty: {} };
     manager.nonEmptyFolders = new Set(['', 'full']);
 
@@ -163,6 +173,7 @@ describe('SidebarManager empty folders toggle', () => {
 
   it('does not dim folders whose subtree contains models', () => {
     const manager = createManager(createApiClient());
+    manager.showEmptyFolders = true;
     // Models live in "characters/anime" only; "characters" itself holds no
     // direct models but must not be dimmed.
     manager.nonEmptyFolders = manager._buildNonEmptyFolderSet(['characters/anime']);
@@ -177,6 +188,48 @@ describe('SidebarManager empty folders toggle', () => {
     expect(animeNode[0]).not.toContain('empty');
     expect(emptyNode[0]).toContain('empty');
   });
+
+  it('does not dim folders while the preference is off', () => {
+    const manager = createManager(createApiClient());
+    manager.showEmptyFolders = false;
+    manager.treeData = { full: {}, empty: {} };
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    const html = manager.renderTreeNode(manager.treeData, '');
+
+    expect(html).not.toContain('sidebar-tree-node-content  empty');
+  });
+
+  describe('list view', () => {
+    beforeEach(() => {
+      document.body.innerHTML = '<div id="sidebarFolderTree"></div>';
+    });
+
+    it('hides empty folders from the flat list while the preference is off', () => {
+      const manager = createManager(createApiClient(), { displayMode: 'list' });
+      manager.showEmptyFolders = false;
+      manager.foldersList = ['', 'full', 'empty'];
+      manager.nonEmptyFolders = manager._buildNonEmptyFolderSet(['full']);
+
+      manager.renderFolderList();
+
+      const html = document.getElementById('sidebarFolderTree').innerHTML;
+      expect(html).toContain('data-path="full"');
+      expect(html).not.toContain('data-path="empty"');
+    });
+
+    it('shows empty folders dimmed in the flat list when the preference is on', () => {
+      const manager = createManager(createApiClient(), { displayMode: 'list' });
+      manager.showEmptyFolders = true;
+      manager.foldersList = ['', 'full', 'empty'];
+      manager.nonEmptyFolders = manager._buildNonEmptyFolderSet(['full']);
+
+      manager.renderFolderList();
+
+      const html = document.getElementById('sidebarFolderTree').innerHTML;
+      expect(html).toContain('sidebar-node-content empty" data-path="empty"');
+    });
+  });
 });
 
 describe('SidebarManager view options menu', () => {
@@ -185,11 +238,15 @@ describe('SidebarManager view options menu', () => {
       <div class="context-menu-item" data-action="view-mode-tree"><i class="check-indicator" style="display:none"></i></div>
       <div class="context-menu-item" data-action="view-mode-list"><i class="check-indicator" style="display:none"></i></div>
       <div class="context-menu-item" data-action="toggle-recursive"><i class="check-indicator" style="display:none"></i></div>
-      <div class="context-menu-item" data-action="toggle-empty-folders"><i class="check-indicator" style="display:none"></i></div>
+      <div class="context-menu-item" data-action="toggle-empty-folders"><span id="sidebarEmptyFoldersCount"></span><i class="check-indicator" style="display:none"></i></div>
     </div>`;
 
   function getCheck(action) {
     return document.querySelector(`#sidebarViewOptionsMenu [data-action="${action}"] .check-indicator`);
+  }
+
+  function getEmptyFoldersItem() {
+    return document.querySelector('[data-action="toggle-empty-folders"]');
   }
 
   beforeEach(() => {
@@ -227,7 +284,35 @@ describe('SidebarManager view options menu', () => {
 
     manager.updateViewOptionsMenu();
 
-    expect(document.querySelector('[data-action="toggle-empty-folders"]').style.display).toBe('none');
+    expect(getEmptyFoldersItem().style.display).toBe('none');
+  });
+
+  it('hides the empty-folders item when the library has no empty folders', () => {
+    const manager = createManager(createApiClient());
+    manager.emptyFolderCount = 0;
+
+    manager.updateViewOptionsMenu();
+
+    expect(getEmptyFoldersItem().style.display).toBe('none');
+  });
+
+  it('keeps the empty-folders item visible while the count is unknown', () => {
+    const manager = createManager(createApiClient());
+    manager.emptyFolderCount = null;
+
+    manager.updateViewOptionsMenu();
+
+    expect(getEmptyFoldersItem().style.display).not.toBe('none');
+  });
+
+  it('shows the empty-folder count next to the label', () => {
+    const manager = createManager(createApiClient());
+    manager.emptyFolderCount = 12;
+
+    manager.updateViewOptionsMenu();
+
+    expect(getEmptyFoldersItem().style.display).not.toBe('none');
+    expect(document.getElementById('sidebarEmptyFoldersCount').textContent).toBe('(12)');
   });
 
   it('switches display mode from the menu and closes it', () => {
@@ -245,7 +330,7 @@ describe('SidebarManager view options menu', () => {
 
   it('toggles empty folders from the menu and keeps it open', () => {
     const manager = createManager(createApiClient());
-    manager.loadFolderTree = vi.fn();
+    manager.showEmptyFolders = false;
     const menu = document.getElementById('sidebarViewOptionsMenu');
     menu.style.display = 'block';
 
@@ -254,6 +339,7 @@ describe('SidebarManager view options menu', () => {
     expect(manager.showEmptyFolders).toBe(true);
     expect(getCheck('toggle-empty-folders').style.display).toBe('block');
     expect(menu.style.display).toBe('block');
+    expect(manager.renderFolderDisplay).toHaveBeenCalled();
   });
 
   it('collapses all folders from the header button', () => {
@@ -298,6 +384,29 @@ describe('SidebarManager view options menu', () => {
     manager.handleViewOptionsButton({ stopPropagation: vi.fn(), currentTarget: button });
     expect(menu.style.display).toBe('none');
   });
+
+  it('shows empty folders on a fresh library (default preference)', () => {
+    const manager = createManager(createApiClient());
+    manager.updateSearchRecursiveOption = vi.fn();
+    manager.updateFolderManagementButtons = vi.fn();
+    manager.updateCollapseAllButton = vi.fn();
+
+    manager.restoreSidebarState();
+
+    expect(manager.showEmptyFolders).toBe(true);
+  });
+
+  it('honours a stored preference to hide empty folders', () => {
+    setStorageItem('loras_showEmptyFolders', false);
+    const manager = createManager(createApiClient());
+    manager.updateSearchRecursiveOption = vi.fn();
+    manager.updateFolderManagementButtons = vi.fn();
+    manager.updateCollapseAllButton = vi.fn();
+
+    manager.restoreSidebarState();
+
+    expect(manager.showEmptyFolders).toBe(false);
+  });
 });
 
 describe('SidebarManager folder creation', () => {
@@ -327,17 +436,32 @@ describe('SidebarManager folder creation', () => {
     const apiClient = createApiClient();
     const manager = createManager(apiClient);
     manager.selectedPath = 'characters';
+    manager.showEmptyFolders = false;
     manager.refresh = vi.fn().mockResolvedValue(undefined);
 
     const success = await manager._createFolder('characters/anime', 'characters');
 
     expect(success).toBe(true);
     expect(apiClient.createFolder).toHaveBeenCalledWith('/models/loras/characters/anime');
-    // Empty-folder display is enabled so the new folder shows up immediately
+    // The new folder is empty, so creating it turns empty-folder display back
+    // on to keep the folder visible in the tree.
     expect(manager.showEmptyFolders).toBe(true);
     expect(getStorageItem('loras_showEmptyFolders')).toBe(true);
     expect(manager.expandedNodes.has('characters')).toBe(true);
     expect(manager.refresh).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-enables empty folders when creating while the preference is off', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
+    manager.showEmptyFolders = false;
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._createFolder('new-folder', '');
+
+    expect(success).toBe(true);
+    expect(manager.showEmptyFolders).toBe(true);
+    expect(getStorageItem('loras_showEmptyFolders')).toBe(true);
   });
 
   it('fails gracefully when no model root is configured', async () => {

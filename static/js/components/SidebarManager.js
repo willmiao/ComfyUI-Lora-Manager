@@ -43,8 +43,9 @@ export class SidebarManager {
         this.isDisabledByPage = false;
         this.initializationPromise = null;
         this.isCreatingFolder = false;
-        this.showEmptyFolders = false;
+        this.showEmptyFolders = true;
         this.nonEmptyFolders = null; // models-only folder set used to dim empty nodes
+        this.emptyFolderCount = null; // null = not known yet (no models-only list)
         this._createFolderBasePath = null;
         this._createFolderTempChildren = null; // children container added for a leaf parent during inline creation
         this._renameFolderPath = null;
@@ -135,8 +136,9 @@ export class SidebarManager {
         this.apiClient = null;
         this.isInitialized = false;
         this.recursiveSearchEnabled = true;
-        this.showEmptyFolders = false;
+        this.showEmptyFolders = true;
         this.nonEmptyFolders = null;
+        this.emptyFolderCount = null;
         this._createFolderBasePath = null;
         this._createFolderTempChildren = null;
         this._renameFolderPath = null;
@@ -723,8 +725,9 @@ export class SidebarManager {
             const absolutePath = this.combineRootAndRelativePath(root, targetRelativePath);
             const result = await this.apiClient.createFolder(absolutePath);
 
-            // The new folder has no models yet — enable empty-folder display
-            // so it shows up in the tree immediately.
+            // A newly created folder is empty by definition. If the user turned
+            // empty-folder display off, switch it back on so the folder they
+            // just asked for is actually visible in the tree.
             if (!this.showEmptyFolders) {
                 this.showEmptyFolders = true;
                 setStorageItem(`${this.pageType}_showEmptyFolders`, true);
@@ -1392,40 +1395,44 @@ export class SidebarManager {
 
     async loadFolderTree() {
         try {
-            const includeEmpty = this.showEmptyFolders && this._supportsFolderManagement();
+            const supportsEmptyFolders = this._supportsFolderManagement();
+            // The full folder list (including empty directories) and the
+            // models-only list are both always fetched: the first is the
+            // single source of truth for the tree and for the empty-folder
+            // count, the second is what "empty" is measured against. The
+            // `showEmptyFolders` preference only gates rendering, so the
+            // view-options menu can report the count (and hide the toggle
+            // when there are none) while empty folders stay hidden.
             if (this.displayMode === 'tree') {
-                if (includeEmpty) {
-                    // Fetch the models-only folder list alongside so empty
-                    // directories can be dimmed in the tree.
-                    const [treeResponse, foldersResponse] = await Promise.all([
-                        this.apiClient.fetchUnifiedFolderTree({ includeEmpty: true }),
-                        this.apiClient.fetchModelFolders(),
-                    ]);
-                    this.treeData = treeResponse.tree || {};
-                    this.nonEmptyFolders = this._buildNonEmptyFolderSet(foldersResponse.folders || []);
-                } else {
-                    const response = await this.apiClient.fetchUnifiedFolderTree();
-                    this.treeData = response.tree || {};
-                    this.nonEmptyFolders = null;
-                }
+                const [treeResponse, foldersResponse] = await Promise.all([
+                    supportsEmptyFolders
+                        ? this.apiClient.fetchUnifiedFolderTree({ includeEmpty: true })
+                        : this.apiClient.fetchUnifiedFolderTree(),
+                    supportsEmptyFolders ? this.apiClient.fetchModelFolders() : Promise.resolve(null),
+                ]);
+                this.treeData = treeResponse.tree || {};
+                this.nonEmptyFolders = foldersResponse
+                    ? this._buildNonEmptyFolderSet(foldersResponse.folders || [])
+                    : null;
+                this.emptyFolderCount = this._computeEmptyFolderCount();
             } else {
-                if (includeEmpty) {
-                    const [allFoldersResponse, foldersResponse] = await Promise.all([
-                        this.apiClient.fetchModelFolders({ includeEmpty: true }),
-                        this.apiClient.fetchModelFolders(),
-                    ]);
-                    this.foldersList = allFoldersResponse.folders || [];
-                    this.nonEmptyFolders = this._buildNonEmptyFolderSet(foldersResponse.folders || []);
-                } else {
-                    const response = await this.apiClient.fetchModelFolders();
-                    this.foldersList = response.folders || [];
-                    this.nonEmptyFolders = null;
-                }
+                const [allFoldersResponse, foldersResponse] = await Promise.all([
+                    this.apiClient.fetchModelFolders(
+                        supportsEmptyFolders ? { includeEmpty: true } : undefined
+                    ),
+                    supportsEmptyFolders ? this.apiClient.fetchModelFolders() : Promise.resolve(null),
+                ]);
+                this.foldersList = allFoldersResponse.folders || [];
+                this.nonEmptyFolders = foldersResponse
+                    ? this._buildNonEmptyFolderSet(foldersResponse.folders || [])
+                    : null;
+                this.emptyFolderCount = this._computeEmptyFolderCount();
             }
             this.folderTreeLoaded = true;
             this.renderFolderDisplay();
         } catch (error) {
             this.folderTreeLoaded = false;
+            this.emptyFolderCount = null;
             console.error('Failed to load folder data:', error);
             this.renderEmptyState();
         }
@@ -1450,6 +1457,62 @@ export class SidebarManager {
             }
         }
         return set;
+    }
+
+    /**
+     * Whether a folder should render in the dimmed "empty" style.
+     *
+     * The full folder list is always loaded so the empty-folder count is
+     * available, but the dimmed styling (like the folders themselves) is only
+     * shown while the show-empty-folders preference is on.
+     */
+    _isRenderedEmptyFolder(path) {
+        if (!this.showEmptyFolders || !this.nonEmptyFolders) return false;
+        return !this.nonEmptyFolders.has(path);
+    }
+
+    // Apply the show-empty-folders preference to the flat folder list. When
+    // the models-only set is unknown the list is passed through unchanged, so
+    // the filter can never hide everything.
+    _filterVisibleFolders(folders) {
+        const list = folders || [];
+        if (this.showEmptyFolders || !this.nonEmptyFolders) return list;
+        return list.filter((folder) => !folder || this.nonEmptyFolders.has(folder));
+    }
+
+    /**
+     * How many directories in the current view hold no models anywhere in
+     * their subtree, or null when the models-only list is unavailable
+     * (unsupported page or a failed request). Null keeps the view-options
+     * menu in its "not sure yet" state instead of claiming there are none.
+     */
+    _computeEmptyFolderCount() {
+        if (!this.nonEmptyFolders) return null;
+        const known = this.displayMode === 'tree'
+            ? this._collectTreePaths()
+            : this._collectListPaths();
+        return known.filter((path) => path && !this.nonEmptyFolders.has(path)).length;
+    }
+
+    // Every folder path present in the current tree, including intermediate
+    // nodes that only exist to nest other folders.
+    _collectTreePaths() {
+        const paths = [];
+        const walk = (node, prefix) => {
+            for (const [name, children] of Object.entries(node || {})) {
+                const path = prefix ? `${prefix}/${name}` : name;
+                paths.push(path);
+                walk(children, path);
+            }
+        };
+        walk(this.treeData, '');
+        return paths;
+    }
+
+    // Every folder path in the flat list view. Unlike the tree, that list
+    // already carries full paths, so no prefix expansion is needed.
+    _collectListPaths() {
+        return (this.foldersList || []).filter(Boolean);
     }
 
     folderExistsInTree(path) {
@@ -1499,7 +1562,7 @@ export class SidebarManager {
             const hasChildren = Object.keys(children).length > 0;
             const isExpanded = this.expandedNodes.has(currentPath);
             const isSelected = this.selectedPath === currentPath;
-            const isEmpty = this.nonEmptyFolders ? !this.nonEmptyFolders.has(currentPath) : false;
+            const isEmpty = this._isRenderedEmptyFolder(currentPath);
 
             const escapedPath = escapeAttribute(currentPath);
             const escapedFolderName = escapeHtml(folderName);
@@ -1549,15 +1612,21 @@ export class SidebarManager {
         const folderTree = document.getElementById('sidebarFolderTree');
         if (!folderTree) return;
 
-        if (!this.foldersList || this.foldersList.length === 0) {
+        // Unlike the tree — where the backend simply omits empty directories
+        // when the preference is off — the flat list is always loaded in full
+        // (the empty-folder count and the delete guard need it), so empty
+        // entries are filtered out here instead.
+        const visibleFolders = this._filterVisibleFolders(this.foldersList);
+
+        if (visibleFolders.length === 0) {
             this.renderEmptyState();
             return;
         }
 
-        const foldersHtml = this.foldersList.map(folder => {
+        const foldersHtml = visibleFolders.map(folder => {
             const displayName = folder === '' ? '/' : folder;
             const isSelected = this.selectedPath === folder;
-            const isEmpty = this.nonEmptyFolders ? !this.nonEmptyFolders.has(folder) : false;
+            const isEmpty = this._isRenderedEmptyFolder(folder);
             const escapedPath = escapeAttribute(folder);
             const escapedDisplayName = escapeHtml(displayName);
             const escapedTitle = escapeAttribute(displayName);
@@ -1860,7 +1929,9 @@ export class SidebarManager {
         this.showEmptyFolders = !this.showEmptyFolders;
         setStorageItem(`${this.pageType}_showEmptyFolders`, this.showEmptyFolders);
         this.updateViewOptionsMenu();
-        this.loadFolderTree();
+        // Both folder lists are already loaded (the count needs them), so
+        // showing/hiding empty folders is a pure re-render.
+        this.renderFolderDisplay();
     }
 
     handleCreateFolderButton(event) {
@@ -1974,12 +2045,29 @@ export class SidebarManager {
         setCheck('view-mode-list', !isTreeMode);
         setCheck('toggle-recursive', isTreeMode && this.recursiveSearchEnabled);
         setDisabled('toggle-recursive', !isTreeMode);
-        setCheck('toggle-empty-folders', this.showEmptyFolders && this._supportsFolderManagement());
 
-        // Empty-folder display requires a model library backend
+        // Empty-folder display requires a model library backend, and the
+        // toggle is only worth showing when there actually are empty folders
+        // to reveal/hide. `null` means the folder data has not loaded yet, in
+        // which case the item is kept visible rather than guessed at.
+        const supportsFolderManagement = this._supportsFolderManagement();
+        const hasEmptyFolders = !supportsFolderManagement
+            || this.emptyFolderCount === null
+            || this.emptyFolderCount > 0;
+        setCheck('toggle-empty-folders', this.showEmptyFolders && supportsFolderManagement);
+
         const emptyFoldersItem = menu.querySelector('[data-action="toggle-empty-folders"]');
         if (emptyFoldersItem) {
-            emptyFoldersItem.style.display = this._supportsFolderManagement() ? '' : 'none';
+            emptyFoldersItem.style.display = supportsFolderManagement && hasEmptyFolders ? '' : 'none';
+        }
+
+        // Surface the count so the preference's effect is visible without
+        // opening the menu against a large library.
+        const emptyFoldersCount = document.getElementById('sidebarEmptyFoldersCount');
+        if (emptyFoldersCount) {
+            emptyFoldersCount.textContent = this.emptyFolderCount
+                ? `(${this.emptyFolderCount})`
+                : '';
         }
     }
 
@@ -2221,7 +2309,11 @@ export class SidebarManager {
         this.expandedNodes = new Set(expandedPaths);
         this.displayMode = displayMode;
         this.recursiveSearchEnabled = recursiveSearchEnabled;
-        this.showEmptyFolders = getStorageItem(`${this.pageType}_showEmptyFolders`, false);
+        // Empty folders are shown by default so the sidebar matches the
+        // destination picker (which lists them too) instead of silently hiding
+        // a folder that a download just landed in. New folders created from the
+        // header stay visible for the same reason.
+        this.showEmptyFolders = getStorageItem(`${this.pageType}_showEmptyFolders`, true);
 
         this.updateSearchRecursiveOption();
         this.updateFolderManagementButtons();
