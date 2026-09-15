@@ -524,13 +524,16 @@ def normalize_prompt_for_dedup(prompt) -> str:
 
 
 def calculate_relative_path_for_model(
-    model_data: Dict[str, Any], model_type: str = "lora"
+    model_data: Dict[str, Any],
+    model_type: str = "lora",
+    model_roots: Optional[List[str]] = None,
 ) -> str:
     """Calculate relative path for existing model using template from settings
 
     Args:
         model_data: Model data from scanner cache
         model_type: Type of model ('lora', 'checkpoint', 'embedding')
+        model_roots: Roots used to resolve the model's current relative folder
 
     Returns:
         Relative path string (empty string for flat structure)
@@ -579,7 +582,35 @@ def calculate_relative_path_for_model(
     if isinstance(civitai_data, dict):
         version_name = sanitize_folder_name(civitai_data.get("name") or "")
 
+    original_path = ""
+    if "{original_path}" in path_template:
+        file_path = model_data.get("file_path")
+        if isinstance(file_path, str) and file_path and model_roots:
+            absolute_file = os.path.abspath(file_path)
+            matching_roots = []
+            for root in model_roots:
+                if not isinstance(root, str) or not root:
+                    continue
+                absolute_root = os.path.abspath(root)
+                try:
+                    common_path = os.path.commonpath([absolute_file, absolute_root])
+                    if os.path.normcase(common_path) == os.path.normcase(absolute_root):
+                        matching_roots.append(absolute_root)
+                except ValueError:
+                    # Different Windows drives cannot share a common path.
+                    continue
+
+            if matching_roots:
+                # Prefer the most specific root when configured roots overlap.
+                current_root = max(matching_roots, key=len)
+                relative_dir = os.path.relpath(
+                    os.path.dirname(absolute_file), current_root
+                )
+                if relative_dir != ".":
+                    original_path = relative_dir.replace(os.sep, "/")
+
     formatted_path = path_template
+    formatted_path = formatted_path.replace("{original_path}", original_path)
     formatted_path = formatted_path.replace("{base_model}", mapped_base_model)
     formatted_path = formatted_path.replace("{first_tag}", first_tag)
     formatted_path = formatted_path.replace("{author}", author)

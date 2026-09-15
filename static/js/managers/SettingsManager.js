@@ -2252,7 +2252,8 @@ export class SettingsManager {
             const exampleTemplate = template
                 .replace('{base_model}', 'Flux.1 D')
                 .replace('{author}', 'authorname')
-                .replace('{first_tag}', 'style');
+                .replace('{first_tag}', 'style')
+                .replace('{original_path}', 'characters/favorites');
             previewElement.textContent = `${exampleTemplate}/model-name.safetensors`;
         }
         previewElement.style.display = 'block';
