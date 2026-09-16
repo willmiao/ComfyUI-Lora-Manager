@@ -57,6 +57,19 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale, the same precedent as
 > `Shift+Enter` in `modals.model.metadata.notesHint`; zh-CN / zh-TW / ja use full-width
 > parentheses and ko keeps this file's ASCII style.
+>
+> **Status (2026-09, download metadata phases):** the download progress UI now names the two
+> post-transfer stages instead of sitting at 100% showing `0 B/s`, adding 4
+> `modals.download.progress.*` keys (`metadata`, `indexingFile`, `fetchingSourceMetadata`,
+> `fetchingMetadata`). Translated in all 9 locales in the same pass, so the "no remaining
+> placeholders" claim holds again. No new terminology: `metadata` reuses the §5 row, and the
+> fetching phrasing mirrors each locale's `download.fetchingRepoFiles` / `fetchingVersions`.
+> `{name}` and `{source}` are verbatim §1-R2 placeholders — `{source}` is filled at runtime
+> with the *untranslated* platform name, so its surrounding spacing follows each locale's
+> `modelCard.actions.viewOnSource` precedent (ja `{source} から`, ko `{source}에서`,
+> zh `从 {source}` / `從 {source}`, he `מ-{source}`) and no brand ever appears inside the
+> translated text. ja / ko keep this block's ASCII `:` like their sibling progress keys;
+> zh-CN / zh-TW use full-width `：`.
 
 ---
 
