@@ -19,6 +19,28 @@ from .model_sources import has_external_source
 logger = logging.getLogger(__name__)
 
 
+def _merge_ordered_unique(existing: Iterable[str], new: Iterable[str]) -> list[str]:
+    """Concatenate two word lists, dropping duplicates without reordering.
+
+    Trigger word order is meaningful: the sequence stored in
+    ``civitai.trainedWords`` is the order used when building prompts, and users
+    can reorder it in the UI. A plain ``set`` union used to shuffle that order on
+    every metadata refresh, so existing words are kept first (in their saved
+    order) and newly discovered ones are appended.
+    """
+
+    merged: list[str] = []
+    seen: set[str] = set()
+
+    for word in list(existing) + list(new):
+        if word in seen:
+            continue
+        seen.add(word)
+        merged.append(word)
+
+    return merged
+
+
 class MetadataProviderProtocol(Protocol):
     """Subset of metadata provider interface consumed by the sync service."""
 
@@ -115,9 +137,10 @@ class MetadataSyncService:
                 )
 
             if "trainedWords" in existing_civitai:
-                existing_trained = existing_civitai.get("trainedWords", [])
-                new_trained = civitai_metadata.get("trainedWords", [])
-                merged_trained = list(set(existing_trained + new_trained))
+                existing_trained = existing_civitai.get("trainedWords", []) or []
+                new_trained = civitai_metadata.get("trainedWords", []) or []
+                # Order preserving merge: the saved order drives prompt order.
+                merged_trained = _merge_ordered_unique(existing_trained, new_trained)
                 merged_civitai["trainedWords"] = merged_trained
 
             local_metadata["civitai"] = merged_civitai

@@ -6,7 +6,7 @@ import pytest
 
 from py.services.connectivity_guard import OFFLINE_COOLDOWN_ERROR, OFFLINE_FRIENDLY_MESSAGE
 from py.services.errors import RateLimitError
-from py.services.metadata_sync_service import MetadataSyncService
+from py.services.metadata_sync_service import MetadataSyncService, _merge_ordered_unique
 
 
 class DummySettings:
@@ -110,6 +110,49 @@ async def test_update_model_metadata_merges_and_persists():
         "path/to/model.metadata.json",
         result,
     )
+
+
+def test_merge_ordered_unique_keeps_first_seen_order():
+    assert _merge_ordered_unique(["b", "a"], ["a", "c", "b", "d"]) == [
+        "b",
+        "a",
+        "c",
+        "d",
+    ]
+    assert _merge_ordered_unique([], ["x"]) == ["x"]
+    assert _merge_ordered_unique(["x"], []) == ["x"]
+
+
+@pytest.mark.asyncio
+async def test_update_model_metadata_preserves_trained_word_order():
+    """Trigger word order (prompt order) must survive a metadata refresh."""
+
+    helpers = build_service()
+
+    local = {
+        "civitai": {"trainedWords": ["zeta style", "alpha", "beta"]},
+        "model_name": "Local",
+    }
+    remote = {
+        "source": "api",
+        "trainedWords": ["beta", "gamma", "alpha"],
+        "model": {"name": "Remote Model"},
+    }
+
+    result = await helpers.service.update_model_metadata(
+        "path/to/model.metadata.json",
+        local,
+        remote,
+        helpers.default_provider,
+    )
+
+    # Saved order first, newly discovered words appended, duplicates dropped
+    assert result["civitai"]["trainedWords"] == [
+        "zeta style",
+        "alpha",
+        "beta",
+        "gamma",
+    ]
 
 
 @pytest.mark.asyncio
