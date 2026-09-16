@@ -12,6 +12,10 @@
 .input-group input,
 .input-group select {
     width: 100%;
+    /* Include padding/border in the declared width so full-width fields do not
+       spill past the modal's content box, where their right border gets
+       clipped by the step's overflow-x: hidden. */
+    box-sizing: border-box;
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
@@ -720,6 +724,9 @@
 /* Textarea for multi-URL input */
 #modelUrl {
     width: 100%;
+    /* Content-box sizing pushed the border box 2px past the step's content
+       edge, clipping the right border. Include padding/border in the width. */
+    box-sizing: border-box;
     padding: 8px;
     border: 1px solid var(--border-color);
     border-radius: var(--border-radius-xs);
@@ -766,6 +773,16 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-gutter: stable;
+}
+
+/* Fields sit flush against the scrollable step's content edge; the global
+   focus outline (offset: 2px) has its left/right edges clipped by the step's
+   overflow-x. Draw the ring inset so the full outline stays visible.
+   (Same fix as #importModal in import-modal.css.) */
+#downloadModal input:focus-visible,
+#downloadModal select:focus-visible,
+#downloadModal textarea:focus-visible {
+    outline-offset: -2px;
 }
 
 #downloadModal .download-step .modal-actions {

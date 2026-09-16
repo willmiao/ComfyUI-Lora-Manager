@@ -31,6 +31,10 @@
 /* Textarea Styling */
 #batchUrlInput {
     width: 100%;
+    /* Content-box sizing made the border box wider than the modal's content
+       box, so the right border/halo fell outside the clipped area and was cut
+       off. Include padding and border in the declared width. */
+    box-sizing: border-box;
     min-height: 120px;
     padding: 12px;
     border: 1px solid var(--border-color);
