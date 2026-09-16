@@ -3,9 +3,9 @@
         "cancel": "キャンセル",
         "confirm": "確認",
         "reorder": {
-            "dragHandle": "[TODO: Translate] Drag to reorder (Alt + ↑/↓)",
-            "ariaLabel": "[TODO: Translate] Reorder {item}, position {position} of {total}",
-            "announcement": "[TODO: Translate] Moved to position {position} of {total}"
+            "dragHandle": "ドラッグして並べ替え（Alt + ↑/↓）",
+            "ariaLabel": "{item} を並べ替え、{total} 件中 {position} 番目",
+            "announcement": "{total} 件中 {position} 番目に移動しました"
         },
         "actions": {
             "save": "保存",

@@ -3,9 +3,9 @@
         "cancel": "Отмена",
         "confirm": "Подтвердить",
         "reorder": {
-            "dragHandle": "[TODO: Translate] Drag to reorder (Alt + ↑/↓)",
-            "ariaLabel": "[TODO: Translate] Reorder {item}, position {position} of {total}",
-            "announcement": "[TODO: Translate] Moved to position {position} of {total}"
+            "dragHandle": "Перетащите, чтобы изменить порядок (Alt + ↑/↓)",
+            "ariaLabel": "Изменить порядок {item}, позиция {position} из {total}",
+            "announcement": "Перемещено на позицию {position} из {total}"
         },
         "actions": {
             "save": "Сохранить",

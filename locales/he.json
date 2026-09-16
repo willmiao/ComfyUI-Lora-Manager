@@ -3,9 +3,9 @@
         "cancel": "ביטול",
         "confirm": "אישור",
         "reorder": {
-            "dragHandle": "[TODO: Translate] Drag to reorder (Alt + ↑/↓)",
-            "ariaLabel": "[TODO: Translate] Reorder {item}, position {position} of {total}",
-            "announcement": "[TODO: Translate] Moved to position {position} of {total}"
+            "dragHandle": "גרור כדי לשנות סדר (Alt + ↑/↓)",
+            "ariaLabel": "סדר מחדש את {item}, מיקום {position} מתוך {total}",
+            "announcement": "הועבר למיקום {position} מתוך {total}"
         },
         "actions": {
             "save": "שמירה",

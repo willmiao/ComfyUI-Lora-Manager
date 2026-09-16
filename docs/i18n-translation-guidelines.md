@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2022 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2025 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -49,6 +49,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > placeholders left behind by the feature series, and all 35 are now translated in all 9
 > locales, so the "no remaining placeholders" claim above holds again. Terminology in §2,
 > "Folder sidebar feature".
+>
+> **Status (2026-09, chip reordering):** model tags and trigger words now share one drag/`⠿`
+> grip reorder affordance with `Alt + ↑/↓` keyboard support, which added the 3
+> `common.reorder.*` keys. They live under `common` (not a feature namespace) because both
+> editors render them; all 9 locales are translated (renderings in §2, "Chip reordering").
+> `Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale, the same precedent as
+> `Shift+Enter` in `modals.model.metadata.notesHint`; zh-CN / zh-TW / ja use full-width
+> parentheses and ko keeps this file's ASCII style.
 
 ---
 
@@ -354,6 +362,28 @@ Deleting a folder **never cascades over model files** — the backend refuses it
 clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{message}` tokens in
 `sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
 are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
+
+### Chip reordering (model tags / trigger words)
+
+Model tags and trigger-word chips share a single reorder affordance (drag the chip or its
+`⠿` grip, or move it with `Alt + ↑/↓`), so the copy sits in `common.reorder.*` instead of a
+feature namespace. `dragHandle` is both the grip tooltip and the hint shown in the edit
+controls row; `ariaLabel` is the per-grip screen-reader label (`{item}` is the tag/word text);
+`announcement` is the aria-live message after a keyboard move and deliberately has no
+`{item}`. Keep `{item}` / `{position}` / `{total}` verbatim (§1-R2) — the caller supplies
+exactly those.
+
+`Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale (same precedent as
+`Shift+Enter`), and `position X of Y` reuses each locale's established ordering phrasing
+(ja `{total} 件中 … 番目`, ko `총 {total}개 중 …번째`, fr `sur {total}`, ru `из {total}`, …).
+
+| Term | Rendering |
+|---|---|
+| drag to reorder | zh-CN 拖拽以调整顺序 · zh-TW 拖曳以調整順序 · ja ドラッグして並べ替え · ko 드래그하여 순서 변경 · fr Glisser pour réordonner · de Zum Neuordnen ziehen · es Arrastra para reordenar · ru Перетащите, чтобы изменить порядок · he גרור כדי לשנות סדר |
+| position {position} of {total} | zh-CN 第 {position} 个，共 {total} 个 · zh-TW 第 {position} 個，共 {total} 個 · ja {total} 件中 {position} 番目 · ko 총 {total}개 중 {position}번째 · fr position {position} sur {total} · de Position {position} von {total} · es posición {position} de {total} · ru позиция {position} из {total} · he מיקום {position} מתוך {total} |
+
+The grip/handle noun itself is never translated (it is an icon); the hint carries the whole
+instruction, so no locale needs a separate "grip" term.
 
 ---
 

@@ -3,9 +3,9 @@
         "cancel": "取消",
         "confirm": "確認",
         "reorder": {
-            "dragHandle": "[TODO: Translate] Drag to reorder (Alt + ↑/↓)",
-            "ariaLabel": "[TODO: Translate] Reorder {item}, position {position} of {total}",
-            "announcement": "[TODO: Translate] Moved to position {position} of {total}"
+            "dragHandle": "拖曳以調整順序（Alt + ↑/↓）",
+            "ariaLabel": "調整 {item} 的順序，第 {position} 個，共 {total} 個",
+            "announcement": "已移動到第 {position} 個，共 {total} 個"
         },
         "actions": {
             "save": "儲存",
