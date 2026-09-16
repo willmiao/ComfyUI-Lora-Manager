@@ -494,6 +494,7 @@ class RecipeModal {
         this.syncGenerationParams(hydratedRecipe.gen_params);
         this.syncResourcesSection(hydratedRecipe);
         this.syncHeaderActions();
+        this.syncBaseModelBadge();
         this.syncMetaFooter();
 
         // Show the modal
@@ -518,6 +519,32 @@ class RecipeModal {
                 requestEditVersions
             );
         }
+    }
+
+    /**
+     * Render the recipe-level base model badge in the header tags row.
+     * Unlike the width-constrained card overlay (which abbreviates), the
+     * modal has room for the full base model name — matching the model
+     * modal's info grid and this modal's resource rows. Falls back to a
+     * dimmed "Unknown" instead of hiding so the header layout does not
+     * shift when hydration fills the value in.
+     */
+    syncBaseModelBadge() {
+        const badge = document.getElementById('recipeBaseModelBadge');
+        if (!badge) {
+            return;
+        }
+
+        const rawLabel = (this.currentRecipe?.base_model || '').trim();
+        const unknownLabel = translate('recipes.modal.metadata.unknown', {}, 'Unknown');
+        const baseModelLabel = rawLabel || unknownLabel;
+        const fieldLabel = translate('recipes.modal.metadata.baseModel', {}, 'Base Model');
+
+        badge.textContent = baseModelLabel;
+        badge.title = `${fieldLabel}: ${baseModelLabel}`;
+        badge.setAttribute('aria-label', badge.title);
+        badge.classList.toggle('is-unknown', !rawLabel);
+        badge.hidden = false;
     }
 
     /**
@@ -661,6 +688,10 @@ class RecipeModal {
                 nextRecipe.has_workflow = fullRecipe.has_workflow;
             }
 
+            if (fullRecipe.base_model !== undefined) {
+                nextRecipe.base_model = fullRecipe.base_model;
+            }
+
             if (fullRecipe.checkpoint !== undefined) {
                 nextRecipe.checkpoint = fullRecipe.checkpoint;
             } else {
@@ -718,6 +749,7 @@ class RecipeModal {
             this.updateSourceUrlDisplay(this.currentRecipe.source_path || '');
         }
         this.syncHeaderActions();
+        this.syncBaseModelBadge();
         this.syncMetaFooter();
     }
 

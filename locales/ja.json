@@ -920,7 +920,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "ベースモデル",
+                "unknown": "不明"
             },
             "actions": {
                 "openFileLocation": "ファイルの場所を開く",

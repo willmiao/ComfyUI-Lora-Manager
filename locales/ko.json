@@ -920,7 +920,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "베이스 모델",
+                "unknown": "알 수 없음"
             },
             "actions": {
                 "openFileLocation": "파일 위치 열기",

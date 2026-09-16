@@ -26,8 +26,13 @@
                     <i class="fas fa-trash" aria-hidden="true"></i>
                 </button>
             </div>
-            <!-- Recipe Tags Container (rendered by renderCompactTags) -->
-            <div id="recipeTagsContainer"></div>
+            <!-- Tags row: the base model badge is an independent sibling of the
+                 tags container so renderCompactTags re-renders and tag edit mode
+                 never touch it. Badge is populated by RecipeModal.syncBaseModelBadge(). -->
+            <div class="recipe-tags-row">
+                <span id="recipeBaseModelBadge" class="base-model-label recipe-base-model-badge" hidden></span>
+                <div id="recipeTagsContainer"></div>
+            </div>
         </header>
         
         <div class="modal-body">

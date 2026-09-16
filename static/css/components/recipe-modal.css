@@ -28,6 +28,38 @@
     width: 100%;
 }
 
+/* Tags row: the base model badge shares one line with the compact tags. */
+.recipe-tags-row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    width: 100%;
+}
+
+.recipe-tags-row #recipeTagsContainer {
+    flex: 1;
+    min-width: 0;
+}
+
+/* Header base model badge: reuses the card .base-model-label pill shape but
+   swaps the on-image overlay styling (text shadow, backdrop blur) for the
+   accent-tinted chip look used by resource rows in this modal. */
+.recipe-base-model-badge {
+    flex-shrink: 0;
+    max-width: 160px;
+    text-shadow: none;
+    backdrop-filter: none;
+    background: oklch(var(--lora-accent) / 0.1);
+    color: var(--lora-accent);
+    padding: 2px 8px;
+}
+
+.recipe-base-model-badge.is-unknown {
+    background: var(--surface-subtle);
+    color: var(--text-color);
+    opacity: 0.6;
+}
+
 .recipe-modal-header h2 {
     margin: 0 0 var(--space-1);
     padding: var(--space-1);

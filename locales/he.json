@@ -920,7 +920,9 @@
         },
         "modal": {
             "metadata": {
-                "id": "ID"
+                "id": "ID",
+                "baseModel": "מודל בסיס",
+                "unknown": "לא ידוע"
             },
             "actions": {
                 "openFileLocation": "פתח מיקום קובץ",
