@@ -1488,6 +1488,10 @@
       "progress": {
         "currentFile": "Current file:",
         "downloading": "Downloading: {name}",
+        "metadata": "Metadata: {name}",
+        "indexingFile": "Reading model file...",
+        "fetchingSourceMetadata": "Fetching metadata from {source}...",
+        "fetchingMetadata": "Fetching metadata...",
         "transferred": "Transferred: {downloaded} / {total}",
         "transferredSimple": "Transferred: {downloaded}",
         "transferredUnknown": "Transferred: --",

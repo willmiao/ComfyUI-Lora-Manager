@@ -45,6 +45,7 @@ USER_AGENT = "ComfyUI-LoRA-Manager/1.0"
 GROUP_PREFIXES: dict[str, str] = {
     "huggingface": "hf",
     "modelscope": "ms",
+    "modelscope-ai": "msai",
     "tensorart": "ta",
 }
 
@@ -77,6 +78,30 @@ class ModelCardContext:
     description: str = ""
     """Author-written summary shown on the model page, outside the README."""
 
+    model_name: str = ""
+    """Site-published display name for the repository.
+
+    Sites publish this next to the repository id (ModelScope's ``Name``).
+    It is what a CivitAI download would store as the model's name, so the
+    card never has to fall back to the local filename.
+    """
+
+    model_name_localized: str = ""
+    """Site-published localized name (ModelScope's ``ChineseName``)."""
+
+    version_name: str = ""
+    """Site-published label for the requested file's version.
+
+    Resolved per file, like :attr:`example_images`: a repository publishes
+    one label per checkpoint (ModelScope's ``modelVersion.showName``).
+    """
+
+    license: str = ""
+    """License the site records for the repository."""
+
+    model_type: str = ""
+    """Site-reported model type, e.g. ModelScope's ``AigcType`` (``LoRA``)."""
+
     base_model: str = ""
     """Base model as reported by the site (possibly a site-local id)."""
 
@@ -104,6 +129,11 @@ class ModelCardContext:
         return not any(
             (
                 self.description,
+                self.model_name,
+                self.model_name_localized,
+                self.version_name,
+                self.license,
+                self.model_type,
                 self.base_model,
                 self.base_model_aliases,
                 self.official_tags,

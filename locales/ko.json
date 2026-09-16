@@ -1488,6 +1488,10 @@
             "progress": {
                 "currentFile": "현재 파일:",
                 "downloading": "다운로드 중: {name}",
+                "metadata": "[TODO: Translate] Metadata: {name}",
+                "indexingFile": "[TODO: Translate] Reading model file...",
+                "fetchingSourceMetadata": "[TODO: Translate] Fetching metadata from {source}...",
+                "fetchingMetadata": "[TODO: Translate] Fetching metadata...",
                 "transferred": "다운로드됨: {downloaded} / {total}",
                 "transferredSimple": "다운로드됨: {downloaded}",
                 "transferredUnknown": "다운로드됨: --",

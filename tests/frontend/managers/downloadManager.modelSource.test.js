@@ -266,4 +266,101 @@ describe('DownloadManager external model source downloads', () => {
     expect(manager._externalGroupKey(ms)).toBe('modelscope:u/r');
     expect(manager._externalGroupKey(hf)).not.toBe(manager._externalGroupKey(ms));
   });
+
+  describe('post-transfer stage reporting', () => {
+    it('ignores ordinary frames', () => {
+      const updateProgress = vi.fn();
+
+      expect(
+        manager._applyMetadataStage(
+          { status: 'progress', progress: 40, bytes_per_second: 10 },
+          updateProgress,
+          0,
+          'f.safetensors'
+        )
+      ).toBe(false);
+      expect(updateProgress).not.toHaveBeenCalled();
+    });
+
+    it('routes a metadata stage to the progress bar at 100%', () => {
+      const updateProgress = vi.fn();
+
+      expect(
+        manager._applyMetadataStage(
+          { status: 'metadata', stage: 'source', platform: 'modelscope' },
+          updateProgress,
+          3,
+          'f.safetensors'
+        )
+      ).toBe(true);
+      expect(updateProgress).toHaveBeenCalledWith(100, 3, 'f.safetensors', {}, {
+        phase: 'metadata',
+        stage: 'source',
+        platform: 'modelscope',
+      });
+    });
+
+    it('tolerates a stage frame with no stage or platform', () => {
+      const updateProgress = vi.fn();
+
+      expect(
+        manager._applyMetadataStage({ status: 'metadata' }, updateProgress, 0, 'f')
+      ).toBe(true);
+      expect(updateProgress).toHaveBeenCalledWith(100, 0, 'f', {}, {
+        phase: 'metadata',
+        stage: '',
+        platform: '',
+      });
+    });
+
+    it('surfaces a metadata frame received while the request is in flight', async () => {
+      // End-to-end through the websocket handler: the backend keeps the socket
+      // open while it hydrates, and the frame has to reach the progress bar.
+      const sockets = [];
+      class RecordingWebSocket {
+        constructor(url) {
+          this.url = url;
+          this.onopen = null;
+          this.onmessage = null;
+          this.onerror = null;
+          this.close = vi.fn();
+          sockets.push(this);
+          queueMicrotask(() => this.onopen && this.onopen());
+        }
+      }
+      vi.stubGlobal('WebSocket', RecordingWebSocket);
+
+      const updateProgress = vi.fn();
+      mockLoadingManager.showDownloadProgress.mockReturnValue(updateProgress);
+
+      mockApiClient.downloadModelSource.mockImplementation(async () => {
+        sockets.at(-1).onmessage({
+          data: JSON.stringify({
+            status: 'metadata',
+            stage: 'source',
+            platform: 'modelscope',
+          }),
+        });
+        return { success: true };
+      });
+
+      manager.sourcePlatform = 'modelscope';
+      manager.sourceRepoId = 'u/r';
+      manager.sourceSelectedFiles = ['a.safetensors'];
+
+      await manager._downloadExternalRepoFiles({
+        modelRoot: '/models',
+        targetFolder: '',
+        useDefaultPaths: false,
+      });
+
+      expect(updateProgress).toHaveBeenCalledWith(100, 0, 'a.safetensors', {}, {
+        phase: 'metadata',
+        stage: 'source',
+        platform: 'modelscope',
+      });
+
+      mockLoadingManager.showDownloadProgress.mockReturnValue(vi.fn());
+    });
+  });
 });

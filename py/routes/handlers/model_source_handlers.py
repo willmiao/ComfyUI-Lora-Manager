@@ -30,6 +30,7 @@ from ...services.model_sources import (
     SourceRef,
     detect_source,
     get_download_source,
+    hydrate_from_source,
     is_valid_source_id,
     list_sources,
     normalize_metadata_source,
@@ -85,25 +86,77 @@ def _infer_model_type(model_root: str) -> tuple[Any, str]:
     return _DEFAULT_MODEL_CLASS, _DEFAULT_SCANNER_GETTER
 
 
+async def _report_phase(
+    download_id: str | None, stage: str, platform: str = ""
+) -> None:
+    """Tell the progress UI which post-transfer stage is running.
+
+    A download's byte counter stops the moment the last byte lands, but the
+    backend still has to index the file and read the model site's API.  Without
+    this the bar sits at 100% reporting "0 B/s" and the download looks stuck for
+    several seconds.  *stage* is machine-readable — the UI localises it — and
+    *platform* lets it name the site the metadata comes from.
+    """
+
+    if not download_id:
+        return
+    try:
+        await ws_manager.broadcast_download_progress(
+            download_id,
+            {
+                "status": "metadata",
+                "stage": stage,
+                "platform": platform,
+                "progress": 100,
+            },
+        )
+    except Exception as exc:  # pragma: no cover - progress must never be fatal
+        logger.debug("Failed to report the '%s' phase: %s", stage, exc)
+
+
 async def _save_source_metadata(
-    dest_path: str, ref: SourceRef, model_root: str
+    dest_path: str, ref: SourceRef, model_root: str, *, download_id: str | None = None
 ) -> None:
     """Create a proper .metadata.json and add the model to the scanner cache.
 
-    Uses ``MetadataManager.create_default_metadata()`` which computes the
-    SHA256 hash, extracts safetensors header metadata (base_model), and
-    produces a fully-populated ``LoraMetadata`` (or ``CheckpointMetadata`` /
-    ``EmbeddingMetadata``) object.  We then overlay the external-source fields
-    and register the model in the in-memory scanner cache so it appears
-    immediately without a full filesystem walk.
+    The metadata is created through the owning scanner rather than
+    ``MetadataManager.create_default_metadata()``, because that is the only
+    factory that knows when hashing must be deferred: ``CheckpointScanner`` and
+    ``OtherScanner`` deliberately record ``hash_status="pending"`` with an empty
+    ``sha256`` for their multi-GB files, and the generic helper would read a
+    10 GB checkpoint end to end *inside the download request*.  Scanners for the
+    small types delegate straight back to it, so nothing changes for them.
+
+    The external-source fields are then overlaid and the model is registered in
+    the in-memory scanner cache so it appears immediately without a full
+    filesystem walk.
+
+    Finally the site's own published metadata is applied (see
+    :func:`~py.services.model_sources.hydration.hydrate_from_source`), so a
+    ModelScope or Hugging Face download lands with the same populated model
+    card a CivitAI download produces instead of a bare filename and hash.
+
+    Both post-transfer stages are reported through *download_id* when the UI is
+    watching one, because neither advances the byte counter.
     """
     try:
         model_class, scanner_getter_name = _infer_model_type(model_root)
 
-        # 1. Create proper metadata (computes SHA256, reads safetensors headers)
-        metadata = await MetadataManager.create_default_metadata(
-            dest_path, model_class=model_class
-        )
+        scanner = None
+        scanner_getter = getattr(ServiceRegistry, scanner_getter_name, None)
+        if scanner_getter is not None:
+            scanner = await scanner_getter()
+
+        # 1. Create proper metadata (reads safetensors headers; hashes only for
+        #    the model types whose scanner does not defer it)
+        await _report_phase(download_id, "indexing", ref.platform)
+        create_metadata = getattr(scanner, "_create_default_metadata", None)
+        if create_metadata is not None:
+            metadata = await create_metadata(dest_path)
+        else:
+            metadata = await MetadataManager.create_default_metadata(
+                dest_path, model_class=model_class
+            )
         if metadata is None:
             logger.warning("create_default_metadata returned None for %s", dest_path)
             return
@@ -120,8 +173,8 @@ async def _save_source_metadata(
         # 3. Save metadata atomically
         await MetadataManager.save_metadata(dest_path, metadata)
         logger.info(
-            "Saved %s metadata (source=%s) for %s",
-            ref.platform, ref.url, dest_path,
+            "Saved %s metadata (source=%s, hash_status=%s) for %s",
+            ref.platform, ref.url, getattr(metadata, "hash_status", "?"), dest_path,
         )
 
         # 4. Determine relative folder path for cache
@@ -132,13 +185,16 @@ async def _save_source_metadata(
             folder = rel.replace(os.sep, "/") if rel != "." else ""
 
         # 5. Add to scanner cache (same as CivitAI's _execute_download does)
-        scanner_getter = getattr(ServiceRegistry, scanner_getter_name, None)
-        if scanner_getter is not None:
-            scanner = await scanner_getter()
-            if scanner is not None:
-                metadata_dict = normalize_metadata_source(metadata.to_dict())
-                await scanner.add_model_to_cache(metadata_dict, folder)
-                logger.info("Added %s to scanner cache (folder=%s)", dest_path, folder)
+        if scanner is not None:
+            metadata_dict = normalize_metadata_source(metadata.to_dict())
+            await scanner.add_model_to_cache(metadata_dict, folder)
+            logger.info("Added %s to scanner cache (folder=%s)", dest_path, folder)
+
+        # 6. Top up from the site's public API. Runs last so the scanner-cache
+        #    refresh it performs lands on the entry created above. It never
+        #    raises and never fails the download.
+        await _report_phase(download_id, "source", ref.platform)
+        await hydrate_from_source(dest_path, ref=ref)
 
     except Exception as exc:
         logger.warning("Failed to save source metadata for %s: %s", dest_path, exc)
@@ -466,21 +522,26 @@ class ModelSourceHandler:
         os.makedirs(target_dir, exist_ok=True)
         dest_path = os.path.join(target_dir, file_base)
 
-        # Check if already exists (simple skip)
-        if os.path.exists(dest_path) and os.path.getsize(dest_path) > 0:
-            logger.info("download_model_source: file already exists, skipping — %s", dest_path)
-            return web.json_response({
-                "success": True,
-                "message": f"File already exists: {dest_path}",
-                "path": dest_path,
-            })
-
         # Built per request: sites that redirect to a CDN hand out a
         # time-limited token in the redirect, so the URL must never be cached.
         resolve_url = source.file_download_url(repo, filename, revision)
         ref = SourceRef(
             platform=source.platform, source_id=repo, url=source.canonical_url(repo)
         )
+
+        # Check if already exists (simple skip)
+        if os.path.exists(dest_path) and os.path.getsize(dest_path) > 0:
+            logger.info("download_model_source: file already exists, skipping — %s", dest_path)
+            # The sidecar may predate the source metadata being fetched, or may
+            # have been deleted, so top it up instead of skipping past it.
+            # Hydration no-ops when there is no sidecar to update.
+            await _report_phase(download_id, "source", source.platform)
+            await hydrate_from_source(dest_path, ref=ref)
+            return web.json_response({
+                "success": True,
+                "message": f"File already exists: {dest_path}",
+                "path": dest_path,
+            })
 
         # Set up progress callback if download_id is provided
         progress_callback = None
@@ -530,7 +591,9 @@ class ModelSourceHandler:
                     progress_callback=progress_callback,
                 )
                 if ok:
-                    await _save_source_metadata(dest_path, ref, model_root)
+                    await _save_source_metadata(
+                        dest_path, ref, model_root, download_id=download_id
+                    )
                     return web.json_response({
                         "success": True,
                         "message": f"Downloaded to {dest_path}",
@@ -557,7 +620,9 @@ class ModelSourceHandler:
                 progress_callback=progress_callback,
             )
             if success:
-                await _save_source_metadata(dest_path, ref, model_root)
+                await _save_source_metadata(
+                    dest_path, ref, model_root, download_id=download_id
+                )
                 return web.json_response({
                     "success": True,
                     "message": f"Downloaded to {result}",

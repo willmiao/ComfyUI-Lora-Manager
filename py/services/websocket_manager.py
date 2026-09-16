@@ -170,6 +170,13 @@ class WebSocketManager:
             progress_entry['status'] = data['status']
         if 'message' in data:
             progress_entry['message'] = data['message']
+        # Post-transfer stage reporting (see `model_source_handlers._report_phase`):
+        # the byte counter has stopped by then, so the stage is the only thing
+        # that still says the download is working.
+        if 'stage' in data:
+            progress_entry['stage'] = data['stage']
+        if 'platform' in data:
+            progress_entry['platform'] = data['platform']
 
         self._download_progress[download_id] = progress_entry
         

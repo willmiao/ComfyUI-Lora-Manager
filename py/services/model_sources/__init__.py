@@ -24,7 +24,12 @@ from .base import (
     is_valid_source_id,
 )
 from .huggingface import HuggingFaceSource
-from .modelscope import ModelScopeSource
+from .hydration import (
+    hydrate_from_source,
+    load_model_card,
+    resolve_site_base_model,
+)
+from .modelscope import ModelScopeIntlSource, ModelScopeSource
 from .registry import (
     LEGACY_HF_URL_FIELD,
     SOURCE_PLATFORM_FIELD,
@@ -52,6 +57,7 @@ __all__ = [
     "ModelSourceCache",
     "ModelSourceError",
     "HuggingFaceSource",
+    "ModelScopeIntlSource",
     "ModelScopeSource",
     "SOURCE_PLATFORM_FIELD",
     "SOURCE_URL_FIELD",
@@ -68,9 +74,12 @@ __all__ = [
     "get_source",
     "get_source_platform",
     "has_external_source",
+    "hydrate_from_source",
     "is_valid_source_id",
     "list_sources",
+    "load_model_card",
     "normalize_metadata_source",
+    "resolve_site_base_model",
     "resolve_source_ref",
     "source_group_key",
     "source_label",

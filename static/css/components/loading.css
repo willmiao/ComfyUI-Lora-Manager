@@ -97,6 +97,32 @@
     width: 0%;
 }
 
+/* The transfer is done but the backend is still indexing the file and reading
+   the model site's API. A sheen over the full bar reads as "busy" where a
+   motionless 100% bar reads as "stuck". */
+.current-item-bar.is-indeterminate {
+    position: relative;
+    overflow: hidden;
+}
+
+.current-item-bar.is-indeterminate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+        90deg,
+        transparent 0%,
+        rgba(255, 255, 255, 0.5) 50%,
+        transparent 100%
+    );
+    animation: progress-sheen 1.2s ease-in-out infinite;
+}
+
+@keyframes progress-sheen {
+    from { transform: translateX(-100%); }
+    to { transform: translateX(100%); }
+}
+
 .current-item-percent {
     font-size: 0.8rem;
     color: var(--text-color-secondary, var(--text-color));
@@ -130,5 +156,9 @@
     .progress-bar,
     .current-item-bar {
         transition: none;
+    }
+
+    .current-item-bar.is-indeterminate::after {
+        animation: none;
     }
 }

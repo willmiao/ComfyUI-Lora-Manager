@@ -26,6 +26,7 @@ describe('modelSourceHelpers', () => {
     expect(MODEL_SOURCES.map((s) => s.platform)).toEqual([
       'huggingface',
       'modelscope',
+      'modelscope-ai',
       'tensorart',
     ]);
   });
@@ -42,6 +43,16 @@ describe('modelSourceHelpers', () => {
       expect(info.platform).toBe('modelscope');
       expect(info.sourceId).toBe('user/repo');
       expect(info.url).toBe('https://modelscope.cn/models/user/repo');
+    });
+
+    it('recognises ModelScope International as its own platform', () => {
+      const info = parseModelSourceUrl(
+        'https://www.modelscope.ai/models/referall13/EM1/files'
+      );
+      expect(info.platform).toBe('modelscope-ai');
+      expect(info.groupPrefix).toBe('msai');
+      expect(info.sourceId).toBe('referall13/EM1');
+      expect(info.url).toBe('https://www.modelscope.ai/models/referall13/EM1');
     });
 
     it('recognises TensorArt URLs and keeps only the numeric id', () => {

@@ -59,6 +59,17 @@ class TestDetectSource:
                 "modelscope",
                 "jj3550945163/Krea-2-LORA",
             ),
+            # modelscope.ai is a separate catalogue with its own platform id.
+            (
+                "https://www.modelscope.ai/models/referall13/EM1",
+                "modelscope-ai",
+                "referall13/EM1",
+            ),
+            (
+                "https://modelscope.ai/models/ErLubu/krea2_style_260911_02/summary",
+                "modelscope-ai",
+                "ErLubu/krea2_style_260911_02",
+            ),
             (
                 "https://tensor.art/models/827823520299086029/Vivid-Impressions-Storybook-Sstyle-V1.0",
                 "tensorart",
@@ -97,6 +108,21 @@ class TestDetectSource:
             == "https://tensor.art/models/123"
         )
 
+    def test_modelscope_com_is_an_alias_of_the_mainland_site(self):
+        """``.com`` 301-redirects to ``.cn``, so it is not a third catalogue."""
+        ref = detect_source("https://www.modelscope.com/models/u/r")
+        assert ref.platform == "modelscope"
+        assert ref.url == "https://modelscope.cn/models/u/r"
+
+    def test_the_two_modelscope_catalogues_do_not_cross_match(self):
+        """A host must never be accepted by the other deployment's patterns."""
+        mainland = get_source("modelscope")
+        international = get_source("modelscope-ai")
+
+        assert mainland.parse("https://www.modelscope.ai/models/u/r") is None
+        assert international.parse("https://modelscope.cn/models/u/r") is None
+        assert international.parse("https://www.modelscope.com/models/u/r") is None
+
 
 class TestStrictParsing:
     @pytest.mark.parametrize(
@@ -106,6 +132,8 @@ class TestStrictParsing:
             "https://huggingface.co/user/repo/",
             "https://modelscope.cn/models/user/repo",
             "https://modelscope.cn/models/user/repo/summary",
+            "https://www.modelscope.ai/models/user/repo",
+            "https://www.modelscope.ai/models/user/repo/files",
             "https://tensor.art/models/827823520299086029",
             "https://tensor.art/models/827823520299086029/Vivid-Impressions",
         ],
@@ -145,6 +173,16 @@ class TestCapabilities:
         assert source.default_revision == "master"
         assert source.default_subdir == "modelscope"
 
+    def test_modelscope_intl_is_the_same_site_on_another_catalogue(self):
+        source = get_source("modelscope-ai")
+        assert source.supports_enrichment is True
+        assert source.supports_download is True
+        assert source.default_revision == "master"
+        # A distinct directory: the same owner/name can exist on both
+        # deployments with different content.
+        assert source.default_subdir == "modelscope-ai"
+        assert source.base_url == "https://www.modelscope.ai"
+
     def test_tensorart_is_link_only(self):
         source = get_source("tensorart")
         assert source.supports_enrichment is False
@@ -152,11 +190,17 @@ class TestCapabilities:
 
     def test_registry_lists_every_source(self):
         platforms = {s.platform for s in list_sources()}
-        assert platforms == {"huggingface", "modelscope", "tensorart"}
+        assert platforms == {
+            "huggingface",
+            "modelscope",
+            "modelscope-ai",
+            "tensorart",
+        }
 
     def test_labels_are_brand_names(self):
         assert source_label("huggingface") == "Hugging Face"
         assert source_label("modelscope") == "ModelScope"
+        assert source_label("modelscope-ai") == "ModelScope (International)"
         assert source_label("tensorart") == "TensorArt"
         assert source_label("unknown", "fallback") == "fallback"
 
@@ -312,6 +356,44 @@ class TestFetchModelCard:
         )
 
     @pytest.mark.asyncio
+    async def test_modelscope_intl_fetches_from_its_own_catalogue(self, monkeypatch):
+        """The mainland site 404s for a `.ai`-only repository, so every fetch
+        has to stay on the host the URL came from."""
+        calls: list[str] = []
+
+        async def fake_fetch_text(url: str, **_kwargs) -> str:
+            calls.append(url)
+            return "# card"
+
+        json_calls: list[str] = []
+
+        async def fake_fetch_json(url: str, **_kwargs):
+            json_calls.append(url)
+            return 200, {"Data": {"Name": "EM1", "MuseInfo": {"versions": []}}}
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_text", fake_fetch_text
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        source = get_source("modelscope-ai")
+        await source.fetch_model_card("referall13/EM1")
+        await source.fetch_model_card_context("referall13/EM1")
+        await source.list_files("referall13/EM1")
+
+        assert calls == [
+            "https://www.modelscope.ai/models/referall13/EM1/resolve/master/README.md"
+        ]
+        assert json_calls == [
+            "https://www.modelscope.ai/api/v1/models/referall13/EM1",
+            "https://www.modelscope.ai/api/v1/models/referall13/EM1/repo/files"
+            "?Revision=master",
+        ]
+        assert not any("modelscope.cn" in url for url in calls + json_calls)
+
+    @pytest.mark.asyncio
     async def test_tensorart_never_fetches(self):
         # TensorArt enrichment is disabled: the provider must not issue any
         # HTTP request, so it deliberately does not import `fetch_text`.
@@ -335,6 +417,12 @@ class TestAssetBaseUrl:
             == "https://modelscope.cn/models/u/r/resolve/master"
         )
 
+    def test_modelscope_intl_uses_master_revision(self):
+        assert (
+            get_source("modelscope-ai").asset_base_url("u/r")
+            == "https://www.modelscope.ai/models/u/r/resolve/master"
+        )
+
 
 # ---------------------------------------------------------------------------
 # Model card context (site extras kept outside the README)
@@ -354,6 +442,9 @@ def _modelscope_detail_payload() -> dict:
         "Data": {
             "Name": "Krea-2-LORA",
             "ChineseName": "krea脸模",
+            "AigcType": "LoRA",
+            "License": "Apache License 2.0",
+            "Tags": ["LoRA", "text-to-image", "portrait"],
             "Description": "权重0.5-1.2。配合《风格滤镜》lora一起使用。",
             "BaseModel": ["krea/Krea-2-Turbo"],
             "License": "Apache License 2.0",
@@ -421,6 +512,81 @@ class TestFetchModelCardContext:
         assert context.base_model == "krea/Krea-2-Turbo"
         # OfficialTag values only, de-duplicated, order preserved.
         assert context.official_tags == ["photography", "woman"]
+
+    @pytest.mark.asyncio
+    async def test_modelscope_reads_site_identity_fields(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "Krea-2-LORA_c1-st1000.safetensors"
+        )
+
+        assert context.model_name == "Krea-2-LORA"
+        assert context.model_name_localized == "krea脸模"
+        assert context.license == "Apache License 2.0"
+        assert context.model_type == "LoRA"
+        # The version label is taken from the file that was matched, not from
+        # whichever version happens to come first in the payload.
+        assert context.version_name == "c1-st1000"
+
+    @pytest.mark.asyncio
+    async def test_modelscope_version_label_is_empty_for_an_unknown_file(
+        self, monkeypatch
+    ):
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context(
+            "u/r", "other.safetensors"
+        )
+
+        assert context.version_name == ""
+        # The repository-wide fields are still published.
+        assert context.model_name == "Krea-2-LORA"
+
+    @pytest.mark.asyncio
+    async def test_modelscope_falls_back_to_plain_tags(self, monkeypatch):
+        """An empty ``OfficialTags`` must not mean "no tags at all".
+
+        The plain ``Tags`` list mixes genuine content tags with library and
+        task categories; the latter are dropped so the card is not tagged
+        "lora" / "text-to-image".
+        """
+        payload = _modelscope_detail_payload()
+        payload["Data"]["OfficialTags"] = None
+
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, payload
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context("u/r")
+
+        assert context.official_tags == ["portrait"]
+
+    @pytest.mark.asyncio
+    async def test_modelscope_curated_tags_win_over_plain_tags(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 200, _modelscope_detail_payload()
+
+        monkeypatch.setattr(
+            "py.services.model_sources.modelscope.fetch_json", fake_fetch_json
+        )
+
+        context = await ModelScopeSource().fetch_model_card_context("u/r")
+
+        assert "portrait" not in context.official_tags
 
     @pytest.mark.asyncio
     async def test_modelscope_matches_example_images_by_filename(self, monkeypatch):
@@ -655,6 +821,22 @@ class TestDownloadUrls:
             "https://modelscope.cn/models/u/r/resolve/master/sub/f.safetensors"
         )
 
+    def test_modelscope_intl_builds_every_url_on_its_own_host(self):
+        """The two deployments serve different catalogues, so a URL built for
+        one must never point at the other."""
+        source = get_source("modelscope-ai")
+
+        assert source.canonical_url("u/r") == "https://www.modelscope.ai/models/u/r"
+        assert source.file_download_url("u/r", "sub/f.safetensors") == (
+            "https://www.modelscope.ai/models/u/r/resolve/master/sub/f.safetensors"
+        )
+        assert source.asset_base_url("u/r") == (
+            "https://www.modelscope.ai/models/u/r/resolve/master"
+        )
+        assert source.page_url_for_file("u/r", "sub/f.safetensors") == (
+            "https://www.modelscope.ai/models/u/r/file/view/master/sub/f.safetensors"
+        )
+
     def test_explicit_revision_wins(self):
         assert ModelScopeSource().file_download_url("u/r", "f.bin", "v1") == (
             "https://modelscope.cn/models/u/r/resolve/v1/f.bin"
@@ -701,12 +883,13 @@ class TestSourceIdValidation:
 class TestDownloadSourceRegistry:
     def test_downloadable_sources_excludes_link_only_sites(self):
         platforms = {source.platform for source in downloadable_sources()}
-        assert platforms == {"huggingface", "modelscope"}
+        assert platforms == {"huggingface", "modelscope", "modelscope-ai"}
 
     def test_get_download_source_rejects_link_only_platform(self):
         assert get_download_source("tensorart") is None
         assert get_download_source("nope") is None
         assert get_download_source("modelscope").platform == "modelscope"
+        assert get_download_source("modelscope-ai").platform == "modelscope-ai"
         assert get_download_source("huggingface").platform == "huggingface"
 
 

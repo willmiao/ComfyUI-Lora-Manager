@@ -1,4 +1,4 @@
-"""ModelScope (魔搭社区) model source.
+"""ModelScope (魔搭社区) model sources.
 
 ModelScope exposes the same "model card as README.md" convention as
 Hugging Face, including a YAML frontmatter block that often carries
@@ -10,11 +10,13 @@ none of which requires an API key for public models:
   the same content through the API, used as a fallback when the resolve
   URL is unavailable.
 * ``/api/v1/models/{owner}/{name}`` — the model-detail payload behind the
-  model page.  It carries the author's summary (``Description``), the
-  site-curated tags (``OfficialTags``), and, per published version, the
-  model filenames (``MuseInfo.versions[].stats.fileList``) together with
-  that file's example images (``coverImages``) and trigger words.  See
-  :meth:`ModelScopeSource.fetch_model_card_context`.
+  model page.  It carries the repository's display name (``Name`` /
+  ``ChineseName``), the author's summary (``Description``), the license, the
+  AIGC type, the site tags (``OfficialTags``, falling back to ``Tags``), and,
+  per published version, the model filenames
+  (``MuseInfo.versions[].stats.fileList``) together with that version's label
+  (``modelVersion.showName``), example images (``coverImages``) and trigger
+  words.  See :meth:`ModelScopeSource.fetch_model_card_context`.
 * ``/api/v1/models/{owner}/{name}/repo/files?Revision=..`` — the file
   listing backing the download picker.  It reports real sizes for LFS
   files (not the pointer size), so no extra HEAD request is needed.
@@ -28,6 +30,12 @@ valid; the CDN URL must never be cached.
 The README and the detail payload both describe the whole repository rather
 than one file, so a per-run ``ModelSourceCache`` keeps them from being read
 again for every checkpoint of a collection repository.
+
+Two deployments are served by this module.  ``modelscope.cn`` (with
+``modelscope.com`` as a redirect alias) and ``modelscope.ai`` are *separate
+catalogues*, not mirrors, so they are registered as distinct sources:
+:class:`ModelScopeSource` and :class:`ModelScopeIntlSource`.  Every URL either
+class builds is derived from its ``base_url``.
 """
 
 from __future__ import annotations
@@ -36,7 +44,7 @@ import json
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Iterable, Optional
 
 from .base import (
     ModelCardContext,
@@ -52,18 +60,28 @@ if TYPE_CHECKING:  # pragma: no cover - typing only
 
 logger = logging.getLogger(__name__)
 
-_URL_PATTERN = re.compile(
-    r"https?://(?:www\.)?modelscope\.(?:cn|com)/models/(?P<id>[^/?#\s]+/[^/?#\s]+)"
-)
+#: ModelScope runs two independent catalogues.  ``modelscope.com`` is a
+#: redirect alias of the mainland site, but ``modelscope.ai`` is the
+#: *international* deployment with its own repository catalogue — a repository
+#: published on one is routinely absent from the other (``referall13/EM1``
+#: exists only on ``.ai``, ``jj3550945163/Krea-2-LORA`` only on ``.cn``).  The
+#: host therefore decides which site, API and CDN a model belongs to, and the
+#: two deployments are registered as separate sources rather than folded into
+#: one id.
+_MAINLAND_HOSTS = r"modelscope\.(?:cn|com)"
+_INTERNATIONAL_HOSTS = r"modelscope\.ai"
 
 #: Trailing view segments the site appends to a model URL; accepted verbatim
 #: when the user pastes a browser tab URL.
 _VIEW_SEGMENTS = r"(?:summary|files|model-file|readme|community|evaluation)?"
 
-_STRICT_URL_PATTERN = re.compile(
-    r"https?://(?:www\.)?modelscope\.(?:cn|com)/models/(?P<id>[^/?#\s]+/[^/?#\s]+)"
-    rf"/?{_VIEW_SEGMENTS}/?$"
-)
+
+def _url_patterns(hosts: str) -> tuple[re.Pattern[str], re.Pattern[str]]:
+    """Build the lenient and strict model-URL patterns for *hosts*."""
+
+    body = rf"https?://(?:www\.)?(?:{hosts})/models/(?P<id>[^/?#\s]+/[^/?#\s]+)"
+    return re.compile(body), re.compile(rf"{body}/?{_VIEW_SEGMENTS}/?$")
+
 
 #: ``master`` is ModelScope's default branch; ``main`` is tried as a fallback
 #: for repos imported from Hugging Face.
@@ -71,7 +89,12 @@ _REVISIONS = ("master", "main")
 
 
 class ModelScopeSource(ModelSource):
-    """ModelScope (``modelscope.cn``)."""
+    """ModelScope's mainland site (``modelscope.cn``).
+
+    ``modelscope.com`` is accepted as an alias of it.  The international
+    deployment is :class:`ModelScopeIntlSource`; everything below is written in
+    terms of ``base_url`` so both share one implementation.
+    """
 
     platform = "modelscope"
     label = "ModelScope"
@@ -79,15 +102,18 @@ class ModelScopeSource(ModelSource):
     supports_download = True
     default_revision = "master"
     default_subdir = "modelscope"
-    url_pattern = _URL_PATTERN
-    strict_url_pattern = _STRICT_URL_PATTERN
+
+    #: Origin every outgoing URL is built from.
+    base_url = "https://modelscope.cn"
+
+    url_pattern, strict_url_pattern = _url_patterns(_MAINLAND_HOSTS)
 
     def canonical_url(self, source_id: str) -> str:
-        return f"https://modelscope.cn/models/{source_id}"
+        return f"{self.base_url}/models/{source_id}"
 
     def asset_base_url(self, source_id: str, revision: str = "") -> str:
         return (
-            f"https://modelscope.cn/models/{source_id}/resolve/"
+            f"{self.base_url}/models/{source_id}/resolve/"
             f"{self.resolve_revision(revision)}"
         )
 
@@ -96,7 +122,7 @@ class ModelScopeSource(ModelSource):
 
         for revision in _REVISIONS:
             text = await fetch_text(
-                f"https://modelscope.cn/models/{source_id}/resolve/{revision}/README.md"
+                f"{self.base_url}/models/{source_id}/resolve/{revision}/README.md"
             )
             if text:
                 return text
@@ -105,7 +131,7 @@ class ModelScopeSource(ModelSource):
         # environments where the CDN resolve host is blocked.
         for revision in _REVISIONS:
             text = await fetch_text(
-                "https://modelscope.cn/api/v1/models/"
+                f"{self.base_url}/api/v1/models/"
                 f"{source_id}/repo?Revision={revision}&FilePath=README.md"
             )
             if text:
@@ -158,7 +184,7 @@ class ModelScopeSource(ModelSource):
             return cache.provider[cache_key]
 
         status, payload = await fetch_json(
-            f"https://modelscope.cn/api/v1/models/{source_id}"
+            f"{self.base_url}/api/v1/models/{source_id}"
         )
         if status != 200 or not isinstance(payload, dict):
             logger.debug(
@@ -185,7 +211,7 @@ class ModelScopeSource(ModelSource):
 
         revision = self.resolve_revision(revision)
         status, payload = await fetch_json(
-            "https://modelscope.cn/api/v1/models/"
+            f"{self.base_url}/api/v1/models/"
             f"{source_id}/repo/files?Revision={revision}"
         )
 
@@ -208,18 +234,37 @@ class ModelScopeSource(ModelSource):
         self, source_id: str, filename: str, revision: str = ""
     ) -> str:
         return (
-            f"https://modelscope.cn/models/{source_id}/resolve/"
+            f"{self.base_url}/models/{source_id}/resolve/"
             f"{self.resolve_revision(revision)}/{filename}"
         )
 
     def page_url_for_file(self, source_id: str, filename: str) -> str:
         return (
-            f"https://modelscope.cn/models/{source_id}/file/view/"
+            f"{self.base_url}/models/{source_id}/file/view/"
             f"{self.default_revision}/{filename}"
         )
 
 
-__all__ = ["ModelScopeSource"]
+class ModelScopeIntlSource(ModelScopeSource):
+    """ModelScope's international site (``modelscope.ai``).
+
+    A separate catalogue rather than a mirror, so it is registered under its
+    own platform id: the two deployments must not share a version group, a
+    "use default paths" directory, or a stored ``source_url``.  The detail API,
+    the file listing, the resolve URLs and the CDN redirect all behave exactly
+    like the mainland site, which is why every URL here is derived from
+    :attr:`base_url` instead of being duplicated.
+    """
+
+    platform = "modelscope-ai"
+    label = "ModelScope (International)"
+    default_subdir = "modelscope-ai"
+    base_url = "https://www.modelscope.ai"
+
+    url_pattern, strict_url_pattern = _url_patterns(_INTERNATIONAL_HOSTS)
+
+
+__all__ = ["ModelScopeIntlSource", "ModelScopeSource"]
 
 
 # ---------------------------------------------------------------------------
@@ -228,6 +273,33 @@ __all__ = ["ModelScopeSource"]
 
 #: Trigger-word values that mean "the author left this blank".
 _EMPTY_TRIGGER_VALUES = frozenset({"none", "null", "n/a"})
+
+#: Repository tags that only restate what the model *is* (its library, task or
+#: framework) rather than what it depicts.  ModelScope mixes both into the
+#: plain ``Tags`` list, and a card tagged "lora" or "text-to-image" is noise.
+_GENERIC_TAGS = frozenset(
+    {
+        "any-to-any",
+        "checkpoint",
+        "controlnet",
+        "diffusers",
+        "embedding",
+        "image-text-to-text",
+        "image-to-image",
+        "image-to-video",
+        "lora",
+        "lycoris",
+        "onnx",
+        "pytorch",
+        "safetensors",
+        "tensorflow",
+        "text-to-image",
+        "text-to-speech",
+        "text-to-video",
+        "textual-inversion",
+        "vae",
+    }
+)
 
 
 def _clean_text(value: Any) -> str:
@@ -259,9 +331,13 @@ def _build_card_context(
 
     context = ModelCardContext(
         description=_clean_text(data.get("Description")),
+        model_name=_clean_text(data.get("Name")),
+        model_name_localized=_clean_text(data.get("ChineseName")),
+        license=_clean_text(data.get("License")),
+        model_type=_clean_text(data.get("AigcType")),
         base_model=_first_string(data.get("BaseModel")),
         base_model_aliases=_base_model_aliases(data),
-        official_tags=_official_tags(data.get("OfficialTags")),
+        official_tags=_official_tags(data),
     )
 
     versions = _matching_versions(
@@ -271,6 +347,7 @@ def _build_card_context(
         sha256=sha256,
     )
     if versions:
+        context.version_name = _version_label(versions)
         context.example_images = _cover_image_urls(versions)
         context.trigger_words = _version_trigger_words(versions)
     return context
@@ -303,24 +380,61 @@ def _base_model_aliases(data: dict[str, Any]) -> list[str]:
     return aliases
 
 
-def _official_tags(value: Any) -> list[str]:
-    """Extract the site-curated tag values from ``OfficialTags``.
+def _official_tags(data: dict[str, Any]) -> list[str]:
+    """Return the content tags the site publishes for the repository.
 
-    ModelScope's entries are dicts carrying an English ``Tag`` plus a
-    ``ChineseName``; the English value is the curated content vocabulary, so
-    that is the one surfaced here.
+    ``OfficialTags`` is ModelScope's curated content vocabulary and is
+    preferred whenever it is populated.  Plenty of AIGC repositories leave it
+    empty and carry only the plain ``Tags`` list, which mixes content tags with
+    framework and task categories; those categories are dropped so a card is
+    not handed "lora" and "text-to-image" as if they described the model.
     """
 
-    tags: list[str] = []
+    curated = _dedupe(_tag_values(data.get("OfficialTags")))
+    if curated:
+        return curated
+
+    generic = set(_GENERIC_TAGS)
+    for value in (
+        data.get("AigcType"),
+        data.get("Libraries"),
+        data.get("Frameworks"),
+    ):
+        for item in value if isinstance(value, list) else [value]:
+            text = _clean_text(item).lower()
+            if text:
+                generic.add(text)
+
+    return _dedupe(
+        tag for tag in _tag_values(data.get("Tags")) if tag.lower() not in generic
+    )
+
+
+def _tag_values(value: Any) -> list[str]:
+    """Return the tag strings from either shape ModelScope publishes.
+
+    ``OfficialTags`` is a list of ``{"Tag": ..., "ChineseName": ...}`` dicts
+    carrying an English value; the plain ``Tags`` list is already strings.
+    """
+
     if not isinstance(value, list):
-        return tags
+        return []
+    tags: list[str] = []
     for entry in value:
-        if not isinstance(entry, dict):
-            continue
-        tag = _clean_text(entry.get("Tag"))
-        if tag and tag not in tags:
+        tag = _clean_text(entry.get("Tag") if isinstance(entry, dict) else entry)
+        if tag:
             tags.append(tag)
     return tags
+
+
+def _dedupe(values: Iterable[str]) -> list[str]:
+    """Drop empties and repeats, keeping the first spelling seen."""
+
+    unique: list[str] = []
+    for value in values:
+        if value and value not in unique:
+            unique.append(value)
+    return unique
 
 
 def _version_files(version: dict[str, Any]) -> list[str]:
@@ -357,6 +471,23 @@ def _version_show_name(version: dict[str, Any]) -> str:
     if not isinstance(model_version, dict):
         return ""
     return _clean_text(model_version.get("showName")).lower()
+
+
+def _version_label(versions: list[dict[str, Any]]) -> str:
+    """Return the first published version label, preserving its spelling.
+
+    Unlike :func:`_version_show_name` this is for display, so the label is
+    not lowercased.
+    """
+
+    for version in versions:
+        model_version = version.get("modelVersion")
+        if not isinstance(model_version, dict):
+            continue
+        label = _clean_text(model_version.get("showName"))
+        if label:
+            return label
+    return ""
 
 
 def _file_digests(data: dict[str, Any]) -> dict[str, str]:

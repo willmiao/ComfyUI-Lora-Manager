@@ -48,6 +48,7 @@ class PostProcessor:
         readme_content: str = "",
         source_context: Optional["ModelCardContext"] = None,
         resolved_base_model: str = "",
+        metadata_source: str = "agent:enrich_hf_metadata",
     ) -> Dict[str, Any]:
         """Route *llm_output* to the correct skill post-processor.
 
@@ -63,13 +64,18 @@ class PostProcessor:
         hints resolve to, used when the LLM did not supply one (which is the
         normal case when the LLM was skipped).
 
+        *metadata_source* records who produced the metadata.  The AI skill
+        keeps its historical value; the deterministic download-time hydration
+        passes its own so the two remain distinguishable.  ``llm_enriched_at``
+        is only stamped when *llm_output* actually carries a provider answer.
+
         Returns a dict with keys ``success`` (bool), ``updated_fields`` (list),
         ``preview_downloaded`` (bool), and ``errors`` (list).
         """
         if skill_name == "enrich_hf_metadata":
             return await self._process_enrich_hf_metadata(
                 model_path, llm_output, metadata, readme_content, source_context,
-                resolved_base_model,
+                resolved_base_model, metadata_source,
             )
         return {
             "success": False,
@@ -89,6 +95,7 @@ class PostProcessor:
         readme_content: str = "",
         source_context: Optional["ModelCardContext"] = None,
         resolved_base_model: str = "",
+        metadata_source: str = "agent:enrich_hf_metadata",
     ) -> Dict[str, Any]:
         from ...metadata_ops import (
             apply_metadata_updates,
@@ -135,6 +142,17 @@ class PostProcessor:
         if new_base and self._should_overwrite(current_base, is_source_model):
             updates["base_model"] = new_base
 
+        # model_name — the site's own display name, so a source download never
+        # shows up under its local filename.  Written only while the name is
+        # still the untouched file stem: once a user renames a model that
+        # choice is theirs to keep.
+        site_name = ((source_context.model_name if source_context else "") or "").strip()
+        if is_source_model and site_name:
+            current_name = (metadata.get("model_name") or "").strip()
+            file_stem = (metadata.get("file_name") or "").strip()
+            if not current_name or current_name == file_stem:
+                updates["model_name"] = site_name
+
         # trigger words → civitai.trainedWords
         new_triggers = llm_output.get("trigger_words", [])
         trigger_words_empty = True
@@ -142,14 +160,9 @@ class PostProcessor:
             cleaned = [t.strip() for t in new_triggers if t.strip()]
             cleaned = [t for t in cleaned if t.lower() not in ("none", "null", "n/a")]
             trigger_words_empty = not cleaned
-            current_civitai = metadata.get("civitai") or {}
-            current_triggers = current_civitai.get("trainedWords") or []
+            current_triggers = (metadata.get("civitai") or {}).get("trainedWords") or []
             if self._should_overwrite_list(current_triggers, is_source_model):
-                trig_civitai = dict(current_civitai)
-                if "civitai" in updates and isinstance(updates["civitai"], dict):
-                    trig_civitai.update(updates["civitai"])
-                trig_civitai["trainedWords"] = cleaned
-                updates["civitai"] = trig_civitai
+                self._merge_civitai(updates, metadata, trainedWords=cleaned)
 
         # modelDescription — the author's own summary (when the site keeps one
         # outside the README, e.g. ModelScope's ``Description``) followed by the
@@ -175,12 +188,16 @@ class PostProcessor:
         if not short_desc:
             short_desc = site_description
         if short_desc and is_source_model:
-            current_civitai = metadata.get("civitai") or {}
-            desc_civitai = dict(current_civitai)
-            if "civitai" in updates and isinstance(updates["civitai"], dict):
-                desc_civitai.update(updates["civitai"])
-            desc_civitai["description"] = short_desc
-            updates["civitai"] = desc_civitai
+            self._merge_civitai(updates, metadata, description=short_desc)
+
+        # The version label completes the card the way a CivitAI download does:
+        # the UI renders `civitai.name` as the version chip.  It is per file,
+        # so a collection repository shows that checkpoint's own label.
+        site_version = (
+            (source_context.version_name if source_context else "") or ""
+        ).strip()
+        if is_source_model and site_version:
+            self._merge_civitai(updates, metadata, name=site_version)
 
         # gallery images → civitai.images (site example images, YAML frontmatter
         # widget entries, and Sample Gallery markdown tables in the README body)
@@ -244,12 +261,7 @@ class PostProcessor:
             all_images = _dedupe_images(site_images + readme_images)
             if all_images:
                 gallery_images = all_images
-                current_civitai = metadata.get("civitai") or {}
-                gallery_civitai = dict(current_civitai)
-                if "civitai" in updates and isinstance(updates["civitai"], dict):
-                    gallery_civitai.update(updates["civitai"])
-                gallery_civitai["images"] = all_images
-                updates["civitai"] = gallery_civitai
+                self._merge_civitai(updates, metadata, images=all_images)
 
         # tags — the site's curated tags are authoritative content vocabulary, so
         # they are kept alongside whatever the LLM proposed (the LLM is skipped
@@ -269,9 +281,12 @@ class PostProcessor:
             if len(merged) > len(existing_tags) or is_source_model:
                 updates["tags"] = merged
 
-        # metadata_source & llm_enriched_at (always set)
-        updates["metadata_source"] = "agent:enrich_hf_metadata"
-        updates["llm_enriched_at"] = datetime.now(timezone.utc).isoformat()
+        # metadata_source is recorded for provenance; llm_enriched_at only means
+        # something when a provider actually answered, so the deterministic
+        # download-time hydration does not claim an enrichment that never ran.
+        updates["metadata_source"] = metadata_source
+        if llm_output:
+            updates["llm_enriched_at"] = datetime.now(timezone.utc).isoformat()
 
         # LLM confidence, stored for the enrichment evaluation harness.  The key
         # must NOT start with an underscore: `BaseModelMetadata.from_dict()`
@@ -292,12 +307,7 @@ class PostProcessor:
                 if instance_prompt:
                     site_triggers = [instance_prompt]
             if site_triggers:
-                current_civitai = metadata.get("civitai") or {}
-                trig_civitai = dict(current_civitai)
-                if "civitai" in updates and isinstance(updates["civitai"], dict):
-                    trig_civitai.update(updates["civitai"])
-                trig_civitai["trainedWords"] = site_triggers
-                updates["civitai"] = trig_civitai
+                self._merge_civitai(updates, metadata, trainedWords=site_triggers)
 
         preview_remote_url = (llm_output.get("preview_url") or "").strip()
         # Fallback: if the LLM couldn't find a preview image in the cleaned
@@ -370,6 +380,25 @@ class PostProcessor:
         return is_source_model or not current_value or current_value.lower() in (
             "", "unknown",
         )
+
+    @staticmethod
+    def _merge_civitai(
+        updates: Dict[str, Any], metadata: Dict[str, Any], **fields: Any
+    ) -> None:
+        """Layer *fields* onto the ``civitai`` block being assembled.
+
+        Description, version label, trigger words and gallery images all live
+        in the same dict and are contributed by separate branches, so each one
+        starts from what is already on disk and then applies whatever an
+        earlier branch queued in *updates*.
+        """
+
+        merged = dict(metadata.get("civitai") or {})
+        queued = updates.get("civitai")
+        if isinstance(queued, dict):
+            merged.update(queued)
+        merged.update(fields)
+        updates["civitai"] = merged
 
     @staticmethod
     def _should_overwrite_list(current_list: List[str], is_source_model: bool) -> bool:

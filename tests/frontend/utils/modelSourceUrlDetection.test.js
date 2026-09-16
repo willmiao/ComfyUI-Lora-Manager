@@ -174,6 +174,54 @@ describe('DownloadManager.detectUrlType — external model source URLs', () => {
         expect(result.platform).toBe('huggingface');
     });
 
+    // modelscope.ai is a separate catalogue from modelscope.cn, not an alias,
+    // so it carries its own platform id all the way to the backend.
+    it('detects a ModelScope International repo URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://www.modelscope.ai/models/referall13/EM1'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope-ai',
+            repo: 'referall13/EM1',
+        });
+    });
+
+    it('detects a ModelScope International repo URL without the www prefix', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://modelscope.ai/models/ErLubu/krea2_style_260911_02'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'modelscope-ai',
+            repo: 'ErLubu/krea2_style_260911_02',
+        });
+    });
+
+    it('detects a ModelScope International file URL', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://www.modelscope.ai/models/referall13/EM1/resolve/master/EM1_c1-st1000.safetensors'
+        );
+        expect(result).toEqual({
+            type: 'model-source-file',
+            platform: 'modelscope-ai',
+            repo: 'referall13/EM1',
+            revision: 'master',
+            filename: 'EM1_c1-st1000.safetensors',
+        });
+    });
+
+    it('keeps the two ModelScope deployments distinct', () => {
+        const mainland = DownloadManager.detectUrlType(
+            'https://modelscope.cn/models/referall13/EM1'
+        );
+        const intl = DownloadManager.detectUrlType(
+            'https://www.modelscope.ai/models/referall13/EM1'
+        );
+        expect(mainland.platform).toBe('modelscope');
+        expect(intl.platform).toBe('modelscope-ai');
+    });
+
     it('rejects path traversal in either platform', () => {
         expect(
             DownloadManager.detectUrlType('https://modelscope.cn/models/../etc/passwd')

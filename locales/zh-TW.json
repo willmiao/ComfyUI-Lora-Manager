@@ -1488,6 +1488,10 @@
             "progress": {
                 "currentFile": "目前檔案：",
                 "downloading": "下載中：{name}",
+                "metadata": "[TODO: Translate] Metadata: {name}",
+                "indexingFile": "[TODO: Translate] Reading model file...",
+                "fetchingSourceMetadata": "[TODO: Translate] Fetching metadata from {source}...",
+                "fetchingMetadata": "[TODO: Translate] Fetching metadata...",
                 "transferred": "已下載：{downloaded} / {total}",
                 "transferredSimple": "已下載：{downloaded}",
                 "transferredUnknown": "已下載：--",

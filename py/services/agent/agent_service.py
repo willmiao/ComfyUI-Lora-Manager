@@ -33,8 +33,8 @@ from ..model_sources import (
     resolve_source_ref,
     source_label,
 )
+from ..model_sources.hydration import load_model_card, resolve_site_base_model
 from ..websocket_manager import ws_manager
-from .base_model_resolver import resolve_base_model
 from .post_processor import PostProcessor
 from .skill_registry import SkillRegistry
 from .skills.enrich_hf_metadata.readme_processor import (
@@ -466,12 +466,7 @@ class AgentService:
         raw_basename = os.path.splitext(os.path.basename(model_path))[0]
         variables["asset_base_url"] = source.asset_base_url(ref.source_id)
 
-        cache_key = f"{ref.platform}:{ref.source_id}"
-        readme = cache.readmes.get(cache_key) if cache is not None else None
-        if readme is None:
-            readme = await source.fetch_model_card(ref.source_id)
-            if cache is not None and readme:
-                cache.readmes[cache_key] = readme
+        readme = await load_model_card(source, ref.source_id, cache)
 
         # Sites such as ModelScope keep part of the model card outside the
         # README (author summary, curated tags, per-file example images).  The
@@ -507,17 +502,7 @@ class AgentService:
     async def _resolve_site_base_model(self, source_context: ModelCardContext) -> str:
         """Resolve the site's base-model hints to a canonical name, or ``""``."""
 
-        from ...metadata_ops import list_base_models
-
-        hints = [*source_context.base_model_aliases, source_context.base_model]
-        if not any(hints):
-            return ""
-        try:
-            known_names = await list_base_models()
-        except Exception as exc:
-            logger.debug("Failed to list base models for site resolution: %s", exc)
-            return ""
-        return resolve_base_model(hints, known_names)
+        return await resolve_site_base_model(source_context)
 
     async def _build_prompt_context(
         self,

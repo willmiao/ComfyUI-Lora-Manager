@@ -71,8 +71,17 @@ Enriches models linked to an external model site with metadata extracted by an L
 | Platform | Link | AI enrichment | Direct download |
 | --- | --- | --- | --- |
 | Hugging Face | yes | yes | yes |
-| ModelScope | yes | yes | yes |
+| ModelScope (`modelscope.cn`) | yes | yes | yes |
+| ModelScope International (`modelscope.ai`) | yes | yes | yes |
 | TensorArt | yes | no (see below) | no |
+
+`modelscope.cn` and `modelscope.ai` are **separate catalogues, not mirrors** — a
+repository published on one is routinely absent from the other — so each is
+registered as its own source (`ModelScopeSource` / `ModelScopeIntlSource` in
+`py/services/model_sources/modelscope.py`). The host therefore decides which
+API and CDN a model resolves against, and the two deployments get separate
+version groups (`ms:` / `msai:`) and default download directories. Keep the two
+tables in `modelSourceHelpers.js` and `registry.py` in step when adding a site.
 
 TensorArt is link-only: `tensor.art` sits behind a Cloudflare managed challenge and its internal API requires session authorization, so the backend cannot read its model pages. Linking still stores the canonical page URL and the "View on TensorArt" link works.
 
@@ -133,7 +142,9 @@ gaps the LLM leaves behind:
 
 | Field | Deterministic source | LLM role |
 | --- | --- | --- |
+| `model_name` | site display name (`Name`), written only while the value is still the file stem | — |
 | `modelDescription` | author summary + README as HTML | — |
+| `civitai.name` | the matched version's label (`modelVersion.showName`) | — |
 | `civitai.images` | site example images, then README images | — |
 | `preview_url` | first available example image | may propose one from the README |
 | `tags` | site-curated tags, always merged in | proposes additional content tags |
@@ -146,6 +157,47 @@ gaps the LLM leaves behind:
 Models with no source, an unknown source, or a source without model-card access (TensorArt) are skipped with an explicit reason and counted in the run summary.
 
 **Model types**: LoRA, Checkpoint, Embedding
+
+### Download-time hydration
+
+The same deterministic mapping runs automatically when a model is downloaded
+from a model source, so a ModelScope or Hugging Face download lands with the
+populated card a CivitAI download produces instead of a bare filename and
+hash. Nothing needs to be triggered by hand and no provider is called.
+
+`py/services/model_sources/hydration.py` owns this path:
+
+* `_save_source_metadata()` in `py/routes/handlers/model_source_handlers.py`
+  creates the sidecar (hash, source link, scanner-cache entry) and then calls
+  `hydrate_from_source()`. It also runs for a file that was already on disk, so
+  models downloaded before this existed get topped up on the next attempt.
+* Metadata is created through the **owning scanner**
+  (`scanner._create_default_metadata()`) rather than
+  `MetadataManager.create_default_metadata()`, so the per-type lazy-hash rule
+  applies: `CheckpointScanner` and `OtherScanner` store
+  `hash_status="pending"` with an empty `sha256` for their multi-GB files, and
+  the generic helper would read a 10 GB checkpoint end to end inside the
+  download request. Hydration copes with the empty hash — `_matching_versions()`
+  falls back to the repository basename, which the download just wrote.
+* Hydration reuses `PostProcessor` with an empty `llm_output`, so the two paths
+  cannot drift apart. It reports `metadata_source = "source:<platform>"` rather
+  than the skill's `agent:enrich_hf_metadata`, and — because no provider ran —
+  it does not stamp `llm_enriched_at`.
+* `model_name` is only written while it still equals the file stem: once a user
+  renames a model, that choice is kept.
+* Only a model whose stored `source_platform`/`source_url` match the repository
+  being downloaded is updated; a local file that merely shares a name must not
+  receive another model's card.
+* The README and repository payload describe the *repository*, so a short-lived
+  process-wide `ModelSourceCache` (`shared_source_cache`, 300 s, 32 entries)
+  keeps a batch over one repository to two HTTP requests.
+* Every failure — unreachable site, changed payload shape, broken post-processor
+  — is logged and swallowed. Metadata hydration can never fail a download.
+* Neither stage advances the byte counter, so both are announced to the
+  progress UI (`_report_phase()` → `{"status": "metadata", "stage": ...}`) as
+  they start. Without that the bar sits at 100% reporting `0 B/s` for several
+  seconds and the download looks stuck. `stage` and `platform` are
+  machine-readable; the wording is localised in `LoadingManager`.
 
 ## Adding a New Skill
 

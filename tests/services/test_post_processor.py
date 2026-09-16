@@ -1121,3 +1121,118 @@ pip install modelscope
             )
 
         assert "modelDescription" not in mock_apply.call_args[0][1]
+
+
+# ======================================================================
+# Site identity and provenance fields
+# ======================================================================
+
+
+class TestSiteIdentityFields:
+    """The fields that make a source download look like a CivitAI one."""
+
+    METADATA = {
+        "from_civitai": False,
+        "source_platform": "modelscope",
+        "source_url": "https://modelscope.cn/models/user/repo",
+        "file_name": "Krea-2-LORA_c1-st1000",
+        "model_name": "Krea-2-LORA_c1-st1000",
+        "base_model": "Unknown",
+    }
+
+    @staticmethod
+    def _run(processor, *, metadata, context, llm_output=None, **kwargs):
+        async def _call():
+            with (
+                mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+                mock.patch("py.metadata_ops.download_preview", return_value=None),
+                mock.patch("py.metadata_ops.refresh_cache"),
+            ):
+                await processor.process(
+                    skill_name="enrich_hf_metadata",
+                    model_path="/p.safetensors",
+                    llm_output=llm_output if llm_output is not None else {},
+                    metadata=metadata,
+                    source_context=context,
+                    **kwargs,
+                )
+            return mock_apply.call_args[0][1]
+
+        return _call()
+
+    @pytest.mark.asyncio
+    async def test_model_name_is_taken_from_the_site(self, processor):
+        applied = await self._run(
+            processor,
+            metadata=dict(self.METADATA),
+            context=ModelCardContext(model_name="Krea-2-LORA"),
+        )
+        assert applied["model_name"] == "Krea-2-LORA"
+
+    @pytest.mark.asyncio
+    async def test_model_name_is_also_written_when_absent(self, processor):
+        metadata = {**self.METADATA, "model_name": ""}
+        applied = await self._run(
+            processor,
+            metadata=metadata,
+            context=ModelCardContext(model_name="Krea-2-LORA"),
+        )
+        assert applied["model_name"] == "Krea-2-LORA"
+
+    @pytest.mark.asyncio
+    async def test_renamed_model_keeps_the_users_name(self, processor):
+        metadata = {**self.METADATA, "model_name": "my own name"}
+        applied = await self._run(
+            processor,
+            metadata=metadata,
+            context=ModelCardContext(model_name="Krea-2-LORA"),
+        )
+        assert "model_name" not in applied
+
+    @pytest.mark.asyncio
+    async def test_version_label_becomes_the_civitai_name(self, processor):
+        applied = await self._run(
+            processor,
+            metadata=dict(self.METADATA),
+            context=ModelCardContext(
+                model_name="Krea-2-LORA",
+                version_name="c1-st1000",
+                description="权重0.5-1.2。",
+            ),
+        )
+        assert applied["civitai"]["name"] == "c1-st1000"
+        # Every civitai branch contributes to one dict, so an earlier branch
+        # must survive a later one.
+        assert applied["civitai"]["description"] == "权重0.5-1.2。"
+
+    @pytest.mark.asyncio
+    async def test_llm_enriched_at_is_stamped_only_when_the_llm_answered(
+        self, processor
+    ):
+        applied = await self._run(
+            processor,
+            metadata=dict(self.METADATA),
+            context=ModelCardContext(model_name="Krea-2-LORA"),
+        )
+        assert applied["metadata_source"] == "agent:enrich_hf_metadata"
+        assert "llm_enriched_at" not in applied
+
+    @pytest.mark.asyncio
+    async def test_llm_answer_stamps_llm_enriched_at(self, processor):
+        applied = await self._run(
+            processor,
+            metadata=dict(self.METADATA),
+            context=ModelCardContext(model_name="Krea-2-LORA"),
+            llm_output={"base_model": "", "confidence": "high"},
+        )
+        assert "llm_enriched_at" in applied
+
+    @pytest.mark.asyncio
+    async def test_metadata_source_can_be_overridden(self, processor):
+        applied = await self._run(
+            processor,
+            metadata=dict(self.METADATA),
+            context=ModelCardContext(model_name="Krea-2-LORA"),
+            metadata_source="source:modelscope",
+        )
+        assert applied["metadata_source"] == "source:modelscope"

@@ -13,15 +13,18 @@ from typing import Any, Dict, Mapping, Optional
 
 from .base import GROUP_PREFIXES, ModelSource, SourceRef, clean_source_url
 from .huggingface import HuggingFaceSource
-from .modelscope import ModelScopeSource
+from .modelscope import ModelScopeIntlSource, ModelScopeSource
 from .tensorart import TensorArtSource
 
 logger = logging.getLogger(__name__)
 
 #: Order matters only for disambiguation; the URL patterns are disjoint.
+#: ``modelscope.ai`` is a separate catalogue from ``modelscope.cn`` rather than
+#: an alias, which is why it gets its own entry (see ``modelscope.py``).
 _SOURCES: tuple[ModelSource, ...] = (
     HuggingFaceSource(),
     ModelScopeSource(),
+    ModelScopeIntlSource(),
     TensorArtSource(),
 )
 

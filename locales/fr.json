@@ -1488,6 +1488,10 @@
             "progress": {
                 "currentFile": "Fichier actuel :",
                 "downloading": "Téléchargement : {name}",
+                "metadata": "[TODO: Translate] Metadata: {name}",
+                "indexingFile": "[TODO: Translate] Reading model file...",
+                "fetchingSourceMetadata": "[TODO: Translate] Fetching metadata from {source}...",
+                "fetchingMetadata": "[TODO: Translate] Fetching metadata...",
                 "transferred": "Téléchargé : {downloaded} / {total}",
                 "transferredSimple": "Téléchargé : {downloaded}",
                 "transferredUnknown": "Téléchargé : --",

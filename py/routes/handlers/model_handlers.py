@@ -1910,6 +1910,11 @@ class ModelDownloadHandler:
                 response_payload["status"] = status
                 if "message" in progress_data:
                     response_payload["message"] = progress_data["message"]
+                # Post-transfer stage (indexing / source metadata); polling
+                # consumers need it to tell "working" from "stuck".
+                for field in ("stage", "platform"):
+                    if field in progress_data:
+                        response_payload[field] = progress_data[field]
             elif status is None and "message" in progress_data:
                 response_payload["message"] = progress_data["message"]
 

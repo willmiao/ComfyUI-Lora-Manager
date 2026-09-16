@@ -340,6 +340,27 @@ export class DownloadManager {
 
     // ---- External repository download flow (Hugging Face / ModelScope) ----
 
+    /**
+     * Report a post-transfer stage frame to the progress UI.
+     *
+     * The backend keeps working after the last byte lands — it indexes the
+     * file and reads the model site's API — and announces those stages with
+     * `status: 'metadata'`. Without them the bar sits at 100% showing "0 B/s"
+     * and the download looks stuck. The stage and platform are machine
+     * readable so LoadingManager can localise the wording.
+     *
+     * @returns {boolean} `true` when the frame was a stage frame.
+     */
+    _applyMetadataStage(data, updateProgress, completed, name) {
+        if (data?.status !== 'metadata') return false;
+        updateProgress(100, completed, name, {}, {
+            phase: 'metadata',
+            stage: data.stage || '',
+            platform: data.platform || '',
+        });
+        return true;
+    }
+
     /** Rendering group key: the same repo on two sites is two groups. */
     _externalGroupKey(item) {
         return `${item.source}:${item.repo || 'unknown'}`;
@@ -1708,6 +1729,12 @@ export class DownloadManager {
                             cancelled = true;
                             return;
                         }
+                        // Indexing / site metadata: the transfer is over but the
+                        // backend is still working, so say so instead of
+                        // leaving the bar frozen at 100%.
+                        if (this._applyMetadataStage(data, updateProgress, snapshotCompleted, filename)) {
+                            return;
+                        }
                         if (data.status === 'progress') {
                             const metrics = {
                                 bytesDownloaded: data.bytes_downloaded,
@@ -2331,6 +2358,9 @@ export class DownloadManager {
                         const snapshotCompleted = completedDownloads;
                         wsHf.onmessage = (event) => {
                             const data = JSON.parse(event.data);
+                            if (this._applyMetadataStage(data, updateProgress, snapshotCompleted, name)) {
+                                return;
+                            }
                             if (data.status === 'progress') {
                                 const metrics = {
                                     bytesDownloaded: data.bytes_downloaded,

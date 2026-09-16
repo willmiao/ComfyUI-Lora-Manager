@@ -50,6 +50,26 @@ export const MODEL_SOURCES = [
       `https://modelscope.cn/models/${id}/file/view/master/${filename}`,
   },
   {
+    // A separate catalogue from `modelscope.cn`, not an alias: a repository
+    // published on one is routinely absent from the other, so the host is part
+    // of the model's identity. Mirrors ModelScopeIntlSource in the backend.
+    platform: 'modelscope-ai',
+    label: 'ModelScope (International)',
+    groupPrefix: 'msai',
+    supportsEnrichment: true,
+    supportsDownload: true,
+    defaultRevision: 'master',
+    defaultSubdir: 'modelscope-ai',
+    exampleUrl: 'https://www.modelscope.ai/models/user/repo',
+    placeholder: 'https://www.modelscope.ai/models/user/repo',
+    pattern: /^https?:\/\/(?:www\.)?modelscope\.ai\/models\/([^/?#\s]+\/[^/?#\s]+)/i,
+    filePattern:
+      /^https?:\/\/(?:www\.)?modelscope\.ai\/models\/([^/?#\s]+\/[^/?#\s]+)\/resolve\/([^/?#\s]+)\/(.+)$/i,
+    canonical: (id) => `https://www.modelscope.ai/models/${id}`,
+    filePage: (id, filename) =>
+      `https://www.modelscope.ai/models/${id}/file/view/master/${filename}`,
+  },
+  {
     platform: 'tensorart',
     label: 'TensorArt',
     groupPrefix: 'ta',
