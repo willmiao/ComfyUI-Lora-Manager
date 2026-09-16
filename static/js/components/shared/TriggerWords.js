@@ -7,10 +7,33 @@ import { showToast, copyToClipboard } from '../../utils/uiHelpers.js';
 import { translate } from '../../utils/i18nHelpers.js';
 import { getModelApiClient } from '../../api/modelApiFactory.js';
 import { escapeAttribute, escapeHtml } from './utils.js';
+import {
+    enablePointerSort,
+    disablePointerSort,
+} from './pointerSort.js';
+import {
+    createReorderSupport,
+    renderReorderHandle,
+    renderReorderHint,
+} from './reorderSupport.js';
 
 const MAX_WORDS_PER_TRIGGER_GROUP = 500;
 const MAX_TRIGGER_WORD_GROUPS = 100;
 const TRIGGER_WORD_CLICK_DELAY_MS = 220;
+const TRIGGER_WORD_DRAG_HANDLE_SELECTOR = '.reorder-handle';
+
+/**
+ * Drag-to-reorder configuration for trigger word tags.
+ * Handlers are installed when entering edit mode and removed again on exit, so
+ * display mode keeps its click-to-copy / double-click-to-edit behaviour.
+ * The item body is click-to-edit here, so only the grip starts a drag.
+ */
+const TRIGGER_WORD_DRAG_CONFIG = {
+    itemSelector: '.trigger-word-tag',
+    handleSelector: TRIGGER_WORD_DRAG_HANDLE_SELECTOR,
+    ignoreSelector: '.metadata-delete-btn, .trigger-word-edit-input',
+    blockedItemSelector: '.is-editing',
+};
 
 /**
  * Fetch trained words for a model
@@ -183,6 +206,16 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
 }
 
 /**
+ * Render the drag handle of a trigger word tag.
+ * The handle is always in the DOM but only visible (and clickable) in edit mode,
+ * so switching modes never has to rebuild the tag markup.
+ * @returns {string} Handle markup
+ */
+function renderTriggerWordDragHandle() {
+    return renderReorderHandle(translate('common.reorder.dragHandle'));
+}
+
+/**
  * Render trigger words
  * @param {Array} words - Array of trigger words
  * @param {string} filePath - File path
@@ -203,6 +236,7 @@ export function renderTriggerWords(words, filePath) {
                 <div class="trigger-words-tags" style="display:none;"></div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
+                ${renderReorderHint(translate('common.reorder.dragHandle'))}
                 <button class="metadata-save-btn" title="${translate('modals.model.triggerWords.save')}">
                     <i class="fas fa-save"></i> ${translate('common.actions.save')}
                 </button>
@@ -228,6 +262,7 @@ export function renderTriggerWords(words, filePath) {
         const escapedAttr = escapeAttribute(word);
         return `
                         <div class="trigger-word-tag" data-word="${escapedAttr}" title="${translate('modals.model.triggerWords.copyOrEditWord')}">
+                            ${renderTriggerWordDragHandle()}
                             <span class="trigger-word-content">${escapedWord}</span>
                             <span class="trigger-word-copy">
                                 <i class="fas fa-copy"></i>
@@ -240,6 +275,7 @@ export function renderTriggerWords(words, filePath) {
                 </div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
+                ${renderReorderHint(translate('common.reorder.dragHandle'))}
                 <button class="metadata-save-btn" title="${translate('modals.model.triggerWords.save')}">
                     <i class="fas fa-save"></i> ${translate('common.actions.save')}
                 </button>
@@ -316,6 +352,10 @@ export function setupTriggerWordsEditMode() {
                 }
             });
 
+            // Enable drag-to-reorder (grip handle) for the current words
+            enableTriggerWordSort(triggerWordsSection);
+            refreshTriggerWordHandleLabels(triggerWordsSection);
+
             // Load trained words and display dropdown when entering edit mode
             // Add loading indicator
             const loadingIndicator = document.createElement('div');
@@ -379,6 +419,10 @@ export function setupTriggerWordsEditMode() {
                 if (tagsContainer) tagsContainer.style.display = 'none';
             }
 
+            // Leaving edit mode: tags are no longer reorderable
+            disableTriggerWordSort(triggerWordsSection);
+            refreshTriggerWordHandleLabels(triggerWordsSection);
+
             // Remove dropdown if present
             const dropdown = triggerWordsSection.querySelector('.metadata-suggestions-dropdown');
             if (dropdown) dropdown.remove();
@@ -433,7 +477,12 @@ export function setupTriggerWordsEditMode() {
 function deleteTriggerWord(e) {
     e.stopPropagation();
     const tag = this.closest('.trigger-word-tag');
+    const section = tag?.closest('.trigger-words');
     tag.remove();
+
+    if (section) {
+        refreshTriggerWordHandleLabels(section);
+    }
 
     // Update status of items in the trained words dropdown
     updateTrainedWordsDropdown();
@@ -494,6 +543,72 @@ function restoreOriginalTriggerWords(section, originalWords) {
 }
 
 /**
+ * Get (or lazily create) the reorder support of a section.
+ * Reordering is only allowed while the section is in edit mode, because the tag
+ * body itself is click-to-edit and the grip must not appear in display mode.
+ * @param {HTMLElement} section - The .trigger-words section
+ * @returns {{refresh: Function, announce: Function}|null} Reorder support
+ */
+function getTriggerWordReorder(section) {
+    const tagsContainer = section.querySelector('.trigger-words-tags');
+    if (!tagsContainer) return null;
+
+    let support = section._triggerWordReorderSupport;
+    if (!support || section._triggerWordReorderContainer !== tagsContainer) {
+        support = createReorderSupport({
+            container: tagsContainer,
+            scope: section,
+            handleSelector: TRIGGER_WORD_DRAG_HANDLE_SELECTOR,
+            sortConfig: TRIGGER_WORD_DRAG_CONFIG,
+            isActive: () => section.classList.contains('edit-mode'),
+        });
+        section._triggerWordReorderSupport = support;
+        section._triggerWordReorderContainer = tagsContainer;
+    }
+
+    return support;
+}
+
+/**
+ * Refresh the handle labels and the "sortable" flag of a section
+ * @param {HTMLElement} section - The .trigger-words section
+ */
+function refreshTriggerWordHandleLabels(section) {
+    getTriggerWordReorder(section)?.refresh();
+}
+
+/**
+ * Enable drag-to-reorder for the tags of a section (edit mode only)
+ * @param {HTMLElement} section - The .trigger-words section
+ */
+function enableTriggerWordSort(section) {
+    const tagsContainer = section.querySelector('.trigger-words-tags');
+    if (!tagsContainer) return;
+
+    const support = getTriggerWordReorder(section);
+
+    enablePointerSort(tagsContainer, {
+        ...TRIGGER_WORD_DRAG_CONFIG,
+        onSorted: (item) => {
+            support?.refresh();
+            support?.announce(item);
+        },
+    });
+}
+
+/**
+ * Remove drag-to-reorder handlers when leaving edit mode
+ * @param {HTMLElement} section - The .trigger-words section
+ */
+function disableTriggerWordSort(section) {
+    const tagsContainer = section.querySelector('.trigger-words-tags');
+    if (!tagsContainer) return;
+
+    disablePointerSort(tagsContainer, TRIGGER_WORD_DRAG_CONFIG);
+    refreshTriggerWordHandleLabels(section);
+}
+
+/**
  * Create a trigger word tag element
  * @param {string} word - Trigger word
  * @param {boolean} isEditMode - Whether the tag should be editable
@@ -507,6 +622,7 @@ function createTriggerWordTag(word, isEditMode = false) {
 
     const escapedWord = escapeHtml(word);
     tag.innerHTML = `
+        ${renderTriggerWordDragHandle()}
         <span class="trigger-word-content">${escapedWord}</span>
         <span class="trigger-word-copy" style="${isEditMode ? 'display:none;' : ''}">
             <i class="fas fa-copy"></i>
@@ -637,7 +753,7 @@ function validateTriggerWord(word, tagsContainer, currentTag = null) {
  * @param {Event} e - Click event
  */
 function startEditTriggerWord(e) {
-    if (e.target.closest('.metadata-delete-btn') || e.target.closest('.trigger-word-edit-input')) return;
+    if (e.target.closest('.metadata-delete-btn') || e.target.closest('.trigger-word-edit-input') || e.target.closest(TRIGGER_WORD_DRAG_HANDLE_SELECTOR)) return;
 
     const tag = this.closest('.trigger-word-tag');
     const section = tag?.closest('.trigger-words');
@@ -684,6 +800,11 @@ function startEditTriggerWord(e) {
         tag.classList.remove('is-editing');
         tag.style.removeProperty('--trigger-word-edit-width');
         tag.style.removeProperty('--trigger-word-edit-height');
+
+        if (section) {
+            refreshTriggerWordHandleLabels(section);
+        }
+
         updateTrainedWordsDropdown();
     };
 
@@ -762,6 +883,12 @@ function addNewTriggerWord(word) {
 
     const newTag = createTriggerWordTag(word, triggerWordsSection.classList.contains('edit-mode'));
     tagsContainer.appendChild(newTag);
+
+    if (triggerWordsSection.classList.contains('edit-mode')) {
+        // Wire the freshly added tag for reordering too
+        enableTriggerWordSort(triggerWordsSection);
+        refreshTriggerWordHandleLabels(triggerWordsSection);
+    }
 
     // Update status of items in the trained words dropdown
     updateTrainedWordsDropdown();

@@ -2,6 +2,11 @@
     "common": {
         "cancel": "ביטול",
         "confirm": "אישור",
+        "reorder": {
+            "dragHandle": "[TODO: Translate] Drag to reorder (Alt + ↑/↓)",
+            "ariaLabel": "[TODO: Translate] Reorder {item}, position {position} of {total}",
+            "announcement": "[TODO: Translate] Moved to position {position} of {total}"
+        },
         "actions": {
             "save": "שמירה",
             "cancel": "ביטול",

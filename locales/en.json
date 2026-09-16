@@ -2,6 +2,11 @@
   "common": {
     "cancel": "Cancel",
     "confirm": "Confirm",
+    "reorder": {
+      "dragHandle": "Drag to reorder (Alt + ↑/↓)",
+      "ariaLabel": "Reorder {item}, position {position} of {total}",
+      "announcement": "Moved to position {position} of {total}"
+    },
     "actions": {
       "save": "Save",
       "cancel": "Cancel",
