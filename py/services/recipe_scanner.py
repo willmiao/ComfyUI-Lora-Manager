@@ -116,6 +116,12 @@ class RecipeScanner:
             self._persistent_cache: Optional[PersistentRecipeCache] = None
             self._civitai_client: Any = None  # Lazily initialized from registry
             self._json_path_map: Dict[str, str] = {}  # recipe_id -> json_path
+            # True when the last scan refused to prune the stored cache because
+            # every recorded recipe file was missing (see
+            # :meth:`_initialize_recipe_cache_sync`). Keeps dependent background
+            # work (FTS index) aligned with the stored rows instead of the
+            # intentionally out-of-sync in-memory view.
+            self._prune_skipped: bool = False
             if lora_scanner:
                 self._lora_scanner = lora_scanner
             if checkpoint_scanner:
@@ -1651,8 +1657,12 @@ class RecipeScanner:
                 'pageType': 'recipes',
             })
             self._schedule_post_scan_enrichment()
-            # Schedule FTS index build in background (non-blocking)
-            self._schedule_fts_index_build()
+            # Schedule FTS index build in background (non-blocking). When the
+            # prune was skipped the in-memory cache is intentionally out of sync
+            # with the stored rows, so leave the existing index alone instead of
+            # rebuilding it from the empty view.
+            if not self._prune_skipped:
+                self._schedule_fts_index_build()
         except Exception as e:
             logger.error(f"Recipe Scanner: Error initializing cache in background: {e}")
             # Ensure the cache is never None so the page stops showing the
@@ -1723,6 +1733,7 @@ class RecipeScanner:
         """
         loop = None
         scan_start_time: Optional[float] = None
+        self._prune_skipped = False
         try:
             # Ensure cache exists to avoid None reference errors
             if self._cache is None:
@@ -1749,13 +1760,37 @@ class RecipeScanner:
                 logger.warning(f"Recipes directory not found: {recipes_dir}")
                 return self._cache
 
+            # Record which directory the scan actually used. When the Recipes
+            # Storage Path is empty this falls back to the first LoRA root, and
+            # a support reader needs that path to tell a real wipe apart from a
+            # scan that looked somewhere else (see the prune guard below).
+            logger.info(f"Recipe scan directory: {recipes_dir}")
+
             # Try to load from persistent cache first
             persisted = self._persistent_cache.load_cache()
             if persisted:
-                recipes, changed, json_paths = self._reconcile_recipe_cache(
-                    persisted, recipes_dir
-                )
+                (
+                    recipes,
+                    changed,
+                    json_paths,
+                    skipped_prune_reason,
+                ) = self._reconcile_recipe_cache(persisted, recipes_dir)
                 self._json_path_map = json_paths
+
+                if skipped_prune_reason:
+                    # Every persisted recipe file vanished at once. That is not a
+                    # reliable deletion signal: a drive that did not mount, a
+                    # recipes_path that silently fell back to another root, or a
+                    # shared cache touched by a second instance all look exactly
+                    # like this. Keep the stored cache and skip the prune, so the
+                    # only copy of the user's recipes is not destroyed.
+                    logger.warning(
+                        f"Recipe cache prune skipped: {skipped_prune_reason}. "
+                        f"Keeping {len(persisted.raw_data)} stored recipe(s); this "
+                        "session reports no recipes until the files are found again."
+                    )
+                    self._prune_skipped = True
+                    return self._cache
 
                 if not changed:
                     # Fast path: use cached data directly
@@ -1770,7 +1805,10 @@ class RecipeScanner:
                     if self._backfill_source_path_if_needed(recipes, json_paths):
                         self._cache.image_id_map = self._build_image_id_map()
                         self._persistent_cache.save_cache(
-                            recipes, json_paths, self._cache.image_id_map
+                            recipes,
+                            json_paths,
+                            self._cache.image_id_map,
+                            skip_if_empty=True,
                         )
                     else:
                         # Use persisted map, or rebuild if empty (e.g. first startup
@@ -1798,7 +1836,10 @@ class RecipeScanner:
                     self._cache.image_id_map = self._build_image_id_map()
                     # Persist updated cache
                     self._persistent_cache.save_cache(
-                        recipes, json_paths, self._cache.image_id_map
+                        recipes,
+                        json_paths,
+                        self._cache.image_id_map,
+                        skip_if_empty=True,
                     )
                     return self._cache
 
@@ -1825,7 +1866,10 @@ class RecipeScanner:
 
             # Persist for next startup
             self._persistent_cache.save_cache(
-                recipes, json_paths, self._cache.image_id_map
+                recipes,
+                json_paths,
+                self._cache.image_id_map,
+                skip_if_empty=True,
             )
 
             if report_progress:
@@ -1862,7 +1906,7 @@ class RecipeScanner:
         self,
         persisted: PersistedRecipeData,
         recipes_dir: str,
-    ) -> Tuple[List[Dict[str, Any]], bool, Dict[str, str]]:
+    ) -> Tuple[List[Dict[str, Any]], bool, Dict[str, str], Optional[str]]:
         """Reconcile persisted cache with current filesystem state.
 
         Args:
@@ -1870,7 +1914,11 @@ class RecipeScanner:
             recipes_dir: Path to the recipes directory.
 
         Returns:
-            Tuple of (recipes list, changed flag, json_paths dict).
+            Tuple of (recipes list, changed flag, json_paths dict,
+            skipped_prune_reason). The last element is ``None`` on a normal
+            reconcile. When it is a string, the scan saw every persisted recipe
+            file disappear at once; the caller must then keep the persisted
+            cache instead of overwriting it. The reason text is user-facing.
         """
         recipes: List[Dict[str, Any]] = []
         json_paths: Dict[str, str] = {}
@@ -1951,12 +1999,67 @@ class RecipeScanner:
                 time.sleep(0)
 
         # Check for deleted files
-        for json_path in persisted.file_stats.keys():
-            if json_path not in current_files:
-                changed = True
-                logger.debug("Recipe file deleted: %s", json_path)
+        orphaned_stats = [
+            json_path
+            for json_path in persisted.file_stats.keys()
+            if json_path not in current_files
+        ]
+        if orphaned_stats:
+            changed = True
+            # This single line plus the resolved scan directory logged by the
+            # caller are the evidence a support reader gets for a recipes path
+            # that moved; the per-file lines stay at debug to avoid flooding.
+            if len(orphaned_stats) > 10:
+                logger.info(
+                    f"Recipe reconcile: {len(orphaned_stats)} of "
+                    f"{len(persisted.file_stats)} cached recipe file(s) are not in "
+                    f"{recipes_dir} (first: {orphaned_stats[0]}, "
+                    f"last: {orphaned_stats[-1]})"
+                )
+            else:
+                for json_path in orphaned_stats:
+                    logger.debug("Recipe file deleted: %s", json_path)
 
-        return recipes, changed, json_paths
+        skipped_prune_reason: Optional[str] = None
+        if not current_files and persisted.file_stats:
+            metadata_is_coherent = self._persisted_metadata_is_coherent(persisted)
+            if metadata_is_coherent:
+                skipped_prune_reason = (
+                    f"every recipe file recorded in the cache "
+                    f"({len(persisted.file_stats)}) is missing from {recipes_dir}"
+                )
+            else:
+                # The stored row set and its recorded file stats disagree, so
+                # this cache is stale rather than a faithful record of recipes
+                # that have just gone missing. Pruning it is safe.
+                logger.info(
+                    f"Recipe reconcile: stored cache is inconsistent "
+                    f"({len(persisted.raw_data)} row(s) vs "
+                    f"{len(persisted.file_stats)} file record(s)); falling back "
+                    "to a normal prune."
+                )
+
+        return recipes, changed, json_paths, skipped_prune_reason
+
+    @staticmethod
+    def _persisted_metadata_is_coherent(persisted: PersistedRecipeData) -> bool:
+        """Return True when the stored rows and their file stats describe one set.
+
+        The prune guard treats "no recipe files found" as a signal that the
+        directory moved out from under us, which is only meaningful when the
+        stored cache is a faithful record of recipes that exist on disk. A cache
+        whose row set and file-stat set have diverged (left behind by an older
+        reconcile) carries recipes that were already orphaned, so it is not
+        evidence of a fresh disappearance.
+        """
+        stats_ids = {
+            os.path.basename(json_path)[: -len(".recipe.json")]
+            for json_path in persisted.file_stats
+            if os.path.basename(json_path).lower().endswith(".recipe.json")
+        }
+        rows_ids = {str(recipe.get("id", "")) for recipe in persisted.raw_data}
+        rows_ids.discard("")
+        return bool(rows_ids) and rows_ids == stats_ids
 
     # Metadata key recording that the one-shot source_path backfill has run.
     _SOURCE_PATH_BACKFILL_MARKER = "source_path_backfilled"
@@ -2656,7 +2759,8 @@ class RecipeScanner:
 
                         # Schedule non-blocking background work
                         self._schedule_post_scan_enrichment()
-                        self._schedule_fts_index_build()
+                        if not self._prune_skipped:
+                            self._schedule_fts_index_build()
 
                         return cast(RecipeCache, self._cache)
 

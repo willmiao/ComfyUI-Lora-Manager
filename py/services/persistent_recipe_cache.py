@@ -170,20 +170,30 @@ class PersistentRecipeCache:
         recipes: List[Dict[str, Any]],
         json_paths: Optional[Dict[str, str]] = None,
         image_id_map: Optional[Dict[str, str]] = None,
-    ) -> None:
+        skip_if_empty: bool = False,
+    ) -> bool:
         """Save all recipes to SQLite cache.
 
         Args:
             recipes: List of recipe dictionaries to persist.
             json_paths: Optional mapping of recipe_id -> json_path for file stats.
             image_id_map: Optional precomputed civitai image_id → recipe_id mapping.
+            skip_if_empty: When True, refuse to replace a non-empty cache with an
+                empty one. This is the storage-level backstop against a scan that
+                silently loses every recipe (unavailable drive / mis-resolved
+                recipes directory): overwriting both deletes the user's data and
+                destroys their only record of it. Intentional full clears (manual
+                rebuild) must pass ``skip_if_empty=False``.
+
+        Returns:
+            ``True`` when the write happened, ``False`` when it was skipped.
         """
         if not self.is_enabled():
-            return
+            return False
         if not self._schema_initialized:
             self._initialize_schema()
         if not self._schema_initialized:
-            return
+            return False
 
         try:
             with self._db_lock:
@@ -191,6 +201,23 @@ class PersistentRecipeCache:
                 try:
                     conn.execute("PRAGMA foreign_keys = ON")
                     conn.execute("BEGIN")
+
+                    if skip_if_empty and not recipes:
+                        existing = conn.execute(
+                            "SELECT COUNT(*) FROM recipes"
+                        ).fetchone()
+                        if existing and existing[0]:
+                            conn.rollback()
+                            logger.warning(
+                                "Refusing to persist an empty recipe cache: the "
+                                "stored cache still holds %d recipe(s). The scan "
+                                "found nothing, which usually means the recipes "
+                                "path was unavailable or resolved elsewhere; "
+                                "keeping the stored cache so the data stays "
+                                "recoverable.",
+                                existing[0],
+                            )
+                            return False
 
                     # Clear existing data
                     conn.execute("DELETE FROM recipes")
@@ -225,10 +252,12 @@ class PersistentRecipeCache:
 
                     conn.commit()
                     logger.debug("Persisted %d recipes to cache", len(recipe_rows))
+                    return True
                 finally:
                     conn.close()
         except Exception as exc:
             logger.warning("Failed to persist recipe cache: %s", exc)
+            return False
 
     def get_file_stats(self) -> Dict[str, Tuple[float, int]]:
         """Return stored file stats for all cached recipes.
