@@ -225,10 +225,9 @@ def main() -> int:
 
     args = parser.parse_args()
 
-    # Get project root (parent of .agents directory)
+    # Get project root: this script lives in <project_root>/scripts/e2e/.
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    skill_dir = os.path.dirname(script_dir)
-    project_root = os.path.dirname(os.path.dirname(os.path.dirname(skill_dir)))
+    project_root = os.path.dirname(os.path.dirname(script_dir))
 
     managed_pids = read_managed_pids(args.port)
 
