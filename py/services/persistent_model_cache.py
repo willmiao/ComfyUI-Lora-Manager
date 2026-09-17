@@ -6,7 +6,9 @@ import threading
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple
 
+from ..utils.cache_db import connect_cache_db
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
+from ..utils.file_lock import exclusive_lock
 from .model_sources import normalize_metadata_source
 
 logger = logging.getLogger(__name__)
@@ -257,267 +259,271 @@ class PersistentModelCache:
             return
         try:
             with self._db_lock:
-                conn = self._connect()
-                try:
-                    conn.execute("PRAGMA foreign_keys = ON")
-                    conn.execute("BEGIN")
+                # Cross-process serialization: another LoRA Manager instance may
+                # share this settings directory, and the read-merge-write below
+                # spans several statements.
+                with exclusive_lock(self._db_path):
+                    conn = self._connect()
+                    try:
+                        conn.execute("PRAGMA foreign_keys = ON")
+                        conn.execute("BEGIN")
 
-                    model_rows = [self._prepare_model_row(model_type, item) for item in raw_data]
-                    model_map: Dict[str, Tuple[Any, ...]] = {
-                        row[1]: row for row in model_rows if row[1]  # row[1] is file_path
-                    }
+                        model_rows = [self._prepare_model_row(model_type, item) for item in raw_data]
+                        model_map: Dict[str, Tuple[Any, ...]] = {
+                            row[1]: row for row in model_rows if row[1]  # row[1] is file_path
+                        }
 
-                    existing_models = conn.execute(
-                        "SELECT "
-                        + ", ".join(self._MODEL_COLUMNS[1:])
-                        + " FROM models WHERE model_type = ?",
-                        (model_type,),
-                    ).fetchall()
-                    existing_model_map: Dict[str, sqlite3.Row] = {
-                        row["file_path"]: row for row in existing_models
-                    }
-
-                    to_remove_models = [
-                        (model_type, path)
-                        for path in existing_model_map.keys()
-                        if path not in model_map
-                    ]
-                    if to_remove_models:
-                        conn.executemany(
-                            "DELETE FROM models WHERE model_type = ? AND file_path = ?",
-                            to_remove_models,
-                        )
-                        conn.executemany(
-                            "DELETE FROM model_tags WHERE model_type = ? AND file_path = ?",
-                            to_remove_models,
-                        )
-                        conn.executemany(
-                            "DELETE FROM hash_index WHERE model_type = ? AND file_path = ?",
-                            to_remove_models,
-                        )
-                        conn.executemany(
-                            "DELETE FROM autov3_index WHERE model_type = ? AND file_path = ?",
-                            to_remove_models,
-                        )
-                        conn.executemany(
-                            "DELETE FROM excluded_models WHERE model_type = ? AND file_path = ?",
-                            to_remove_models,
-                        )
-
-                    insert_rows: List[Tuple[Any, ...]] = []
-                    update_rows: List[Tuple[Any, ...]] = []
-
-                    for file_path, row in model_map.items():
-                        existing = existing_model_map.get(file_path)
-                        if existing is None:
-                            insert_rows.append(row)
-                            continue
-
-                        existing_values = tuple(
-                            existing[column] for column in self._MODEL_COLUMNS[1:]
-                        )
-                        current_values = row[1:]
-                        if existing_values != current_values:
-                            update_rows.append(row[2:] + (model_type, file_path))
-
-                    if insert_rows:
-                        conn.executemany(self._insert_model_sql(), insert_rows)
-
-                    if update_rows:
-                        set_clause = ", ".join(
-                            f"{column} = ?"
-                            for column in self._MODEL_UPDATE_COLUMNS
-                        )
-                        update_sql = (
-                            f"UPDATE models SET {set_clause} WHERE model_type = ? AND file_path = ?"
-                        )
-                        conn.executemany(update_sql, update_rows)
-
-                    existing_tags_rows = conn.execute(
-                        "SELECT file_path, tag FROM model_tags WHERE model_type = ?",
-                        (model_type,),
-                    ).fetchall()
-                    existing_tags: Dict[str, set[str]] = {}
-                    for row in existing_tags_rows:
-                        existing_tags.setdefault(row["file_path"], set()).add(row["tag"])
-
-                    new_tags: Dict[str, set[str]] = {}
-                    for item in raw_data:
-                        file_path = item.get("file_path")
-                        if not file_path:
-                            continue
-                        tags = set(item.get("tags") or [])
-                        if tags:
-                            new_tags[file_path] = tags
-
-                    tag_inserts: List[Tuple[str, str, str]] = []
-                    tag_deletes: List[Tuple[str, str, str]] = []
-
-                    all_tag_paths = set(existing_tags.keys()) | set(new_tags.keys())
-                    for path in all_tag_paths:
-                        existing_set = existing_tags.get(path, set())
-                        new_set = new_tags.get(path, set())
-                        to_add = new_set - existing_set
-                        to_remove = existing_set - new_set
-
-                        for tag in to_add:
-                            tag_inserts.append((model_type, path, tag))
-                        for tag in to_remove:
-                            tag_deletes.append((model_type, path, tag))
-
-                    if tag_deletes:
-                        conn.executemany(
-                            "DELETE FROM model_tags WHERE model_type = ? AND file_path = ? AND tag = ?",
-                            tag_deletes,
-                        )
-                    if tag_inserts:
-                        conn.executemany(
-                            "INSERT INTO model_tags (model_type, file_path, tag) VALUES (?, ?, ?)",
-                            tag_inserts,
-                        )
-
-                    existing_hash_rows = conn.execute(
-                        "SELECT sha256, file_path FROM hash_index WHERE model_type = ?",
-                        (model_type,),
-                    ).fetchall()
-                    existing_hash_map: Dict[str, set[str]] = {}
-                    for row in existing_hash_rows:
-                        sha_value = (row["sha256"] or "").lower()
-                        if not sha_value:
-                            continue
-                        existing_hash_map.setdefault(sha_value, set()).add(row["file_path"])
-
-                    new_hash_map: Dict[str, set[str]] = {}
-                    for sha_value, paths in hash_index.items():
-                        normalized_sha = (sha_value or "").lower()
-                        if not normalized_sha:
-                            continue
-                        bucket = new_hash_map.setdefault(normalized_sha, set())
-                        for path in paths:
-                            if path:
-                                bucket.add(path)
-
-                    hash_inserts: List[Tuple[str, str, str]] = []
-                    hash_deletes: List[Tuple[str, str, str]] = []
-
-                    all_shas = set(existing_hash_map.keys()) | set(new_hash_map.keys())
-                    for sha_value in all_shas:
-                        existing_paths = existing_hash_map.get(sha_value, set())
-                        new_paths = new_hash_map.get(sha_value, set())
-
-                        for path in existing_paths - new_paths:
-                            hash_deletes.append((model_type, sha_value, path))
-                        for path in new_paths - existing_paths:
-                            hash_inserts.append((model_type, sha_value, path))
-
-                    if hash_deletes:
-                        conn.executemany(
-                            "DELETE FROM hash_index WHERE model_type = ? AND sha256 = ? AND file_path = ?",
-                            hash_deletes,
-                        )
-                    if hash_inserts:
-                        conn.executemany(
-                            "INSERT OR IGNORE INTO hash_index (model_type, sha256, file_path) VALUES (?, ?, ?)",
-                            hash_inserts,
-                        )
-
-                    if autov3_hash_index is not None:
-                        existing_autov3_rows = conn.execute(
-                            "SELECT autov3, file_path FROM autov3_index WHERE model_type = ?",
+                        existing_models = conn.execute(
+                            "SELECT "
+                            + ", ".join(self._MODEL_COLUMNS[1:])
+                            + " FROM models WHERE model_type = ?",
                             (model_type,),
                         ).fetchall()
-                        existing_autov3_map: Dict[str, set[str]] = {}
-                        for row in existing_autov3_rows:
-                            autov3_value = (row["autov3"] or "").lower()
-                            if not autov3_value:
-                                continue
-                            existing_autov3_map.setdefault(autov3_value, set()).add(row["file_path"])
+                        existing_model_map: Dict[str, sqlite3.Row] = {
+                            row["file_path"]: row for row in existing_models
+                        }
 
-                        new_autov3_map: Dict[str, set[str]] = {}
-                        for autov3_value, paths in autov3_hash_index.items():
-                            normalized_autov3 = (autov3_value or "").lower()
-                            if not normalized_autov3:
+                        to_remove_models = [
+                            (model_type, path)
+                            for path in existing_model_map.keys()
+                            if path not in model_map
+                        ]
+                        if to_remove_models:
+                            conn.executemany(
+                                "DELETE FROM models WHERE model_type = ? AND file_path = ?",
+                                to_remove_models,
+                            )
+                            conn.executemany(
+                                "DELETE FROM model_tags WHERE model_type = ? AND file_path = ?",
+                                to_remove_models,
+                            )
+                            conn.executemany(
+                                "DELETE FROM hash_index WHERE model_type = ? AND file_path = ?",
+                                to_remove_models,
+                            )
+                            conn.executemany(
+                                "DELETE FROM autov3_index WHERE model_type = ? AND file_path = ?",
+                                to_remove_models,
+                            )
+                            conn.executemany(
+                                "DELETE FROM excluded_models WHERE model_type = ? AND file_path = ?",
+                                to_remove_models,
+                            )
+
+                        insert_rows: List[Tuple[Any, ...]] = []
+                        update_rows: List[Tuple[Any, ...]] = []
+
+                        for file_path, row in model_map.items():
+                            existing = existing_model_map.get(file_path)
+                            if existing is None:
+                                insert_rows.append(row)
                                 continue
-                            bucket = new_autov3_map.setdefault(normalized_autov3, set())
+
+                            existing_values = tuple(
+                                existing[column] for column in self._MODEL_COLUMNS[1:]
+                            )
+                            current_values = row[1:]
+                            if existing_values != current_values:
+                                update_rows.append(row[2:] + (model_type, file_path))
+
+                        if insert_rows:
+                            conn.executemany(self._insert_model_sql(), insert_rows)
+
+                        if update_rows:
+                            set_clause = ", ".join(
+                                f"{column} = ?"
+                                for column in self._MODEL_UPDATE_COLUMNS
+                            )
+                            update_sql = (
+                                f"UPDATE models SET {set_clause} WHERE model_type = ? AND file_path = ?"
+                            )
+                            conn.executemany(update_sql, update_rows)
+
+                        existing_tags_rows = conn.execute(
+                            "SELECT file_path, tag FROM model_tags WHERE model_type = ?",
+                            (model_type,),
+                        ).fetchall()
+                        existing_tags: Dict[str, set[str]] = {}
+                        for row in existing_tags_rows:
+                            existing_tags.setdefault(row["file_path"], set()).add(row["tag"])
+
+                        new_tags: Dict[str, set[str]] = {}
+                        for item in raw_data:
+                            file_path = item.get("file_path")
+                            if not file_path:
+                                continue
+                            tags = set(item.get("tags") or [])
+                            if tags:
+                                new_tags[file_path] = tags
+
+                        tag_inserts: List[Tuple[str, str, str]] = []
+                        tag_deletes: List[Tuple[str, str, str]] = []
+
+                        all_tag_paths = set(existing_tags.keys()) | set(new_tags.keys())
+                        for path in all_tag_paths:
+                            existing_set = existing_tags.get(path, set())
+                            new_set = new_tags.get(path, set())
+                            to_add = new_set - existing_set
+                            to_remove = existing_set - new_set
+
+                            for tag in to_add:
+                                tag_inserts.append((model_type, path, tag))
+                            for tag in to_remove:
+                                tag_deletes.append((model_type, path, tag))
+
+                        if tag_deletes:
+                            conn.executemany(
+                                "DELETE FROM model_tags WHERE model_type = ? AND file_path = ? AND tag = ?",
+                                tag_deletes,
+                            )
+                        if tag_inserts:
+                            conn.executemany(
+                                "INSERT INTO model_tags (model_type, file_path, tag) VALUES (?, ?, ?)",
+                                tag_inserts,
+                            )
+
+                        existing_hash_rows = conn.execute(
+                            "SELECT sha256, file_path FROM hash_index WHERE model_type = ?",
+                            (model_type,),
+                        ).fetchall()
+                        existing_hash_map: Dict[str, set[str]] = {}
+                        for row in existing_hash_rows:
+                            sha_value = (row["sha256"] or "").lower()
+                            if not sha_value:
+                                continue
+                            existing_hash_map.setdefault(sha_value, set()).add(row["file_path"])
+
+                        new_hash_map: Dict[str, set[str]] = {}
+                        for sha_value, paths in hash_index.items():
+                            normalized_sha = (sha_value or "").lower()
+                            if not normalized_sha:
+                                continue
+                            bucket = new_hash_map.setdefault(normalized_sha, set())
                             for path in paths:
                                 if path:
                                     bucket.add(path)
 
-                        autov3_inserts: List[Tuple[str, str, str]] = []
-                        autov3_deletes: List[Tuple[str, str, str]] = []
+                        hash_inserts: List[Tuple[str, str, str]] = []
+                        hash_deletes: List[Tuple[str, str, str]] = []
 
-                        all_autov3 = set(existing_autov3_map.keys()) | set(new_autov3_map.keys())
-                        for autov3_value in all_autov3:
-                            existing_paths = existing_autov3_map.get(autov3_value, set())
-                            new_paths = new_autov3_map.get(autov3_value, set())
+                        all_shas = set(existing_hash_map.keys()) | set(new_hash_map.keys())
+                        for sha_value in all_shas:
+                            existing_paths = existing_hash_map.get(sha_value, set())
+                            new_paths = new_hash_map.get(sha_value, set())
 
                             for path in existing_paths - new_paths:
-                                autov3_deletes.append((model_type, autov3_value, path))
+                                hash_deletes.append((model_type, sha_value, path))
                             for path in new_paths - existing_paths:
-                                autov3_inserts.append((model_type, autov3_value, path))
+                                hash_inserts.append((model_type, sha_value, path))
 
-                        if autov3_deletes:
+                        if hash_deletes:
                             conn.executemany(
-                                "DELETE FROM autov3_index WHERE model_type = ? AND autov3 = ? AND file_path = ?",
-                                autov3_deletes,
+                                "DELETE FROM hash_index WHERE model_type = ? AND sha256 = ? AND file_path = ?",
+                                hash_deletes,
                             )
-                        if autov3_inserts:
+                        if hash_inserts:
                             conn.executemany(
-                                "INSERT OR IGNORE INTO autov3_index (model_type, autov3, file_path) VALUES (?, ?, ?)",
-                                autov3_inserts,
+                                "INSERT OR IGNORE INTO hash_index (model_type, sha256, file_path) VALUES (?, ?, ?)",
+                                hash_inserts,
                             )
 
-                    existing_excluded_rows = conn.execute(
-                        "SELECT file_path FROM excluded_models WHERE model_type = ?",
-                        (model_type,),
-                    ).fetchall()
-                    existing_excluded = {row["file_path"] for row in existing_excluded_rows}
-                    new_excluded = {path for path in excluded_models if path}
+                        if autov3_hash_index is not None:
+                            existing_autov3_rows = conn.execute(
+                                "SELECT autov3, file_path FROM autov3_index WHERE model_type = ?",
+                                (model_type,),
+                            ).fetchall()
+                            existing_autov3_map: Dict[str, set[str]] = {}
+                            for row in existing_autov3_rows:
+                                autov3_value = (row["autov3"] or "").lower()
+                                if not autov3_value:
+                                    continue
+                                existing_autov3_map.setdefault(autov3_value, set()).add(row["file_path"])
 
-                    excluded_deletes = [
-                        (model_type, path)
-                        for path in existing_excluded - new_excluded
-                    ]
-                    excluded_inserts = [
-                        (model_type, path)
-                        for path in new_excluded - existing_excluded
-                    ]
+                            new_autov3_map: Dict[str, set[str]] = {}
+                            for autov3_value, paths in autov3_hash_index.items():
+                                normalized_autov3 = (autov3_value or "").lower()
+                                if not normalized_autov3:
+                                    continue
+                                bucket = new_autov3_map.setdefault(normalized_autov3, set())
+                                for path in paths:
+                                    if path:
+                                        bucket.add(path)
 
-                    if excluded_deletes:
-                        conn.executemany(
-                            "DELETE FROM excluded_models WHERE model_type = ? AND file_path = ?",
-                            excluded_deletes,
-                        )
-                    if excluded_inserts:
-                        conn.executemany(
-                            "INSERT OR IGNORE INTO excluded_models (model_type, file_path) VALUES (?, ?)",
-                            excluded_inserts,
-                        )
+                            autov3_inserts: List[Tuple[str, str, str]] = []
+                            autov3_deletes: List[Tuple[str, str, str]] = []
 
-                    if all_folders is not None:
-                        conn.execute(
-                            "DELETE FROM folders WHERE model_type = ?",
+                            all_autov3 = set(existing_autov3_map.keys()) | set(new_autov3_map.keys())
+                            for autov3_value in all_autov3:
+                                existing_paths = existing_autov3_map.get(autov3_value, set())
+                                new_paths = new_autov3_map.get(autov3_value, set())
+
+                                for path in existing_paths - new_paths:
+                                    autov3_deletes.append((model_type, autov3_value, path))
+                                for path in new_paths - existing_paths:
+                                    autov3_inserts.append((model_type, autov3_value, path))
+
+                            if autov3_deletes:
+                                conn.executemany(
+                                    "DELETE FROM autov3_index WHERE model_type = ? AND autov3 = ? AND file_path = ?",
+                                    autov3_deletes,
+                                )
+                            if autov3_inserts:
+                                conn.executemany(
+                                    "INSERT OR IGNORE INTO autov3_index (model_type, autov3, file_path) VALUES (?, ?, ?)",
+                                    autov3_inserts,
+                                )
+
+                        existing_excluded_rows = conn.execute(
+                            "SELECT file_path FROM excluded_models WHERE model_type = ?",
                             (model_type,),
-                        )
-                        folder_inserts = [
-                            (model_type, path) for path in all_folders if path
-                        ]
-                        if folder_inserts:
-                            conn.executemany(
-                                "INSERT OR IGNORE INTO folders (model_type, path) VALUES (?, ?)",
-                                folder_inserts,
-                            )
-                        # Mark the snapshot as having folder data even when the
-                        # library has no subfolders, so an empty list is not
-                        # mistaken for "never recorded" on load.
-                        conn.execute(
-                            "INSERT OR REPLACE INTO cache_meta (key, value) VALUES (?, ?)",
-                            (f"folders_recorded:{model_type}", "1"),
-                        )
+                        ).fetchall()
+                        existing_excluded = {row["file_path"] for row in existing_excluded_rows}
+                        new_excluded = {path for path in excluded_models if path}
 
-                    conn.commit()
-                finally:
-                    conn.close()
+                        excluded_deletes = [
+                            (model_type, path)
+                            for path in existing_excluded - new_excluded
+                        ]
+                        excluded_inserts = [
+                            (model_type, path)
+                            for path in new_excluded - existing_excluded
+                        ]
+
+                        if excluded_deletes:
+                            conn.executemany(
+                                "DELETE FROM excluded_models WHERE model_type = ? AND file_path = ?",
+                                excluded_deletes,
+                            )
+                        if excluded_inserts:
+                            conn.executemany(
+                                "INSERT OR IGNORE INTO excluded_models (model_type, file_path) VALUES (?, ?)",
+                                excluded_inserts,
+                            )
+
+                        if all_folders is not None:
+                            conn.execute(
+                                "DELETE FROM folders WHERE model_type = ?",
+                                (model_type,),
+                            )
+                            folder_inserts = [
+                                (model_type, path) for path in all_folders if path
+                            ]
+                            if folder_inserts:
+                                conn.executemany(
+                                    "INSERT OR IGNORE INTO folders (model_type, path) VALUES (?, ?)",
+                                    folder_inserts,
+                                )
+                            # Mark the snapshot as having folder data even when the
+                            # library has no subfolders, so an empty list is not
+                            # mistaken for "never recorded" on load.
+                            conn.execute(
+                                "INSERT OR REPLACE INTO cache_meta (key, value) VALUES (?, ?)",
+                                (f"folders_recorded:{model_type}", "1"),
+                            )
+
+                        conn.commit()
+                    finally:
+                        conn.close()
         except Exception as exc:
             logger.warning("Failed to persist cache for %s: %s", model_type, exc)
 
@@ -650,16 +656,14 @@ class PersistentModelCache:
                 conn.execute(f"ALTER TABLE models ADD COLUMN {column} {definition}")
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
-        uri = False
-        path = self._db_path
-        if readonly:
-            if not os.path.exists(path):
-                raise FileNotFoundError(path)
-            path = f"file:{path}?mode=ro"
-            uri = True
-        conn = sqlite3.connect(path, check_same_thread=False, uri=uri, detect_types=sqlite3.PARSE_DECLTYPES)
-        conn.row_factory = sqlite3.Row
-        return conn
+        if readonly and not os.path.exists(self._db_path):
+            raise FileNotFoundError(self._db_path)
+        return connect_cache_db(
+            self._db_path,
+            readonly=readonly,
+            detect_types=sqlite3.PARSE_DECLTYPES,
+            row_factory=sqlite3.Row,
+        )
 
     def _prepare_model_row(self, model_type: str, item: Dict[str, Any]) -> Tuple[Any, ...]:
         # Keep `source_*` and the legacy `hf_url` alias consistent no matter

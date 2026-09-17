@@ -2729,6 +2729,10 @@ class RecipeScanner:
                     try:
                         # Invalidate persistent cache so the sync path does a
                         # full directory scan instead of reconciling stale data.
+                        # This is the deliberate escape hatch from the
+                        # all-missing prune guard: an explicit user rebuild is
+                        # allowed to clear the stored cache, while an implicit
+                        # startup scan is not.
                         if self._persistent_cache:
                             self._persistent_cache.save_cache([], {})
                         self._json_path_map = {}

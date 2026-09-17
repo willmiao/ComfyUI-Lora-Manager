@@ -21,7 +21,20 @@ NETWORK_EXCEPTIONS = (ClientError, OSError, asyncio.TimeoutError)
 # otherwise delete them because they are untracked and, in released tags,
 # not listed in ``.gitignore``. ``-e`` excludes a path from cleaning
 # regardless of whether it is ignored.
-_PRESERVE_DIRS = ('settings.json', 'civitai', 'wildcards', 'backups', 'stats', 'logs', 'cache', 'model_cache')
+# ``cache`` covers the resolved cache tree (cache/model, cache/recipe,
+# cache/fts, ...); the legacy ``recipe_cache`` / ``model_cache`` directories
+# are listed too because a portable install can predate the cache/ move.
+_PRESERVE_DIRS = (
+    'settings.json',
+    'civitai',
+    'wildcards',
+    'backups',
+    'stats',
+    'logs',
+    'cache',
+    'model_cache',
+    'recipe_cache',
+)
 
 
 def _clean_excludes() -> List[str]:

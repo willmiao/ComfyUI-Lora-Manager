@@ -15,6 +15,7 @@ node_modules/
 coverage/
 .coverage
 model_cache/
+recipe_cache/
 
 # agent / dev tooling
 .opencode/

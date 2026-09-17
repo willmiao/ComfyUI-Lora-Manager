@@ -20,6 +20,7 @@ import time
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 
+from ..utils.cache_db import connect_cache_db
 from ..utils.cache_paths import CacheType, resolve_cache_path_with_migration
 
 logger = logging.getLogger(__name__)
@@ -677,16 +678,13 @@ class TagFTSIndex:
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
         """Create a database connection."""
-        uri = False
-        path = self._db_path
-        if readonly:
-            if not os.path.exists(path):
-                raise FileNotFoundError(path)
-            path = f"file:{path}?mode=ro"
-            uri = True
-        conn = sqlite3.connect(path, check_same_thread=False, uri=uri)
-        conn.row_factory = sqlite3.Row
-        return conn
+        if readonly and not os.path.exists(self._db_path):
+            raise FileNotFoundError(self._db_path)
+        return connect_cache_db(
+            self._db_path,
+            readonly=readonly,
+            row_factory=sqlite3.Row,
+        )
 
     def _build_fts_query(self, query: str) -> str:
         """Build an FTS5 query string with prefix matching.
