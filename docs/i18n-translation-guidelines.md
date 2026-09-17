@@ -57,6 +57,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > prototyped and removed because it collided with the browser's Alt + Arrow handling and the
 > modal's arrow-key navigation.
 
+> **Status (2026-09, standalone no-paths guidance):** the standalone branch of the
+> `other.noPaths` empty state now shows the real `settings.json` path plus an
+> `other.noPaths.openSettingsFolder` button (each locale reuses its
+> `settings.openSettingsFileLocation.label` rendering), and `descriptionStandalone` was
+> reworded in `en.json` — from "none of the configured folders exist on disk" to "no
+> other-model folders were found; add the folder keys you need to the `folder_paths`
+> section" — and re-translated in all 9 locales. The `on disk` phrase now survives only in
+> the ComfyUI variant (`descriptionComfyUI`).
+
 ---
 
 ## 1. Hard rules (do not violate)

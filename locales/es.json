@@ -1241,12 +1241,12 @@
         },
         "noPaths": {
             "title": "No se encontraron carpetas de otros modelos",
-            "descriptionStandalone": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las rutas de carpetas de abajo a settings.json y reinicia LoRA Manager.",
+            "descriptionStandalone": "La gestión de otros modelos está activada, pero no se encontraron carpetas de otros modelos. Añade las claves de carpeta que necesites a la sección folder_paths de tu settings.json y reinicia LoRA Manager.",
             "hintStandalone": "Solo se escanean las claves de carpeta listadas arriba; las claves que no necesites puedes omitirlas.",
             "descriptionComfyUI": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las carpetas de modelos correspondientes a tus rutas de modelos de ComfyUI y recarga esta página.",
             "hintComfyUI": "Los otros modelos se leen de las carpetas vae, upscale_models, text_encoders, clip_vision y controlnet de ComfyUI.",
             "openSettings": "Abrir configuración",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "openSettingsFolder": "Abrir carpeta de ajustes"
         }
     },
     "sidebar": {

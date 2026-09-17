@@ -1241,12 +1241,12 @@
         },
         "noPaths": {
             "title": "Aucun dossier d’autres modèles trouvé",
-            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les chemins de dossiers ci-dessous à settings.json, puis redémarrez LoRA Manager.",
+            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun dossier d’autres modèles n’a été trouvé. Ajoutez les clés de dossiers dont vous avez besoin à la section folder_paths de votre settings.json, puis redémarrez LoRA Manager.",
             "hintStandalone": "Seules les clés de dossiers listées ci-dessus sont analysées ; les clés inutiles peuvent être omises.",
             "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
             "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
             "openSettings": "Ouvrir les paramètres",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "openSettingsFolder": "Ouvrir le dossier des paramètres"
         }
     },
     "sidebar": {

@@ -1241,12 +1241,12 @@
         },
         "noPaths": {
             "title": "기타 모델 폴더를 찾을 수 없습니다",
-            "descriptionStandalone": "기타 모델 관리가 켜져 있지만, 설정된 모델 폴더가 디스크에 존재하지 않습니다. 아래 폴더 경로를 settings.json에 추가한 뒤 LoRA Manager를 재시작하세요.",
+            "descriptionStandalone": "기타 모델 관리가 켜져 있지만, 기타 모델 폴더를 찾을 수 없습니다. 필요한 폴더 키를 settings.json의 folder_paths 섹션에 추가한 뒤 LoRA Manager를 재시작하세요.",
             "hintStandalone": "위에 나열된 폴더 키만 스캔됩니다. 필요 없는 키는 생략할 수 있습니다.",
             "descriptionComfyUI": "기타 모델 관리가 켜져 있지만, 설정된 모델 폴더가 디스크에 존재하지 않습니다. 해당 모델 폴더를 ComfyUI 모델 경로에 추가한 뒤 이 페이지를 새로 고침하세요.",
             "hintComfyUI": "기타 모델은 ComfyUI의 vae, upscale_models, text_encoders, clip_vision, controlnet 폴더에서 읽어옵니다.",
             "openSettings": "설정 열기",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "openSettingsFolder": "설정 폴더 열기"
         }
     },
     "sidebar": {

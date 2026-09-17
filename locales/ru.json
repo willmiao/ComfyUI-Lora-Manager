@@ -1241,12 +1241,12 @@
         },
         "noPaths": {
             "title": "Папки других моделей не найдены",
-            "descriptionStandalone": "Управление другими моделями включено, но ни одна из настроенных папок моделей не существует на диске. Добавьте указанные ниже пути к папкам в settings.json и перезапустите LoRA Manager.",
+            "descriptionStandalone": "Управление другими моделями включено, но папки других моделей не найдены. Добавьте нужные ключи папок в раздел folder_paths файла settings.json и перезапустите LoRA Manager.",
             "hintStandalone": "Сканируются только перечисленные выше ключи папок; ненужные ключи можно опустить.",
             "descriptionComfyUI": "Управление другими моделями включено, но ни одна из настроенных папок моделей не существует на диске. Добавьте соответствующие папки моделей в пути к моделям ComfyUI и перезагрузите эту страницу.",
             "hintComfyUI": "Другие модели читаются из папок vae, upscale_models, text_encoders, clip_vision и controlnet в ComfyUI.",
             "openSettings": "Открыть настройки",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "openSettingsFolder": "Открыть папку настроек"
         }
     },
     "sidebar": {

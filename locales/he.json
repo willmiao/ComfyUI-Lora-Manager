@@ -1241,12 +1241,12 @@
         },
         "noPaths": {
             "title": "לא נמצאו תיקיות של מודלים אחרים",
-            "descriptionStandalone": "ניהול המודלים האחרים פועל, אך אף אחת מתיקיות המודלים המוגדרות אינה קיימת בדיסק. הוסף את נתיבי התיקיות שלמטה ל-settings.json והפעל מחדש את LoRA Manager.",
+            "descriptionStandalone": "ניהול המודלים האחרים פועל, אך לא נמצאו תיקיות של מודלים אחרים. הוסף את מפתחות התיקיות הדרושים למקטע folder_paths ב-settings.json והפעל מחדש את LoRA Manager.",
             "hintStandalone": "רק מפתחות התיקיות המפורטים למעלה נסרקים; ניתן להשמיט מפתחות שאינך צריך.",
             "descriptionComfyUI": "ניהול המודלים האחרים פועל, אך אף אחת מתיקיות המודלים המוגדרות אינה קיימת בדיסק. הוסף את תיקיות המודלים המתאימות לנתיבי המודלים של ComfyUI וטען מחדש עמוד זה.",
             "hintComfyUI": "מודלים אחרים נקראים מתיקיות vae, upscale_models, text_encoders, clip_vision ו-controlnet של ComfyUI.",
             "openSettings": "פתח הגדרות",
-            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
+            "openSettingsFolder": "פתח תיקיית הגדרות"
         }
     },
     "sidebar": {
