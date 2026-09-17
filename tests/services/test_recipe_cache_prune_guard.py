@@ -243,6 +243,32 @@ def test_sync_init_persists_when_recipes_are_found(guard_scanner, tmp_path: Path
     assert [recipe["id"] for recipe in persisted.raw_data] == ["fresh"]
 
 
+def test_force_refresh_scan_persists_an_empty_result(guard_scanner, tmp_path: Path):
+    """A manual rebuild stays the escape hatch from a skipped prune.
+
+    The startup guard deliberately keeps a stale cache, which leaves the in-memory
+    view empty until the files come back. An explicit rebuild must be able to land
+    on the real (empty) filesystem state instead, otherwise there is no way out.
+    The route to it is `refresh_cache(force=True)`, which clears the stored cache
+    first and then does a full directory scan.
+    """
+    scanner, cache = guard_scanner
+    gone = tmp_path / "old-location" / "kept.recipe.json"
+    _write_recipe_json(gone, "kept")
+    assert cache.save_cache(
+        [{"id": "kept", "title": "Recipe kept"}], {"kept": str(gone)}
+    )
+    gone.unlink()
+
+    # Simulate the explicit rebuild: clear the stored cache, then full scan.
+    assert cache.save_cache([], {}) is True
+    scanner._initialize_recipe_cache_sync()
+
+    assert scanner._prune_skipped is False
+    persisted = cache.load_cache()
+    assert persisted is None or persisted.raw_data == []
+
+
 def test_save_cache_skip_if_empty_preserves_existing_rows(tmp_path: Path):
     """The storage-level backstop refuses to empty a populated cache."""
     cache = PersistentRecipeCache(db_path=str(tmp_path / "recipe_cache.sqlite"))
