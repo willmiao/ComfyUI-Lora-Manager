@@ -2764,12 +2764,40 @@ class ModelLibraryHandler:
 
             normalized_type, scanner = await self._get_scanner_for_type(model_type)
             if not normalized_type:
+                # The lookup cannot be served as a fully interactive list. Two
+                # cases share this branch: a CivitAI type with no scanner at all
+                # (Wildcards, Workflows, Hypernetwork, Poses, AestheticGradient)
+                # and an Other-model type while the opt-in master switch is off.
+                # Answer 200 with the CivitAI list marked read-only plus a
+                # machine-readable reason, so clients can still show the
+                # versions and explain why the actions are missing. Legacy
+                # clients keep working: they only read `success`/`versions`.
+                reason = (
+                    "other_models_disabled"
+                    if self._normalize_model_type(model_type) == "other"
+                    else "model_type_unsupported"
+                )
                 return web.json_response(
                     {
-                        "success": False,
-                        "error": f'Model type "{model_type}" is not supported',
-                    },
-                    status=400,
+                        "success": True,
+                        "modelId": model_id,
+                        "modelName": model_name,
+                        "modelType": model_type,
+                        "supported": False,
+                        "reason": reason,
+                        "versions": [
+                            {
+                                "id": version.get("id"),
+                                "name": version.get("name", ""),
+                                "thumbnailUrl": version.get("images")[0]["url"]
+                                if version.get("images")
+                                else None,
+                                "inLibrary": False,
+                                "hasBeenDownloaded": False,
+                            }
+                            for version in versions
+                        ],
+                    }
                 )
 
             if not scanner:
@@ -2811,6 +2839,7 @@ class ModelLibraryHandler:
                     "modelId": model_id,
                     "modelName": model_name,
                     "modelType": model_type,
+                    "supported": True,
                     "versions": enriched_versions,
                 }
             )

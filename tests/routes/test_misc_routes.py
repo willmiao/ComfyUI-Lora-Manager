@@ -2425,3 +2425,135 @@ async def test_get_init_status_reports_pending_scanners():
     assert "embedding" in payload["details"]
     assert "recipe" in payload["details"]
     assert "lora" not in payload["details"]
+
+
+class StaticMetadataProvider:
+    """Metadata provider returning one fixed CivitAI model payload."""
+
+    def __init__(self, payload):
+        self.payload = payload
+
+    async def get_model_versions(self, _model_id):
+        return self.payload
+
+    async def get_user_models(self, _username, cursor=None):
+        return {"items": [], "nextCursor": None}
+
+    async def get_creator_model_count(self, _username):
+        return None
+
+
+def _versions_status_handler(payload, *, other_scanner=None):
+    async def metadata_factory():
+        return StaticMetadataProvider(payload)
+
+    async def other_factory():
+        return other_scanner
+
+    return ModelLibraryHandler(
+        ServiceRegistryAdapter(
+            get_lora_scanner=fake_scanner_factory,
+            get_checkpoint_scanner=fake_scanner_factory,
+            get_embedding_scanner=fake_scanner_factory,
+            get_other_scanner=other_factory,
+            get_downloaded_version_history_service=fake_download_history_service_factory,
+        ),
+        metadata_provider_factory=metadata_factory,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_model_versions_status_unsupported_type_is_read_only():
+    """A type with no scanner answers 200 with a read-only list + reason."""
+    handler = _versions_status_handler(
+        {
+            "name": "Wildcards pack",
+            "type": "Wildcards",
+            "modelVersions": [
+                {"id": 11, "name": "v1", "images": [{"url": "https://img/1.png"}]},
+                {"id": 12, "name": "v2", "images": []},
+            ],
+        }
+    )
+
+    response = await handler.get_model_versions_status(
+        FakeRequest(query={"modelId": "45448"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["supported"] is False
+    assert payload["reason"] == "model_type_unsupported"
+    assert payload["modelType"] == "wildcards"
+    assert payload["versions"] == [
+        {
+            "id": 11,
+            "name": "v1",
+            "thumbnailUrl": "https://img/1.png",
+            "inLibrary": False,
+            "hasBeenDownloaded": False,
+        },
+        {
+            "id": 12,
+            "name": "v2",
+            "thumbnailUrl": None,
+            "inLibrary": False,
+            "hasBeenDownloaded": False,
+        },
+    ]
+
+
+@pytest.mark.asyncio
+async def test_get_model_versions_status_other_disabled_is_read_only():
+    """The opt-in gate keeps its own reason instead of the permanent one."""
+    _set_other_models_enabled(False)
+    handler = _versions_status_handler(
+        {
+            "name": "SDXL VAE",
+            "type": "VAE",
+            "modelVersions": [{"id": 333245, "name": "SDXL-VAE", "images": []}],
+        }
+    )
+
+    response = await handler.get_model_versions_status(
+        FakeRequest(query={"modelId": "296576"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["supported"] is False
+    assert payload["reason"] == "other_models_disabled"
+    assert payload["modelType"] == "vae"
+
+
+@pytest.mark.asyncio
+async def test_get_model_versions_status_supported_type_stays_interactive():
+    """A managed type keeps the existing enriched, fully interactive payload."""
+    handler = _versions_status_handler(
+        {
+            "name": "Some LoRA",
+            "type": "LORA",
+            "modelVersions": [{"id": 1, "name": "v1", "images": []}],
+        }
+    )
+
+    response = await handler.get_model_versions_status(
+        FakeRequest(query={"modelId": "5"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["supported"] is True
+    assert "reason" not in payload
+    assert payload["versions"] == [
+        {
+            "id": 1,
+            "name": "v1",
+            "thumbnailUrl": None,
+            "inLibrary": False,
+            "hasBeenDownloaded": False,
+        }
+    ]
