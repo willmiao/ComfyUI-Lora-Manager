@@ -174,12 +174,42 @@ def ensure_settings_file(logger: Optional[logging.Logger] = None) -> str:
     return target_path
 
 
+def _portable_env_override() -> Optional[bool]:
+    """Return the portable mode forced by ``LORA_MANAGER_PORTABLE``, if any.
+
+    Returns:
+        ``True`` when the variable enables portable mode, ``False`` when it is
+        explicitly set to ``"0"``, and ``None`` when it is unset or holds some
+        other value (in which case the persisted settings flag decides).
+    """
+
+    raw = os.environ.get(_LM_PORTABLE_ENV)
+    if raw is None:
+        return None
+    if raw == "1":
+        return True
+    if raw == "0":
+        return False
+    return None
+
+
 def _should_use_portable_settings(path: str, logger: logging.Logger) -> bool:
     """Return ``True`` when the env var forces it or the settings file enables it."""
 
-    if os.environ.get(_LM_PORTABLE_ENV, "0") == "1":
+    override = _portable_env_override()
+    if override is True:
         logger.debug("Portable mode enabled via %s", _LM_PORTABLE_ENV)
         return True
+    if override is False:
+        # Explicit opt-out. Without this, a single `LORA_MANAGER_PORTABLE=1`
+        # run would pin the shared plugin settings.json to portable mode
+        # forever, with no way back except editing that file by hand.
+        logger.info(
+            "Portable mode disabled via %s=%s",
+            _LM_PORTABLE_ENV,
+            os.environ.get(_LM_PORTABLE_ENV, ""),
+        )
+        return False
 
     if not os.path.exists(path):
         return False

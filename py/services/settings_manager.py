@@ -37,6 +37,7 @@ from ..utils.constants import (
 from ..utils.preview_selection import VALID_MATURE_BLUR_LEVELS
 from ..utils.settings_paths import (
     APP_NAME,
+    _portable_env_override,
     ensure_settings_file,
     get_legacy_settings_path,
     get_settings_dir_override,
@@ -172,13 +173,23 @@ class SettingsManager:
         self._check_environment_variables()
         self._collect_configuration_warnings()
 
-        if (
-            os.environ.get("LORA_MANAGER_PORTABLE", "0") == "1"
-            and not is_settings_dir_pinned()
-        ):
+        portable_override = _portable_env_override()
+        if portable_override is True and not is_settings_dir_pinned():
             if not self.settings.get("use_portable_settings"):
                 self.settings["use_portable_settings"] = True
                 self._save_settings()
+        elif portable_override is False and self.settings.get(
+            "use_portable_settings"
+        ):
+            # Explicit opt-out from a persisted portable mode: clear the flag so
+            # later runs go back to the shared settings directory instead of
+            # requiring a manual edit of settings.json.
+            logger.info(
+                "Clearing the persisted portable-mode flag because %s=0",
+                "LORA_MANAGER_PORTABLE",
+            )
+            self.settings["use_portable_settings"] = False
+            self._save_settings()
 
         if self._needs_initial_save:
             self._save_settings()

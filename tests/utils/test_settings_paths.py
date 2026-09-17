@@ -34,10 +34,12 @@ class TestShouldUsePortableSettings:
     @pytest.mark.parametrize(
         "env_value, settings_flag, expected",
         [
-            ("1", False, True),   # env = 1 overrides settings.json false
+            ("1", False, True),   # env = 1 forces portable on
             ("1", True, True),    # env = 1 matches settings.json true
-            ("0", False, False),  # env = 0 → rely on settings.json
-            ("0", True, True),    # env = 0 → rely on settings.json
+            ("0", False, False),  # env = 0 forces portable off
+            ("0", True, False),   # env = 0 overrides a persisted true
+            ("yes", False, False),  # unrecognised value → rely on settings.json
+            ("yes", True, True),    # unrecognised value → rely on settings.json
             ("", False, False),   # unset → rely on settings.json
             ("", True, True),     # unset → rely on settings.json
         ],
@@ -57,6 +59,21 @@ class TestShouldUsePortableSettings:
 
             result = _should_use_portable_settings(str(settings_file), logging.getLogger())
             assert result == expected
+
+    def test_explicit_zero_is_the_documented_opt_out(self, tmp_path, caplog):
+        """`=0` must be honoured even against a persisted true flag."""
+        settings_file = tmp_path / "settings.json"
+        settings_file.write_text(json.dumps({"use_portable_settings": True}))
+
+        with pytest.MonkeyPatch.context() as mp:
+            mp.setenv("LORA_MANAGER_PORTABLE", "0")
+            with caplog.at_level(logging.INFO):
+                result = _should_use_portable_settings(
+                    str(settings_file), logging.getLogger()
+                )
+
+        assert result is False
+        assert "Portable mode disabled" in caplog.text
 
     def test_missing_file_without_env(self, tmp_path):
         """Without env var, missing settings file returns False."""
