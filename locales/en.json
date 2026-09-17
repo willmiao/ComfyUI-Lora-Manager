@@ -1241,11 +1241,12 @@
     },
     "noPaths": {
       "title": "No other-model folders found",
-      "descriptionStandalone": "Other Models management is on, but none of the configured model folders exist on disk. Add the folder paths below to settings.json and restart LoRA Manager.",
+      "descriptionStandalone": "Other Models management is on, but no other-model folders were found. Add the folder keys you need to the folder_paths section of your settings.json, then restart LoRA Manager.",
       "hintStandalone": "Only the folder keys listed above are scanned; keys you do not need can be omitted.",
       "descriptionComfyUI": "Other Models management is on, but none of the configured model folders exist on disk. Add the matching model folders to your ComfyUI model paths, then reload this page.",
       "hintComfyUI": "Other models are read from ComfyUI's vae, upscale_models, text_encoders, clip_vision and controlnet folders.",
-      "openSettings": "Open Settings"
+      "openSettings": "Open Settings",
+      "openSettingsFolder": "Open Settings Folder"
     }
   },
   "sidebar": {

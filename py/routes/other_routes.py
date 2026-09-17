@@ -83,11 +83,16 @@ class OtherRoutes(BaseModelRoutes):
         # resolved to no existing folder. Render an actionable empty state
         # instead of an apparently broken empty grid.
         standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
-        return {
+        context = {
             "other_disabled": False,
             "other_no_paths": not bool(config.other_roots),
             "standalone_mode": standalone_mode,
         }
+        if standalone_mode:
+            # The settings UI cannot edit primary folder_paths, so the empty
+            # state must point at the actual file the user has to edit.
+            context["settings_file"] = getattr(self._settings, "settings_file", "") or ""
+        return context
 
     def _get_expected_model_types(self) -> str:
         """Get expected model types string for error messages"""

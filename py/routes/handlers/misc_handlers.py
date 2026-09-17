@@ -421,6 +421,11 @@ def _wsl_to_windows_path(wsl_path: str) -> str | None:
         return None
 
 
+def _has_gui_display() -> bool:
+    """Check whether a GUI session is reachable for xdg-open."""
+    return bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+
+
 class PromptServerProtocol(Protocol):
     """Subset of PromptServer used by the handlers."""
 
@@ -3393,6 +3398,18 @@ class FileSystemHandler:
                     subprocess.Popen(["open", "-R", settings_file])
                 else:
                     folder = os.path.dirname(settings_file)
+                    if not _has_gui_display():
+                        # Headless/SSH session: xdg-open cannot open a file
+                        # manager, so hand the path to the browser for copying
+                        # instead of reporting a success that never happened.
+                        return web.json_response(
+                            {
+                                "success": True,
+                                "message": "Headless session: path available for copying",
+                                "path": settings_file,
+                                "mode": "clipboard",
+                            }
+                        )
                     subprocess.Popen(["xdg-open", folder])
 
             return web.json_response(

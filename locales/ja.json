@@ -1245,7 +1245,8 @@
             "hintStandalone": "スキャンされるのは上記のフォルダーキーのみです。不要なキーは省略できます。",
             "descriptionComfyUI": "その他のモデル管理はオンですが、設定されたモデルフォルダーがディスク上に存在しません。該当するモデルフォルダーをComfyUIのモデルパスに追加し、このページを再読み込みしてください。",
             "hintComfyUI": "その他のモデルは、ComfyUIのvae、upscale_models、text_encoders、clip_vision、controlnetフォルダーから読み込まれます。",
-            "openSettings": "設定を開く"
+            "openSettings": "設定を開く",
+            "openSettingsFolder": "[TODO: Translate] Open Settings Folder"
         }
     },
     "sidebar": {

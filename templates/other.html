@@ -63,6 +63,19 @@
         background: rgba(127, 127, 127, 0.15);
         border: 1px solid rgba(127, 127, 127, 0.25);
     }
+    .other-settings-file {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+    }
+    .other-settings-file code {
+        padding: 4px 8px;
+        border-radius: 4px;
+        background: rgba(127, 127, 127, 0.15);
+        border: 1px solid rgba(127, 127, 127, 0.25);
+        word-break: break-all;
+    }
 </style>
 {% endblock %}
 
@@ -127,6 +140,9 @@
         <h2>{{ t('other.noPaths.title') }}</h2>
         {% if standalone_mode %}
         <p>{{ t('other.noPaths.descriptionStandalone') }}</p>
+        {% if settings_file %}
+        <p class="other-settings-file"><i class="fas fa-file-alt"></i> <code>{{ settings_file }}</code></p>
+        {% endif %}
         <pre class="other-no-paths-config"><code>"folder_paths": {
   "vae": ["/path/to/vae"],
   "upscale_models": ["/path/to/upscale_models"],
@@ -135,13 +151,16 @@
   "controlnet": ["/path/to/controlnet"]
 }</code></pre>
         <p class="other-disabled-hint">{{ t('other.noPaths.hintStandalone') }}</p>
+        <button id="openSettingsFolderBtn" type="button">
+            <i class="fas fa-folder-open"></i> {{ t('other.noPaths.openSettingsFolder') }}
+        </button>
         {% else %}
         <p>{{ t('other.noPaths.descriptionComfyUI') }}</p>
         <p class="other-disabled-hint">{{ t('other.noPaths.hintComfyUI') }}</p>
-        {% endif %}
         <button id="openOtherModelsSettingsBtn" type="button">
             <i class="fas fa-cog"></i> {{ t('other.noPaths.openSettings') }}
         </button>
+        {% endif %}
     </div>
     {% else %}
     <div class="sticky-topbar">

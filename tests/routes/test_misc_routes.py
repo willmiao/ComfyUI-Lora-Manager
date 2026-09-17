@@ -533,6 +533,62 @@ async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_open_settings_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
+    """Without a GUI session xdg-open cannot work; the handler must hand the
+    path to the browser instead of reporting a success that never happened."""
+    settings_file = tmp_path / "settings" / "settings.json"
+    settings_file.parent.mkdir(parents=True, exist_ok=True)
+    settings_file.write_text("{}", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace(settings_file=str(settings_file)))
+
+    monkeypatch.delenv("DISPLAY", raising=False)
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    popen_calls = []
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args))
+
+    response = await handler.open_settings_location(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["mode"] == "clipboard"
+    assert payload["path"] == str(settings_file)
+    assert popen_calls == []
+
+
+@pytest.mark.asyncio
+async def test_open_settings_location_with_display_opens_folder(tmp_path, monkeypatch):
+    settings_file = tmp_path / "settings" / "settings.json"
+    settings_file.parent.mkdir(parents=True, exist_ok=True)
+    settings_file.write_text("{}", encoding="utf-8")
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace(settings_file=str(settings_file)))
+
+    monkeypatch.setenv("DISPLAY", ":0")
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    calls = []
+
+    def fake_popen(args):
+        calls.append(args)
+        return MagicMock()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+
+    response = await handler.open_settings_location(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert calls == [["xdg-open", str(settings_file.parent)]]
+
+
+@pytest.mark.asyncio
 async def test_open_wildcards_location_creates_and_opens_directory(tmp_path, monkeypatch):
     wildcards_dir = tmp_path / "settings" / "wildcards"
 

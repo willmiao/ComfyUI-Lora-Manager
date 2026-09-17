@@ -121,6 +121,25 @@ def test_page_context_reports_feature_state(monkeypatch):
     assert provider(None) == {"other_disabled": True, "other_no_paths": False}
 
 
+def test_page_context_exposes_settings_file_in_standalone(monkeypatch):
+    """Standalone users must edit settings.json by hand; the empty state
+    needs the real file path to point them at."""
+    from py.config import config
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    handler = OtherRoutes()
+    provider = handler._get_page_context_provider()
+
+    monkeypatch.setattr(config, "other_roots", [], raising=False)
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+
+    context = provider(None)
+    assert context["other_no_paths"] is True
+    assert context["standalone_mode"] is True
+    assert context["settings_file"] == manager.settings_file
+
+
 def test_get_expected_model_types_mentions_supported_types():
     expected = OtherRoutes()._get_expected_model_types()
     for name in ("VAE", "Upscaler", "TextEncoder", "CLIPVision", "Controlnet"):
