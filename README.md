@@ -272,6 +272,33 @@ You can now run LoRA Manager independently from ComfyUI:
 
    > **Note:** Existing installations automatically migrate the legacy `settings.json` from the plugin folder to the user settings directory the first time you launch this version.
 
+#### Other Model Folders (Optional)
+
+Besides LoRAs, checkpoints, and embeddings, LoRA Manager can optionally manage other model types — VAE, upscale models, text encoders, CLIP vision, and ControlNet. This feature is opt-in: enable it from **Settings → Library → Other Models Management**, or by setting `"enable_other_models": true` in `settings.json`.
+
+When running as a ComfyUI plugin, these folders are picked up automatically from your ComfyUI folder configuration (including `extra_model_paths.yaml`) — no extra setup needed.
+
+In standalone mode, add the corresponding keys to `folder_paths` in your `settings.json` (only the ones you want to manage):
+
+```json
+{
+  "enable_other_models": true,
+  "folder_paths": {
+    "loras": ["C:/path/to/your/loras_folder"],
+    "checkpoints": ["C:/path/to/your/checkpoints_folder"],
+    "unet": ["C:/path/to/your/diffusion_models_folder"],
+    "embeddings": ["C:/path/to/your/embeddings_folder"],
+    "vae": ["C:/path/to/your/vae_folder"],
+    "upscale_models": ["C:/path/to/your/upscale_models_folder"],
+    "text_encoders": ["C:/path/to/your/text_encoders_folder"],
+    "clip_vision": ["C:/path/to/your/clip_vision_folder"],
+    "controlnet": ["C:/path/to/your/controlnet_folder"]
+  }
+}
+```
+
+Available folder keys: `vae`, `upscale_models`, `text_encoders` (legacy alias: `clip`), `clip_vision`, `controlnet`. To manage only some of these types, toggle them under **Settings → Library**, or set `"enabled_other_sub_types"` explicitly, e.g. `"enabled_other_sub_types": ["vae", "upscaler", "text_encoder"]` (the default; add `"clip_vision"` and/or `"controlnet"` to manage those too). Restart standalone mode after editing `settings.json`.
+
 This standalone mode provides a lightweight option for managing your model and recipe collection without needing to run the full ComfyUI environment, making it useful even for users who primarily use other stable diffusion interfaces.
 
 ## Testing & Coverage
