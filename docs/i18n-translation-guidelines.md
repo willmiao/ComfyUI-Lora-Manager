@@ -51,25 +51,11 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > "Folder sidebar feature".
 >
 > **Status (2026-09, chip reordering):** model tags and trigger words now share one drag/`⠿`
-> grip reorder affordance with `Alt + ↑/↓` keyboard support, which added the 3
-> `common.reorder.*` keys. They live under `common` (not a feature namespace) because both
-> editors render them; all 9 locales are translated (renderings in §2, "Chip reordering").
-> `Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale, the same precedent as
-> `Shift+Enter` in `modals.model.metadata.notesHint`; zh-CN / zh-TW / ja use full-width
-> parentheses and ko keeps this file's ASCII style.
->
-> **Status (2026-09, download metadata phases):** the download progress UI now names the two
-> post-transfer stages instead of sitting at 100% showing `0 B/s`, adding 4
-> `modals.download.progress.*` keys (`metadata`, `indexingFile`, `fetchingSourceMetadata`,
-> `fetchingMetadata`). Translated in all 9 locales in the same pass, so the "no remaining
-> placeholders" claim holds again. No new terminology: `metadata` reuses the §5 row, and the
-> fetching phrasing mirrors each locale's `download.fetchingRepoFiles` / `fetchingVersions`.
-> `{name}` and `{source}` are verbatim §1-R2 placeholders — `{source}` is filled at runtime
-> with the *untranslated* platform name, so its surrounding spacing follows each locale's
-> `modelCard.actions.viewOnSource` precedent (ja `{source} から`, ko `{source}에서`,
-> zh `从 {source}` / `從 {source}`, he `מ-{source}`) and no brand ever appears inside the
-> translated text. ja / ko keep this block's ASCII `:` like their sibling progress keys;
-> zh-CN / zh-TW use full-width `：`.
+> grip reorder affordance, which added the single `common.reorder.dragHandle` key (it lives
+> under `common` because both editors render it). All 9 locales are translated (renderings in
+> §2, "Chip reordering"). Reordering is pointer-only by design: an `Alt + Arrow` shortcut was
+> prototyped and removed because it collided with the browser's Alt + Arrow handling and the
+> modal's arrow-key navigation.
 
 ---
 
@@ -378,25 +364,23 @@ are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{
 
 ### Chip reordering (model tags / trigger words)
 
-Model tags and trigger-word chips share a single reorder affordance (drag the chip or its
-`⠿` grip, or move it with `Alt + ↑/↓`), so the copy sits in `common.reorder.*` instead of a
-feature namespace. `dragHandle` is both the grip tooltip and the hint shown in the edit
-controls row; `ariaLabel` is the per-grip screen-reader label (`{item}` is the tag/word text);
-`announcement` is the aria-live message after a keyboard move and deliberately has no
-`{item}`. Keep `{item}` / `{position}` / `{total}` verbatim (§1-R2) — the caller supplies
-exactly those.
+Model tags and trigger-word chips share a single reorder affordance (drag the chip, or its
+`⠿` grip where the chip body is click-to-edit), so the copy sits in `common.reorder.dragHandle`
+instead of a feature namespace. It is used twice per editor: as the grip tooltip and as the
+hint shown in the edit controls row. There is deliberately **no keyboard shortcut** — an
+`Alt + Arrow` binding fought the browser's own Alt + Arrow handling and the modal's arrow-key
+navigation, so reordering is pointer-only and the grip is a decorative, non-focusable
+affordance. Do not reintroduce a shortcut or a "position X of Y" screen-reader string without
+re-adding the corresponding keys.
 
-`Alt` and the `↑/↓` glyphs stay Latin/verbatim in every locale (same precedent as
-`Shift+Enter`), and `position X of Y` reuses each locale's established ordering phrasing
-(ja `{total} 件中 … 番目`, ko `총 {total}개 중 …번째`, fr `sur {total}`, ru `из {total}`, …).
+`dragHandle` is a fragment, not a sentence: it labels both the grip and the hint, so keep it
+short and imperative and do not append a keyboard hint in any locale.
 
 | Term | Rendering |
 |---|---|
 | drag to reorder | zh-CN 拖拽以调整顺序 · zh-TW 拖曳以調整順序 · ja ドラッグして並べ替え · ko 드래그하여 순서 변경 · fr Glisser pour réordonner · de Zum Neuordnen ziehen · es Arrastra para reordenar · ru Перетащите, чтобы изменить порядок · he גרור כדי לשנות סדר |
-| position {position} of {total} | zh-CN 第 {position} 个，共 {total} 个 · zh-TW 第 {position} 個，共 {total} 個 · ja {total} 件中 {position} 番目 · ko 총 {total}개 중 {position}번째 · fr position {position} sur {total} · de Position {position} von {total} · es posición {position} de {total} · ru позиция {position} из {total} · he מיקום {position} מתוך {total} |
 
-The grip/handle noun itself is never translated (it is an icon); the hint carries the whole
-instruction, so no locale needs a separate "grip" term.
+The grip itself is an icon and is never translated.
 
 ---
 

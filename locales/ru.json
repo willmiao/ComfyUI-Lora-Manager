@@ -3,9 +3,7 @@
         "cancel": "Отмена",
         "confirm": "Подтвердить",
         "reorder": {
-            "dragHandle": "Перетащите, чтобы изменить порядок (Alt + ↑/↓)",
-            "ariaLabel": "Изменить порядок {item}, позиция {position} из {total}",
-            "announcement": "Перемещено на позицию {position} из {total}"
+            "dragHandle": "Перетащите, чтобы изменить порядок"
         },
         "actions": {
             "save": "Сохранить",

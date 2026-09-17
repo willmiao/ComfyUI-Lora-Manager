@@ -101,17 +101,6 @@ describe("ModelTags reordering", () => {
         firePointer('pointerup', target, { clientY: 999 });
     }
 
-    function pressKey(target, key, init = {}) {
-        const event = new KeyboardEvent('keydown', {
-            key,
-            bubbles: true,
-            cancelable: true,
-            ...init,
-        });
-        target.dispatchEvent(event);
-        return event;
-    }
-
     async function enterEditMode(tags = ['alpha', 'beta', 'gamma']) {
         document.body.innerHTML = TAG_SECTION_HTML(tags);
         setupTagEditMode('loras');
@@ -170,18 +159,11 @@ describe("ModelTags reordering", () => {
         expect(order()).toEqual(['alpha', 'beta', 'gamma']);
     });
 
-    it("saves the new order after a keyboard reorder", async () => {
+    it("saves the new order after a drag", async () => {
         await enterEditMode();
 
-        pressKey(handles()[0], 'ArrowRight', { altKey: true });
-        expect(order()).toEqual(['beta', 'alpha', 'gamma']);
-
-        const liveRegion = section().querySelector('.reorder-live-region');
-        expect(liveRegion.getAttribute('aria-live')).toBe('polite');
-        expect(liveRegion.textContent).toBe('Moved to position 2 of 3');
-
-        expect(handles()[0].getAttribute('aria-label'))
-            .toBe('Reorder beta, position 1 of 3');
+        dragToEnd(handles()[0]);
+        expect(order()).toEqual(['beta', 'gamma', 'alpha']);
 
         document.querySelector('.save-tags-btn')
             .dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
@@ -191,17 +173,8 @@ describe("ModelTags reordering", () => {
         });
 
         expect(saveModelMetadataMock).toHaveBeenCalledWith('test.safetensors', {
-            tags: ['beta', 'alpha', 'gamma'],
+            tags: ['beta', 'gamma', 'alpha'],
         });
-    });
-
-    it("swallows the reorder shortcut at the ends of the list", async () => {
-        await enterEditMode();
-
-        const event = pressKey(handles()[0], 'ArrowLeft', { altKey: true });
-
-        expect(event.defaultPrevented).toBe(true);
-        expect(order()).toEqual(['alpha', 'beta', 'gamma']);
     });
 
     it("updates the sortable flag when tags are deleted", async () => {

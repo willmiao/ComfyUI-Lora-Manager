@@ -3,9 +3,7 @@
         "cancel": "ביטול",
         "confirm": "אישור",
         "reorder": {
-            "dragHandle": "גרור כדי לשנות סדר (Alt + ↑/↓)",
-            "ariaLabel": "סדר מחדש את {item}, מיקום {position} מתוך {total}",
-            "announcement": "הועבר למיקום {position} מתוך {total}"
+            "dragHandle": "גרור כדי לשנות סדר"
         },
         "actions": {
             "save": "שמירה",

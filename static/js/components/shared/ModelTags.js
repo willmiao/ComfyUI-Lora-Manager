@@ -9,7 +9,7 @@ import { getPriorityTagSuggestions } from '../../utils/priorityTagHelpers.js';
 import { state } from '../../state/index.js';
 import { enablePointerSort } from './pointerSort.js';
 import {
-    createReorderSupport,
+    refreshReorderState,
     renderReorderHandle,
     renderReorderHint,
 } from './reorderSupport.js';
@@ -24,7 +24,6 @@ const MODEL_TYPE_SUGGESTION_KEY_MAP = {
 };
 const METADATA_ITEM_SELECTOR = '.metadata-item';
 const METADATA_ITEMS_CONTAINER_SELECTOR = '.metadata-items';
-const METADATA_DRAG_HANDLE_SELECTOR = '.reorder-handle';
 
 /**
  * Tag items have no click action of their own, so the whole chip stays
@@ -436,7 +435,7 @@ function createTagEditUI(currentTags, editBtnHTML = '') {
             <div class="metadata-items">
                 ${currentTags.map(tag => `
                     <div class="metadata-item" data-tag="${tag}">
-                        ${renderReorderHandle(translate('common.reorder.dragHandle'))}
+                        ${renderReorderHandle(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
                         <span class="metadata-item-content">${tag}</span>
                         <button class="metadata-delete-btn">
                             <i class="fas fa-times"></i>
@@ -445,7 +444,7 @@ function createTagEditUI(currentTags, editBtnHTML = '') {
                 `).join('')}
             </div>
             <div class="metadata-edit-controls">
-                ${renderReorderHint(translate('common.reorder.dragHandle'))}
+                ${renderReorderHint(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
                 <button class="save-tags-btn" title="Save changes">
                     <i class="fas fa-save"></i> Save
                 </button>
@@ -561,7 +560,7 @@ function setupDeleteButtons() {
             const scope = tag?.closest('.model-tags-container');
             tag.remove();
 
-            scope?._tagReorderSupport?.refresh();
+            refreshTagReorderState(scope);
 
             // Update status of items in the suggestion dropdown
             updateSuggestionsDropdown();
@@ -582,28 +581,28 @@ function setupTagDragAndDrop(scopeContainer) {
     }
 
     const scope = container.closest('.model-tags-container') || container;
-    let support = scope._tagReorderSupport;
-    if (!support || scope._tagReorderContainer !== container) {
-        support = createReorderSupport({
-            container,
-            scope,
-            handleSelector: METADATA_DRAG_HANDLE_SELECTOR,
-            sortConfig: TAG_SORT_CONFIG,
-        });
-        scope._tagReorderSupport = support;
-        scope._tagReorderContainer = container;
-    }
 
     enablePointerSort(container, {
         ...TAG_SORT_CONFIG,
-        onSorted: (item) => {
+        onSorted: () => {
             updateSuggestionsDropdown();
-            support.refresh();
-            support.announce(item);
+            refreshTagReorderState(scope);
         },
     });
 
-    support.refresh();
+    refreshTagReorderState(scope);
+}
+
+/**
+ * Refresh the "sortable" flag (and therefore the grip + hint) of a tags section
+ * @param {Element} [tagsSection] - The .model-tags-container element
+ */
+function refreshTagReorderState(tagsSection) {
+    refreshReorderState({
+        container: tagsSection?.querySelector(METADATA_ITEMS_CONTAINER_SELECTOR),
+        scope: tagsSection || undefined,
+        itemSelector: METADATA_ITEM_SELECTOR,
+    });
 }
 
 /**
@@ -644,7 +643,7 @@ function addNewTag(tag, scopeElement = null) {
     newTag.className = 'metadata-item';
     newTag.dataset.tag = tag;
     newTag.innerHTML = `
-        ${renderReorderHandle(translate('common.reorder.dragHandle'))}
+        ${renderReorderHandle(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
         <span class="metadata-item-content">${tag}</span>
         <button class="metadata-delete-btn">
             <i class="fas fa-times"></i>

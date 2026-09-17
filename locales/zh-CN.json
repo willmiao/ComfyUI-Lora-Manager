@@ -3,9 +3,7 @@
         "cancel": "取消",
         "confirm": "确认",
         "reorder": {
-            "dragHandle": "拖拽以调整顺序（Alt + ↑/↓）",
-            "ariaLabel": "调整 {item} 的顺序，第 {position} 个，共 {total} 个",
-            "announcement": "已移动到第 {position} 个，共 {total} 个"
+            "dragHandle": "拖拽以调整顺序"
         },
         "actions": {
             "save": "保存",

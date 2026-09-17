@@ -77,17 +77,6 @@ describe("TriggerWords reordering", () => {
         firePointer('pointerup', handle, { clientY: 999 });
     }
 
-    function pressKey(handle, key, init = {}) {
-        const event = new KeyboardEvent('keydown', {
-            key,
-            bubbles: true,
-            cancelable: true,
-            ...init,
-        });
-        handle.dispatchEvent(event);
-        return event;
-    }
-
     async function enterEditMode(words = ["alpha", "beta", "gamma"]) {
         document.body.innerHTML = renderTriggerWords(words, "test.safetensors");
         setupTriggerWordsEditMode();
@@ -112,6 +101,16 @@ describe("TriggerWords reordering", () => {
 
         expect(handles()).toHaveLength(1);
         expect(section().classList.contains('has-sortable-words')).toBe(false);
+    });
+
+    it("keeps the grip a decorative drag affordance, not a keyboard control", async () => {
+        await enterEditMode();
+
+        const grip = handles()[0];
+        expect(grip.tagName).toBe('SPAN');
+        expect(grip.getAttribute('aria-hidden')).toBe('true');
+        expect(grip.hasAttribute('tabindex')).toBe(false);
+        expect(grip.getAttribute('title')).toBe('Drag to reorder');
     });
 
     it("reorders a word by dragging its handle and swallows the follow-up click", async () => {
@@ -144,13 +143,23 @@ describe("TriggerWords reordering", () => {
         expect(document.querySelector('.reorder-dragging')).toBeNull();
     });
 
-    it("reorders with the keyboard and saves the new order", async () => {
+    it("treats a click on the grip without movement as a click, not a drag", async () => {
         await enterEditMode();
 
-        pressKey(handles()[0], 'ArrowRight', { altKey: true });
-        expect(order()).toEqual(["beta", "alpha", "gamma"]);
+        const grip = handles()[0];
+        firePointer('pointerdown', grip, { clientY: 10 });
+        firePointer('pointermove', grip, { clientY: 12 });
+        firePointer('pointerup', grip, { clientY: 12 });
+        grip.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
 
-        pressKey(handles()[2], 'ArrowUp', { altKey: true });
+        expect(order()).toEqual(["alpha", "beta", "gamma"]);
+        expect(document.querySelector('.trigger-word-edit-input')).toBeNull();
+    });
+
+    it("saves the new order after a drag", async () => {
+        await enterEditMode();
+
+        dragToEnd(handles()[0]);
         expect(order()).toEqual(["beta", "gamma", "alpha"]);
 
         document.querySelector('.metadata-save-btn')
@@ -163,49 +172,6 @@ describe("TriggerWords reordering", () => {
         expect(saveModelMetadataMock).toHaveBeenCalledWith("test.safetensors", {
             civitai: { trainedWords: ["beta", "gamma", "alpha"] },
         });
-    });
-
-    it("swallows the reorder shortcut at the ends of the list", async () => {
-        await enterEditMode();
-
-        const event = pressKey(handles()[0], 'ArrowLeft', { altKey: true });
-
-        expect(event.defaultPrevented).toBe(true);
-        expect(order()).toEqual(["alpha", "beta", "gamma"]);
-    });
-
-    it("ignores the reorder shortcut without the Alt modifier", async () => {
-        await enterEditMode();
-
-        pressKey(handles()[0], 'ArrowRight');
-
-        expect(order()).toEqual(["alpha", "beta", "gamma"]);
-    });
-
-    it("announces moved words for screen readers", async () => {
-        await enterEditMode();
-
-        pressKey(handles()[0], 'ArrowRight', { altKey: true });
-
-        const liveRegion = section().querySelector('.reorder-live-region');
-        expect(liveRegion.getAttribute('aria-live')).toBe('polite');
-        expect(liveRegion.textContent).toBe(
-            'Moved to position 2 of 3',
-        );
-    });
-
-    it("updates handle labels with the current position", async () => {
-        await enterEditMode();
-
-        expect(handles()[0].getAttribute('aria-label'))
-            .toBe('Reorder alpha, position 1 of 3');
-
-        pressKey(handles()[0], 'ArrowRight', { altKey: true });
-
-        expect(handles()[0].getAttribute('aria-label'))
-            .toBe('Reorder beta, position 1 of 3');
-        expect(handles()[1].getAttribute('aria-label'))
-            .toBe('Reorder alpha, position 2 of 3');
     });
 
     it("restores the original order when edit mode is canceled", async () => {

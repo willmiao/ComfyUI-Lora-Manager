@@ -3,9 +3,7 @@
         "cancel": "취소",
         "confirm": "확인",
         "reorder": {
-            "dragHandle": "드래그하여 순서 변경 (Alt + ↑/↓)",
-            "ariaLabel": "{item} 순서 변경, 총 {total}개 중 {position}번째",
-            "announcement": "총 {total}개 중 {position}번째로 이동했습니다"
+            "dragHandle": "드래그하여 순서 변경"
         },
         "actions": {
             "save": "저장",

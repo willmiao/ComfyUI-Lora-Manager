@@ -8,14 +8,12 @@ const POINTER_SORT_MODULE = new URL(
 describe("pointerSort", () => {
     let enablePointerSort;
     let disablePointerSort;
-    let moveItemWithinContainer;
 
     beforeEach(async () => {
         document.body.innerHTML = '';
         const module = await import(POINTER_SORT_MODULE);
         enablePointerSort = module.enablePointerSort;
         disablePointerSort = module.disablePointerSort;
-        moveItemWithinContainer = module.moveItemWithinContainer;
     });
 
     function buildList(words) {
@@ -172,25 +170,4 @@ describe("pointerSort", () => {
         expect(order()).toEqual(['a', 'b']);
     });
 
-    it("moveItemWithinContainer moves items within bounds only", () => {
-        const { container } = buildList(['a', 'b', 'c']);
-        const items = Array.from(document.querySelectorAll('.item'));
-
-        expect(moveItemWithinContainer(items[0], 1, sortOptions()))
-            .toEqual({ index: 1, total: 3 });
-        expect(order()).toEqual(['b', 'a', 'c']);
-
-        expect(moveItemWithinContainer(items[2], -1, sortOptions()))
-            .toEqual({ index: 1, total: 3 });
-        expect(order()).toEqual(['b', 'c', 'a']);
-
-        // Out of range / unknown item moves are refused
-        const currentFirst = document.querySelector('.item');
-        expect(moveItemWithinContainer(currentFirst, -1, sortOptions())).toBeNull();
-        expect(moveItemWithinContainer(currentFirst, 3, sortOptions())).toBeNull();
-        expect(moveItemWithinContainer(document.createElement('div'), 1, {
-            ...sortOptions(),
-            container,
-        })).toBeNull();
-    });
 });

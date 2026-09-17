@@ -112,37 +112,6 @@ export function disablePointerSort(container, options = {}) {
     }
 }
 
-/**
- * Move an item by `offset` positions inside its container.
- * Shared by the keyboard interaction so it matches drag ordering exactly.
- * @param {HTMLElement} item - Item to move
- * @param {number} offset - Negative moves earlier, positive moves later
- * @param {Object} [options] - Same options as enablePointerSort(); use
- *   `options.container` when the item is not attached to its list yet
- * @returns {{index: number, total: number}|null} New position, or null when out of range
- */
-export function moveItemWithinContainer(item, offset, options = {}) {
-    if (!item || !offset) return null;
-
-    const config = resolveConfig(options);
-    const container = options.container || item.parentElement;
-    if (!container) return null;
-
-    const items = Array.from(container.querySelectorAll(config.itemSelector)).filter(
-        (element) => !element.classList.contains(config.placeholderClass),
-    );
-    const index = items.indexOf(item);
-    if (index === -1) return null;
-
-    const target = index + offset;
-    if (target < 0 || target >= items.length) return null;
-
-    const reference = offset < 0 ? items[target] : items[target].nextSibling;
-    container.insertBefore(item, reference);
-
-    return { index: target, total: items.length };
-}
-
 function handlePointerDown(event, item, container, config) {
     if (activeDragState || pendingDragState) return;
     if (typeof event.button === 'number' && event.button !== 0) return;

@@ -12,7 +12,7 @@ import {
     disablePointerSort,
 } from './pointerSort.js';
 import {
-    createReorderSupport,
+    refreshReorderState,
     renderReorderHandle,
     renderReorderHint,
 } from './reorderSupport.js';
@@ -26,13 +26,15 @@ const TRIGGER_WORD_DRAG_HANDLE_SELECTOR = '.reorder-handle';
  * Drag-to-reorder configuration for trigger word tags.
  * Handlers are installed when entering edit mode and removed again on exit, so
  * display mode keeps its click-to-copy / double-click-to-edit behaviour.
- * The item body is click-to-edit here, so only the grip starts a drag.
+ * The item body is click-to-edit here, so only the grip starts a drag, and the
+ * small threshold keeps a click on the grip from lifting the tag.
  */
 const TRIGGER_WORD_DRAG_CONFIG = {
     itemSelector: '.trigger-word-tag',
     handleSelector: TRIGGER_WORD_DRAG_HANDLE_SELECTOR,
     ignoreSelector: '.metadata-delete-btn, .trigger-word-edit-input',
     blockedItemSelector: '.is-editing',
+    dragThreshold: 5,
 };
 
 /**
@@ -212,7 +214,7 @@ function createSuggestionDropdown(trainedWords, classTokens, existingWords = [])
  * @returns {string} Handle markup
  */
 function renderTriggerWordDragHandle() {
-    return renderReorderHandle(translate('common.reorder.dragHandle'));
+    return renderReorderHandle(translate('common.reorder.dragHandle', {}, 'Drag to reorder'));
 }
 
 /**
@@ -236,7 +238,7 @@ export function renderTriggerWords(words, filePath) {
                 <div class="trigger-words-tags" style="display:none;"></div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
-                ${renderReorderHint(translate('common.reorder.dragHandle'))}
+                ${renderReorderHint(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
                 <button class="metadata-save-btn" title="${translate('modals.model.triggerWords.save')}">
                     <i class="fas fa-save"></i> ${translate('common.actions.save')}
                 </button>
@@ -275,7 +277,7 @@ export function renderTriggerWords(words, filePath) {
                 </div>
             </div>
             <div class="metadata-edit-controls" style="display:none;">
-                ${renderReorderHint(translate('common.reorder.dragHandle'))}
+                ${renderReorderHint(translate('common.reorder.dragHandle', {}, 'Drag to reorder'))}
                 <button class="metadata-save-btn" title="${translate('modals.model.triggerWords.save')}">
                     <i class="fas fa-save"></i> ${translate('common.actions.save')}
                 </button>
@@ -543,38 +545,18 @@ function restoreOriginalTriggerWords(section, originalWords) {
 }
 
 /**
- * Get (or lazily create) the reorder support of a section.
- * Reordering is only allowed while the section is in edit mode, because the tag
- * body itself is click-to-edit and the grip must not appear in display mode.
- * @param {HTMLElement} section - The .trigger-words section
- * @returns {{refresh: Function, announce: Function}|null} Reorder support
- */
-function getTriggerWordReorder(section) {
-    const tagsContainer = section.querySelector('.trigger-words-tags');
-    if (!tagsContainer) return null;
-
-    let support = section._triggerWordReorderSupport;
-    if (!support || section._triggerWordReorderContainer !== tagsContainer) {
-        support = createReorderSupport({
-            container: tagsContainer,
-            scope: section,
-            handleSelector: TRIGGER_WORD_DRAG_HANDLE_SELECTOR,
-            sortConfig: TRIGGER_WORD_DRAG_CONFIG,
-            isActive: () => section.classList.contains('edit-mode'),
-        });
-        section._triggerWordReorderSupport = support;
-        section._triggerWordReorderContainer = tagsContainer;
-    }
-
-    return support;
-}
-
-/**
- * Refresh the handle labels and the "sortable" flag of a section
+ * Refresh the "sortable" flag (and therefore the grip + hint) of a section.
+ * Reordering is drag-only and only offered while editing: the tag body itself
+ * is click-to-edit, so the grip must not appear in display mode.
  * @param {HTMLElement} section - The .trigger-words section
  */
 function refreshTriggerWordHandleLabels(section) {
-    getTriggerWordReorder(section)?.refresh();
+    refreshReorderState({
+        container: section.querySelector('.trigger-words-tags'),
+        scope: section,
+        itemSelector: TRIGGER_WORD_DRAG_CONFIG.itemSelector,
+        isActive: () => section.classList.contains('edit-mode'),
+    });
 }
 
 /**
@@ -585,14 +567,9 @@ function enableTriggerWordSort(section) {
     const tagsContainer = section.querySelector('.trigger-words-tags');
     if (!tagsContainer) return;
 
-    const support = getTriggerWordReorder(section);
-
     enablePointerSort(tagsContainer, {
         ...TRIGGER_WORD_DRAG_CONFIG,
-        onSorted: (item) => {
-            support?.refresh();
-            support?.announce(item);
-        },
+        onSorted: () => refreshTriggerWordHandleLabels(section),
     });
 }
 

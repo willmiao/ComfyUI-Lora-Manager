@@ -124,6 +124,7 @@
   cursor: grab;
   /* Keep a touch drag on the handle from scrolling the surrounding panel */
   touch-action: none;
+  user-select: none;
   transition: opacity 0.2s ease, color 0.2s ease;
 }
 
@@ -137,16 +138,9 @@
   margin-right: 4px;
 }
 
-.reorder-handle:hover,
-.reorder-handle:focus-visible {
+.reorder-handle:hover {
   opacity: 0.9;
   color: var(--lora-accent);
-}
-
-.reorder-handle:focus-visible {
-  outline: 2px solid var(--lora-accent);
-  outline-offset: 1px;
-  border-radius: 2px;
 }
 
 .reorder-handle:active {
@@ -197,19 +191,6 @@ body.reorder-drag-active {
 
 body.reorder-drag-active * {
   cursor: grabbing !important;
-}
-
-/* Screen-reader-only live region announcing reorder moves */
-.reorder-sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
 }
 
 .metadata-item-content {

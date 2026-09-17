@@ -3,9 +3,7 @@
         "cancel": "Annuler",
         "confirm": "Confirmer",
         "reorder": {
-            "dragHandle": "Glisser pour réordonner (Alt + ↑/↓)",
-            "ariaLabel": "Réordonner {item}, position {position} sur {total}",
-            "announcement": "Déplacé en position {position} sur {total}"
+            "dragHandle": "Glisser pour réordonner"
         },
         "actions": {
             "save": "Enregistrer",
