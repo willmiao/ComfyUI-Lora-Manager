@@ -2432,6 +2432,11 @@ export class SettingsManager {
             || ['vae', 'upscaler', 'text_encoder']
         );
 
+        const masterToggle = document.getElementById('enableOtherModels');
+        if (masterToggle) {
+            masterToggle.checked = enableOtherModels;
+        }
+
         document.querySelectorAll('[data-other-subtype-toggle]').forEach((input) => {
             input.checked = enabledSubTypes.has(input.value);
             input.disabled = !enableOtherModels;

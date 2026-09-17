@@ -665,6 +665,22 @@ describe('SettingsManager other-model root selects', () => {
             expect(container.classList.contains('is-disabled')).toBe(false);
         });
 
+        it('restores the master toggle checked state from settings', () => {
+            const manager = createManager();
+            const masterToggle = document.createElement('input');
+            masterToggle.type = 'checkbox';
+            masterToggle.id = 'enableOtherModels';
+            document.body.appendChild(masterToggle);
+
+            state.global.settings = { enable_other_models: true };
+            manager.updateOtherModelsControls();
+            expect(masterToggle.checked).toBe(true);
+
+            state.global.settings = { enable_other_models: false };
+            manager.updateOtherModelsControls();
+            expect(masterToggle.checked).toBe(false);
+        });
+
         it('persists the checked sub_types as the whole allow-list', async () => {
             const manager = createManager();
             appendToggles('vae', 'upscaler', 'controlnet');
