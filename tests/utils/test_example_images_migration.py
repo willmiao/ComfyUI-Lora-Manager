@@ -177,3 +177,156 @@ async def test_migrations_run_and_update_progress(tmp_path, monkeypatch):
     update_args = lora_scanner.update_calls[0]
     assert update_args[0] == str(metadata_path)
     assert update_args[2]["civitai"]["customImages"][0]["id"] == "short1234"
+
+
+@pytest.mark.asyncio
+async def test_v2_to_v3_migration_repairs_video_dimensions(tmp_path, monkeypatch):
+    """Upgrading a library already at v2 backfills local video dimensions once.
+
+    This mirrors the real upgrade path for issue #1115: the naming migration is
+    already done, but imported videos still carry the 720x1280 placeholder.
+    """
+
+    from tests.utils.test_video_dimension_probe import build_mp4
+
+    example_root = tmp_path / "example_images"
+    library_root = example_root / "main"
+    library_root.mkdir(parents=True)
+
+    progress_path = library_root / ".download_progress.json"
+    progress_path.write_text(json.dumps({"naming_version": 2}))
+
+    model_hash = "d" * 64
+    model_folder = library_root / model_hash
+    model_folder.mkdir()
+    # Landscape clip stored during the buggy import path.
+    (model_folder / "custom_land1.mp4").write_bytes(build_mp4(1280, 720))
+
+    model_file = tmp_path / "models" / "video.safetensors"
+    model_file.parent.mkdir()
+    model_file.write_text("weights", encoding="utf-8")
+
+    scanner = FakeScanner(
+        {
+            model_hash: {
+                "sha256": model_hash,
+                "file_path": str(model_file),
+                "civitai": {
+                    "images": [
+                        {"url": "https://example.com/remote.jpg", "type": "image", "width": 512, "height": 512}
+                    ],
+                    "customImages": [
+                        {"url": "", "id": "land1", "type": "video", "width": 720, "height": 1280}
+                    ],
+                },
+            }
+        }
+    )
+
+    async def fake_get_lora_scanner(cls):
+        return scanner
+
+    async def fake_get_checkpoint_scanner(cls):
+        return FakeScanner({})
+
+    monkeypatch.setattr(
+        migration_module.ServiceRegistry, "get_lora_scanner", classmethod(fake_get_lora_scanner)
+    )
+    monkeypatch.setattr(
+        migration_module.ServiceRegistry,
+        "get_checkpoint_scanner",
+        classmethod(fake_get_checkpoint_scanner),
+    )
+
+    monkeypatch.setattr(
+        migration_module.settings,
+        "get",
+        lambda key, default=None: str(example_root) if key == "example_images_path" else default,
+    )
+    monkeypatch.setattr(
+        migration_module,
+        "iter_library_roots",
+        lambda: [("main", str(library_root))],
+    )
+
+    saved_metadata = []
+
+    async def fake_save_metadata(path, metadata):
+        saved_metadata.append((path, metadata))
+        return True
+
+    async def fake_load_payload(path):
+        return {
+            "model_name": "Video",
+            "civitai": {
+                "images": [
+                    {"url": "https://example.com/remote.jpg", "type": "image", "width": 512, "height": 512}
+                ],
+                "customImages": [
+                    {"url": "", "id": "land1", "type": "video", "width": 720, "height": 1280}
+                ],
+            },
+        }
+
+    monkeypatch.setattr(
+        migration_module.MetadataManager, "save_metadata", staticmethod(fake_save_metadata)
+    )
+    monkeypatch.setattr(
+        migration_module.MetadataManager, "load_metadata_payload", staticmethod(fake_load_payload)
+    )
+
+    scheduled = []
+    original_create_task = asyncio.create_task
+
+    def capture_create_task(coro, *args, **kwargs):
+        task = original_create_task(coro, *args, **kwargs)
+        scheduled.append(task)
+        return task
+
+    monkeypatch.setattr(migration_module.asyncio, "create_task", capture_create_task)
+
+    await migration_module.ExampleImagesMigration.check_and_run_migrations()
+    await asyncio.gather(*scheduled)
+
+    assert len(saved_metadata) == 1
+    _path, payload = saved_metadata[0]
+    entry = payload["civitai"]["customImages"][0]
+    assert (entry["width"], entry["height"]) == (1280, 720)
+    # Remote-backed entry is untouched.
+    assert payload["civitai"]["images"][0]["width"] == 512
+
+    assert json.loads(progress_path.read_text())["naming_version"] == 3
+
+
+@pytest.mark.asyncio
+async def test_v3_migration_does_not_run_twice(tmp_path, monkeypatch):
+    """The version gate keeps the repair off the startup path after one run."""
+
+    example_root = tmp_path / "example_images"
+    library_root = example_root / "main"
+    library_root.mkdir(parents=True)
+    (library_root / ".download_progress.json").write_text(json.dumps({"naming_version": 3}))
+
+    monkeypatch.setattr(
+        migration_module.settings,
+        "get",
+        lambda key, default=None: str(example_root) if key == "example_images_path" else default,
+    )
+    monkeypatch.setattr(
+        migration_module,
+        "iter_library_roots",
+        lambda: [("main", str(library_root))],
+    )
+
+    called = []
+
+    async def spy_run_migrations(*args, **kwargs):
+        called.append(args)
+
+    monkeypatch.setattr(
+        migration_module.ExampleImagesMigration, "run_migrations", staticmethod(spy_run_migrations)
+    )
+
+    await migration_module.ExampleImagesMigration.check_and_run_migrations()
+
+    assert called == []

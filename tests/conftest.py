@@ -334,6 +334,21 @@ def mock_websocket_manager():
 
 
 @pytest.fixture(autouse=True)
+def reset_media_dimension_caches():
+    """Clear path-keyed dimension caches so files reused across tests re-probe."""
+    from py.utils.exif_utils import _get_image_dimensions_cached
+    from py.utils.video_metadata import _clear_video_dimensions_cache
+
+    _get_image_dimensions_cached.cache_clear()
+    _clear_video_dimensions_cache()
+
+    yield
+
+    _get_image_dimensions_cached.cache_clear()
+    _clear_video_dimensions_cache()
+
+
+@pytest.fixture(autouse=True)
 def reset_singletons():
     """Reset all singletons before each test to ensure isolation."""
     # Import here to avoid circular imports
