@@ -382,7 +382,8 @@
         "nav": {
             "general": "General",
             "interface": "Interfaz",
-            "library": "Biblioteca"
+            "library": "Biblioteca",
+            "modelPaths": "[TODO: Translate] Model Paths"
         },
         "search": {
             "placeholder": "Buscar ajustes...",
@@ -581,6 +582,30 @@
                 "duplicatePath": "Esta ruta ya está configurada",
                 "checkpointUnetOverlap": "No se puede usar la misma ruta para checkpoints y modelos de difusión: {paths}",
                 "checkpointUnetOverlapInline": "Esta ruta ya se usa para otro tipo de modelo. Use carpetas separadas para checkpoints y modelos de difusión."
+            }
+        },
+        "modelPaths": {
+            "title": "[TODO: Translate] Model Library Paths",
+            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
+            "restartRequired": "[TODO: Translate] Requires restart to take effect",
+            "coreTypes": "[TODO: Translate] Core Model Types",
+            "otherTypes": "[TODO: Translate] Other Model Types",
+            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
+            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
+            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
+            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
+            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "folderKeys": {
+                "loras": "[TODO: Translate] LoRA Paths",
+                "checkpoints": "[TODO: Translate] Checkpoint Paths",
+                "unet": "[TODO: Translate] Diffusion Model Paths",
+                "embeddings": "[TODO: Translate] Embedding Paths",
+                "vae": "[TODO: Translate] VAE Paths",
+                "upscale_models": "[TODO: Translate] Upscaler Paths",
+                "text_encoders": "[TODO: Translate] Text Encoder Paths",
+                "clip": "[TODO: Translate] CLIP Paths (legacy)",
+                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
+                "controlnet": "[TODO: Translate] ControlNet Paths"
             }
         },
         "priorityTags": {
@@ -1241,11 +1266,12 @@
         },
         "noPaths": {
             "title": "No se encontraron carpetas de otros modelos",
-            "descriptionStandalone": "La gestión de otros modelos está activada, pero no se encontraron carpetas de otros modelos. Añade las claves de carpeta que necesites a la sección folder_paths de tu settings.json y reinicia LoRA Manager.",
-            "hintStandalone": "Solo se escanean las claves de carpeta listadas arriba; las claves que no necesites puedes omitirlas.",
+            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
             "descriptionComfyUI": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las carpetas de modelos correspondientes a tus rutas de modelos de ComfyUI y recarga esta página.",
             "hintComfyUI": "Los otros modelos se leen de las carpetas vae, upscale_models, text_encoders, clip_vision y controlnet de ComfyUI.",
             "openSettings": "Abrir configuración",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
             "openSettingsFolder": "Abrir carpeta de ajustes"
         }
     },

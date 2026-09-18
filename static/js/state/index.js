@@ -77,6 +77,12 @@ export function createDefaultSettings() {
         priority_tags: { ...DEFAULT_PRIORITY_TAG_CONFIG },
         default_other_roots: {},
         enabled_other_sub_types: ['vae', 'upscaler', 'text_encoder'],
+        // Standalone-only fields populated by GET /api/lm/settings; in plugin
+        // mode the backend omits folder_paths/folder_path_schema and these
+        // defaults apply.
+        standalone_mode: false,
+        folder_paths: {},
+        folder_path_schema: [],
     };
 }
 

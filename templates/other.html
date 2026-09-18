@@ -51,18 +51,6 @@
         opacity: 0.6;
         cursor: default;
     }
-    .other-no-paths-config {
-        margin: 4px 0 0;
-        padding: 12px 16px;
-        max-width: 520px;
-        overflow-x: auto;
-        text-align: left;
-        font-size: 12px;
-        line-height: 1.5;
-        border-radius: 6px;
-        background: rgba(127, 127, 127, 0.15);
-        border: 1px solid rgba(127, 127, 127, 0.25);
-    }
     .other-settings-file {
         display: flex;
         align-items: center;
@@ -140,17 +128,13 @@
         <h2>{{ t('other.noPaths.title') }}</h2>
         {% if standalone_mode %}
         <p>{{ t('other.noPaths.descriptionStandalone') }}</p>
+        <p class="other-disabled-hint">{{ t('other.noPaths.hintStandalone') }}</p>
+        <button id="openModelPathsSettingsBtn" type="button">
+            <i class="fas fa-cog"></i> {{ t('other.noPaths.openModelPaths') }}
+        </button>
         {% if settings_file %}
         <p class="other-settings-file"><i class="fas fa-file-alt"></i> <code>{{ settings_file }}</code></p>
         {% endif %}
-        <pre class="other-no-paths-config"><code>"folder_paths": {
-  "vae": ["/path/to/vae"],
-  "upscale_models": ["/path/to/upscale_models"],
-  "text_encoders": ["/path/to/text_encoders"],
-  "clip_vision": ["/path/to/clip_vision"],
-  "controlnet": ["/path/to/controlnet"]
-}</code></pre>
-        <p class="other-disabled-hint">{{ t('other.noPaths.hintStandalone') }}</p>
         <button id="openSettingsFolderBtn" type="button">
             <i class="fas fa-folder-open"></i> {{ t('other.noPaths.openSettingsFolder') }}
         </button>

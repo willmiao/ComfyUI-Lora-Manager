@@ -18,6 +18,16 @@ import { bannerService } from './BannerService.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
 
+// Other-model sub_type -> i18n label key, mirroring the checkbox list in
+// templates/components/modals/settings/library.html.
+const OTHER_SUB_TYPE_LABEL_KEYS = {
+    vae: 'settings.folderSettings.subTypeVae',
+    upscaler: 'settings.folderSettings.subTypeUpscaler',
+    text_encoder: 'settings.folderSettings.subTypeTextEncoder',
+    clip_vision: 'settings.folderSettings.subTypeClipVision',
+    controlnet: 'settings.folderSettings.subTypeControlnet',
+};
+
 export class SettingsManager {
     constructor() {
         this.initialized = false;
@@ -26,6 +36,8 @@ export class SettingsManager {
         this.availableLibraries = {};
         this.activeLibrary = '';
         this.registeredStartupBannerIds = new Set();
+        this.modelPathsSectionInitialized = false;
+        this.modelPathsDirty = false;
 
         // Add initialization to sync with modal state
         this.currentPage = document.body.dataset.page || 'loras';
@@ -78,6 +90,7 @@ export class SettingsManager {
 
         await this.applyLanguageSetting();
         this.applyFrontendSettings();
+        this.setupModelPathsSection();
     }
 
     async applyLanguageSetting() {
@@ -276,6 +289,10 @@ export class SettingsManager {
             case 'open-settings-modal':
                 modalManager.showModal('settingsModal');
                 break;
+            case 'open-model-paths-settings':
+                modalManager.showModal('settingsModal');
+                document.querySelector('.settings-nav-item[data-section="modelPaths"]')?.click();
+                break;
             case 'open-settings-location':
                 this.openSettingsFileLocation();
                 break;
@@ -472,8 +489,11 @@ export class SettingsManager {
                 const sectionId = item.dataset.section;
                 if (!sectionId) return;
 
-                // Hide all sections
-                sections.forEach(section => {
+                // Query live instead of using the captured NodeLists: the
+                // standalone Model Paths section is added after this
+                // initializer runs, and a stale snapshot would leave it
+                // active forever.
+                document.querySelectorAll('.settings-section').forEach(section => {
                     section.classList.remove('active');
                 });
 
@@ -484,7 +504,7 @@ export class SettingsManager {
                 }
 
                 // Update active nav state
-                navItems.forEach(nav => nav.classList.remove('active'));
+                document.querySelectorAll('.settings-nav-item').forEach(nav => nav.classList.remove('active'));
                 item.classList.add('active');
             });
         });
@@ -1159,6 +1179,9 @@ export class SettingsManager {
 
         // Load extra folder paths
         this.loadExtraFolderPaths();
+
+        // Load standalone model library paths (no-op in plugin mode)
+        this.loadModelPaths();
 
         // Load language setting
         const languageSelect = document.getElementById('languageSelect');
@@ -1940,6 +1963,460 @@ export class SettingsManager {
             state.global.settings.extra_folder_paths = currentPaths;
             this.loadExtraFolderPaths();
         }
+    }
+
+    // --- Standalone Model Paths section --------------------------------------
+    // The section only exists in standalone mode, where primary folder_paths
+    // are read from settings.json instead of the ComfyUI host. Editors are
+    // rendered from the backend-provided folder_path_schema so new model
+    // categories appear automatically.
+
+    setupModelPathsSection() {
+        if (this.modelPathsSectionInitialized) return;
+        if (!state.global.settings.standalone_mode) return;
+
+        const navGroup = document.querySelector('.settings-nav-list .settings-nav-group');
+        const settingsForm = document.querySelector('.settings-form');
+        if (!navGroup || !settingsForm) return;
+
+        const navButton = document.createElement('button');
+        navButton.type = 'button';
+        navButton.className = 'settings-nav-item';
+        navButton.dataset.section = 'modelPaths';
+        navButton.textContent = translate('settings.nav.modelPaths', {}, 'Model Paths');
+
+        const section = document.createElement('div');
+        section.className = 'settings-section';
+        section.id = 'section-modelPaths';
+        section.dataset.section = 'modelPaths';
+        section.innerHTML = `
+            <div class="settings-subsection">
+                <div class="settings-subsection-header">
+                    <h4>
+                        ${translate('settings.modelPaths.title', {}, 'Model Library Paths')}
+                        <i class="fas fa-sync-alt restart-required-icon" title="${translate('settings.modelPaths.restartRequired', {}, 'Restart required for changes to take effect')}"></i>
+                    </h4>
+                </div>
+                <div class="setting-item">
+                    <div class="input-help">
+                        ${translate('settings.modelPaths.description', {}, 'Root folders LoRA Manager scans for your models. Changes take effect after restarting the server.')}
+                    </div>
+                </div>
+                <div class="model-paths-restart-notice" id="modelPathsRestartNotice">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>${translate('settings.modelPaths.pendingRestartNotice', {}, 'Path changes saved. Restart LoRA Manager for them to take effect.')}</span>
+                </div>
+                <div class="settings-subsection-header">
+                    <h4>${translate('settings.modelPaths.coreTypes', {}, 'Core Model Types')}</h4>
+                </div>
+                <div id="modelPathsCoreTypes"></div>
+                <div class="settings-subsection-header">
+                    <h4>${translate('settings.modelPaths.otherTypes', {}, 'Other Model Types')}</h4>
+                </div>
+                <div class="setting-item">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label for="modelPathsEnableOtherModels">
+                                ${translate('settings.folderSettings.enableOtherModels', {}, 'Enable Other Models Management')}
+                                <i class="fas fa-info-circle info-icon" data-tooltip="${translate('settings.folderSettings.enableOtherModelsHelp', {}, '')}"></i>
+                            </label>
+                        </div>
+                        <div class="setting-control">
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="modelPathsEnableOtherModels" onchange="settingsManager.handleModelPathsEnableOtherModels()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item other-subtype-toggles" id="modelPathsSubTypeToggles">
+                    <div class="setting-row">
+                        <div class="setting-info">
+                            <label>
+                                ${translate('settings.folderSettings.otherSubTypes', {}, 'Enabled Model Types')}
+                                <i class="fas fa-info-circle info-icon" data-tooltip="${translate('settings.folderSettings.otherSubTypesHelp', {}, '')}"></i>
+                            </label>
+                        </div>
+                        <div class="setting-control other-subtype-checkboxes">
+                            ${this._buildModelPathSubTypeCheckboxes()}
+                        </div>
+                    </div>
+                </div>
+                <div class="setting-item" id="modelPathsOtherEmpty">
+                    <div class="input-help">
+                        ${translate('settings.modelPaths.otherTypesDisabledHint', {}, 'No other model types are enabled. Turn on the types you need above to configure their folders.')}
+                    </div>
+                </div>
+                <div id="modelPathsOtherTypes"></div>
+            </div>
+        `;
+
+        // The static nav items were bound by initializeNavigation() before the
+        // backend sync completed, so this dynamically added item carries its
+        // own handler with the same show-section behavior.
+        navButton.addEventListener('click', () => {
+            document.querySelectorAll('.settings-section').forEach((s) => s.classList.remove('active'));
+            section.classList.add('active');
+            document.querySelectorAll('.settings-nav-item').forEach((n) => n.classList.remove('active'));
+            navButton.classList.add('active');
+        });
+
+        navGroup.appendChild(navButton);
+        settingsForm.appendChild(section);
+        this.modelPathsSectionInitialized = true;
+    }
+
+    _buildModelPathSubTypeCheckboxes() {
+        const schema = state.global.settings.folder_path_schema || [];
+        const subTypes = [];
+        schema.forEach((entry) => {
+            if (entry.category === 'other' && entry.sub_type && !subTypes.includes(entry.sub_type)) {
+                subTypes.push(entry.sub_type);
+            }
+        });
+
+        return subTypes.map((subType) => {
+            const labelKey = OTHER_SUB_TYPE_LABEL_KEYS[subType];
+            const label = labelKey ? translate(labelKey, {}, subType) : subType;
+            return `
+                <label class="other-subtype-checkbox">
+                    <input type="checkbox" value="${subType}"
+                           data-model-paths-subtype="${subType}"
+                           onchange="settingsManager.handleModelPathsSubTypeToggles()">
+                    <span>${label}</span>
+                </label>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Master toggle inside the standalone Model Paths section. Edits the same
+     * enable_other_models key as the Library tab control and keeps both in
+     * sync, then re-renders the other-model path editors in place.
+     */
+    async handleModelPathsEnableOtherModels() {
+        const toggle = document.getElementById('modelPathsEnableOtherModels');
+        if (!toggle) return;
+
+        const enabled = toggle.checked;
+        const previous = !!state.global.settings.enable_other_models;
+
+        try {
+            await this.saveSetting('enable_other_models', enabled);
+            // Mirror the Library tab flow: refresh its controls and roots,
+            // then re-render this section's editors immediately.
+            this.updateOtherModelsControls();
+            await this.loadOtherRoots();
+            this.updateOtherModelsControls();
+            this.updateOtherModelsNavVisibility(enabled);
+            this.removeOtherModelsAnnouncement(enabled);
+            this.loadModelPaths();
+            showToast('toast.settings.settingsUpdated', { setting: 'enable other models' }, 'success');
+        } catch (error) {
+            toggle.checked = previous;
+            state.global.settings.enable_other_models = previous;
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    /**
+     * Sub-type checkboxes inside the standalone Model Paths section. Saves the
+     * same enabled_other_sub_types allow-list as the Library tab checkboxes
+     * (which use data-other-subtype-toggle, so the two never mix) and
+     * re-renders the editors without requiring a modal reopen.
+     */
+    async handleModelPathsSubTypeToggles() {
+        const values = Array.from(document.querySelectorAll('[data-model-paths-subtype]'))
+            .filter((input) => input.checked)
+            .map((input) => input.value);
+
+        const previous = state.global.settings.enabled_other_sub_types;
+
+        try {
+            await this.saveSetting('enabled_other_sub_types', values);
+            this.updateOtherModelsControls();
+            await this.loadOtherRoots();
+            this.updateOtherModelsControls();
+            this.loadModelPaths();
+            showToast('toast.settings.settingsUpdated', { setting: 'other model types' }, 'success');
+        } catch (error) {
+            state.global.settings.enabled_other_sub_types = previous;
+            this.loadModelPaths();
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+        }
+    }
+
+    loadModelPaths() {
+        if (!state.global.settings.standalone_mode) return;
+
+        const coreHost = document.getElementById('modelPathsCoreTypes');
+        const otherHost = document.getElementById('modelPathsOtherTypes');
+        if (!coreHost || !otherHost) return;
+
+        coreHost.innerHTML = '';
+        otherHost.innerHTML = '';
+
+        const schema = state.global.settings.folder_path_schema || [];
+        const otherModelsEnabled = state.global.settings.enable_other_models === true;
+        const enabledSubTypes = new Set(state.global.settings.enabled_other_sub_types || []);
+
+        // Keep the inline enable controls in sync with the current settings.
+        const masterToggle = document.getElementById('modelPathsEnableOtherModels');
+        if (masterToggle) {
+            masterToggle.checked = otherModelsEnabled;
+        }
+        document.querySelectorAll('[data-model-paths-subtype]').forEach((input) => {
+            input.checked = enabledSubTypes.has(input.value);
+            input.disabled = !otherModelsEnabled;
+        });
+        const subTypeToggles = document.getElementById('modelPathsSubTypeToggles');
+        if (subTypeToggles) {
+            subTypeToggles.classList.toggle('is-disabled', !otherModelsEnabled);
+        }
+
+        let otherCount = 0;
+        schema.forEach((entry) => {
+            if (entry.category === 'core') {
+                this._buildModelPathTypeGroup(coreHost, entry);
+            } else if (otherModelsEnabled && entry.sub_type && enabledSubTypes.has(entry.sub_type)) {
+                otherCount++;
+                this._buildModelPathTypeGroup(otherHost, entry);
+            }
+        });
+
+        const emptyHint = document.getElementById('modelPathsOtherEmpty');
+        if (emptyHint) {
+            emptyHint.style.display = otherCount === 0 ? 'block' : 'none';
+        }
+
+        const folderPaths = state.global.settings.folder_paths || {};
+        schema.forEach((entry) => {
+            const container = document.getElementById(`modelFolderPaths-${entry.key}`);
+            if (!container) return;
+
+            container.innerHTML = '';
+            const paths = folderPaths[entry.key] || [];
+            paths.forEach((path) => {
+                this.addModelFolderPathRow(entry.key, path);
+            });
+            // No trailing empty row on load: an unconfigured type shows just
+            // its Add button, and removing a row never resurrects an empty one.
+        });
+    }
+
+    _buildModelPathTypeGroup(host, entry) {
+        const item = document.createElement('div');
+        item.className = 'setting-item';
+
+        const label = translate(`settings.modelPaths.folderKeys.${entry.key}`, {}, entry.key);
+        item.innerHTML = `
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>${label}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="add-mapping-btn" onclick="settingsManager.addModelFolderPathRow('${entry.key}')">
+                        <i class="fas fa-plus"></i>
+                        <span>${translate('common.actions.add', {}, 'Add')}</span>
+                    </button>
+                </div>
+            </div>
+            <div class="extra-folder-paths-container" id="modelFolderPaths-${entry.key}">
+            </div>
+        `;
+
+        host.appendChild(item);
+    }
+
+    addModelFolderPathRow(key, path = '', shouldFocus = true) {
+        const container = document.getElementById(`modelFolderPaths-${key}`);
+        if (!container) return;
+
+        const row = document.createElement('div');
+        row.className = 'extra-folder-path-row mapping-row';
+
+        row.innerHTML = `
+            <div class="path-controls">
+                <input type="text" class="extra-folder-path-input"
+                       placeholder="${translate('settings.extraFolderPaths.pathPlaceholder', {}, '/path/to/models')}" value="${path}"
+                       onblur="settingsManager.updateModelFolderPaths('${key}')"
+                       onfocus="settingsManager.clearModelFolderPathError(this)"
+                       onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                <button type="button" class="remove-path-btn"
+                        onclick="settingsManager.removeModelFolderPathRow(this, '${key}')"
+                        title="${translate('common.actions.delete', {}, 'Delete')}">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="extra-folder-path-error"></div>
+        `;
+
+        container.appendChild(row);
+
+        if (!path && shouldFocus) {
+            const input = row.querySelector('.extra-folder-path-input');
+            if (input) {
+                setTimeout(() => input.focus(), 0);
+            }
+        }
+    }
+
+    clearModelFolderPathError(input) {
+        input.classList.remove('has-error');
+        const row = input.closest('.extra-folder-path-row');
+        if (row) {
+            const errEl = row.querySelector('.extra-folder-path-error');
+            if (errEl) {
+                errEl.classList.remove('visible');
+                errEl.textContent = '';
+            }
+        }
+    }
+
+    _clearAllModelFolderPathErrors() {
+        const section = document.getElementById('section-modelPaths');
+        if (!section) return;
+        section.querySelectorAll('.extra-folder-path-input.has-error').forEach((input) => {
+            input.classList.remove('has-error');
+        });
+        section.querySelectorAll('.extra-folder-path-error.visible').forEach((el) => {
+            el.classList.remove('visible');
+            el.textContent = '';
+        });
+    }
+
+    _markModelFolderPathsError(key, overlappingPaths, showMessage = false) {
+        const container = document.getElementById(`modelFolderPaths-${key}`);
+        if (!container) return;
+
+        const inputs = container.querySelectorAll('.extra-folder-path-input');
+        inputs.forEach((input) => {
+            const val = input.value.trim();
+            if (val && overlappingPaths.includes(val)) {
+                input.classList.add('has-error');
+                if (showMessage) {
+                    const row = input.closest('.extra-folder-path-row');
+                    if (row) {
+                        const errEl = row.querySelector('.extra-folder-path-error');
+                        if (errEl) {
+                            errEl.textContent = translate('settings.extraFolderPaths.validation.checkpointUnetOverlapInline', {}, 'This path is also used for a different model type. Use separate folders for checkpoints and diffusion models.');
+                            errEl.classList.add('visible');
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    removeModelFolderPathRow(btn, key) {
+        const row = btn.closest('.extra-folder-path-row');
+        if (row) {
+            row.remove();
+            this.updateModelFolderPaths(key, { fromRemoval: true });
+        }
+    }
+
+    async updateModelFolderPaths(changedKey, { fromRemoval = false } = {}) {
+        this._clearAllModelFolderPathErrors();
+
+        const folderPaths = {};
+
+        const section = document.getElementById('section-modelPaths');
+        if (!section) return;
+
+        section.querySelectorAll('.extra-folder-paths-container[id^="modelFolderPaths-"]').forEach((container) => {
+            const key = container.id.slice('modelFolderPaths-'.length);
+            const paths = [];
+            container.querySelectorAll('.extra-folder-path-input').forEach((input) => {
+                const value = input.value.trim();
+                if (value) {
+                    paths.push(value);
+                }
+            });
+            folderPaths[key] = paths;
+        });
+
+        // Client-side pre-check: checkpoints and unet must not share the same path.
+        const normalise = (p) => p.replace(/[/\\]+$/, '').toLowerCase();
+        const ckptSet = new Set((folderPaths.checkpoints || []).map(normalise));
+        const unetSet = new Set((folderPaths.unet || []).map(normalise));
+        const ckptOverlap = (folderPaths.checkpoints || []).filter(p => p && unetSet.has(normalise(p)));
+        const unetOverlap = (folderPaths.unet || []).filter(p => p && ckptSet.has(normalise(p)));
+        const hasOverlap = ckptOverlap.length > 0 || unetOverlap.length > 0;
+
+        if (hasOverlap) {
+            if (changedKey === 'checkpoints') {
+                this._markModelFolderPathsError('checkpoints', ckptOverlap, true);
+                this._markModelFolderPathsError('unet', unetOverlap, false);
+            } else if (changedKey === 'unet') {
+                this._markModelFolderPathsError('unet', unetOverlap, true);
+                this._markModelFolderPathsError('checkpoints', ckptOverlap, false);
+            } else {
+                this._markModelFolderPathsError('checkpoints', ckptOverlap, false);
+                this._markModelFolderPathsError('unet', unetOverlap, false);
+            }
+            return;
+        }
+
+        const currentPaths = state.global.settings.folder_paths || {};
+        const pathsChanged = JSON.stringify(currentPaths) !== JSON.stringify(folderPaths);
+
+        if (!pathsChanged) {
+            return;
+        }
+
+        state.global.settings.folder_paths = folderPaths;
+
+        try {
+            await this.saveSetting('folder_paths', folderPaths);
+            this._markModelPathsDirty();
+            showToast('settings.modelPaths.saveSuccessRestart', {}, 'success');
+
+            // Keep the continuous-add flow: after the user fills the trailing
+            // empty row, append a fresh one — but never after a removal.
+            const container = document.getElementById(`modelFolderPaths-${changedKey}`);
+            if (container && !fromRemoval) {
+                const inputs = container.querySelectorAll('.extra-folder-path-input');
+                const hasEmptyRow = Array.from(inputs).some((input) => !input.value.trim());
+
+                if (!hasEmptyRow) {
+                    this.addModelFolderPathRow(changedKey, '');
+                }
+            }
+        } catch (error) {
+            console.error('Failed to save folder paths:', error);
+            showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
+
+            state.global.settings.folder_paths = currentPaths;
+            this.loadModelPaths();
+        }
+    }
+
+    /**
+     * Surface a persistent "restart required" cue after folder_paths changes:
+     * a dot on the Model Paths nav item, an inline notice in the section, and
+     * a global banner. The banner id is unique per change because dismissed
+     * banner ids persist across restarts — reusing one would mute future
+     * reminders. The whole state clears on the next page load (i.e. after the
+     * restart the user was asked to do).
+     */
+    _markModelPathsDirty() {
+        if (this.modelPathsDirty) return;
+        this.modelPathsDirty = true;
+
+        document.querySelector('.settings-nav-item[data-section="modelPaths"]')
+            ?.classList.add('has-pending-restart');
+
+        document.getElementById('modelPathsRestartNotice')?.classList.add('visible');
+
+        const bannerId = `model-paths-restart-${Date.now()}`;
+        bannerService.registerBanner(bannerId, {
+            id: bannerId,
+            title: translate('settings.modelPaths.pendingRestartBannerTitle', {}, 'Restart required to apply path changes'),
+            content: translate('settings.modelPaths.pendingRestartBannerMessage', {}, 'Model library paths were updated. Restart the LoRA Manager server to scan the new folders.'),
+            dismissible: true,
+            priority: 60,
+        });
     }
 
     loadBaseModelMappings() {

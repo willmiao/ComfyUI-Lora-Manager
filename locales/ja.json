@@ -382,7 +382,8 @@
         "nav": {
             "general": "一般",
             "interface": "インターフェース",
-            "library": "ライブラリ"
+            "library": "ライブラリ",
+            "modelPaths": "[TODO: Translate] Model Paths"
         },
         "search": {
             "placeholder": "設定を検索...",
@@ -581,6 +582,30 @@
                 "duplicatePath": "このパスはすでに設定されています",
                 "checkpointUnetOverlap": "Checkpoints と diffusion models に同じパスは使用できません：{paths}",
                 "checkpointUnetOverlapInline": "このパスは別のモデルタイプですでに使用されています。Checkpoints と diffusion models には別々のフォルダを使用してください。"
+            }
+        },
+        "modelPaths": {
+            "title": "[TODO: Translate] Model Library Paths",
+            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
+            "restartRequired": "[TODO: Translate] Requires restart to take effect",
+            "coreTypes": "[TODO: Translate] Core Model Types",
+            "otherTypes": "[TODO: Translate] Other Model Types",
+            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
+            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
+            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
+            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
+            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "folderKeys": {
+                "loras": "[TODO: Translate] LoRA Paths",
+                "checkpoints": "[TODO: Translate] Checkpoint Paths",
+                "unet": "[TODO: Translate] Diffusion Model Paths",
+                "embeddings": "[TODO: Translate] Embedding Paths",
+                "vae": "[TODO: Translate] VAE Paths",
+                "upscale_models": "[TODO: Translate] Upscaler Paths",
+                "text_encoders": "[TODO: Translate] Text Encoder Paths",
+                "clip": "[TODO: Translate] CLIP Paths (legacy)",
+                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
+                "controlnet": "[TODO: Translate] ControlNet Paths"
             }
         },
         "priorityTags": {
@@ -1241,11 +1266,12 @@
         },
         "noPaths": {
             "title": "その他のモデルのフォルダーが見つかりません",
-            "descriptionStandalone": "その他のモデル管理はオンですが、その他のモデルのフォルダーが見つかりません。必要なフォルダーキーをsettings.jsonのfolder_pathsセクションに追加し、LoRA Managerを再起動してください。",
-            "hintStandalone": "スキャンされるのは上記のフォルダーキーのみです。不要なキーは省略できます。",
+            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
             "descriptionComfyUI": "その他のモデル管理はオンですが、設定されたモデルフォルダーがディスク上に存在しません。該当するモデルフォルダーをComfyUIのモデルパスに追加し、このページを再読み込みしてください。",
             "hintComfyUI": "その他のモデルは、ComfyUIのvae、upscale_models、text_encoders、clip_vision、controlnetフォルダーから読み込まれます。",
             "openSettings": "設定を開く",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
             "openSettingsFolder": "設定フォルダーを開く"
         }
     },

@@ -43,3 +43,35 @@ class TestIsEmptyPlaceholderHash:
     def test_rejects_non_strings(self):
         assert not is_empty_placeholder_hash(None)
         assert not is_empty_placeholder_hash(123)
+
+class TestFolderPathSchema:
+    def test_core_keys_first_in_canonical_order(self):
+        from py.utils.constants import CORE_FOLDER_PATH_KEYS, folder_path_schema
+
+        schema = folder_path_schema()
+        core = [entry for entry in schema if entry["category"] == "core"]
+
+        assert [entry["key"] for entry in core] == CORE_FOLDER_PATH_KEYS
+        assert all(entry["sub_type"] is None for entry in core)
+        assert schema[: len(core)] == core
+
+    def test_other_entries_derive_from_subtypes_table(self):
+        from py.utils.constants import OTHER_MODEL_FOLDER_SUBTYPES, folder_path_schema
+
+        schema = folder_path_schema()
+        other = {entry["key"]: entry for entry in schema if entry["category"] == "other"}
+
+        assert set(other) == set(OTHER_MODEL_FOLDER_SUBTYPES)
+        for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items():
+            assert other[folder_key]["sub_type"] == sub_type
+
+    def test_text_encoder_exposes_both_folder_keys(self):
+        from py.utils.constants import folder_path_schema
+
+        text_encoder_keys = [
+            entry["key"]
+            for entry in folder_path_schema()
+            if entry["sub_type"] == "text_encoder"
+        ]
+
+        assert text_encoder_keys == ["text_encoders", "clip"]

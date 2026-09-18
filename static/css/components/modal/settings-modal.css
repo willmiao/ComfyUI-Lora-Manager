@@ -1780,3 +1780,38 @@ input:checked + .toggle-slider:before {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Standalone Model Paths: pending-restart cues */
+.settings-nav-item.has-pending-restart {
+    position: relative;
+}
+
+.settings-nav-item.has-pending-restart::after {
+    content: '';
+    position: absolute;
+    right: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--lora-warning, #e67e22);
+}
+
+.model-paths-restart-notice {
+    display: none;
+    margin-top: 8px;
+    padding: 10px 14px;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--lora-warning, #e67e22);
+    background: rgba(230, 126, 34, 0.08);
+    color: var(--lora-warning, #e67e22);
+    font-size: 0.85em;
+    line-height: 1.4;
+    align-items: center;
+    gap: 8px;
+}
+
+.model-paths-restart-notice.visible {
+    display: flex;
+}

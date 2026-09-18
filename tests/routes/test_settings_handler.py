@@ -160,3 +160,134 @@ async def test_activate_library_unexpected_error_returns_500(monkeypatch):
     assert response.status == 500
     assert payload["success"] is False
     assert payload["error"] == "bad things"
+
+
+class DummySettingsForGet:
+    def __init__(self, values=None):
+        self._values = dict(values or {})
+        self.settings_file = "/tmp/settings.json"
+        self.set_calls = []
+
+    def keys(self):
+        return self._values.keys()
+
+    def get(self, key, default=None):
+        return self._values.get(key, default)
+
+    def set(self, key, value):
+        self.set_calls.append((key, value))
+        self._values[key] = value
+
+    def get_startup_messages(self):
+        return []
+
+
+def make_get_handler(values=None) -> SettingsHandler:
+    return SettingsHandler(
+        settings_service=DummySettingsForGet(values),
+        metadata_provider_updater=noop_async,
+        downloader_factory=dummy_downloader_factory,
+    )
+
+
+@pytest.fixture
+def patch_other_models_availability(monkeypatch):
+    monkeypatch.setattr(
+        config,
+        "get_other_models_availability",
+        lambda: {"available": False},
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_settings_plugin_mode_hides_folder_paths(
+    monkeypatch, patch_other_models_availability
+):
+    monkeypatch.delenv("LORA_MANAGER_STANDALONE", raising=False)
+    handler = make_get_handler(
+        {
+            "language": "en",
+            "folder_paths": {"loras": ["/models/loras"]},
+        }
+    )
+
+    response = await handler.get_settings(FakeRequest())
+    payload = json_payload(response)
+
+    assert response.status == 200
+    settings = payload["settings"]
+    assert settings["standalone_mode"] is False
+    assert "folder_paths" not in settings
+    assert "folder_path_schema" not in settings
+
+
+@pytest.mark.asyncio
+async def test_get_settings_standalone_exposes_folder_paths_and_schema(
+    monkeypatch, patch_other_models_availability
+):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+    folder_paths = {"loras": ["/models/loras"], "vae": ["/models/vae"]}
+    handler = make_get_handler({"language": "en", "folder_paths": folder_paths})
+
+    response = await handler.get_settings(FakeRequest())
+    payload = json_payload(response)
+
+    assert response.status == 200
+    settings = payload["settings"]
+    assert settings["standalone_mode"] is True
+    assert settings["folder_paths"] == folder_paths
+
+    schema = settings["folder_path_schema"]
+    core_keys = [entry["key"] for entry in schema if entry["category"] == "core"]
+    assert core_keys == ["loras", "checkpoints", "unet", "embeddings"]
+    other_entries = {entry["key"]: entry for entry in schema if entry["category"] == "other"}
+    assert other_entries["vae"]["sub_type"] == "vae"
+    assert other_entries["text_encoders"]["sub_type"] == "text_encoder"
+
+
+@pytest.mark.asyncio
+async def test_update_settings_passes_folder_paths_through(
+    monkeypatch, patch_other_models_availability
+):
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+    handler = make_get_handler({"folder_paths": {}})
+    new_paths = {"loras": ["/models/loras"]}
+
+    response = await handler.update_settings(
+        FakeRequest(json_data={"folder_paths": new_paths})
+    )
+    payload = json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert handler._settings.set_calls == [("folder_paths", new_paths)]
+
+
+@pytest.mark.asyncio
+async def test_get_settings_standalone_filters_template_placeholders(
+    monkeypatch, patch_other_models_availability
+):
+    """Fresh installs are seeded from settings.json.example; its placeholder
+    paths must not show up as real values in the Model Paths UI."""
+    monkeypatch.setenv("LORA_MANAGER_STANDALONE", "1")
+    handler = make_get_handler(
+        {
+            "folder_paths": {
+                "loras": ["C:/path/to/your/loras_folder", "/real/loras"],
+                "vae": ["C:/path/to/another/vae_folder"],
+            }
+        }
+    )
+    handler._settings.get_template_folder_path_placeholders = lambda: {
+        "C:/path/to/your/loras_folder",
+        "C:/path/to/another/vae_folder",
+    }
+
+    response = await handler.get_settings(FakeRequest())
+    payload = json_payload(response)
+
+    assert response.status == 200
+    assert payload["settings"]["folder_paths"] == {
+        "loras": ["/real/loras"],
+        "vae": [],
+    }

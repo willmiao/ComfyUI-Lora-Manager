@@ -192,6 +192,15 @@ The system runs in two modes:
 - Auto-saves paths to `settings.json` in ComfyUI mode
 - `settings.json.example` is intentionally minimal (see Important Notes); all
   other defaults live in `DEFAULT_SETTINGS` (`py/services/settings_manager.py`)
+- **`folder_paths` vs `extra_folder_paths` — different purposes, do not conflate:**
+  - `folder_paths` (primary model roots): in ComfyUI plugin mode these come
+    from the ComfyUI host; in standalone mode they are the ONLY source of
+    model library paths and are currently edited by hand in `settings.json`.
+  - `extra_folder_paths` is a **ComfyUI-plugin-mode feature**: paths visible
+    ONLY to LoRA Manager, not to ComfyUI. Its motivation is that a very large
+    model library slows ComfyUI itself down, while LoRA Manager handles large
+    libraries without performance issues — so users keep ComfyUI's library
+    small and add the bulk via `extra_folder_paths`.
 
 ### Frontend UI Architecture
 

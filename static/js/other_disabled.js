@@ -1,6 +1,6 @@
 import { appCore } from './core.js';
 import { showToast } from './utils/uiHelpers.js';
-import { enableOtherModels, openOtherModelsSettings } from './utils/otherModels.js';
+import { enableOtherModels, openOtherModelsSettings, openModelPathsSettings } from './utils/otherModels.js';
 
 /**
  * Other Models is an opt-in feature. While it is disabled this page renders an
@@ -9,8 +9,8 @@ import { enableOtherModels, openOtherModelsSettings } from './utils/otherModels.
  *
  * The same module backs the "enabled but no folders found" state: ComfyUI
  * mode points to the Settings page's Library section, while standalone mode
- * (where the settings UI cannot edit primary folder paths) reveals the
- * settings.json file the user must edit instead.
+ * points to the standalone-only Model Paths section (which edits the primary
+ * folder_paths) and still offers the settings.json location as a fallback.
  */
 async function handleEnableClick() {
     const button = document.getElementById('enableOtherModelsBtn');
@@ -35,9 +35,17 @@ function handleOpenSettingsClick(event) {
 }
 
 /**
- * Open the settings.json location from the standalone no-folders state.
- * The settings UI cannot edit primary folder_paths, so the only useful
- * action is revealing the file itself (or copying its path in Docker).
+ * Open Settings on the Model Paths section for the standalone "no folders
+ * found" state, so the missing folders can be added directly.
+ */
+function handleOpenModelPathsSettingsClick(event) {
+    event.preventDefault();
+    openModelPathsSettings();
+}
+
+/**
+ * Open the settings.json location from the standalone no-folders state,
+ * offered as a fallback next to the Model Paths settings button.
  */
 async function handleOpenSettingsFolderClick() {
     const button = document.getElementById('openSettingsFolderBtn');
@@ -82,6 +90,11 @@ async function initializeOtherDisabledPage() {
     const settingsButton = document.getElementById('openOtherModelsSettingsBtn');
     if (settingsButton) {
         settingsButton.addEventListener('click', handleOpenSettingsClick);
+    }
+
+    const modelPathsButton = document.getElementById('openModelPathsSettingsBtn');
+    if (modelPathsButton) {
+        modelPathsButton.addEventListener('click', handleOpenModelPathsSettingsClick);
     }
 
     const settingsFolderButton = document.getElementById('openSettingsFolderBtn');

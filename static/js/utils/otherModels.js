@@ -50,3 +50,19 @@ export function openOtherModelsSettings() {
         });
     }, 100);
 }
+
+/**
+ * Open the settings modal on the standalone-only Model Paths section, where
+ * primary folder_paths are edited. The section only exists in standalone mode,
+ * so the nav item lookup simply no-ops elsewhere.
+ */
+export function openModelPathsSettings() {
+    const modalManager = window.modalManager;
+    if (modalManager && typeof modalManager.showModal === 'function') {
+        modalManager.showModal('settingsModal');
+    }
+
+    window.setTimeout(() => {
+        document.querySelector('.settings-nav-item[data-section="modelPaths"]')?.click();
+    }, 100);
+}

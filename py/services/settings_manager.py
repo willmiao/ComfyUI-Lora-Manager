@@ -19,6 +19,7 @@ from typing import (
     Mapping,
     Optional,
     Sequence,
+    Set,
     Tuple,
 )
 
@@ -307,6 +308,29 @@ class SettingsManager:
             return False
 
         return payload == template
+
+    def get_template_folder_path_placeholders(self) -> Set[str]:
+        """Placeholder folder_paths values shipped in settings.json.example.
+
+        A fresh standalone install is seeded from the template, so its
+        documentation-only placeholder paths end up in the live settings
+        file. The Model Paths settings UI hides them; the first real save
+        overwrites them via ``set("folder_paths")``.
+        """
+
+        template = self._read_template_payload()
+        if not template:
+            return set()
+
+        folder_paths = template.get("folder_paths")
+        if not isinstance(folder_paths, Mapping):
+            return set()
+
+        placeholders: Set[str] = set()
+        for value in folder_paths.values():
+            paths = value if isinstance(value, list) else [value]
+            placeholders.update(p for p in paths if isinstance(p, str) and p)
+        return placeholders
 
     def _merge_template_with_defaults(
         self, defaults: Dict[str, Any], template: Mapping[str, Any]
@@ -1219,19 +1243,27 @@ class SettingsManager:
             if self._bootstrap_reason == "missing":
                 message = (
                     "LoRA Manager created a default settings.json because no configuration was found. "
-                    "Edit settings.json to add your model directories so library scanning can run."
+                    "Open Settings → Model Paths to add your model directories so library scanning can run."
                 )
             else:
                 message = (
                     "LoRA Manager could not locate any configured model directories. "
-                    "Edit settings.json to add your model folders so library scanning can run."
+                    "Open Settings → Model Paths to add your model folders so library scanning can run."
                 )
             self._add_startup_message(
                 code="missing-model-paths",
                 title="Model folders need setup",
                 message=message,
                 severity="warning",
-                actions=self._default_settings_actions(),
+                actions=[
+                    {
+                        "action": "open-model-paths-settings",
+                        "label": "Configure model folders",
+                        "type": "primary",
+                        "icon": "fas fa-cog",
+                    },
+                    *self._default_settings_actions(),
+                ],
                 dismissible=False,
             )
 

@@ -382,7 +382,8 @@
         "nav": {
             "general": "通用",
             "interface": "界面",
-            "library": "库"
+            "library": "库",
+            "modelPaths": "[TODO: Translate] Model Paths"
         },
         "search": {
             "placeholder": "搜索设置...",
@@ -581,6 +582,30 @@
                 "duplicatePath": "此路径已配置",
                 "checkpointUnetOverlap": "checkpoints 和 diffusion models 不能使用相同的路径：{paths}",
                 "checkpointUnetOverlapInline": "此路径已被用于另一种模型类型。请为 checkpoints 和 diffusion models 使用不同的文件夹。"
+            }
+        },
+        "modelPaths": {
+            "title": "[TODO: Translate] Model Library Paths",
+            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
+            "restartRequired": "[TODO: Translate] Requires restart to take effect",
+            "coreTypes": "[TODO: Translate] Core Model Types",
+            "otherTypes": "[TODO: Translate] Other Model Types",
+            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
+            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
+            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
+            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
+            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "folderKeys": {
+                "loras": "[TODO: Translate] LoRA Paths",
+                "checkpoints": "[TODO: Translate] Checkpoint Paths",
+                "unet": "[TODO: Translate] Diffusion Model Paths",
+                "embeddings": "[TODO: Translate] Embedding Paths",
+                "vae": "[TODO: Translate] VAE Paths",
+                "upscale_models": "[TODO: Translate] Upscaler Paths",
+                "text_encoders": "[TODO: Translate] Text Encoder Paths",
+                "clip": "[TODO: Translate] CLIP Paths (legacy)",
+                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
+                "controlnet": "[TODO: Translate] ControlNet Paths"
             }
         },
         "priorityTags": {
@@ -1241,11 +1266,12 @@
         },
         "noPaths": {
             "title": "未找到其他模型文件夹",
-            "descriptionStandalone": "其他模型管理已开启，但未找到其他模型文件夹。请将你需要的文件夹键添加到 settings.json 的 folder_paths 部分，然后重启 LoRA Manager。",
-            "hintStandalone": "只会扫描上面列出的文件夹键；不需要的键可以省略。",
+            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
             "descriptionComfyUI": "其他模型管理已开启，但配置的模型文件夹在磁盘上都不存在。请将对应的模型文件夹添加到 ComfyUI 的模型路径，然后重新加载此页面。",
             "hintComfyUI": "其他模型从 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 文件夹中读取。",
             "openSettings": "打开设置",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
             "openSettingsFolder": "打开设置文件夹"
         }
     },

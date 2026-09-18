@@ -89,8 +89,8 @@ class OtherRoutes(BaseModelRoutes):
             "standalone_mode": standalone_mode,
         }
         if standalone_mode:
-            # The settings UI cannot edit primary folder_paths, so the empty
-            # state must point at the actual file the user has to edit.
+            # The empty state points at the Model Paths settings section and
+            # shows the settings.json path as a fallback reference.
             context["settings_file"] = getattr(self._settings, "settings_file", "") or ""
         return context
 

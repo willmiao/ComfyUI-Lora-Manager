@@ -127,6 +127,29 @@ def other_sub_type_folder_keys() -> Dict[str, List[str]]:
 # Precomputed inverse of OTHER_MODEL_FOLDER_SUBTYPES, keeping the table order.
 OTHER_SUB_TYPE_FOLDER_KEYS: Dict[str, List[str]] = other_sub_type_folder_keys()
 
+# Core folder_paths keys every LoRA Manager installation understands.
+CORE_FOLDER_PATH_KEYS: List[str] = ["loras", "checkpoints", "unet", "embeddings"]
+
+
+def folder_path_schema() -> List[Dict[str, Any]]:
+    """Ordered schema describing the editable folder_paths keys.
+
+    Drives the standalone-only Model Paths settings UI: the frontend renders
+    one multi-path editor per entry and resolves labels via the
+    ``settings.modelPaths.folderKeys.<key>`` i18n keys, so adding a new model
+    category is a constants + locale change only. ``sub_type`` lets the UI
+    hide editors for other-model categories the user has not enabled.
+    """
+    schema: List[Dict[str, Any]] = [
+        {"key": key, "category": "core", "sub_type": None}
+        for key in CORE_FOLDER_PATH_KEYS
+    ]
+    schema.extend(
+        {"key": folder_key, "category": "other", "sub_type": sub_type}
+        for folder_key, sub_type in OTHER_MODEL_FOLDER_SUBTYPES.items()
+    )
+    return schema
+
 
 def normalize_other_sub_types(value: Any) -> List[str]:
     """Normalize a stored/requested enabled-sub_type list.

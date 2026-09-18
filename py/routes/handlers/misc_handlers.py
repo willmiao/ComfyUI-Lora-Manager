@@ -54,6 +54,7 @@ from ...utils.constants import (
     SUPPORTED_MEDIA_EXTENSIONS,
     VALID_LORA_TYPES,
     VALID_OTHER_CIVITAI_TYPES,
+    folder_path_schema,
 )
 from .model_source_handlers import ModelSourceHandler
 from .agent_handlers import AgentHandler
@@ -1580,6 +1581,30 @@ class SettingsHandler:
                     availability_error,
                 )
                 response_data["other_models_paths_available"] = None
+            standalone_mode = os.environ.get("LORA_MANAGER_STANDALONE", "0") == "1"
+            response_data["standalone_mode"] = standalone_mode
+            if standalone_mode:
+                # Standalone reads its model roots exclusively from
+                # settings.json, so the Model Paths settings UI needs the
+                # current values plus the editable-key schema. In plugin mode
+                # the paths come from the ComfyUI host and stay hidden.
+                folder_paths = self._settings.get("folder_paths") or {}
+                # A fresh install is seeded from settings.json.example, whose
+                # folder_paths are documentation placeholders — hide them so
+                # the UI starts with empty editors instead of fake paths.
+                get_placeholders = getattr(
+                    self._settings, "get_template_folder_path_placeholders", None
+                )
+                placeholders = get_placeholders() if get_placeholders else set()
+                if placeholders:
+                    folder_paths = {
+                        key: [p for p in paths if p not in placeholders]
+                        if isinstance(paths, list)
+                        else paths
+                        for key, paths in folder_paths.items()
+                    }
+                response_data["folder_paths"] = folder_paths
+                response_data["folder_path_schema"] = folder_path_schema()
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file

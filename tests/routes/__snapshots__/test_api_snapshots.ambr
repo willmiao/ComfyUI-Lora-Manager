@@ -30,6 +30,7 @@
       'language': 'en',
       'llm_api_key_set': False,
       'other_models_paths_available': False,
+      'standalone_mode': False,
       'theme': 'dark',
     }),
     'success': True,

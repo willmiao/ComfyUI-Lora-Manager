@@ -382,7 +382,8 @@
         "nav": {
             "general": "일반",
             "interface": "인터페이스",
-            "library": "라이브러리"
+            "library": "라이브러리",
+            "modelPaths": "[TODO: Translate] Model Paths"
         },
         "search": {
             "placeholder": "설정 검색...",
@@ -581,6 +582,30 @@
                 "duplicatePath": "이 경로는 이미 구성되어 있습니다",
                 "checkpointUnetOverlap": "checkpoints와 diffusion models에 동일한 경로를 사용할 수 없습니다: {paths}",
                 "checkpointUnetOverlapInline": "이 경로는 다른 모델 유형에 이미 사용 중입니다. checkpoints와 diffusion models에 별도의 폴더를 사용하세요."
+            }
+        },
+        "modelPaths": {
+            "title": "[TODO: Translate] Model Library Paths",
+            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
+            "restartRequired": "[TODO: Translate] Requires restart to take effect",
+            "coreTypes": "[TODO: Translate] Core Model Types",
+            "otherTypes": "[TODO: Translate] Other Model Types",
+            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
+            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
+            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
+            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
+            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "folderKeys": {
+                "loras": "[TODO: Translate] LoRA Paths",
+                "checkpoints": "[TODO: Translate] Checkpoint Paths",
+                "unet": "[TODO: Translate] Diffusion Model Paths",
+                "embeddings": "[TODO: Translate] Embedding Paths",
+                "vae": "[TODO: Translate] VAE Paths",
+                "upscale_models": "[TODO: Translate] Upscaler Paths",
+                "text_encoders": "[TODO: Translate] Text Encoder Paths",
+                "clip": "[TODO: Translate] CLIP Paths (legacy)",
+                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
+                "controlnet": "[TODO: Translate] ControlNet Paths"
             }
         },
         "priorityTags": {
@@ -1241,11 +1266,12 @@
         },
         "noPaths": {
             "title": "기타 모델 폴더를 찾을 수 없습니다",
-            "descriptionStandalone": "기타 모델 관리가 켜져 있지만, 기타 모델 폴더를 찾을 수 없습니다. 필요한 폴더 키를 settings.json의 folder_paths 섹션에 추가한 뒤 LoRA Manager를 재시작하세요.",
-            "hintStandalone": "위에 나열된 폴더 키만 스캔됩니다. 필요 없는 키는 생략할 수 있습니다.",
+            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
             "descriptionComfyUI": "기타 모델 관리가 켜져 있지만, 설정된 모델 폴더가 디스크에 존재하지 않습니다. 해당 모델 폴더를 ComfyUI 모델 경로에 추가한 뒤 이 페이지를 새로 고침하세요.",
             "hintComfyUI": "기타 모델은 ComfyUI의 vae, upscale_models, text_encoders, clip_vision, controlnet 폴더에서 읽어옵니다.",
             "openSettings": "설정 열기",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
             "openSettingsFolder": "설정 폴더 열기"
         }
     },

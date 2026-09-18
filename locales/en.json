@@ -382,7 +382,8 @@
     "nav": {
       "general": "General",
       "interface": "Interface",
-      "library": "Library"
+      "library": "Library",
+      "modelPaths": "Model Paths"
     },
     "search": {
       "placeholder": "Search settings...",
@@ -581,6 +582,30 @@
         "duplicatePath": "This path is already configured",
         "checkpointUnetOverlap": "Cannot use the same path for both checkpoints and diffusion models: {paths}",
         "checkpointUnetOverlapInline": "This path is also used for a different model type. Use separate folders for checkpoints and diffusion models."
+      }
+    },
+    "modelPaths": {
+      "title": "Model Library Paths",
+      "description": "Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
+      "restartRequired": "Requires restart to take effect",
+      "coreTypes": "Core Model Types",
+      "otherTypes": "Other Model Types",
+      "otherTypesDisabledHint": "No other model types are enabled. Turn on the types you need above to configure their folders.",
+      "saveSuccessRestart": "Model library paths updated. Restart required to apply changes.",
+      "pendingRestartNotice": "Path changes saved. Restart LoRA Manager for them to take effect.",
+      "pendingRestartBannerTitle": "Restart required to apply path changes",
+      "pendingRestartBannerMessage": "Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+      "folderKeys": {
+        "loras": "LoRA Paths",
+        "checkpoints": "Checkpoint Paths",
+        "unet": "Diffusion Model Paths",
+        "embeddings": "Embedding Paths",
+        "vae": "VAE Paths",
+        "upscale_models": "Upscaler Paths",
+        "text_encoders": "Text Encoder Paths",
+        "clip": "CLIP Paths (legacy)",
+        "clip_vision": "CLIP Vision Paths",
+        "controlnet": "ControlNet Paths"
       }
     },
     "priorityTags": {
@@ -1241,11 +1266,12 @@
     },
     "noPaths": {
       "title": "No other-model folders found",
-      "descriptionStandalone": "Other Models management is on, but no other-model folders were found. Add the folder keys you need to the folder_paths section of your settings.json, then restart LoRA Manager.",
-      "hintStandalone": "Only the folder keys listed above are scanned; keys you do not need can be omitted.",
+      "descriptionStandalone": "Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
+      "hintStandalone": "Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
       "descriptionComfyUI": "Other Models management is on, but none of the configured model folders exist on disk. Add the matching model folders to your ComfyUI model paths, then reload this page.",
       "hintComfyUI": "Other models are read from ComfyUI's vae, upscale_models, text_encoders, clip_vision and controlnet folders.",
       "openSettings": "Open Settings",
+      "openModelPaths": "Configure Model Folders",
       "openSettingsFolder": "Open Settings Folder"
     }
   },

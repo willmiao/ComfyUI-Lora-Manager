@@ -53,11 +53,17 @@ def test_missing_settings_creates_defaults_and_emits_warnings(tmp_path):
     actions = warning.get("actions") or []
     assert actions == [
         {
+            "action": "open-model-paths-settings",
+            "label": "Configure model folders",
+            "type": "primary",
+            "icon": "fas fa-cog",
+        },
+        {
             "action": "open-settings-location",
             "label": "Open settings folder",
             "type": "primary",
             "icon": "fas fa-folder-open",
-        }
+        },
     ]
 
 
@@ -155,3 +161,13 @@ def test_apply_settings_dir_from_argv():
             os.environ.pop("LORA_MANAGER_SETTINGS_DIR", None)
         else:
             os.environ["LORA_MANAGER_SETTINGS_DIR"] = previous
+
+
+def test_template_folder_path_placeholders_are_exposed():
+    manager = get_settings_manager()
+
+    placeholders = manager.get_template_folder_path_placeholders()
+
+    assert "C:/path/to/your/loras_folder" in placeholders
+    assert "C:/path/to/another/embeddings_folder" in placeholders
+    assert len(placeholders) == 8

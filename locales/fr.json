@@ -382,7 +382,8 @@
         "nav": {
             "general": "Général",
             "interface": "Interface",
-            "library": "Bibliothèque"
+            "library": "Bibliothèque",
+            "modelPaths": "[TODO: Translate] Model Paths"
         },
         "search": {
             "placeholder": "Rechercher dans les paramètres...",
@@ -581,6 +582,30 @@
                 "duplicatePath": "Ce chemin est déjà configuré",
                 "checkpointUnetOverlap": "Impossible d'utiliser le même chemin pour les checkpoints et les modèles de diffusion : {paths}",
                 "checkpointUnetOverlapInline": "Ce chemin est déjà utilisé pour un autre type de modèle. Utilisez des dossiers séparés pour les checkpoints et les modèles de diffusion."
+            }
+        },
+        "modelPaths": {
+            "title": "[TODO: Translate] Model Library Paths",
+            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
+            "restartRequired": "[TODO: Translate] Requires restart to take effect",
+            "coreTypes": "[TODO: Translate] Core Model Types",
+            "otherTypes": "[TODO: Translate] Other Model Types",
+            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
+            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
+            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
+            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
+            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "folderKeys": {
+                "loras": "[TODO: Translate] LoRA Paths",
+                "checkpoints": "[TODO: Translate] Checkpoint Paths",
+                "unet": "[TODO: Translate] Diffusion Model Paths",
+                "embeddings": "[TODO: Translate] Embedding Paths",
+                "vae": "[TODO: Translate] VAE Paths",
+                "upscale_models": "[TODO: Translate] Upscaler Paths",
+                "text_encoders": "[TODO: Translate] Text Encoder Paths",
+                "clip": "[TODO: Translate] CLIP Paths (legacy)",
+                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
+                "controlnet": "[TODO: Translate] ControlNet Paths"
             }
         },
         "priorityTags": {
@@ -1241,11 +1266,12 @@
         },
         "noPaths": {
             "title": "Aucun dossier d’autres modèles trouvé",
-            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun dossier d’autres modèles n’a été trouvé. Ajoutez les clés de dossiers dont vous avez besoin à la section folder_paths de votre settings.json, puis redémarrez LoRA Manager.",
-            "hintStandalone": "Seules les clés de dossiers listées ci-dessus sont analysées ; les clés inutiles peuvent être omises.",
+            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
+            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
             "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
             "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
             "openSettings": "Ouvrir les paramètres",
+            "openModelPaths": "[TODO: Translate] Configure Model Folders",
             "openSettingsFolder": "Ouvrir le dossier des paramètres"
         }
     },
