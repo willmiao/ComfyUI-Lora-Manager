@@ -1,7 +1,7 @@
 import { api } from "../../scripts/api.js";
 import { app } from "../../scripts/app.js";
 import { createMenuItem, createDropIndicator } from "./loras_widget_components.js";
-import { parseLoraValue, formatLoraValue, syncClipStrengthIfCollapsed, saveRecipeDirectly, copyToClipboard, showToast, moveLoraByDirection, getDropTargetIndex } from "./loras_widget_utils.js";
+import { parseLoraValue, formatLoraValue, syncClipStrengthIfCollapsed, saveRecipeDirectly, copyToClipboard, showToast, moveLoraByDirection, getDropTargetIndex, getLoraStrengthRange, applyStrengthRangeCue } from "./loras_widget_utils.js";
 
 // Function to handle strength adjustment via dragging
 export function handleStrengthDrag(name, initialStrength, initialX, event, widget, isClipStrength = false, updateWidget = true) {
@@ -194,6 +194,7 @@ export function initDrag(
     const strengthInput = currentDragElement.querySelector('.lm-lora-strength-input');
     if (strengthInput && typeof newStrength === 'number') {
       strengthInput.value = newStrength.toFixed(2);
+      applyStrengthRangeCue(strengthInput, newStrength, getLoraStrengthRange(name));
     }
     
     // Prevent showing the preview tooltip during drag
@@ -334,6 +335,10 @@ export function initHeaderDrag(headerEl, widget, renderFunction) {
     strengthInputs.forEach((input, index) => {
       if (lorasData[index]) {
         input.value = lorasData[index].strength.toFixed(2);
+      }
+      const entryEl = input.closest('[data-lora-name]');
+      if (entryEl) {
+        applyStrengthRangeCue(input, input.value, getLoraStrengthRange(entryEl.dataset.loraName));
       }
     });
   });

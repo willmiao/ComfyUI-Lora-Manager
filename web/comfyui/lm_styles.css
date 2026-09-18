@@ -309,6 +309,18 @@
   box-shadow: 0 0 0 2px rgba(66, 153, 225, 0.3);
 }
 
+/* Advisory cue: strength is outside the usage-tips recommended range.
+   Amber to distinguish it from the red "missing LoRA" error state. */
+.lm-lora-strength-input.lm-strength-out-of-range {
+  border-color: rgba(245, 158, 11, 0.75);
+  color: rgba(252, 211, 77, 0.95);
+}
+
+.lm-lora-strength-input.lm-strength-out-of-range:focus {
+  border-color: rgba(245, 158, 11, 0.9);
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
+}
+
 .lm-lora-strength-buttons {
   display: flex;
   flex-direction: column;

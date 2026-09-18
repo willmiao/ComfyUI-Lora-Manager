@@ -7,6 +7,8 @@ import {
   syncClipStrengthIfCollapsed,
   getAvailableLoras,
   getAvailableLorasSync,
+  getLoraStrengthRange,
+  applyStrengthRangeCue,
   isLoraNameAvailable,
   onLibraryChanged
 } from "./loras_widget_utils.js";
@@ -521,6 +523,7 @@ export function addLorasWidget(node, name, opts, callback) {
       strengthEl.classList.add("lm-lora-strength-input");
       strengthEl.type = "text";
       strengthEl.value = typeof strength === 'number' ? strength.toFixed(2) : Number(strength).toFixed(2);
+      applyStrengthRangeCue(strengthEl, strength, getLoraStrengthRange(name));
       strengthEl.addEventListener('pointerdown', () => {
         pendingFocusTarget = { name, type: "strength" };
       });
@@ -650,6 +653,7 @@ export function addLorasWidget(node, name, opts, callback) {
         clipStrengthEl.classList.add("lm-lora-strength-input", "lm-lora-clip-strength-input");
         clipStrengthEl.type = "text";
         clipStrengthEl.value = typeof clipStrength === 'number' ? clipStrength.toFixed(2) : Number(clipStrength).toFixed(2);
+        applyStrengthRangeCue(clipStrengthEl, clipStrength, getLoraStrengthRange(name));
         clipStrengthEl.addEventListener('pointerdown', () => {
           pendingFocusTarget = { name, type: "clip" };
         });

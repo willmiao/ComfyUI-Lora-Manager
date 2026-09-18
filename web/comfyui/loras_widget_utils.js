@@ -88,6 +88,158 @@ let availableLorasCache = null;
 let availableLorasPromise = null;
 let availabilityGeneration = 0;
 
+/**
+ * Parse a numeric usage-tips value (accepts numbers and numeric strings).
+ */
+function parseUsageTipNumber(value) {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = parseFloat(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return null;
+}
+
+/**
+ * Parse a "x.x-y.y" range string, tolerating whitespace and negatives.
+ */
+function parseRangeString(value) {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const match = value.trim().match(/^(-?\d+(?:\.\d+)?)\s*-\s*(-?\d+(?:\.\d+)?)$/);
+  if (!match) {
+    return null;
+  }
+  return { min: parseFloat(match[1]), max: parseFloat(match[2]) };
+}
+
+/**
+ * Extract the recommended strength range from a usage_tips payload (JSON
+ * string or already-parsed object). Explicit strength_min/strength_max keys
+ * take precedence over the strength_range "x.x-y.y" shorthand. Returns
+ * { min, max, recommended } with null bounds for open-ended ranges, or null
+ * when no valid range is configured.
+ */
+export function parseStrengthRange(usageTips) {
+  let tips = usageTips;
+  if (typeof tips === "string") {
+    if (!tips.trim()) {
+      return null;
+    }
+    try {
+      tips = JSON.parse(tips);
+    } catch {
+      return null;
+    }
+  }
+  if (!tips || typeof tips !== "object") {
+    return null;
+  }
+
+  let min = parseUsageTipNumber(tips.strength_min ?? tips.strengthMin);
+  let max = parseUsageTipNumber(tips.strength_max ?? tips.strengthMax);
+
+  if (min === null || max === null) {
+    const parsed = parseRangeString(tips.strength_range ?? tips.strengthRange);
+    if (parsed) {
+      if (min === null) min = parsed.min;
+      if (max === null) max = parsed.max;
+    }
+  }
+
+  if (min === null && max === null) {
+    return null;
+  }
+  if (min !== null && max !== null && min > max) {
+    return null;
+  }
+
+  return { min, max, recommended: parseUsageTipNumber(tips.strength) };
+}
+
+/**
+ * Describe how a strength value violates the recommended range, or return
+ * null when it is inside (or no range is configured). The returned string is
+ * used as the input's tooltip.
+ */
+export function describeStrengthRangeViolation(value, range) {
+  if (!range) {
+    return null;
+  }
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return null;
+  }
+  const { min, max, recommended } = range;
+
+  let direction = null;
+  if (min !== null && numeric < min) {
+    direction = "Below";
+  } else if (max !== null && numeric > max) {
+    direction = "Above";
+  }
+  if (!direction) {
+    return null;
+  }
+
+  let rangeText;
+  if (min !== null && max !== null) {
+    rangeText = `${min.toFixed(2)}\u2013${max.toFixed(2)}`;
+  } else if (min !== null) {
+    rangeText = `\u2265 ${min.toFixed(2)}`;
+  } else {
+    rangeText = `\u2264 ${max.toFixed(2)}`;
+  }
+
+  let text = `${direction} recommended strength range (${rangeText})`;
+  if (recommended !== null) {
+    text += `; recommended: ${recommended.toFixed(2)}`;
+  }
+  return text;
+}
+
+/**
+ * Toggle the out-of-range visual cue on a strength input.
+ */
+export function applyStrengthRangeCue(inputEl, value, range) {
+  const message = describeStrengthRangeViolation(value, range);
+  inputEl.classList.toggle("lm-strength-out-of-range", message !== null);
+  if (message) {
+    inputEl.title = message;
+  } else {
+    inputEl.removeAttribute("title");
+  }
+}
+
+/**
+ * Build the lookup map of recommended strength ranges from cycler-list
+ * entries. Keyed like the availability set (normalized path and basename).
+ */
+export function buildStrengthRangeMap(loras) {
+  const map = new Map();
+  for (const lora of loras || []) {
+    const range = parseStrengthRange(lora?.usage_tips);
+    if (!range) {
+      continue;
+    }
+    const normalized = normalizeLoraNameKey(lora?.file_name);
+    if (!normalized) {
+      continue;
+    }
+    map.set(normalized, range);
+    const slash = normalized.lastIndexOf("/");
+    if (slash >= 0) {
+      map.set(normalized.slice(slash + 1), range);
+    }
+  }
+  return map;
+}
+
 async function refreshAvailableLoras() {
   const generation = availabilityGeneration;
   try {
@@ -100,16 +252,18 @@ async function refreshAvailableLoras() {
       return null;
     }
     const data = await response.json();
-    const paths = (data?.loras || [])
+    const loras = data?.loras || [];
+    const paths = loras
       .map((lora) => lora?.file_name)
       .filter(Boolean);
     const set = buildAvailableLoraSet(paths);
+    const ranges = buildStrengthRangeMap(loras);
     if (generation !== availabilityGeneration) {
       // Stale response: the cache was invalidated while this fetch was in
       // flight, do not repopulate it with pre-change data.
       return null;
     }
-    availableLorasCache = { set, at: Date.now() };
+    availableLorasCache = { set, ranges, at: Date.now() };
     return set;
   } catch (error) {
     console.warn("Failed to fetch available LoRAs:", error);
@@ -147,6 +301,38 @@ export function getAvailableLorasSync() {
     Date.now() - availableLorasCache.at < AVAILABLE_LORAS_TTL_MS
   ) {
     return availableLorasCache.set;
+  }
+  return null;
+}
+
+/**
+ * Synchronous lookup of a LoRA's recommended strength range from the cached
+ * cycler-list data. Mirrors isLoraNameAvailable's matching: basename fallback
+ * for folder-qualified names, and null for absolute paths or while the cache
+ * is not loaded (no cue is shown in those cases).
+ */
+export function getLoraStrengthRange(name) {
+  if (
+    !availableLorasCache ||
+    Date.now() - availableLorasCache.at >= AVAILABLE_LORAS_TTL_MS
+  ) {
+    return null;
+  }
+  const ranges = availableLorasCache.ranges;
+  if (!ranges || ranges.size === 0) {
+    return null;
+  }
+  const normalized = String(name || "").replace(/\\/g, "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:\//.test(normalized)) {
+    return null;
+  }
+  const key = normalizeLoraNameKey(name);
+  if (ranges.has(key)) {
+    return ranges.get(key);
+  }
+  const slash = key.lastIndexOf("/");
+  if (slash >= 0) {
+    return ranges.get(key.slice(slash + 1)) || null;
   }
   return null;
 }

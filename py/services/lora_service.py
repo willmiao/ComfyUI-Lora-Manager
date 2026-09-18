@@ -714,12 +714,18 @@ class LoraService(BaseModelService):
                 ),
             )
 
-        # Return minimal data needed for cycling
-        return [
-            {
+        # Return minimal data needed for cycling. usage_tips is only included
+        # when non-empty so widget consumers (recommended strength range cues)
+        # can build their lookup without inflating the payload.
+        result = []
+        for lora in available_loras:
+            entry = {
                 "file_name": f"{lora['folder']}/{lora['file_name']}" if lora.get("folder") else lora["file_name"],
                 "model_name": lora.get("model_name", lora["file_name"]),
                 "folder": lora.get("folder", ""),
             }
-            for lora in available_loras
-        ]
+            usage_tips = lora.get("usage_tips")
+            if usage_tips:
+                entry["usage_tips"] = usage_tips
+            result.append(entry)
+        return result
