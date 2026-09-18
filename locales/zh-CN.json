@@ -383,7 +383,7 @@
             "general": "通用",
             "interface": "界面",
             "library": "库",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "模型路径"
         },
         "search": {
             "placeholder": "搜索设置...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "模型库路径",
+            "description": "LoRA Manager 扫描模型所用的根文件夹。独立模式下，这些是从 settings.json 读取的主要模型位置。",
+            "restartRequired": "需要重启才能生效",
+            "coreTypes": "核心模型类型",
+            "otherTypes": "其他模型类型",
+            "otherTypesDisabledHint": "未启用任何其他模型类型。请在上方启用你需要的类型，然后为其配置文件夹。",
+            "saveSuccessRestart": "模型库路径已更新，需要重启才能生效。",
+            "pendingRestartNotice": "路径更改已保存。重启 LoRA Manager 后生效。",
+            "pendingRestartBannerTitle": "需要重启以应用路径更改",
+            "pendingRestartBannerMessage": "模型库路径已更新。请重启 LoRA Manager 服务器以扫描新文件夹。",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "LoRA 路径",
+                "checkpoints": "Checkpoint 路径",
+                "unet": "Diffusion 模型路径",
+                "embeddings": "Embedding 路径",
+                "vae": "VAE 路径",
+                "upscale_models": "Upscaler 路径",
+                "text_encoders": "Text Encoder 路径",
+                "clip": "CLIP 路径（旧版）",
+                "clip_vision": "CLIP Vision 路径",
+                "controlnet": "ControlNet 路径"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "未找到其他模型文件夹",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "其他模型管理已开启，但未找到其他模型文件夹。请在“设置 → 模型路径”中添加你的模型文件夹，然后重启 LoRA Manager。",
+            "hintStandalone": "仅扫描已启用的模型类型；请在“库 → 默认根目录”中启用你需要的类型。",
             "descriptionComfyUI": "其他模型管理已开启，但配置的模型文件夹在磁盘上都不存在。请将对应的模型文件夹添加到 ComfyUI 的模型路径，然后重新加载此页面。",
             "hintComfyUI": "其他模型从 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 文件夹中读取。",
             "openSettings": "打开设置",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "配置模型文件夹",
             "openSettingsFolder": "打开设置文件夹"
         }
     },

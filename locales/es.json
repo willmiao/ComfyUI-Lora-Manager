@@ -383,7 +383,7 @@
             "general": "General",
             "interface": "Interfaz",
             "library": "Biblioteca",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "Rutas de modelos"
         },
         "search": {
             "placeholder": "Buscar ajustes...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "Rutas de la biblioteca de modelos",
+            "description": "Carpetas raíz que LoRA Manager escanea en busca de tus modelos. Son las ubicaciones de modelos principales leídas de settings.json en modo independiente.",
+            "restartRequired": "Requiere reiniciar para que surta efecto",
+            "coreTypes": "Tipos de modelos principales",
+            "otherTypes": "Otros tipos de modelos",
+            "otherTypesDisabledHint": "No hay habilitado ningún otro tipo de modelo. Activa los tipos que necesites arriba para configurar sus carpetas.",
+            "saveSuccessRestart": "Rutas de la biblioteca de modelos actualizadas. Se requiere reinicio para aplicar los cambios.",
+            "pendingRestartNotice": "Cambios de rutas guardados. Reinicia LoRA Manager para que surtan efecto.",
+            "pendingRestartBannerTitle": "Se requiere reinicio para aplicar los cambios de rutas",
+            "pendingRestartBannerMessage": "Se actualizaron las rutas de la biblioteca de modelos. Reinicia el servidor de LoRA Manager para escanear las nuevas carpetas.",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "Rutas de LoRA",
+                "checkpoints": "Rutas de Checkpoint",
+                "unet": "Rutas de modelo de difusión",
+                "embeddings": "Rutas de Embedding",
+                "vae": "Rutas de VAE",
+                "upscale_models": "Rutas de Upscaler",
+                "text_encoders": "Rutas de Text Encoder",
+                "clip": "Rutas de CLIP (heredadas)",
+                "clip_vision": "Rutas de CLIP Vision",
+                "controlnet": "Rutas de ControlNet"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "No se encontraron carpetas de otros modelos",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "La gestión de otros modelos está activada, pero no se encontraron carpetas de otros modelos. Añade tus carpetas de modelos en Configuración → Rutas de modelos y reinicia LoRA Manager.",
+            "hintStandalone": "Solo se escanean los tipos de modelos habilitados; activa los tipos que necesites en Biblioteca → Raíces predeterminadas.",
             "descriptionComfyUI": "La gestión de otros modelos está activada, pero ninguna de las carpetas de modelos configuradas existe en el disco. Añade las carpetas de modelos correspondientes a tus rutas de modelos de ComfyUI y recarga esta página.",
             "hintComfyUI": "Los otros modelos se leen de las carpetas vae, upscale_models, text_encoders, clip_vision y controlnet de ComfyUI.",
             "openSettings": "Abrir configuración",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "Configurar carpetas de modelos",
             "openSettingsFolder": "Abrir carpeta de ajustes"
         }
     },

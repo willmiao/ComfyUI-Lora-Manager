@@ -383,7 +383,7 @@
             "general": "一般",
             "interface": "インターフェース",
             "library": "ライブラリ",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "モデルパス"
         },
         "search": {
             "placeholder": "設定を検索...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "モデルライブラリパス",
+            "description": "LoRA Managerがモデルをスキャンするルートフォルダーです。スタンドアロンモードでは settings.json から読み込まれる主要なモデルの場所になります。",
+            "restartRequired": "変更を有効にするには再起動が必要です",
+            "coreTypes": "コアモデルタイプ",
+            "otherTypes": "その他のモデルタイプ",
+            "otherTypesDisabledHint": "その他のモデルタイプが有効になっていません。フォルダーを設定するには、上で必要なタイプをオンにしてください。",
+            "saveSuccessRestart": "モデルライブラリパスを更新しました。変更を適用するには再起動が必要です。",
+            "pendingRestartNotice": "パスの変更を保存しました。変更を有効にするにはLoRA Managerを再起動してください。",
+            "pendingRestartBannerTitle": "パスの変更を適用するには再起動が必要です",
+            "pendingRestartBannerMessage": "モデルライブラリパスが更新されました。新しいフォルダーをスキャンするにはLoRA Managerサーバーを再起動してください。",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "LoRAパス",
+                "checkpoints": "Checkpointパス",
+                "unet": "Diffusionモデルパス",
+                "embeddings": "Embeddingパス",
+                "vae": "VAEパス",
+                "upscale_models": "Upscalerパス",
+                "text_encoders": "Text Encoderパス",
+                "clip": "CLIPパス（レガシー）",
+                "clip_vision": "CLIP Visionパス",
+                "controlnet": "ControlNetパス"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "その他のモデルのフォルダーが見つかりません",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "その他のモデル管理はオンですが、その他のモデルフォルダーが見つかりませんでした。「設定 > モデルパス」でモデルフォルダーを追加し、LoRA Managerを再起動してください。",
+            "hintStandalone": "有効になっているモデルタイプのみがスキャンされます。必要なタイプは「ライブラリ > デフォルトルート」で有効にしてください。",
             "descriptionComfyUI": "その他のモデル管理はオンですが、設定されたモデルフォルダーがディスク上に存在しません。該当するモデルフォルダーをComfyUIのモデルパスに追加し、このページを再読み込みしてください。",
             "hintComfyUI": "その他のモデルは、ComfyUIのvae、upscale_models、text_encoders、clip_vision、controlnetフォルダーから読み込まれます。",
             "openSettings": "設定を開く",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "モデルフォルダーを設定",
             "openSettingsFolder": "設定フォルダーを開く"
         }
     },

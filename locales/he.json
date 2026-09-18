@@ -383,7 +383,7 @@
             "general": "כללי",
             "interface": "ממשק",
             "library": "ספרייה",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "נתיבי מודלים"
         },
         "search": {
             "placeholder": "חיפוש בהגדרות...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "נתיבי ספריית המודלים",
+            "description": "תיקיות שורש ש-LoRA Manager סורק לאיתור המודלים שלך. אלו מיקומי המודלים הראשיים הנקראים מ-settings.json במצב עצמאי.",
+            "restartRequired": "נדרש אתחול כדי שהשינוי ייכנס לתוקף",
+            "coreTypes": "סוגי מודלים מרכזיים",
+            "otherTypes": "סוגי מודלים אחרים",
+            "otherTypesDisabledHint": "לא מופעלים סוגי מודלים אחרים. הפעל למעלה את הסוגים הדרושים לך כדי להגדיר את התיקיות שלהם.",
+            "saveSuccessRestart": "נתיבי ספריית המודלים עודכנו. נדרשת הפעלה מחדש כדי להחיל את השינויים.",
+            "pendingRestartNotice": "שינויי הנתיבים נשמרו. הפעל מחדש את LoRA Manager כדי שייכנסו לתוקף.",
+            "pendingRestartBannerTitle": "נדרשת הפעלה מחדש כדי להחיל את שינויי הנתיבים",
+            "pendingRestartBannerMessage": "נתיבי ספריית המודלים עודכנו. הפעל מחדש את שרת LoRA Manager כדי לסרוק את התיקיות החדשות.",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "נתיבי LoRA",
+                "checkpoints": "נתיבי Checkpoint",
+                "unet": "נתיבי מודל דיפוזיה",
+                "embeddings": "נתיבי Embedding",
+                "vae": "נתיבי VAE",
+                "upscale_models": "נתיבי Upscaler",
+                "text_encoders": "נתיבי Text Encoder",
+                "clip": "נתיבי CLIP (ישן)",
+                "clip_vision": "נתיבי CLIP Vision",
+                "controlnet": "נתיבי ControlNet"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "לא נמצאו תיקיות של מודלים אחרים",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "ניהול המודלים האחרים פועל, אך לא נמצאו תיקיות של מודלים אחרים. הוסף את תיקיות המודלים שלך תחת הגדרות > נתיבי מודלים, ולאחר מכן הפעל מחדש את LoRA Manager.",
+            "hintStandalone": "נסרקים רק סוגי מודלים מופעלים; הפעל את הסוגים הדרושים לך תחת ספרייה > תיקיות ברירת מחדל.",
             "descriptionComfyUI": "ניהול המודלים האחרים פועל, אך אף אחת מתיקיות המודלים המוגדרות אינה קיימת בדיסק. הוסף את תיקיות המודלים המתאימות לנתיבי המודלים של ComfyUI וטען מחדש עמוד זה.",
             "hintComfyUI": "מודלים אחרים נקראים מתיקיות vae, upscale_models, text_encoders, clip_vision ו-controlnet של ComfyUI.",
             "openSettings": "פתח הגדרות",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "הגדר תיקיות מודלים",
             "openSettingsFolder": "פתח תיקיית הגדרות"
         }
     },

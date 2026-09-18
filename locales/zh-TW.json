@@ -383,7 +383,7 @@
             "general": "通用",
             "interface": "介面",
             "library": "模型庫",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "模型路徑"
         },
         "search": {
             "placeholder": "搜尋設定...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "模型庫路徑",
+            "description": "LoRA Manager 掃描您模型的根目錄資料夾。這些是獨立模式下從 settings.json 讀取的主要模型位置。",
+            "restartRequired": "需要重新啟動才能生效",
+            "coreTypes": "核心模型類型",
+            "otherTypes": "其他模型類型",
+            "otherTypesDisabledHint": "尚未啟用任何其他模型類型。請在上方開啟您需要的類型，以設定其資料夾。",
+            "saveSuccessRestart": "模型庫路徑已更新，需要重新啟動才能生效。",
+            "pendingRestartNotice": "路徑變更已儲存。請重新啟動 LoRA Manager 以使其生效。",
+            "pendingRestartBannerTitle": "需要重新啟動才能套用路徑變更",
+            "pendingRestartBannerMessage": "模型庫路徑已更新。請重新啟動 LoRA Manager 伺服器以掃描新的資料夾。",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "LoRA 路徑",
+                "checkpoints": "Checkpoint 路徑",
+                "unet": "Diffusion 模型路徑",
+                "embeddings": "Embedding 路徑",
+                "vae": "VAE 路徑",
+                "upscale_models": "Upscaler 路徑",
+                "text_encoders": "Text Encoder 路徑",
+                "clip": "CLIP 路徑（舊版）",
+                "clip_vision": "CLIP Vision 路徑",
+                "controlnet": "ControlNet 路徑"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "找不到其他模型資料夾",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "其他模型管理已開啟，但找不到其他模型的資料夾。請在「設定 > 模型路徑」中加入您的模型資料夾，然後重新啟動 LoRA Manager。",
+            "hintStandalone": "僅會掃描已啟用的模型類型；請在「模型庫 > 預設根目錄」中啟用您需要的類型。",
             "descriptionComfyUI": "其他模型管理已開啟，但設定的模型資料夾在磁碟上都不存在。請將對應的模型資料夾加入 ComfyUI 的模型路徑，然後重新載入此頁面。",
             "hintComfyUI": "其他模型會從 ComfyUI 的 vae、upscale_models、text_encoders、clip_vision 和 controlnet 資料夾讀取。",
             "openSettings": "開啟設定",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "設定模型資料夾",
             "openSettingsFolder": "開啟設定資料夾"
         }
     },

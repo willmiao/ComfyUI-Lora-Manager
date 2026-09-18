@@ -383,7 +383,7 @@
             "general": "Général",
             "interface": "Interface",
             "library": "Bibliothèque",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "Chemins de modèles"
         },
         "search": {
             "placeholder": "Rechercher dans les paramètres...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "Chemins de la bibliothèque de modèles",
+            "description": "Dossiers racine que LoRA Manager analyse pour trouver vos modèles. Ce sont les emplacements de modèles principaux lus depuis settings.json en mode autonome.",
+            "restartRequired": "Un redémarrage est requis pour appliquer les changements",
+            "coreTypes": "Types de modèles principaux",
+            "otherTypes": "Autres types de modèles",
+            "otherTypesDisabledHint": "Aucun autre type de modèle n’est activé. Activez les types dont vous avez besoin ci-dessus pour configurer leurs dossiers.",
+            "saveSuccessRestart": "Chemins de la bibliothèque de modèles mis à jour. Redémarrage requis pour appliquer les changements.",
+            "pendingRestartNotice": "Changements de chemins enregistrés. Redémarrez LoRA Manager pour qu’ils prennent effet.",
+            "pendingRestartBannerTitle": "Redémarrage requis pour appliquer les changements de chemins",
+            "pendingRestartBannerMessage": "Les chemins de la bibliothèque de modèles ont été mis à jour. Redémarrez le serveur LoRA Manager pour analyser les nouveaux dossiers.",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "Chemins LoRA",
+                "checkpoints": "Chemins Checkpoint",
+                "unet": "Chemins de modèle de diffusion",
+                "embeddings": "Chemins Embedding",
+                "vae": "Chemins VAE",
+                "upscale_models": "Chemins Upscaler",
+                "text_encoders": "Chemins Text Encoder",
+                "clip": "Chemins CLIP (hérité)",
+                "clip_vision": "Chemins CLIP Vision",
+                "controlnet": "Chemins ControlNet"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "Aucun dossier d’autres modèles trouvé",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "La gestion des autres modèles est activée, mais aucun dossier d’autres modèles n’a été trouvé. Ajoutez vos dossiers de modèles dans Paramètres → Chemins de modèles, puis redémarrez LoRA Manager.",
+            "hintStandalone": "Seuls les types de modèles activés sont analysés ; activez les types dont vous avez besoin dans Bibliothèque → Racines par défaut.",
             "descriptionComfyUI": "La gestion des autres modèles est activée, mais aucun des dossiers de modèles configurés n’existe sur le disque. Ajoutez les dossiers de modèles correspondants à vos chemins de modèles ComfyUI, puis rechargez cette page.",
             "hintComfyUI": "Les autres modèles sont lus depuis les dossiers vae, upscale_models, text_encoders, clip_vision et controlnet de ComfyUI.",
             "openSettings": "Ouvrir les paramètres",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "Configurer les dossiers de modèles",
             "openSettingsFolder": "Ouvrir le dossier des paramètres"
         }
     },

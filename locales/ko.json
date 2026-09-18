@@ -383,7 +383,7 @@
             "general": "일반",
             "interface": "인터페이스",
             "library": "라이브러리",
-            "modelPaths": "[TODO: Translate] Model Paths"
+            "modelPaths": "모델 경로"
         },
         "search": {
             "placeholder": "설정 검색...",
@@ -585,27 +585,27 @@
             }
         },
         "modelPaths": {
-            "title": "[TODO: Translate] Model Library Paths",
-            "description": "[TODO: Translate] Root folders LoRA Manager scans for your models. These are the primary model locations read from settings.json in standalone mode.",
-            "restartRequired": "[TODO: Translate] Requires restart to take effect",
-            "coreTypes": "[TODO: Translate] Core Model Types",
-            "otherTypes": "[TODO: Translate] Other Model Types",
-            "otherTypesDisabledHint": "[TODO: Translate] No other model types are enabled. Turn on the types you need above to configure their folders.",
-            "saveSuccessRestart": "[TODO: Translate] Model library paths updated. Restart required to apply changes.",
-            "pendingRestartNotice": "[TODO: Translate] Path changes saved. Restart LoRA Manager for them to take effect.",
-            "pendingRestartBannerTitle": "[TODO: Translate] Restart required to apply path changes",
-            "pendingRestartBannerMessage": "[TODO: Translate] Model library paths were updated. Restart the LoRA Manager server to scan the new folders.",
+            "title": "모델 라이브러리 경로",
+            "description": "LoRA Manager가 모델을 스캔하는 루트 폴더입니다. 독립 실행 모드에서는 settings.json에서 읽어오는 기본 모델 위치입니다.",
+            "restartRequired": "변경 사항을 적용하려면 재시작이 필요합니다",
+            "coreTypes": "핵심 모델 유형",
+            "otherTypes": "기타 모델 유형",
+            "otherTypesDisabledHint": "활성화된 기타 모델 유형이 없습니다. 위에서 필요한 유형을 켜면 해당 폴더를 구성할 수 있습니다.",
+            "saveSuccessRestart": "모델 라이브러리 경로가 업데이트되었습니다. 변경 사항을 적용하려면 재시작이 필요합니다.",
+            "pendingRestartNotice": "경로 변경 사항이 저장되었습니다. 적용하려면 LoRA Manager를 재시작하세요.",
+            "pendingRestartBannerTitle": "경로 변경 사항을 적용하려면 재시작이 필요합니다",
+            "pendingRestartBannerMessage": "모델 라이브러리 경로가 업데이트되었습니다. 새 폴더를 스캔하려면 LoRA Manager 서버를 재시작하세요.",
             "folderKeys": {
-                "loras": "[TODO: Translate] LoRA Paths",
-                "checkpoints": "[TODO: Translate] Checkpoint Paths",
-                "unet": "[TODO: Translate] Diffusion Model Paths",
-                "embeddings": "[TODO: Translate] Embedding Paths",
-                "vae": "[TODO: Translate] VAE Paths",
-                "upscale_models": "[TODO: Translate] Upscaler Paths",
-                "text_encoders": "[TODO: Translate] Text Encoder Paths",
-                "clip": "[TODO: Translate] CLIP Paths (legacy)",
-                "clip_vision": "[TODO: Translate] CLIP Vision Paths",
-                "controlnet": "[TODO: Translate] ControlNet Paths"
+                "loras": "LoRA 경로",
+                "checkpoints": "Checkpoint 경로",
+                "unet": "Diffusion Model 경로",
+                "embeddings": "Embedding 경로",
+                "vae": "VAE 경로",
+                "upscale_models": "Upscaler 경로",
+                "text_encoders": "Text Encoder 경로",
+                "clip": "CLIP 경로 (레거시)",
+                "clip_vision": "CLIP Vision 경로",
+                "controlnet": "ControlNet 경로"
             }
         },
         "priorityTags": {
@@ -1266,12 +1266,12 @@
         },
         "noPaths": {
             "title": "기타 모델 폴더를 찾을 수 없습니다",
-            "descriptionStandalone": "[TODO: Translate] Other Models management is on, but no other-model folders were found. Add your model folders under Settings → Model Paths, then restart LoRA Manager.",
-            "hintStandalone": "[TODO: Translate] Only enabled model types are scanned; enable the types you need under Library → Folder Settings.",
+            "descriptionStandalone": "기타 모델 관리가 켜져 있지만, 기타 모델 폴더를 찾을 수 없습니다. 설정 → 모델 경로에서 모델 폴더를 추가한 뒤 LoRA Manager를 재시작하세요.",
+            "hintStandalone": "활성화된 모델 유형만 스캔됩니다. 라이브러리 → 기본 루트에서 필요한 유형을 활성화하세요.",
             "descriptionComfyUI": "기타 모델 관리가 켜져 있지만, 설정된 모델 폴더가 디스크에 존재하지 않습니다. 해당 모델 폴더를 ComfyUI 모델 경로에 추가한 뒤 이 페이지를 새로 고침하세요.",
             "hintComfyUI": "기타 모델은 ComfyUI의 vae, upscale_models, text_encoders, clip_vision, controlnet 폴더에서 읽어옵니다.",
             "openSettings": "설정 열기",
-            "openModelPaths": "[TODO: Translate] Configure Model Folders",
+            "openModelPaths": "모델 폴더 구성",
             "openSettingsFolder": "설정 폴더 열기"
         }
     },
