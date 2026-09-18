@@ -1,0 +1,179 @@
+/* Directory Picker Modal */
+/* Stacks above the settings modal: settings tooltips/combobox panels sit at
+   10000/10002, so 10010 keeps the picker on top of everything settings-side. */
+#directoryPickerModal {
+    z-index: 10010;
+}
+
+.directory-picker-content {
+    max-width: 560px;
+    display: flex;
+    flex-direction: column;
+}
+
+.directory-picker-content h3 {
+    color: var(--text-color);
+    margin-bottom: var(--space-2);
+}
+
+/* Manual path row */
+#directoryPickerModal .directory-picker-path-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: var(--space-2);
+}
+
+#directoryPickerModal .directory-picker-path-row input {
+    flex: 1;
+    min-width: 0;
+    padding: 8px 12px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--bg-color);
+    color: var(--text-color);
+    font-family: inherit;
+    font-size: 0.9em;
+}
+
+#directoryPickerModal .directory-picker-path-row input:focus {
+    outline: none;
+    border-color: var(--lora-accent);
+    box-shadow: 0 0 0 2px oklch(from var(--lora-accent) l c h / 0.2);
+}
+
+/* Directory browser (class names shared with the batch import browser) */
+#directoryPickerModal .directory-browser {
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--lora-surface);
+    overflow: hidden;
+}
+
+#directoryPickerModal .browser-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+#directoryPickerModal .back-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    background: var(--card-bg);
+    color: var(--text-color);
+    cursor: pointer;
+    transition: var(--transition-base);
+}
+
+#directoryPickerModal .back-btn:hover {
+    border-color: var(--lora-accent);
+    background: var(--bg-color);
+}
+
+#directoryPickerModal .back-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#directoryPickerModal .current-path {
+    flex: 1;
+    padding: 6px 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-xs);
+    font-size: 0.9em;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#directoryPickerModal .browser-content {
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 12px;
+}
+
+#directoryPickerModal .folder-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+#directoryPickerModal .folder-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-xs);
+    cursor: pointer;
+    transition: var(--transition-base);
+    border: 1px solid transparent;
+}
+
+#directoryPickerModal .folder-item:hover {
+    background: var(--lora-surface-hover, oklch(from var(--lora-accent) l c h / 0.1));
+    border-color: var(--lora-accent);
+}
+
+#directoryPickerModal .folder-item i {
+    color: #fbbf24;
+    font-size: 1.1em;
+}
+
+#directoryPickerModal .item-name {
+    flex: 1;
+    font-size: 0.9em;
+    color: var(--text-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#directoryPickerModal .browser-footer {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    padding: 10px 12px;
+    background: var(--bg-color);
+    border-top: 1px solid var(--border-color);
+}
+
+#directoryPickerModal .directory-picker-error {
+    margin-top: 8px;
+    padding: 8px 10px;
+    border-radius: var(--border-radius-xs);
+    background: oklch(from var(--lora-error) l c h / 0.12);
+    color: var(--lora-error);
+    font-size: 0.85em;
+    word-break: break-word;
+}
+
+#directoryPickerModal .directory-picker-empty {
+    padding: var(--space-2);
+    text-align: center;
+    color: var(--text-color);
+    opacity: 0.6;
+    font-size: 0.9em;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] #directoryPickerModal .directory-browser {
+    background: var(--card-bg);
+}
+
+[data-theme="dark"] #directoryPickerModal .browser-header,
+[data-theme="dark"] #directoryPickerModal .browser-footer {
+    background: var(--lora-surface);
+}
+
+[data-theme="dark"] #directoryPickerModal .folder-item i {
+    color: #fcd34d;
+}

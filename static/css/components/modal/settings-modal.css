@@ -1692,6 +1692,87 @@ input:checked + .toggle-slider:before {
     color: white;
 }
 
+/* Browse (directory picker) button — boxed accent style used on the dynamic
+   extra-folder-path / model-path rows, mirroring .remove-path-btn. Static
+   path fields use the .inset variant below instead. */
+#settingsModal .browse-path-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border-radius: var(--border-radius-xs);
+    border: 1px solid var(--lora-accent);
+    background: transparent;
+    color: var(--lora-accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    flex-shrink: 0;
+}
+
+#settingsModal .browse-path-btn:hover {
+    background: var(--lora-accent);
+    color: white;
+}
+
+/* Inset variant (static path fields): the button floats inside the right
+   edge of the input, so the setting row keeps its single-control look and
+   narrow columns never push it onto a second line. */
+#settingsModal .browse-path-btn.inset {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-color);
+    opacity: 0.55;
+}
+
+#settingsModal .browse-path-btn.inset:hover {
+    background: transparent;
+    color: var(--lora-accent);
+    opacity: 1;
+}
+
+#settingsModal input.has-inset-browse {
+    padding-right: 34px;
+}
+
+/* Advisory path validation feedback (wraps below the input row) */
+#settingsModal .text-input-wrapper,
+#settingsModal .path-control {
+    flex-wrap: wrap;
+}
+
+#settingsModal .path-control > .text-input-wrapper {
+    flex: 1;
+    min-width: 0;
+}
+
+.path-validation {
+    display: none;
+    flex-basis: 100%;
+    width: 100%;
+    margin-top: 4px;
+    font-size: 0.8em;
+    line-height: 1.4;
+    color: var(--lora-error);
+}
+
+.path-validation.visible {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.path-validation.valid {
+    color: var(--lora-success);
+}
+
 /* Highlight animation for setting items targeted from Doctor actions */
 @keyframes settings-highlight-pulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(from var(--lora-accent) r g b / 0.4); }

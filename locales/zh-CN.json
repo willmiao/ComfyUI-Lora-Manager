@@ -608,6 +608,22 @@
                 "controlnet": "ControlNet 路径"
             }
         },
+        "directoryPicker": {
+            "title": "浏览文件夹",
+            "selectFolder": "选择此文件夹",
+            "goUp": "上级目录",
+            "pathPlaceholder": "输入路径...",
+            "go": "跳转",
+            "emptyFolder": "没有子文件夹",
+            "loadError": "目录加载失败"
+        },
+        "pathValidation": {
+            "valid": "路径有效",
+            "pathNotFound": "路径不存在",
+            "notADirectory": "不是一个目录",
+            "notReadable": "路径不可读",
+            "notWritable": "路径不可写"
+        },
         "priorityTags": {
             "title": "优先标签",
             "description": "为每种模型类型自定义标签优先级顺序 (例如: character, concept, style(toon|toon_style))",

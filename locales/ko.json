@@ -608,6 +608,22 @@
                 "controlnet": "ControlNet 경로"
             }
         },
+        "directoryPicker": {
+            "title": "폴더 찾아보기",
+            "selectFolder": "이 폴더 선택",
+            "goUp": "위로",
+            "pathPlaceholder": "경로 입력...",
+            "go": "이동",
+            "emptyFolder": "하위 폴더 없음",
+            "loadError": "디렉터리를 불러오지 못했습니다"
+        },
+        "pathValidation": {
+            "valid": "유효한 경로입니다",
+            "pathNotFound": "경로가 존재하지 않습니다",
+            "notADirectory": "디렉터리가 아닙니다",
+            "notReadable": "경로를 읽을 수 없습니다",
+            "notWritable": "경로에 쓸 수 없습니다"
+        },
         "priorityTags": {
             "title": "우선순위 태그",
             "description": "모델 유형별 태그 우선순위를 사용자 지정합니다(예: character, concept, style(toon|toon_style)).",

@@ -608,6 +608,22 @@
                 "controlnet": "Пути ControlNet"
             }
         },
+        "directoryPicker": {
+            "title": "Обзор папок",
+            "selectFolder": "Выбрать эту папку",
+            "goUp": "Вверх",
+            "pathPlaceholder": "Введите путь...",
+            "go": "Перейти",
+            "emptyFolder": "Нет подпапок",
+            "loadError": "Не удалось загрузить каталог"
+        },
+        "pathValidation": {
+            "valid": "Путь действителен",
+            "pathNotFound": "Путь не существует",
+            "notADirectory": "Не является каталогом",
+            "notReadable": "Путь недоступен для чтения",
+            "notWritable": "Путь недоступен для записи"
+        },
         "priorityTags": {
             "title": "Приоритетные теги",
             "description": "Настройте порядок приоритетов тегов для каждого типа моделей (например, character, concept, style(toon|toon_style)).",

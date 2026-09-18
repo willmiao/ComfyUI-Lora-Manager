@@ -15,8 +15,16 @@ import { i18n } from '../i18n/index.js';
 import { configureModelCardVideo } from '../components/shared/ModelCard.js';
 import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePriorityTagSuggestionsCache } from '../utils/priorityTagHelpers.js';
 import { bannerService } from './BannerService.js';
+import { directoryPickerModal } from '../components/DirectoryPickerModal.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
+
+const PATH_VALIDATION_ERROR_I18N = {
+    path_not_found: { key: 'settings.pathValidation.pathNotFound', fallback: 'Path does not exist' },
+    not_a_directory: { key: 'settings.pathValidation.notADirectory', fallback: 'Not a directory' },
+    not_readable: { key: 'settings.pathValidation.notReadable', fallback: 'Path is not readable' },
+    not_writable: { key: 'settings.pathValidation.notWritable', fallback: 'Path is not writable' },
+};
 
 // Other-model sub_type -> i18n label key, mirroring the checkbox list in
 // templates/components/modals/settings/library.html.
@@ -1198,6 +1206,24 @@ export class SettingsManager {
         if (useNewLicenseIconsCheckbox) {
             useNewLicenseIconsCheckbox.checked = state.global.settings.use_new_license_icons !== false;
         }
+
+        // Directory browse buttons + advisory path validation (idempotent,
+        // safe to call on every modal open).
+        this.attachPathField('recipesPath', {
+            onAfterSelect: () => this.saveInputSetting('recipesPath', 'recipes_path'),
+        });
+        this.attachPathField('exampleImagesPath', {
+            onAfterSelect: (pickedPath) => {
+                // Mirror ExampleImagesManager's blur-save flow.
+                window.exampleImagesManager?.updateDownloadButtonState?.(pickedPath.trim() !== '');
+                this.saveSetting('example_images_path', pickedPath)
+                    .then(() => showToast('toast.exampleImages.pathUpdated', {}, 'success'))
+                    .catch((error) => showToast('toast.exampleImages.pathUpdateFailed', { message: error.message }, 'error'));
+            },
+        });
+        this.attachPathField('exampleImagesLocalRoot', {
+            onAfterSelect: () => this.saveInputSetting('exampleImagesLocalRoot', 'example_images_local_root'),
+        });
     }
 
     loadDownloadBackendSettings() {
@@ -1806,6 +1832,11 @@ export class SettingsManager {
                        onblur="settingsManager.updateExtraFolderPaths('${modelType}')"
                        onfocus="settingsManager.clearExtraFolderPathError(this)"
                        onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                <button type="button" class="browse-path-btn"
+                        onclick="settingsManager.browseForPathRow(this, '${modelType}')"
+                        title="${translate('settings.directoryPicker.title', {}, 'Browse Folders')}">
+                    <i class="fas fa-folder-open"></i>
+                </button>
                 <button type="button" class="remove-path-btn"
                         onclick="settingsManager.removeExtraFolderPathRow(this, '${modelType}')"
                         title="${translate('common.actions.delete', {}, 'Delete')}">
@@ -2242,6 +2273,11 @@ export class SettingsManager {
                        onblur="settingsManager.updateModelFolderPaths('${key}')"
                        onfocus="settingsManager.clearModelFolderPathError(this)"
                        onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                <button type="button" class="browse-path-btn"
+                        onclick="settingsManager.browseForPathRow(this, '${key}', true)"
+                        title="${translate('settings.directoryPicker.title', {}, 'Browse Folders')}">
+                    <i class="fas fa-folder-open"></i>
+                </button>
                 <button type="button" class="remove-path-btn"
                         onclick="settingsManager.removeModelFolderPathRow(this, '${key}')"
                         title="${translate('common.actions.delete', {}, 'Delete')}">
@@ -3761,6 +3797,161 @@ export class SettingsManager {
             }
             showToast('toast.settings.settingSaveFailed', { message: error.message }, 'error');
         }
+    }
+
+    // ── Directory picker + live path validation ─────────────────────────
+    // Validation is advisory only: it never blocks or alters save flows.
+
+    attachPathField(inputId, { expect = 'directory', onAfterSelect } = {}) {
+        const input = document.getElementById(inputId);
+        if (!input) {
+            console.warn(`SettingsManager.attachPathField: #${inputId} not found`);
+            return;
+        }
+        if (input.dataset.pathFieldAttached === '1') return;
+        input.dataset.pathFieldAttached = '1';
+
+        const browseBtn = document.createElement('button');
+        browseBtn.type = 'button';
+        browseBtn.className = 'browse-path-btn inset';
+        browseBtn.title = translate('settings.directoryPicker.title', {}, 'Browse Folders');
+        browseBtn.innerHTML = '<i class="fas fa-folder-open"></i>';
+
+        // Inset layout: the button is absolutely positioned inside the right
+        // edge of the input, so the row keeps its original single-control look.
+        const parent = input.parentElement;
+        let wrapper;
+        let statusHost;
+        if (parent && parent.classList.contains('path-control')) {
+            // e.g. #exampleImagesPath sits beside a Download button: wrap only
+            // the input so the button insets into it and Download stays beside it.
+            wrapper = document.createElement('div');
+            wrapper.className = 'text-input-wrapper';
+            parent.insertBefore(wrapper, input);
+            wrapper.appendChild(input);
+            statusHost = parent;
+        } else {
+            // .text-input-wrapper provided by the setting_input macro
+            wrapper = parent;
+            statusHost = parent;
+        }
+        wrapper.appendChild(browseBtn);
+        input.classList.add('has-inset-browse');
+
+        const statusEl = document.createElement('div');
+        statusEl.className = 'path-validation';
+        statusHost.appendChild(statusEl);
+
+        input._pathFieldConfig = { expect, onAfterSelect, statusEl };
+
+        browseBtn.addEventListener('click', () => this.browseForPath(inputId));
+        input.addEventListener('blur', () => {
+            clearTimeout(input._pathValidationTimer);
+            this.validatePath(input, statusEl, expect);
+        });
+        input.addEventListener('input', () => {
+            clearTimeout(input._pathValidationTimer);
+            input._pathValidationTimer = setTimeout(() => {
+                this.validatePath(input, statusEl, expect);
+            }, 500);
+        });
+    }
+
+    async validatePath(input, statusEl, expect = 'directory') {
+        const value = input.value.trim();
+        const seq = input._pathValidationSeq = (input._pathValidationSeq || 0) + 1;
+
+        if (!value) {
+            this._clearPathStatus(statusEl);
+            return;
+        }
+
+        let data;
+        try {
+            const response = await fetch('/api/lm/validate-path', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: value, expect }),
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            data = await response.json();
+        } catch (error) {
+            if (seq === input._pathValidationSeq) {
+                this._clearPathStatus(statusEl);
+            }
+            return;
+        }
+
+        // Ignore responses overtaken by newer input or validation runs.
+        if (seq !== input._pathValidationSeq || input.value.trim() !== value) {
+            return;
+        }
+
+        if (data.success && !data.error_code) {
+            statusEl.innerHTML = `<i class="fas fa-check-circle"></i><span>${translate('settings.pathValidation.valid', {}, 'Path is valid')}</span>`;
+            statusEl.classList.add('visible', 'valid');
+        } else {
+            const message = this._getPathValidationMessage(data);
+            statusEl.innerHTML = '<i class="fas fa-exclamation-circle"></i><span></span>';
+            statusEl.querySelector('span').textContent = message;
+            statusEl.classList.add('visible');
+            statusEl.classList.remove('valid');
+        }
+    }
+
+    _getPathValidationMessage(data) {
+        const entry = PATH_VALIDATION_ERROR_I18N[data?.error_code];
+        if (entry) {
+            return translate(entry.key, {}, entry.fallback);
+        }
+        return data?.error || translate('settings.pathValidation.pathNotFound', {}, 'Path does not exist');
+    }
+
+    _clearPathStatus(statusEl) {
+        statusEl.classList.remove('visible', 'valid');
+        statusEl.textContent = '';
+    }
+
+    browseForPath(inputId, { onAfterSelect } = {}) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const config = input._pathFieldConfig || {};
+        const afterSelect = onAfterSelect || config.onAfterSelect;
+
+        directoryPickerModal.open({
+            initialPath: input.value.trim(),
+            onSelect: (pickedPath) => {
+                input.value = pickedPath;
+                if (config.statusEl) {
+                    this.validatePath(input, config.statusEl, config.expect || 'directory');
+                }
+                if (typeof afterSelect === 'function') {
+                    afterSelect(pickedPath);
+                }
+            },
+        });
+    }
+
+    // Browse variant for the dynamic extra/model folder path rows: picking a
+    // folder routes through the row's existing validation + save logic.
+    browseForPathRow(btn, key, isModelPath = false) {
+        const row = btn.closest('.extra-folder-path-row');
+        const input = row ? row.querySelector('.extra-folder-path-input') : null;
+        if (!input) return;
+
+        directoryPickerModal.open({
+            initialPath: input.value.trim(),
+            onSelect: (pickedPath) => {
+                input.value = pickedPath;
+                if (isModelPath) {
+                    this.updateModelFolderPaths(key);
+                } else {
+                    this.updateExtraFolderPaths(key);
+                }
+            },
+        });
     }
 
     async saveInputSetting(elementId, settingKey) {

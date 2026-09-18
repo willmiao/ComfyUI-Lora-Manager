@@ -608,6 +608,22 @@
                 "controlnet": "Chemins ControlNet"
             }
         },
+        "directoryPicker": {
+            "title": "Parcourir les dossiers",
+            "selectFolder": "Sélectionner ce dossier",
+            "goUp": "Remonter",
+            "pathPlaceholder": "Saisir un chemin...",
+            "go": "Aller",
+            "emptyFolder": "Aucun sous-dossier",
+            "loadError": "Échec du chargement du dossier"
+        },
+        "pathValidation": {
+            "valid": "Le chemin est valide",
+            "pathNotFound": "Le chemin n’existe pas",
+            "notADirectory": "N’est pas un dossier",
+            "notReadable": "Le chemin n’est pas lisible",
+            "notWritable": "Le chemin n’est pas accessible en écriture"
+        },
         "priorityTags": {
             "title": "Tags prioritaires",
             "description": "Personnalisez l'ordre de priorité des tags pour chaque type de modèle (par ex. : character, concept, style(toon|toon_style))",

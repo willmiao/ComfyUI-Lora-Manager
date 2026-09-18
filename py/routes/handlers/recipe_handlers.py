@@ -9,7 +9,6 @@ import re
 import asyncio
 import tempfile
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Protocol, Tuple
 
 from aiohttp import web
@@ -34,6 +33,7 @@ from ...utils.civitai_utils import (
     rewrite_preview_url,
 )
 from ...utils.constants import NSFW_LEVELS
+from ...utils.directory_browser import WINDOWS_DRIVES_TOKEN, browse_directory
 from ...utils.exif_utils import ExifUtils
 from ...utils.recipe_open_stats import RecipeOpenStats
 from ...recipes.merger import GenParamsMerger
@@ -3124,11 +3124,10 @@ class RecipeWorkflowHandler:
 class BatchImportHandler:
     """Handle batch import operations for recipes."""
 
-    # Virtual path token for the Windows drive list. Browsing up from a drive
-    # root (e.g. C:\) lands here so users can switch drives without typing a
-    # path. Only meaningful on Windows; elsewhere it falls through to normal
-    # path handling and fails the existence check.
-    WINDOWS_DRIVES_TOKEN = "__drives__"
+    # Virtual path token for the Windows drive list. Kept as a class
+    # attribute for backwards compatibility; the canonical definition lives
+    # in py/utils/directory_browser.py.
+    WINDOWS_DRIVES_TOKEN = WINDOWS_DRIVES_TOKEN
 
     def __init__(
         self,
@@ -3301,131 +3300,8 @@ class BatchImportHandler:
         """Browse a directory and return its contents (subdirectories and files)."""
         try:
             data = await request.json()
-            directory_path = data.get("path", "")
-
-            if os.name == "nt" and directory_path == self.WINDOWS_DRIVES_TOKEN:
-                return self._windows_drives_response()
-
-            # Default to the user's home directory. The frontend previously
-            # sent "/" as the initial path, which is POSIX-only: on Windows it
-            # resolves to the current drive root and then fails the access
-            # check below.
-            if not directory_path:
-                path = Path.home()
-            else:
-                path = Path(directory_path).expanduser().resolve()
-
-            # Access check: browsing intentionally covers the whole server
-            # filesystem (the server operator browses their own machine). On
-            # POSIX every absolute path is under "/", but Path("/") has no
-            # drive letter on Windows and can never anchor a drive-qualified
-            # path in relative_to(), so test for a drive there instead.
-            if os.name == "nt":
-                is_allowed = bool(path.drive)
-            else:
-                is_allowed = path.is_absolute()
-
-            if not is_allowed:
-                return web.json_response(
-                    {"success": False, "error": "Access denied to this directory"},
-                    status=403,
-                )
-
-            if not path.exists():
-                return web.json_response(
-                    {"success": False, "error": "Directory does not exist"},
-                    status=404,
-                )
-
-            if not path.is_dir():
-                return web.json_response(
-                    {"success": False, "error": "Path is not a directory"},
-                    status=400,
-                )
-
-            # List directory contents
-            directories = []
-            image_files = []
-
-            image_extensions = {
-                ".jpg",
-                ".jpeg",
-                ".png",
-                ".gif",
-                ".webp",
-                ".bmp",
-                ".tiff",
-                ".tif",
-            }
-
-            try:
-                for item in path.iterdir():
-                    try:
-                        if item.is_dir():
-                            # Skip hidden directories and common system folders
-                            if not item.name.startswith(".") and item.name not in [
-                                "__pycache__",
-                                "node_modules",
-                            ]:
-                                directories.append(
-                                    {
-                                        "name": item.name,
-                                        "path": str(item),
-                                        "is_parent": False,
-                                    }
-                                )
-                        elif item.is_file() and item.suffix.lower() in image_extensions:
-                            image_files.append(
-                                {
-                                    "name": item.name,
-                                    "path": str(item),
-                                    "size": item.stat().st_size,
-                                }
-                            )
-                    except (PermissionError, OSError):
-                        # Skip files/directories we can't access
-                        continue
-
-                # Sort directories and files alphabetically
-                directories.sort(key=lambda x: x["name"].lower())
-                image_files.sort(key=lambda x: x["name"].lower())
-
-                # Parent directory. A filesystem root is its own parent
-                # (parent == path): POSIX "/" gets no parent, while a Windows
-                # drive root (C:\) links up to the virtual drive list so users
-                # can switch drives. The previous str(path) != str(path.root)
-                # check misfired on Windows, where a drive root's parent is
-                # itself, producing an infinite self-loop.
-                if path.parent == path:
-                    parent_path = (
-                        self.WINDOWS_DRIVES_TOKEN if os.name == "nt" else None
-                    )
-                else:
-                    parent_path = str(path.parent)
-
-                return web.json_response(
-                    {
-                        "success": True,
-                        "current_path": str(path),
-                        "parent_path": parent_path,
-                        "directories": directories,
-                        "image_files": image_files,
-                        "image_count": len(image_files),
-                        "directory_count": len(directories),
-                    }
-                )
-
-            except PermissionError:
-                return web.json_response(
-                    {"success": False, "error": "Permission denied"},
-                    status=403,
-                )
-            except OSError as exc:
-                return web.json_response(
-                    {"success": False, "error": f"Error reading directory: {str(exc)}"},
-                    status=500,
-                )
-
+            payload, status = browse_directory(data.get("path", ""))
+            return web.json_response(payload, status=status)
         except json.JSONDecodeError:
             return web.json_response(
                 {"success": False, "error": "Invalid JSON"},
@@ -3434,30 +3310,3 @@ class BatchImportHandler:
         except Exception as exc:
             self._logger.error("Error browsing directory: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
-
-    def _windows_drives_response(self) -> web.Response:
-        """List available drive letters as a virtual directory (Windows only)."""
-        try:
-            drives = os.listdrives()
-        except AttributeError:  # Python < 3.12
-            drives = [
-                f"{letter}:\\"
-                for letter in "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                if os.path.exists(f"{letter}:\\")
-            ]
-        directories = [
-            {"name": drive, "path": drive, "is_parent": False} for drive in drives
-        ]
-        return web.json_response(
-            {
-                "success": True,
-                # Empty current_path marks the virtual level; the frontend
-                # disables folder selection there.
-                "current_path": "",
-                "parent_path": None,
-                "directories": directories,
-                "image_files": [],
-                "image_count": 0,
-                "directory_count": len(directories),
-            }
-        )

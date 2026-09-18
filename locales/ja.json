@@ -608,6 +608,22 @@
                 "controlnet": "ControlNetパス"
             }
         },
+        "directoryPicker": {
+            "title": "フォルダを参照",
+            "selectFolder": "このフォルダを選択",
+            "goUp": "上へ",
+            "pathPlaceholder": "パスを入力...",
+            "go": "移動",
+            "emptyFolder": "サブフォルダがありません",
+            "loadError": "ディレクトリの読み込みに失敗しました"
+        },
+        "pathValidation": {
+            "valid": "パスは有効です",
+            "pathNotFound": "パスが存在しません",
+            "notADirectory": "ディレクトリではありません",
+            "notReadable": "パスは読み取れません",
+            "notWritable": "パスは書き込めません"
+        },
         "priorityTags": {
             "title": "優先タグ",
             "description": "各モデルタイプのタグ優先順位をカスタマイズします (例: character, concept, style(toon|toon_style))",

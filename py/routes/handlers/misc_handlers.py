@@ -61,6 +61,7 @@ from .agent_handlers import AgentHandler
 from .download_routing_handlers import DownloadRoutingHandler
 from .model_handlers import ModelCivitaiHandler
 from ...utils.civitai_utils import rewrite_preview_url
+from ...utils.directory_browser import browse_directory
 from ...utils.example_images_paths import (
     find_non_compliant_items_in_example_images_root,
     is_valid_example_images_root,
@@ -3497,6 +3498,76 @@ class FileSystemHandler:
             logger.error("Failed to open wildcards location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def browse_directory(self, request: web.Request) -> web.Response:
+        """Browse a directory for the settings-UI directory picker."""
+        try:
+            data = await request.json()
+            payload, status = browse_directory(data.get("path", ""))
+            return web.json_response(payload, status=status)
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON"}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to browse directory: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    async def validate_path(self, request: web.Request) -> web.Response:
+        """Validate a filesystem path for the settings UI.
+
+        A well-formed request always returns HTTP 200; invalid paths are
+        reported via ``error_code`` in the payload. HTTP 400 is reserved for
+        malformed requests (missing path, invalid JSON).
+        """
+        try:
+            data = await request.json()
+            raw_path = data.get("path")
+            expect = data.get("expect", "directory")
+
+            if not raw_path or not isinstance(raw_path, str):
+                return web.json_response(
+                    {"success": False, "error": "Missing path parameter"}, status=400
+                )
+
+            # Business path convention: abspath only, never realpath.
+            path = os.path.abspath(os.path.expanduser(raw_path))
+
+            exists = os.path.exists(path)
+            is_directory = os.path.isdir(path) if exists else False
+            readable = bool(exists and os.access(path, os.R_OK))
+            writable = bool(exists and os.access(path, os.W_OK))
+
+            error_code = None
+            if not exists:
+                error_code = "path_not_found"
+            elif expect == "directory" and not is_directory:
+                error_code = "not_a_directory"
+            elif expect == "file" and not os.path.isfile(path):
+                error_code = "not_a_file"
+            elif not readable:
+                error_code = "not_readable"
+            elif not writable:
+                error_code = "not_writable"
+
+            return web.json_response(
+                {
+                    "success": True,
+                    "path": path,
+                    "exists": exists,
+                    "is_directory": is_directory,
+                    "readable": readable,
+                    "writable": writable,
+                    "error_code": error_code,
+                }
+            )
+        except json.JSONDecodeError:
+            return web.json_response(
+                {"success": False, "error": "Invalid JSON"}, status=400
+            )
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to validate path: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
 
 class CustomWordsHandler:
     """Handler for autocomplete via TagFTSIndex."""
@@ -4141,6 +4212,8 @@ class MiscHandlerSet:
             "open_settings_location": self.filesystem.open_settings_location,
             "open_backup_location": self.filesystem.open_backup_location,
             "open_wildcards_location": self.filesystem.open_wildcards_location,
+            "browse_directory": self.filesystem.browse_directory,
+            "validate_path": self.filesystem.validate_path,
             "search_custom_words": self.custom_words.search_custom_words,
             "search_wildcards": self.wildcards.search_wildcards,
             "get_supporters": self.supporters.get_supporters,

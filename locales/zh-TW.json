@@ -608,6 +608,22 @@
                 "controlnet": "ControlNet 路徑"
             }
         },
+        "directoryPicker": {
+            "title": "瀏覽資料夾",
+            "selectFolder": "選擇此資料夾",
+            "goUp": "上一層",
+            "pathPlaceholder": "輸入路徑...",
+            "go": "前往",
+            "emptyFolder": "沒有子資料夾",
+            "loadError": "目錄載入失敗"
+        },
+        "pathValidation": {
+            "valid": "路徑有效",
+            "pathNotFound": "路徑不存在",
+            "notADirectory": "不是目錄",
+            "notReadable": "路徑無法讀取",
+            "notWritable": "路徑無法寫入"
+        },
         "priorityTags": {
             "title": "優先標籤",
             "description": "為每種模型類型自訂標籤的優先順序 (例如: character, concept, style(toon|toon_style))",

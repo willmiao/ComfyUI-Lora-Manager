@@ -608,6 +608,22 @@
                 "controlnet": "Rutas de ControlNet"
             }
         },
+        "directoryPicker": {
+            "title": "Explorar carpetas",
+            "selectFolder": "Seleccionar esta carpeta",
+            "goUp": "Subir",
+            "pathPlaceholder": "Introducir ruta...",
+            "go": "Ir",
+            "emptyFolder": "No hay subcarpetas",
+            "loadError": "Error al cargar el directorio"
+        },
+        "pathValidation": {
+            "valid": "La ruta es válida",
+            "pathNotFound": "La ruta no existe",
+            "notADirectory": "No es un directorio",
+            "notReadable": "La ruta no es legible",
+            "notWritable": "La ruta no es escribible"
+        },
         "priorityTags": {
             "title": "Etiquetas prioritarias",
             "description": "Personaliza el orden de prioridad de etiquetas para cada tipo de modelo (p. ej., character, concept, style(toon|toon_style))",

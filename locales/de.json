@@ -608,6 +608,22 @@
                 "controlnet": "ControlNet-Pfade"
             }
         },
+        "directoryPicker": {
+            "title": "Ordner durchsuchen",
+            "selectFolder": "Diesen Ordner auswählen",
+            "goUp": "Nach oben",
+            "pathPlaceholder": "Pfad eingeben...",
+            "go": "Los",
+            "emptyFolder": "Keine Unterordner",
+            "loadError": "Verzeichnis konnte nicht geladen werden"
+        },
+        "pathValidation": {
+            "valid": "Pfad ist gültig",
+            "pathNotFound": "Pfad existiert nicht",
+            "notADirectory": "Kein Verzeichnis",
+            "notReadable": "Pfad ist nicht lesbar",
+            "notWritable": "Pfad ist nicht beschreibbar"
+        },
         "priorityTags": {
             "title": "Prioritäts-Tags",
             "description": "Passen Sie die Tag-Prioritätsreihenfolge für jeden Modelltyp an (z. B. character, concept, style(toon|toon_style))",

@@ -608,6 +608,22 @@
                 "controlnet": "נתיבי ControlNet"
             }
         },
+        "directoryPicker": {
+            "title": "עיון בתיקיות",
+            "selectFolder": "בחר תיקייה זו",
+            "goUp": "למעלה",
+            "pathPlaceholder": "הזן נתיב...",
+            "go": "עבור",
+            "emptyFolder": "אין תתי-תיקיות",
+            "loadError": "טעינת התיקייה נכשלה"
+        },
+        "pathValidation": {
+            "valid": "הנתיב תקין",
+            "pathNotFound": "הנתיב לא קיים",
+            "notADirectory": "לא תיקייה",
+            "notReadable": "הנתיב לא ניתן לקריאה",
+            "notWritable": "הנתיב לא ניתן לכתיבה"
+        },
         "priorityTags": {
             "title": "תגיות עדיפות",
             "description": "התאם את סדר העדיפות של התגיות עבור כל סוג מודל (לדוגמה: character, concept, style(toon|toon_style))",

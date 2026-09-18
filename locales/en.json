@@ -608,6 +608,22 @@
         "controlnet": "ControlNet Paths"
       }
     },
+    "directoryPicker": {
+      "title": "Browse Folders",
+      "selectFolder": "Select This Folder",
+      "goUp": "Up",
+      "pathPlaceholder": "Enter path...",
+      "go": "Go",
+      "emptyFolder": "No subfolders",
+      "loadError": "Failed to load directory"
+    },
+    "pathValidation": {
+      "valid": "Path is valid",
+      "pathNotFound": "Path does not exist",
+      "notADirectory": "Not a directory",
+      "notReadable": "Path is not readable",
+      "notWritable": "Path is not writable"
+    },
     "priorityTags": {
       "title": "Priority Tags",
       "description": "Customize the tag priority order for each model type (e.g., character, concept, style(toon|toon_style))",
