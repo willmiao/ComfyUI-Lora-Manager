@@ -383,6 +383,7 @@
             "general": "Allgemein",
             "interface": "Oberfläche",
             "library": "Bibliothek",
+            "organization": "Organisation",
             "modelPaths": "Modellpfade"
         },
         "search": {

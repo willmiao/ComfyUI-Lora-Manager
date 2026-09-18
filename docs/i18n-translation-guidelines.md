@@ -66,6 +66,11 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > section" — and re-translated in all 9 locales. The `on disk` phrase now survives only in
 > the ComfyUI variant (`descriptionComfyUI`).
 
+> **Status (2026-09, settings Organization tab):** the settings modal split its overloaded
+> Library tab, adding the single `settings.nav.organization` key (renderings in §2,
+> "Settings Organization tab"). All 9 locales are translated, so the "no remaining
+> placeholders" claim holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -370,6 +375,27 @@ Deleting a folder **never cascades over model files** — the backend refuses it
 clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{message}` tokens in
 `sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
 are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
+
+### Settings Organization tab
+
+The settings modal's fourth nav tab groups everything about how files are arranged on
+disk: download path templates, priority tags, and auto-organize exclusions. The label is
+the **noun for arranging files**, matching each locale's existing
+`settings.sections.autoOrganize` rendering minus the "auto":
+
+| Locale | `settings.nav.organization` |
+|---|---|
+| fr | Organisation |
+| zh-CN | 整理 |
+| zh-TW | 整理 |
+| ja | 整理 |
+| ko | 정리 |
+| de | Organisation |
+| es | Organización |
+| ru | Организация |
+| he | ארגון |
+
+zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
 
 ### Chip reordering (model tags / trigger words)
 

@@ -383,6 +383,7 @@
             "general": "Général",
             "interface": "Interface",
             "library": "Bibliothèque",
+            "organization": "Organisation",
             "modelPaths": "Chemins de modèles"
         },
         "search": {

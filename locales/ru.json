@@ -383,6 +383,7 @@
             "general": "Общее",
             "interface": "Интерфейс",
             "library": "Библиотека",
+            "organization": "Организация",
             "modelPaths": "Пути к моделям"
         },
         "search": {

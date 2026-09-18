@@ -383,6 +383,7 @@
       "general": "General",
       "interface": "Interface",
       "library": "Library",
+      "organization": "Organization",
       "modelPaths": "Model Paths"
     },
     "search": {
