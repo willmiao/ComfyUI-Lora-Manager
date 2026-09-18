@@ -2741,6 +2741,11 @@
             "content": "Analysez et gérez les fichiers VAE, Upscaler, Text Encoder, CLIP Vision et ControlNet, et téléchargez-les depuis CivitAI, le tout depuis une page dédiée.",
             "enable": "Activer les autres modèles",
             "openSettings": "Ouvrir les paramètres"
+        },
+        "pager": {
+            "previous": "Message précédent",
+            "next": "Message suivant",
+            "position": "Message {current} sur {total}"
         }
     }
 }

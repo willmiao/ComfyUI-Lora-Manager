@@ -2741,6 +2741,11 @@
             "content": "Сканирование и управление файлами VAE, Upscaler, Text Encoder, CLIP Vision и ControlNet, а также загрузка их с CivitAI — всё на одной отдельной странице.",
             "enable": "Включить другие модели",
             "openSettings": "Открыть настройки"
+        },
+        "pager": {
+            "previous": "Предыдущее уведомление",
+            "next": "Следующее уведомление",
+            "position": "Уведомление {current} из {total}"
         }
     }
 }

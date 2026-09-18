@@ -2405,6 +2405,17 @@ export class SettingsManager {
 
         try {
             await this.saveSetting('folder_paths', folderPaths);
+
+            // The "model folders need setup" startup banner is obsolete once
+            // at least one folder path is configured.
+            const hasAnyPath = Object.values(folderPaths).some(value => {
+                const list = Array.isArray(value) ? value : [value];
+                return list.some(path => typeof path === 'string' && path.trim());
+            });
+            if (hasAnyPath) {
+                bannerService.removeBannerElement('startup-missing-model-paths');
+            }
+
             this._markModelPathsDirty();
             showToast('settings.modelPaths.saveSuccessRestart', {}, 'success');
 
@@ -2451,7 +2462,9 @@ export class SettingsManager {
             title: translate('settings.modelPaths.pendingRestartBannerTitle', {}, 'Restart required to apply path changes'),
             content: translate('settings.modelPaths.pendingRestartBannerMessage', {}, 'Model library paths were updated. Restart the LoRA Manager server to scan the new folders.'),
             dismissible: true,
-            priority: 60,
+            // Above startup warnings (60), below startup errors (90): a pending
+            // restart is the most actionable state and should preempt prompts.
+            priority: 80,
         });
     }
 

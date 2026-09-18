@@ -31,6 +31,9 @@ class BannerService {
         this.banners = new Map();
         this.container = null;
         this.initialized = false;
+        // Only one banner is rendered at a time; this index selects which of
+        // the active (non-dismissed) banners is currently displayed.
+        this.currentBannerIndex = 0;
         this.recentHistory = this.loadBannerHistory();
         this.bannerHistoryViewedAt = this.loadBannerHistoryViewedAt();
 
@@ -121,12 +124,22 @@ class BannerService {
      */
     registerBanner(id, bannerConfig) {
         this.banners.set(id, bannerConfig);
-        
-        // If already initialized, render the banner immediately
-        if (this.initialized && !this.isBannerDismissed(id) && this.container) {
-            this.renderBanner(bannerConfig);
-            this.updateContainerVisibility();
+
+        if (!this.initialized || !this.container || this.isBannerDismissed(id)) {
+            return;
         }
+
+        // Preempt the currently displayed banner only when the new one has a
+        // strictly higher priority (i.e. sorts earlier).
+        const activeBanners = this.getSortedActiveBanners();
+        const displayedId = this.container.querySelector('.banner-item')
+            ?.getAttribute('data-banner-id');
+        const newIndex = activeBanners.findIndex(banner => banner.id === id);
+        const displayedIndex = activeBanners.findIndex(banner => banner.id === displayedId);
+        if (displayedIndex === -1 || (newIndex !== -1 && newIndex < displayedIndex)) {
+            this.currentBannerIndex = Math.max(newIndex, 0);
+        }
+        this.renderCurrentBanner();
     }
 
     /**
@@ -164,11 +177,10 @@ class BannerService {
             if (banner && typeof banner.onRemove === 'function') {
                 banner.onRemove(bannerElement);
             }
-            
+
             bannerElement.style.animation = 'banner-slide-up 0.3s ease-in-out forwards';
             setTimeout(() => {
-                bannerElement.remove();
-                this.updateContainerVisibility();
+                this.renderCurrentBanner();
             }, 300);
         }
 
@@ -194,27 +206,86 @@ class BannerService {
     }
 
     /**
+     * Get active (non-dismissed) banners sorted by priority, highest first
+     * @returns {Object[]}
+     */
+    getSortedActiveBanners() {
+        return Array.from(this.banners.values())
+            .filter(banner => !this.isBannerDismissed(banner.id))
+            .sort((a, b) => (b.priority || 0) - (a.priority || 0));
+    }
+
+    /**
      * Show all active (non-dismissed) banners
      */
     async showActiveBanners() {
         if (!this.container) return;
 
-        const activeBanners = Array.from(this.banners.values())
-            .filter(banner => !this.isBannerDismissed(banner.id))
-            .sort((a, b) => (b.priority || 0) - (a.priority || 0));
-
-        activeBanners.forEach(banner => {
-            this.renderBanner(banner);
-        });
-
-        this.updateContainerVisibility();
+        this.currentBannerIndex = 0;
+        this.renderCurrentBanner();
     }
 
     /**
-     * Render a banner to the DOM
-     * @param {Object} banner - Banner configuration
+     * Render the currently selected banner into the container. Only one
+     * banner is visible at a time; a pager lets the user cycle through the
+     * remaining active banners.
      */
-    renderBanner(banner) {
+    renderCurrentBanner() {
+        if (!this.container) return;
+
+        const activeBanners = this.getSortedActiveBanners();
+
+        this.container.innerHTML = '';
+
+        if (activeBanners.length === 0) {
+            this.currentBannerIndex = 0;
+            this.updateContainerVisibility();
+            return;
+        }
+
+        if (this.currentBannerIndex >= activeBanners.length) {
+            this.currentBannerIndex = activeBanners.length - 1;
+        }
+        if (this.currentBannerIndex < 0) {
+            this.currentBannerIndex = 0;
+        }
+
+        // Record every active banner once so dismissed/cycled-away banners
+        // remain reachable through the notification center history.
+        activeBanners.forEach(banner => this.recordBannerAppearance(banner));
+
+        const banner = activeBanners[this.currentBannerIndex];
+        const bannerElement = this.buildBannerElement(banner, activeBanners.length);
+        this.container.appendChild(bannerElement);
+
+        this.updateContainerVisibility();
+
+        // Call onRegister callback if provided
+        if (typeof banner.onRegister === 'function') {
+            banner.onRegister(bannerElement);
+        }
+    }
+
+    /**
+     * Advance the displayed banner by offset, wrapping around
+     * @param {number} offset - +1 for next, -1 for previous
+     */
+    showAdjacentBanner(offset) {
+        const activeBanners = this.getSortedActiveBanners();
+        if (activeBanners.length < 2) return;
+
+        this.currentBannerIndex =
+            (this.currentBannerIndex + offset + activeBanners.length) % activeBanners.length;
+        this.renderCurrentBanner();
+    }
+
+    /**
+     * Build a banner DOM element
+     * @param {Object} banner - Banner configuration
+     * @param {number} totalCount - Total number of active banners
+     * @returns {HTMLElement}
+     */
+    buildBannerElement(banner, totalCount) {
         const bannerElement = document.createElement('div');
         bannerElement.className = 'banner-item';
         bannerElement.setAttribute('data-banner-id', banner.id);
@@ -230,10 +301,33 @@ class BannerService {
             </a>`;
         }).join('') : '';
 
-        const dismissButtonHtml = banner.dismissible ? 
+        const dismissButtonHtml = banner.dismissible ?
             `<button class="banner-dismiss" onclick="bannerService.dismissBanner('${banner.id}').catch(console.error)" title="Dismiss">
                 <i class="fas fa-times"></i>
             </button>` : '';
+
+        let pagerHtml = '';
+        if (totalCount > 1) {
+            const previousLabel = translate('banners.pager.previous', {}, 'Previous message');
+            const nextLabel = translate('banners.pager.next', {}, 'Next message');
+            const positionLabel = translate('banners.pager.position', {
+                current: this.currentBannerIndex + 1,
+                total: totalCount
+            }, `Message ${this.currentBannerIndex + 1} of ${totalCount}`);
+
+            pagerHtml = `
+                <div class="banner-pager">
+                    <button type="button" class="banner-pager-btn" data-pager="prev"
+                            aria-label="${previousLabel}" title="${previousLabel}">
+                        <i class="fas fa-chevron-left"></i>
+                    </button>
+                    <span class="banner-pager-indicator" aria-label="${positionLabel}">${this.currentBannerIndex + 1} / ${totalCount}</span>
+                    <button type="button" class="banner-pager-btn" data-pager="next"
+                            aria-label="${nextLabel}" title="${nextLabel}">
+                        <i class="fas fa-chevron-right"></i>
+                    </button>
+                </div>`;
+        }
 
         bannerElement.innerHTML = `
             <div class="banner-content">
@@ -244,18 +338,19 @@ class BannerService {
                 <div class="banner-actions">
                     ${actionsHtml}
                 </div>
+                ${pagerHtml}
             </div>
             ${dismissButtonHtml}
         `;
 
-        this.container.appendChild(bannerElement);
+        bannerElement.querySelectorAll('.banner-pager-btn').forEach(button => {
+            button.addEventListener('click', (event) => {
+                event.preventDefault();
+                this.showAdjacentBanner(button.getAttribute('data-pager') === 'next' ? 1 : -1);
+            });
+        });
 
-        this.recordBannerAppearance(banner);
-
-        // Call onRegister callback if provided
-        if (typeof banner.onRegister === 'function') {
-            banner.onRegister(bannerElement);
-        }
+        return bannerElement;
     }
 
     /**
@@ -458,17 +553,18 @@ class BannerService {
      * @param {string} bannerId - Banner ID to remove
      */
     removeBannerElement(bannerId) {
+        // Also remove from banners map
+        this.banners.delete(bannerId);
+
         const bannerElement = document.querySelector(`[data-banner-id="${bannerId}"]`);
         if (bannerElement) {
             bannerElement.style.animation = 'banner-slide-up 0.3s ease-in-out forwards';
             setTimeout(() => {
-                bannerElement.remove();
-                this.updateContainerVisibility();
+                this.renderCurrentBanner();
             }, 300);
+        } else {
+            this.renderCurrentBanner();
         }
-
-        // Also remove from banners map
-        this.banners.delete(bannerId);
     }
 
     prepareCommunitySupportBanner() {

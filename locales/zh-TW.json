@@ -2741,6 +2741,11 @@
             "content": "在專屬頁面中掃描和管理 VAE、Upscaler、Text Encoder、CLIP Vision 和 ControlNet 檔案，並從 CivitAI 下載。",
             "enable": "啟用其他模型",
             "openSettings": "開啟設定"
+        },
+        "pager": {
+            "previous": "上一則通知",
+            "next": "下一則通知",
+            "position": "第 {current} 則通知，共 {total} 則"
         }
     }
 }

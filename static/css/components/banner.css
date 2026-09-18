@@ -118,6 +118,44 @@
     transform: translateY(-1px);
 }
 
+/* Banner Pager (cycles through multiple active banners) */
+.banner-pager {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-shrink: 0;
+    margin-left: var(--space-2);
+}
+
+.banner-pager-btn {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition-base);
+    font-size: 0.75em;
+    padding: 0;
+}
+
+.banner-pager-btn:hover {
+    background: oklch(var(--lora-accent) / 0.1);
+    color: var(--lora-accent);
+}
+
+.banner-pager-indicator {
+    font-size: 0.8em;
+    color: var(--text-muted);
+    min-width: 2.8em;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+}
+
 /* Dismiss Button */
 .banner-dismiss {
     position: absolute;
@@ -182,6 +220,10 @@
         width: 100%;
         flex-wrap: wrap;
         justify-content: flex-start;
+    }
+
+    .banner-pager {
+        margin-left: 0;
     }
     
     .banner-action {

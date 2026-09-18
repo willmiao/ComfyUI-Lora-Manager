@@ -2741,6 +2741,11 @@
       "content": "Scan and manage VAE, upscaler, text encoder, CLIP vision and ControlNet files — and download them from CivitAI — from one dedicated page.",
       "enable": "Enable Other Models",
       "openSettings": "Open Settings"
+    },
+    "pager": {
+      "previous": "Previous message",
+      "next": "Next message",
+      "position": "Message {current} of {total}"
     }
   }
 }

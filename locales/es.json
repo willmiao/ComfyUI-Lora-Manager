@@ -2741,6 +2741,11 @@
             "content": "Escanea y gestiona archivos VAE, Upscaler, Text Encoder, CLIP Vision y ControlNet, y descárgalos desde CivitAI, todo desde una página dedicada.",
             "enable": "Activar otros modelos",
             "openSettings": "Abrir configuración"
+        },
+        "pager": {
+            "previous": "Notificación anterior",
+            "next": "Notificación siguiente",
+            "position": "Notificación {current} de {total}"
         }
     }
 }

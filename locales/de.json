@@ -2741,6 +2741,11 @@
             "content": "Scannen und verwalten Sie VAE-, Upscaler-, Text-Encoder-, CLIP-Vision- und ControlNet-Dateien und laden Sie sie von CivitAI herunter, alles auf einer eigenen Seite.",
             "enable": "Weitere Modelle aktivieren",
             "openSettings": "Einstellungen öffnen"
+        },
+        "pager": {
+            "previous": "Vorherige Mitteilung",
+            "next": "Nächste Mitteilung",
+            "position": "Mitteilung {current} von {total}"
         }
     }
 }

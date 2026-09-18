@@ -2741,6 +2741,11 @@
             "content": "סרוק ונהל קבצי VAE, Upscaler, Text Encoder, CLIP Vision ו-ControlNet, והורד אותם מ-CivitAI — מהעמוד הייעודי.",
             "enable": "הפעל מודלים אחרים",
             "openSettings": "פתח הגדרות"
+        },
+        "pager": {
+            "previous": "הודעה קודמת",
+            "next": "הודעה הבאה",
+            "position": "הודעה {current} מתוך {total}"
         }
     }
 }

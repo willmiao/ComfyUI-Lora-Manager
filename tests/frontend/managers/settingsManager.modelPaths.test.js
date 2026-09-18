@@ -415,4 +415,75 @@ describe('SettingsManager Model Paths section', () => {
             .filter((id) => id.startsWith('model-paths-restart-'));
         expect(restartBanners).toHaveLength(1);
     });
+
+    it('gives the restart banner a higher priority than startup warnings', async () => {
+        buildModalDom();
+        setStandaloneSettings();
+
+        const manager = createManager();
+        manager.saveSetting = vi.fn().mockResolvedValue();
+        manager.setupModelPathsSection();
+        manager.loadModelPaths();
+
+        manager.addModelFolderPathRow('loras');
+        document.querySelector('#modelFolderPaths-loras .extra-folder-path-input').value = '/data/loras';
+        await manager.updateModelFolderPaths('loras');
+
+        const restartBanner = Array.from(bannerService.banners.values())
+            .find((banner) => banner.id.startsWith('model-paths-restart-'));
+        // Startup warnings map to 60; the restart cue must outrank them so it
+        // preempts the "model folders need setup" prompt in the banner pager.
+        expect(restartBanner.priority).toBeGreaterThan(60);
+    });
+
+    it('removes the "model folders need setup" startup banner once a path is saved', async () => {
+        buildModalDom();
+        setStandaloneSettings();
+
+        bannerService.registerBanner('startup-missing-model-paths', {
+            id: 'startup-missing-model-paths',
+            title: 'Model folders need setup',
+            content: 'stub',
+            dismissible: false,
+            priority: 60,
+        });
+
+        const manager = createManager();
+        manager.saveSetting = vi.fn().mockResolvedValue();
+        manager.setupModelPathsSection();
+        manager.loadModelPaths();
+
+        manager.addModelFolderPathRow('loras');
+        document.querySelector('#modelFolderPaths-loras .extra-folder-path-input').value = '/data/loras';
+        await manager.updateModelFolderPaths('loras');
+
+        expect(bannerService.banners.has('startup-missing-model-paths')).toBe(false);
+    });
+
+    it('keeps the setup banner when the saved paths are all empty', async () => {
+        buildModalDom();
+        setStandaloneSettings({ folder_paths: { loras: ['/data/loras'] } });
+
+        const manager = createManager();
+        manager.saveSetting = vi.fn().mockResolvedValue();
+        manager.setupModelPathsSection();
+        manager.loadModelPaths();
+
+        bannerService.registerBanner('startup-missing-model-paths', {
+            id: 'startup-missing-model-paths',
+            title: 'Model folders need setup',
+            content: 'stub',
+            dismissible: false,
+            priority: 60,
+        });
+
+        // Clear every row and save: an all-empty path set must not retire the
+        // setup prompt.
+        document.querySelectorAll('#modelFolderPaths-loras .extra-folder-path-input')
+            .forEach((input) => { input.value = ''; });
+        await manager.updateModelFolderPaths('loras');
+
+        expect(manager.saveSetting).toHaveBeenCalled();
+        expect(bannerService.banners.has('startup-missing-model-paths')).toBe(true);
+    });
 });
