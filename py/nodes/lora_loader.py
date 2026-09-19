@@ -16,6 +16,7 @@ from .utils import (
     parse_lora_syntax,
     validate_lora_entries,
 )
+from .anima_remap import maybe_remap_lora, get_model_block_count
 
 logger = logging.getLogger(__name__)
 
@@ -81,7 +82,7 @@ def _format_loaded_loras(loaded_loras):
     return " ".join(formatted_loras)
 
 
-def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
+def _apply_entries(model, clip, lora_entries, nunchaku_model_kind, anima_remap=True):
     loaded_loras = []
     all_trigger_words = []
 
@@ -101,11 +102,19 @@ def _apply_entries(model, clip, lora_entries, nunchaku_model_kind):
             model = nunchaku_load_qwen_loras(model, qwen_lora_configs)
         return model, clip, loaded_loras, all_trigger_words
 
+    # Detect model block count once for Anima remap
+    model_block_count = None
+    if anima_remap and nunchaku_model_kind is None:
+        model_block_count = get_model_block_count(model)
+
     for entry in lora_entries:
         if nunchaku_model_kind == "flux":
             model = nunchaku_load_lora(model, entry["input_path"], entry["model_strength"])
         else:
             lora = comfy.utils.load_torch_file(entry["absolute_path"], safe_load=True)
+            # Auto-remap LoRA block indices for Anima model family
+            if model_block_count is not None:
+                lora = maybe_remap_lora(lora, model_block_count)
             model, clip = comfy.sd.load_lora_for_models(
                 model,
                 clip,
@@ -166,7 +175,7 @@ class LoraLoaderLM:
         elif nunchaku_model_kind == "qwen_image":
             logger.info("Detected Nunchaku Qwen-Image model")
 
-        model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
+        model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind, anima_remap)
         trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
         return (model, clip, trigger_words_text, formatted_loras_text)
@@ -181,6 +190,10 @@ class LoraTextLoaderLM:
         return {
             "required": {
                 "model": ("MODEL",),
+                "anima_remap": ("BOOLEAN", {
+                    "default": True,
+                    "tooltip": "Auto-remap LoRA block indices for Anima model family (Base→2.9B→3.8B)",
+                }),
                 "lora_syntax": ("STRING", {
                     "forceInput": True,
                     "tooltip": "Format: <lora:lora_name:strength> separated by spaces or punctuation",
@@ -196,7 +209,7 @@ class LoraTextLoaderLM:
     RETURN_NAMES = ("MODEL", "CLIP", "trigger_words", "loaded_loras")
     FUNCTION = "load_loras_from_text"
 
-    def load_loras_from_text(self, model, lora_syntax, clip=None, lora_stack=None):
+    def load_loras_from_text(self, model, lora_syntax, anima_remap=True, clip=None, lora_stack=None):
         """Load LoRAs based on text syntax input."""
         lora_entries = _collect_stack_entries(lora_stack)
         for lora in parse_lora_syntax(lora_syntax):
@@ -216,7 +229,7 @@ class LoraTextLoaderLM:
         elif nunchaku_model_kind == "qwen_image":
             logger.info("Detected Nunchaku Qwen-Image model")
 
-        model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind)
+        model, clip, loaded_loras, all_trigger_words = _apply_entries(model, clip, lora_entries, nunchaku_model_kind, anima_remap)
         trigger_words_text = ",, ".join(all_trigger_words) if all_trigger_words else ""
         formatted_loras_text = _format_loaded_loras(loaded_loras)
         return (model, clip, trigger_words_text, formatted_loras_text)

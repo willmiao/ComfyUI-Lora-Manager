@@ -1,0 +1,11 @@
+{
+  "source_checkpoint_path": "models/anima_base.safetensors",
+  "output_checkpoint_path": "models/anima_2.9B_muted.safetensors",
+  "old_block_count": 28,
+  "new_block_count": 40,
+  "insertion_positions": [2, 5, 8, 11, 14, 17, 21, 24, 27, 30, 33, 36],
+  "inserted_to_source": {
+    "2": 1, "5": 3, "8": 5, "11": 7, "14": 9, "17": 11,
+    "21": 14, "24": 16, "27": 18, "30": 20, "33": 22, "36": 24
+  }
+}
