@@ -1,12 +1,14 @@
 import { modalManager } from './ModalManager.js';
 import { showToast } from '../utils/uiHelpers.js';
 import { state, createDefaultSettings } from '../state/index.js';
-import { resetAndReload } from '../api/modelApiFactory.js';
+import { resetAndReload, getModelApiClient } from '../api/modelApiFactory.js';
 import { 
     DOWNLOAD_PATH_TEMPLATES, 
     MAPPABLE_BASE_MODELS, 
     PATH_TEMPLATE_PLACEHOLDERS, 
     DEFAULT_PATH_TEMPLATES, 
+    FILENAME_TEMPLATE_PLACEHOLDERS,
+    DEFAULT_FILENAME_TEMPLATES,
     DEFAULT_PRIORITY_TAG_CONFIG,
     getMappableBaseModelsDynamic
 } from '../utils/constants.js';
@@ -34,6 +36,13 @@ const OTHER_SUB_TYPE_LABEL_KEYS = {
     text_encoder: 'settings.folderSettings.subTypeTextEncoder',
     clip_vision: 'settings.folderSettings.subTypeClipVision',
     controlnet: 'settings.folderSettings.subTypeControlnet',
+};
+
+// Singular filename-template model type -> plural API model type (MODEL_TYPES)
+const FILENAME_TEMPLATE_MODEL_TYPES = {
+    lora: 'loras',
+    checkpoint: 'checkpoints',
+    embedding: 'embeddings',
 };
 
 export class SettingsManager {
@@ -146,6 +155,25 @@ export class SettingsManager {
         }
 
         merged.download_path_templates = { ...DEFAULT_PATH_TEMPLATES, ...templates };
+
+        let filenameTemplates = backendSettings?.download_filename_templates;
+        if (typeof filenameTemplates === 'string') {
+            try {
+                const parsed = JSON.parse(filenameTemplates);
+                if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                    filenameTemplates = parsed;
+                }
+            } catch (parseError) {
+                console.warn('Failed to parse download_filename_templates string from backend, using defaults');
+                filenameTemplates = null;
+            }
+        }
+
+        if (!filenameTemplates || typeof filenameTemplates !== 'object' || Array.isArray(filenameTemplates)) {
+            filenameTemplates = {};
+        }
+
+        merged.download_filename_templates = { ...DEFAULT_FILENAME_TEMPLATES, ...filenameTemplates };
 
         const priorityTags = backendSettings?.priority_tags;
         const normalizedPriority = { ...DEFAULT_PRIORITY_TAG_CONFIG };
@@ -421,6 +449,31 @@ export class SettingsManager {
                 });
 
                 customInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.target.blur();
+                    }
+                });
+            }
+        });
+
+        ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
+            const filenameInput = document.getElementById(`${modelType}FilenameTemplate`);
+            if (filenameInput) {
+                filenameInput.addEventListener('input', (e) => {
+                    const template = e.target.value;
+                    settingsManager.validateFilenameTemplate(modelType, template);
+                    settingsManager.updateFilenamePreview(modelType, template);
+                    settingsManager.updateFilenameTemplateApplyButton(modelType, template);
+                });
+
+                filenameInput.addEventListener('blur', (e) => {
+                    const template = e.target.value;
+                    if (settingsManager.validateFilenameTemplate(modelType, template)) {
+                        settingsManager.updateFilenameTemplate(modelType, template);
+                    }
+                });
+
+                filenameInput.addEventListener('keydown', (e) => {
                     if (e.key === 'Enter') {
                         e.target.blur();
                     }
@@ -1141,6 +1194,9 @@ export class SettingsManager {
 
         // Load download path templates
         this.loadDownloadPathTemplates();
+
+        // Load download filename templates
+        this.loadFilenameTemplates();
 
         // Load priority tag settings
         this.loadPriorityTagSettings();
@@ -2794,6 +2850,146 @@ export class SettingsManager {
         } catch (error) {
             console.error('Error saving download path templates:', error);
             showToast('toast.settings.downloadTemplatesFailed', { message: error.message }, 'error');
+        }
+    }
+
+    loadFilenameTemplates() {
+        const templates = state.global.settings.download_filename_templates || DEFAULT_FILENAME_TEMPLATES;
+
+        ['lora', 'checkpoint', 'embedding'].forEach(modelType => {
+            const input = document.getElementById(`${modelType}FilenameTemplate`);
+            if (!input) return;
+
+            const template = templates[modelType] || '';
+            input.value = template;
+            this.validateFilenameTemplate(modelType, template);
+            this.updateFilenamePreview(modelType, template);
+            this.updateFilenameTemplateApplyButton(modelType, template);
+        });
+    }
+
+    validateFilenameTemplate(modelType, template) {
+        const validationElement = document.getElementById(`${modelType}FilenameValidation`);
+        if (!validationElement) return true;
+
+        // Reset validation state
+        validationElement.innerHTML = '';
+        validationElement.className = 'template-validation';
+
+        if (!template) {
+            validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.filenameTemplates.validation.keepOriginal', {}, 'Valid (keep original filename)')}`;
+            validationElement.classList.add('valid');
+            return true;
+        }
+
+        // A filename stem cannot contain path separators or OS-illegal characters
+        const invalidChars = /[/\\<>:"|?*]/;
+        if (invalidChars.test(template)) {
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.filenameTemplates.validation.invalidChars', {}, 'Invalid characters detected (a filename cannot contain / \\ < > : " | ? *)')}`;
+            validationElement.classList.add('invalid');
+            return false;
+        }
+
+        // Extract placeholders
+        const placeholderRegex = /\{([^}]+)\}/g;
+        const matches = template.match(placeholderRegex) || [];
+
+        // Check for invalid placeholders
+        const invalidPlaceholders = matches.filter(match =>
+            !FILENAME_TEMPLATE_PLACEHOLDERS.includes(match)
+        );
+
+        if (invalidPlaceholders.length > 0) {
+            validationElement.innerHTML = `<i class="fas fa-times"></i> ${translate('settings.filenameTemplates.validation.invalidPlaceholder', { placeholder: invalidPlaceholders[0] }, `Invalid placeholder: ${invalidPlaceholders[0]}`)}`;
+            validationElement.classList.add('invalid');
+            return false;
+        }
+
+        // Template is valid
+        validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.filenameTemplates.validation.validTemplate', {}, 'Valid template')}`;
+        validationElement.classList.add('valid');
+        return true;
+    }
+
+    updateFilenameTemplate(modelType, template) {
+        if (!this.validateFilenameTemplate(modelType, template)) {
+            return; // Don't save invalid templates
+        }
+
+        // Update state
+        if (!state.global.settings.download_filename_templates) {
+            state.global.settings.download_filename_templates = { ...DEFAULT_FILENAME_TEMPLATES };
+        }
+        state.global.settings.download_filename_templates[modelType] = template;
+
+        // Update preview and apply-button state
+        this.updateFilenamePreview(modelType, template);
+        this.updateFilenameTemplateApplyButton(modelType, template);
+
+        // Save settings
+        this.saveFilenameTemplates();
+    }
+
+    updateFilenameTemplateApplyButton(modelType, template) {
+        const button = document.getElementById(`${modelType}ApplyFilenameTemplate`);
+        if (!button) return;
+
+        // An empty template keeps original filenames, so there is nothing to apply
+        button.disabled = !template;
+    }
+
+    updateFilenamePreview(modelType, template) {
+        const previewElement = document.getElementById(`${modelType}FilenamePreview`);
+        if (!previewElement) return;
+
+        if (!template) {
+            // Empty template keeps the original filename untouched
+            previewElement.textContent = 'V1.safetensors';
+        } else {
+            const exampleStem = template
+                .replaceAll('{model_name}', 'model-name')
+                .replaceAll('{version_name}', 'v3')
+                .replaceAll('{base_model}', 'Flux.1 D')
+                .replaceAll('{author}', 'authorname')
+                .replaceAll('{first_tag}', 'style')
+                .replaceAll('{hash_short}', 'a1b2c3d4e5')
+                .replaceAll('{original_name}', 'V1');
+            previewElement.textContent = `${exampleStem}.safetensors`;
+        }
+        previewElement.style.display = 'block';
+    }
+
+    async saveFilenameTemplates() {
+        try {
+            // Save to backend using universal save method
+            await this.saveSetting('download_filename_templates', state.global.settings.download_filename_templates);
+
+            showToast('toast.settings.filenameTemplatesUpdated', {}, 'success');
+
+        } catch (error) {
+            console.error('Error saving download filename templates:', error);
+            showToast('toast.settings.filenameTemplatesFailed', { message: error.message }, 'error');
+        }
+    }
+
+    async applyFilenameTemplate(modelType) {
+        const template = state.global.settings.download_filename_templates?.[modelType] || '';
+        if (!template) {
+            showToast('settings.filenameTemplates.emptyTemplateInfo', {}, 'info');
+            return;
+        }
+
+        if (!confirm(translate('settings.filenameTemplates.confirmApply', {}, 'Rename all existing files of this model type according to the filename template? The original filename is preserved in each model\'s metadata.'))) {
+            return;
+        }
+
+        try {
+            const apiClient = getModelApiClient(FILENAME_TEMPLATE_MODEL_TYPES[modelType]);
+            await apiClient.applyFilenameTemplate();
+            resetAndReload(true);
+        } catch (error) {
+            // The API client already surfaced a toast with the failure reason
+            console.error('Error applying filename template:', error);
         }
     }
 

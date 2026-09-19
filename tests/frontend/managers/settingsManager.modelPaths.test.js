@@ -36,6 +36,8 @@ vi.mock('../../../static/js/utils/constants.js', () => ({
     DEFAULT_PATH_TEMPLATES: {},
     MAPPABLE_BASE_MODELS: [],
     PATH_TEMPLATE_PLACEHOLDERS: {},
+    FILENAME_TEMPLATE_PLACEHOLDERS: [],
+    DEFAULT_FILENAME_TEMPLATES: { lora: '', checkpoint: '', embedding: '' },
     DEFAULT_PRIORITY_TAG_CONFIG: {},
     getMappableBaseModelsDynamic: () => [],
 }));

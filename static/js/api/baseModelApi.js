@@ -2175,6 +2175,135 @@ export class BaseModelApiClient {
         });
     }
 
+    /**
+     * Apply the configured download filename template to models, renaming their files
+     * @param {Array} filePaths - Optional array of file paths to rename. If not provided, applies to all models.
+     * @returns {Promise} - Promise that resolves when the operation is complete
+     */
+    async applyFilenameTemplate(filePaths = null) {
+        let ws = null;
+
+        await state.loadingManager.showWithProgress(async (loading) => {
+            loading.showCancelButton(() => this.cancelTask());
+            try {
+                // Connect to WebSocket for progress updates
+                const wsProtocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                ws = new WebSocket(`${wsProtocol}${window.location.host}${WS_ENDPOINTS.fetchProgress}`);
+
+                const operationComplete = new Promise((resolve, reject) => {
+                    ws.onmessage = (event) => {
+                        const data = JSON.parse(event.data);
+
+                        if (data.type !== 'filename_template_progress') return;
+
+                        switch (data.status) {
+                            case 'started':
+                                loading.setProgress(0);
+                                const operationType = data.operation_type === 'bulk' ? 'selected models' : 'all models';
+                                loading.setStatus(translate('loras.bulkOperations.filenameTemplateProgress.starting', { type: operationType }, `Applying filename template to ${operationType}...`));
+                                break;
+
+                            case 'processing':
+                                const percent = data.total > 0 ? ((data.processed / data.total) * 90).toFixed(1) : 0;
+                                loading.setProgress(percent);
+                                loading.setStatus(
+                                    translate('loras.bulkOperations.filenameTemplateProgress.processing', {
+                                        processed: data.processed,
+                                        total: data.total,
+                                        success: data.success,
+                                        failures: data.failures,
+                                        skipped: data.skipped
+                                    }, `Processing (${data.processed}/${data.total}) - ${data.success} renamed, ${data.skipped} skipped, ${data.failures} failed`)
+                                );
+                                break;
+
+                            case 'completed':
+                                loading.setProgress(100);
+                                loading.setStatus(
+                                    translate('loras.bulkOperations.filenameTemplateProgress.completed', {
+                                        success: data.success,
+                                        skipped: data.skipped,
+                                        failures: data.failures,
+                                        total: data.total
+                                    }, `Completed: ${data.success} renamed, ${data.skipped} skipped, ${data.failures} failed`)
+                                );
+
+                                setTimeout(() => {
+                                    resolve(data);
+                                }, 1500);
+                                break;
+
+                            case 'cancelled':
+                                loading.setStatus(translate('toast.api.operationCancelled', {}, 'Operation cancelled by user'));
+                                resolve(data);
+                                break;
+
+                            case 'error':
+                                loading.setStatus(translate('loras.bulkOperations.filenameTemplateProgress.error', { error: data.error }, `Error: ${data.error}`));
+                                reject(new Error(data.error));
+                                break;
+                        }
+                    };
+
+                    ws.onerror = (error) => {
+                        console.error('WebSocket error during filename template apply:', error);
+                        reject(new Error('Connection error'));
+                    };
+                });
+
+                // Start the filename template operation
+                const endpoint = this.apiConfig.endpoints.applyFilenameTemplate;
+
+                const requestBody = {};
+                if (filePaths) {
+                    requestBody.file_paths = filePaths;
+                }
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestBody),
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.error || 'Failed to start filename template operation');
+                }
+
+                // Wait for the operation to complete via WebSocket
+                const result = await operationComplete;
+
+                // Show appropriate success message based on results
+                if (result.status === 'cancelled') {
+                    showToast('toast.api.operationCancelledPartial', { success: result.success, total: result.total }, 'info');
+                } else if (result.failures === 0) {
+                    showToast('toast.loras.filenameTemplateSuccess', {
+                        count: result.success,
+                        type: result.operation_type === 'bulk' ? 'selected models' : 'all models'
+                    }, 'success');
+                } else {
+                    showToast('toast.loras.filenameTemplatePartialSuccess', {
+                        success: result.success,
+                        failures: result.failures,
+                        total: result.total
+                    }, 'warning');
+                }
+
+            } catch (error) {
+                console.error('Error applying filename template:', error);
+                showToast('toast.loras.filenameTemplateFailed', { error: error.message }, 'error');
+                throw error;
+            } finally {
+                if (ws && ws.readyState === WebSocket.OPEN) {
+                    ws.close();
+                }
+            }
+        }, {
+            initialMessage: translate('loras.bulkOperations.filenameTemplateProgress.initializing', {}, 'Initializing filename template apply...'),
+            completionMessage: translate('loras.bulkOperations.filenameTemplateProgress.complete', {}, 'Filename template apply complete')
+        });
+    }
+
     async stopExampleImages() {
         try {
             const response = await fetch('/api/lm/stop-example-images', {

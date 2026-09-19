@@ -681,6 +681,22 @@
         "validTemplate": "Valid template"
       }
     },
+    "filenameTemplates": {
+      "title": "Filename Templates",
+      "help": "Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
+      "availablePlaceholders": "Available placeholders:",
+      "templatePlaceholder": "Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
+      "applyButton": "Apply to Library Now",
+      "applyHelp": "Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
+      "confirmApply": "Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
+      "emptyTemplateInfo": "No filename template configured for this model type — original filenames are kept, nothing to apply.",
+      "validation": {
+        "keepOriginal": "Valid (keep original filename)",
+        "invalidChars": "Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
+        "invalidPlaceholder": "Invalid placeholder: {placeholder}",
+        "validTemplate": "Valid template"
+      }
+    },
     "exampleImages": {
       "downloadLocation": "Download Location",
       "downloadLocationPlaceholder": "Enter folder path for example images",
@@ -911,6 +927,14 @@
         "cleaning": "Cleaning up empty directories...",
         "completed": "Completed: {success} moved, {skipped} skipped, {failures} failed",
         "complete": "Auto-organize complete",
+        "error": "Error: {error}"
+      },
+      "filenameTemplateProgress": {
+        "initializing": "Initializing filename template apply...",
+        "starting": "Applying filename template to {type}...",
+        "processing": "Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
+        "completed": "Completed: {success} renamed, {skipped} skipped, {failures} failed",
+        "complete": "Filename template apply complete",
         "error": "Error: {error}"
       },
       "enrichHfAgent": "Enrich Metadata with AI"
@@ -2311,6 +2335,9 @@
       "autoOrganizeSuccess": "Auto-organize completed successfully for {count} {type}",
       "autoOrganizePartialSuccess": "Auto-organize completed with {success} moved, {failures} failed out of {total} models",
       "autoOrganizeFailed": "Auto-organize failed: {error}",
+      "filenameTemplateSuccess": "Filename template applied successfully for {count} {type}",
+      "filenameTemplatePartialSuccess": "Filename template applied with {success} renamed, {failures} failed out of {total} models",
+      "filenameTemplateFailed": "Applying filename template failed: {error}",
       "noModelsSelected": "No models selected"
     },
     "recipes": {
@@ -2477,6 +2504,8 @@
       "mappingSaveFailed": "Failed to save base model mappings: {message}",
       "downloadTemplatesUpdated": "Download path templates updated",
       "downloadTemplatesFailed": "Failed to save download path templates: {message}",
+      "filenameTemplatesUpdated": "Filename templates updated",
+      "filenameTemplatesFailed": "Failed to save filename templates: {message}",
       "recipesPathUpdated": "Recipes storage path updated",
       "recipesPathSaveFailed": "Failed to update recipes storage path: {message}",
       "settingsUpdated": "Settings updated: {setting}",

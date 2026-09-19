@@ -122,6 +122,9 @@ export function getApiEndpoints(modelType) {
         autoOrganize: `/api/lm/${modelType}/auto-organize`,
         autoOrganizeProgress: `/api/lm/${modelType}/auto-organize-progress`,
 
+        // Filename template operations
+        applyFilenameTemplate: `/api/lm/${modelType}/apply-filename-template`,
+
         // Model-specific endpoints (will be merged with specific configs)
         specific: {}
     };

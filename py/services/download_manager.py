@@ -33,7 +33,7 @@ from ..utils.constants import (
 from ..utils.civitai_utils import normalize_civitai_download_url, rewrite_preview_url
 from ..utils.file_utils import calculate_sha256, calculate_autov3
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
-from ..utils.utils import sanitize_folder_name
+from ..utils.utils import calculate_filename_for_model, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
 from .service_registry import ServiceRegistry
@@ -45,6 +45,7 @@ from .errors import RateLimitError
 from .aria2_downloader import Aria2Error, get_aria2_downloader
 from .aria2_transfer_state import Aria2TransferStateStore
 from .download_queue_service import DownloadQueueService
+from .model_lifecycle_service import ModelLifecycleService, load_local_metadata
 
 # Download to temporary file first
 import tempfile
@@ -2746,6 +2747,7 @@ class DownloadManager:
                 else None
             )
 
+            downloaded_metadata: List[Dict[str, Any]] = []
             for index, entry in enumerate(metadata_entries):
                 file_path_for_adjust = getattr(
                     entry, "file_path", actual_file_paths[index]
@@ -2788,6 +2790,15 @@ class DownloadManager:
                 if scanner is not None:
                     await scanner.add_model_to_cache(metadata_dict, relative_path)
 
+                downloaded_metadata.append(metadata_dict)
+
+            await self._apply_download_filename_template(
+                scanner=scanner,
+                model_type=model_type,
+                downloaded_metadata=downloaded_metadata,
+                download_id=download_id,
+            )
+
             if transfer_backend == "aria2" and download_id:
                 await self._aria2_state_store.remove(download_id)
 
@@ -2826,6 +2837,83 @@ class DownloadManager:
                         logger.warning(f"Failed to cleanup file {path}: {exc}")
 
             return {"success": False, "error": str(e)}
+
+    async def _apply_download_filename_template(
+        self,
+        *,
+        scanner,
+        model_type: str,
+        downloaded_metadata: List[Dict[str, Any]],
+        download_id: Optional[str],
+    ) -> None:
+        """Rename freshly downloaded models according to the filename template.
+
+        Best-effort post-download step: any failure (including name conflicts)
+        is logged and skipped so a successful download is never turned into a
+        failure by a rename problem.
+        """
+        try:
+            if scanner is None or not downloaded_metadata:
+                return
+
+            template = get_settings_manager().get_download_filename_template(
+                model_type
+            )
+            if not template:
+                return
+
+            lifecycle_service = ModelLifecycleService(
+                scanner=scanner,
+                metadata_manager=MetadataManager,
+                metadata_loader=load_local_metadata,
+                recipe_scanner_factory=ServiceRegistry.get_recipe_scanner,
+            )
+
+            for metadata_dict in downloaded_metadata:
+                file_path = metadata_dict.get("file_path")
+                if not isinstance(file_path, str) or not file_path:
+                    continue
+
+                new_stem = calculate_filename_for_model(metadata_dict, model_type)
+                if not new_stem:
+                    continue
+
+                current_stem = os.path.splitext(os.path.basename(file_path))[0]
+                if new_stem == current_stem or os.path.normcase(
+                    new_stem
+                ) == os.path.normcase(current_stem):
+                    continue
+
+                try:
+                    result = await lifecycle_service.rename_model(
+                        file_path=file_path, new_file_name=new_stem
+                    )
+                except ValueError as exc:
+                    logger.warning(
+                        "Keeping original filename for %s: %s", file_path, exc
+                    )
+                    continue
+
+                new_file_path = result.get("new_file_path")
+                if download_id and isinstance(new_file_path, str):
+                    info = self._active_downloads.get(download_id)
+                    if info is None:
+                        continue
+                    if info.get("file_path") == file_path:
+                        info["file_path"] = new_file_path
+                    extracted = info.get("extracted_paths")
+                    if isinstance(extracted, list):
+                        info["extracted_paths"] = [
+                            new_file_path if path == file_path else path
+                            for path in extracted
+                        ]
+        except Exception as exc:  # Rename phase must never fail the download
+            logger.warning(
+                "Filename template rename failed for %s download: %s",
+                model_type,
+                exc,
+                exc_info=True,
+            )
 
     def _get_supported_extensions_for_type(self, model_type: str) -> Set[str]:
         if model_type in ("checkpoint", "other"):

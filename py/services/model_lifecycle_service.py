@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 from typing import Any, Awaitable, Callable, Dict, Iterable, List, Mapping, Optional, TYPE_CHECKING, cast
@@ -15,6 +16,26 @@ logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     from ..services.model_update_service import ModelUpdateService
+
+
+async def load_local_metadata(metadata_path: str) -> Dict[str, Any]:
+    """Load a metadata sidecar JSON, returning an empty dict when missing.
+
+    Thin equivalent of ``MetadataSyncService.load_local_metadata`` for callers
+    (download manager, use cases) that do not hold a sync-service instance.
+    """
+
+    if not os.path.exists(metadata_path):
+        return {}
+
+    try:
+        with open(metadata_path, "r", encoding="utf-8") as handle:
+            payload = json.load(handle)
+    except Exception as exc:
+        logger.warning("Failed to load metadata from %s: %s", metadata_path, exc)
+        return {}
+
+    return payload if isinstance(payload, dict) else {}
 
 
 async def delete_model_artifacts(
@@ -404,6 +425,9 @@ class ModelLifecycleService:
         if metadata and new_metadata_path:
             metadata["file_name"] = new_file_name
             metadata["file_path"] = new_file_path
+            # Preserve the pre-rename stem so the original download filename
+            # stays recoverable after template-driven renames.
+            metadata.setdefault("original_file_name", old_file_name)
 
             if metadata.get("preview_url"):
                 old_preview = str(metadata["preview_url"])

@@ -198,6 +198,82 @@
         </div>
     </div>
 
+    <!-- Filename Templates -->
+    <div class="settings-subsection">
+        <div class="settings-subsection-header">
+            <h4>
+                {{ t('settings.filenameTemplates.title') }}
+                <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.filenameTemplates.help') }}"></i>
+            </h4>
+        </div>
+        <div class="setting-item">
+            <div class="input-help">
+                <div class="placeholder-info">
+                    <strong>{{ t('settings.filenameTemplates.availablePlaceholders') }}</strong>
+                    <span class="placeholder-tag">{model_name}</span>
+                    <span class="placeholder-tag">{version_name}</span>
+                    <span class="placeholder-tag">{base_model}</span>
+                    <span class="placeholder-tag">{author}</span>
+                    <span class="placeholder-tag">{first_tag}</span>
+                    <span class="placeholder-tag">{hash_short}</span>
+                    <span class="placeholder-tag">{original_name}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="loraFilenameTemplate">{{ t('settings.downloadPathTemplates.modelTypes.lora') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="loraApplyFilenameTemplate" class="primary-btn" onclick="settingsManager.applyFilenameTemplate('lora')">
+                        {{ t('settings.filenameTemplates.applyButton') }}
+                    </button>
+                </div>
+            </div>
+            <input type="text" id="loraFilenameTemplate" class="template-custom-input" placeholder="{{ t('settings.filenameTemplates.templatePlaceholder') }}" />
+            <div class="template-validation" id="loraFilenameValidation"></div>
+            <div class="template-preview" id="loraFilenamePreview"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="checkpointFilenameTemplate">{{ t('settings.downloadPathTemplates.modelTypes.checkpoint') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="checkpointApplyFilenameTemplate" class="primary-btn" onclick="settingsManager.applyFilenameTemplate('checkpoint')">
+                        {{ t('settings.filenameTemplates.applyButton') }}
+                    </button>
+                </div>
+            </div>
+            <input type="text" id="checkpointFilenameTemplate" class="template-custom-input" placeholder="{{ t('settings.filenameTemplates.templatePlaceholder') }}" />
+            <div class="template-validation" id="checkpointFilenameValidation"></div>
+            <div class="template-preview" id="checkpointFilenamePreview"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="embeddingFilenameTemplate">{{ t('settings.downloadPathTemplates.modelTypes.embedding') }}</label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="embeddingApplyFilenameTemplate" class="primary-btn" onclick="settingsManager.applyFilenameTemplate('embedding')">
+                        {{ t('settings.filenameTemplates.applyButton') }}
+                    </button>
+                </div>
+            </div>
+            <input type="text" id="embeddingFilenameTemplate" class="template-custom-input" placeholder="{{ t('settings.filenameTemplates.templatePlaceholder') }}" />
+            <div class="template-validation" id="embeddingFilenameValidation"></div>
+            <div class="template-preview" id="embeddingFilenamePreview"></div>
+        </div>
+
+        <div class="setting-item">
+            <div class="input-help">{{ t('settings.filenameTemplates.applyHelp') }}</div>
+        </div>
+    </div>
+
     <!-- Auto-organize -->
     <div class="settings-subsection">
         {{ sm.subsection_header('settings.sections.autoOrganize') }}

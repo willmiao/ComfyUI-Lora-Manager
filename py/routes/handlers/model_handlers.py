@@ -37,10 +37,14 @@ from ...services.use_cases import (
     DownloadModelEarlyAccessError,
     DownloadModelUseCase,
     DownloadModelValidationError,
+    FilenameTemplateUseCase,
     MetadataRefreshProgressReporter,
 )
 from ...services.websocket_manager import WebSocketManager
-from ...services.websocket_progress_callback import WebSocketProgressCallback
+from ...services.websocket_progress_callback import (
+    WebSocketFilenameTemplateProgressCallback,
+    WebSocketProgressCallback,
+)
 from ...services.download_queue_service import DownloadQueueService
 from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.civitai_utils import resolve_license_payload
@@ -2692,6 +2696,71 @@ class ModelAutoOrganizeHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+class ModelFilenameTemplateHandler:
+    """Apply the configured filename template to existing library models."""
+
+    def __init__(
+        self,
+        *,
+        use_case: FilenameTemplateUseCase,
+        progress_callback: WebSocketFilenameTemplateProgressCallback,
+        logger: logging.Logger,
+    ) -> None:
+        self._use_case = use_case
+        self._progress_callback = progress_callback
+        self._logger = logger
+
+    async def apply_filename_template(self, request: web.Request) -> web.Response:
+        try:
+            file_paths = None
+            if request.method == "POST":
+                try:
+                    data = await request.json()
+                    file_paths = data.get("file_paths")
+                except Exception:  # pragma: no cover - permissive path
+                    pass
+            else:
+                # GET variant (browser extension is GET-only): comma-separated
+                # file_paths query parameter.
+                raw_file_paths = request.query.get("file_paths")
+                if raw_file_paths:
+                    file_paths = [
+                        path.strip()
+                        for path in raw_file_paths.split(",")
+                        if path.strip()
+                    ]
+
+            result = await self._use_case.execute(
+                file_paths=file_paths,
+                progress_callback=self._progress_callback,
+            )
+            _broadcast_models_changed()
+            return web.json_response(result.to_dict())
+        except AutoOrganizeInProgressError:
+            return web.json_response(
+                {
+                    "success": False,
+                    "error": "Another library operation is already running. Please wait for it to complete.",
+                },
+                status=409,
+            )
+        except Exception as exc:
+            self._logger.error(
+                "Error in apply_filename_template: %s", exc, exc_info=True
+            )
+            try:
+                await self._progress_callback.on_progress(
+                    {
+                        "type": "filename_template_progress",
+                        "status": "error",
+                        "error": str(exc),
+                    }
+                )
+            except Exception:  # pragma: no cover - defensive reporting
+                pass
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+
 class ModelUpdateHandler:
     """Handle update tracking requests."""
 
@@ -3459,6 +3528,7 @@ class ModelHandlerSet:
     civitai: ModelCivitaiHandler
     move: ModelMoveHandler
     auto_organize: ModelAutoOrganizeHandler
+    filename_template: ModelFilenameTemplateHandler
     updates: ModelUpdateHandler
 
     def to_route_mapping(
@@ -3523,6 +3593,7 @@ class ModelHandlerSet:
             "rename_folder": self.move.rename_folder,
             "auto_organize_models": self.auto_organize.auto_organize_models,
             "get_auto_organize_progress": self.auto_organize.get_auto_organize_progress,
+            "apply_filename_template": self.filename_template.apply_filename_template,
             "get_model_notes": self.query.get_model_notes,
             "get_model_preview_url": self.query.get_model_preview_url,
             "get_model_civitai_url": self.query.get_model_civitai_url,

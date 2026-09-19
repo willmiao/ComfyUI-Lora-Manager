@@ -681,6 +681,22 @@
                 "validTemplate": "유효한 템플릿"
             }
         },
+        "filenameTemplates": {
+            "title": "[TODO: Translate] Filename Templates",
+            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
+            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
+            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
+            "applyButton": "[TODO: Translate] Apply to Library Now",
+            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
+            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
+            "emptyTemplateInfo": "[TODO: Translate] No filename template configured for this model type — original filenames are kept, nothing to apply.",
+            "validation": {
+                "keepOriginal": "[TODO: Translate] Valid (keep original filename)",
+                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
+                "validTemplate": "[TODO: Translate] Valid template"
+            }
+        },
         "exampleImages": {
             "downloadLocation": "다운로드 위치",
             "downloadLocationPlaceholder": "예시 이미지 폴더 경로를 입력하세요",
@@ -912,6 +928,14 @@
                 "completed": "완료: {success}개 이동, {skipped}개 건너뜀, {failures}개 실패",
                 "complete": "자동 정리 완료",
                 "error": "오류: {error}"
+            },
+            "filenameTemplateProgress": {
+                "initializing": "[TODO: Translate] Initializing filename template apply...",
+                "starting": "[TODO: Translate] Applying filename template to {type}...",
+                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
+                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
+                "complete": "[TODO: Translate] Filename template apply complete",
+                "error": "[TODO: Translate] Error: {error}"
             },
             "enrichHfAgent": "AI로 메타데이터 보강"
         },
@@ -2311,6 +2335,9 @@
             "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
             "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
+            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
+            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
+            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
             "noModelsSelected": "선택된 모델이 없습니다"
         },
         "recipes": {
@@ -2477,6 +2504,8 @@
             "mappingSaveFailed": "베이스 모델 매핑 저장 실패: {message}",
             "downloadTemplatesUpdated": "다운로드 경로 템플릿이 업데이트되었습니다",
             "downloadTemplatesFailed": "다운로드 경로 템플릿 저장 실패: {message}",
+            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
+            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
             "recipesPathUpdated": "레시피 저장 경로가 업데이트되었습니다",
             "recipesPathSaveFailed": "레시피 저장 경로 업데이트 실패: {message}",
             "settingsUpdated": "설정 업데이트됨: {setting}",

@@ -3,6 +3,7 @@ import pytest
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.services.service_registry import ServiceRegistry
 from py.utils.utils import (
+    calculate_filename_for_model,
     calculate_recipe_fingerprint,
     calculate_relative_path_for_model,
     get_lora_info,
@@ -162,6 +163,145 @@ def test_calculate_recipe_fingerprint_filters_and_sorts():
 
 def test_calculate_recipe_fingerprint_empty_input():
     assert calculate_recipe_fingerprint([]) == ""
+
+
+def _set_filename_templates(isolated_settings, template, model_types=("lora", "checkpoint", "embedding")):
+    isolated_settings["download_filename_templates"] = {
+        model_type: template for model_type in model_types
+    }
+
+
+def test_calculate_filename_returns_empty_without_template(isolated_settings):
+    model_data = {"model_name": "Model", "file_path": "/models/V1.safetensors"}
+
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+
+def test_calculate_filename_substitutes_all_placeholders(isolated_settings):
+    _set_filename_templates(
+        isolated_settings,
+        "{base_model}-{model_name}-{version_name}-{author}-{first_tag}-{hash_short}-{original_name}",
+    )
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "SDXL",
+        "tags": ["Style"],
+        "sha256": "ABCDEF0123456789",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1, "name": "v3", "creator": {"username": "Author"}},
+    }
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert result == "SDXL-My Model-v3-Author-style-abcdef0123-V1"
+
+
+def test_calculate_filename_hash_short_empty_when_unknown(isolated_settings):
+    _set_filename_templates(isolated_settings, "{model_name}-{hash_short}")
+
+    model_data = {
+        "model_name": "My Model",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    # Missing hash leaves an empty segment; the dangling separator collapses.
+    assert calculate_filename_for_model(model_data, "lora") == "My Model"
+
+
+def test_calculate_filename_missing_metadata_produces_empty_segments(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}-{model_name}")
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "",
+        "tags": [],
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "My Model"
+
+
+def test_calculate_filename_rejects_path_separators(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}/{model_name}")
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "SDXL",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+    _set_filename_templates(isolated_settings, "{base_model}\\{model_name}")
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+
+def test_calculate_filename_strips_illegal_characters(isolated_settings):
+    _set_filename_templates(isolated_settings, '{model_name}:"custom"')
+
+    model_data = {
+        "model_name": "My:Model*",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert result == "My_Modelcustom"
+
+
+def test_calculate_filename_empty_result_returns_empty(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}-{first_tag}")
+
+    model_data = {
+        "base_model": "",
+        "tags": [],
+        "file_path": "/models/V1.safetensors",
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == ""
+
+
+def test_calculate_filename_uses_base_model_mapping(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model}-{model_name}")
+    isolated_settings["base_model_path_mappings"] = {"SDXL": "sdxl-mapped"}
+
+    model_data = {
+        "model_name": "Model",
+        "base_model": "SDXL",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "sdxl-mapped-Model"
+
+
+def test_calculate_filename_embedding_replaces_spaces(isolated_settings):
+    _set_filename_templates(isolated_settings, "{base_model} {model_name}")
+
+    model_data = {
+        "model_name": "My Model",
+        "base_model": "Base Model",
+        "file_path": "/models/V1.safetensors",
+        "civitai": {"id": 1},
+    }
+
+    assert calculate_filename_for_model(model_data, "embedding") == "Base_Model_My_Model"
+
+
+def test_calculate_filename_original_name_falls_back_to_file_name(isolated_settings):
+    _set_filename_templates(isolated_settings, "{original_name}-{hash_short}")
+
+    model_data = {
+        "file_name": "legacy-name",
+        "sha256": "0123456789abcdef",
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "legacy-name-0123456789"
 
 
 @pytest.mark.parametrize(

@@ -43,10 +43,22 @@ class AutoOrganizeResult:
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert result to dictionary"""
+        if self.operation_type == 'filename_template':
+            message = (
+                f'Filename template applied: {self.success_count} renamed, '
+                f'{self.skipped_count} skipped, {self.failure_count} failed '
+                f'out of {self.total} total'
+            )
+        else:
+            message = (
+                f'Auto-organize {self.operation_type} completed: '
+                f'{self.success_count} moved, {self.skipped_count} skipped, '
+                f'{self.failure_count} failed out of {self.total} total'
+            )
         result: Dict[str, Any] = {
             'success': self.status != 'error',
             'status': self.status,
-            'message': f'Auto-organize {self.operation_type} completed: {self.success_count} moved, {self.skipped_count} skipped, {self.failure_count} failed out of {self.total} total',
+            'message': message,
             'summary': {
                 'total': self.total,
                 'success': self.success_count,

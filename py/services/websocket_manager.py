@@ -20,6 +20,8 @@ class WebSocketManager:
         self._last_init_progress: Dict[str, Dict[str, Any]] = {}
         # Add auto-organize progress tracking
         self._auto_organize_progress: Optional[Dict[str, Any]] = None
+        # Add filename template progress tracking
+        self._filename_template_progress: Optional[Dict[str, Any]] = None
         # Add recipe rematch progress tracking
         self._recipe_rematch_progress: Optional[Dict[str, Any]] = None
         self._auto_organize_lock = asyncio.Lock()
@@ -205,6 +207,26 @@ class WebSocketManager:
     def cleanup_auto_organize_progress(self):
         """Clear auto-organize progress data"""
         self._auto_organize_progress = None
+
+    async def broadcast_filename_template_progress(self, data: Dict[str, Any]):
+        """Broadcast filename template progress to connected clients"""
+        self._filename_template_progress = data
+        await self.broadcast(data)
+
+    def get_filename_template_progress(self) -> Optional[Dict[str, Any]]:
+        """Get current filename template progress"""
+        return self._filename_template_progress
+
+    def cleanup_filename_template_progress(self):
+        """Clear filename template progress data"""
+        self._filename_template_progress = None
+
+    def is_filename_template_running(self) -> bool:
+        """Check if a filename template operation is currently running"""
+        if not self._filename_template_progress:
+            return False
+        status = self._filename_template_progress.get('status')
+        return status in ['started', 'processing']
     
     async def broadcast_recipe_rematch_progress(self, data: Dict[str, Any]):
         """Broadcast recipe rematch progress to connected clients"""

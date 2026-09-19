@@ -19,6 +19,7 @@ from py.services.use_cases import (
     DownloadModelEarlyAccessError,
     DownloadModelUseCase,
     DownloadModelValidationError,
+    FilenameTemplateUseCase,
     ImportExampleImagesUseCase,
     ImportExampleImagesValidationError,
 )
@@ -33,7 +34,7 @@ from py.utils.example_images_processor import (
     ExampleImagesValidationError,
 )
 from py.utils.metadata_manager import MetadataManager
-from tests.conftest import MockModelService, MockScanner
+from tests.conftest import MockCache, MockModelService, MockScanner
 
 
 class StubLockProvider:
@@ -503,3 +504,178 @@ async def test_import_example_images_use_case_propagates_generic_error() -> None
 
     with pytest.raises(ExampleImagesImportError):
         await use_case.execute(request)  # pyright: ignore[reportArgumentType]
+
+
+class StubLifecycleService:
+    def __init__(self, scanner: Optional[MockScanner] = None) -> None:
+        self.renames: List[Dict[str, str]] = []
+        self.error: Optional[Exception] = None
+        self.cancel_on_rename = False
+        self._scanner = scanner
+
+    async def rename_model(self, *, file_path: str, new_file_name: str) -> Dict[str, Any]:
+        if self.error is not None:
+            raise self.error
+        self.renames.append({"file_path": file_path, "new_file_name": new_file_name})
+        if self.cancel_on_rename and self._scanner is not None:
+            self._scanner.cancel_task()
+        return {"success": True, "new_file_path": file_path}
+
+
+def _filename_template_model(
+    file_path: str,
+    model_name: str,
+    sha256: str = "abcdef0123456789",
+) -> Dict[str, Any]:
+    return {
+        "file_path": file_path,
+        "file_name": file_path.rsplit("/", 1)[-1].rsplit(".", 1)[0],
+        "model_name": model_name,
+        "sha256": sha256,
+        "civitai": {"id": 1},
+    }
+
+
+def _set_filename_template(template: str, model_type: str = "lora") -> None:
+    from py.services.settings_manager import get_settings_manager
+
+    manager = get_settings_manager()
+    templates = dict(manager.settings.get("download_filename_templates") or {})
+    templates[model_type] = template
+    manager.settings["download_filename_templates"] = templates
+
+
+def _make_filename_template_use_case(
+    scanner: MockScanner,
+    lifecycle: StubLifecycleService,
+    lock_provider: Optional[StubLockProvider] = None,
+) -> FilenameTemplateUseCase:
+    return FilenameTemplateUseCase(
+        scanner=scanner,
+        lifecycle_service=lifecycle,  # pyright: ignore[reportArgumentType]
+        lock_provider=lock_provider or StubLockProvider(),
+        model_type="lora",
+    )
+
+
+async def test_filename_template_use_case_renames_models() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    progress = ProgressCollector()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=progress)
+
+    assert result.status == "success"
+    assert result.operation_type == "filename_template"
+    assert result.total == 2
+    assert result.success_count == 2
+    assert result.failure_count == 0
+    assert lifecycle.renames == [
+        {"file_path": "/library/alpha.safetensors", "new_file_name": "Alpha-abcdef0123"},
+        {"file_path": "/library/beta.safetensors", "new_file_name": "Beta-abcdef0123"},
+    ]
+    statuses = [event["status"] for event in progress.events]
+    assert statuses[0] == "started"
+    assert statuses[-1] == "completed"
+    assert all(event["type"] == "filename_template_progress" for event in progress.events)
+
+
+async def test_filename_template_use_case_skips_unchanged_names() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/Alpha-abcdef0123.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.success_count == 0
+    assert result.skipped_count == 1
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_skips_all_when_template_empty() -> None:
+    _set_filename_template("")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.skipped_count == 1
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_counts_conflicts_as_failures() -> None:
+    _set_filename_template("{model_name}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    lifecycle.error = ValueError("A file with this name already exists")
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.status == "success"
+    assert result.failure_count == 2
+    assert result.success_count == 0
+    assert len(result.results) == 2
+
+
+async def test_filename_template_use_case_honours_cancellation() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService(scanner=scanner)
+    lifecycle.cancel_on_rename = True
+    progress = ProgressCollector()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(progress_callback=progress)
+
+    assert result.status == "cancelled"
+    assert len(lifecycle.renames) == 1
+    assert progress.events[-1]["status"] == "cancelled"
+
+
+async def test_filename_template_use_case_filters_file_paths() -> None:
+    _set_filename_template("{model_name}-{hash_short}")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+    use_case = _make_filename_template_use_case(scanner, lifecycle)
+
+    result = await use_case.execute(
+        file_paths=["/library/beta.safetensors"], progress_callback=None
+    )
+
+    assert result.total == 1
+    assert lifecycle.renames == [
+        {"file_path": "/library/beta.safetensors", "new_file_name": "Beta-abcdef0123"}
+    ]
+
+
+async def test_filename_template_use_case_rejects_when_lock_held() -> None:
+    _set_filename_template("{model_name}")
+    scanner = MockScanner(cache=MockCache())
+    lifecycle = StubLifecycleService()
+    lock_provider = StubLockProvider()
+    lock_provider.running = True
+    use_case = _make_filename_template_use_case(scanner, lifecycle, lock_provider)
+
+    with pytest.raises(AutoOrganizeInProgressError):
+        await use_case.execute(progress_callback=None)

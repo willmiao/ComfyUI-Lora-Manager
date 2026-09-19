@@ -23,6 +23,7 @@ from py.services.metadata_sync_service import MetadataSyncService
 from py.services.model_file_service import AutoOrganizeResult
 from py.services.model_update_service import ModelVersionRecord
 from py.services.service_registry import ServiceRegistry
+from py.services.use_cases import FilenameTemplateUseCase
 from py.services.websocket_manager import ws_manager
 from py.utils.exif_utils import ExifUtils
 from py.utils.metadata_manager import MetadataManager
@@ -126,9 +127,11 @@ async def create_test_client(service) -> TestClient[Any, Any]:
 @pytest.fixture(autouse=True)
 def reset_ws_manager_state():
     ws_manager.cleanup_auto_organize_progress()
+    ws_manager.cleanup_filename_template_progress()
     ws_manager._download_progress.clear()
     yield
     ws_manager.cleanup_auto_organize_progress()
+    ws_manager.cleanup_filename_template_progress()
     ws_manager._download_progress.clear()
 
 
@@ -761,6 +764,105 @@ def test_auto_organize_conflict_when_running(mock_service):
 
     asyncio.run(scenario())
 
+
+def test_apply_filename_template_route_emits_progress(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    async def fake_execute(self, file_paths=None, progress_callback=None):
+        result = AutoOrganizeResult()
+        result.total = 1
+        result.processed = 1
+        result.success_count = 1
+        result.operation_type = "filename_template"
+        if progress_callback is not None:
+            await progress_callback.on_progress(
+                {"type": "filename_template_progress", "status": "started"}
+            )
+            await progress_callback.on_progress(
+                {"type": "filename_template_progress", "status": "completed"}
+            )
+        return result
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", fake_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.post(
+                "/api/lm/test-models/apply-filename-template",
+                json={"file_paths": ["/tmp/a.safetensors"]},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert payload["summary"]["operation_type"] == "filename_template"
+
+            progress = ws_manager.get_filename_template_progress()
+            assert progress is not None
+            assert progress["status"] == "completed"
+            # Auto-organize progress state must stay untouched.
+            assert ws_manager.get_auto_organize_progress() is None
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_apply_filename_template_get_parses_query_file_paths(
+    mock_service, monkeypatch: pytest.MonkeyPatch
+):
+    captured = {}
+
+    async def fake_execute(self, file_paths=None, progress_callback=None):
+        captured["file_paths"] = file_paths
+        result = AutoOrganizeResult()
+        result.operation_type = "filename_template"
+        return result
+
+    monkeypatch.setattr(FilenameTemplateUseCase, "execute", fake_execute)
+
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            response = await client.get(
+                "/api/lm/test-models/apply-filename-template",
+                params={"file_paths": "/tmp/a.safetensors, /tmp/b.safetensors"},
+            )
+            payload = await response.json()
+
+            assert response.status == 200
+            assert payload["success"] is True
+            assert captured["file_paths"] == [
+                "/tmp/a.safetensors",
+                "/tmp/b.safetensors",
+            ]
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
+
+
+def test_apply_filename_template_conflict_when_running(mock_service):
+    async def scenario():
+        client = await create_test_client(mock_service)
+        try:
+            await ws_manager.broadcast_filename_template_progress(
+                {"type": "filename_template_progress", "status": "started"}
+            )
+
+            response = await client.post("/api/lm/test-models/apply-filename-template")
+            payload = await response.json()
+
+            assert response.status == 409
+            assert payload == {
+                "success": False,
+                "error": "Another library operation is already running. Please wait for it to complete.",
+            }
+        finally:
+            await client.close()
+
+    asyncio.run(scenario())
 
 
 def test_download_model_returns_skipped_success(mock_service, download_manager_stub):

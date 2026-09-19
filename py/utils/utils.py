@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+import logging
 import os
 import re
 from typing import Any, Dict, List, Optional
@@ -6,6 +7,8 @@ from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
 import asyncio
+
+logger = logging.getLogger(__name__)
 
 
 def get_lora_info(lora_name):
@@ -596,6 +599,107 @@ def calculate_relative_path_for_model(
     formatted_path = formatted_path.rstrip("/")
 
     return formatted_path
+
+
+def calculate_filename_for_model(
+    model_data: Dict[str, Any], model_type: str = "lora"
+) -> str:
+    """Calculate the filename stem for a model using the filename template.
+
+    Mirrors the data extraction of :func:`calculate_relative_path_for_model`
+    but renders a single filename (no path segments). Missing values resolve
+    to empty segments instead of the path-oriented defaults ("Anonymous" /
+    "no tags") so templates degrade gracefully.
+
+    Args:
+        model_data: Model data from scanner cache
+        model_type: Type of model ('lora', 'checkpoint', 'embedding')
+
+    Returns:
+        Sanitized filename stem without extension, or an empty string when no
+        template is configured, the template is invalid, or the rendered name
+        is empty.
+    """
+    settings_manager = get_settings_manager()
+    template = settings_manager.get_download_filename_template(model_type)
+
+    if not template:
+        return ""
+
+    # A filename template must render a single name, never folder segments.
+    if "/" in template or "\\" in template:
+        logger.warning(
+            "Filename template for %s contains a path separator and is ignored: %r",
+            model_type,
+            template,
+        )
+        return ""
+
+    civitai_data = model_data.get("civitai", {})
+
+    author = ""
+    if isinstance(civitai_data, dict) and civitai_data.get("id") is not None:
+        creator_info = civitai_data.get("creator") or {}
+        author = creator_info.get("username") or ""
+
+    base_model = model_data.get("base_model", "")
+    base_model_mappings = settings_manager.get("base_model_path_mappings", {})
+    mapped_base_model = base_model_mappings.get(base_model, base_model)
+
+    lowercase_tags = [
+        tag.lower() for tag in model_data.get("tags", []) if isinstance(tag, str)
+    ]
+    first_tag = settings_manager.resolve_priority_tag_for_model(
+        lowercase_tags, model_type
+    )
+
+    model_name = model_data.get("model_name", "")
+    version_name = ""
+    if isinstance(civitai_data, dict):
+        version_name = civitai_data.get("name") or ""
+
+    sha256 = model_data.get("sha256") or ""
+    hash_short = sha256[:10].lower() if isinstance(sha256, str) else ""
+
+    file_path = model_data.get("file_path") or ""
+    if isinstance(file_path, str) and file_path:
+        original_name = os.path.splitext(os.path.basename(file_path))[0]
+    else:
+        original_name = os.path.splitext(str(model_data.get("file_name", "")))[0]
+
+    def _sanitize_value(value: Any) -> str:
+        # sanitize_folder_name falls back to "unnamed" for empty input; for
+        # templates an empty value must stay empty so segments collapse.
+        text = str(value) if value else ""
+        return sanitize_folder_name(text) if text else ""
+
+    replacements = {
+        "{model_name}": _sanitize_value(model_name),
+        "{version_name}": _sanitize_value(version_name),
+        "{base_model}": _sanitize_value(mapped_base_model),
+        "{author}": _sanitize_value(author),
+        "{first_tag}": _sanitize_value(first_tag),
+        "{hash_short}": hash_short,
+        "{original_name}": _sanitize_value(original_name),
+    }
+
+    result = template
+    for placeholder, value in replacements.items():
+        result = result.replace(placeholder, value)
+
+    if model_type == "embedding":
+        result = result.replace(" ", "_")
+
+    # Strip characters that are illegal in filenames on common filesystems.
+    result = re.sub(r'[:*?"<>|]', "", result)
+    # Collapse runs of identical separators introduced by empty substitutions.
+    result = re.sub(r"([-_. ])\1+", r"\1", result)
+    # Drop separators left dangling next to each other ("- -" -> "-").
+    result = re.sub(r" ?([-_.]) (?=[-_.])", r"\1", result)
+    # A stem must not start or end with separators, spaces or dots.
+    result = result.strip("-_. ")
+
+    return result
 
 
 def remove_empty_dirs(path):

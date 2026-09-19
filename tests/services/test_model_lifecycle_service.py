@@ -425,6 +425,52 @@ async def test_rename_model_preserves_extension(tmp_path: Path):
 
 
 @pytest.mark.asyncio
+async def test_rename_model_records_original_file_name(tmp_path: Path):
+    old_name = "V1"
+    new_name = "flux-my-model-v3"
+
+    model_path = tmp_path / f"{old_name}.safetensors"
+    model_path.write_bytes(b"model")
+
+    metadata_path = tmp_path / f"{old_name}.metadata.json"
+    metadata_payload = {
+        "file_name": old_name,
+        "file_path": model_path.as_posix(),
+    }
+    metadata_path.write_text(json.dumps(metadata_payload))
+
+    async def metadata_loader(path: str):
+        with open(path, "r", encoding="utf-8") as handle:
+            return json.load(handle)
+
+    service = ModelLifecycleService(
+        scanner=DummyScanner(),
+        metadata_manager=PassthroughMetadataManager(),
+        metadata_loader=metadata_loader,
+    )
+
+    await service.rename_model(
+        file_path=model_path.as_posix(),
+        new_file_name=new_name,
+    )
+
+    saved_metadata = json.loads((tmp_path / f"{new_name}.metadata.json").read_text())
+    assert saved_metadata["original_file_name"] == old_name
+
+    # A second rename keeps the very first recorded name.
+    second_name = "flux-my-model-v4"
+    await service.rename_model(
+        file_path=(tmp_path / f"{new_name}.safetensors").as_posix(),
+        new_file_name=second_name,
+    )
+
+    saved_metadata = json.loads(
+        (tmp_path / f"{second_name}.metadata.json").read_text()
+    )
+    assert saved_metadata["original_file_name"] == old_name
+
+
+@pytest.mark.asyncio
 async def test_rename_model_with_dotted_basename(tmp_path: Path):
     old_name = "model.v1"
     old_extension = ".gguf"

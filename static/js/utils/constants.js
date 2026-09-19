@@ -360,6 +360,25 @@ export const DEFAULT_PATH_TEMPLATES = {
     other: ''
 };
 
+// Valid placeholders for download filename templates (opt-in rename of
+// downloaded safetensors; the result is a filename stem, no path separators)
+export const FILENAME_TEMPLATE_PLACEHOLDERS = [
+    '{model_name}',
+    '{version_name}',
+    '{base_model}',
+    '{author}',
+    '{first_tag}',
+    '{hash_short}',
+    '{original_name}'
+];
+
+// Default filename templates per model type; empty string keeps the original filename
+export const DEFAULT_FILENAME_TEMPLATES = {
+    lora: '',
+    checkpoint: '',
+    embedding: ''
+};
+
 // Model type labels for UI
 export const MODEL_TYPE_LABELS = {
     lora: 'LoRA Models',

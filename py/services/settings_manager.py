@@ -98,6 +98,7 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "recipes_path": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
+    "download_filename_templates": {},
     "folder_paths": {},
     "extra_folder_paths": {},
     "example_images_path": "",
@@ -1276,6 +1277,7 @@ class SettingsManager:
         defaults = copy.deepcopy(DEFAULT_SETTINGS)
         defaults["base_model_path_mappings"] = {}
         defaults["download_path_templates"] = {}
+        defaults["download_filename_templates"] = {}
         defaults["priority_tags"] = DEFAULT_PRIORITY_TAG_CONFIG.copy()
         defaults.setdefault("folder_paths", {})
         defaults.setdefault("extra_folder_paths", {})
@@ -2423,6 +2425,49 @@ class SettingsManager:
         return templates.get(
             model_type, DEFAULT_DOWNLOAD_PATH_TEMPLATES.get(model_type, "")
         )
+
+    def get_download_filename_template(self, model_type: str) -> str:
+        """Get the download filename template for a specific model type.
+
+        Args:
+            model_type: The type of model ('lora', 'checkpoint', 'embedding',
+                'other')
+
+        Returns:
+            Template string for the model type. Empty string (the default for
+            every model type) means downloaded files keep their original
+            filename.
+        """
+        templates = self.settings.get("download_filename_templates", {})
+
+        # Handle edge case where templates might be stored as JSON string
+        if isinstance(templates, str):
+            try:
+                parsed_templates = json.loads(templates)
+                if isinstance(parsed_templates, dict):
+                    self.settings["download_filename_templates"] = parsed_templates
+                    self._save_settings()
+                    templates = parsed_templates
+                    logger.info(
+                        "Successfully parsed download_filename_templates from JSON string"
+                    )
+                else:
+                    raise ValueError("Parsed JSON is not a dictionary")
+            except (json.JSONDecodeError, ValueError) as e:
+                logger.warning(
+                    f"Failed to parse download_filename_templates JSON string: {e}. Resetting to empty templates."
+                )
+                templates = {}
+                self.settings["download_filename_templates"] = templates
+                self._save_settings()
+
+        if not isinstance(templates, dict):
+            templates = {}
+            self.settings["download_filename_templates"] = templates
+            self._save_settings()
+
+        template = templates.get(model_type, "")
+        return template if isinstance(template, str) else ""
 
 
 _SETTINGS_MANAGER: Optional["SettingsManager"] = None

@@ -681,6 +681,22 @@
                 "validTemplate": "תבנית תקינה"
             }
         },
+        "filenameTemplates": {
+            "title": "[TODO: Translate] Filename Templates",
+            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
+            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
+            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
+            "applyButton": "[TODO: Translate] Apply to Library Now",
+            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
+            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
+            "emptyTemplateInfo": "[TODO: Translate] No filename template configured for this model type — original filenames are kept, nothing to apply.",
+            "validation": {
+                "keepOriginal": "[TODO: Translate] Valid (keep original filename)",
+                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
+                "validTemplate": "[TODO: Translate] Valid template"
+            }
+        },
         "exampleImages": {
             "downloadLocation": "מיקום הורדה",
             "downloadLocationPlaceholder": "הזן נתיב תיקייה לתמונות דוגמה",
@@ -912,6 +928,14 @@
                 "completed": "הושלם: {success} הועברו, {skipped} דולגו, {failures} נכשלו",
                 "complete": "ארגון אוטומטי הושלם",
                 "error": "שגיאה: {error}"
+            },
+            "filenameTemplateProgress": {
+                "initializing": "[TODO: Translate] Initializing filename template apply...",
+                "starting": "[TODO: Translate] Applying filename template to {type}...",
+                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
+                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
+                "complete": "[TODO: Translate] Filename template apply complete",
+                "error": "[TODO: Translate] Error: {error}"
             },
             "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         },
@@ -2311,6 +2335,9 @@
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
+            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
+            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
+            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
             "noModelsSelected": "לא נבחרו מודלים"
         },
         "recipes": {
@@ -2477,6 +2504,8 @@
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
             "downloadTemplatesUpdated": "תבניות נתיב הורדה עודכנו",
             "downloadTemplatesFailed": "שמירת תבניות נתיב הורדה נכשלה: {message}",
+            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
+            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
             "recipesPathUpdated": "נתיב אחסון המתכונים עודכן",
             "recipesPathSaveFailed": "עדכון נתיב אחסון המתכונים נכשל: {message}",
             "settingsUpdated": "הגדרות עודכנו: {setting}",
