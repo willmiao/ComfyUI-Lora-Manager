@@ -463,7 +463,6 @@ export class SettingsManager {
                     const template = e.target.value;
                     settingsManager.validateFilenameTemplate(modelType, template);
                     settingsManager.updateFilenamePreview(modelType, template);
-                    settingsManager.updateFilenameTemplateApplyButton(modelType, template);
                 });
 
                 filenameInput.addEventListener('blur', (e) => {
@@ -2864,7 +2863,6 @@ export class SettingsManager {
             input.value = template;
             this.validateFilenameTemplate(modelType, template);
             this.updateFilenamePreview(modelType, template);
-            this.updateFilenameTemplateApplyButton(modelType, template);
         });
     }
 
@@ -2877,7 +2875,7 @@ export class SettingsManager {
         validationElement.className = 'template-validation';
 
         if (!template) {
-            validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.filenameTemplates.validation.keepOriginal', {}, 'Valid (keep original filename)')}`;
+            validationElement.innerHTML = `<i class="fas fa-check"></i> ${translate('settings.filenameTemplates.validation.restoreOriginal', {}, 'Valid (empty template restores original filenames)')}`;
             validationElement.classList.add('valid');
             return true;
         }
@@ -2922,20 +2920,11 @@ export class SettingsManager {
         }
         state.global.settings.download_filename_templates[modelType] = template;
 
-        // Update preview and apply-button state
+        // Update preview
         this.updateFilenamePreview(modelType, template);
-        this.updateFilenameTemplateApplyButton(modelType, template);
 
         // Save settings
         this.saveFilenameTemplates();
-    }
-
-    updateFilenameTemplateApplyButton(modelType, template) {
-        const button = document.getElementById(`${modelType}ApplyFilenameTemplate`);
-        if (!button) return;
-
-        // An empty template keeps original filenames, so there is nothing to apply
-        button.disabled = !template;
     }
 
     updateFilenamePreview(modelType, template) {
@@ -2943,7 +2932,7 @@ export class SettingsManager {
         if (!previewElement) return;
 
         if (!template) {
-            // Empty template keeps the original filename untouched
+            // Empty template restores the recorded original filename
             previewElement.textContent = 'V1.safetensors';
         } else {
             const exampleStem = template
@@ -2972,14 +2961,96 @@ export class SettingsManager {
         }
     }
 
-    async applyFilenameTemplate(modelType) {
-        const template = state.global.settings.download_filename_templates?.[modelType] || '';
-        if (!template) {
-            showToast('settings.filenameTemplates.emptyTemplateInfo', {}, 'info');
-            return;
+    /**
+     * Confirm the bulk apply/revert via a dedicated modal. Self-managed (NOT
+     * through ModalManager): it stacks above the settings modal, and
+     * ModalManager's "close current modal on open" behavior would kill the
+     * settings modal underneath. Resolves true when the user confirms.
+     */
+    confirmFilenameTemplateApply(isRevert) {
+        const modalElement = document.getElementById('filenameTemplateConfirmModal');
+        if (!modalElement) {
+            return Promise.resolve(true);
         }
 
-        if (!confirm(translate('settings.filenameTemplates.confirmApply', {}, 'Rename all existing files of this model type according to the filename template? The original filename is preserved in each model\'s metadata.'))) {
+        const titleElement = modalElement.querySelector('[data-role="title"]');
+        if (titleElement) {
+            titleElement.textContent = isRevert
+                ? translate('modals.filenameTemplateConfirm.titleRevert', {}, 'Restore original filenames?')
+                : translate('modals.filenameTemplateConfirm.titleApply', {}, 'Apply filename template to library?');
+        }
+
+        const messageElement = modalElement.querySelector('[data-role="message"]');
+        if (messageElement) {
+            messageElement.textContent = isRevert
+                ? translate('settings.filenameTemplates.confirmRevert', {}, 'Restore the recorded original filename for all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.')
+                : translate('settings.filenameTemplates.confirmApply', {}, 'Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model\'s metadata.');
+        }
+
+        const confirmButton = modalElement.querySelector('[data-action="confirm-filename-template"]');
+        const cancelButton = modalElement.querySelector('[data-action="cancel-filename-template"]');
+        if (!confirmButton || !cancelButton) {
+            return Promise.resolve(true);
+        }
+
+        confirmButton.textContent = isRevert
+            ? translate('modals.filenameTemplateConfirm.revertButton', {}, 'Restore Original Filenames')
+            : translate('settings.filenameTemplates.applyButton', {}, 'Apply to Library Now');
+
+        return new Promise((resolve) => {
+            let resolved = false;
+
+            const cleanup = () => {
+                confirmButton.removeEventListener('click', handleConfirm);
+                cancelButton.removeEventListener('click', handleCancel);
+                document.removeEventListener('keydown', handleEscape, true);
+            };
+
+            const finalize = (proceed) => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+                cleanup();
+                modalElement.classList.remove('show');
+                // Keep body.modal-open: the settings modal underneath is still open.
+                resolve(proceed);
+            };
+
+            const handleConfirm = (event) => {
+                event.preventDefault();
+                finalize(true);
+            };
+
+            const handleCancel = (event) => {
+                event.preventDefault();
+                finalize(false);
+            };
+
+            // Capture phase + stopPropagation so ESC never reaches the
+            // settings modal's own ESC handler underneath.
+            const handleEscape = (event) => {
+                if (event.key === 'Escape') {
+                    event.stopPropagation();
+                    finalize(false);
+                }
+            };
+
+            confirmButton.addEventListener('click', handleConfirm);
+            cancelButton.addEventListener('click', handleCancel);
+            document.addEventListener('keydown', handleEscape, true);
+
+            modalElement.classList.add('show');
+            cancelButton.focus();
+        });
+    }
+
+    async applyFilenameTemplate(modelType) {
+        const template = state.global.settings.download_filename_templates?.[modelType] || '';
+        // An empty template reverts renamed models to their recorded original
+        // filename instead of rendering a template.
+        const confirmed = await this.confirmFilenameTemplateApply(!template);
+        if (!confirmed) {
             return;
         }
 

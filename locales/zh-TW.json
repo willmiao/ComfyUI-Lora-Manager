@@ -689,9 +689,9 @@
             "applyButton": "[TODO: Translate] Apply to Library Now",
             "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
             "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "emptyTemplateInfo": "[TODO: Translate] No filename template configured for this model type — original filenames are kept, nothing to apply.",
+            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
             "validation": {
-                "keepOriginal": "[TODO: Translate] Valid (keep original filename)",
+                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
                 "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
                 "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
                 "validTemplate": "[TODO: Translate] Valid template"
@@ -1625,6 +1625,11 @@
             "message": "這會檢查資料庫中的每個 {typePlural} 的更新，大型收藏可能會花上一些時間。",
             "tip": "想分批處理？切換到批次模式，選擇需要的模型，然後使用「檢查所選更新」。",
             "action": "全部檢查"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "[TODO: Translate] Apply filename template to library?",
+            "titleRevert": "[TODO: Translate] Restore original filenames?",
+            "revertButton": "[TODO: Translate] Restore Original Filenames"
         },
         "bulkAddTags": {
             "title": "新增標籤到多個模型",

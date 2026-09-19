@@ -549,12 +549,17 @@ def _make_filename_template_use_case(
     scanner: MockScanner,
     lifecycle: StubLifecycleService,
     lock_provider: Optional[StubLockProvider] = None,
+    metadata_loader: Optional[Any] = None,
 ) -> FilenameTemplateUseCase:
+    kwargs: Dict[str, Any] = {}
+    if metadata_loader is not None:
+        kwargs["metadata_loader"] = metadata_loader
     return FilenameTemplateUseCase(
         scanner=scanner,
         lifecycle_service=lifecycle,  # pyright: ignore[reportArgumentType]
         lock_provider=lock_provider or StubLockProvider(),
         model_type="lora",
+        **kwargs,
     )
 
 
@@ -600,7 +605,36 @@ async def test_filename_template_use_case_skips_unchanged_names() -> None:
     assert lifecycle.renames == []
 
 
-async def test_filename_template_use_case_skips_all_when_template_empty() -> None:
+async def test_filename_template_use_case_reverts_to_recorded_original_when_template_empty() -> None:
+    _set_filename_template("")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha-renamed.safetensors", "Alpha"),
+        _filename_template_model("/library/beta.safetensors", "Beta"),
+    ]))
+    lifecycle = StubLifecycleService()
+
+    async def metadata_loader(metadata_path: str) -> Dict[str, Any]:
+        if metadata_path == "/library/alpha-renamed.metadata.json":
+            return {"original_file_name": "alpha-original"}
+        return {}
+
+    use_case = _make_filename_template_use_case(
+        scanner, lifecycle, metadata_loader=metadata_loader
+    )
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.success_count == 1
+    assert result.skipped_count == 1
+    assert lifecycle.renames == [
+        {
+            "file_path": "/library/alpha-renamed.safetensors",
+            "new_file_name": "alpha-original",
+        }
+    ]
+
+
+async def test_filename_template_use_case_skips_revert_without_recorded_original() -> None:
     _set_filename_template("")
     scanner = MockScanner(cache=MockCache([
         _filename_template_model("/library/alpha.safetensors", "Alpha"),
@@ -610,6 +644,27 @@ async def test_filename_template_use_case_skips_all_when_template_empty() -> Non
 
     result = await use_case.execute(progress_callback=None)
 
+    assert result.skipped_count == 1
+    assert lifecycle.renames == []
+
+
+async def test_filename_template_use_case_skips_revert_matching_current_name() -> None:
+    _set_filename_template("")
+    scanner = MockScanner(cache=MockCache([
+        _filename_template_model("/library/alpha.safetensors", "Alpha"),
+    ]))
+    lifecycle = StubLifecycleService()
+
+    async def metadata_loader(metadata_path: str) -> Dict[str, Any]:
+        return {"original_file_name": "alpha"}
+
+    use_case = _make_filename_template_use_case(
+        scanner, lifecycle, metadata_loader=metadata_loader
+    )
+
+    result = await use_case.execute(progress_callback=None)
+
+    assert result.success_count == 0
     assert result.skipped_count == 1
     assert lifecycle.renames == []
 

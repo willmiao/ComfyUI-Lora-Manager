@@ -689,9 +689,9 @@
             "applyButton": "[TODO: Translate] Apply to Library Now",
             "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
             "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "emptyTemplateInfo": "[TODO: Translate] No filename template configured for this model type — original filenames are kept, nothing to apply.",
+            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
             "validation": {
-                "keepOriginal": "[TODO: Translate] Valid (keep original filename)",
+                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
                 "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
                 "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
                 "validTemplate": "[TODO: Translate] Valid template"
@@ -1625,6 +1625,11 @@
             "message": "这会检查库中的每个 {typePlural} 的更新，大型集合可能需要一些时间。",
             "tip": "想分批进行？切换到批量模式，选中需要的模型，然后使用“检查所选更新”。",
             "action": "检查全部"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "[TODO: Translate] Apply filename template to library?",
+            "titleRevert": "[TODO: Translate] Restore original filenames?",
+            "revertButton": "[TODO: Translate] Restore Original Filenames"
         },
         "bulkAddTags": {
             "title": "批量添加标签",

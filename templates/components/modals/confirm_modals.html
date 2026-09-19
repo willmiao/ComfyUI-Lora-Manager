@@ -82,6 +82,20 @@
     </div>
 </div>
 
+<!-- Filename Template Apply/Revert Confirmation Modal
+     Self-managed by SettingsManager (NOT registered with ModalManager): it
+     stacks above the settings modal, like the directory picker. -->
+<div id="filenameTemplateConfirmModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title"></h2>
+        <p class="delete-message" data-role="message"></p>
+        <div class="modal-actions">
+            <button class="cancel-btn" data-action="cancel-filename-template">{{ t('common.actions.cancel') }}</button>
+            <button class="primary-btn" data-action="confirm-filename-template"></button>
+        </div>
+    </div>
+</div>
+
 <!-- Sidebar Folder Delete Confirmation Modal -->
 <!-- Shared by two states: 'confirm' (model-free folder) and 'blocked' (the
      subtree still holds models, so a cascade delete is refused). -->

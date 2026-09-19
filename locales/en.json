@@ -683,15 +683,15 @@
     },
     "filenameTemplates": {
       "title": "Filename Templates",
-      "help": "Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
+      "help": "Configure filenames for downloaded models per model type. Leave empty to keep original filenames on download; applying an empty template restores the recorded original filenames of previously renamed models. The original filename is always preserved in the model's metadata.",
       "availablePlaceholders": "Available placeholders:",
       "templatePlaceholder": "Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
       "applyButton": "Apply to Library Now",
-      "applyHelp": "Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
+      "applyHelp": "Renames all existing files of this model type according to the template; with an empty template, restores the recorded original filenames instead. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
       "confirmApply": "Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-      "emptyTemplateInfo": "No filename template configured for this model type — original filenames are kept, nothing to apply.",
+      "confirmRevert": "Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
       "validation": {
-        "keepOriginal": "Valid (keep original filename)",
+        "restoreOriginal": "Valid (empty template restores original filenames)",
         "invalidChars": "Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
         "invalidPlaceholder": "Invalid placeholder: {placeholder}",
         "validTemplate": "Valid template"
@@ -1625,6 +1625,11 @@
       "message": "This checks every {typePlural} in your library for updates. Large collections may take a little longer.",
       "tip": "To work in smaller batches, switch to bulk mode, choose the ones you need, then use \"Check Updates for Selected\".",
       "action": "Check All"
+    },
+    "filenameTemplateConfirm": {
+      "titleApply": "Apply filename template to library?",
+      "titleRevert": "Restore original filenames?",
+      "revertButton": "Restore Original Filenames"
     },
     "bulkAddTags": {
       "title": "Add Tags to Multiple Models",

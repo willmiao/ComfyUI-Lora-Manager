@@ -2,8 +2,9 @@
 
 **Issue:** [#1071 — Lora Renaming](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1071)
 **Status:** Core feature **implemented** (2026-09-19, commit `2bc9860b`,
-preceded by the settings-tab split in `327da046`). This document records the
-follow-up items deliberately left out of that commit, for a future session.
+preceded by the settings-tab split in `327da046`). Follow-ups 1 and 2 were
+resolved together on 2026-09-19 by redefining the empty template as
+"revert to recorded original filename" (see below). Follow-up 3 remains open.
 
 ## What shipped in `2bc9860b`
 
@@ -30,47 +31,67 @@ metadata pointer updates, `original_file_name` recording, idempotency,
 conflict handling (failure counted, batch continues), empty-template no-op,
 GET variant.
 
-## Follow-up 1 — Reword the empty-template validation message
+## Follow-ups 1 & 2 — RESOLVED: empty template = revert to recorded original
 
-**Problem:** the empty-template state currently reads "Valid (keep original
-filename)" (`settings.filenameTemplates.validation.keepOriginal` in
-`locales/en.json`). "Original" is ambiguous — it reads as "restore the
-recorded original name", but the semantics are "leave the current filename
-untouched" (empty template = no-op, confirmed in E2E).
+Follow-up 1 asked to reword the ambiguous "Valid (keep original filename)"
+empty-template message; Follow-up 2 asked for a bulk revert to the recorded
+`original_file_name`. Both were resolved by a single semantic change: **an
+empty template now means "restore the recorded original filename"** instead of
+"leave the current filename untouched".
 
-**Fix:** reword the `en.json` value, e.g. "Valid (leave files unchanged)",
-then re-run `python scripts/sync_translation_keys.py` and retranslate the key
-in the 9 non-English locales (see `docs/i18n-translation-guidelines.md` §7 —
-the owner explicitly asking for translations is the trigger).
+Rationale: for never-renamed models a revert is a no-op (no recorded
+original), for renamed models it restores the pre-rename name, and new
+downloads with an empty template keep the download name as before — so the
+two contexts (download path and bulk apply) share one coherent meaning, and
+no separate revert feature or `{recorded_original}` placeholder is needed.
 
-## Follow-up 2 — Bulk revert to recorded original filename
+Implemented changes:
 
-**Problem:** renames record `original_file_name` in each model's
-`.metadata.json`, but there is no way to undo in bulk. Restoring today means
-renaming each model by hand via the existing single-model rename dialog.
-Note: the `{original_name}` template placeholder resolves to the **current**
-filename stem (`calculate_filename_for_model` reads `file_path` /
-`file_name` from the cache entry), so "set template to `{original_name}` and
-apply" is **not** a revert path.
+- `FilenameTemplateUseCase._process_model`: an empty template now resolves
+  the target name from the sidecar's `original_file_name` via the injected
+  `metadata_loader` (default `load_local_metadata`); models without a
+  recorded original or whose original matches the current name are skipped.
+  Cache entries do not project `original_file_name`, so the sidecar is read
+  per model.
+- `SettingsManager.js`: removed the empty-template early return and the
+  apply-button disable (`updateFilenameTemplateApplyButton` deleted — the
+  button is now always enabled). The browser-native `confirm()` was replaced
+  with `filenameTemplateConfirmModal`
+  (`templates/components/modals/confirm_modals.html`), a **self-managed**
+  modal (like `DirectoryPickerModal`, NOT registered with ModalManager):
+  ModalManager's "close current modal on open" behavior would kill the
+  settings modal underneath. It stacks via `z-index: 10010`
+  (`delete-modal.css`), handles ESC in capture phase with
+  `stopPropagation`, and shows apply vs revert wording
+  (`modals.filenameTemplateConfirm.titleApply` / `titleRevert` /
+  `revertButton`; messages reuse `settings.filenameTemplates.confirmApply` /
+  `confirmRevert`).
+- `locales/en.json`: reworded `help` / `applyHelp`, replaced
+  `validation.keepOriginal` with `validation.restoreOriginal`
+  ("Valid (empty template restores original filenames)"), added
+  `confirmRevert`, removed the now-unused `emptyTemplateInfo`. Other locales
+  re-synced with `[TODO: Translate]` placeholders — retranslation waits for
+  the feature owner's request per `docs/i18n-translation-guidelines.md` §7.
+- Tests: revert / no-record-skip / same-name-skip cases in
+  `tests/services/test_use_cases.py`; modal confirm-and-revert and
+  cancel paths in
+  `tests/frontend/managers/settingsManager.filenameTemplates.test.js`.
 
-**Suggested shape (smallest change):** add a new placeholder, e.g.
-`{recorded_original}`, resolved in `calculate_filename_for_model` from
-`model_data.get("original_file_name")` (cache entries need to carry the
-field — check whether the scanner cache surfaces sidecar extras; if not,
-read it in the use case via the metadata loader). Setting the template to
-`{recorded_original}` and running "Apply to Library Now" then reverts the
-library. Models never renamed render an empty segment → skipped, which is
-the desired behaviour.
+Sandbox E2E verified (standalone server, sandboxed settings + library under
+`/tmp`, 2026-09-19): template apply renames and records
+`original_file_name`; empty-template apply reverts to the recorded name;
+revert target occupied by a newer file counts as failure and keeps the
+current name; models without a recorded original are skipped;
+apply → revert → re-apply cycles repeat cleanly.
 
-Alternative shape: a dedicated revert endpoint + button. More code, clearer
-UX; only worth it if the placeholder approach proves too obscure.
+Standing caveats (unchanged):
 
-**Caveats either way:**
-- The revert target may collide with an existing file (a file downloaded
-  after the rename may already carry that name) — the existing conflict
+- The revert target may collide with an existing file — the existing conflict
   handling (count as failure, keep current name) covers this.
 - `original_file_name` only exists for models renamed after `2bc9860b`;
-  older renames have no recorded original and must be skipped.
+  older renames have no recorded original and are skipped.
+- `original_file_name` is kept (not cleared) after a revert, so
+  apply → revert → re-apply stays repeatable.
 
 ## Follow-up 3 — Cross-page refresh after bulk apply
 

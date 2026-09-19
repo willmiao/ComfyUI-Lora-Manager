@@ -81,7 +81,6 @@ vi.mock('../../../static/js/managers/BannerService.js', () => ({
 
 import { SettingsManager } from '../../../static/js/managers/SettingsManager.js';
 import { state } from '../../../static/js/state/index.js';
-import { showToast } from '../../../static/js/utils/uiHelpers.js';
 import { resetAndReload, getModelApiClient } from '../../../static/js/api/modelApiFactory.js';
 
 const createManager = () => {
@@ -109,6 +108,17 @@ const appendFilenameTemplateUi = (modelType = 'lora') => {
     `;
 };
 
+const appendConfirmModal = () => {
+    document.body.insertAdjacentHTML('beforeend', `
+        <div id="filenameTemplateConfirmModal" class="modal delete-modal">
+            <h2 data-role="title"></h2>
+            <p data-role="message"></p>
+            <button data-action="cancel-filename-template"></button>
+            <button data-action="confirm-filename-template"></button>
+        </div>
+    `);
+};
+
 describe('SettingsManager filename templates', () => {
     beforeEach(() => {
         document.body.innerHTML = '';
@@ -118,7 +128,7 @@ describe('SettingsManager filename templates', () => {
         };
     });
 
-    it('treats an empty template as valid (keep original filename)', () => {
+    it('treats an empty template as valid (restores original filenames)', () => {
         appendFilenameTemplateUi();
         const manager = createManager();
 
@@ -126,7 +136,7 @@ describe('SettingsManager filename templates', () => {
 
         const validation = document.getElementById('loraFilenameValidation');
         expect(validation.classList.contains('valid')).toBe(true);
-        expect(validation.textContent).toContain('keep original filename');
+        expect(validation.textContent).toContain('restores original filenames');
     });
 
     it('rejects templates with path separators or OS-illegal characters', () => {
@@ -184,7 +194,7 @@ describe('SettingsManager filename templates', () => {
         expect(manager.saveSetting).not.toHaveBeenCalled();
     });
 
-    it('previews the original filename when the template is empty', () => {
+    it('previews the recorded original filename when the template is empty', () => {
         appendFilenameTemplateUi();
         const manager = createManager();
 
@@ -203,15 +213,44 @@ describe('SettingsManager filename templates', () => {
             .toBe('Flux.1 D-model-name-v3-a1b2c3d4e5.safetensors');
     });
 
-    it('disables the apply button when the template is empty', () => {
+    it('applies an empty template as a revert after modal confirmation', async () => {
         appendFilenameTemplateUi();
+        appendConfirmModal();
+        const manager = createManager();
+        const apiClient = { applyFilenameTemplate: vi.fn().mockResolvedValue() };
+        getModelApiClient.mockReturnValue(apiClient);
+
+        const applyPromise = manager.applyFilenameTemplate('lora');
+
+        const modal = document.getElementById('filenameTemplateConfirmModal');
+        expect(modal.classList.contains('show')).toBe(true);
+        expect(modal.querySelector('[data-role="title"]').textContent)
+            .toBe('Restore original filenames?');
+        expect(modal.querySelector('[data-role="message"]').textContent)
+            .toContain('Restore the recorded original filename');
+        expect(modal.querySelector('[data-action="confirm-filename-template"]').textContent)
+            .toBe('Restore Original Filenames');
+
+        modal.querySelector('[data-action="confirm-filename-template"]').click();
+        await applyPromise;
+
+        expect(getModelApiClient).toHaveBeenCalledWith('loras');
+        expect(apiClient.applyFilenameTemplate).toHaveBeenCalledWith();
+        expect(resetAndReload).toHaveBeenCalledWith(true);
+        expect(modal.classList.contains('show')).toBe(false);
+    });
+
+    it('does not revert when the modal is cancelled', async () => {
+        appendFilenameTemplateUi();
+        appendConfirmModal();
         const manager = createManager();
 
-        manager.updateFilenameTemplateApplyButton('lora', '');
-        expect(document.getElementById('loraApplyFilenameTemplate').disabled).toBe(true);
+        const applyPromise = manager.applyFilenameTemplate('lora');
+        document.querySelector('[data-action="cancel-filename-template"]').click();
+        await applyPromise;
 
-        manager.updateFilenameTemplateApplyButton('lora', '{model_name}');
-        expect(document.getElementById('loraApplyFilenameTemplate').disabled).toBe(false);
+        expect(getModelApiClient).not.toHaveBeenCalled();
+        expect(resetAndReload).not.toHaveBeenCalled();
     });
 
     it('merges backend download_filename_templates over defaults', () => {
@@ -236,22 +275,10 @@ describe('SettingsManager filename templates', () => {
         });
     });
 
-    it('shows an info toast and does nothing when applying an empty template', async () => {
-        appendFilenameTemplateUi();
-        const manager = createManager();
-        vi.stubGlobal('confirm', vi.fn(() => true));
-
-        await manager.applyFilenameTemplate('lora');
-
-        expect(showToast).toHaveBeenCalledWith('settings.filenameTemplates.emptyTemplateInfo', {}, 'info');
-        expect(getModelApiClient).not.toHaveBeenCalled();
-    });
-
     it('applies the template through the model API client and reloads', async () => {
         appendFilenameTemplateUi();
         state.global.settings.download_filename_templates.lora = '{model_name}';
         const manager = createManager();
-        vi.stubGlobal('confirm', vi.fn(() => true));
         const apiClient = { applyFilenameTemplate: vi.fn().mockResolvedValue() };
         getModelApiClient.mockReturnValue(apiClient);
 
@@ -262,15 +289,26 @@ describe('SettingsManager filename templates', () => {
         expect(resetAndReload).toHaveBeenCalledWith(true);
     });
 
-    it('does not apply when the confirm dialog is declined', async () => {
+    it('shows the apply wording for a non-empty template and honours cancellation', async () => {
         appendFilenameTemplateUi();
+        appendConfirmModal();
         state.global.settings.download_filename_templates.lora = '{model_name}';
         const manager = createManager();
-        vi.stubGlobal('confirm', vi.fn(() => false));
 
-        await manager.applyFilenameTemplate('lora');
+        const applyPromise = manager.applyFilenameTemplate('lora');
+
+        const modal = document.getElementById('filenameTemplateConfirmModal');
+        expect(modal.classList.contains('show')).toBe(true);
+        expect(modal.querySelector('[data-role="title"]').textContent)
+            .toBe('Apply filename template to library?');
+        expect(modal.querySelector('[data-role="message"]').textContent)
+            .toContain('Rename all existing files');
+
+        modal.querySelector('[data-action="cancel-filename-template"]').click();
+        await applyPromise;
 
         expect(getModelApiClient).not.toHaveBeenCalled();
         expect(resetAndReload).not.toHaveBeenCalled();
+        expect(modal.classList.contains('show')).toBe(false);
     });
 });

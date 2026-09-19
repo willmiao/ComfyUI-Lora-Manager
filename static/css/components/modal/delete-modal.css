@@ -27,6 +27,12 @@
     justify-content: center;
 }
 
+/* Self-managed by SettingsManager: stacks above the settings modal like the
+   directory picker (settings panels sit at 10000/10002). */
+#filenameTemplateConfirmModal {
+    z-index: 10010;
+}
+
 .delete-modal-content {
     max-width: 500px;
     width: 90%;

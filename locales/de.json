@@ -689,9 +689,9 @@
             "applyButton": "[TODO: Translate] Apply to Library Now",
             "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
             "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "emptyTemplateInfo": "[TODO: Translate] No filename template configured for this model type — original filenames are kept, nothing to apply.",
+            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
             "validation": {
-                "keepOriginal": "[TODO: Translate] Valid (keep original filename)",
+                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
                 "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
                 "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
                 "validTemplate": "[TODO: Translate] Valid template"
@@ -1625,6 +1625,11 @@
             "message": "Damit werden alle {typePlural} in Ihrer Bibliothek auf Updates geprüft. Bei großen Sammlungen kann das etwas länger dauern.",
             "tip": "Möchten Sie in Etappen prüfen? Wechseln Sie in den Massenmodus, wählen Sie die benötigten Modelle aus und nutzen Sie anschließend \"Auswahl auf Updates prüfen\".",
             "action": "Alles prüfen"
+        },
+        "filenameTemplateConfirm": {
+            "titleApply": "[TODO: Translate] Apply filename template to library?",
+            "titleRevert": "[TODO: Translate] Restore original filenames?",
+            "revertButton": "[TODO: Translate] Restore Original Filenames"
         },
         "bulkAddTags": {
             "title": "Tags zu mehreren Modellen hinzufügen",

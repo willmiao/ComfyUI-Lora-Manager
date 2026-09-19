@@ -1,16 +1,20 @@
-"""Filename template use case: bulk-rename library models per the configured template."""
+"""Filename template use case: bulk-rename library models per the configured template.
+
+An empty template reverts previously renamed models to the original filename
+recorded in their ``.metadata.json`` sidecar (``original_file_name``).
+"""
 
 from __future__ import annotations
 
 import asyncio
 import logging
 import os
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
 
 from ...utils.constants import AUTO_ORGANIZE_BATCH_SIZE
 from ...utils.utils import calculate_filename_for_model
 from ..model_file_service import AutoOrganizeResult, ProgressCallback
-from ..model_lifecycle_service import ModelLifecycleService
+from ..model_lifecycle_service import ModelLifecycleService, load_local_metadata
 from ..settings_manager import get_settings_manager
 from .auto_organize_use_case import (
     AutoOrganizeInProgressError,
@@ -25,8 +29,10 @@ _PROGRESS_TYPE = "filename_template_progress"
 class FilenameTemplateUseCase:
     """Apply the download filename template to existing library models.
 
-    Shares the auto-organize lock (and its in-progress error) so a bulk
-    rename never runs concurrently with an auto-organize operation.
+    An empty template restores the recorded original filename instead of
+    rendering a template. Shares the auto-organize lock (and its in-progress
+    error) so a bulk rename never runs concurrently with an auto-organize
+    operation.
     """
 
     def __init__(
@@ -36,11 +42,13 @@ class FilenameTemplateUseCase:
         lifecycle_service: ModelLifecycleService,
         lock_provider: AutoOrganizeLockProvider,
         model_type: str,
+        metadata_loader: Callable[[str], Awaitable[Dict[str, Any]]] = load_local_metadata,
     ) -> None:
         self._scanner = scanner
         self._lifecycle_service = lifecycle_service
         self._lock_provider = lock_provider
         self._model_type = model_type
+        self._metadata_loader = metadata_loader
 
     async def execute(
         self,
@@ -151,10 +159,11 @@ class FilenameTemplateUseCase:
                 return
 
             if not template:
-                result.skipped_count += 1
-                return
-
-            new_stem = calculate_filename_for_model(model, self._model_type)
+                # Empty template = revert to the original filename recorded
+                # by the first rename; models without a record are skipped.
+                new_stem = await self._resolve_recorded_original(file_path)
+            else:
+                new_stem = calculate_filename_for_model(model, self._model_type)
             if not new_stem:
                 result.skipped_count += 1
                 return
@@ -183,6 +192,20 @@ class FilenameTemplateUseCase:
             )
             self._add_result(result, model_name, False, f"Error: {exc}")
             result.failure_count += 1
+
+    async def _resolve_recorded_original(self, file_path: str) -> str:
+        """Return the original filename stem recorded at the first rename.
+
+        Reads the ``.metadata.json`` sidecar; returns an empty string when no
+        sidecar or no ``original_file_name`` entry exists (models never
+        renamed, or renamed before the recording shipped).
+        """
+        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata = await self._metadata_loader(metadata_path)
+        original = metadata.get("original_file_name")
+        if not isinstance(original, str):
+            return ""
+        return original.strip()
 
     async def _emit_progress(
         self,
