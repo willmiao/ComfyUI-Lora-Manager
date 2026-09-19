@@ -682,19 +682,19 @@
             }
         },
         "filenameTemplates": {
-            "title": "[TODO: Translate] Filename Templates",
-            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
-            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
-            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
-            "applyButton": "[TODO: Translate] Apply to Library Now",
-            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
-            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
+            "title": "Modèles de nom de fichier",
+            "help": "Configurer les noms de fichier des modèles téléchargés par type de modèle. Laisser vide pour conserver le nom de fichier d'origine. Le nom de fichier d'origine est toujours conservé dans les métadonnées du modèle.",
+            "availablePlaceholders": "Espaces réservés disponibles :",
+            "templatePlaceholder": "Entrez un modèle de nom de fichier (ex: {base_model}-{model_name}-{version_name})",
+            "applyButton": "Appliquer à la bibliothèque maintenant",
+            "applyHelp": "Renomme tous les fichiers existants de ce type de modèle selon le modèle. Attention : le renommage change le chemin relatif vu par les loaders ComfyUI, les workflows existants référençant l'ancien nom de fichier peuvent donc nécessiter une mise à jour. Le nom de fichier d'origine est conservé dans les métadonnées de chaque modèle.",
+            "confirmApply": "Renommer tous les fichiers existants de ce type de modèle selon le modèle de nom de fichier ? Cela change le chemin relatif vu par les loaders ComfyUI. Le nom de fichier d'origine est conservé dans les métadonnées de chaque modèle.",
+            "confirmRevert": "Restaurer les noms de fichier d'origine enregistrés de tous les fichiers précédemment renommés de ce type de modèle ? Cela change le chemin relatif vu par les loaders ComfyUI. Les fichiers sans nom de fichier d'origine enregistré sont ignorés.",
             "validation": {
-                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
-                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
-                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
-                "validTemplate": "[TODO: Translate] Valid template"
+                "restoreOriginal": "Valide (un modèle vide restaure les noms de fichier d'origine)",
+                "invalidChars": "Caractères invalides détectés (un nom de fichier ne peut pas contenir / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "Espace réservé invalide : {placeholder}",
+                "validTemplate": "Modèle valide"
             }
         },
         "exampleImages": {
@@ -930,12 +930,12 @@
                 "error": "Erreur : {error}"
             },
             "filenameTemplateProgress": {
-                "initializing": "[TODO: Translate] Initializing filename template apply...",
-                "starting": "[TODO: Translate] Applying filename template to {type}...",
-                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
-                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
-                "complete": "[TODO: Translate] Filename template apply complete",
-                "error": "[TODO: Translate] Error: {error}"
+                "initializing": "Initialisation de l'application du modèle de nom de fichier...",
+                "starting": "Application du modèle de nom de fichier pour {type}...",
+                "processing": "Traitement ({processed}/{total}) - {success} renommés, {skipped} ignorés, {failures} échecs",
+                "completed": "Terminé : {success} renommés, {skipped} ignorés, {failures} échecs",
+                "complete": "Application du modèle de nom de fichier terminée",
+                "error": "Erreur : {error}"
             },
             "enrichHfAgent": "Enrichir les métadonnées avec l'IA"
         },
@@ -1627,9 +1627,9 @@
             "action": "Tout vérifier"
         },
         "filenameTemplateConfirm": {
-            "titleApply": "[TODO: Translate] Apply filename template to library?",
-            "titleRevert": "[TODO: Translate] Restore original filenames?",
-            "revertButton": "[TODO: Translate] Restore Original Filenames"
+            "titleApply": "Appliquer le modèle de nom de fichier à la bibliothèque ?",
+            "titleRevert": "Restaurer les noms de fichier d'origine ?",
+            "revertButton": "Restaurer les noms de fichier d'origine"
         },
         "bulkAddTags": {
             "title": "Ajouter des tags à plusieurs modèles",
@@ -2340,9 +2340,9 @@
             "autoOrganizeSuccess": "Auto-organisation terminée avec succès pour {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organisation terminée avec {success} déplacés, {failures} échecs sur {total} modèles",
             "autoOrganizeFailed": "Échec de l'auto-organisation : {error}",
-            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
-            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
-            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
+            "filenameTemplateSuccess": "Modèle de nom de fichier appliqué avec succès pour {count} {type}",
+            "filenameTemplatePartialSuccess": "Modèle de nom de fichier appliqué avec {success} renommés, {failures} échecs sur {total} modèles",
+            "filenameTemplateFailed": "Échec de l'application du modèle de nom de fichier : {error}",
             "noModelsSelected": "Aucun modèle sélectionné"
         },
         "recipes": {
@@ -2509,8 +2509,8 @@
             "mappingSaveFailed": "Échec de la sauvegarde des mappages de modèle de base : {message}",
             "downloadTemplatesUpdated": "Modèles de chemin de téléchargement mis à jour",
             "downloadTemplatesFailed": "Échec de la sauvegarde des modèles de chemin de téléchargement : {message}",
-            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
-            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
+            "filenameTemplatesUpdated": "Modèles de nom de fichier mis à jour",
+            "filenameTemplatesFailed": "Échec de la sauvegarde des modèles de nom de fichier : {message}",
             "recipesPathUpdated": "Chemin de stockage des Recipes mis à jour",
             "recipesPathSaveFailed": "Échec de la mise à jour du chemin de stockage des Recipes : {message}",
             "settingsUpdated": "Paramètres mis à jour : {setting}",

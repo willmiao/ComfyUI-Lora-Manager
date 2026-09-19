@@ -71,6 +71,13 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > "Settings Organization tab"). All 9 locales are translated, so the "no remaining
 > placeholders" claim holds again.
 
+> **Status (2026-09, filename templates):** the Filename Templates feature (per-model-type
+> download filename templates + bulk "Apply to Library Now" rename, with an empty template
+> restoring recorded original filenames) added 26 keys across `settings.filenameTemplates.*`,
+> `loras.bulkOperations.filenameTemplateProgress.*`, `modals.filenameTemplateConfirm.*` and
+> the `toast.loras.filenameTemplate*` / `toast.settings.filenameTemplates*` toasts. All 9
+> locales are translated (terminology in §2, "Filename Templates feature").
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -396,6 +403,23 @@ the **noun for arranging files**, matching each locale's existing
 | he | ארגון |
 
 zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
+
+### Filename Templates feature
+
+Per-model-type templates that name downloaded model files; "Apply to Library Now"
+bulk-renames existing files, and an **empty template restores the recorded original
+filenames** (recorded in each model's metadata at its first rename). "Template" follows
+each locale's existing download-path-template noun (zh-CN 模板 vs zh-TW 範本 — note the
+split); progress strings mirror `loras.bulkOperations.autoOrganizeProgress` verbatim with
+the locale's "moved" verb swapped for its "renamed" verb, and the toasts mirror the
+`autoOrganize*` / `downloadTemplates*` toast shapes.
+
+| Term | Rendering |
+|---|---|
+| filename template(s) | zh-CN 文件名模板 · zh-TW 檔案名稱範本 · ja ファイル名テンプレート · ko 파일명 템플릿 · fr modèle(s) de nom de fichier · de Dateinamen-Vorlage(n) · es plantilla(s) de nombres de archivo · ru шаблон(ы) имён файлов · he תבנית שם קובץ / תבניות שמות קבצים |
+| Apply to Library Now (button) | zh-CN 立即应用到库 · zh-TW 立即套用至模型庫 · ja ライブラリに今すぐ適用 · ko 지금 라이브러리에 적용 · fr Appliquer à la bibliothèque maintenant · de Jetzt auf Bibliothek anwenden · es Aplicar a la biblioteca ahora · ru Применить к библиотеке сейчас · he החל על הספרייה כעת |
+| Restore original filenames (modal title / button) | zh-CN 恢复原始文件名？/ 恢复原始文件名 · zh-TW 要還原原始檔案名稱嗎？/ 還原原始檔案名稱 · ja 元のファイル名を復元しますか？/ 元のファイル名を復元 · ko 원본 파일명을 복원하시겠습니까? / 원본 파일명 복원 · fr Restaurer les noms de fichier d'origine ? / Restaurer les noms de fichier d'origine · de Ursprüngliche Dateinamen wiederherstellen? / Ursprüngliche Dateinamen wiederherstellen · es ¿Restaurar los nombres de archivo originales? / Restaurar nombres de archivo originales · ru Восстановить исходные имена файлов? / Восстановить исходные имена файлов · he לשחזר שמות קבצים מקוריים? / שחזר שמות קבצים מקוריים |
+| "renamed" (progress/toast counter) | zh-CN 已重命名 · zh-TW 已重新命名 · ja リネーム · ko 이름 변경 · fr renommés · de umbenannt · es renombrados · ru переименовано · he שונו שמותם |
 
 ### Chip reordering (model tags / trigger words)
 

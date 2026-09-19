@@ -682,19 +682,19 @@
             }
         },
         "filenameTemplates": {
-            "title": "[TODO: Translate] Filename Templates",
-            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
-            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
-            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
-            "applyButton": "[TODO: Translate] Apply to Library Now",
-            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
-            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
+            "title": "檔案名稱範本",
+            "help": "依模型類型設定已下載模型的檔案名稱。留空則下載時保留原始檔案名稱；套用空範本會還原先前已重新命名模型所記錄的原始檔案名稱。原始檔案名稱一律會保存在模型的中繼資料中。",
+            "availablePlaceholders": "可用佔位符：",
+            "templatePlaceholder": "輸入檔案名稱範本（例如：{base_model}-{model_name}-{version_name}）",
+            "applyButton": "立即套用至模型庫",
+            "applyHelp": "依範本重新命名此模型類型的所有現有檔案；若範本為空，則改為還原已記錄的原始檔案名稱。警告：重新命名會變更 ComfyUI 載入器所見的相對路徑，因此參照舊檔案名稱的現有工作流可能需要更新。原始檔案名稱會保存在每個模型的中繼資料中。",
+            "confirmApply": "要依檔案名稱範本重新命名此模型類型的所有現有檔案嗎？這會變更 ComfyUI 載入器所見的相對路徑。原始檔案名稱會保存在每個模型的中繼資料中。",
+            "confirmRevert": "要將此模型類型所有先前已重新命名的檔案還原為已記錄的原始檔案名稱嗎？這會變更 ComfyUI 載入器所見的相對路徑。沒有記錄原始檔案名稱的檔案將被略過。",
             "validation": {
-                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
-                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
-                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
-                "validTemplate": "[TODO: Translate] Valid template"
+                "restoreOriginal": "有效（空範本會還原原始檔案名稱）",
+                "invalidChars": "偵測到無效字元（檔案名稱不能包含 / \\ < > : \" | ? *）",
+                "invalidPlaceholder": "無效佔位符：{placeholder}",
+                "validTemplate": "範本有效"
             }
         },
         "exampleImages": {
@@ -930,12 +930,12 @@
                 "error": "錯誤：{error}"
             },
             "filenameTemplateProgress": {
-                "initializing": "[TODO: Translate] Initializing filename template apply...",
-                "starting": "[TODO: Translate] Applying filename template to {type}...",
-                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
-                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
-                "complete": "[TODO: Translate] Filename template apply complete",
-                "error": "[TODO: Translate] Error: {error}"
+                "initializing": "正在初始化檔案名稱範本套用...",
+                "starting": "正在將檔案名稱範本套用至 {type}...",
+                "processing": "處理中（{processed}/{total}）- 已重新命名 {success}，已略過 {skipped}，失敗 {failures}",
+                "completed": "完成：已重新命名 {success}，已略過 {skipped}，失敗 {failures}",
+                "complete": "檔案名稱範本套用完成",
+                "error": "錯誤：{error}"
             },
             "enrichHfAgent": "AI 中繼資料增強"
         },
@@ -1627,9 +1627,9 @@
             "action": "全部檢查"
         },
         "filenameTemplateConfirm": {
-            "titleApply": "[TODO: Translate] Apply filename template to library?",
-            "titleRevert": "[TODO: Translate] Restore original filenames?",
-            "revertButton": "[TODO: Translate] Restore Original Filenames"
+            "titleApply": "要將檔案名稱範本套用至模型庫嗎？",
+            "titleRevert": "要還原原始檔案名稱嗎？",
+            "revertButton": "還原原始檔案名稱"
         },
         "bulkAddTags": {
             "title": "新增標籤到多個模型",
@@ -2340,9 +2340,9 @@
             "autoOrganizeSuccess": "自動整理已成功完成，共 {count} 個 {type} 已整理",
             "autoOrganizePartialSuccess": "自動整理完成：已移動 {success} 個，{failures} 個失敗，共 {total} 個模型",
             "autoOrganizeFailed": "自動整理失敗：{error}",
-            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
-            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
-            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
+            "filenameTemplateSuccess": "已成功為 {count} 個 {type} 套用檔案名稱範本",
+            "filenameTemplatePartialSuccess": "檔案名稱範本套用完成：已重新命名 {success} 個，{failures} 個失敗，共 {total} 個模型",
+            "filenameTemplateFailed": "套用檔案名稱範本失敗：{error}",
             "noModelsSelected": "未選擇任何模型"
         },
         "recipes": {
@@ -2509,8 +2509,8 @@
             "mappingSaveFailed": "儲存基礎模型對應失敗：{message}",
             "downloadTemplatesUpdated": "下載路徑範本已更新",
             "downloadTemplatesFailed": "儲存下載路徑範本失敗：{message}",
-            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
-            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
+            "filenameTemplatesUpdated": "檔案名稱範本已更新",
+            "filenameTemplatesFailed": "儲存檔案名稱範本失敗：{message}",
             "recipesPathUpdated": "配方儲存路徑已更新",
             "recipesPathSaveFailed": "更新配方儲存路徑失敗：{message}",
             "settingsUpdated": "設定已更新：{setting}",

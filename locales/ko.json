@@ -682,19 +682,19 @@
             }
         },
         "filenameTemplates": {
-            "title": "[TODO: Translate] Filename Templates",
-            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
-            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
-            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
-            "applyButton": "[TODO: Translate] Apply to Library Now",
-            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
-            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
+            "title": "파일명 템플릿",
+            "help": "모델 유형별로 다운로드되는 모델의 파일명을 구성합니다. 비워 두면 다운로드 시 원본 파일명을 유지하고, 빈 템플릿을 적용하면 이전에 이름이 변경된 모델의 기록된 원본 파일명이 복원됩니다. 원본 파일명은 항상 모델의 메타데이터에 보존됩니다.",
+            "availablePlaceholders": "사용 가능한 플레이스홀더:",
+            "templatePlaceholder": "파일명 템플릿 입력 (예: {base_model}-{model_name}-{version_name})",
+            "applyButton": "지금 라이브러리에 적용",
+            "applyHelp": "이 모델 유형의 기존 파일을 모두 템플릿에 따라 이름 변경합니다. 빈 템플릿이면 기록된 원본 파일명을 대신 복원합니다. 경고: 이름을 변경하면 ComfyUI 로더에서 보이는 상대 경로가 바뀌므로 이전 파일명을 참조하는 기존 워크플로를 업데이트해야 할 수 있습니다. 원본 파일명은 각 모델의 메타데이터에 보존됩니다.",
+            "confirmApply": "이 모델 유형의 기존 파일을 모두 파일명 템플릿에 따라 이름 변경하시겠습니까? ComfyUI 로더에서 보이는 상대 경로가 변경됩니다. 원본 파일명은 각 모델의 메타데이터에 보존됩니다.",
+            "confirmRevert": "이 모델 유형에서 이전에 이름이 변경된 모든 파일의 기록된 원본 파일명을 복원하시겠습니까? ComfyUI 로더에서 보이는 상대 경로가 변경됩니다. 기록된 원본 파일명이 없는 파일은 건너뜁니다.",
             "validation": {
-                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
-                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
-                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
-                "validTemplate": "[TODO: Translate] Valid template"
+                "restoreOriginal": "유효함 (빈 템플릿은 원본 파일명을 복원합니다)",
+                "invalidChars": "잘못된 문자가 감지됨 (파일명에는 / \\ < > : \" | ? * 문자를 사용할 수 없습니다)",
+                "invalidPlaceholder": "잘못된 플레이스홀더: {placeholder}",
+                "validTemplate": "유효한 템플릿"
             }
         },
         "exampleImages": {
@@ -930,12 +930,12 @@
                 "error": "오류: {error}"
             },
             "filenameTemplateProgress": {
-                "initializing": "[TODO: Translate] Initializing filename template apply...",
-                "starting": "[TODO: Translate] Applying filename template to {type}...",
-                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
-                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
-                "complete": "[TODO: Translate] Filename template apply complete",
-                "error": "[TODO: Translate] Error: {error}"
+                "initializing": "파일명 템플릿 적용 초기화 중...",
+                "starting": "{type}에 파일명 템플릿 적용 중...",
+                "processing": "처리 중 ({processed}/{total}) - {success}개 이름 변경, {skipped}개 건너뜀, {failures}개 실패",
+                "completed": "완료: {success}개 이름 변경, {skipped}개 건너뜀, {failures}개 실패",
+                "complete": "파일명 템플릿 적용 완료",
+                "error": "오류: {error}"
             },
             "enrichHfAgent": "AI로 메타데이터 보강"
         },
@@ -1627,9 +1627,9 @@
             "action": "전체 확인"
         },
         "filenameTemplateConfirm": {
-            "titleApply": "[TODO: Translate] Apply filename template to library?",
-            "titleRevert": "[TODO: Translate] Restore original filenames?",
-            "revertButton": "[TODO: Translate] Restore Original Filenames"
+            "titleApply": "라이브러리에 파일명 템플릿을 적용하시겠습니까?",
+            "titleRevert": "원본 파일명을 복원하시겠습니까?",
+            "revertButton": "원본 파일명 복원"
         },
         "bulkAddTags": {
             "title": "여러 모델에 태그 추가",
@@ -2340,9 +2340,9 @@
             "autoOrganizeSuccess": "{count}개의 {type}에 대해 자동 정리가 성공적으로 완료되었습니다",
             "autoOrganizePartialSuccess": "자동 정리 완료: 전체 {total}개 중 {success}개 이동, {failures}개 실패",
             "autoOrganizeFailed": "자동 정리 실패: {error}",
-            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
-            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
-            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
+            "filenameTemplateSuccess": "{count}개의 {type}에 파일명 템플릿이 성공적으로 적용되었습니다",
+            "filenameTemplatePartialSuccess": "파일명 템플릿 적용 완료: 전체 {total}개 중 {success}개 이름 변경, {failures}개 실패",
+            "filenameTemplateFailed": "파일명 템플릿 적용 실패: {error}",
             "noModelsSelected": "선택된 모델이 없습니다"
         },
         "recipes": {
@@ -2509,8 +2509,8 @@
             "mappingSaveFailed": "베이스 모델 매핑 저장 실패: {message}",
             "downloadTemplatesUpdated": "다운로드 경로 템플릿이 업데이트되었습니다",
             "downloadTemplatesFailed": "다운로드 경로 템플릿 저장 실패: {message}",
-            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
-            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
+            "filenameTemplatesUpdated": "파일명 템플릿이 업데이트되었습니다",
+            "filenameTemplatesFailed": "파일명 템플릿 저장 실패: {message}",
             "recipesPathUpdated": "레시피 저장 경로가 업데이트되었습니다",
             "recipesPathSaveFailed": "레시피 저장 경로 업데이트 실패: {message}",
             "settingsUpdated": "설정 업데이트됨: {setting}",

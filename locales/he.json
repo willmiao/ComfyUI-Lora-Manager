@@ -682,19 +682,19 @@
             }
         },
         "filenameTemplates": {
-            "title": "[TODO: Translate] Filename Templates",
-            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
-            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
-            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
-            "applyButton": "[TODO: Translate] Apply to Library Now",
-            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
-            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
+            "title": "תבניות שמות קבצים",
+            "help": "הגדר שמות קבצים למודלים שהורדו לפי סוג מודל. השאר ריק כדי לשמור על שמות הקבצים המקוריים בעת ההורדה; החלת תבנית ריקה משחזרת את שמות הקבצים המקוריים המתועדים של מודלים ששונה שמם בעבר. שם הקובץ המקורי תמיד נשמר במטא-נתונים של המודל.",
+            "availablePlaceholders": "מצייני מקום זמינים:",
+            "templatePlaceholder": "הזן תבנית שם קובץ (למשל, {base_model}-{model_name}-{version_name})",
+            "applyButton": "החל על הספרייה כעת",
+            "applyHelp": "משנה את שמות כל הקבצים הקיימים מסוג מודל זה בהתאם לתבנית; עם תבנית ריקה, משחזר במקום זאת את שמות הקבצים המקוריים המתועדים. אזהרה: שינוי שם משנה את הנתיב היחסי שרואים הטוענים של ComfyUI, ולכן workflows קיימים המפנים לשם הקובץ הישן עשויים לדרוש עדכון. שם הקובץ המקורי נשמר במטא-נתונים של כל מודל.",
+            "confirmApply": "לשנות את שמות כל הקבצים הקיימים מסוג מודל זה בהתאם לתבנית שם הקובץ? פעולה זו משנה את הנתיב היחסי שרואים הטוענים של ComfyUI. שם הקובץ המקורי נשמר במטא-נתונים של כל מודל.",
+            "confirmRevert": "לשחזר את שמות הקבצים המקוריים המתועדים של כל הקבצים ששונה שמם בעבר מסוג מודל זה? פעולה זו משנה את הנתיב היחסי שרואים הטוענים של ComfyUI. קבצים ללא שם קובץ מקורי מתועד ידולגו.",
             "validation": {
-                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
-                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
-                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
-                "validTemplate": "[TODO: Translate] Valid template"
+                "restoreOriginal": "תקין (תבנית ריקה משחזרת שמות קבצים מקוריים)",
+                "invalidChars": "זוהו תווים לא חוקיים (שם קובץ אינו יכול להכיל / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "מציין מקום לא חוקי: {placeholder}",
+                "validTemplate": "תבנית תקינה"
             }
         },
         "exampleImages": {
@@ -930,12 +930,12 @@
                 "error": "שגיאה: {error}"
             },
             "filenameTemplateProgress": {
-                "initializing": "[TODO: Translate] Initializing filename template apply...",
-                "starting": "[TODO: Translate] Applying filename template to {type}...",
-                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
-                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
-                "complete": "[TODO: Translate] Filename template apply complete",
-                "error": "[TODO: Translate] Error: {error}"
+                "initializing": "מאתחל החלת תבנית שם קובץ...",
+                "starting": "מחיל תבנית שם קובץ על {type}...",
+                "processing": "מעבד ({processed}/{total}) - {success} שונו שמותם, {skipped} דולגו, {failures} נכשלו",
+                "completed": "הושלם: {success} שונו שמותם, {skipped} דולגו, {failures} נכשלו",
+                "complete": "החלת תבנית שם הקובץ הושלמה",
+                "error": "שגיאה: {error}"
             },
             "enrichHfAgent": "העשרת מטא-נתונים ב-AI"
         },
@@ -1627,9 +1627,9 @@
             "action": "בדוק הכל"
         },
         "filenameTemplateConfirm": {
-            "titleApply": "[TODO: Translate] Apply filename template to library?",
-            "titleRevert": "[TODO: Translate] Restore original filenames?",
-            "revertButton": "[TODO: Translate] Restore Original Filenames"
+            "titleApply": "להחיל תבנית שם קובץ על הספרייה?",
+            "titleRevert": "לשחזר שמות קבצים מקוריים?",
+            "revertButton": "שחזר שמות קבצים מקוריים"
         },
         "bulkAddTags": {
             "title": "הוסף תגיות למספר מודלים",
@@ -2340,9 +2340,9 @@
             "autoOrganizeSuccess": "הארגון האוטומטי הושלם בהצלחה עבור {count} {type}",
             "autoOrganizePartialSuccess": "הארגון האוטומטי הושלם עם {success} שהועברו, {failures} שנכשלו מתוך {total} מודלים",
             "autoOrganizeFailed": "הארגון האוטומטי נכשל: {error}",
-            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
-            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
-            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
+            "filenameTemplateSuccess": "תבנית שם הקובץ הוחלה בהצלחה עבור {count} {type}",
+            "filenameTemplatePartialSuccess": "החלת תבנית שם הקובץ הושלמה עם {success} ששונה שמם, {failures} שנכשלו מתוך {total} מודלים",
+            "filenameTemplateFailed": "החלת תבנית שם הקובץ נכשלה: {error}",
             "noModelsSelected": "לא נבחרו מודלים"
         },
         "recipes": {
@@ -2509,8 +2509,8 @@
             "mappingSaveFailed": "שמירת מיפויי מודל בסיס נכשלה: {message}",
             "downloadTemplatesUpdated": "תבניות נתיב הורדה עודכנו",
             "downloadTemplatesFailed": "שמירת תבניות נתיב הורדה נכשלה: {message}",
-            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
-            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
+            "filenameTemplatesUpdated": "תבניות שמות הקבצים עודכנו",
+            "filenameTemplatesFailed": "שמירת תבניות שמות הקבצים נכשלה: {message}",
             "recipesPathUpdated": "נתיב אחסון המתכונים עודכן",
             "recipesPathSaveFailed": "עדכון נתיב אחסון המתכונים נכשל: {message}",
             "settingsUpdated": "הגדרות עודכנו: {setting}",

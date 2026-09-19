@@ -682,19 +682,19 @@
             }
         },
         "filenameTemplates": {
-            "title": "[TODO: Translate] Filename Templates",
-            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
-            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
-            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
-            "applyButton": "[TODO: Translate] Apply to Library Now",
-            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
-            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
+            "title": "Plantillas de nombres de archivo",
+            "help": "Configurar nombres de archivo de los modelos descargados por tipo de modelo. Dejar vacío para conservar los nombres de archivo originales al descargar; aplicar una plantilla vacía restaura los nombres de archivo originales registrados de los modelos renombrados previamente. El nombre de archivo original siempre se conserva en los metadatos del modelo.",
+            "availablePlaceholders": "Marcadores de posición disponibles:",
+            "templatePlaceholder": "Introduce plantilla de nombre de archivo (ej., {base_model}-{model_name}-{version_name})",
+            "applyButton": "Aplicar a la biblioteca ahora",
+            "applyHelp": "Renombra todos los archivos existentes de este tipo de modelo según la plantilla; con una plantilla vacía, restaura los nombres de archivo originales registrados. Advertencia: renombrar cambia la ruta relativa que ven los cargadores de ComfyUI, por lo que los workflows existentes que hagan referencia al nombre de archivo anterior pueden necesitar actualizarse. El nombre de archivo original se conserva en los metadatos de cada modelo.",
+            "confirmApply": "¿Renombrar todos los archivos existentes de este tipo de modelo según la plantilla de nombres de archivo? Esto cambia la ruta relativa que ven los cargadores de ComfyUI. El nombre de archivo original se conserva en los metadatos de cada modelo.",
+            "confirmRevert": "¿Restaurar los nombres de archivo originales registrados de todos los archivos renombrados previamente de este tipo de modelo? Esto cambia la ruta relativa que ven los cargadores de ComfyUI. Los archivos sin un nombre de archivo original registrado se omiten.",
             "validation": {
-                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
-                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
-                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
-                "validTemplate": "[TODO: Translate] Valid template"
+                "restoreOriginal": "Válido (la plantilla vacía restaura los nombres de archivo originales)",
+                "invalidChars": "Caracteres inválidos detectados (un nombre de archivo no puede contener / \\ < > : \" | ? *)",
+                "invalidPlaceholder": "Marcador de posición inválido: {placeholder}",
+                "validTemplate": "Plantilla válida"
             }
         },
         "exampleImages": {
@@ -930,12 +930,12 @@
                 "error": "Error: {error}"
             },
             "filenameTemplateProgress": {
-                "initializing": "[TODO: Translate] Initializing filename template apply...",
-                "starting": "[TODO: Translate] Applying filename template to {type}...",
-                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
-                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
-                "complete": "[TODO: Translate] Filename template apply complete",
-                "error": "[TODO: Translate] Error: {error}"
+                "initializing": "Inicializando aplicación de plantilla de nombres de archivo...",
+                "starting": "Aplicando plantilla de nombres de archivo a {type}...",
+                "processing": "Procesando ({processed}/{total}) - {success} renombrados, {skipped} omitidos, {failures} fallidos",
+                "completed": "Completado: {success} renombrados, {skipped} omitidos, {failures} fallidos",
+                "complete": "Aplicación de plantilla de nombres de archivo completada",
+                "error": "Error: {error}"
             },
             "enrichHfAgent": "Enriquecer metadatos con IA"
         },
@@ -1627,9 +1627,9 @@
             "action": "Comprobar todo"
         },
         "filenameTemplateConfirm": {
-            "titleApply": "[TODO: Translate] Apply filename template to library?",
-            "titleRevert": "[TODO: Translate] Restore original filenames?",
-            "revertButton": "[TODO: Translate] Restore Original Filenames"
+            "titleApply": "¿Aplicar la plantilla de nombres de archivo a la biblioteca?",
+            "titleRevert": "¿Restaurar los nombres de archivo originales?",
+            "revertButton": "Restaurar nombres de archivo originales"
         },
         "bulkAddTags": {
             "title": "Añadir etiquetas a múltiples modelos",
@@ -2340,9 +2340,9 @@
             "autoOrganizeSuccess": "Auto-organización completada exitosamente para {count} {type}",
             "autoOrganizePartialSuccess": "Auto-organización completada con {success} movidos, {failures} fallidos de un total de {total} modelos",
             "autoOrganizeFailed": "Auto-organización fallida: {error}",
-            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
-            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
-            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
+            "filenameTemplateSuccess": "Plantilla de nombres de archivo aplicada exitosamente para {count} {type}",
+            "filenameTemplatePartialSuccess": "Plantilla de nombres de archivo aplicada con {success} renombrados, {failures} fallidos de un total de {total} modelos",
+            "filenameTemplateFailed": "Aplicación de la plantilla de nombres de archivo fallida: {error}",
             "noModelsSelected": "No hay modelos seleccionados"
         },
         "recipes": {
@@ -2509,8 +2509,8 @@
             "mappingSaveFailed": "Error al guardar mapeos de modelo base: {message}",
             "downloadTemplatesUpdated": "Plantillas de rutas de descarga actualizadas",
             "downloadTemplatesFailed": "Error al guardar plantillas de rutas de descarga: {message}",
-            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
-            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
+            "filenameTemplatesUpdated": "Plantillas de nombres de archivo actualizadas",
+            "filenameTemplatesFailed": "Error al guardar plantillas de nombres de archivo: {message}",
             "recipesPathUpdated": "Ruta de almacenamiento de recetas actualizada",
             "recipesPathSaveFailed": "Error al actualizar la ruta de almacenamiento de recetas: {message}",
             "settingsUpdated": "Configuración actualizada: {setting}",

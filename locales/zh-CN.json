@@ -682,19 +682,19 @@
             }
         },
         "filenameTemplates": {
-            "title": "[TODO: Translate] Filename Templates",
-            "help": "[TODO: Translate] Configure filenames for downloaded models per model type. Leave empty to keep the original filename. The original filename is always preserved in the model's metadata.",
-            "availablePlaceholders": "[TODO: Translate] Available placeholders:",
-            "templatePlaceholder": "[TODO: Translate] Enter filename template (e.g., {base_model}-{model_name}-{version_name})",
-            "applyButton": "[TODO: Translate] Apply to Library Now",
-            "applyHelp": "[TODO: Translate] Renames all existing files of this model type according to the template. Warning: renaming changes the relative path seen by ComfyUI loaders, so existing workflows referencing the old filename may need to be updated. The original filename is preserved in each model's metadata.",
-            "confirmApply": "[TODO: Translate] Rename all existing files of this model type according to the filename template? This changes the relative path seen by ComfyUI loaders. The original filename is preserved in each model's metadata.",
-            "confirmRevert": "[TODO: Translate] Restore the recorded original filenames of all previously renamed files of this model type? This changes the relative path seen by ComfyUI loaders. Files without a recorded original filename are skipped.",
+            "title": "文件名模板",
+            "help": "按模型类型配置下载模型的文件名。留空则下载时保留原始文件名；应用空模板会恢复此前被重命名模型所记录的原始文件名。原始文件名始终保留在模型的元数据中。",
+            "availablePlaceholders": "可用占位符：",
+            "templatePlaceholder": "输入文件名模板（如：{base_model}-{model_name}-{version_name}）",
+            "applyButton": "立即应用到库",
+            "applyHelp": "根据模板重命名此模型类型的所有现有文件；模板为空时则恢复已记录的原始文件名。警告：重命名会改变 ComfyUI 加载器所见的相对路径，因此引用旧文件名的现有工作流可能需要更新。原始文件名保留在每个模型的元数据中。",
+            "confirmApply": "要根据文件名模板重命名此模型类型的所有现有文件吗？这会改变 ComfyUI 加载器所见的相对路径。原始文件名保留在每个模型的元数据中。",
+            "confirmRevert": "要恢复此模型类型中所有此前被重命名文件所记录的原始文件名吗？这会改变 ComfyUI 加载器所见的相对路径。未记录原始文件名的文件将被跳过。",
             "validation": {
-                "restoreOriginal": "[TODO: Translate] Valid (empty template restores original filenames)",
-                "invalidChars": "[TODO: Translate] Invalid characters detected (a filename cannot contain / \\ < > : \" | ? *)",
-                "invalidPlaceholder": "[TODO: Translate] Invalid placeholder: {placeholder}",
-                "validTemplate": "[TODO: Translate] Valid template"
+                "restoreOriginal": "有效（空模板将恢复原始文件名）",
+                "invalidChars": "检测到无效字符（文件名不能包含 / \\ < > : \" | ? *）",
+                "invalidPlaceholder": "无效占位符：{placeholder}",
+                "validTemplate": "有效模板"
             }
         },
         "exampleImages": {
@@ -930,12 +930,12 @@
                 "error": "错误：{error}"
             },
             "filenameTemplateProgress": {
-                "initializing": "[TODO: Translate] Initializing filename template apply...",
-                "starting": "[TODO: Translate] Applying filename template to {type}...",
-                "processing": "[TODO: Translate] Processing ({processed}/{total}) - {success} renamed, {skipped} skipped, {failures} failed",
-                "completed": "[TODO: Translate] Completed: {success} renamed, {skipped} skipped, {failures} failed",
-                "complete": "[TODO: Translate] Filename template apply complete",
-                "error": "[TODO: Translate] Error: {error}"
+                "initializing": "正在初始化应用文件名模板...",
+                "starting": "正在为 {type} 应用文件名模板...",
+                "processing": "处理中（{processed}/{total}）- 已重命名 {success} 个，跳过 {skipped} 个，失败 {failures} 个",
+                "completed": "完成：已重命名 {success} 个，跳过 {skipped} 个，失败 {failures} 个",
+                "complete": "文件名模板应用完成",
+                "error": "错误：{error}"
             },
             "enrichHfAgent": "AI 元数据增强"
         },
@@ -1627,9 +1627,9 @@
             "action": "检查全部"
         },
         "filenameTemplateConfirm": {
-            "titleApply": "[TODO: Translate] Apply filename template to library?",
-            "titleRevert": "[TODO: Translate] Restore original filenames?",
-            "revertButton": "[TODO: Translate] Restore Original Filenames"
+            "titleApply": "将文件名模板应用到库？",
+            "titleRevert": "恢复原始文件名？",
+            "revertButton": "恢复原始文件名"
         },
         "bulkAddTags": {
             "title": "批量添加标签",
@@ -2340,9 +2340,9 @@
             "autoOrganizeSuccess": "自动整理已成功完成，共 {count} 个 {type}",
             "autoOrganizePartialSuccess": "自动整理完成：已移动 {success} 个，{failures} 个失败，共 {total} 个模型",
             "autoOrganizeFailed": "自动整理失败：{error}",
-            "filenameTemplateSuccess": "[TODO: Translate] Filename template applied successfully for {count} {type}",
-            "filenameTemplatePartialSuccess": "[TODO: Translate] Filename template applied with {success} renamed, {failures} failed out of {total} models",
-            "filenameTemplateFailed": "[TODO: Translate] Applying filename template failed: {error}",
+            "filenameTemplateSuccess": "文件名模板已成功应用，共 {count} 个 {type}",
+            "filenameTemplatePartialSuccess": "文件名模板应用完成：已重命名 {success} 个，{failures} 个失败，共 {total} 个模型",
+            "filenameTemplateFailed": "应用文件名模板失败：{error}",
             "noModelsSelected": "未选中模型"
         },
         "recipes": {
@@ -2509,8 +2509,8 @@
             "mappingSaveFailed": "保存基础模型映射失败：{message}",
             "downloadTemplatesUpdated": "下载路径模板已更新",
             "downloadTemplatesFailed": "保存下载路径模板失败：{message}",
-            "filenameTemplatesUpdated": "[TODO: Translate] Filename templates updated",
-            "filenameTemplatesFailed": "[TODO: Translate] Failed to save filename templates: {message}",
+            "filenameTemplatesUpdated": "文件名模板已更新",
+            "filenameTemplatesFailed": "保存文件名模板失败：{message}",
             "recipesPathUpdated": "配方存储路径已更新",
             "recipesPathSaveFailed": "更新配方存储路径失败：{message}",
             "settingsUpdated": "设置已更新：{setting}",
