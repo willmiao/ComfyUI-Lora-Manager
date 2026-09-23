@@ -253,8 +253,21 @@ class LoadImageMetadataLM:
         if "model" in extracted.issues and "model_name" not in overrides:
             values.pop("checkpoint_name", None)
             values.pop("unet_name", None)
+        # Extraction without a recognized latent source (e.g. img2img) leaves
+        # width/height unset; the source image dimensions are the best
+        # estimate then. The synthetic starter preset keeps its fixed size.
+        image_fallback = not no_metadata and "source" not in extracted.issues
+        try:
+            image_height, image_width = int(pixels.shape[1]), int(pixels.shape[2])
+        except (AttributeError, IndexError, TypeError, ValueError):
+            image_fallback = False
         for key, default in EMPTY_IMAGE_DEFAULTS.items():
-            if key not in values:
+            if key in values:
+                continue
+            if image_fallback and key in ("width", "height"):
+                values[key] = image_width if key == "width" else image_height
+                notes.append(f"WARNING Missing {key}; using source image dimension {values[key]}.")
+            else:
                 values[key] = default
                 notes.append(f"ERROR: Missing {key}; using default {default!r}.")
         # Validate independently so one invalid value cannot erase the other

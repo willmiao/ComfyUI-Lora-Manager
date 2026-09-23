@@ -96,6 +96,44 @@ def test_no_metadata_can_be_inspected_with_defaults(runtime):
     assert "No model resolved" in result[15]
 
 
+def test_graph_without_recognized_latent_falls_back_to_image_size(runtime):
+    info = PngImagePlugin.PngInfo()
+    graph = {
+        "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "base.safetensors"}},
+        "2": {"class_type": "CLIPTextEncode", "inputs": {"text": "pos", "clip": ["1", 1]}},
+        "3": {"class_type": "CLIPTextEncode", "inputs": {"text": "neg", "clip": ["1", 1]}},
+        "5": {"class_type": "KSampler", "inputs": {
+            "model": ["1", 0], "positive": ["2", 0], "negative": ["3", 0],
+            "latent_image": ["9", 0], "seed": 1, "steps": 20, "cfg": 7,
+            "sampler_name": "euler", "scheduler": "normal", "denoise": 1,
+        }},
+        "9": {"class_type": "VAEEncode", "inputs": {"pixels": ["10", 0], "vae": ["1", 2]}},
+    }
+    info.add_text("prompt", json.dumps(graph))
+    Image.new("RGB", (16, 24)).save(runtime[0], pnginfo=info)
+    # The mocked loader returns pixels with shape (1, 24, 16, 3): H=24, W=16.
+    result = LoadImageMetadataLM().load_metadata("input.png")
+    assert result[12:14] == (16, 24)
+    assert "using source image dimension" in result[15]
+    assert "❌ ERROR" not in result[16]
+
+
+def test_parameters_without_size_fall_back_to_image_size(runtime):
+    info = PngImagePlugin.PngInfo()
+    info.add_text("parameters", PARAMETERS.replace(", Size: 768x1024", ""))
+    Image.new("RGB", (16, 24)).save(runtime[0], pnginfo=info)
+    result = LoadImageMetadataLM().load_metadata("input.png")
+    assert result[12:14] == (16, 24)
+
+
+def test_size_override_wins_over_image_size_fallback(runtime):
+    info = PngImagePlugin.PngInfo()
+    info.add_text("parameters", PARAMETERS.replace(", Size: 768x1024", ""))
+    Image.new("RGB", (16, 24)).save(runtime[0], pnginfo=info)
+    result = LoadImageMetadataLM().load_metadata("input.png", overrides_json='{"width": 512, "height": 640}')
+    assert result[12:14] == (512, 640)
+
+
 @pytest.mark.parametrize("override", [{"seed": -1}, {"steps": 2.5}, {"cfg": float("nan")}, {"sampler_name": "made_up"}, {"positive": ["1", 0]}, {"unknown": 1}])
 def test_invalid_override_rejected(runtime, override):
     with pytest.raises((MetadataError, ValueError)):

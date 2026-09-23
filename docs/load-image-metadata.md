@@ -75,7 +75,8 @@ prompt; UI-workflow-only subgraph definitions are not expanded or executed.
 
 Extraction errors do not stop this node. If an API prompt uses unsupported
 samplers, the node first tries the image's saved generation parameters. Any
-remaining unavailable or invalid extracted fields use the SDXL starter defaults;
+remaining unavailable or invalid extracted fields use the SDXL starter defaults
+(width/height fall back to the source image dimensions instead);
 valid extracted fields are preserved. `readable_report` starts with **❌ ERROR**
 and explains each recovery or substitution. This also applies to existing nodes
 saved with `missing_settings=strict`; that legacy option no longer blocks
@@ -147,6 +148,8 @@ when uniquely indexed; otherwise choose an SDXL checkpoint manually or supply
   original workflow for those cases.
 - Width/height come from a recognized latent source or fall back to source-image
   dimensions; resized/upscaled images can therefore need dimension overrides.
+  Only the synthetic starter preset for metadata-free images uses a fixed
+  1024×1024 regardless of the source image size.
 - VAE, text encoder choice, CLIP skip, ControlNet and architecture-specific
   conditioning still need the appropriate nodes. No embedded code is executed
   and no external metadata service is contacted.
