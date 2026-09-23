@@ -273,6 +273,16 @@ CIVITAI_MODEL_TAGS = [
     "action",
 ]
 
+# Civitai tags that describe the listing rather than the model's content.
+# Uploaders can also set these by hand, so they must not be picked as an
+# automatic folder name; a user who wants one can still name it explicitly in
+# their priority tag list.
+CIVITAI_META_TAGS = frozenset(
+    {
+        "base model",
+    }
+)
+
 # Default priority tag configuration strings for each model type
 DEFAULT_PRIORITY_TAG_CONFIG = {
     "lora": ", ".join(CIVITAI_MODEL_TAGS),
@@ -295,9 +305,11 @@ DEFAULT_DOWNLOAD_PATH_TEMPLATES: Dict[str, str] = {
 
 # Length guards for template placeholders that end up in file and folder names.
 # Windows enforces MAX_PATH (260 characters) on the full path and 255 on a
-# single path component, and a model folder also has to leave room for the
-# model file, its ".civitai.info"/".json" sidecars and preview images. Values
-# stay well below those limits so the surrounding files still fit.
+# single path component. A model folder also holds the model file, the
+# ".metadata.json" sidecar written by LoRA Manager, preview images and the
+# metadata files other tools drop next to the model (for example
+# ".civitai.info", which LoRA Manager only reads), so names stay well below
+# those limits.
 #
 # Tags get a much tighter budget than other names: some CivitAI uploaders dump
 # their whole keyword list into a single tag (see issue #1119), and such a tag

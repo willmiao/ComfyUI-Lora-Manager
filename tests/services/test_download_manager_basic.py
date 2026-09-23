@@ -239,7 +239,11 @@ async def test_successful_download_uses_defaults(
 
 
 def test_calculate_relative_path_ignores_keyword_dump_tag():
-    """The #1119 download flow: a keyword-dump tag must not become a folder."""
+    """The #1119 download flow: the real tag list must not become a folder.
+
+    The model's only two tags are the keyword dump and Civitai's "base model"
+    label, so nothing usable is left and the template falls back to "no tags".
+    """
     keyword_dump = (
         "lora, character, rosie, irish, redhead, auburn, freckles, green eyes, "
         "curly hair, woman, female, photorealistic, realistic, krea2, dark beast, "
@@ -257,7 +261,7 @@ def test_calculate_relative_path_ignores_keyword_dump_tag():
         "lora",
     )
 
-    assert relative_path == "MappedModel/base model"
+    assert relative_path == "MappedModel/no tags"
     assert keyword_dump not in relative_path
     assert len(relative_path) < 50
 

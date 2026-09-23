@@ -412,6 +412,40 @@ def test_resolve_priority_tag_skips_unusable_tags(manager):
     assert manager.resolve_priority_tag_for_model(["  portrait  "], "lora") == "portrait"
 
 
+def test_resolve_priority_tag_skips_civitai_meta_tags(manager):
+    """Civitai's structural labels are not content, so they cannot be folders."""
+    assert manager.resolve_priority_tag_for_model(["base model"], "lora") == ""
+    assert (
+        manager.resolve_priority_tag_for_model(["Base Model"], "lora") == ""
+    ), "the meta tag check must be case-insensitive"
+    assert manager.resolve_priority_tag_for_model(["base model", " "], "lora") == ""
+    # A real tag after the label is still used.
+    assert (
+        manager.resolve_priority_tag_for_model(["base model", "portrait"], "lora")
+        == "portrait"
+    )
+
+
+def test_resolve_priority_tag_meta_tag_can_be_opted_into(manager):
+    """An explicit priority entry still wins over the meta tag exclusion."""
+    manager.settings["priority_tags"] = {"lora": "base model"}
+
+    assert (
+        manager.resolve_priority_tag_for_model(["base model", "portrait"], "lora")
+        == "base model"
+    )
+
+
+def test_resolve_priority_tag_real_1119_tag_list(manager):
+    """End to end for the reported model: both of its tags are unusable."""
+    assert (
+        manager.resolve_priority_tag_for_model(
+            [KEYWORD_DUMP_TAG, "base model"], "lora"
+        )
+        == ""
+    )
+
+
 def test_auto_set_default_roots(manager):
     # Clear any previously auto-set values to test fresh behavior
     manager.settings["default_lora_root"] = ""

@@ -177,6 +177,20 @@ def test_calculate_relative_path_uses_next_usable_tag(isolated_settings):
     assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/portrait"
 
 
+def test_calculate_relative_path_ignores_civitai_meta_tag(isolated_settings):
+    """Civitai's "base model" label is not content, so it is not a folder."""
+    model_data = {"base_model": "Krea 2", "tags": ["base model"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/no tags"
+
+
+def test_calculate_relative_path_ignores_full_1119_tag_list(isolated_settings):
+    """The reported model carries only a keyword dump and the meta label."""
+    model_data = {"base_model": "Krea 2", "tags": [KEYWORD_DUMP_TAG, "base model"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/no tags"
+
+
 def test_calculate_relative_path_sanitizes_tag_segment(isolated_settings):
     """A tag with path separators must not create nested folders."""
     model_data = {"base_model": "SDXL", "tags": ["a/b:c"]}

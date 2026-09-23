@@ -32,6 +32,7 @@ When your path template contains `{first_tag}`, the app picks a folder name base
 - It checks the priority list from top to bottom. If a canonical tag or any of its aliases appear in the model tags, that canonical name becomes the folder name.
 - If no priority tags are found but the model has tags, the first tag that can be used as a folder name is chosen.
 - Tags that contain a comma, or that are longer than 50 characters, are treated as unusable and skipped: some uploaders pack their whole keyword list into a single tag. If every tag is unusable, the folder falls back to `no tags`.
+- Civitai's structural labels, such as `base model`, describe the listing rather than the model, so the automatic fallback skips them too. Add one to your priority list if you really want it as a folder name.
 - If the model has no tags at all, the folder falls back to `no tags`.
 
 ### Example
@@ -44,6 +45,7 @@ With a template like `/{model_type}/{first_tag}` and the priority entry list `ch
 | `["anime", "portrait"]` | `style` | `anime` hits the `style` entry, so its canonical label is used. |
 | `["portrait", "bw"]` | `portrait` | No priority match, so the first model tag is used. |
 | `["lora, character, rosie, ... face"]` | `no tags` | The only tag is a keyword dump, so it is skipped. |
+| `["lora, character, ... face", "base model"]` | `no tags` | A keyword dump plus a Civitai label: nothing usable is left. |
 | `[]` | `no tags` | Nothing to match, so the fallback is applied. |
 
 ## 3. Save the Settings

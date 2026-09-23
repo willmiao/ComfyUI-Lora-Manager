@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Dict, Iterable, List, Optional, Sequence, Set
 
-from .constants import MAX_PATH_TAG_LENGTH
+from .constants import CIVITAI_META_TAGS, MAX_PATH_TAG_LENGTH
 
 
 @dataclass(frozen=True)
@@ -128,3 +128,19 @@ def is_usable_path_tag(tag: object) -> bool:
         return False
 
     return len(candidate) <= MAX_PATH_TAG_LENGTH
+
+
+def is_civitai_meta_tag(tag: object) -> bool:
+    """Return True for Civitai labels that describe the listing, not content.
+
+    Civitai attaches structural tags such as "base model" to the same list as
+    real content tags. They carry no organisational meaning, so the automatic
+    fallback must not turn one into a folder name. A user who does want such a
+    folder can still put the label in their priority tag list, because explicit
+    priority matches bypass this check.
+    """
+
+    if not isinstance(tag, str):
+        return False
+
+    return tag.strip().casefold() in CIVITAI_META_TAGS
