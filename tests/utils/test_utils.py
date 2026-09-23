@@ -2,6 +2,11 @@ import pytest
 
 from py.services.settings_manager import SettingsManager, get_settings_manager
 from py.services.service_registry import ServiceRegistry
+from py.utils.constants import (
+    MAX_FILENAME_STEM_LENGTH,
+    MAX_FOLDER_NAME_LENGTH,
+    MAX_PATH_TAG_LENGTH,
+)
 from py.utils.utils import (
     calculate_filename_for_model,
     calculate_recipe_fingerprint,
@@ -9,6 +14,15 @@ from py.utils.utils import (
     get_lora_info,
     get_lora_info_absolute,
     sanitize_folder_name,
+)
+
+
+# Real CivitAI data for the model reported in issue #1119: the uploader dumped
+# a whole keyword list into a single tag.
+KEYWORD_DUMP_TAG = (
+    "lora, character, rosie, irish, redhead, auburn, freckles, green eyes, "
+    "curly hair, woman, female, photorealistic, realistic, krea2, dark beast, "
+    "kreativity, nsfw, nude, portrait, face"
 )
 
 
@@ -145,6 +159,66 @@ def test_calculate_relative_path_sanitizes_double_slashes(isolated_settings):
 
     assert "//" not in relative_path
     assert relative_path == "no tags/Author"
+
+
+def test_calculate_relative_path_ignores_keyword_dump_tag(isolated_settings):
+    """A tag holding a whole keyword list must not become a folder name (#1119)."""
+    model_data = {"base_model": "Krea 2", "tags": [KEYWORD_DUMP_TAG]}
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "Krea 2/no tags"
+
+
+def test_calculate_relative_path_uses_next_usable_tag(isolated_settings):
+    """Unusable tags are skipped instead of hijacking the folder name (#1119)."""
+    model_data = {"base_model": "Krea 2", "tags": [KEYWORD_DUMP_TAG, "portrait"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "Krea 2/portrait"
+
+
+def test_calculate_relative_path_sanitizes_tag_segment(isolated_settings):
+    """A tag with path separators must not create nested folders."""
+    model_data = {"base_model": "SDXL", "tags": ["a/b:c"]}
+
+    assert calculate_relative_path_for_model(model_data, "lora") == "SDXL/a_b_c"
+
+
+def test_calculate_relative_path_caps_tag_segment(isolated_settings):
+    """A long configured priority tag is truncated to the tag length budget."""
+    long_tag = "y" * 80
+    isolated_settings["priority_tags"] = {"lora": long_tag}
+
+    model_data = {"base_model": "SDXL", "tags": [long_tag]}
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "SDXL/" + "y" * MAX_PATH_TAG_LENGTH
+
+
+def test_calculate_relative_path_keeps_tag_within_budget(isolated_settings):
+    model_data = {"base_model": "SDXL", "tags": ["t" * 40]}
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == "SDXL/" + "t" * 40
+
+
+def test_calculate_relative_path_caps_model_and_version_names(isolated_settings):
+    isolated_settings["download_path_templates"]["lora"] = "{model_name}/{version_name}"
+
+    model_data = {
+        "model_name": "m" * 300,
+        "base_model": "SDXL",
+        "tags": [],
+        "civitai": {"id": 1, "name": "v" * 300, "creator": {"username": "Creator"}},
+    }
+
+    relative_path = calculate_relative_path_for_model(model_data, "lora")
+
+    assert relative_path == (
+        "m" * MAX_FOLDER_NAME_LENGTH + "/" + "v" * MAX_FOLDER_NAME_LENGTH
+    )
 
 
 def test_calculate_recipe_fingerprint_filters_and_sorts():
@@ -304,6 +378,32 @@ def test_calculate_filename_original_name_falls_back_to_file_name(isolated_setti
     assert calculate_filename_for_model(model_data, "lora") == "legacy-name-0123456789"
 
 
+def test_calculate_filename_drops_keyword_dump_tag(isolated_settings):
+    """The keyword-dump tag collapses instead of filling the filename (#1119)."""
+    _set_filename_templates(isolated_settings, "{base_model}-{first_tag}")
+
+    model_data = {
+        "base_model": "Krea 2",
+        "tags": [KEYWORD_DUMP_TAG],
+        "file_path": "/models/V1.safetensors",
+    }
+
+    assert calculate_filename_for_model(model_data, "lora") == "Krea 2"
+
+
+def test_calculate_filename_caps_rendered_stem(isolated_settings):
+    _set_filename_templates(isolated_settings, "{model_name}")
+
+    model_data = {
+        "model_name": "m" * 400,
+        "file_path": "/models/V1.safetensors",
+    }
+
+    result = calculate_filename_for_model(model_data, "lora")
+
+    assert len(result) == MAX_FILENAME_STEM_LENGTH
+
+
 @pytest.mark.parametrize(
     "original, expected",
     [
@@ -316,6 +416,27 @@ def test_calculate_filename_original_name_falls_back_to_file_name(isolated_setti
 )
 def test_sanitize_folder_name(original, expected):
     assert sanitize_folder_name(original) == expected
+
+
+def test_sanitize_folder_name_without_max_length_is_unbounded():
+    assert sanitize_folder_name("x" * 300) == "x" * 300
+
+
+@pytest.mark.parametrize(
+    "original, max_length, expected",
+    [
+        ("abcdefghij", 4, "abcd"),
+        # Re-trim separators and spaces exposed by the cut.
+        ("abc...defg", 4, "abc"),
+        ("abcdefg hij", 8, "abcdefg"),
+        # Shorter than the cap is returned untouched.
+        ("short", 10, "short"),
+        # A cut that leaves only separators falls back to "unnamed".
+        ("...abcdef", 3, "unnamed"),
+    ],
+)
+def test_sanitize_folder_name_truncates_to_max_length(original, max_length, expected):
+    assert sanitize_folder_name(original, max_length=max_length) == expected
 
 
 def test_get_lora_info_absolute_bare_name(mock_lora_scanner):

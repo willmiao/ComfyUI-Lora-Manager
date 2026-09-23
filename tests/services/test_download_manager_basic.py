@@ -238,6 +238,47 @@ async def test_successful_download_uses_defaults(
     assert captured["download_urls"] == ["https://example.invalid/file.safetensors"]
 
 
+def test_calculate_relative_path_ignores_keyword_dump_tag():
+    """The #1119 download flow: a keyword-dump tag must not become a folder."""
+    keyword_dump = (
+        "lora, character, rosie, irish, redhead, auburn, freckles, green eyes, "
+        "curly hair, woman, female, photorealistic, realistic, krea2, dark beast, "
+        "kreativity, nsfw, nude, portrait, face"
+    )
+    manager = DownloadManager()
+
+    relative_path = manager._calculate_relative_path(
+        {
+            "baseModel": "BaseModel",
+            "creator": {"username": "mad_macs"},
+            "name": "v1.2",
+            "model": {"name": "Rosie", "tags": [keyword_dump, "base model"]},
+        },
+        "lora",
+    )
+
+    assert relative_path == "MappedModel/base model"
+    assert keyword_dump not in relative_path
+    assert len(relative_path) < 50
+
+
+def test_calculate_relative_path_sanitizes_tag_segment():
+    """A tag with path separators must not create nested folders."""
+    manager = DownloadManager()
+
+    relative_path = manager._calculate_relative_path(
+        {
+            "baseModel": "BaseModel",
+            "creator": {"username": "author"},
+            "name": "v1.2",
+            "model": {"name": "Rosie", "tags": ["a/b:c"]},
+        },
+        "lora",
+    )
+
+    assert relative_path == "MappedModel/a_b_c"
+
+
 @pytest.mark.asyncio
 async def test_download_accepts_enhancement_lora_primary_file(
     monkeypatch, scanners, metadata_provider, tmp_path

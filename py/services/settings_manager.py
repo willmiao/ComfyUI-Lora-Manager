@@ -47,6 +47,7 @@ from ..utils.settings_paths import (
 from ..utils.tag_priorities import (
     PriorityTagEntry,
     collect_canonical_tags,
+    is_usable_path_tag,
     parse_priority_tag_string,
     resolve_priority_tag,
 )
@@ -1569,9 +1570,12 @@ class SettingsManager:
         if resolved:
             return resolved
 
+        # Fall back to the first tag that is usable as a folder name. The raw
+        # tag list can contain keyword dumps that would become unusable folders
+        # and break path length limits, so skip those (#1119).
         for tag in tags:
-            if isinstance(tag, str) and tag:
-                return tag
+            if is_usable_path_tag(tag):
+                return tag.strip()
         return ""
 
     def get_priority_tag_suggestions(self) -> Dict[str, List[str]]:

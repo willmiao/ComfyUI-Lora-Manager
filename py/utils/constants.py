@@ -293,6 +293,19 @@ DEFAULT_DOWNLOAD_PATH_TEMPLATES: Dict[str, str] = {
     "other": "",
 }
 
+# Length guards for template placeholders that end up in file and folder names.
+# Windows enforces MAX_PATH (260 characters) on the full path and 255 on a
+# single path component, and a model folder also has to leave room for the
+# model file, its ".civitai.info"/".json" sidecars and preview images. Values
+# stay well below those limits so the surrounding files still fit.
+#
+# Tags get a much tighter budget than other names: some CivitAI uploaders dump
+# their whole keyword list into a single tag (see issue #1119), and such a tag
+# is only useful as a folder name after truncation.
+MAX_FOLDER_NAME_LENGTH = 100
+MAX_PATH_TAG_LENGTH = 50
+MAX_FILENAME_STEM_LENGTH = 150
+
 # baseModel values from CivitAI that should be treated as diffusion models (unet)
 # These model types are incorrectly labeled as "checkpoint" by CivitAI but are actually diffusion models
 DIFFUSION_MODEL_BASE_MODELS = frozenset(

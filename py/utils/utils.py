@@ -6,6 +6,11 @@ from typing import Any, Dict, List, Optional
 from ..services.service_registry import ServiceRegistry
 from ..config import config
 from ..services.settings_manager import get_settings_manager
+from .constants import (
+    MAX_FILENAME_STEM_LENGTH,
+    MAX_FOLDER_NAME_LENGTH,
+    MAX_PATH_TAG_LENGTH,
+)
 import asyncio
 
 logger = logging.getLogger(__name__)
@@ -417,12 +422,17 @@ def fuzzy_match(text: str, pattern: str, threshold: float = 0.85) -> bool:
     return True
 
 
-def sanitize_folder_name(name: str, replacement: str = "_") -> str:
+def sanitize_folder_name(
+    name: str, replacement: str = "_", max_length: Optional[int] = None
+) -> str:
     """Sanitize a folder name by removing or replacing invalid characters.
 
     Args:
         name: The original folder name.
         replacement: The character to use when replacing invalid characters.
+        max_length: Optional maximum length for the resulting name. Longer
+            names are truncated (and re-trimmed) so that a single untrusted
+            value cannot blow past filesystem path limits.
 
     Returns:
         A sanitized folder name safe to use across common filesystems.
@@ -448,6 +458,15 @@ def sanitize_folder_name(name: str, replacement: str = "_") -> str:
     else:
         # If no replacement, just strip spaces and dots from right, spaces from left
         sanitized = sanitized.rstrip(" .").lstrip(" ")
+
+    if max_length is not None and max_length > 0 and len(sanitized) > max_length:
+        sanitized = sanitized[:max_length]
+        # Re-trim separators and spaces exposed by the cut so the truncated
+        # name stays filesystem-safe.
+        if replacement:
+            sanitized = sanitized.rstrip(" ." + replacement).lstrip(" " + replacement)
+        else:
+            sanitized = sanitized.rstrip(" .").lstrip(" ")
 
     if not sanitized:
         return "unnamed"
@@ -575,12 +594,20 @@ def calculate_relative_path_for_model(
     if not first_tag:
         first_tag = "no tags"  # Default if no tags available
 
+    # Tags are user-generated on CivitAI, so sanitize the value before it
+    # becomes a path segment and cap its length (#1119).
+    first_tag = sanitize_folder_name(first_tag, max_length=MAX_PATH_TAG_LENGTH)
+
     # Format the template with available data
-    model_name = sanitize_folder_name(model_data.get("model_name", ""))
+    model_name = sanitize_folder_name(
+        model_data.get("model_name", ""), max_length=MAX_FOLDER_NAME_LENGTH
+    )
     version_name = ""
 
     if isinstance(civitai_data, dict):
-        version_name = sanitize_folder_name(civitai_data.get("name") or "")
+        version_name = sanitize_folder_name(
+            civitai_data.get("name") or "", max_length=MAX_FOLDER_NAME_LENGTH
+        )
 
     formatted_path = path_template
     formatted_path = formatted_path.replace("{base_model}", mapped_base_model)
@@ -667,20 +694,22 @@ def calculate_filename_for_model(
     else:
         original_name = os.path.splitext(str(model_data.get("file_name", "")))[0]
 
-    def _sanitize_value(value: Any) -> str:
+    def _sanitize_value(value: Any, max_length: Optional[int] = None) -> str:
         # sanitize_folder_name falls back to "unnamed" for empty input; for
         # templates an empty value must stay empty so segments collapse.
         text = str(value) if value else ""
-        return sanitize_folder_name(text) if text else ""
+        if not text:
+            return ""
+        return sanitize_folder_name(text, max_length=max_length)
 
     replacements = {
-        "{model_name}": _sanitize_value(model_name),
-        "{version_name}": _sanitize_value(version_name),
-        "{base_model}": _sanitize_value(mapped_base_model),
-        "{author}": _sanitize_value(author),
-        "{first_tag}": _sanitize_value(first_tag),
+        "{model_name}": _sanitize_value(model_name, MAX_FILENAME_STEM_LENGTH),
+        "{version_name}": _sanitize_value(version_name, MAX_FILENAME_STEM_LENGTH),
+        "{base_model}": _sanitize_value(mapped_base_model, MAX_FILENAME_STEM_LENGTH),
+        "{author}": _sanitize_value(author, MAX_FILENAME_STEM_LENGTH),
+        "{first_tag}": _sanitize_value(first_tag, MAX_PATH_TAG_LENGTH),
         "{hash_short}": hash_short,
-        "{original_name}": _sanitize_value(original_name),
+        "{original_name}": _sanitize_value(original_name, MAX_FILENAME_STEM_LENGTH),
     }
 
     result = template
@@ -698,6 +727,11 @@ def calculate_filename_for_model(
     result = re.sub(r" ?([-_.]) (?=[-_.])", r"\1", result)
     # A stem must not start or end with separators, spaces or dots.
     result = result.strip("-_. ")
+
+    # A template can concatenate several values, so cap the rendered stem as
+    # well and re-trim the cut.
+    if len(result) > MAX_FILENAME_STEM_LENGTH:
+        result = result[:MAX_FILENAME_STEM_LENGTH].strip("-_. ")
 
     return result
 

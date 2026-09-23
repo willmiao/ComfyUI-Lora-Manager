@@ -365,6 +365,53 @@ def test_download_path_template_unknown_type_is_flat(manager):
     assert manager.get_download_path_template("not-a-model-type") == ""
 
 
+# Real CivitAI data for the model reported in issue #1119: the uploader dumped
+# a whole keyword list into a single tag.
+KEYWORD_DUMP_TAG = (
+    "lora, character, rosie, irish, redhead, auburn, freckles, green eyes, "
+    "curly hair, woman, female, photorealistic, realistic, krea2, dark beast, "
+    "kreativity, nsfw, nude, portrait, face"
+)
+
+
+def test_resolve_priority_tag_prefers_configured_priority(manager):
+    # Priority order from CIVITAI_MODEL_TAGS: "character" precedes "anime".
+    assert manager.resolve_priority_tag_for_model(["anime", "character"], "lora") == (
+        "character"
+    )
+
+
+def test_resolve_priority_tag_falls_back_to_first_usable_tag(manager):
+    assert (
+        manager.resolve_priority_tag_for_model(["portrait", "anime-ish"], "lora")
+        == "portrait"
+    )
+
+
+def test_resolve_priority_tag_skips_keyword_dump_tag(manager):
+    """A keyword-dump tag must not be used as a folder name (#1119)."""
+    assert manager.resolve_priority_tag_for_model([KEYWORD_DUMP_TAG], "lora") == ""
+
+
+def test_resolve_priority_tag_skips_keyword_dump_and_uses_next_tag(manager):
+    assert (
+        manager.resolve_priority_tag_for_model([KEYWORD_DUMP_TAG, "portrait"], "lora")
+        == "portrait"
+    )
+
+
+def test_resolve_priority_tag_skips_unusable_tags(manager):
+    overlong_tag = "x" * 51
+
+    assert manager.resolve_priority_tag_for_model([overlong_tag], "lora") == ""
+    assert manager.resolve_priority_tag_for_model([overlong_tag, "  "], "lora") == ""
+    # Non-string entries never win the fallback.
+    assert manager.resolve_priority_tag_for_model([None, 42], "lora") == ""
+    # A tag at the length budget is still accepted and stripped.
+    assert manager.resolve_priority_tag_for_model(["x" * 50], "lora") == "x" * 50
+    assert manager.resolve_priority_tag_for_model(["  portrait  "], "lora") == "portrait"
+
+
 def test_auto_set_default_roots(manager):
     # Clear any previously auto-set values to test fresh behavior
     manager.settings["default_lora_root"] = ""

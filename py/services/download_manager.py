@@ -25,6 +25,8 @@ from ..utils.models import (
 )
 from ..utils.constants import (
     CARD_PREVIEW_WIDTH,
+    MAX_FOLDER_NAME_LENGTH,
+    MAX_PATH_TAG_LENGTH,
     MODEL_WEIGHT_FILE_TYPES,
     SUPPORTED_DOWNLOAD_SKIP_BASE_MODELS,
     VALID_LORA_TYPES,
@@ -2327,16 +2329,26 @@ class DownloadManager:
         if not first_tag:
             first_tag = "no tags"  # Default if no tags available
 
+        # Tags come straight from CivitAI, so sanitize the value before it
+        # becomes a path segment and cap its length (#1119).
+        first_tag = sanitize_folder_name(first_tag, max_length=MAX_PATH_TAG_LENGTH)
+
         # Format the template with available data
         formatted_path = path_template
         formatted_path = formatted_path.replace("{base_model}", mapped_base_model)
         formatted_path = formatted_path.replace("{first_tag}", first_tag)
         formatted_path = formatted_path.replace("{author}", author)
         formatted_path = formatted_path.replace(
-            "{model_name}", sanitize_folder_name(model_info.get("name", ""))
+            "{model_name}",
+            sanitize_folder_name(
+                model_info.get("name", ""), max_length=MAX_FOLDER_NAME_LENGTH
+            ),
         )
         formatted_path = formatted_path.replace(
-            "{version_name}", sanitize_folder_name(version_info.get("name", ""))
+            "{version_name}",
+            sanitize_folder_name(
+                version_info.get("name", ""), max_length=MAX_FOLDER_NAME_LENGTH
+            ),
         )
 
         if model_type == "embedding":
