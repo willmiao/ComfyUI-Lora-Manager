@@ -119,6 +119,16 @@ def get_lora_info_absolute(lora_name):
         scanner = await ServiceRegistry.get_lora_scanner()
         cache = await scanner.get_cached_data()
 
+        # Stack producers can resolve an exact business path. Preserve it even
+        # when several indexed LoRAs share the same basename.
+        if os.path.isabs(lora_name):
+            for item in cache.raw_data:
+                file_path = item.get("file_path")
+                if file_path and os.path.abspath(file_path) == os.path.abspath(lora_name):
+                    civitai = item.get("civitai") or {}
+                    return file_path, civitai.get("trainedWords", [])
+            return lora_name, []
+
         lora_name_normalized = lora_name.replace("\\", "/")
         lora_name_no_ext = lora_name_normalized
         for ext in (".safetensors", ".ckpt", ".pt", ".bin"):

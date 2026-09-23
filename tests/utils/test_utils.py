@@ -562,3 +562,22 @@ def test_get_lora_info_not_found_returns_original(mock_lora_scanner):
 
     assert path == "nonexistent"
     assert triggers == []
+
+
+def test_get_lora_info_absolute_preserves_exact_stack_path(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "same", "folder": "a", "file_path": "/models/a/same.safetensors", "civitai": {"trainedWords": ["wrong"]}},
+        {"file_name": "same", "folder": "b", "file_path": "/models/b/same.safetensors", "civitai": {"trainedWords": ["right"]}},
+    ])
+    assert get_lora_info_absolute("/models/b/same.safetensors") == (
+        "/models/b/same.safetensors", ["right"]
+    )
+
+
+def test_get_lora_info_absolute_does_not_substitute_missing_absolute_path(mock_lora_scanner):
+    mock_lora_scanner([
+        {"file_name": "same", "folder": "a", "file_path": "/models/a/same.safetensors"},
+    ])
+    assert get_lora_info_absolute("/models/missing/same.safetensors") == (
+        "/models/missing/same.safetensors", []
+    )

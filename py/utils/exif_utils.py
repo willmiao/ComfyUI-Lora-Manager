@@ -177,6 +177,11 @@ class ExifUtils:
                 return brotli_meta
 
         with Image.open(image_path) as img:
+            # PNG text chunks may legally follow IDAT. Pillow reads those only
+            # when loading the image, so inspecting info immediately after open
+            # can incorrectly report a metadata-free image.
+            if img.format == "PNG":
+                img.load()
             info = getattr(img, "info", {}) or {}
 
             if "parameters" in info:
@@ -192,6 +197,18 @@ class ExifUtils:
                     metadata["comment"] = ExifUtils._decode_user_comment(
                         exif[piexif.ExifIFD.UserComment]
                     )
+
+            # ComfyUI's WebP exporter stores JSON in EXIF Make/Model with
+            # prompt:/workflow: prefixes instead of UserComment.
+            exif = img.getexif()
+            for tag in (piexif.ImageIFD.Make, piexif.ImageIFD.Model):
+                text = ExifUtils._decode_exif_text(exif.get(tag))
+                if not text:
+                    continue
+                for key in ("prompt", "workflow"):
+                    prefix = key + ":"
+                    if text.startswith(prefix) and not metadata[key]:
+                        metadata[key] = text[len(prefix):].rstrip("\x00")
 
             try:
                 exif_dict = piexif.load(image_path)
