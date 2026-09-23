@@ -200,3 +200,19 @@ def test_lora_loader_qwen_model_raises_clear_error_when_helper_import_fails(monk
             [],
             lora_stack=[("stack_qwen.safetensors", 0.6, 0.1)],
         )
+
+
+def test_stack_entry_keeps_resolved_absolute_path(monkeypatch):
+    from py.nodes.lora_loader import _collect_stack_entries
+
+    seen = []
+
+    def resolve(name):
+        seen.append(name)
+        return name, ["trigger"]
+
+    monkeypatch.setattr("py.nodes.lora_loader.get_lora_info_absolute", resolve)
+    result = _collect_stack_entries([("/models/b/same.safetensors", .7, .3)])
+    assert seen == ["/models/b/same.safetensors"]
+    assert result[0]["absolute_path"] == "/models/b/same.safetensors"
+    assert result[0]["clip_strength"] == .3

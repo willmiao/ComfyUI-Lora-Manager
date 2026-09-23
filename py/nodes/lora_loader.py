@@ -1,5 +1,6 @@
 import importlib
 import logging
+import os
 
 import comfy.sd  # pyright: ignore[reportMissingImports]
 import comfy.utils  # pyright: ignore[reportMissingImports]
@@ -37,7 +38,9 @@ def _collect_stack_entries(lora_stack):
 
     for lora_path, model_strength, clip_strength in lora_stack:
         lora_name = extract_lora_name(lora_path)
-        absolute_lora_path, trigger_words = get_lora_info_absolute(lora_name)
+        absolute_lora_path, trigger_words = get_lora_info_absolute(
+            lora_path if os.path.isabs(lora_path) else lora_name
+        )
         entries.append({
             "name": lora_name,
             "absolute_path": absolute_lora_path,
