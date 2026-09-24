@@ -7,6 +7,7 @@ import { state } from '../state/index.js';
 import { setSessionItem, removeSessionItem, getStorageItem, setStorageItem } from '../utils/storageHelpers.js';
 import { fetchRecipeDetails, updateRecipeMetadata, sendRecipeWorkflow, extractRecipeId } from '../api/recipeApi.js';
 import { downloadManager } from '../managers/DownloadManager.js';
+import { withBasePath } from '../utils/basePath.js';
 import { MODEL_TYPES } from '../api/apiConfig.js';
 import { openMediaViewer } from './shared/MediaViewer.js';
 import { showRecipeDeleteConfirmation } from './RecipeCard.js';
@@ -3231,7 +3232,7 @@ class RecipeModal {
             setSessionItem('filterCheckpointRecipeName', this.currentRecipe.title);
         }
 
-        window.location.href = '/checkpoints';
+        window.location.href = withBasePath('/checkpoints');
     }
 
     _getCheckpointHash(checkpoint) {
@@ -3281,7 +3282,7 @@ class RecipeModal {
         }
 
         // Navigate to the LoRAs page
-        window.location.href = '/loras';
+        window.location.href = withBasePath('/loras');
     }
 
     // Only in-library LoRA items are row-navigable: the row opens the local

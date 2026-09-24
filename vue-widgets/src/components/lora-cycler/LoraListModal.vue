@@ -58,6 +58,7 @@
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue'
 import ModalWrapper from '../lora-pool/modals/ModalWrapper.vue'
 import type { LoraItem } from '../../composables/types'
+import { lmApiUrl } from '@/utils/basePath'
 
 interface LoraListItem {
   index: number
@@ -131,7 +132,7 @@ const selectLora = (index: number) => {
 // in the Vue widgets build, so we need to use the full path with /api prefix
 const customPreviewUrlResolver = async (modelName: string) => {
   const response = await fetch(
-    `/api/lm/loras/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`
+    lmApiUrl(`/api/lm/loras/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`)
   )
   if (!response.ok) {
     throw new Error('Failed to fetch preview URL')

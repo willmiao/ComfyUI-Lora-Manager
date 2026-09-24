@@ -167,8 +167,8 @@
 
 {% block main_script %}
 {% if other_disabled or other_no_paths %}
-<script type="module" src="/loras_static/js/other_disabled.js?v={{ version }}"></script>
+<script type="module" src="{{ rel_prefix }}loras_static/js/other_disabled.js?v={{ version }}"></script>
 {% else %}
-<script type="module" src="/loras_static/js/other.js?v={{ version }}"></script>
+<script type="module" src="{{ rel_prefix }}loras_static/js/other.js?v={{ version }}"></script>
 {% endif %}
 {% endblock %}

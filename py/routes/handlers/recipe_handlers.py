@@ -36,6 +36,7 @@ from ...utils.constants import NSFW_LEVELS
 from ...utils.directory_browser import WINDOWS_DRIVES_TOKEN, browse_directory
 from ...utils.exif_utils import ExifUtils
 from ...utils.recipe_open_stats import RecipeOpenStats
+from ...utils.url_utils import relative_root_prefix
 from ...recipes.merger import GenParamsMerger
 from ...recipes.enrichment import RecipeEnricher
 from ...services.websocket_manager import ws_manager as default_ws_manager
@@ -215,6 +216,7 @@ class RecipePageView:
                     settings=self._settings,
                     request=request,
                     t=self._server_i18n.get_translation,
+                    rel_prefix=relative_root_prefix(request.path),
                 )
             except Exception as cache_error:  # pragma: no cover - logging path
                 self._logger.error("Error loading recipe cache data: %s", cache_error)
@@ -223,6 +225,7 @@ class RecipePageView:
                     settings=self._settings,
                     request=request,
                     t=self._server_i18n.get_translation,
+                    rel_prefix=relative_root_prefix(request.path),
                 )
             return web.Response(text=rendered, content_type="text/html")
         except Exception as exc:  # pragma: no cover - logging path

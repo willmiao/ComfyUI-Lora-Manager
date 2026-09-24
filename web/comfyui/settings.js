@@ -1,4 +1,5 @@
 import { app } from "../../scripts/app.js";
+import { lmUrl } from "./base_path.js";
 
 // ============================================================================
 // Setting IDs and Defaults
@@ -55,7 +56,7 @@ const loadWorkflowOptions = async () => {
         return;
     }
     try {
-        const response = await fetch("/api/lm/example-workflows");
+        const response = await fetch(lmUrl("/api/lm/example-workflows"));
         const data = await response.json();
         if (data.success && data.workflows) {
             workflowOptionsFull = data.workflows;
@@ -81,7 +82,7 @@ const loadTemplateWorkflow = async (templateName) => {
         const workflow = workflowOptionsFull.find((w) => w.label === templateName);
         if (workflow && workflow.value) {
             const workflowResponse = await fetch(
-                `/api/lm/example-workflows/${encodeURIComponent(workflow.value)}`
+                lmUrl(`/api/lm/example-workflows/${encodeURIComponent(workflow.value)}`)
             );
             const workflowData = await workflowResponse.json();
             if (workflowData.success && workflowData.workflow) {

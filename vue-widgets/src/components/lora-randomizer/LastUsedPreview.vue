@@ -35,6 +35,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import type { LoraEntry } from '../../composables/types'
+import { lmApiUrl } from '@/utils/basePath'
 
 const props = defineProps<{
   loras: LoraEntry[]
@@ -48,7 +49,7 @@ const previewUrls = ref<Record<string, string>>({})
 // Fetch preview URL for a lora using API
 const fetchPreviewUrl = async (loraName: string) => {
   try {
-    const response = await fetch(`/api/lm/loras/preview-url?name=${encodeURIComponent(loraName)}`)
+    const response = await fetch(lmApiUrl(`/api/lm/loras/preview-url?name=${encodeURIComponent(loraName)}`))
 
     if (response.ok) {
       const data = await response.json()

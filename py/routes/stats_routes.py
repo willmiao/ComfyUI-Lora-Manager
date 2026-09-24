@@ -13,6 +13,7 @@ from ..services.server_i18n import server_i18n
 from ..services.service_registry import ServiceRegistry
 from ..services.model_query import normalize_sub_type, resolve_sub_type
 from ..utils.constants import VALID_LORA_SUB_TYPES, VALID_CHECKPOINT_SUB_TYPES
+from ..utils.url_utils import relative_root_prefix
 from ..utils.usage_stats import UsageStats
 
 logger = logging.getLogger(__name__)
@@ -106,6 +107,7 @@ class StatsRoutes:
                 settings=settings_manager,
                 request=request,
                 t=server_i18n.get_translation,
+                rel_prefix=relative_root_prefix(request.path),
             )
             
             return web.Response(

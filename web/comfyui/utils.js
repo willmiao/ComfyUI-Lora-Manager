@@ -1,6 +1,7 @@
 export const CONVERTED_TYPE = 'converted-widget';
 import { app } from "../../scripts/app.js";
 import { AutoComplete } from "./autocomplete.js";
+import { lmUrl } from "./base_path.js";
 
 const ROOT_GRAPH_ID = "root";
 
@@ -408,7 +409,7 @@ export function updateConnectedTriggerWords(node, loraNames) {
             return;
         }
 
-        fetch("/api/lm/loras/get_trigger_words", {
+        fetch(lmUrl("/api/lm/loras/get_trigger_words"), {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({

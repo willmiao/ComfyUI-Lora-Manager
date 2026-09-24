@@ -9,6 +9,7 @@ import { moveManager } from '../../managers/MoveManager.js';
 import { rematchModalManager } from '../../managers/RematchModalManager.js';
 import { showRematchSummary } from '../RematchSummaryModal.js';
 import { probeExtension, delegateReimport, getCivitaiImageInfo } from '../../utils/extensionReimportBridge.js';
+import { withBasePath } from '../../utils/basePath.js';
 
 export class RecipeContextMenu extends BaseContextMenu {
     constructor() {
@@ -180,7 +181,7 @@ export class RecipeContextMenu extends BaseContextMenu {
                     setSessionItem('filterRecipeName', recipe.title);
 
                     // Navigate to the LoRAs page
-                    window.location.href = '/loras';
+                    window.location.href = withBasePath('/loras');
                 } else {
                     showToast('recipes.contextMenu.viewLoras.noLorasFound', {}, 'info');
                 }

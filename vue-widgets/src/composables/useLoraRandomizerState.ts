@@ -1,5 +1,6 @@
 import { ref, computed, watch } from 'vue'
 import type { ComponentWidget, RandomizerConfig, LoraEntry } from './types'
+import { lmApiUrl } from '@/utils/basePath'
 
 export function useLoraRandomizerState(widget: ComponentWidget<RandomizerConfig>) {
   // Flag to prevent infinite loops during config restoration
@@ -160,7 +161,7 @@ export function useLoraRandomizerState(widget: ComponentWidget<RandomizerConfig>
       }
 
       // Call API endpoint
-      const response = await fetch('/api/lm/loras/random-sample', {
+      const response = await fetch(lmApiUrl('/api/lm/loras/random-sample'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

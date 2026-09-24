@@ -27,6 +27,6 @@
 
 {% block main_script %}
 {% if not is_initializing %}
-<script type="module" src="/loras_static/js/loras.js?v={{ version }}"></script>
+<script type="module" src="{{ rel_prefix }}loras_static/js/loras.js?v={{ version }}"></script>
 {% endif %}
 {% endblock %}

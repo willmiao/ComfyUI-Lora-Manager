@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { lmUrl } from "./base_path.js";
 
 // Mirrors the backend resolver (get_lora_info_absolute): a ".ckpt"/".pt"
 // reference resolves to the same-named .safetensors file. The scanner only
@@ -394,7 +395,7 @@ function connectLibraryChangeSocket() {
   const protocol = window.location.protocol === "https:" ? "wss://" : "ws://";
   let ws;
   try {
-    ws = new WebSocket(`${protocol}${window.location.host}/ws/fetch-progress`);
+    ws = new WebSocket(`${protocol}${window.location.host}${lmUrl("/ws/fetch-progress")}`);
   } catch (error) {
     return;
   }
@@ -474,7 +475,7 @@ export async function saveRecipeDirectly() {
     }
     
     // Send the request to the backend API
-    const response = await fetch('/api/lm/recipes/save-from-widget', {
+    const response = await fetch(lmUrl('/api/lm/recipes/save-from-widget'), {
       method: 'POST'
     });
     

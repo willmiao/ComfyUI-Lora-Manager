@@ -1105,7 +1105,7 @@ to { transform: rotate(360deg);
   box-sizing: border-box;
 }
 
-.last-used-preview[data-v-b940502e] {
+.last-used-preview[data-v-7db61bc9] {
   position: absolute;
   bottom: 100%;
   right: 0;
@@ -1113,7 +1113,7 @@ to { transform: rotate(360deg);
   z-index: 100;
   width: 280px;
 }
-.last-used-preview__content[data-v-b940502e] {
+.last-used-preview__content[data-v-7db61bc9] {
   background: var(--comfy-menu-bg, #1a1a1a);
   border: 1px solid var(--border-color, #444);
   border-radius: 6px;
@@ -1123,7 +1123,7 @@ to { transform: rotate(360deg);
   flex-direction: column;
   gap: 4px;
 }
-.last-used-preview__item[data-v-b940502e] {
+.last-used-preview__item[data-v-7db61bc9] {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -1131,7 +1131,7 @@ to { transform: rotate(360deg);
   background: var(--comfy-input-bg, #333);
   border-radius: 6px;
 }
-.last-used-preview__thumb[data-v-b940502e] {
+.last-used-preview__thumb[data-v-7db61bc9] {
   width: 28px;
   height: 28px;
   object-fit: cover;
@@ -1139,37 +1139,37 @@ to { transform: rotate(360deg);
   flex-shrink: 0;
   background: rgba(0, 0, 0, 0.2);
 }
-.last-used-preview__thumb--placeholder[data-v-b940502e] {
+.last-used-preview__thumb--placeholder[data-v-7db61bc9] {
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--fg-color, #fff);
   opacity: 0.2;
 }
-.last-used-preview__thumb--placeholder svg[data-v-b940502e] {
+.last-used-preview__thumb--placeholder svg[data-v-7db61bc9] {
   width: 14px;
   height: 14px;
 }
-.last-used-preview__info[data-v-b940502e] {
+.last-used-preview__info[data-v-7db61bc9] {
   flex: 1;
   display: flex;
   flex-direction: column;
   gap: 1px;
   min-width: 0;
 }
-.last-used-preview__name[data-v-b940502e] {
+.last-used-preview__name[data-v-7db61bc9] {
   font-size: 11px;
   color: var(--fg-color, #fff);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.last-used-preview__strength[data-v-b940502e] {
+.last-used-preview__strength[data-v-7db61bc9] {
   font-size: 10px;
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.last-used-preview__more[data-v-b940502e] {
+.last-used-preview__more[data-v-7db61bc9] {
   font-size: 11px;
   color: var(--fg-color, #fff);
   opacity: 0.5;
@@ -1957,10 +1957,10 @@ to { transform: rotate(360deg);
   opacity: 1;
 }
 
-.search-container[data-v-83f6f852] {
+.search-container[data-v-ed10780a] {
   position: relative;
 }
-.search-icon[data-v-83f6f852] {
+.search-icon[data-v-ed10780a] {
   position: absolute;
   left: 10px;
   top: 50%;
@@ -1970,7 +1970,7 @@ to { transform: rotate(360deg);
   color: var(--fg-color, #fff);
   opacity: 0.5;
 }
-.search-input[data-v-83f6f852] {
+.search-input[data-v-ed10780a] {
   width: 100%;
   padding: 8px 32px;
   background: var(--comfy-input-bg, #333);
@@ -1981,14 +1981,14 @@ to { transform: rotate(360deg);
   outline: none;
   box-sizing: border-box;
 }
-.search-input[data-v-83f6f852]:focus {
+.search-input[data-v-ed10780a]:focus {
   border-color: rgba(66, 153, 225, 0.6);
 }
-.search-input[data-v-83f6f852]::placeholder {
+.search-input[data-v-ed10780a]::placeholder {
   color: var(--fg-color, #fff);
   opacity: 0.4;
 }
-.clear-button[data-v-83f6f852] {
+.clear-button[data-v-ed10780a] {
   position: absolute;
   right: 8px;
   top: 50%;
@@ -2005,22 +2005,22 @@ to { transform: rotate(360deg);
   opacity: 0.5;
   transition: opacity 0.15s;
 }
-.clear-button[data-v-83f6f852]:hover {
+.clear-button[data-v-ed10780a]:hover {
   opacity: 0.8;
 }
-.clear-button svg[data-v-83f6f852] {
+.clear-button svg[data-v-ed10780a] {
   width: 12px;
   height: 12px;
   color: var(--fg-color, #fff);
 }
-.lora-list[data-v-83f6f852] {
+.lora-list[data-v-ed10780a] {
   display: flex;
   flex-direction: column;
   gap: 2px;
   max-height: 400px;
   overflow-y: auto;
 }
-.lora-item[data-v-83f6f852] {
+.lora-item[data-v-ed10780a] {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -2030,14 +2030,14 @@ to { transform: rotate(360deg);
   transition: all 0.15s;
   border-left: 3px solid transparent;
 }
-.lora-item[data-v-83f6f852]:hover {
+.lora-item[data-v-ed10780a]:hover {
   background: rgba(66, 153, 225, 0.15);
 }
-.lora-item.active[data-v-83f6f852] {
+.lora-item.active[data-v-ed10780a] {
   background: rgba(66, 153, 225, 0.25);
   border-left-color: rgba(66, 153, 225, 0.8);
 }
-.lora-index[data-v-83f6f852] {
+.lora-index[data-v-ed10780a] {
   font-family: 'SF Mono', 'Roboto Mono', monospace;
   font-size: 12px;
   color: rgba(226, 232, 240, 0.5);
@@ -2045,7 +2045,7 @@ to { transform: rotate(360deg);
   text-align: right;
   font-variant-numeric: tabular-nums;
 }
-.lora-name[data-v-83f6f852] {
+.lora-name[data-v-ed10780a] {
   flex: 1;
   font-size: 13px;
   color: var(--fg-color, #fff);
@@ -2053,7 +2053,7 @@ to { transform: rotate(360deg);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.current-badge[data-v-83f6f852] {
+.current-badge[data-v-ed10780a] {
   font-size: 11px;
   padding: 2px 8px;
   background: rgba(66, 153, 225, 0.3);
@@ -2062,14 +2062,14 @@ to { transform: rotate(360deg);
   color: rgba(191, 219, 254, 1);
   font-weight: 500;
 }
-.lora-item.no-lora-item .lora-name[data-v-83f6f852] {
+.lora-item.no-lora-item .lora-name[data-v-ed10780a] {
   font-style: italic;
   color: rgba(226, 232, 240, 0.6);
 }
-.lora-item.no-lora-item:hover .lora-name[data-v-83f6f852] {
+.lora-item.no-lora-item:hover .lora-name[data-v-ed10780a] {
   color: rgba(226, 232, 240, 0.8);
 }
-.no-results[data-v-83f6f852] {
+.no-results[data-v-ed10780a] {
   padding: 32px 20px;
   text-align: center;
   color: var(--fg-color, #fff);
@@ -12262,11 +12262,18 @@ const _sfc_main$c = /* @__PURE__ */ defineComponent({
   }
 });
 const FoldersModal = /* @__PURE__ */ _export_sfc(_sfc_main$c, [["__scopeId", "data-v-046dcbf4"]]);
+function getLmBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmApiUrl(path) {
+  return `${getLmBasePath()}${path}`;
+}
 function useLoraPoolApi() {
   const isLoading = ref(false);
   const fetchBaseModels = async (limit = 50) => {
     try {
-      const response = await fetch(`/api/lm/loras/base-models?limit=${limit}`);
+      const response = await fetch(lmApiUrl(`/api/lm/loras/base-models?limit=${limit}`));
       const data = await response.json();
       return data.base_models || [];
     } catch (error) {
@@ -12276,7 +12283,7 @@ function useLoraPoolApi() {
   };
   const fetchTags = async (limit = 0) => {
     try {
-      const response = await fetch(`/api/lm/loras/top-tags?limit=${limit}`);
+      const response = await fetch(lmApiUrl(`/api/lm/loras/top-tags?limit=${limit}`));
       const data = await response.json();
       return data.tags || [];
     } catch (error) {
@@ -12286,7 +12293,7 @@ function useLoraPoolApi() {
   };
   const fetchFolderTree = async () => {
     try {
-      const response = await fetch("/api/lm/loras/unified-folder-tree");
+      const response = await fetch(lmApiUrl("/api/lm/loras/unified-folder-tree"));
       const data = await response.json();
       return transformFolderTree(data.tree || {});
     } catch (error) {
@@ -12334,7 +12341,7 @@ function useLoraPoolApi() {
       if (params.namePatternsUseRegex !== void 0) {
         urlParams.set("name_pattern_use_regex", String(params.namePatternsUseRegex));
       }
-      const response = await fetch(`/api/lm/loras/list?${urlParams}`);
+      const response = await fetch(lmApiUrl(`/api/lm/loras/list?${urlParams}`));
       const data = await response.json();
       return {
         items: data.items || [],
@@ -12682,7 +12689,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     const previewUrls = ref({});
     const fetchPreviewUrl = async (loraName) => {
       try {
-        const response = await fetch(`/api/lm/loras/preview-url?name=${encodeURIComponent(loraName)}`);
+        const response = await fetch(lmApiUrl(`/api/lm/loras/preview-url?name=${encodeURIComponent(loraName)}`));
         if (response.ok) {
           const data = await response.json();
           if (data.preview_url) {
@@ -12732,7 +12739,7 @@ const _sfc_main$a = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-b940502e"]]);
+const LastUsedPreview = /* @__PURE__ */ _export_sfc(_sfc_main$a, [["__scopeId", "data-v-7db61bc9"]]);
 const _hoisted_1$7 = { class: "slider-handle__value" };
 const _sfc_main$9 = /* @__PURE__ */ defineComponent({
   __name: "SingleSlider",
@@ -13528,7 +13535,7 @@ function useLoraRandomizerState(widget) {
       if (poolConfig) {
         requestBody.pool_config = poolConfig.filters || {};
       }
-      const response = await fetch("/api/lm/loras/random-sample", {
+      const response = await fetch(lmApiUrl("/api/lm/loras/random-sample"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -14238,7 +14245,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
     const customPreviewUrlResolver = async (modelName) => {
       const response = await fetch(
-        `/api/lm/loras/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`
+        lmApiUrl(`/api/lm/loras/preview-url?name=${encodeURIComponent(modelName)}&license_flags=true`)
       );
       if (!response.ok) {
         throw new Error("Failed to fetch preview URL");
@@ -14364,7 +14371,7 @@ const _sfc_main$4 = /* @__PURE__ */ defineComponent({
     };
   }
 });
-const LoraListModal = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-83f6f852"]]);
+const LoraListModal = /* @__PURE__ */ _export_sfc(_sfc_main$4, [["__scopeId", "data-v-ed10780a"]]);
 function useLoraCyclerState(widget) {
   let isRestoring = false;
   const currentIndex = ref(1);
@@ -14491,7 +14498,7 @@ function useLoraCyclerState(widget) {
       if (poolConfig == null ? void 0 : poolConfig.filters) {
         requestBody.pool_config = poolConfig.filters;
       }
-      const response = await fetch("/api/lm/loras/cycler-list", {
+      const response = await fetch(lmApiUrl("/api/lm/loras/cycler-list"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -15898,6 +15905,13 @@ function stripAutocompleteMetadataFromPromptResult(result) {
   }
   return result;
 }
+function getComfyUIBasePath() {
+  const { pathname } = window.location;
+  return pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
+}
+function lmUrl(path) {
+  return `${getComfyUIBasePath()}${path}`;
+}
 const ROOT_GRAPH_ID = "root";
 const LORA_PROVIDER_NODE_TYPES = [
   "Lora Stacker (LoraManager)",
@@ -16055,7 +16069,7 @@ function updateConnectedTriggerWords(node, loraNames) {
     if (nodeIds.length === 0) {
       return;
     }
-    fetch("/api/lm/loras/get_trigger_words", {
+    fetch(lmUrl("/api/lm/loras/get_trigger_words"), {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

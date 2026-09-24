@@ -3,6 +3,7 @@
  */
 import { showToast, copyToClipboard } from '../../utils/uiHelpers.js';
 import { setSessionItem, removeSessionItem } from '../../utils/storageHelpers.js';
+import { withBasePath } from '../../utils/basePath.js';
 
 /**
  * Loads recipes that use the specified model and renders them in the tab.
@@ -356,7 +357,7 @@ function navigateToRecipesPage({ modelKind, displayName, modelHash }) {
     }
 
     // Directly navigate to recipes page
-    window.location.href = '/loras/recipes';
+    window.location.href = withBasePath('/loras/recipes');
 }
 
 /**
@@ -378,7 +379,7 @@ function navigateToRecipeDetails(recipeId) {
     setSessionItem('viewRecipeId', recipeId);
 
     // Directly navigate to recipes page
-    window.location.href = '/loras/recipes';
+    window.location.href = withBasePath('/loras/recipes');
 }
 
 function getRecipesEndpoint(modelKind) {

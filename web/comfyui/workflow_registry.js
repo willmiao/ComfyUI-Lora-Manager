@@ -1,5 +1,6 @@
 import { app } from "../../scripts/app.js";
 import { api } from "../../scripts/api.js";
+import { lmUrl } from "./base_path.js";
 import { getAllGraphNodes, getNodeReference, getNodeFromGraph, getChildGraphs, chainCallback, getLinkFromGraph } from "./utils.js";
 import { ensureLmStyles } from "./lm_styles_loader.js";
 
@@ -396,7 +397,7 @@ app.registerExtension({
             }
             this._lastFingerprint = fingerprint;
 
-            const response = await fetch("/api/lm/register-nodes", {
+            const response = await fetch(lmUrl("/api/lm/register-nodes"), {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

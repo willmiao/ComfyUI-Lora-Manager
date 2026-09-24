@@ -50,6 +50,7 @@ from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.civitai_utils import resolve_license_payload
 from ...utils.file_utils import calculate_sha256
 from ...utils.metadata_manager import MetadataManager
+from ...utils.url_utils import relative_root_prefix
 
 LICENSE_FIELDS = (
     "allowNoCredit",
@@ -204,6 +205,7 @@ class ModelPageView:
                 "version": self._get_app_version(),
                 "provider_presets_json": json.dumps(PROVIDER_PRESETS),
                 "provider_models_json": "{}",
+                "rel_prefix": relative_root_prefix(request.path),
             }
 
             if not is_initializing:
