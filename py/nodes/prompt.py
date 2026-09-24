@@ -7,6 +7,7 @@ from ..services.wildcard_service import (
     contains_dynamic_syntax,
     get_wildcard_service,
     is_trigger_words_input,
+    linked_text_requires_rerun,
 )
 
 
@@ -85,6 +86,10 @@ class PromptLM:
                 ),
             },
             "optional": optional_inputs,
+            "hidden": {
+                "prompt": "PROMPT",
+                "unique_id": "UNIQUE_ID",
+            },
         }
 
     RETURN_TYPES = ("CONDITIONING", "STRING")
@@ -100,10 +105,16 @@ class PromptLM:
         text: str,
         clip: Any | None = None,
         seed: int | None = None,
+        prompt: dict | None = None,
+        unique_id: str | None = None,
         **kwargs: Any,
     ):
         del clip, kwargs
-        if contains_dynamic_syntax(text) and seed is None:
+        if seed is not None:
+            return False
+        if contains_dynamic_syntax(text):
+            return float("NaN")
+        if text is None and linked_text_requires_rerun(prompt, unique_id, "text"):
             return float("NaN")
         return False
 
@@ -112,8 +123,11 @@ class PromptLM:
         text: str,
         clip: Any,
         seed: int | None = None,
+        prompt: dict | None = None,
+        unique_id: str | None = None,
         **kwargs: Any,
     ):
+        del prompt, unique_id
         expanded_text = get_wildcard_service().expand_text(text, seed=seed)
 
         trigger_words = []

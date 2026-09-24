@@ -39,6 +39,51 @@ def contains_dynamic_syntax(text: str) -> bool:
     )
 
 
+def _is_prompt_link(value: Any) -> bool:
+    """Return True for ComfyUI prompt-graph links ([node_id, output_index])."""
+
+    return (
+        isinstance(value, list)
+        and len(value) == 2
+        and isinstance(value[0], str)
+        and isinstance(value[1], (int, float))
+    )
+
+
+def linked_text_requires_rerun(prompt: Any, node_id: Any, input_name: str) -> bool:
+    """Decide if a linked text input forces re-execution for dynamic expansion.
+
+    IS_CHANGED only receives constant inputs, so a linked text arrives as None.
+    This walks the prompt graph to the upstream node and returns False only
+    when that node is fully constant and free of dynamic syntax. Dynamic
+    syntax — or anything that cannot be statically resolved — returns True.
+    """
+
+    if not isinstance(prompt, dict) or node_id is None:
+        return True
+    node = prompt.get(str(node_id))
+    if not isinstance(node, dict):
+        return True
+    inputs = node.get("inputs")
+    if not isinstance(inputs, dict):
+        return True
+    value = inputs.get(input_name)
+    if not _is_prompt_link(value):
+        return contains_dynamic_syntax(value)
+    upstream = prompt.get(value[0])
+    if not isinstance(upstream, dict):
+        return True
+    upstream_inputs = upstream.get("inputs")
+    if not isinstance(upstream_inputs, dict):
+        return True
+    for upstream_value in upstream_inputs.values():
+        if _is_prompt_link(upstream_value):
+            return True
+        if contains_dynamic_syntax(upstream_value):
+            return True
+    return False
+
+
 def get_wildcards_dir(create: bool = False) -> str:
     """Return the managed wildcard directory inside the settings folder."""
 
