@@ -10,8 +10,6 @@ from typing import Any, Generator, List, Tuple
 import pytest
 from aiohttp import web
 
-from py.utils.settings_paths import ensure_settings_file
-
 
 ROUTE_CALLS_KEY: web.AppKey[List[Tuple[str, dict[str, Any]]]] = web.AppKey("route_calls")
 
@@ -54,22 +52,41 @@ def standalone_module(monkeypatch) -> Generator[ModuleType, None, None]:
         sys.modules.pop("py.lora_manager", None)
 
 
-def _write_settings(contents: dict[str, Any]) -> Path:
+@pytest.fixture
+def isolated_settings(standalone_module, tmp_path, monkeypatch) -> Path:
+    """Point the standalone module's settings resolution into *tmp_path*.
+
+    ``standalone`` imports ``ensure_settings_file`` by name, so patching
+    ``py.utils.settings_paths`` alone is not enough — the module attribute
+    must be replaced directly.  Without this, ``ensure_settings_file()``
+    would resolve to the developer's real project ``settings.json`` and
+    tests could overwrite or even migrate (i.e. delete) it.
+    """
+
+    settings_path = tmp_path / "settings.json"
+    monkeypatch.setattr(
+        standalone_module,
+        "ensure_settings_file",
+        lambda *args, **kwargs: str(settings_path),
+    )
+    return settings_path
+
+
+def _write_settings(contents: dict[str, Any], settings_path: Path) -> Path:
     """Persist *contents* into the isolated settings.json."""
 
-    settings_path = Path(ensure_settings_file())
     settings_path.write_text(json.dumps(contents))
     return settings_path
 
 
-async def test_standalone_server_sets_up_routes(tmp_path, standalone_module):
+async def test_standalone_server_sets_up_routes(tmp_path, standalone_module, isolated_settings):
     """``StandaloneServer.setup`` wires the HTTP routes and lifecycle hooks."""
 
     example_images_dir = tmp_path / "example_images"
     example_images_dir.mkdir()
     (example_images_dir / "preview.png").write_text("placeholder")
 
-    _write_settings({"example_images_path": str(example_images_dir)})
+    _write_settings({"example_images_path": str(example_images_dir)}, isolated_settings)
 
     server = standalone_module.StandaloneServer()
     await server.setup()
@@ -93,7 +110,7 @@ def test_standalone_server_raises_header_limits(standalone_module):
     assert server.app._handler_args["max_line_size"] == standalone_module.HEADER_SIZE_LIMIT
 
 
-def test_validate_settings_warns_for_missing_model_paths(caplog, standalone_module):
+def test_validate_settings_warns_for_missing_model_paths(caplog, standalone_module, isolated_settings):
     """Missing model folders trigger the configuration warning."""
 
     caplog.set_level("WARNING")
@@ -105,7 +122,8 @@ def test_validate_settings_warns_for_missing_model_paths(caplog, standalone_modu
                 "checkpoints": [],
                 "embeddings": [],
             }
-        }
+        },
+        isolated_settings,
     )
 
     assert standalone_module.validate_settings() is True

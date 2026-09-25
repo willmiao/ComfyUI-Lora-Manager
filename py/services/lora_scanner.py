@@ -15,8 +15,12 @@ class LoraScanner(ModelScanner):
     """Service for scanning and managing LoRA files"""
     
     def __init__(self):
-        # Define supported file extensions
-        file_extensions = {'.safetensors'}
+        # Define supported file extensions.
+        # `.ckpt` is included so LoRAs exported/converted by Draw Things
+        # (stored as `<name>_lora_f16.ckpt`) are discovered alongside
+        # `.safetensors`. Embedded metadata differs from the safetensors
+        # header, so enrichment relies on hash/name-based CivitAI lookup.
+        file_extensions = {'.safetensors', '.ckpt'}
 
         # Initialize parent class with ModelHashIndex
         from .model_hash_index import ModelHashIndex
