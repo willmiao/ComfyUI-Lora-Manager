@@ -44,12 +44,15 @@ import json
 import logging
 import os
 import re
-from typing import TYPE_CHECKING, Any, Iterable, Optional
+from typing import TYPE_CHECKING, Any, Iterable, Mapping, Optional
 
 from .base import (
+    GROUP_PREFIXES,
     ModelCardContext,
     ModelSource,
     ModelSourceError,
+    SourceRef,
+    clean_source_url,
     fetch_json,
     fetch_text,
     filter_weight_files,
@@ -110,6 +113,22 @@ class ModelScopeSource(ModelSource):
 
     def canonical_url(self, source_id: str) -> str:
         return f"{self.base_url}/models/{source_id}"
+
+    def group_key(self, ref: SourceRef, item: Mapping[str, Any]) -> Optional[str]:
+        """Group by ModelScope's published-model id, never by repository.
+
+        A collection repository hosts many unrelated published models, so
+        the repo id is not a version-group identity.  Only models whose
+        metadata carries the site-native ``source_model_id`` (recorded at
+        enrichment time from ``MuseInfo.versions[].modelVersion.modelId``)
+        group together; unenriched models stay standalone.
+        """
+
+        model_id = clean_source_url(item.get("source_model_id"))
+        if not model_id:
+            return None
+        prefix = GROUP_PREFIXES.get(self.platform, self.platform)
+        return f"{prefix}:{model_id}"
 
     def asset_base_url(self, source_id: str, revision: str = "") -> str:
         return (
@@ -350,7 +369,35 @@ def _build_card_context(
         context.version_name = _version_label(versions)
         context.example_images = _cover_image_urls(versions)
         context.trigger_words = _version_trigger_words(versions)
+        context.source_model_id, context.source_version_id = _version_identity(
+            versions
+        )
     return context
+
+
+def _version_identity(versions: list[dict[str, Any]]) -> tuple[str, str]:
+    """Return the site-native ``(model id, version id)`` of the first match.
+
+    ``modelVersion.modelId`` is identical across every version of one
+    published model and differs between the models of a collection
+    repository, which makes it the version-grouping identity;
+    ``modelVersion.id`` identifies the version itself.  Both are ints in
+    the payload and are stored as strings.
+    """
+
+    for version in versions:
+        model_version = version.get("modelVersion")
+        if not isinstance(model_version, dict):
+            continue
+        model_id = model_version.get("modelId")
+        version_id = model_version.get("id")
+        if model_id is None and version_id is None:
+            continue
+        return (
+            str(model_id) if model_id is not None else "",
+            str(version_id) if version_id is not None else "",
+        )
+    return "", ""
 
 
 def _base_model_aliases(data: dict[str, Any]) -> list[str]:

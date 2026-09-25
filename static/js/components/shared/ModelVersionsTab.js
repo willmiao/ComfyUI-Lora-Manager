@@ -994,9 +994,9 @@ export function initVersionsTab({
             renderErrorState(container, translate('modals.model.versions.missingModelId', {}, 'This model is missing a Civitai model id.'));
             return;
         }
-        // External source group keys (e.g. "hf:user/repo", "ms:user/repo",
-        // "ta:8278...") are not real CivitAI model IDs — skip the remote API
-        // call and show a helpful message instead.
+        // External source group keys (e.g. "ms:12345", "ta:8278...") are
+        // not real CivitAI model IDs — skip the remote API call and show a
+        // helpful message instead.
         const sourceGroup = parseModelSourceGroupKey(modelId);
         if (sourceGroup) {
             controller.isLoading = false;

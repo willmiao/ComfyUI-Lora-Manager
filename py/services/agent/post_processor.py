@@ -199,6 +199,15 @@ class PostProcessor:
         if is_source_model and site_version:
             self._merge_civitai(updates, metadata, name=site_version)
 
+        # Site-native identity ids (ModelScope's published model/version ids).
+        # They are what version grouping keys off, so they must reach the
+        # sidecar even when nothing else about the card changed.
+        if is_source_model and source_context is not None:
+            if source_context.source_model_id:
+                updates["source_model_id"] = source_context.source_model_id
+            if source_context.source_version_id:
+                updates["source_version_id"] = source_context.source_version_id
+
         # gallery images → civitai.images (site example images, YAML frontmatter
         # widget entries, and Sample Gallery markdown tables in the README body)
         rec_width = llm_output.get("recommended_width") or 0

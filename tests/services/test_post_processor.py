@@ -817,6 +817,75 @@ class TestSiteProvidedContext:
             "https://huggingface.co/user/repo/resolve/main/images/cat.png"
         ]
 
+    @pytest.mark.asyncio
+    async def test_site_identity_ids_are_persisted(self, processor):
+        """source_model_id/source_version_id reach the sidecar for grouping."""
+        context = ModelCardContext(source_model_id="555", source_version_id="1002")
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content="",
+                source_context=context,
+            )
+
+        applied = mock_apply.call_args[0][1]
+        assert applied["source_model_id"] == "555"
+        assert applied["source_version_id"] == "1002"
+
+    @pytest.mark.asyncio
+    async def test_site_identity_ids_absent_without_context_values(self, processor):
+        """No identity keys are written when the site did not publish any."""
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata=dict(self.MODELSCOPE_METADATA),
+                readme_content="",
+                source_context=ModelCardContext(description="summary only"),
+            )
+
+        applied = mock_apply.call_args[0][1]
+        assert "source_model_id" not in applied
+        assert "source_version_id" not in applied
+
+    @pytest.mark.asyncio
+    async def test_site_identity_ids_skipped_for_a_model_with_no_external_source(
+        self, processor
+    ):
+        """A CivitAI-only model must not pick up source identity ids."""
+        context = ModelCardContext(source_model_id="555", source_version_id="1002")
+
+        with (
+            mock.patch("py.metadata_ops.apply_metadata_updates") as mock_apply,
+            mock.patch("py.metadata_ops.download_preview", return_value=None),
+            mock.patch("py.metadata_ops.refresh_cache"),
+        ):
+            await processor.process(
+                skill_name="enrich_hf_metadata",
+                model_path="/p.safetensors",
+                llm_output=self.LLM_OUTPUT,
+                metadata={"from_civitai": True},
+                readme_content="",
+                source_context=context,
+            )
+
+        applied = mock_apply.call_args[0][1]
+        assert "source_model_id" not in applied
+        assert "source_version_id" not in applied
+
 
 
 # ======================================================================

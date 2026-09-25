@@ -1027,6 +1027,8 @@ def _modelscope_card_payload() -> dict:
                         "modelVersion": {
                             "showName": "c1-st1000",
                             "triggerWords": '["kreaface","kreamodel"]',
+                            "id": 1002,
+                            "modelId": 555,
                         },
                         "coverImages": [
                             {"url": "https://resources.modelscope.cn/cover-images/b.png"},
@@ -1141,6 +1143,9 @@ async def test_download_hydrates_the_card_from_the_site(tmp_path, monkeypatch):
         '{"strength_min": 0.5, "strength_max": 1.2, "strength_range": "0.5-1.2"}'
     )
     assert saved["metadata_source"] == "source:modelscope"
+    # The site-native identity ids are persisted for version grouping.
+    assert saved["source_model_id"] == "555"
+    assert saved["source_version_id"] == "1002"
     # No provider answered, so claiming an AI enrichment would be a lie.
     assert "llm_enriched_at" not in saved
 
@@ -1148,6 +1153,7 @@ async def test_download_hydrates_the_card_from_the_site(tmp_path, monkeypatch):
     assert scanner.update_single_model_cache.await_count == 1
     cached = scanner.update_single_model_cache.await_args.args[2]
     assert cached["model_name"] == "Krea-2-LORA"
+    assert cached["source_model_id"] == "555"
 
 
 @pytest.mark.asyncio

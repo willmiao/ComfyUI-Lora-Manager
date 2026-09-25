@@ -68,6 +68,8 @@ class PersistentModelCache:
         "source_platform",
         "source_url",
         "hf_url",
+        "source_model_id",
+        "source_version_id",
     )
     _MODEL_UPDATE_COLUMNS: Tuple[str, ...] = _MODEL_COLUMNS[2:]
     _instances: Dict[str, "PersistentModelCache"] = {}
@@ -214,6 +216,8 @@ class PersistentModelCache:
                 "source_platform": row["source_platform"] or "",
                 "source_url": row["source_url"] or "",
                 "hf_url": row["hf_url"] or "",
+                "source_model_id": row["source_model_id"] or "",
+                "source_version_id": row["source_version_id"] or "",
             }
             # Legacy rows only carry `hf_url`; derive the canonical pair so
             # every consumer sees the same shape.
@@ -579,6 +583,8 @@ class PersistentModelCache:
                             source_platform TEXT DEFAULT '',
                             source_url TEXT DEFAULT '',
                             hf_url TEXT DEFAULT '',
+                            source_model_id TEXT DEFAULT '',
+                            source_version_id TEXT DEFAULT '',
                             PRIMARY KEY (model_type, file_path)
                         );
 
@@ -648,6 +654,8 @@ class PersistentModelCache:
             "source_platform": "TEXT DEFAULT ''",
             "source_url": "TEXT DEFAULT ''",
             "hf_url": "TEXT DEFAULT ''",
+            "source_model_id": "TEXT DEFAULT ''",
+            "source_version_id": "TEXT DEFAULT ''",
             "autov3": "TEXT",
         }
 
@@ -735,6 +743,8 @@ class PersistentModelCache:
             item.get("source_platform") or "",
             item.get("source_url") or "",
             item.get("hf_url") or "",
+            item.get("source_model_id") or "",
+            item.get("source_version_id") or "",
         )
 
     def _insert_model_sql(self) -> str:

@@ -105,13 +105,39 @@ describe('modelSourceHelpers', () => {
 
   describe('getModelSourceGroupKey', () => {
     it('matches the backend group-key shapes', () => {
-      expect(getModelSourceGroupKey({ hf_url: 'https://huggingface.co/u/r' })).toBe('hf:u/r');
-      expect(
-        getModelSourceGroupKey({ source_url: 'https://modelscope.cn/models/u/r' })
-      ).toBe('ms:u/r');
+      // TensorArt's numeric id already identifies a single model.
       expect(getModelSourceGroupKey({ source_url: 'https://tensor.art/models/123' })).toBe(
         'ta:123'
       );
+      // ModelScope groups by the site-native published-model id.
+      expect(
+        getModelSourceGroupKey({
+          source_url: 'https://modelscope.cn/models/u/r',
+          source_model_id: '555',
+        })
+      ).toBe('ms:555');
+      expect(
+        getModelSourceGroupKey({
+          source_url: 'https://www.modelscope.ai/models/u/r',
+          source_model_id: '678',
+        })
+      ).toBe('msai:678');
+    });
+
+    it('returns an empty string for sources without a model identity', () => {
+      // Hugging Face repos are not a model identity: never grouped.
+      expect(getModelSourceGroupKey({ hf_url: 'https://huggingface.co/u/r' })).toBe('');
+      // Unenriched ModelScope models stay standalone rather than collapsing
+      // a whole collection repo into one group.
+      expect(
+        getModelSourceGroupKey({ source_url: 'https://modelscope.cn/models/u/r' })
+      ).toBe('');
+      expect(
+        getModelSourceGroupKey({
+          source_url: 'https://modelscope.cn/models/u/r',
+          source_model_id: '   ',
+        })
+      ).toBe('');
     });
 
     it('returns an empty string without a source', () => {

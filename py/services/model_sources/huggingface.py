@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any, Mapping, Optional
 
 from .base import (
     ModelSource,
     ModelSourceError,
+    SourceRef,
     fetch_json,
     fetch_text,
     filter_weight_files,
@@ -53,6 +55,16 @@ class HuggingFaceSource(ModelSource):
 
     def canonical_url(self, source_id: str) -> str:
         return f"https://huggingface.co/{source_id}"
+
+    def group_key(self, ref: SourceRef, item: Mapping[str, Any]) -> Optional[str]:
+        """Hugging Face models never auto-group.
+
+        A repository is not a model identity — collection repos host many
+        unrelated models — and the Hub exposes no site-native published-model
+        id, so there is no reliable key to group by.
+        """
+
+        return None
 
     def asset_base_url(self, source_id: str, revision: str = "") -> str:
         return f"https://huggingface.co/{source_id}/resolve/{self.resolve_revision(revision)}"

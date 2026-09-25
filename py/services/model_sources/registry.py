@@ -196,8 +196,13 @@ def get_source_platform(item: Mapping[str, Any]) -> str:
 def source_group_key(item: Mapping[str, Any]) -> Optional[str]:
     """Return the version-group key for *item*, or ``None``.
 
-    Hugging Face keeps the historical ``hf:{owner}/{repo}`` shape; other
-    platforms use their own short prefix (see :data:`GROUP_PREFIXES`).
+    Only sources with a site-native model identity yield a key: TensorArt
+    groups by its numeric model id (``ta:<id>``) and ModelScope by the
+    published-model id recorded at enrichment time (``ms:<id>`` /
+    ``msai:<id>``).  Hugging Face yields no key at all — a repository is
+    not a model identity — and unenriched ModelScope models stay
+    standalone rather than collapsing a whole collection repository into
+    one group.
     """
 
     ref = resolve_source_ref(item)
@@ -206,7 +211,7 @@ def source_group_key(item: Mapping[str, Any]) -> Optional[str]:
     source = get_source(ref.platform)
     if source is None:
         return None
-    return source.group_key(ref.source_id)
+    return source.group_key(ref, item)
 
 
 __all__ = [

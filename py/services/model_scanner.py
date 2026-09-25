@@ -399,10 +399,14 @@ class ModelScanner:
             'skip_metadata_refresh': bool(get_value('skip_metadata_refresh', False)),
             # External model source (Hugging Face / ModelScope / TensorArt).
             # `source_url` + `source_platform` are canonical; `hf_url` stays in
-            # sync as a legacy alias (normalised below).
+            # sync as a legacy alias (normalised below).  `source_model_id` /
+            # `source_version_id` are the site-native identity ids version
+            # grouping keys off (ModelScope; empty elsewhere).
             'source_platform': get_value('source_platform', '') or '',
             'source_url': get_value('source_url', '') or '',
             'hf_url': get_value('hf_url', '') or '',
+            'source_model_id': get_value('source_model_id', '') or '',
+            'source_version_id': get_value('source_version_id', '') or '',
         }
         normalize_metadata_source(entry)
 

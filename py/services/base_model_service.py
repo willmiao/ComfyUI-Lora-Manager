@@ -741,17 +741,13 @@ class BaseModelService(ABC):
         return annotated
 
     @staticmethod
-    def _extract_hf_group_key(item: Dict[str, Any]) -> Optional[str]:
-        """Extract `hf:{owner}/{repo}` from item's ``hf_url``, or None."""
-        key = BaseModelService._extract_source_group_key(item)
-        return key if key and key.startswith("hf:") else None
-
-    @staticmethod
     def _extract_source_group_key(item: Dict[str, Any]) -> Optional[str]:
         """Return the external-source group key for *item*, or None.
 
-        Hugging Face keeps the historical ``hf:{owner}/{repo}`` shape; other
-        platforms use their own short prefix (``ms:`` / ``ta:``).
+        Only sources with a site-native model identity yield a key:
+        ModelScope groups by its published-model id (``ms:{id}``), TensorArt
+        by its numeric model id (``ta:{id}``); Hugging Face models never
+        group (see :meth:`ModelSource.group_key`).
         """
         return source_group_key(item)
 
@@ -761,8 +757,8 @@ class BaseModelService(ABC):
 
         Preference order:
         1. CivitAI ``modelId`` (int)
-        2. External model source identity, e.g. ``hf:{owner}/{repo}``,
-           ``ms:{owner}/{repo}``, ``ta:{model_id}`` (str)
+        2. External model source identity, e.g. ``ms:{model_id}``,
+           ``ta:{model_id}`` (str)
         3. ``None`` (no known grouping source)
         """
         mid = BaseModelService._extract_model_id(item)

@@ -25,7 +25,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Any, Dict, Iterable, Optional
+from typing import Any, Dict, Iterable, Mapping, Optional
 
 import aiohttp
 
@@ -123,6 +123,20 @@ class ModelCardContext:
     trigger_words: list[str] = field(default_factory=list)
     """Trigger words the site records for the requested model file."""
 
+    source_model_id: str = ""
+    """Site-native id of the *published model* the requested file belongs to.
+
+    Sites whose repository is not a model identity publish a separate,
+    stable id per model (ModelScope's ``modelVersion.modelId`` — identical
+    across every version of one published model, different between the
+    models of a collection repository).  It is the version-grouping key,
+    persisted on the sidecar as ``source_model_id``.
+    """
+
+    source_version_id: str = ""
+    """Site-native id of the published version the requested file belongs to
+    (ModelScope's ``modelVersion.id``), persisted as ``source_version_id``."""
+
     def is_empty(self) -> bool:
         """Return ``True`` when the site contributed nothing extra."""
 
@@ -139,6 +153,8 @@ class ModelCardContext:
                 self.official_tags,
                 self.example_images,
                 self.trigger_words,
+                self.source_model_id,
+                self.source_version_id,
             )
         )
 
@@ -329,11 +345,20 @@ class ModelSource:
 
         return ""
 
-    def group_key(self, source_id: str) -> str:
-        """Return the version-group key for *source_id*."""
+    def group_key(self, ref: SourceRef, item: Mapping[str, Any]) -> Optional[str]:
+        """Return the version-group key for the model described by *item*.
+
+        The default groups by source id (``{prefix}:{owner}/{repo}``), which
+        is only correct when the source id already identifies a single
+        published model.  Sources whose repository hosts many unrelated
+        models override this: they either derive the key from a site-native
+        model identity recorded in *item* (ModelScope's ``source_model_id``)
+        or return ``None`` when the platform has no reliable model identity
+        at all (Hugging Face), leaving the model ungrouped.
+        """
 
         prefix = GROUP_PREFIXES.get(self.platform, self.platform)
-        return f"{prefix}:{source_id}"
+        return f"{prefix}:{ref.source_id}"
 
     async def fetch_model_card(self, source_id: str) -> str:
         """Fetch the raw model card (README) markdown for *source_id*."""

@@ -967,6 +967,8 @@ def _make_cache_entry(**overrides) -> Dict[str, Any]:
         "source_platform": "",
         "source_url": "",
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
         "license_flags": 113,
         "hash_status": "completed",
     }
@@ -1005,6 +1007,8 @@ async def test_sync_cache_no_change(tmp_path: Path):
         "tags": ["alpha"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -1049,6 +1053,8 @@ async def test_sync_cache_in_place_update(tmp_path: Path):
         "tags": ["beta", "gamma"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -1094,6 +1100,8 @@ async def test_sync_cache_not_in_cache_delegates(tmp_path: Path):
         "tags": [],
         "civitai": {},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -1147,6 +1155,8 @@ async def test_sync_cache_conditional_resort_skipped(tmp_path: Path, monkeypatch
         "tags": ["alpha"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(
@@ -1197,6 +1207,8 @@ async def test_sync_cache_conditional_resort_triggered(tmp_path: Path, monkeypat
         "tags": ["alpha"],
         "civitai": {"id": 111, "modelId": 222, "name": "v1"},
         "hf_url": "",
+        "source_model_id": "",
+        "source_version_id": "",
     }
 
     changed = await scanner.sync_cache_from_metadata(

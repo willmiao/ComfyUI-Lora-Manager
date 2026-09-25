@@ -522,7 +522,7 @@ export function createModelCard(model, modelType) {
         card.dataset.modelId = modelId;
     } else {
         // For externally-sourced models, derive a group key from the source
-        // URL for version grouping (hf:user/repo, ms:user/repo, ta:<id>).
+        // identity for version grouping (ms:<model_id>, ta:<id>).
         const sourceGroupKey = getModelSourceGroupKey(model);
         if (sourceGroupKey) {
             card.dataset.modelId = sourceGroupKey;
