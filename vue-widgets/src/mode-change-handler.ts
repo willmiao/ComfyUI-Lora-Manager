@@ -7,6 +7,9 @@
  * - Lora Cycler (LoraManager)
  */
 
+// @ts-ignore
+import { interceptModeChange } from '../../web/comfyui/utils.js'
+
 /**
  * List of node types that act as LoRA providers in the workflow chain.
  * These nodes can be traversed when collecting active LoRAs and can trigger
@@ -120,8 +123,11 @@ export function isNodeActive(mode: number | undefined): boolean {
 /**
  * Setup a mode change handler for a node.
  *
- * Intercepts the mode property setter to trigger a callback when the mode changes.
- * This is needed because ComfyUI sets the mode property directly without using a setter.
+ * Delegates to `interceptModeChange`, which observes the mode property
+ * without shadowing the frontend's own `mode` accessor. Since ComfyUI
+ * frontend 1.53, `mode` is backed by shell state (`node._state.mode`) that
+ * serialization reads directly — redefining the property on the instance
+ * would silently revert bypass/mute on save/reload.
  *
  * @param node - The node to set up the handler for
  * @param onModeChange - Callback function called when mode changes (receives newMode and oldMode)
@@ -130,21 +136,7 @@ export function setupModeChangeHandler(
   node: any,
   onModeChange: (newMode: number, oldMode: number) => void
 ): void {
-  let _mode = node.mode;
-
-  Object.defineProperty(node, 'mode', {
-    get() {
-      return _mode;
-    },
-    set(value: number) {
-      const oldValue = _mode;
-      _mode = value;
-
-      if (oldValue !== value) {
-        onModeChange(value, oldValue);
-      }
-    }
-  });
+  interceptModeChange(node, onModeChange);
 }
 
 /**

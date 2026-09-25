@@ -50,6 +50,22 @@ vi.mock(UTILS_MODULE, () => ({
   chainCallback: (proto, property, callback) => {
     proto[property] = callback;
   },
+  interceptModeChange: (node, onModeChange) => {
+    let currentMode = node.mode;
+    Object.defineProperty(node, "mode", {
+      configurable: true,
+      get() {
+        return currentMode;
+      },
+      set(value) {
+        const oldValue = currentMode;
+        currentMode = value;
+        if (oldValue !== value) {
+          onModeChange(value, oldValue);
+        }
+      },
+    });
+  },
   getAllGraphNodes,
   getNodeFromGraph,
   getWidgetByName,

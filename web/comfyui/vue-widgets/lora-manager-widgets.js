@@ -15715,82 +15715,6 @@ function createVueWidgetCleanup(vueApp, onCleanup) {
     onCleanup == null ? void 0 : onCleanup();
   };
 }
-const LORA_PROVIDER_NODE_TYPES$1 = [
-  "Lora Stacker (LoraManager)",
-  "Lora Randomizer (LoraManager)",
-  "Lora Cycler (LoraManager)",
-  "Create Hook LoRA (LoraManager)"
-];
-const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
-  "Lora Stack Combiner (LoraManager)"
-];
-const LORA_CHAIN_NODE_TYPES$1 = [
-  ...LORA_PROVIDER_NODE_TYPES$1,
-  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
-];
-function isLoraStackAggregatorNode$1(comfyClass) {
-  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
-}
-function getActiveLorasFromNodeByType(node) {
-  const comfyClass = node == null ? void 0 : node.comfyClass;
-  if (comfyClass === "Lora Cycler (LoraManager)") {
-    return extractFromCyclerConfig(node);
-  }
-  if (isLoraStackAggregatorNode$1(comfyClass)) {
-    return /* @__PURE__ */ new Set();
-  }
-  return extractFromLorasWidget(node);
-}
-function extractFromLorasWidget(node) {
-  var _a2;
-  const activeLoraNames = /* @__PURE__ */ new Set();
-  const lorasWidget = node.lorasWidget || ((_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras"));
-  if (lorasWidget == null ? void 0 : lorasWidget.value) {
-    lorasWidget.value.forEach((lora) => {
-      if (lora.active) {
-        activeLoraNames.add(lora.name);
-      }
-    });
-  }
-  return activeLoraNames;
-}
-function extractFromCyclerConfig(node) {
-  var _a2, _b;
-  const activeLoraNames = /* @__PURE__ */ new Set();
-  const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
-  if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
-    activeLoraNames.add(cyclerWidget.value.current_lora_filename);
-  }
-  return activeLoraNames;
-}
-function isNodeActive(mode) {
-  return mode === void 0 || mode === 0 || mode === 3;
-}
-function setupModeChangeHandler(node, onModeChange) {
-  let _mode = node.mode;
-  Object.defineProperty(node, "mode", {
-    get() {
-      return _mode;
-    },
-    set(value) {
-      const oldValue = _mode;
-      _mode = value;
-      if (oldValue !== value) {
-        onModeChange(value, oldValue);
-      }
-    }
-  });
-}
-function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
-  return (newMode, _oldMode) => {
-    const isNodeCurrentlyActive = isNodeActive(newMode);
-    const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
-    if (nodeSpecificCallback) {
-      nodeSpecificCallback(activeLoraNames);
-    }
-    updateDownstreamLoaders2(node);
-  };
-}
 let _loraSyntaxFormatCache = null;
 let _loraSyntaxFormatRefreshPromise = null;
 async function _fetchLoraSyntaxFormat() {
@@ -15913,24 +15837,24 @@ function lmUrl(path) {
   return `${getComfyUIBasePath()}${path}`;
 }
 const ROOT_GRAPH_ID = "root";
-const LORA_PROVIDER_NODE_TYPES = [
+const LORA_PROVIDER_NODE_TYPES$1 = [
   "Lora Stacker (LoraManager)",
   "Lora Randomizer (LoraManager)",
   "Lora Cycler (LoraManager)",
   "Create Hook LoRA (LoraManager)"
 ];
-const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+const LORA_STACK_AGGREGATOR_NODE_TYPES$1 = [
   "Lora Stack Combiner (LoraManager)"
 ];
-const LORA_CHAIN_NODE_TYPES = [
-  ...LORA_PROVIDER_NODE_TYPES,
-  ...LORA_STACK_AGGREGATOR_NODE_TYPES
+const LORA_CHAIN_NODE_TYPES$1 = [
+  ...LORA_PROVIDER_NODE_TYPES$1,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES$1
 ];
-function isLoraStackAggregatorNode(comfyClass) {
-  return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass);
+function isLoraStackAggregatorNode$1(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES$1.includes(comfyClass);
 }
 function isLoraChainNode(comfyClass) {
-  return LORA_CHAIN_NODE_TYPES.includes(comfyClass);
+  return LORA_CHAIN_NODE_TYPES$1.includes(comfyClass);
 }
 function isMapLike(collection) {
   return collection && typeof collection.entries === "function" && typeof collection.values === "function";
@@ -15967,6 +15891,50 @@ function getLinkFromGraph(graph, linkId) {
     return graph.links.get(linkId) || null;
   }
   return graph.links[linkId] || null;
+}
+function findModeAccessor(node) {
+  let proto = Object.getPrototypeOf(node);
+  while (proto && proto !== Object.prototype) {
+    const descriptor = Object.getOwnPropertyDescriptor(proto, "mode");
+    if (descriptor && (descriptor.get || descriptor.set)) {
+      return descriptor;
+    }
+    proto = Object.getPrototypeOf(proto);
+  }
+  return null;
+}
+function interceptModeChange(node, onModeChange) {
+  const delegate = findModeAccessor(node);
+  if (delegate && typeof delegate.get === "function" && typeof delegate.set === "function") {
+    Object.defineProperty(node, "mode", {
+      configurable: true,
+      get() {
+        return delegate.get.call(this);
+      },
+      set(value) {
+        const oldValue = delegate.get.call(this);
+        delegate.set.call(this, value);
+        if (oldValue !== value) {
+          onModeChange(value, oldValue);
+        }
+      }
+    });
+    return;
+  }
+  let currentMode = node.mode;
+  Object.defineProperty(node, "mode", {
+    configurable: true,
+    get() {
+      return currentMode;
+    },
+    set(value) {
+      const oldValue = currentMode;
+      currentMode = value;
+      if (oldValue !== value) {
+        onModeChange(value, oldValue);
+      }
+    }
+  });
 }
 function isLoraStackInput(input) {
   return (input == null ? void 0 : input.type) === "LORA_STACK";
@@ -16025,7 +15993,7 @@ function getActiveLorasFromNode(node) {
     }
     return activeLoraNames;
   }
-  if (isLoraStackAggregatorNode(node.comfyClass)) {
+  if (isLoraStackAggregatorNode$1(node.comfyClass)) {
     return activeLoraNames;
   }
   let lorasWidget = node.lorasWidget;
@@ -16135,6 +16103,70 @@ function updateDownstreamLoaders(startNode, visited = /* @__PURE__ */ new Set())
       }
     }
   }
+}
+const LORA_PROVIDER_NODE_TYPES = [
+  "Lora Stacker (LoraManager)",
+  "Lora Randomizer (LoraManager)",
+  "Lora Cycler (LoraManager)",
+  "Create Hook LoRA (LoraManager)"
+];
+const LORA_STACK_AGGREGATOR_NODE_TYPES = [
+  "Lora Stack Combiner (LoraManager)"
+];
+const LORA_CHAIN_NODE_TYPES = [
+  ...LORA_PROVIDER_NODE_TYPES,
+  ...LORA_STACK_AGGREGATOR_NODE_TYPES
+];
+function isLoraStackAggregatorNode(comfyClass) {
+  return LORA_STACK_AGGREGATOR_NODE_TYPES.includes(comfyClass);
+}
+function getActiveLorasFromNodeByType(node) {
+  const comfyClass = node == null ? void 0 : node.comfyClass;
+  if (comfyClass === "Lora Cycler (LoraManager)") {
+    return extractFromCyclerConfig(node);
+  }
+  if (isLoraStackAggregatorNode(comfyClass)) {
+    return /* @__PURE__ */ new Set();
+  }
+  return extractFromLorasWidget(node);
+}
+function extractFromLorasWidget(node) {
+  var _a2;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const lorasWidget = node.lorasWidget || ((_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "loras"));
+  if (lorasWidget == null ? void 0 : lorasWidget.value) {
+    lorasWidget.value.forEach((lora) => {
+      if (lora.active) {
+        activeLoraNames.add(lora.name);
+      }
+    });
+  }
+  return activeLoraNames;
+}
+function extractFromCyclerConfig(node) {
+  var _a2, _b;
+  const activeLoraNames = /* @__PURE__ */ new Set();
+  const cyclerWidget = (_a2 = node.widgets) == null ? void 0 : _a2.find((w2) => w2.name === "cycler_config");
+  if ((_b = cyclerWidget == null ? void 0 : cyclerWidget.value) == null ? void 0 : _b.current_lora_filename) {
+    activeLoraNames.add(cyclerWidget.value.current_lora_filename);
+  }
+  return activeLoraNames;
+}
+function isNodeActive(mode) {
+  return mode === void 0 || mode === 0 || mode === 3;
+}
+function setupModeChangeHandler(node, onModeChange) {
+  interceptModeChange(node, onModeChange);
+}
+function createModeChangeCallback(node, updateDownstreamLoaders2, nodeSpecificCallback) {
+  return (newMode, _oldMode) => {
+    const isNodeCurrentlyActive = isNodeActive(newMode);
+    const activeLoraNames = isNodeCurrentlyActive ? getActiveLorasFromNodeByType(node) : /* @__PURE__ */ new Set();
+    if (nodeSpecificCallback) {
+      nodeSpecificCallback(activeLoraNames);
+    }
+    updateDownstreamLoaders2(node);
+  };
 }
 const LORA_POOL_WIDGET_MIN_WIDTH = 500;
 const LORA_POOL_WIDGET_MIN_HEIGHT = 520;
@@ -16853,7 +16885,7 @@ app.registerExtension({
         return originalConfigure == null ? void 0 : originalConfigure.apply(this, arguments);
       };
     }
-    if (LORA_CHAIN_NODE_TYPES$1.includes(comfyClass)) {
+    if (LORA_CHAIN_NODE_TYPES.includes(comfyClass)) {
       const originalOnNodeCreated = nodeType.prototype.onNodeCreated;
       nodeType.prototype.onNodeCreated = function() {
         originalOnNodeCreated == null ? void 0 : originalOnNodeCreated.apply(this, arguments);

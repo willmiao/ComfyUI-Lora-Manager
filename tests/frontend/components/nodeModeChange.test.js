@@ -277,5 +277,44 @@ describe("Node mode change handling", () => {
         new Set(["LoaderLora1", "LoaderLora2"])
       );
     });
+
+    it("should keep bypass state in the shell state on ECS frontends (issue #1123)", async () => {
+      // ComfyUI frontend >= 1.53 backs `mode` with a prototype accessor over
+      // `node._state.mode` and serializes from `_state`; the interceptor must
+      // delegate to it instead of shadowing it.
+      class EcsLGraphNode {
+        constructor() {
+          this._state = { mode: 0 };
+        }
+        get mode() {
+          return this._state.mode;
+        }
+        set mode(value) {
+          this._state.mode = value;
+        }
+      }
+
+      const ecsNode = new EcsLGraphNode();
+      Object.assign(ecsNode, {
+        comfyClass: "Lora Loader (LoraManager)",
+        widgets: [
+          { name: "text", value: "", options: {}, callback: null },
+          { name: "loras", value: [], options: {}, callback: null },
+        ],
+        addInput: vi.fn(),
+        graph: {},
+      });
+
+      const nodeType = { comfyClass: "Lora Loader (LoraManager)", prototype: {} };
+      await extension.beforeRegisterNodeDef(nodeType, {}, {});
+      nodeType.prototype.onNodeCreated.call(ecsNode);
+
+      // Bypass the node: the write must reach the shell state that
+      // serialization reads from.
+      ecsNode.mode = 4;
+      expect(ecsNode._state.mode).toBe(4);
+      expect(ecsNode.mode).toBe(4);
+      expect(updateConnectedTriggerWords).toHaveBeenCalledWith(ecsNode, expect.anything());
+    });
   });
 });
