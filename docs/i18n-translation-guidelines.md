@@ -365,6 +365,20 @@ in `en`, not "Enrich HF Metadata": they cover ModelScope as well, so no locale m
 an `HF` qualifier in `loras.contextMenu.enrichHfAgent` / `loras.bulkOperations.enrichHfAgent`
 (the key names keep the historical `Hf`; only the values changed).
 
+The gated/private-repository download support added `settings.huggingfaceApiKey*` (label,
+placeholder, help, and the three status strings). "Access token" renderings, and the status
+strings reuse each locale's existing `civitaiApiKey*` forms ("Configured" / "Not configured" /
+"Set up") verbatim:
+
+| Term | Rendering |
+|---|---|
+| access token | zh-CN 访问令牌 · zh-TW 存取權杖 · ja アクセストークン · ko 액세스 토큰 · fr jeton d'accès · de Access Token (Latin, like `CivitAI API Key`) · es token de acceso · ru токен доступа · he אסימון גישה |
+| gated repository | zh-CN 受限（gated）仓库 · zh-TW 受限（gated）倉庫 · ja ゲート付きリポジトリ · ko 게이트가 설정된 저장소 · fr dépôt restreint (gated) · de gated Repository (loanword) · es repositorio restringido (gated) · ru закрытый (gated) репозиторий · he מאגר מוגבל (gated) |
+
+The help text tells the user to create a **read-only** token at
+`huggingface.co/settings/tokens` and to accept the repository's terms on its page first —
+keep both clauses: a token alone does not unlock a gated repository.
+
 ### Folder sidebar feature (create / rename / delete folders, empty folders, view options)
 
 The model-root sidebar manages on-disk folders. "Folder" reuses the noun already fixed in §2
