@@ -261,6 +261,11 @@ If a cross-layer issue ever needs a live server, the sandboxed helpers live in
 ## Important Notes
 
 - ALWAYS use English for comments (per copilot-instructions.md)
+- **`.civitai.info` files are NOT LoRA Manager sidecars.** They are written by
+  third-party apps; LoRA Manager treats them as read-only and only consumes
+  them during migration/import. Never write, modify, or delete them, and never
+  propose doing so as a fix — LoRA Manager's own metadata lives in the
+  `.metadata.json` sidecar it owns.
 - **`settings.json.example` must stay minimal**: only `use_portable_settings`,
   `civitai_api_key`, and the four core `folder_paths` keys (`loras`,
   `checkpoints`, `unet`, `embeddings`). Do NOT add optional/default keys
