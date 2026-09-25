@@ -1139,3 +1139,100 @@ class TestHashBasedVersionMatching:
             )
 
         assert mock_ctx.call_args.kwargs["sha256"] == "c" * 64
+
+
+# ---------------------------------------------------------------------------
+# Hugging Face authentication (gated / private repositories)
+# ---------------------------------------------------------------------------
+
+
+class TestHuggingFaceAuth:
+    def test_auth_headers_empty_without_token(self, monkeypatch):
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: ""
+        )
+
+        assert HuggingFaceSource().auth_headers() == {}
+
+    def test_auth_headers_bearer_with_token(self, monkeypatch):
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        assert HuggingFaceSource().auth_headers() == {
+            "Authorization": "Bearer hf_secret"
+        }
+
+    @pytest.mark.asyncio
+    async def test_list_files_sends_token_to_tree_api(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_json(url, **kwargs):
+            captured.update(kwargs)
+            return 200, []
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        await HuggingFaceSource().list_files("u/r")
+
+        assert captured["headers"] == {"Authorization": "Bearer hf_secret"}
+
+    @pytest.mark.asyncio
+    async def test_model_card_sends_token(self, monkeypatch):
+        captured: dict = {}
+
+        async def fake_fetch_text(url, **kwargs):
+            captured.update(kwargs)
+            return "# card"
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_text", fake_fetch_text
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        await HuggingFaceSource().fetch_model_card("u/r")
+
+        assert captured["headers"] == {"Authorization": "Bearer hf_secret"}
+
+    @pytest.mark.asyncio
+    async def test_unauthorised_without_token_explains_how_to_fix(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 401, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: ""
+        )
+
+        with pytest.raises(ModelSourceError) as excinfo:
+            await HuggingFaceSource().list_files("u/r")
+
+        assert excinfo.value.status == 401
+        assert "access token" in str(excinfo.value)
+
+    @pytest.mark.asyncio
+    async def test_denied_with_token_points_at_repo_terms(self, monkeypatch):
+        async def fake_fetch_json(url, **_kwargs):
+            return 403, None
+
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface.fetch_json", fake_fetch_json
+        )
+        monkeypatch.setattr(
+            "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+        )
+
+        with pytest.raises(ModelSourceError) as excinfo:
+            await HuggingFaceSource().list_files("u/r")
+
+        assert excinfo.value.status == 403
+        assert "accept its terms" in str(excinfo.value)

@@ -325,6 +325,12 @@
         "civitaiApiKeyConfigured": "설정됨",
         "civitaiApiKeyNotConfigured": "설정되지 않음",
         "civitaiApiKeySet": "설정",
+        "huggingfaceApiKey": "[TODO: Translate] Hugging Face Access Token",
+        "huggingfaceApiKeyPlaceholder": "[TODO: Translate] Enter your Hugging Face access token",
+        "huggingfaceApiKeyHelp": "[TODO: Translate] Required to download from gated or private Hugging Face repositories. Create a read-only token at huggingface.co/settings/tokens, and accept the repository's terms on its page first.",
+        "huggingfaceApiKeyConfigured": "[TODO: Translate] Configured",
+        "huggingfaceApiKeyNotConfigured": "[TODO: Translate] Not configured",
+        "huggingfaceApiKeySet": "[TODO: Translate] Set up",
         "civitaiHost": {
             "label": "CivitAI 호스트",
             "help": "\"View on CivitAI\" 링크를 사용할 때 어떤 CivitAI 사이트를 열지 선택합니다.",

@@ -928,6 +928,7 @@ export class SettingsManager {
 
         // Update API key status display (do NOT pre-fill the input)
         this.updateApiKeyStatus();
+        this.updateHfApiKeyStatus();
         this.updateLlmApiKeyStatus();
 
         // ── AI Provider settings ──────────────────────────────────────
@@ -4350,6 +4351,28 @@ export class SettingsManager {
         }
     }
 
+    updateHfApiKeyStatus() {
+        const hasKey = !!(state.global.settings.huggingface_api_key_set ||
+                          state.global.settings.huggingface_api_key);
+        const statusText = document.getElementById('huggingfaceApiKeyStatusText');
+        const actionBtn = document.getElementById('huggingfaceApiKeyActionBtn');
+        if (!statusText || !actionBtn) return;
+
+        if (hasKey) {
+            statusText.classList.remove('api-key-status--unconfigured');
+            statusText.classList.add('api-key-status--configured');
+            statusText.innerHTML = '<i class="fas fa-check-circle text-success"></i> '
+                + translate('settings.huggingfaceApiKeyConfigured', {}, 'Configured');
+            actionBtn.textContent = translate('common.actions.change', {}, 'Change');
+        } else {
+            statusText.classList.remove('api-key-status--configured');
+            statusText.classList.add('api-key-status--unconfigured');
+            statusText.innerHTML = '<i class="fas fa-times-circle text-error"></i> '
+                + translate('settings.huggingfaceApiKeyNotConfigured', {}, 'Not configured');
+            actionBtn.textContent = translate('settings.huggingfaceApiKeySet', {}, 'Set up');
+        }
+    }
+
     updateLlmApiKeyStatus() {
         const hasKey = !!(state.global.settings.llm_api_key_set || state.global.settings.llm_api_key);
         const statusText = document.getElementById('llmApiKeyStatusText');
@@ -4397,9 +4420,17 @@ export class SettingsManager {
         const input = document.getElementById(inputId);
         if (input) input.value = '';
         if (!silent) {
-            if (inputId === 'civitaiApiKey') {
-                this.updateApiKeyStatus();
-            }
+            this.refreshApiKeyStatus(inputId);
+        }
+    }
+
+    refreshApiKeyStatus(inputId) {
+        if (inputId === 'civitaiApiKey') {
+            this.updateApiKeyStatus();
+        } else if (inputId === 'huggingfaceApiKey') {
+            this.updateHfApiKeyStatus();
+        } else if (inputId === 'llmApiKey') {
+            this.updateLlmApiKeyStatus();
         }
     }
 
@@ -4409,11 +4440,16 @@ export class SettingsManager {
 
         const value = input.value.trim();
 
+        const labelNames = {
+            civitai_api_key: 'CivitAI API Key',
+            huggingface_api_key: 'Hugging Face Access Token',
+            llm_api_key: 'LLM API Key',
+        };
+
         try {
             await this.saveSetting(settingsKey, value);
-            const labelName = settingsKey === 'civitai_api_key' ? 'CivitAI API Key' : 'LLM API Key';
             showToast('toast.settings.settingsUpdated',
-                { setting: labelName }, 'success');
+                { setting: labelNames[settingsKey] || 'API Key' }, 'success');
         } catch (error) {
             showToast('toast.settings.settingSaveFailed',
                 { message: error.message }, 'error');
@@ -4421,13 +4457,12 @@ export class SettingsManager {
         }
 
         // Update the in-memory flag so the UI reflects the change
-        if (settingsKey === 'civitai_api_key') {
-            state.global.settings.civitai_api_key_set = !!value;
+        const setFlagKey = `${settingsKey}_set`;
+        if (setFlagKey in state.global.settings) {
+            state.global.settings[setFlagKey] = !!value;
         }
         this.cancelEditApiKey(true, inputId);
-        if (inputId === 'civitaiApiKey') {
-            this.updateApiKeyStatus();
-        }
+        this.refreshApiKeyStatus(inputId);
     }
 
     toggleInputVisibility(button) {

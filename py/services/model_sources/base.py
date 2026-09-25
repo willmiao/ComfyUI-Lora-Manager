@@ -193,7 +193,9 @@ def is_valid_source_id(source_id: str) -> bool:
     )
 
 
-async def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
+async def fetch_text(
+    url: str, *, timeout: int = HTTP_TIMEOUT, headers: Optional[Dict[str, str]] = None
+) -> str:
     """Fetch *url* and return its body as text, or ``""`` on any failure.
 
     Network problems are expected (offline installs, rate limits, dead
@@ -202,8 +204,11 @@ async def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
     """
 
     try:
+        request_headers = {"User-Agent": USER_AGENT}
+        if headers:
+            request_headers.update(headers)
         async with aiohttp.ClientSession(
-            headers={"User-Agent": USER_AGENT},
+            headers=request_headers,
             timeout=aiohttp.ClientTimeout(total=timeout),
         ) as session:
             async with session.get(url) as resp:
@@ -216,7 +221,7 @@ async def fetch_text(url: str, *, timeout: int = HTTP_TIMEOUT) -> str:
 
 
 async def fetch_json(
-    url: str, *, timeout: int = HTTP_TIMEOUT
+    url: str, *, timeout: int = HTTP_TIMEOUT, headers: Optional[Dict[str, str]] = None
 ) -> tuple[int, Any]:
     """Fetch *url* and return ``(status, parsed_body)``.
 
@@ -227,8 +232,11 @@ async def fetch_json(
     """
 
     try:
+        request_headers = {"User-Agent": USER_AGENT}
+        if headers:
+            request_headers.update(headers)
         async with aiohttp.ClientSession(
-            headers={"User-Agent": USER_AGENT},
+            headers=request_headers,
             timeout=aiohttp.ClientTimeout(total=timeout),
         ) as session:
             async with session.get(url) as resp:
@@ -380,6 +388,15 @@ class ModelSource:
         """
 
         return []
+
+    def auth_headers(self) -> Dict[str, str]:
+        """Extra request headers this site needs for API and file downloads.
+
+        Empty by default; sites with gated/private content (Hugging Face)
+        override it to attach the user's access token when one is configured.
+        """
+
+        return {}
 
     def file_download_url(
         self, source_id: str, filename: str, revision: str = ""

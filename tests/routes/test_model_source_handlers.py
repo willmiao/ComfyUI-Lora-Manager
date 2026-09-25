@@ -1148,3 +1148,54 @@ async def test_download_hydrates_the_card_from_the_site(tmp_path, monkeypatch):
     assert scanner.update_single_model_cache.await_count == 1
     cached = scanner.update_single_model_cache.await_args.args[2]
     assert cached["model_name"] == "Krea-2-LORA"
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_sends_hf_token_as_custom_headers(
+    tmp_path, monkeypatch
+):
+    """A gated/private HF repo needs the configured token on the download."""
+    captured = _stub_download_backend(monkeypatch)
+    monkeypatch.setattr(model_source_handlers, "_save_source_metadata", AsyncMock())
+    monkeypatch.setattr(
+        "py.services.model_sources.huggingface._hf_token", lambda: "hf_secret"
+    )
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "huggingface",
+                "repo": "user/repo",
+                "filename": "f.safetensors",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 200
+    assert captured["custom_headers"] == {"Authorization": "Bearer hf_secret"}
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_sends_no_headers_without_hf_token(
+    tmp_path, monkeypatch
+):
+    captured = _stub_download_backend(monkeypatch)
+    monkeypatch.setattr(model_source_handlers, "_save_source_metadata", AsyncMock())
+    monkeypatch.setattr(
+        "py.services.model_sources.huggingface._hf_token", lambda: ""
+    )
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "huggingface",
+                "repo": "user/repo",
+                "filename": "f.safetensors",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 200
+    assert captured["custom_headers"] is None

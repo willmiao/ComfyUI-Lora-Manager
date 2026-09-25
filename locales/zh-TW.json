@@ -325,6 +325,12 @@
         "civitaiApiKeyConfigured": "已設定",
         "civitaiApiKeyNotConfigured": "未設定",
         "civitaiApiKeySet": "設定",
+        "huggingfaceApiKey": "[TODO: Translate] Hugging Face Access Token",
+        "huggingfaceApiKeyPlaceholder": "[TODO: Translate] Enter your Hugging Face access token",
+        "huggingfaceApiKeyHelp": "[TODO: Translate] Required to download from gated or private Hugging Face repositories. Create a read-only token at huggingface.co/settings/tokens, and accept the repository's terms on its page first.",
+        "huggingfaceApiKeyConfigured": "[TODO: Translate] Configured",
+        "huggingfaceApiKeyNotConfigured": "[TODO: Translate] Not configured",
+        "huggingfaceApiKeySet": "[TODO: Translate] Set up",
         "civitaiHost": {
             "label": "CivitAI 站點",
             "help": "選擇使用「在 CivitAI 中查看」時預設開啟的 CivitAI 站點。",

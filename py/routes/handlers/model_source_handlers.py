@@ -580,6 +580,10 @@ class ModelSourceHandler:
             get_settings_manager().get("download_backend", "default")
         )
 
+        # Site-specific credentials (e.g. a Hugging Face access token for
+        # gated/private repositories); empty for anonymous downloads.
+        auth_headers = source.auth_headers()
+
         if download_backend == "aria2":
             aria2 = await Aria2Downloader.get_instance()
             aid = download_id or f"{source.platform}_{repo}_{filename}"
@@ -589,6 +593,7 @@ class ModelSourceHandler:
                     save_path=dest_path,
                     download_id=aid,
                     progress_callback=progress_callback,
+                    headers=auth_headers or None,
                 )
                 if ok:
                     await _save_source_metadata(
@@ -618,6 +623,7 @@ class ModelSourceHandler:
                 use_auth=False,
                 allow_resume=True,
                 progress_callback=progress_callback,
+                custom_headers=auth_headers or None,
             )
             if success:
                 await _save_source_metadata(

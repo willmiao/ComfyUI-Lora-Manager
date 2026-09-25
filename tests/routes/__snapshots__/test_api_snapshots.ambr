@@ -27,6 +27,7 @@
     ]),
     'settings': dict({
       'civitai_api_key_set': True,
+      'huggingface_api_key_set': False,
       'language': 'en',
       'llm_api_key_set': False,
       'other_models_paths_available': False,

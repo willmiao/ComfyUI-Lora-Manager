@@ -1506,6 +1506,7 @@ class SettingsHandler:
             # Sensitive — never expose the actual value to the frontend;
             # frontend receives a boolean instead (*_set).
             "civitai_api_key",
+            "huggingface_api_key",
             "llm_api_key",
         }
     )
@@ -1564,6 +1565,8 @@ class SettingsHandler:
             # Sensitive fields: only expose a boolean indicating whether set
             raw_key = self._settings.get("civitai_api_key")
             response_data["civitai_api_key_set"] = bool(raw_key)
+            raw_hf_key = self._settings.get("huggingface_api_key")
+            response_data["huggingface_api_key_set"] = bool(raw_hf_key)
             raw_llm_key = self._settings.get("llm_api_key")
             response_data["llm_api_key_set"] = bool(raw_llm_key)
             # Derived capability flag (not persisted): whether the host exposes

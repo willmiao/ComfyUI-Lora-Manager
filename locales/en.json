@@ -325,6 +325,12 @@
     "civitaiApiKeyConfigured": "Configured",
     "civitaiApiKeyNotConfigured": "Not configured",
     "civitaiApiKeySet": "Set up",
+    "huggingfaceApiKey": "Hugging Face Access Token",
+    "huggingfaceApiKeyPlaceholder": "Enter your Hugging Face access token",
+    "huggingfaceApiKeyHelp": "Required to download from gated or private Hugging Face repositories. Create a read-only token at huggingface.co/settings/tokens, and accept the repository's terms on its page first.",
+    "huggingfaceApiKeyConfigured": "Configured",
+    "huggingfaceApiKeyNotConfigured": "Not configured",
+    "huggingfaceApiKeySet": "Set up",
     "civitaiHost": {
       "label": "CivitAI host",
       "help": "Choose which CivitAI site opens when using View on CivitAI links.",

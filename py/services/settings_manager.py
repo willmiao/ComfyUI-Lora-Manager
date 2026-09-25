@@ -67,6 +67,7 @@ DEFAULT_KEYS_CLEANUP_THRESHOLD = 10
 
 DEFAULT_SETTINGS: Dict[str, Any] = {
     "civitai_api_key": "",
+    "huggingface_api_key": "",
     "civitai_host": "civitai.com",
     "download_backend": "python",
     "aria2c_path": "",
@@ -1122,6 +1123,15 @@ class SettingsManager:
             logger.info("Found CIVITAI_API_KEY environment variable")
             # Always use the environment variable if it exists
             self.settings["civitai_api_key"] = env_api_key
+            self._save_settings()
+
+        # Hugging Face accepts either of its conventional variable names
+        env_hf_token = os.environ.get("HF_TOKEN") or os.environ.get(
+            "HUGGING_FACE_HUB_TOKEN"
+        )
+        if env_hf_token:
+            logger.info("Found HF_TOKEN environment variable")
+            self.settings["huggingface_api_key"] = env_hf_token
             self._save_settings()
 
         # LLM provider overrides

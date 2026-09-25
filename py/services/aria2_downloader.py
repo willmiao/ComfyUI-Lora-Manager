@@ -81,6 +81,14 @@ CIVITAI_DOWNLOAD_URL_PREFIXES = (
     "https://civitai.red/api/download/",
 )
 
+#: Hosts whose authenticated downloads redirect to a signed CDN URL.  aria2
+#: forwards custom headers to redirect targets, so for these hosts the
+#: redirect is resolved first and the signed URL is handed to aria2 without
+#: the credentials.
+AUTH_REDIRECT_DOWNLOAD_URL_PREFIXES = CIVITAI_DOWNLOAD_URL_PREFIXES + (
+    "https://huggingface.co/",
+)
+
 
 def _is_no_uri_available_error(message: str) -> bool:
     """Return True for aria2's "No URI available" transfer failure.
@@ -308,12 +316,12 @@ class Aria2Downloader:
 
         resolved_url = url
         request_headers = headers
-        if headers and url.startswith(CIVITAI_DOWNLOAD_URL_PREFIXES):
+        if headers and url.startswith(AUTH_REDIRECT_DOWNLOAD_URL_PREFIXES):
             resolved_url = await self._resolve_authenticated_redirect_url(url, headers)
             if resolved_url != url:
                 request_headers = None
                 logger.debug(
-                    "Resolved Civitai download %s to signed URL for aria2",
+                    "Resolved authenticated download %s to signed URL for aria2",
                     download_id,
                 )
 
@@ -341,7 +349,7 @@ class Aria2Downloader:
             ]
 
         logger.debug(
-            "Submitting aria2 download %s -> %s (auth=%s, civitai_signed=%s)",
+            "Submitting aria2 download %s -> %s (auth=%s, signed_url=%s)",
             download_id,
             save_path,
             bool(request_headers),
@@ -732,7 +740,7 @@ class Aria2Downloader:
                     if location:
                         return location
                     raise Aria2Error(
-                        "Authenticated Civitai redirect did not include a Location header"
+                        "Authenticated redirect did not include a Location header"
                     )
 
                 if response.status == 200:
@@ -740,12 +748,12 @@ class Aria2Downloader:
 
                 body = await response.text()
                 raise Aria2Error(
-                    f"Failed to resolve authenticated Civitai redirect: status={response.status} body={body[:300]}"
+                    f"Failed to resolve authenticated redirect: status={response.status} body={body[:300]}"
                 )
         except aiohttp.ClientError as exc:
             if is_ssl_cert_verify_error(exc):
                 logger.error(
-                    "SSL certificate verification failed during Civitai redirect "
+                    "SSL certificate verification failed during authenticated redirect "
                     "resolution for %s. This is usually caused by an outdated CA "
                     "certificate bundle. Recommended fixes:\n"
                     "  1. pip install --upgrade certifi\n"
@@ -753,7 +761,7 @@ class Aria2Downloader:
                     url,
                 )
             raise Aria2Error(
-                f"Failed to resolve authenticated Civitai redirect: {exc}"
+                f"Failed to resolve authenticated redirect: {exc}"
             ) from exc
 
     async def _ensure_process(self) -> None:

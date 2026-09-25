@@ -68,6 +68,43 @@
         </div>
     </div>
 
+    <div class="setting-item api-key-item">
+        <div class="setting-row">
+            <div class="setting-info">
+                <label>{{ t('settings.huggingfaceApiKey') }}</label>
+                <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.huggingfaceApiKeyHelp') }}"></i>
+            </div>
+            <div class="setting-control">
+                <!-- Status display (shown when not editing) -->
+                <div id="huggingfaceApiKeyStatus" class="api-key-status">
+                    <span id="huggingfaceApiKeyStatusText" class="api-key-status-text api-key-status--unconfigured">
+                        <i class="fas fa-times-circle text-error"></i>
+                        {{ t('settings.huggingfaceApiKeyNotConfigured') }}
+                    </span>
+                    <button type="button" class="secondary-btn" id="huggingfaceApiKeyActionBtn" onclick="settingsManager.editApiKey('huggingface_api_key', 'huggingfaceApiKey')">
+                        {{ t('settings.huggingfaceApiKeySet') }}
+                    </button>
+                </div>
+                <!-- Inline edit view (shown when editing) -->
+                <div id="huggingfaceApiKeyEdit" class="api-key-edit is-hidden">
+                    <div class="api-key-input">
+                        <input type="text"
+                            id="huggingfaceApiKey"
+                            class="api-key-masked"
+                            placeholder="{{ t('settings.huggingfaceApiKeyPlaceholder') }}"
+                            autocomplete="off"
+                            data-mask="css" />
+                        <button type="button" class="toggle-visibility">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <button type="button" class="primary-btn" onclick="settingsManager.saveApiKey('huggingface_api_key', 'huggingfaceApiKey')">{{ t('common.actions.save') }}</button>
+                    <button type="button" class="secondary-btn" onclick="settingsManager.cancelEditApiKey(true, 'huggingfaceApiKey')">{{ t('common.actions.cancel') }}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     {{ sm.setting_select('civitaiHost', 'civitai_host', 'settings.civitaiHost.label', [
         ('civitai.com', 'settings.civitaiHost.options.com'),
         ('civitai.red', 'settings.civitaiHost.options.red'),

@@ -27,6 +27,18 @@ _STRICT_URL_PATTERN = re.compile(
 )
 
 
+def _hf_token() -> str:
+    """Return the configured Hugging Face access token, or ``""``."""
+
+    try:
+        from ..settings_manager import get_settings_manager
+
+        token = get_settings_manager().get("huggingface_api_key", "")
+    except Exception:  # pragma: no cover - settings must never break downloads
+        return ""
+    return token.strip() if isinstance(token, str) else ""
+
+
 class HuggingFaceSource(ModelSource):
     """Hugging Face Hub (``huggingface.co``)."""
 
@@ -45,12 +57,20 @@ class HuggingFaceSource(ModelSource):
     def asset_base_url(self, source_id: str, revision: str = "") -> str:
         return f"https://huggingface.co/{source_id}/resolve/{self.resolve_revision(revision)}"
 
+    def auth_headers(self) -> dict[str, str]:
+        """Bearer header for gated/private repositories, when a token is set."""
+
+        token = _hf_token()
+        return {"Authorization": f"Bearer {token}"} if token else {}
+
     async def fetch_model_card(self, source_id: str) -> str:
         """Fetch ``README.md`` from Hugging Face (tries ``main``, then ``master``)."""
 
+        headers = self.auth_headers()
         for branch in ("main", "master"):
             text = await fetch_text(
-                f"https://huggingface.co/{source_id}/raw/{branch}/README.md"
+                f"https://huggingface.co/{source_id}/raw/{branch}/README.md",
+                headers=headers,
             )
             if text:
                 return text
@@ -67,11 +87,26 @@ class HuggingFaceSource(ModelSource):
 
         revision = self.resolve_revision(revision)
         status, payload = await fetch_json(
-            f"https://huggingface.co/api/models/{source_id}/tree/{revision}"
+            f"https://huggingface.co/api/models/{source_id}/tree/{revision}",
+            headers=self.auth_headers(),
         )
 
         if status == 404:
             raise ModelSourceError(f"Repository '{source_id}' not found", status=404)
+        if status in (401, 403):
+            if _hf_token():
+                raise ModelSourceError(
+                    f"Access to '{source_id}' was denied (HTTP {status}). For a gated "
+                    "repository you must accept its terms on the Hugging Face page, "
+                    "and the configured token needs read permission for it.",
+                    status=403,
+                )
+            raise ModelSourceError(
+                f"'{source_id}' requires a Hugging Face access token (gated or "
+                "private repository). Configure one in Settings → Hugging Face "
+                "Access Token, and accept the repository's terms on its page.",
+                status=401,
+            )
         if status != 200 or not isinstance(payload, list):
             raise ModelSourceError(
                 f"Hugging Face API error while listing '{source_id}' (HTTP {status})"

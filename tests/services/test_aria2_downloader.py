@@ -1281,3 +1281,64 @@ async def test_download_file_does_not_refresh_url_for_other_errors(
     assert "Download aborted" in result
     assert add_uri_count["n"] == 1
     assert downloader._transfers == {}
+
+
+@pytest.mark.asyncio
+async def test_download_file_preresolves_huggingface_redirect_and_strips_token(
+    tmp_path, monkeypatch
+):
+    """aria2 forwards custom headers to redirect targets, so the HF Bearer
+    token must never leave huggingface.co: the /resolve/ redirect is resolved
+    first and the signed CDN URL is handed to aria2 without headers."""
+    downloader = Aria2Downloader()
+    downloader._rpc_url = "http://127.0.0.1/jsonrpc"
+    downloader._rpc_secret = "secret"
+
+    save_path = tmp_path / "downloads" / "model.safetensors"
+    rpc_calls = []
+    statuses = iter(
+        [
+            {
+                "gid": "gid-1",
+                "status": "complete",
+                "completedLength": "10",
+                "totalLength": "10",
+                "downloadSpeed": "0",
+                "files": [{"path": str(save_path)}],
+            },
+        ]
+    )
+
+    async def fake_rpc_call(method, params, **_kwargs):
+        rpc_calls.append((method, params))
+        if method == "aria2.addUri":
+            return "gid-1"
+        if method == "aria2.tellStatus":
+            return next(statuses)
+        raise AssertionError(f"Unexpected RPC method: {method}")
+
+    monkeypatch.setattr(downloader, "_ensure_process", AsyncMock())
+    monkeypatch.setattr(
+        downloader,
+        "_resolve_authenticated_redirect_url",
+        AsyncMock(
+            return_value="https://cdn-lfs.huggingface.co/signed/model.safetensors?sig=abc"
+        ),
+    )
+    monkeypatch.setattr(downloader, "_rpc_call", fake_rpc_call)
+    monkeypatch.setattr("py.services.aria2_downloader.asyncio.sleep", AsyncMock())
+
+    success, result = await downloader.download_file(
+        "https://huggingface.co/user/repo/resolve/main/model.safetensors",
+        str(save_path),
+        download_id="download-1",
+        headers={"Authorization": "Bearer hf_secret"},
+    )
+
+    assert success is True
+    assert result == str(save_path)
+    assert rpc_calls[0][0] == "aria2.addUri"
+    assert rpc_calls[0][1][0] == [
+        "https://cdn-lfs.huggingface.co/signed/model.safetensors?sig=abc"
+    ]
+    assert "header" not in rpc_calls[0][1][1]
