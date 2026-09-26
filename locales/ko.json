@@ -810,7 +810,14 @@
             "migrationDeferred": "기존 사이드카 파일은 이동되지 않았습니다. 나중에 설정 → 라이브러리 → 사이드카 파일 저장에서 이동할 수 있습니다.",
             "confirmToCentralized": "저장 모드가 변경되었지만 기존 .metadata.json 사이드카 파일과 미리보기 이미지는 자동으로 이동되지 않습니다. 지금 중앙 집중식 저장 디렉터리로 이동할까요? '지금 사이드카 파일 이동' 버튼으로 나중에 실행할 수도 있습니다.",
             "confirmToAlongside": "저장 모드가 변경되었지만 기존 .metadata.json 사이드카 파일과 미리보기 이미지는 자동으로 이동되지 않습니다. 지금 각 모델 파일 옆으로 되돌릴까요? '지금 사이드카 파일 이동' 버튼으로 나중에 실행할 수도 있습니다.",
-            "confirmRelocateRoot": "중앙 집중식 저장 디렉터리가 변경되었지만 기존 사이드카 파일과 미리보기 이미지는 아직 이전 디렉터리에 있습니다. 지금 새 디렉터리로 이동할까요?"
+            "confirmRelocateRoot": "중앙 집중식 저장 디렉터리가 변경되었지만 기존 사이드카 파일과 미리보기 이미지는 아직 이전 디렉터리에 있습니다. 지금 새 디렉터리로 이동할까요?",
+            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
+            "openFolderButton": "[TODO: Translate] Open Folder",
+            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
+            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
+            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
+            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
         },
         "proxySettings": {
             "enableProxy": "앱 수준 프록시 활성화",
@@ -1669,7 +1676,14 @@
             "titleToCentralized": "사이드카 파일을 중앙 집중식 저장으로 이동할까요?",
             "titleToAlongside": "사이드카 파일을 모델 파일 옆으로 되돌릴까요?",
             "confirmButton": "지금 이동",
-            "titleRelocateRoot": "사이드카 파일을 새 저장 디렉터리로 이동할까요?"
+            "titleRelocateRoot": "사이드카 파일을 새 저장 디렉터리로 이동할까요?",
+            "destination": "[TODO: Translate] Destination: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "[TODO: Translate] Sidecar migration completed",
+            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
+            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+            "location": "[TODO: Translate] Storage location: {path}"
         },
         "bulkAddTags": {
             "title": "여러 모델에 태그 추가",

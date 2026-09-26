@@ -3404,7 +3404,69 @@ export class SettingsManager {
             pathInput.value = state.global.settings.sidecar_storage_path || '';
         }
 
+        this.renderSidecarStorageInfo();
         this.updateSidecarStorageVisibility();
+    }
+
+    // Show the backend-resolved storage root (covers the default location,
+    // which the path input leaves blank) plus the portable-mode repo warning.
+    renderSidecarStorageInfo() {
+        const resolvedEl = document.getElementById('sidecarStorageResolvedPath');
+        if (resolvedEl) {
+            resolvedEl.textContent = state.global.settings.sidecar_storage_root || '';
+        }
+        const warningEl = document.getElementById('sidecarStorageRepoWarning');
+        if (warningEl) {
+            warningEl.style.display = state.global.settings.sidecar_storage_root_in_repo
+                ? 'block'
+                : 'none';
+        }
+    }
+
+    // Re-pull just the derived sidecar fields after a path save: the resolved
+    // root is computed server-side (default location, absolutization).
+    async refreshSidecarStorageInfo() {
+        try {
+            const response = await fetch('/api/lm/settings');
+            const data = await response.json();
+            if (data.success && data.settings) {
+                state.global.settings.sidecar_storage_root = data.settings.sidecar_storage_root;
+                state.global.settings.sidecar_storage_root_is_default = data.settings.sidecar_storage_root_is_default;
+                state.global.settings.sidecar_storage_root_in_repo = data.settings.sidecar_storage_root_in_repo;
+            }
+        } catch (error) {
+            console.warn('Failed to refresh sidecar storage info:', error);
+        }
+        this.renderSidecarStorageInfo();
+    }
+
+    async openSidecarStorageLocation() {
+        try {
+            const response = await fetch('/api/lm/sidecars/open-location', {
+                method: 'POST'
+            });
+
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.mode === 'clipboard' && data.path) {
+                try {
+                    await navigator.clipboard.writeText(data.path);
+                    showToast('settings.sidecarStorage.openLocationCopied', { path: data.path }, 'success');
+                } catch (clipboardErr) {
+                    console.warn('Clipboard API not available:', clipboardErr);
+                    showToast('settings.sidecarStorage.openLocationClipboardFallback', { path: data.path }, 'info');
+                }
+            } else {
+                showToast('settings.sidecarStorage.openLocationSuccess', {}, 'success');
+            }
+        } catch (error) {
+            console.error('Failed to open sidecar storage location:', error);
+            showToast('settings.sidecarStorage.openLocationFailed', {}, 'error');
+        }
     }
 
     updateSidecarStorageVisibility() {
@@ -3452,6 +3514,10 @@ export class SettingsManager {
 
         const newPath = pathInput.value.trim();
         this._loadedSidecarStoragePath = newPath;
+
+        // The resolved root is server-side; refresh before any relocate
+        // confirm so the dialog can name the real destination.
+        await this.refreshSidecarStorageInfo();
 
         const centralized = state.global.settings.sidecar_storage_mode === 'centralized';
         if (centralized && previousPath && previousPath !== newPath) {
@@ -3501,6 +3567,20 @@ export class SettingsManager {
                 : isToCentralized
                     ? translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.')
                     : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.');
+        }
+
+        // Name the destination so users know where the files are going.
+        const destinationElement = modalElement.querySelector('[data-role="destination"]');
+        if (destinationElement) {
+            const resolvedRoot = state.global.settings.sidecar_storage_root || '';
+            if (!isToCentralized && !isRelocate || !resolvedRoot) {
+                destinationElement.style.display = 'none';
+            } else {
+                destinationElement.textContent = translate(
+                    'modals.sidecarMigrationConfirm.destination', { path: resolvedRoot }, `Destination: ${resolvedRoot}`
+                );
+                destinationElement.style.display = 'block';
+            }
         }
 
         const confirmButton = modalElement.querySelector('[data-action="confirm-sidecar-migration"]');
@@ -3586,10 +3666,7 @@ export class SettingsManager {
             }
 
             state.loadingManager?.hide();
-            showToast('settings.sidecarStorage.migrateSuccess', {}, 'success');
-
-            // Reload so cards pick up metadata/preview paths from the new location
-            resetAndReload(true);
+            this.showSidecarMigrationResult(data);
         } catch (error) {
             console.error('Error migrating sidecars:', error);
             state.loadingManager?.hide();
@@ -3600,6 +3677,108 @@ export class SettingsManager {
                 migrateBtn.textContent = translate('settings.sidecarStorage.migrateButton', {}, 'Migrate Sidecars Now');
             }
         }
+    }
+
+    // Post-migration summary: counters + storage location, with an "open
+    // folder" shortcut. Closing reloads so cards pick up the new paths.
+    showSidecarMigrationResult(result) {
+        const modalElement = document.getElementById('sidecarMigrationResultModal');
+        if (!modalElement) {
+            showToast('settings.sidecarStorage.migrateSuccess', {}, 'success');
+            resetAndReload(true);
+            return;
+        }
+
+        const errorCount = result.error_count || 0;
+
+        const titleElement = modalElement.querySelector('[data-role="title"]');
+        if (titleElement) {
+            titleElement.textContent = errorCount
+                ? translate('modals.sidecarMigrationResult.titleWithErrors', { count: errorCount }, `Sidecar migration completed with ${errorCount} error(s)`)
+                : translate('modals.sidecarMigrationResult.title', {}, 'Sidecar migration completed');
+        }
+
+        const messageElement = modalElement.querySelector('[data-role="message"]');
+        if (messageElement) {
+            messageElement.textContent = translate(
+                'modals.sidecarMigrationResult.summary',
+                {
+                    moved: result.moved || 0,
+                    models: result.models_moved || 0,
+                    skipped: result.skipped || 0,
+                    conflicts: result.conflicts || 0,
+                },
+                `Moved ${result.moved || 0} files for ${result.models_moved || 0} models. Skipped: ${result.skipped || 0}, conflicts resolved: ${result.conflicts || 0}.`
+            );
+        }
+
+        const showLocation = result.direction !== 'to_alongside' && !!result.sidecar_root;
+
+        const destinationElement = modalElement.querySelector('[data-role="destination"]');
+        if (destinationElement) {
+            if (showLocation) {
+                destinationElement.textContent = translate(
+                    'modals.sidecarMigrationResult.location',
+                    { path: result.sidecar_root },
+                    `Storage location: ${result.sidecar_root}`
+                );
+                destinationElement.style.display = 'block';
+            } else {
+                destinationElement.style.display = 'none';
+            }
+        }
+
+        const openButton = modalElement.querySelector('[data-action="open-sidecar-location"]');
+        const closeButton = modalElement.querySelector('[data-action="close-sidecar-result"]');
+        if (!closeButton) {
+            resetAndReload(true);
+            return;
+        }
+
+        if (openButton) {
+            openButton.style.display = showLocation ? '' : 'none';
+        }
+
+        const cleanup = () => {
+            closeButton.removeEventListener('click', handleClose);
+            if (openButton) {
+                openButton.removeEventListener('click', handleOpen);
+            }
+            document.removeEventListener('keydown', handleEscape, true);
+        };
+
+        const handleClose = (event) => {
+            event.preventDefault();
+            cleanup();
+            modalElement.classList.remove('show');
+            // Reload so cards pick up metadata/preview paths from the new location
+            resetAndReload(true);
+        };
+
+        // Opening the folder keeps the result modal open; the reload happens
+        // when the user closes it.
+        const handleOpen = (event) => {
+            event.preventDefault();
+            this.openSidecarStorageLocation();
+        };
+
+        // Capture phase + stopPropagation so ESC never reaches the settings
+        // modal's own ESC handler underneath.
+        const handleEscape = (event) => {
+            if (event.key === 'Escape') {
+                event.stopPropagation();
+                handleClose(event);
+            }
+        };
+
+        closeButton.addEventListener('click', handleClose);
+        if (openButton) {
+            openButton.addEventListener('click', handleOpen);
+        }
+        document.addEventListener('keydown', handleEscape, true);
+
+        modalElement.classList.add('show');
+        closeButton.focus();
     }
 
     async loadMetadataArchiveSettings() {

@@ -810,7 +810,14 @@
             "migrationDeferred": "Vorhandene Sidecar-Dateien wurden nicht verschoben. Sie können sie später unter Einstellungen → Bibliothek → Sidecar-Speicherung verschieben.",
             "confirmToCentralized": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt in das zentrale Speicherverzeichnis verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
             "confirmToAlongside": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt wieder neben ihre Modelldateien verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
-            "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?"
+            "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?",
+            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
+            "openFolderButton": "[TODO: Translate] Open Folder",
+            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
+            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
+            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
+            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
         },
         "proxySettings": {
             "enableProxy": "App-Proxy aktivieren",
@@ -1669,7 +1676,14 @@
             "titleToCentralized": "Sidecar-Dateien in die zentrale Speicherung verschieben?",
             "titleToAlongside": "Sidecar-Dateien zurück neben die Modelldateien verschieben?",
             "confirmButton": "Jetzt verschieben",
-            "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?"
+            "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?",
+            "destination": "[TODO: Translate] Destination: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "[TODO: Translate] Sidecar migration completed",
+            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
+            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+            "location": "[TODO: Translate] Storage location: {path}"
         },
         "bulkAddTags": {
             "title": "Tags zu mehreren Modellen hinzufügen",
