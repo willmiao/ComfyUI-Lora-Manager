@@ -11,6 +11,28 @@ This document defines the complete schema for `.metadata.json` files used by Lor
 
 ---
 
+## Storage Location (Alongside vs Centralized)
+
+By default, `.metadata.json` sidecars and preview images live **alongside** their model files. An optional centralized mode stores them under a single root directory instead. Two settings control this (Settings → Library → Sidecar Storage):
+
+| Setting | Values | Default |
+|---------|--------|---------|
+| `sidecar_storage_mode` | `"alongside"` \| `"centralized"` | `"alongside"` |
+| `sidecar_storage_path` | Absolute path string; empty = `<settings dir>/sidecars` | `""` |
+
+In centralized mode, sidecars and previews mirror the library-relative directory structure:
+
+```
+<sidecar_root>/<library>/<root_basename>/<rel_dir>/<name>.metadata.json
+```
+
+- `<library>` is the active library name, `<root_basename>` the basename of the model root containing the file, and `<rel_dir>` the model's directory relative to that root. Each component is sanitized to filesystem-safe characters.
+- `.civitai.info` files always stay next to the model file, in both modes.
+- Changing the mode does **not** move existing files automatically — run the migration (`POST /api/lm/sidecars/migrate` with `{"direction": "to_centralized" | "to_alongside"}`, or the "Migrate Sidecars Now" button in settings).
+- All sidecar/preview path derivation goes through the helpers in `py/utils/sidecar_paths.py`; never construct paths inline.
+
+---
+
 ## Base Fields (All Model Types)
 
 These fields are present in all model metadata files.

@@ -179,6 +179,9 @@ async def download_preview(
 
     base_name = os.path.splitext(os.path.basename(model_path))[0]
     preview_dir = get_preview_dir(model_path)
+    # Centralized mirrors may not exist yet (unlike the model's own directory
+    # in alongside mode).
+    os.makedirs(preview_dir, exist_ok=True)
     output_path = os.path.join(preview_dir, base_name + ".webp")
 
     downloader = await get_downloader()

@@ -891,6 +891,17 @@ class Config:
         if self.recipes_path:
             preview_roots.update(self._expand_preview_root(self.recipes_path))
 
+        # Centralized sidecar storage holds preview assets outside the model
+        # roots; allow serving them when the mode is active.
+        try:
+            from .utils.sidecar_paths import get_sidecar_root  # Local import to avoid circular dependency
+
+            sidecar_root = get_sidecar_root()
+        except Exception:  # pragma: no cover - defensive fallback
+            sidecar_root = ""
+        if sidecar_root:
+            preview_roots.update(self._expand_preview_root(sidecar_root))
+
         for target, link in self._path_mappings.items():
             preview_roots.update(self._expand_preview_root(target))
             preview_roots.update(self._expand_preview_root(link))
@@ -1492,6 +1503,15 @@ class Config:
         a full application restart.
         """
         self.other_roots = self._init_other_paths()
+        self._rebuild_preview_roots()
+
+    def refresh_preview_roots(self) -> None:
+        """Rebuild the preview allowlist after path-affecting settings change.
+
+        Called when ``sidecar_storage_mode`` / ``sidecar_storage_path`` are
+        updated so centralized preview assets become servable (or stop being
+        servable) without a restart.
+        """
         self._rebuild_preview_roots()
 
     def get_other_models_availability(self) -> Dict[str, Any]:

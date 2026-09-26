@@ -32,6 +32,7 @@ from .handlers.misc_handlers import (
     NodeRegistry,
     NodeRegistryHandler,
     SettingsHandler,
+    SidecarMigrationHandler,
     SupportersHandler,
     TrainedWordsHandler,
     UsageStatsHandler,
@@ -142,6 +143,7 @@ class MiscRoutes:
         model_source_handler = ModelSourceHandler()
         agent_handler = AgentHandler()
         download_routing = DownloadRoutingHandler()
+        sidecar_migration = SidecarMigrationHandler()
 
         return self._handler_set_factory(
             health=health,
@@ -164,6 +166,7 @@ class MiscRoutes:
             model_source_handler=model_source_handler,
             agent_handler=agent_handler,
             download_routing=download_routing,
+            sidecar_migration=sidecar_migration,
         )
 
 

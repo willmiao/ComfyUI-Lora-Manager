@@ -113,6 +113,13 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
     RouteDefinition(
         "POST", "/api/lm/download/routing", "get_download_routing"
     ),
+    # Sidecar storage layout migration (GET supported for the extension)
+    RouteDefinition(
+        "POST", "/api/lm/sidecars/migrate", "migrate_sidecars"
+    ),
+    RouteDefinition(
+        "GET", "/api/lm/sidecars/migrate", "migrate_sidecars"
+    ),
     RouteDefinition(
         "POST", "/api/lm/download-model-source", "download_model_source"
     ),

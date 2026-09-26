@@ -266,6 +266,13 @@ If a cross-layer issue ever needs a live server, the sandboxed helpers live in
   them during migration/import. Never write, modify, or delete them, and never
   propose doing so as a fix — LoRA Manager's own metadata lives in the
   `.metadata.json` sidecar it owns.
+- **Sidecar/preview path derivation must go through `py/utils/sidecar_paths.py`**
+  helpers (never inline `splitext + ".metadata.json"`): the centralized storage
+  mode (`sidecar_storage_mode` / `sidecar_storage_path` settings) relocates
+  `.metadata.json` files and preview images under a mirror tree, so any
+  hand-built path is wrong in that mode. `.civitai.info` stays co-located with
+  the model file in both modes. The new settings keys live only in
+  `DEFAULT_SETTINGS` — `settings.json.example` stays minimal (see below).
 - **`settings.json.example` must stay minimal**: only `use_portable_settings`,
   `civitai_api_key`, and the four core `folder_paths` keys (`loras`,
   `checkpoints`, `unet`, `embeddings`). Do NOT add optional/default keys

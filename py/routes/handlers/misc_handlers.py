@@ -45,6 +45,8 @@ from ...services.llm_service import (
     get_provider_model_ids,
 )
 from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStatus
+from ...services.use_cases.sidecar_migration_use_case import SidecarMigrationUseCase
+from ...services.websocket_progress_callback import WebSocketBroadcastCallback
 from ...utils.models import BaseModelMetadata
 from ...utils.constants import (
     CIVITAI_USER_MODEL_TYPES,
@@ -4136,6 +4138,57 @@ class NodeRegistryHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+class SidecarMigrationHandler:
+    """Migrate sidecar metadata and previews between storage layouts."""
+
+    _VALID_DIRECTIONS = ("to_centralized", "to_alongside")
+
+    def __init__(
+        self,
+        *,
+        use_case_factory: Callable[[], SidecarMigrationUseCase] = SidecarMigrationUseCase,
+        progress_callback_factory: Callable[[], Any] = WebSocketBroadcastCallback,
+    ) -> None:
+        self._use_case_factory = use_case_factory
+        self._progress_callback_factory = progress_callback_factory
+
+    async def migrate_sidecars(self, request: web.Request) -> web.Response:
+        """Run a sidecar migration; accepts POST JSON or GET query params."""
+        try:
+            if request.method == "GET":
+                params: Mapping[str, Any] = request.query
+            else:
+                try:
+                    params = await request.json()
+                except Exception:  # empty/invalid body: fall back to query
+                    params = request.query
+
+            direction = str(params.get("direction") or "").strip()
+            if direction not in self._VALID_DIRECTIONS:
+                return web.json_response(
+                    {
+                        "success": False,
+                        "error": "direction must be 'to_centralized' or 'to_alongside'",
+                    },
+                    status=400,
+                )
+
+            force = params.get("force") in (True, 1, "true", "1")
+
+            use_case = self._use_case_factory()
+            progress_cb = self._progress_callback_factory()
+            result = await use_case.execute_with_error_handling(
+                direction=direction,
+                progress_cb=progress_cb,
+                force=force,
+            )
+            status = 200 if result.get("success") else 400
+            return web.json_response(result, status=status)
+        except Exception as exc:
+            logger.error("Sidecar migration failed: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+
 class MiscHandlerSet:
     """Aggregate handlers into a lookup compatible with the registrar."""
 
@@ -4162,6 +4215,7 @@ class MiscHandlerSet:
         model_source_handler: Any = None,
         agent_handler: Any = None,
         download_routing: Any = None,
+        sidecar_migration: Any = None,
     ) -> None:
         self.health = health
         self.settings = settings
@@ -4183,6 +4237,7 @@ class MiscHandlerSet:
         self.model_source_handler = model_source_handler
         self.agent_handler = agent_handler
         self.download_routing = download_routing
+        self.sidecar_migration = sidecar_migration
 
     def to_route_mapping(
         self,
@@ -4249,6 +4304,8 @@ class MiscHandlerSet:
             "cancel_agent_skill": self.agent_handler.cancel_agent_skill,
             # Download routing handler
             "get_download_routing": self.download_routing.get_download_routing,
+            # Sidecar migration handler
+            "migrate_sidecars": self.sidecar_migration.migrate_sidecars,
             # Base model handlers
             "get_base_models": self.base_model.get_base_models,
             "refresh_base_models": self.base_model.refresh_base_models,

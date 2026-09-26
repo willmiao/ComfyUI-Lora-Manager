@@ -2465,6 +2465,10 @@ class DownloadManager:
             # Download preview image if available
             images = version_info.get("images", [])
             if images:
+                # Centralized preview mirrors may not exist yet (unlike the
+                # model's own directory in alongside mode).
+                os.makedirs(get_preview_dir(save_path), exist_ok=True)
+
                 if progress_callback:
                     await progress_callback(
                         1
@@ -3067,10 +3071,12 @@ class DownloadManager:
 
         first_target = targets[0]
         if preview_path != first_target:
+            os.makedirs(os.path.dirname(first_target), exist_ok=True)
             os.replace(preview_path, first_target)
         source_path = first_target
 
         for target in targets[1:]:
+            os.makedirs(os.path.dirname(target), exist_ok=True)
             shutil.copyfile(source_path, target)
 
         return targets

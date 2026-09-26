@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 
 from ..utils.utils import calculate_relative_path_for_model, remove_empty_dirs
 from ..utils.constants import AUTO_ORGANIZE_BATCH_SIZE, MODEL_FILE_EXTENSIONS
+from ..utils.sidecar_paths import is_centralized, resolve_centralized_dir_for_dir
 from ..services.settings_manager import get_settings_manager
 from ..services.model_lifecycle_service import _require_path_in_library_roots
 from ..services.pending_delete_service import PENDING_DELETE_DIR_NAME
@@ -630,6 +631,21 @@ class ModelMoveService:
                 }
 
             shutil.rmtree(absolute_path)
+
+            # Centralized mode: prune the folder's mirror subtree when it no
+            # longer holds any sidecar files (per-model deletes already
+            # removed their sidecars, so only empty directories are expected;
+            # a non-empty mirror keeps its orphan sidecars).
+            if is_centralized():
+                mirror_dir = resolve_centralized_dir_for_dir(absolute_path)
+                if mirror_dir and os.path.isdir(mirror_dir):
+                    for root, _dirs, files in os.walk(mirror_dir, topdown=False):
+                        if files:
+                            continue
+                        try:
+                            os.rmdir(root)
+                        except OSError:  # pragma: no cover - best-effort cleanup
+                            pass
 
             await self._forget_folder(relative_folder)
 

@@ -64,6 +64,9 @@ class PreviewAssetService:
 
         base_name = os.path.splitext(os.path.splitext(os.path.basename(metadata_path))[0])[0]
         preview_dir = os.path.dirname(metadata_path)
+        # Centralized mirrors may not exist yet (unlike the model's own
+        # directory in alongside mode).
+        os.makedirs(preview_dir, exist_ok=True)
         is_video = first_preview.get("type") == "video"
         preview_url = first_preview.get("url")
 
@@ -161,6 +164,9 @@ class PreviewAssetService:
 
         base_name = os.path.splitext(os.path.basename(model_path))[0]
         folder = get_preview_dir(model_path)
+        # Centralized mirrors may not exist yet (unlike the model's own
+        # directory in alongside mode).
+        os.makedirs(folder, exist_ok=True)
 
         extension, optimized_data = await self._convert_preview(
             preview_data, content_type, original_filename

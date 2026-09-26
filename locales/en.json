@@ -383,6 +383,7 @@
       "exampleImages": "Example Images",
       "autoOrganize": "Auto-organize",
       "metadata": "Metadata",
+      "sidecarStorage": "Sidecar Storage",
       "proxySettings": "Proxy Settings"
     },
     "nav": {
@@ -788,6 +789,27 @@
       "providerOrderHelp": "CivitAI API is always tried first. Choose the order of the remaining providers when looking up metadata.",
       "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",
       "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
+    },
+    "sidecarStorage": {
+      "mode": "Sidecar Storage Mode",
+      "modeHelp": "Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+      "modeOptions": {
+        "alongside": "Alongside model files (default)",
+        "centralized": "Centralized storage"
+      },
+      "path": "Centralized Storage Path",
+      "pathHelp": "Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
+      "pathPlaceholder": "Empty = <settings dir>/sidecars",
+      "management": "Sidecar Migration",
+      "managementHelp": "Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
+      "migrateButton": "Migrate Sidecars Now",
+      "migratingButton": "Migrating...",
+      "migrating": "Migrating sidecars...",
+      "migrateSuccess": "Sidecar migration completed successfully",
+      "migrateFailed": "Sidecar migration failed: {message}",
+      "migrationDeferred": "Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
+      "confirmToCentralized": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
+      "confirmToAlongside": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button."
     },
     "proxySettings": {
       "enableProxy": "Enable App-level Proxy",
@@ -1636,6 +1658,11 @@
       "titleApply": "Apply filename template to library?",
       "titleRevert": "Restore original filenames?",
       "revertButton": "Restore Original Filenames"
+    },
+    "sidecarMigrationConfirm": {
+      "titleToCentralized": "Move sidecars to centralized storage?",
+      "titleToAlongside": "Move sidecars back next to model files?",
+      "confirmButton": "Migrate Now"
     },
     "bulkAddTags": {
       "title": "Add Tags to Multiple Models",

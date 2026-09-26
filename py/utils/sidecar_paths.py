@@ -64,15 +64,8 @@ def is_centralized() -> bool:
     return get_storage_mode() == STORAGE_MODE_CENTRALIZED and bool(get_sidecar_root())
 
 
-def get_sidecar_root() -> str:
-    """Return the absolute root directory for centralized sidecar storage.
-
-    Empty string when centralized storage is not usable (mode alongside or an
-    unresolvable configured path).
-    """
-
-    if get_storage_mode() != STORAGE_MODE_CENTRALIZED:
-        return ""
+def _resolve_root_from_settings() -> str:
+    """Resolve the configured/default centralized root, ignoring the active mode."""
 
     configured = _get_settings_value("sidecar_storage_path", "")
     if configured and isinstance(configured, str):
@@ -88,6 +81,31 @@ def get_sidecar_root() -> str:
     except Exception as exc:  # pragma: no cover - defensive fallback
         logger.warning("sidecar_paths: cannot resolve default sidecar root: %s", exc)
         return ""
+
+
+def get_sidecar_root() -> str:
+    """Return the absolute root directory for centralized sidecar storage.
+
+    Empty string when centralized storage is not usable (mode alongside or an
+    unresolvable configured path).
+    """
+
+    if get_storage_mode() != STORAGE_MODE_CENTRALIZED:
+        return ""
+
+    return _resolve_root_from_settings()
+
+
+def get_configured_sidecar_root() -> str:
+    """Return the centralized sidecar root regardless of the active mode.
+
+    Unlike :func:`get_sidecar_root`, this resolves the configured
+    ``sidecar_storage_path`` (or the ``<settings_dir>/sidecars`` default) even
+    when the storage mode is ``alongside``. Migration tooling needs both
+    layouts at once and must not depend on which mode is currently active.
+    """
+
+    return _resolve_root_from_settings()
 
 
 def sanitize_path_component(name: str) -> str:
@@ -137,19 +155,38 @@ def resolve_centralized_dir(model_path: str) -> Optional[str]:
     or the path is not under any configured model root.
     """
 
-    root = get_sidecar_root()
+    return resolve_centralized_dir_for_dir(
+        os.path.dirname(_normalize_for_match(model_path))
+    )
+
+
+def resolve_centralized_dir_for_dir(
+    model_dir: str, *, sidecar_root: Optional[str] = None
+) -> Optional[str]:
+    """Return the centralized mirror directory for a model *directory*.
+
+    Same layout as :func:`resolve_centralized_dir`, but accepts the directory
+    itself. Used by folder-level operations (folder rename, mirror-tree walks)
+    that have no model file path to derive from. Passing a configured model
+    root returns the mirror base for that root.
+
+    ``sidecar_root`` overrides the root lookup; pass
+    :func:`get_configured_sidecar_root` to resolve mirror paths independently
+    of the active storage mode (migration tooling).
+    """
+
+    root = sidecar_root if sidecar_root is not None else get_sidecar_root()
     if not root:
         return None
 
-    target = _normalize_for_match(model_path)
-    model_dir = os.path.dirname(target)
+    normalized_dir = _normalize_for_match(model_dir)
 
     best_root: Optional[str] = None
     for candidate in _iter_model_roots():
         if not candidate:
             continue
         normalized = _normalize_for_match(candidate)
-        if model_dir == normalized or model_dir.startswith(normalized + os.sep):
+        if normalized_dir == normalized or normalized_dir.startswith(normalized + os.sep):
             if best_root is None or len(normalized) > len(best_root):
                 best_root = normalized
 
@@ -163,7 +200,7 @@ def resolve_centralized_dir(model_path: str) -> Optional[str]:
     except Exception:  # pragma: no cover - defensive fallback
         library = "default"
 
-    rel_dir = os.path.relpath(model_dir, best_root)
+    rel_dir = os.path.relpath(normalized_dir, best_root)
     parts = [root, sanitize_path_component(library), sanitize_path_component(os.path.basename(best_root))]
     if rel_dir and rel_dir != os.curdir:
         parts.extend(sanitize_path_component(part) for part in rel_dir.split(os.sep) if part not in ("", os.curdir))
