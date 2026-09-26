@@ -11,6 +11,29 @@ This document defines the complete schema for `.metadata.json` files used by Lor
 
 ---
 
+## Storage Location (Alongside vs Centralized)
+
+By default, `.metadata.json` sidecars and preview images live **alongside** their model files. An optional centralized mode stores them under a single root directory instead. Two settings control this (Settings → Library → Sidecar Storage):
+
+| Setting | Values | Default |
+|---------|--------|---------|
+| `sidecar_storage_mode` | `"alongside"` \| `"centralized"` | `"alongside"` |
+| `sidecar_storage_path` | Absolute path string; empty = `<settings dir>/sidecars` | `""` |
+
+In centralized mode, sidecars and previews mirror the library-relative directory structure:
+
+```
+<sidecar_root>/<library>/<root_basename-roothash>/<rel_dir>/<name>.metadata.json
+```
+
+- `<library>` is the active library name and `<rel_dir>` the model's directory relative to the model root containing the file. `<root_basename-roothash>` combines the root's basename with a short hash of its full path so two roots sharing a basename (e.g. `/mnt/a/loras` and `/mnt/b/loras`) never collide. Each component is sanitized to filesystem-safe characters.
+- `.civitai.info` files always stay next to the model file, in both modes.
+- Changing the mode does **not** move existing files automatically — run the migration (`POST /api/lm/sidecars/migrate` with `{"direction": "to_centralized" | "to_alongside"}`, or the "Migrate Sidecars Now" button in settings).
+- Changing `sidecar_storage_path` while centralized likewise needs a root relocation: `{"direction": "relocate_root", "old_root": "<previous path>"}` moves the whole mirror tree to the new root (the settings UI offers this automatically).
+- All sidecar/preview path derivation goes through the helpers in `py/utils/sidecar_paths.py`; never construct paths inline.
+
+---
+
 ## Base Fields (All Model Types)
 
 These fields are present in all model metadata files.

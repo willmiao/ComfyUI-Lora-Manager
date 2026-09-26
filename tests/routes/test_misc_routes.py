@@ -23,6 +23,7 @@ from py.routes.handlers.misc_handlers import (
     NodeRegistryHandler,
     ServiceRegistryAdapter,
     SettingsHandler,
+    SidecarMigrationHandler,
     _collect_comfyui_session_logs,
     _is_wsl,
     _wsl_to_windows_path,
@@ -2557,3 +2558,123 @@ async def test_get_model_versions_status_supported_type_stays_interactive():
             "hasBeenDownloaded": False,
         }
     ]
+
+
+class DummySidecarMigrationUseCase:
+    def __init__(self, result):
+        self.result = result
+        self.calls = []
+
+    async def execute_with_error_handling(self, *, direction, progress_cb=None, force=False, old_root=None):
+        self.calls.append({"direction": direction, "force": force, "old_root": old_root})
+        return self.result
+
+
+def _sidecar_migration_handler(result):
+    use_case = DummySidecarMigrationUseCase(result)
+    handler = SidecarMigrationHandler(
+        use_case_factory=lambda: use_case,
+        progress_callback_factory=lambda: None,
+    )
+    return handler, use_case
+
+
+@pytest.mark.asyncio
+async def test_sidecar_migration_handler_runs_to_centralized():
+    result = {"success": True, "direction": "to_centralized", "moved": 3}
+    handler, use_case = _sidecar_migration_handler(result)
+
+    response = await handler.migrate_sidecars(
+        FakeRequest(json_data={"direction": "to_centralized", "force": True})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["moved"] == 3
+    assert use_case.calls == [{"direction": "to_centralized", "force": True, "old_root": ""}]
+
+
+@pytest.mark.asyncio
+async def test_sidecar_migration_handler_rejects_bad_direction():
+    handler, use_case = _sidecar_migration_handler({"success": True})
+
+    response = await handler.migrate_sidecars(
+        FakeRequest(json_data={"direction": "sideways"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 400
+    assert payload["success"] is False
+    assert use_case.calls == []
+
+
+@pytest.mark.asyncio
+async def test_sidecar_migration_handler_accepts_get_query_params():
+    result = {"success": True, "direction": "to_alongside", "moved": 0}
+    handler, use_case = _sidecar_migration_handler(result)
+
+    response = await handler.migrate_sidecars(
+        FakeRequest(  # pyright: ignore[reportArgumentType]
+            query={"direction": "to_alongside", "force": "true"},
+            method="GET",
+        )
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert use_case.calls == [{"direction": "to_alongside", "force": True, "old_root": ""}]
+
+
+@pytest.mark.asyncio
+async def test_sidecar_migration_handler_guard_refusal_is_400():
+    result = {"success": False, "error": "sidecar storage is already centralized"}
+    handler, use_case = _sidecar_migration_handler(result)
+
+    response = await handler.migrate_sidecars(
+        FakeRequest(json_data={"direction": "to_centralized"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 400
+    assert payload["success"] is False
+    assert "already centralized" in payload["error"]
+    assert use_case.calls == [{"direction": "to_centralized", "force": False, "old_root": ""}]
+
+
+@pytest.mark.asyncio
+async def test_sidecar_migration_handler_relocate_root_passes_old_root():
+    result = {"success": True, "direction": "relocate_root", "moved": 5}
+    handler, use_case = _sidecar_migration_handler(result)
+
+    response = await handler.migrate_sidecars(
+        FakeRequest(  # pyright: ignore[reportArgumentType]
+            json_data={
+                "direction": "relocate_root",
+                "old_root": "/old/sidecars",
+                "force": True,
+            }
+        )
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert use_case.calls == [
+        {"direction": "relocate_root", "force": True, "old_root": "/old/sidecars"}
+    ]
+
+
+@pytest.mark.asyncio
+async def test_sidecar_migration_handler_relocate_root_requires_old_root():
+    handler, use_case = _sidecar_migration_handler({"success": True})
+
+    response = await handler.migrate_sidecars(
+        FakeRequest(json_data={"direction": "relocate_root"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 400
+    assert "old_root" in payload["error"]
+    assert use_case.calls == []

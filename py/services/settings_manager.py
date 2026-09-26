@@ -99,6 +99,8 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "enable_other_models": False,
     "enabled_other_sub_types": list(DEFAULT_ENABLED_OTHER_SUB_TYPES),
     "recipes_path": "",
+    "sidecar_storage_mode": "alongside",
+    "sidecar_storage_path": "",
     "base_model_path_mappings": {},
     "download_path_templates": {},
     "download_filename_templates": {},
@@ -1616,9 +1618,30 @@ class SettingsManager:
 
         return os.path.abspath(os.path.normpath(os.path.expanduser(stripped)))
 
+    @staticmethod
+    def _normalize_sidecar_storage_mode(value: Any) -> str:
+        """Return a valid sidecar storage mode, falling back to ``alongside``."""
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("alongside", "centralized"):
+                return normalized
+        return "alongside"
+
+    def _refresh_sidecar_storage_config(self) -> None:
+        """Rebuild dependent config state after sidecar storage settings change."""
+
+        try:
+            from ..config import config  # Local import to avoid circular dependency
+
+            config.refresh_preview_roots()
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.debug(
+                "Failed to refresh config after sidecar storage change: %s", exc
+            )
+
     def _get_effective_recipes_dir(self, recipes_path: Optional[str] = None) -> str:
         """Resolve the effective recipes directory for the active library."""
-
         normalized_custom = self._normalize_recipes_path_value(
             self.settings.get("recipes_path", "")
             if recipes_path is None
@@ -1815,6 +1838,10 @@ class SettingsManager:
             target_recipes_dir = self._get_effective_recipes_dir(value)
             self._validate_recipes_storage_path(target_recipes_dir)
             self._migrate_recipes_directory(current_recipes_dir, target_recipes_dir)
+        elif key == "sidecar_storage_mode":
+            value = self._normalize_sidecar_storage_mode(value)
+        elif key == "sidecar_storage_path":
+            value = self._normalize_recipes_path_value(value)
         self.settings[key] = value
         portable_switch_pending = False
         if key == "use_portable_settings" and isinstance(value, bool):
@@ -1845,6 +1872,8 @@ class SettingsManager:
         self._save_settings()
         if key == "recipes_path":
             self._notify_library_change(self.get_active_library_name())
+        if key in ("sidecar_storage_mode", "sidecar_storage_path"):
+            self._refresh_sidecar_storage_config()
         if key in ("enable_other_models", "enabled_other_sub_types"):
             self._apply_other_model_settings_change()
         if portable_switch_pending:

@@ -38,6 +38,7 @@ from typing import (
 )
 
 from ..utils.constants import PREVIEW_EXTENSIONS
+from ..utils.sidecar_paths import get_metadata_path, get_sidecar_dir
 from ..utils import settings_paths
 
 logger = logging.getLogger(__name__)
@@ -669,13 +670,22 @@ class PendingDeleteService:
         """Enumerate existing artifacts exactly like delete_model_artifacts."""
         main_extension = ".safetensors" if main_extension is None else main_extension
         main_file = f"{file_name}{main_extension}" if main_extension else file_name
-        patterns = [main_file, f"{file_name}.metadata.json"]
+        model_path = os.path.join(target_dir, main_file)
+
+        artifacts: List[str] = []
+        main_path = os.path.abspath(model_path)
+        if os.path.exists(main_path):
+            artifacts.append(main_path)
+
+        # Sidecars/previews live in the sidecar dir (the model's own dir in
+        # alongside mode, the centralized mirror otherwise).
+        sidecar_dir = get_sidecar_dir(model_path)
+        patterns = [os.path.basename(get_metadata_path(model_path))]
         for ext in PREVIEW_EXTENSIONS:
             patterns.append(f"{file_name}{ext}")
 
-        artifacts: List[str] = []
         for pattern in patterns:
-            path = os.path.abspath(os.path.join(target_dir, pattern))
+            path = os.path.abspath(os.path.join(sidecar_dir, pattern))
             if os.path.exists(path):
                 artifacts.append(path)
         return artifacts
@@ -694,7 +704,9 @@ class PendingDeleteService:
         """
         for original_path in artifacts:
             staged_path = os.path.join(batch_dir, os.path.basename(original_path))
-            os.rename(original_path, staged_path)
+            # EXDEV-tolerant: centralized sidecars may live on a different
+            # filesystem than the staging batch dir under the model root.
+            self._restore_file(original_path, staged_path)
             staged_pairs.append(
                 {
                     "staged": os.path.abspath(staged_path),
@@ -736,13 +748,14 @@ class PendingDeleteService:
         return staged_pairs
 
     def _restore_file(self, staged_path: str, original_path: str) -> None:
-        """Restore a staged file to its original path, tolerating EXDEV.
+        """Move a file between staging and library paths, tolerating EXDEV.
 
         ``os.rename`` is atomic and preferred (model staging and most recipe
         restores are same-volume). Recipe staging copies into the settings-dir
-        staging parent, which may live on a DIFFERENT filesystem than the
-        recipes dir; rename then raises EXDEV. Fall back to ``shutil.copy2`` +
-        ``os.remove`` so the bytes are restored and the staged copy removed.
+        staging parent, and centralized sidecars live under the configured
+        sidecar root; both may live on a DIFFERENT filesystem than the target
+        dir, so rename can raise EXDEV. Fall back to ``shutil.copy2`` +
+        ``os.remove`` so the bytes are moved and the source copy removed.
         """
         try:
             os.rename(staged_path, original_path)
@@ -764,7 +777,10 @@ class PendingDeleteService:
             if not os.path.exists(staged_path):
                 continue
             try:
-                os.rename(staged_path, original_path)
+                # EXDEV-tolerant: centralized sidecars may have been copied
+                # across filesystems into staging, so plain os.rename would
+                # fail here and strand the only copy.
+                self._restore_file(staged_path, original_path)
             except OSError as exc:  # pragma: no cover - best-effort rollback
                 logger.warning(
                     "Failed to roll back staged file %s -> %s: %s",

@@ -62,6 +62,8 @@ const DEFAULT_SETTINGS_BASE = Object.freeze({
     download_skip_base_models: [],
     backup_auto_enabled: true,
     backup_retention_count: 5,
+    sidecar_storage_mode: 'alongside',
+    sidecar_storage_path: '',
     strip_lora_on_copy: false,
     use_new_license_icons: true,
     group_by_model: false,

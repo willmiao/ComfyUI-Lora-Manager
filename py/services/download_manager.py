@@ -38,6 +38,7 @@ from ..utils.preview_selection import resolve_mature_threshold, select_preview_m
 from ..utils.utils import calculate_filename_for_model, sanitize_folder_name
 from ..utils.exif_utils import ExifUtils
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .service_registry import ServiceRegistry
 from .download_routing import is_diffusion_model_download, resolve_other_download_sub_type
 from .settings_manager import get_settings_manager
@@ -831,7 +832,7 @@ class DownloadManager:
                 )
 
         for file_path in target_files:
-            metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+            metadata_path = get_metadata_path(file_path)
             deleted = await self._delete_file_with_retries(metadata_path)
             if not deleted and os.path.exists(metadata_path):
                 logger.error(f"Error deleting metadata file: {metadata_path}")
@@ -2447,7 +2448,7 @@ class DownloadManager:
                 return {"success": False, "error": save_path}
 
             part_path = save_path + ".part"
-            metadata_path = os.path.splitext(save_path)[0] + ".metadata.json"
+            metadata_path = get_metadata_path(save_path)
 
             pause_control = self._pause_events.get(download_id) if download_id else None
 
@@ -2464,6 +2465,10 @@ class DownloadManager:
             # Download preview image if available
             images = version_info.get("images", [])
             if images:
+                # Centralized preview mirrors may not exist yet (unlike the
+                # model's own directory in alongside mode).
+                os.makedirs(get_preview_dir(save_path), exist_ok=True)
+
                 if progress_callback:
                     await progress_callback(
                         1
@@ -2503,7 +2508,10 @@ class DownloadManager:
 
                     if media_type == "video":
                         preview_ext = _extension_from_url(preview_url, ".mp4")
-                        preview_path = os.path.splitext(save_path)[0] + preview_ext
+                        preview_path = os.path.join(
+                            get_preview_dir(save_path),
+                            os.path.splitext(os.path.basename(save_path))[0] + preview_ext,
+                        )
                         rewritten_url, rewritten = rewrite_preview_url(
                             preview_url, media_type="video"
                         )
@@ -2530,7 +2538,10 @@ class DownloadManager:
                         )
                         if rewritten and rewritten_url:
                             preview_ext = _extension_from_url(preview_url, ".png")
-                            preview_path = os.path.splitext(save_path)[0] + preview_ext
+                            preview_path = os.path.join(
+                                get_preview_dir(save_path),
+                                os.path.splitext(os.path.basename(save_path))[0] + preview_ext,
+                            )
                             success, _ = await downloader.download_file(
                                 rewritten_url, preview_path, use_auth=False
                             )
@@ -2557,8 +2568,9 @@ class DownloadManager:
                                         temp_file_handle.write(
                                             content if isinstance(content, bytes) else content.encode("utf-8")
                                         )
-                                    preview_path = (
-                                        os.path.splitext(save_path)[0] + ".webp"
+                                    preview_path = os.path.join(
+                                        get_preview_dir(save_path),
+                                        os.path.splitext(os.path.basename(save_path))[0] + ".webp",
                                     )
 
                                     optimized_data, _ = ExifUtils.optimize_image(
@@ -2788,9 +2800,7 @@ class DownloadManager:
                             entry = cast(Any, adjusted_entry)
                             metadata_entries[index] = entry
 
-                metadata_file_path = (
-                    os.path.splitext(entry.file_path)[0] + ".metadata.json"
-                )
+                metadata_file_path = get_metadata_path(entry.file_path)
                 metadata_files_for_cleanup.append(metadata_file_path)
 
                 await MetadataManager.save_metadata(entry.file_path, entry)
@@ -3049,7 +3059,11 @@ class DownloadManager:
         extension = os.path.splitext(preview_path)[1] or ".webp"
 
         targets = [
-            os.path.splitext(entry.file_path)[0] + extension for entry in entries
+            os.path.join(
+                get_preview_dir(entry.file_path),
+                os.path.splitext(os.path.basename(entry.file_path))[0] + extension,
+            )
+            for entry in entries
         ]
 
         if not targets:
@@ -3057,10 +3071,12 @@ class DownloadManager:
 
         first_target = targets[0]
         if preview_path != first_target:
+            os.makedirs(os.path.dirname(first_target), exist_ok=True)
             os.replace(preview_path, first_target)
         source_path = first_target
 
         for target in targets[1:]:
+            os.makedirs(os.path.dirname(target), exist_ok=True)
             shutil.copyfile(source_path, target)
 
         return targets

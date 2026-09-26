@@ -11,6 +11,13 @@ from ..utils.models import BaseModelMetadata, autov3_from_civitai_files
 from ..config import config
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import (
+    get_metadata_path,
+    get_preview_dir,
+    get_sidecar_dir,
+    is_centralized,
+    resolve_centralized_dir_for_dir,
+)
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
@@ -1613,6 +1620,25 @@ class ModelScanner:
         old_abs_prefix = f"{str(previous_path).replace(chr(92), '/').rstrip('/')}/"
         new_abs_prefix = f"{str(new_path).replace(chr(92), '/').rstrip('/')}/"
 
+        # Centralized sidecar mode: sidecars/previews live in the mirror tree,
+        # not under the renamed model directory, so the mirror subtree must
+        # move too and mirror-prefixed preview URLs need their own rekey.
+        old_mirror_dir: Optional[str] = None
+        new_mirror_dir: Optional[str] = None
+        if is_centralized():
+            old_mirror_dir = resolve_centralized_dir_for_dir(str(previous_path))
+            new_mirror_dir = resolve_centralized_dir_for_dir(str(new_path))
+        old_mirror_prefix = (
+            f"{old_mirror_dir.replace(chr(92), '/').rstrip('/')}/"
+            if old_mirror_dir
+            else ""
+        )
+        new_mirror_prefix = (
+            f"{new_mirror_dir.replace(chr(92), '/').rstrip('/')}/"
+            if new_mirror_dir
+            else ""
+        )
+
         cache = self._cache
         if cache is None:
             return False
@@ -1670,7 +1696,23 @@ class ModelScanner:
                 item["preview_url"] = self._rekey_path(
                     item["preview_url"], old_abs_prefix, new_abs_prefix
                 )
+                if old_mirror_prefix:
+                    item["preview_url"] = self._rekey_path(
+                        item["preview_url"], old_mirror_prefix, new_mirror_prefix
+                    )
             touched.append(item)
+
+        if old_mirror_dir and new_mirror_dir and os.path.isdir(old_mirror_dir):
+            try:
+                os.makedirs(os.path.dirname(new_mirror_dir), exist_ok=True)
+                shutil.move(old_mirror_dir, new_mirror_dir)
+            except Exception as exc:  # pragma: no cover - defensive
+                logger.warning(
+                    "Failed to move centralized sidecar mirror %s -> %s: %s",
+                    old_mirror_dir,
+                    new_mirror_dir,
+                    exc,
+                )
 
         if touched:
             changed = True
@@ -1700,7 +1742,9 @@ class ModelScanner:
     async def _rewrite_sidecar_paths(self, entries: List[Dict[str, Any]]) -> None:
         """Point each model's metadata sidecar at its new location.
 
-        Sidecars travel with the renamed directory, so only the recorded
+        In alongside mode sidecars travel with the renamed directory; in
+        centralized mode the mirror subtree has already been moved by the
+        caller (:meth:`rename_known_folder`). Either way only the recorded
         ``file_path``/``preview_url`` inside them need rewriting. Failures are
         logged and skipped — a stale sidecar is repaired by the next metadata
         refresh, and must not abort the rename.
@@ -1709,7 +1753,7 @@ class ModelScanner:
             file_path = item.get("file_path")
             if not file_path:
                 continue
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+            metadata_path = get_metadata_path(file_path)
             if not os.path.exists(metadata_path):
                 continue
             try:
@@ -1718,6 +1762,94 @@ class ModelScanner:
                 logger.warning(
                     "Failed to rewrite metadata sidecar %s: %s", metadata_path, exc
                 )
+
+    def _find_pending_models_in_sidecar_mirror(self) -> List[Dict[str, Any]]:
+        """Mirror-tree counterpart of the alongside pending-hash filesystem scan.
+
+        Centralized mode stores ``.metadata.json`` sidecars in the mirror
+        tree, so walking the model folders finds nothing. Each mirror base is
+        resolved from a configured model root; a sidecar's recorded
+        ``file_path`` locates its model, with a stem-based probe under the
+        mapped model root as fallback (mirror path components are sanitized,
+        so reverse mapping is best-effort). Orphan sidecars whose model file
+        no longer exists are skipped, matching the alongside scan.
+        """
+
+        pending_models: List[Dict[str, Any]] = []
+
+        for root_path in self.get_model_roots():
+            mirror_base = resolve_centralized_dir_for_dir(root_path)
+            if not mirror_base or not os.path.isdir(mirror_base):
+                continue
+
+            for dirpath, dirnames, filenames in os.walk(mirror_base):
+                dirnames[:] = [d for d in dirnames if not _is_excluded_dir(d)]
+                for filename in filenames:
+                    if not filename.endswith(".metadata.json"):
+                        continue
+
+                    metadata_path = os.path.join(dirpath, filename)
+                    try:
+                        with open(metadata_path, "r", encoding="utf-8") as f:
+                            data = json.load(f)
+
+                        # Check if hash is pending
+                        hash_status = data.get("hash_status", "completed")
+                        sha256 = data.get("sha256", "")
+
+                        if hash_status != "completed" or not sha256:
+                            # Find corresponding model file: prefer the
+                            # sidecar's recorded path, then probe by stem
+                            # under the mapped model root.
+                            model_path = None
+                            recorded_path = data.get("file_path")
+                            if (
+                                isinstance(recorded_path, str)
+                                and recorded_path
+                                and os.path.exists(recorded_path)
+                            ):
+                                model_path = recorded_path
+                            else:
+                                model_name = filename.replace(".metadata.json", "")
+                                rel_dir = os.path.relpath(dirpath, mirror_base)
+                                candidate_dir = (
+                                    root_path
+                                    if rel_dir == os.curdir
+                                    else os.path.join(root_path, rel_dir)
+                                )
+                                for ext in self.file_extensions:
+                                    potential_path = os.path.join(
+                                        candidate_dir, model_name + ext
+                                    )
+                                    if os.path.exists(potential_path):
+                                        model_path = potential_path
+                                        break
+
+                            if model_path:
+                                pending_models.append(
+                                    {
+                                        "file_path": model_path.replace(os.sep, "/"),
+                                        "hash_status": hash_status,
+                                        "sha256": sha256,
+                                        **{
+                                            k: v
+                                            for k, v in data.items()
+                                            if k
+                                            not in [
+                                                "file_path",
+                                                "hash_status",
+                                                "sha256",
+                                            ]
+                                        },
+                                    }
+                                )
+                    except (json.JSONDecodeError, Exception) as e:
+                        logger.debug(
+                            f"Error reading metadata file {metadata_path}: {e}"
+                        )
+                        continue
+
+        return pending_models
 
     def _schedule_all_folders_backfill(self) -> None:
         """Kick off a one-shot background folder walk if none is running."""
@@ -1889,7 +2021,7 @@ class ModelScanner:
                         file_info['name'] = os.path.basename(file_path)
 
                         metadata = cast(Any, self.model_class).from_civitai_info(version_info, file_info, file_path)
-                        metadata.preview_url = find_preview_file(local_stem, os.path.dirname(file_path))
+                        metadata.preview_url = find_preview_file(local_stem, get_preview_dir(file_path))
                         await MetadataManager.save_metadata(file_path, metadata)
                         logger.info(f"Created metadata from .civitai.info for {file_path} (Reason: .civitai.info was found but .metadata.json was missing)")
                 except Exception as e:
@@ -2326,38 +2458,51 @@ class ModelScanner:
             # Move all associated files with the same base name
             source_metadata = None
             moved_metadata_path = None
-            
-            # Find all files with the same base name in the source directory
+
+            # Associated files (sidecar metadata, previews) sit next to the
+            # model in alongside mode and in the mirror tree in centralized
+            # mode; collect from every directory that holds them.
+            source_sidecar_dir = get_sidecar_dir(source_path)
+            target_sidecar_dir = get_sidecar_dir(target_file)
+            associated_dirs = [(source_dir, target_path)]
+            if os.path.normpath(source_sidecar_dir) != os.path.normpath(source_dir):
+                associated_dirs.append((source_sidecar_dir, target_sidecar_dir))
+
+            # Find all files with the same base name in the source directories
             files_to_move = []
-            try:
-                for file in os.listdir(source_dir):
-                    if file.startswith(base_name + ".") and file != os.path.basename(source_path):
-                        source_file_path = os.path.join(source_dir, file)
-                        # Generate new filename with the same base name as the model file
-                        file_suffix = file[len(base_name):]  # Get the part after base_name (e.g., ".metadata.json", ".preview.png")
-                        new_associated_filename = f"{final_base_name}{file_suffix}"
-                        target_associated_path = os.path.join(target_path, new_associated_filename)
-                        
-                        # Store metadata file path for special handling
-                        if file == f"{base_name}.metadata.json":
-                            source_metadata = source_file_path
-                            moved_metadata_path = target_associated_path
-                        else:
-                            files_to_move.append((source_file_path, target_associated_path))
-            except Exception as e:
-                logger.error(f"Error listing files in {source_dir}: {e}")
-            
+            metadata_filename = os.path.basename(get_metadata_path(source_path))
+            for assoc_source_dir, assoc_target_dir in associated_dirs:
+                try:
+                    for file in os.listdir(assoc_source_dir):
+                        if file.startswith(base_name + ".") and file != os.path.basename(source_path):
+                            source_file_path = os.path.join(assoc_source_dir, file)
+                            # Generate new filename with the same base name as the model file
+                            file_suffix = file[len(base_name):]  # Get the part after base_name (e.g., ".metadata.json", ".preview.png")
+                            new_associated_filename = f"{final_base_name}{file_suffix}"
+                            target_associated_path = os.path.join(assoc_target_dir, new_associated_filename)
+
+                            # Store metadata file path for special handling
+                            if file == metadata_filename:
+                                source_metadata = source_file_path
+                                moved_metadata_path = target_associated_path
+                            else:
+                                files_to_move.append((source_file_path, target_associated_path))
+                except Exception as e:
+                    logger.error(f"Error listing files in {assoc_source_dir}: {e}")
+
             # Move all associated files
             metadata = None
             for source_file, target_file_path in files_to_move:
                 try:
+                    os.makedirs(os.path.dirname(target_file_path), exist_ok=True)
                     shutil.move(source_file, target_file_path)
                 except Exception as e:
                     logger.error(f"Error moving associated file {source_file}: {e}")
-            
+
             # Handle metadata file specially to update paths
             if source_metadata and moved_metadata_path and os.path.exists(source_metadata):
                 try:
+                    os.makedirs(os.path.dirname(moved_metadata_path), exist_ok=True)
                     shutil.move(source_metadata, moved_metadata_path)
                     metadata = await self._update_metadata_paths(moved_metadata_path, target_file)
                 except Exception as e:
@@ -2399,7 +2544,7 @@ class ModelScanner:
             metadata['file_name'] = os.path.splitext(os.path.basename(model_path))[0]
             
             if 'preview_url' in metadata and metadata['preview_url']:
-                preview_dir = os.path.dirname(model_path)
+                preview_dir = get_preview_dir(model_path)
                 # Update preview filename to match the new base name
                 new_base_name = os.path.splitext(os.path.basename(model_path))[0]
                 preview_ext = get_preview_extension(metadata['preview_url'])
@@ -2759,7 +2904,7 @@ class ModelScanner:
 
             # Sidecar write-back: JSON null encodes the checked-unavailable
             # state. Skip silently when the sidecar does not exist.
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+            metadata_path = get_metadata_path(file_path)
             if os.path.exists(metadata_path):
                 with open(metadata_path, 'r', encoding='utf-8') as handle:
                     payload = json.load(handle)
@@ -2825,7 +2970,7 @@ class ModelScanner:
         if not file_path:
             return None
 
-        dir_path = os.path.dirname(file_path)
+        dir_path = get_preview_dir(file_path)
         base_name = os.path.splitext(os.path.basename(file_path))[0]
         preview_path = find_preview_file(base_name, dir_path)
         if preview_path:

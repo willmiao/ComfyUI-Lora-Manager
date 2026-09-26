@@ -321,4 +321,60 @@
             ('civitai_sqlite_archive', 'settings.metadataArchive.providerOrderCivitaiSqliteArchive'),
         ], 'settings.metadataArchive.providerOrderHelp') }}
     </div>
+
+    <!-- Sidecar Storage -->
+    <div class="settings-subsection">
+        {{ sm.subsection_header('settings.sections.sidecarStorage') }}
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sidecarStorageMode">
+                        {{ t('settings.sidecarStorage.mode') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.modeHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control select-control">
+                    <select id="sidecarStorageMode" onchange="settingsManager.handleSidecarStorageModeChange()">
+                        <option value="alongside">{{ t('settings.sidecarStorage.modeOptions.alongside') }}</option>
+                        <option value="centralized">{{ t('settings.sidecarStorage.modeOptions.centralized') }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item" id="sidecarStoragePathSetting" style="display: none;">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label for="sidecarStoragePath">
+                        {{ t('settings.sidecarStorage.path') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.pathHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <div class="text-input-wrapper">
+                        <input type="text" id="sidecarStoragePath"
+                               placeholder="{{ t('settings.sidecarStorage.pathPlaceholder') }}"
+                               onblur="settingsManager.handleSidecarStoragePathChange()"
+                               onkeydown="if(event.key === 'Enter') { this.blur(); }" />
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="setting-item">
+            <div class="setting-row">
+                <div class="setting-info">
+                    <label>
+                        {{ t('settings.sidecarStorage.management') }}
+                        <i class="fas fa-info-circle info-icon" data-tooltip="{{ t('settings.sidecarStorage.managementHelp') }}"></i>
+                    </label>
+                </div>
+                <div class="setting-control">
+                    <button type="button" id="migrateSidecarsBtn" class="primary-btn" onclick="settingsManager.confirmAndMigrateSidecars()">
+                        {{ t('settings.sidecarStorage.migrateButton') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>

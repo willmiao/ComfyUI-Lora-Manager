@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Type, Union, cast
 from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, LoraMetadata
 from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
+from .sidecar_paths import get_metadata_path, get_preview_dir, resolve_metadata_path
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class MetadataManager:
             - metadata: BaseModelMetadata instance or None
             - should_skip: True if corrupted metadata file exists and model should be skipped
         """
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         
         # Check if metadata file exists
         if not os.path.exists(metadata_path):
@@ -98,11 +99,7 @@ class MetadataManager:
                 payload.update(unknown_fields)
         else:
             if not should_skip:
-                metadata_path = (
-                    file_path
-                    if file_path.endswith(".metadata.json")
-                    else f"{os.path.splitext(file_path)[0]}.metadata.json"
-                )
+                metadata_path = resolve_metadata_path(file_path)
                 if os.path.exists(metadata_path):
                     try:
                         with open(metadata_path, "r", encoding="utf-8") as handle:
@@ -150,7 +147,7 @@ class MetadataManager:
             return model_data
 
         folder = model_data.get("folder")
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         sidecar_exists = os.path.exists(metadata_path)
         cached = model_data.copy()
         payload = await MetadataManager.load_metadata_payload(file_path)
@@ -188,15 +185,14 @@ class MetadataManager:
           bool: Success or failure
         """
         # Determine if the input is a metadata path or a model file path
-        if path.endswith('.metadata.json'):
-            metadata_path = path
-        else:
-            # Use existing logic for model file paths
-            file_path = path
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = resolve_metadata_path(path)
         temp_path = f"{metadata_path}.tmp"
         
         try:
+            # Centralized sidecar mirrors may not exist yet (unlike the model's
+            # own directory in alongside mode, which always does).
+            os.makedirs(os.path.dirname(metadata_path), exist_ok=True)
+
             # Convert to dict if needed
             if isinstance(metadata, BaseModelMetadata):
                 metadata_dict = metadata.to_dict()
@@ -259,10 +255,9 @@ class MetadataManager:
             
         try:
             base_name = os.path.splitext(os.path.basename(file_path))[0]
-            dir_path = os.path.dirname(file_path)
-            
+
             # Find preview image
-            preview_url = find_preview_file(base_name, dir_path)
+            preview_url = find_preview_file(base_name, get_preview_dir(file_path))
             
             # Calculate file hash
             start_hash_time = time.perf_counter()
@@ -386,15 +381,16 @@ class MetadataManager:
         # Check if preview exists at the current location
         preview_url = metadata.preview_url
         if preview_url:
-            # Get directory parts of both paths
-            file_dir = os.path.dirname(file_path)
+            # Get directory parts of both paths; the preview directory is the
+            # sidecar/preview dir (the model's own dir in alongside mode, the
+            # centralized mirror otherwise).
+            file_dir = get_preview_dir(file_path)
             preview_dir = os.path.dirname(preview_url)
             
             # Update preview if it doesn't exist OR if model and preview are in different directories
             if not os.path.exists(preview_url) or file_dir != preview_dir:
                 base_name = os.path.splitext(os.path.basename(file_path))[0]
-                dir_path = os.path.dirname(file_path)
-                new_preview_url = find_preview_file(base_name, dir_path)
+                new_preview_url = find_preview_file(base_name, file_dir)
                 if new_preview_url:
                     metadata.preview_url = normalize_path(new_preview_url)
                     need_update = True

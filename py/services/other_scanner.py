@@ -12,6 +12,7 @@ from typing import Any, Dict, List, Optional
 from ..utils.models import OtherModelMetadata
 from ..utils.file_utils import find_preview_file, normalize_path, calculate_autov3
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import get_preview_dir, is_centralized
 from ..config import config
 from .model_scanner import ModelScanner, _is_excluded_dir
 from .model_hash_index import ModelHashIndex
@@ -72,10 +73,9 @@ class OtherScanner(ModelScanner):
                 return None
 
             base_name = os.path.splitext(os.path.basename(file_path))[0]
-            dir_path = os.path.dirname(file_path)
 
             # Find preview image
-            preview_url = find_preview_file(base_name, dir_path)
+            preview_url = find_preview_file(base_name, get_preview_dir(file_path))
 
             # AutoV3 reads only the safetensors header, so it is cheap even for
             # large files; record the checked state at creation time ("" =
@@ -333,6 +333,11 @@ class OtherScanner(ModelScanner):
 
     async def _find_pending_models_from_filesystem(self) -> List[Dict[str, Any]]:
         """Scan filesystem for other-model metadata files with pending hash status."""
+        # Centralized mode stores sidecars in the mirror tree, not next to the
+        # models; walk the mirror instead of the model folders.
+        if is_centralized():
+            return self._find_pending_models_in_sidecar_mirror()
+
         pending_models = []
 
         for root_path in self.get_model_roots():

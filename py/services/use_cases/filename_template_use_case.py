@@ -12,6 +12,7 @@ import os
 from typing import Any, Awaitable, Callable, Dict, List, Optional, Sequence
 
 from ...utils.constants import AUTO_ORGANIZE_BATCH_SIZE
+from ...utils.sidecar_paths import get_metadata_path
 from ...utils.utils import calculate_filename_for_model
 from ..model_file_service import AutoOrganizeResult, ProgressCallback
 from ..model_lifecycle_service import ModelLifecycleService, load_local_metadata
@@ -200,7 +201,7 @@ class FilenameTemplateUseCase:
         sidecar or no ``original_file_name`` entry exists (models never
         renamed, or renamed before the recording shipped).
         """
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await self._metadata_loader(metadata_path)
         original = metadata.get("original_file_name")
         if not isinstance(original, str):
