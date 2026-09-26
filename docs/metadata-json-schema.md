@@ -28,8 +28,9 @@ In centralized mode, sidecars and previews mirror the library-relative directory
 
 - `<library>` is the active library name and `<rel_dir>` the model's directory relative to the model root containing the file. `<root_basename-roothash>` combines the root's basename with a short hash of its full path so two roots sharing a basename (e.g. `/mnt/a/loras` and `/mnt/b/loras`) never collide. Each component is sanitized to filesystem-safe characters.
 - `.civitai.info` files always stay next to the model file, in both modes.
-- Changing the mode does **not** move existing files automatically — run the migration (`POST /api/lm/sidecars/migrate` with `{"direction": "to_centralized" | "to_alongside"}`, or the "Migrate Sidecars Now" button in settings).
+- Changing the mode does **not** move existing files automatically — run the migration (`POST /api/lm/sidecars/migrate` with `{"direction": "to_centralized" | "to_alongside"}`, or the "Migrate Sidecars Now" button in settings). The migration covers excluded (hidden) models too, so un-excluding one later never strands its sidecar in the old layout. The result payload includes a `sidecar_root` field with the resolved centralized root, and the settings UI shows the outcome counters plus an "Open Folder" shortcut.
 - Changing `sidecar_storage_path` while centralized likewise needs a root relocation: `{"direction": "relocate_root", "old_root": "<previous path>"}` moves the whole mirror tree to the new root (the settings UI offers this automatically).
+- The settings UI always shows the resolved effective storage root (via the `sidecar_storage_root*` fields in `GET /api/lm/settings`), with `POST /api/lm/sidecars/open-location` opening it in the file manager. When the resolved root lies inside the plugin installation folder (portable settings mode), the UI warns: reinstalling or clean-updating the plugin would delete the sidecars, so an explicit path outside the installation folder is recommended. The repo `.gitignore` excludes the portable-mode default (`/sidecars/`).
 - All sidecar/preview path derivation goes through the helpers in `py/utils/sidecar_paths.py`; never construct paths inline.
 
 ---

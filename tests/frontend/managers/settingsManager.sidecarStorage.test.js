@@ -116,6 +116,7 @@ const appendMigrationModal = () => {
     modal.innerHTML = `
         <h2 data-role="title"></h2>
         <p data-role="message"></p>
+        <p data-role="destination" style="display:none"></p>
         <button data-action="confirm-sidecar-migration"></button>
         <button data-action="cancel-sidecar-migration"></button>`;
     document.body.appendChild(modal);
@@ -225,8 +226,30 @@ describe('SettingsManager sidecar storage', () => {
             expect(modal.classList.contains('show')).toBe(false);
         });
 
-        it('shows a deferred notice and skips migration when the user cancels', async () => {
+        it('names the resolved destination in the confirm dialog', async () => {
             const manager = createManager();
+            const { select } = appendSidecarControls();
+            const modal = appendMigrationModal();
+            state.global.settings = {
+                sidecar_storage_mode: 'alongside',
+                sidecar_storage_root: '/data/sidecars',
+            };
+            manager._loadedSidecarStorageMode = 'alongside';
+            select.value = 'centralized';
+            mockFetchOk();
+
+            const changePromise = manager.handleSidecarStorageModeChange();
+            await vi.waitFor(() => expect(modal.classList.contains('show')).toBe(true));
+
+            const destination = modal.querySelector('[data-role="destination"]');
+            expect(destination.textContent).toContain('/data/sidecars');
+            expect(destination.style.display).toBe('block');
+
+            modal.querySelector('[data-action="cancel-sidecar-migration"]').click();
+            await changePromise;
+        });
+
+        it('shows a deferred notice and skips migration when the user cancels', async () => {            const manager = createManager();
             const { select } = appendSidecarControls();
             const modal = appendMigrationModal();
             state.global.settings = { sidecar_storage_mode: 'centralized' };
@@ -282,8 +305,7 @@ describe('SettingsManager sidecar storage', () => {
         });
     });
 
-    describe('handleSidecarStoragePathChange', () => {
-        it('offers root relocation when the path changes in centralized mode', async () => {
+    describe('handleSidecarStoragePathChange', () => {        it('offers root relocation when the path changes in centralized mode', async () => {
             const manager = createManager();
             const { pathInput } = appendSidecarControls();
             const modal = appendMigrationModal();
@@ -335,6 +357,155 @@ describe('SettingsManager sidecar storage', () => {
             const migrateCalls = global.fetch.mock.calls.filter(([url]) => url === '/api/lm/sidecars/migrate');
             expect(migrateCalls).toHaveLength(0);
             expect(showToast).toHaveBeenCalledWith('settings.sidecarStorage.migrationDeferred', {}, 'info');
+        });
+    });
+
+    describe('renderSidecarStorageInfo', () => {
+        const appendStorageInfoElements = () => {
+            const resolved = document.createElement('code');
+            resolved.id = 'sidecarStorageResolvedPath';
+            const warning = document.createElement('div');
+            warning.id = 'sidecarStorageRepoWarning';
+            warning.style.display = 'none';
+            document.body.append(resolved, warning);
+            return { resolved, warning };
+        };
+
+        it('shows the resolved root and the repo warning when inside the install folder', () => {
+            const manager = createManager();
+            const { resolved, warning } = appendStorageInfoElements();
+            state.global.settings = {
+                sidecar_storage_root: '/repo/ComfyUI-Lora-Manager/sidecars',
+                sidecar_storage_root_in_repo: true,
+            };
+
+            manager.renderSidecarStorageInfo();
+
+            expect(resolved.textContent).toBe('/repo/ComfyUI-Lora-Manager/sidecars');
+            expect(warning.style.display).toBe('block');
+        });
+
+        it('hides the repo warning when the root lives outside the install folder', () => {
+            const manager = createManager();
+            const { resolved, warning } = appendStorageInfoElements();
+            state.global.settings = {
+                sidecar_storage_root: '/data/sidecars',
+                sidecar_storage_root_in_repo: false,
+            };
+
+            manager.renderSidecarStorageInfo();
+
+            expect(resolved.textContent).toBe('/data/sidecars');
+            expect(warning.style.display).toBe('none');
+        });
+    });
+
+    describe('openSidecarStorageLocation', () => {
+        it('posts to the open-location endpoint', async () => {
+            const manager = createManager();
+            mockFetchOk({ success: true });
+
+            await manager.openSidecarStorageLocation();
+
+            expect(global.fetch).toHaveBeenCalledWith('/api/lm/sidecars/open-location', { method: 'POST' });
+            expect(showToast).toHaveBeenCalledWith('settings.sidecarStorage.openLocationSuccess', {}, 'success');
+        });
+
+        it('copies the path to the clipboard in clipboard mode', async () => {
+            const manager = createManager();
+            mockFetchOk({ success: true, mode: 'clipboard', path: '/data/sidecars' });
+            const writeText = vi.fn().mockResolvedValue();
+            Object.defineProperty(navigator, 'clipboard', {
+                value: { writeText },
+                configurable: true,
+            });
+
+            await manager.openSidecarStorageLocation();
+
+            expect(writeText).toHaveBeenCalledWith('/data/sidecars');
+            expect(showToast).toHaveBeenCalledWith(
+                'settings.sidecarStorage.openLocationCopied',
+                { path: '/data/sidecars' },
+                'success'
+            );
+        });
+    });
+
+    describe('showSidecarMigrationResult', () => {
+        const appendResultModal = () => {
+            const modal = document.createElement('div');
+            modal.id = 'sidecarMigrationResultModal';
+            modal.innerHTML = `
+                <h2 data-role="title"></h2>
+                <p data-role="message"></p>
+                <p data-role="destination" style="display:none"></p>
+                <button data-action="open-sidecar-location" style="display:none"></button>
+                <button data-action="close-sidecar-result"></button>`;
+            document.body.appendChild(modal);
+            return modal;
+        };
+
+        it('renders counters and location, reloads only when closed', async () => {
+            const manager = createManager();
+            const modal = appendResultModal();
+            mockFetchOk({ success: true });
+
+            manager.showSidecarMigrationResult({
+                success: true,
+                direction: 'to_centralized',
+                moved: 12,
+                models_moved: 5,
+                skipped: 1,
+                conflicts: 2,
+                error_count: 0,
+                sidecar_root: '/data/sidecars',
+            });
+
+            expect(modal.classList.contains('show')).toBe(true);
+            expect(modal.querySelector('[data-role="message"]').textContent).toContain('12');
+            expect(modal.querySelector('[data-role="destination"]').textContent).toContain('/data/sidecars');
+            expect(modal.querySelector('[data-action="open-sidecar-location"]').style.display).not.toBe('none');
+            expect(resetAndReload).not.toHaveBeenCalled();
+
+            // "Open Folder" keeps the result modal open.
+            modal.querySelector('[data-action="open-sidecar-location"]').click();
+            await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
+                '/api/lm/sidecars/open-location',
+                { method: 'POST' }
+            ));
+            expect(modal.classList.contains('show')).toBe(true);
+
+            modal.querySelector('[data-action="close-sidecar-result"]').click();
+            expect(modal.classList.contains('show')).toBe(false);
+            expect(resetAndReload).toHaveBeenCalledWith(true);
+        });
+
+        it('hides the location row and open button when migrating back alongside', () => {
+            const manager = createManager();
+            const modal = appendResultModal();
+
+            manager.showSidecarMigrationResult({
+                success: true,
+                direction: 'to_alongside',
+                moved: 3,
+                models_moved: 3,
+                skipped: 0,
+                conflicts: 0,
+                error_count: 0,
+                sidecar_root: '/data/sidecars',
+            });
+
+            expect(modal.querySelector('[data-role="destination"]').style.display).toBe('none');
+            expect(modal.querySelector('[data-action="open-sidecar-location"]').style.display).toBe('none');
+        });
+
+        it('falls back to toast plus reload when the modal is absent', () => {
+            const manager = createManager();
+
+            manager.showSidecarMigrationResult({ success: true, direction: 'to_centralized' });
+
+            expect(showToast).toHaveBeenCalledWith('settings.sidecarStorage.migrateSuccess', {}, 'success');
+            expect(resetAndReload).toHaveBeenCalledWith(true);
         });
     });
 });

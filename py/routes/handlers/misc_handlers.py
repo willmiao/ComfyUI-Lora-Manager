@@ -70,7 +70,12 @@ from ...utils.example_images_paths import (
 )
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.session_logging import get_standalone_session_log_snapshot
-from ...utils.sidecar_paths import get_metadata_path, get_preview_dir
+from ...utils.sidecar_paths import (
+    describe_sidecar_root,
+    get_configured_sidecar_root,
+    get_metadata_path,
+    get_preview_dir,
+)
 from ...utils.usage_stats import UsageStats
 from .base_model_handlers import BaseModelHandlerSet
 
@@ -1627,6 +1632,19 @@ class SettingsHandler:
             settings_file = getattr(self._settings, "settings_file", None)
             if settings_file:
                 response_data["settings_file"] = settings_file
+            # Resolved centralized sidecar root (mode-independent): lets the
+            # settings UI show where sidecars actually live, including when the
+            # path setting is empty and the default kicks in. inside_repo flags
+            # the portable-mode hazard (root inside the plugin folder).
+            try:
+                sidecar_info = describe_sidecar_root()
+                response_data["sidecar_storage_root"] = sidecar_info["root"]
+                response_data["sidecar_storage_root_is_default"] = sidecar_info["is_default"]
+                response_data["sidecar_storage_root_in_repo"] = sidecar_info["inside_repo"]
+            except Exception as sidecar_error:  # pragma: no cover - defensive
+                logger.debug(
+                    "Could not resolve sidecar storage info: %s", sidecar_error
+                )
             messages_getter: Any = getattr(self._settings, "get_startup_messages", None)
             messages = list(messages_getter()) if messages_getter else []
             return web.json_response(
@@ -3516,6 +3534,24 @@ class FileSystemHandler:
             logger.error("Failed to open wildcards location: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
+    async def open_sidecar_location(self, request: web.Request) -> web.Response:
+        """Open the centralized sidecar storage root in the file manager."""
+
+        try:
+            root = get_configured_sidecar_root()
+            if not root:
+                return web.json_response(
+                    {"success": False, "error": "Sidecar storage root is not resolvable"},
+                    status=404,
+                )
+            # Create on demand so the button also works before the first
+            # migration/download has materialized the directory.
+            os.makedirs(root, exist_ok=True)
+            return await self._open_path(root)
+        except Exception as exc:  # pragma: no cover - defensive logging
+            logger.error("Failed to open sidecar location: %s", exc, exc_info=True)
+            return web.json_response({"success": False, "error": str(exc)}, status=500)
+
     async def browse_directory(self, request: web.Request) -> web.Response:
         """Browse a directory for the settings-UI directory picker."""
         try:
@@ -4290,6 +4326,7 @@ class MiscHandlerSet:
             "open_settings_location": self.filesystem.open_settings_location,
             "open_backup_location": self.filesystem.open_backup_location,
             "open_wildcards_location": self.filesystem.open_wildcards_location,
+            "open_sidecar_location": self.filesystem.open_sidecar_location,
             "browse_directory": self.filesystem.browse_directory,
             "validate_path": self.filesystem.validate_path,
             "search_custom_words": self.custom_words.search_custom_words,

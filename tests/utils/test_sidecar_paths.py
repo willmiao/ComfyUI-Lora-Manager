@@ -283,3 +283,39 @@ class TestSettingsValidation:
         settings = get_settings_manager()
         settings.set("sidecar_storage_path", None)
         assert settings.get("sidecar_storage_path") == ""
+
+
+class TestDescribeSidecarRoot:
+    def test_configured_root(self, tmp_path: Path):
+        settings = get_settings_manager()
+        root = tmp_path / "sidecars-custom"
+        settings.set("sidecar_storage_path", str(root))
+
+        info = sidecar_paths.describe_sidecar_root()
+
+        assert info["root"] == os.path.abspath(str(root))
+        assert info["is_default"] is False
+        assert info["inside_repo"] is False
+
+    def test_default_root_marks_is_default(self):
+        settings = get_settings_manager()
+        settings.set("sidecar_storage_path", "")
+
+        info = sidecar_paths.describe_sidecar_root()
+
+        assert info["root"].endswith(os.sep + "sidecars")
+        assert info["is_default"] is True
+
+    def test_inside_repo_detection(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+        monkeypatch.setattr(
+            sidecar_paths, "_installation_root", lambda: str(tmp_path / "repo")
+        )
+        settings = get_settings_manager()
+        settings.set(
+            "sidecar_storage_path", str(tmp_path / "repo" / "sidecars")
+        )
+
+        assert sidecar_paths.describe_sidecar_root()["inside_repo"] is True
+
+        settings.set("sidecar_storage_path", str(tmp_path / "elsewhere"))
+        assert sidecar_paths.describe_sidecar_root()["inside_repo"] is False

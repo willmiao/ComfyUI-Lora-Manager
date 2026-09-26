@@ -121,6 +121,9 @@ MISC_ROUTE_DEFINITIONS: tuple[RouteDefinition, ...] = (
         "GET", "/api/lm/sidecars/migrate", "migrate_sidecars"
     ),
     RouteDefinition(
+        "POST", "/api/lm/sidecars/open-location", "open_sidecar_location"
+    ),
+    RouteDefinition(
         "POST", "/api/lm/download-model-source", "download_model_source"
     ),
     RouteDefinition(

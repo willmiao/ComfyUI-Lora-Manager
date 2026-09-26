@@ -810,7 +810,14 @@
             "migrationDeferred": "Los archivos sidecar existentes no se movieron. Puedes migrarlos más tarde desde Configuración → Biblioteca → Almacenamiento de archivos sidecar.",
             "confirmToCentralized": "El modo de almacenamiento ha cambiado, pero los archivos sidecar .metadata.json y las imágenes de vista previa existentes no se mueven automáticamente. ¿Moverlos ahora al directorio de almacenamiento centralizado? También puedes hacerlo más tarde con el botón «Migrar archivos sidecar ahora».",
             "confirmToAlongside": "El modo de almacenamiento ha cambiado, pero los archivos sidecar .metadata.json y las imágenes de vista previa existentes no se mueven automáticamente. ¿Devolverlos ahora junto a sus archivos de modelo? También puedes hacerlo más tarde con el botón «Migrar archivos sidecar ahora».",
-            "confirmRelocateRoot": "El directorio de almacenamiento centralizado ha cambiado, pero los archivos sidecar y las imágenes de vista previa existentes siguen en el directorio anterior. ¿Moverlos ahora al nuevo directorio?"
+            "confirmRelocateRoot": "El directorio de almacenamiento centralizado ha cambiado, pero los archivos sidecar y las imágenes de vista previa existentes siguen en el directorio anterior. ¿Moverlos ahora al nuevo directorio?",
+            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
+            "openFolderButton": "[TODO: Translate] Open Folder",
+            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
+            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
+            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
+            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
         },
         "proxySettings": {
             "enableProxy": "Habilitar proxy a nivel de aplicación",
@@ -1669,7 +1676,14 @@
             "titleToCentralized": "¿Mover los archivos sidecar al almacenamiento centralizado?",
             "titleToAlongside": "¿Devolver los archivos sidecar junto a los archivos de modelo?",
             "confirmButton": "Migrar ahora",
-            "titleRelocateRoot": "¿Mover los archivos sidecar al nuevo directorio de almacenamiento?"
+            "titleRelocateRoot": "¿Mover los archivos sidecar al nuevo directorio de almacenamiento?",
+            "destination": "[TODO: Translate] Destination: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "[TODO: Translate] Sidecar migration completed",
+            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
+            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+            "location": "[TODO: Translate] Storage location: {path}"
         },
         "bulkAddTags": {
             "title": "Añadir etiquetas a múltiples modelos",

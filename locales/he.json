@@ -810,7 +810,14 @@
             "migrationDeferred": "קובצי הלוואי הקיימים לא הועברו. ניתן להעביר אותם מאוחר יותר דרך הגדרות > ספרייה > אחסון קובצי לוואי.",
             "confirmToCentralized": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להעביר אותם כעת לתיקיית האחסון המרכזי? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
             "confirmToAlongside": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להחזיר אותם כעת לצד קובצי המודל שלהם? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
-            "confirmRelocateRoot": "תיקיית האחסון המרכזי השתנתה, אך קובצי הלוואי ותמונות התצוגה המקדימה הקיימים עדיין נמצאים בתיקייה הקודמת. להעביר אותם כעת לתיקייה החדשה?"
+            "confirmRelocateRoot": "תיקיית האחסון המרכזי השתנתה, אך קובצי הלוואי ותמונות התצוגה המקדימה הקיימים עדיין נמצאים בתיקייה הקודמת. להעביר אותם כעת לתיקייה החדשה?",
+            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
+            "openFolderButton": "[TODO: Translate] Open Folder",
+            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
+            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
+            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
+            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
         },
         "proxySettings": {
             "enableProxy": "הפעל פרוקסי ברמת האפליקציה",
@@ -1669,7 +1676,14 @@
             "titleToCentralized": "להעביר את קובצי הלוואי לאחסון המרכזי?",
             "titleToAlongside": "להחזיר את קובצי הלוואי לצד קובצי המודל?",
             "confirmButton": "העבר כעת",
-            "titleRelocateRoot": "להעביר את קובצי הלוואי לתיקיית האחסון החדשה?"
+            "titleRelocateRoot": "להעביר את קובצי הלוואי לתיקיית האחסון החדשה?",
+            "destination": "[TODO: Translate] Destination: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "[TODO: Translate] Sidecar migration completed",
+            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
+            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+            "location": "[TODO: Translate] Storage location: {path}"
         },
         "bulkAddTags": {
             "title": "הוסף תגיות למספר מודלים",

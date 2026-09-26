@@ -109,6 +109,47 @@ def get_configured_sidecar_root() -> str:
     return _resolve_root_from_settings()
 
 
+def _installation_root() -> str:
+    """Return the plugin installation directory (repository root)."""
+
+    return os.path.dirname(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    )
+
+
+def _path_contains(base: str, path: str) -> bool:
+    """Containment check tolerant of symlinked installs (custom_nodes links)."""
+
+    for candidate in (os.path.abspath(path), os.path.realpath(path)):
+        normalized = os.path.normcase(os.path.normpath(candidate))
+        for root_variant in (os.path.abspath(base), os.path.realpath(base)):
+            root_normalized = os.path.normcase(os.path.normpath(root_variant))
+            if (
+                normalized == root_normalized
+                or normalized.startswith(root_normalized + os.sep)
+            ):
+                return True
+    return False
+
+
+def describe_sidecar_root() -> dict:
+    """Describe the effective centralized sidecar root for UI display.
+
+    ``inside_repo`` flags the portable-mode hazard: when settings live in the
+    repository, the default root lands inside the plugin folder, where a
+    reinstall or ``git clean`` would silently delete every sidecar.
+    """
+
+    configured = _get_settings_value("sidecar_storage_path", "")
+    is_default = not (isinstance(configured, str) and configured.strip())
+    root = _resolve_root_from_settings()
+    return {
+        "root": root,
+        "is_default": is_default,
+        "inside_repo": bool(root) and _path_contains(_installation_root(), root),
+    }
+
+
 def sanitize_path_component(name: str) -> str:
     """Return a filesystem-safe single path component."""
 

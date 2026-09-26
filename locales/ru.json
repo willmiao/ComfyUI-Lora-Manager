@@ -810,7 +810,14 @@
             "migrationDeferred": "Существующие sidecar-файлы не были перенесены. Вы можете перенести их позже в разделе «Настройки → Библиотека → Хранилище sidecar-файлов».",
             "confirmToCentralized": "Режим хранения изменён, но существующие sidecar-файлы .metadata.json и изображения превью не переносятся автоматически. Перенести их сейчас в централизованное хранилище? Это также можно сделать позже кнопкой «Перенести sidecar-файлы сейчас».",
             "confirmToAlongside": "Режим хранения изменён, но существующие sidecar-файлы .metadata.json и изображения превью не переносятся автоматически. Вернуть их сейчас рядом с их файлами моделей? Это также можно сделать позже кнопкой «Перенести sidecar-файлы сейчас».",
-            "confirmRelocateRoot": "Каталог централизованного хранилища изменён, но существующие sidecar-файлы и изображения превью всё ещё находятся в прежнем каталоге. Перенести их сейчас в новый каталог?"
+            "confirmRelocateRoot": "Каталог централизованного хранилища изменён, но существующие sidecar-файлы и изображения превью всё ещё находятся в прежнем каталоге. Перенести их сейчас в новый каталог?",
+            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
+            "openFolderButton": "[TODO: Translate] Open Folder",
+            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
+            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
+            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
+            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
         },
         "proxySettings": {
             "enableProxy": "Включить прокси на уровне приложения",
@@ -1669,7 +1676,14 @@
             "titleToCentralized": "Перенести sidecar-файлы в централизованное хранилище?",
             "titleToAlongside": "Вернуть sidecar-файлы рядом с файлами моделей?",
             "confirmButton": "Перенести сейчас",
-            "titleRelocateRoot": "Перенести sidecar-файлы в новый каталог хранилища?"
+            "titleRelocateRoot": "Перенести sidecar-файлы в новый каталог хранилища?",
+            "destination": "[TODO: Translate] Destination: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "[TODO: Translate] Sidecar migration completed",
+            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
+            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+            "location": "[TODO: Translate] Storage location: {path}"
         },
         "bulkAddTags": {
             "title": "Добавить теги к нескольким моделям",

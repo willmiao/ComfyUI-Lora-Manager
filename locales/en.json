@@ -810,7 +810,14 @@
       "migrationDeferred": "Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
       "confirmToCentralized": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
       "confirmToAlongside": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-      "confirmRelocateRoot": "The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
+      "confirmRelocateRoot": "The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?",
+      "effectivePathLabel": "Effective storage location:",
+      "openFolderButton": "Open Folder",
+      "repoWarning": "The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
+      "openLocationSuccess": "Opened sidecar storage folder",
+      "openLocationCopied": "Sidecar storage path copied to clipboard: {path}",
+      "openLocationClipboardFallback": "Copy the sidecar storage path manually: {path}",
+      "openLocationFailed": "Failed to open the sidecar storage folder"
     },
     "proxySettings": {
       "enableProxy": "Enable App-level Proxy",
@@ -1669,7 +1676,14 @@
       "titleToCentralized": "Move sidecars to centralized storage?",
       "titleToAlongside": "Move sidecars back next to model files?",
       "confirmButton": "Migrate Now",
-      "titleRelocateRoot": "Move sidecars to the new storage directory?"
+      "titleRelocateRoot": "Move sidecars to the new storage directory?",
+      "destination": "Destination: {path}"
+    },
+    "sidecarMigrationResult": {
+      "title": "Sidecar migration completed",
+      "titleWithErrors": "Sidecar migration completed with {count} error(s)",
+      "summary": "Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+      "location": "Storage location: {path}"
     },
     "bulkAddTags": {
       "title": "Add Tags to Multiple Models",

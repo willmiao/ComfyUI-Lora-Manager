@@ -103,9 +103,26 @@
     <div class="modal-content delete-modal-content">
         <h2 data-role="title"></h2>
         <p class="delete-message" data-role="message"></p>
+        <p class="delete-message sidecar-migration-destination" data-role="destination" style="display: none;"></p>
         <div class="modal-actions">
             <button class="cancel-btn" data-action="cancel-sidecar-migration">{{ t('common.actions.cancel') }}</button>
             <button class="primary-btn" data-action="confirm-sidecar-migration"></button>
+        </div>
+    </div>
+</div>
+
+<!-- Sidecar Migration Result Modal
+     Self-managed by SettingsManager: shown after a migration run with the
+     outcome counters and the storage location; closing it reloads the page
+     so cards pick up the new paths. -->
+<div id="sidecarMigrationResultModal" class="modal delete-modal">
+    <div class="modal-content delete-modal-content">
+        <h2 data-role="title"></h2>
+        <p class="delete-message" data-role="message"></p>
+        <p class="delete-message sidecar-migration-destination" data-role="destination" style="display: none;"></p>
+        <div class="modal-actions">
+            <button class="secondary-btn" data-action="open-sidecar-location" style="display: none;">{{ t('settings.sidecarStorage.openFolderButton') }}</button>
+            <button class="primary-btn" data-action="close-sidecar-result">{{ t('common.actions.close') }}</button>
         </div>
     </div>
 </div>

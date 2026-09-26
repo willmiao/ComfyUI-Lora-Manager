@@ -534,6 +534,58 @@ async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatc
 
 
 @pytest.mark.asyncio
+async def test_open_sidecar_location_opens_configured_root(tmp_path, monkeypatch):
+    from py.services.settings_manager import get_settings_manager
+
+    root = tmp_path / "sidecars"
+    get_settings_manager().set("sidecar_storage_path", str(root))
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    calls = []
+
+    def fake_popen(args):
+        calls.append(args)
+        return MagicMock()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    response = await handler.open_sidecar_location(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["path"] == str(root)
+    # Created on demand so the button works before any migration ran.
+    assert root.is_dir()
+    assert calls == [["xdg-open", str(root)]]
+
+
+@pytest.mark.asyncio
+async def test_get_settings_includes_resolved_sidecar_root(tmp_path):
+    from py.services.settings_manager import get_settings_manager
+
+    root = tmp_path / "sidecars-custom"
+    get_settings_manager().set("sidecar_storage_path", str(root))
+
+    handler = SettingsHandler(
+        settings_service=DummySettings(),
+        metadata_provider_updater=noop_async,
+        downloader_factory=dummy_downloader_factory,
+    )
+
+    response = await handler.get_settings(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+    assert payload["settings"]["sidecar_storage_root"] == str(root)
+    assert payload["settings"]["sidecar_storage_root_is_default"] is False
+    assert payload["settings"]["sidecar_storage_root_in_repo"] is False
+
+
+@pytest.mark.asyncio
 async def test_open_settings_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
     """Without a GUI session xdg-open cannot work; the handler must hand the
     path to the browser instead of reporting a success that never happened."""
