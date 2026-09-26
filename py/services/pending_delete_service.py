@@ -38,6 +38,7 @@ from typing import (
 )
 
 from ..utils.constants import PREVIEW_EXTENSIONS
+from ..utils.sidecar_paths import get_metadata_path
 from ..utils import settings_paths
 
 logger = logging.getLogger(__name__)
@@ -669,7 +670,10 @@ class PendingDeleteService:
         """Enumerate existing artifacts exactly like delete_model_artifacts."""
         main_extension = ".safetensors" if main_extension is None else main_extension
         main_file = f"{file_name}{main_extension}" if main_extension else file_name
-        patterns = [main_file, f"{file_name}.metadata.json"]
+        patterns = [
+            main_file,
+            os.path.basename(get_metadata_path(os.path.join(target_dir, main_file))),
+        ]
         for ext in PREVIEW_EXTENSIONS:
             patterns.append(f"{file_name}{ext}")
 

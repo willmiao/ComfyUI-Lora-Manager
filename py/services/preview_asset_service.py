@@ -10,6 +10,7 @@ from urllib.parse import urlparse
 from ..utils.constants import CARD_PREVIEW_WIDTH, PREVIEW_EXTENSIONS
 from ..utils.civitai_utils import rewrite_preview_url
 from ..utils.preview_selection import resolve_mature_threshold, select_preview_media
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from .settings_manager import get_settings_manager
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ class PreviewAssetService:
         """Replace an existing preview asset for a model."""
 
         base_name = os.path.splitext(os.path.basename(model_path))[0]
-        folder = os.path.dirname(model_path)
+        folder = get_preview_dir(model_path)
 
         extension, optimized_data = await self._convert_preview(
             preview_data, content_type, original_filename
@@ -179,7 +180,7 @@ class PreviewAssetService:
         with open(preview_path, "wb") as handle:
             handle.write(optimized_data)
 
-        metadata_path = os.path.splitext(model_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(model_path)
         metadata = await metadata_loader(metadata_path)
         metadata["preview_url"] = preview_path
         metadata["preview_nsfw_level"] = nsfw_level

@@ -68,6 +68,7 @@ from ...utils.example_images_paths import (
 )
 from ...utils.lora_metadata import extract_trained_words
 from ...utils.session_logging import get_standalone_session_log_snapshot
+from ...utils.sidecar_paths import get_metadata_path, get_preview_dir
 from ...utils.usage_stats import UsageStats
 from .base_model_handlers import BaseModelHandlerSet
 
@@ -943,15 +944,24 @@ class DoctorHandler:
 
                             os.rename(path, new_path)
 
-                            for suffix in (".metadata.json", ".civitai.info"):
-                                old_sidecar = old_base_no_ext + suffix
-                                new_sidecar = new_base_no_ext + suffix
-                                if os.path.exists(old_sidecar):
-                                    os.rename(old_sidecar, new_sidecar)
+                            old_metadata_path = get_metadata_path(path)
+                            new_metadata_path = get_metadata_path(new_path)
+                            if os.path.exists(old_metadata_path):
+                                os.rename(old_metadata_path, new_metadata_path)
+
+                            old_sidecar = old_base_no_ext + ".civitai.info"
+                            new_sidecar = new_base_no_ext + ".civitai.info"
+                            if os.path.exists(old_sidecar):
+                                os.rename(old_sidecar, new_sidecar)
 
                             for preview_ext in PREVIEW_EXTENSIONS:
-                                old_preview = old_base_no_ext + preview_ext
-                                new_preview = new_base_no_ext + preview_ext
+                                old_preview = os.path.join(
+                                    get_preview_dir(path), base_name + preview_ext
+                                )
+                                new_preview = os.path.join(
+                                    get_preview_dir(new_path),
+                                    candidate_base + preview_ext,
+                                )
                                 if os.path.exists(old_preview):
                                     os.rename(old_preview, new_preview)
 
@@ -963,7 +973,10 @@ class DoctorHandler:
                                     old_preview_url = entry["preview_url"].replace("\\", "/")
                                     preview_ext = os.path.splitext(old_preview_url)[1]
                                     if preview_ext:
-                                        entry["preview_url"] = (new_base_no_ext + preview_ext).replace(os.sep, "/")
+                                        entry["preview_url"] = os.path.join(
+                                            get_preview_dir(new_path),
+                                            candidate_base + preview_ext,
+                                        ).replace(os.sep, "/")
                                 await scanner.update_single_model_cache(
                                     path, new_path, entry
                                 )

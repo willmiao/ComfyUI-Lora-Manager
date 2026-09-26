@@ -50,6 +50,7 @@ from ...services.errors import RateLimitError, ResourceNotFoundError
 from ...utils.civitai_utils import resolve_license_payload
 from ...utils.file_utils import calculate_sha256
 from ...utils.metadata_manager import MetadataManager
+from ...utils.sidecar_paths import get_metadata_path
 from ...utils.url_utils import relative_root_prefix
 
 LICENSE_FIELDS = (
@@ -676,7 +677,7 @@ class ModelManagementHandler:
                     status=400,
                 )
 
-            metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+            metadata_path = get_metadata_path(file_path)
             local_metadata = await self._metadata_sync.load_local_metadata(
                 metadata_path
             )

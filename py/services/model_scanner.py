@@ -11,6 +11,7 @@ from ..utils.models import BaseModelMetadata, autov3_from_civitai_files
 from ..config import config
 from ..utils.file_utils import find_preview_file, get_preview_extension, calculate_sha256, calculate_autov3
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import get_metadata_path, get_preview_dir
 from ..utils.civitai_utils import resolve_license_info
 from .model_cache import ModelCache
 from .model_hash_index import ModelHashIndex
@@ -1709,7 +1710,7 @@ class ModelScanner:
             file_path = item.get("file_path")
             if not file_path:
                 continue
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+            metadata_path = get_metadata_path(file_path)
             if not os.path.exists(metadata_path):
                 continue
             try:
@@ -2339,7 +2340,7 @@ class ModelScanner:
                         target_associated_path = os.path.join(target_path, new_associated_filename)
                         
                         # Store metadata file path for special handling
-                        if file == f"{base_name}.metadata.json":
+                        if file == os.path.basename(get_metadata_path(source_path)):
                             source_metadata = source_file_path
                             moved_metadata_path = target_associated_path
                         else:
@@ -2399,7 +2400,7 @@ class ModelScanner:
             metadata['file_name'] = os.path.splitext(os.path.basename(model_path))[0]
             
             if 'preview_url' in metadata and metadata['preview_url']:
-                preview_dir = os.path.dirname(model_path)
+                preview_dir = get_preview_dir(model_path)
                 # Update preview filename to match the new base name
                 new_base_name = os.path.splitext(os.path.basename(model_path))[0]
                 preview_ext = get_preview_extension(metadata['preview_url'])
@@ -2759,7 +2760,7 @@ class ModelScanner:
 
             # Sidecar write-back: JSON null encodes the checked-unavailable
             # state. Skip silently when the sidecar does not exist.
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+            metadata_path = get_metadata_path(file_path)
             if os.path.exists(metadata_path):
                 with open(metadata_path, 'r', encoding='utf-8') as handle:
                     payload = json.load(handle)

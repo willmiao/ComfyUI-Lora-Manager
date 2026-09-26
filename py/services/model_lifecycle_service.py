@@ -11,6 +11,7 @@ from ..services.service_registry import ServiceRegistry
 from ..services.pending_delete_service import get_pending_delete_service
 from ..utils.constants import PREVIEW_EXTENSIONS
 from ..utils.metadata_manager import MetadataManager
+from ..utils.sidecar_paths import get_metadata_path
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +46,10 @@ async def delete_model_artifacts(
 
     main_extension = ".safetensors" if main_extension is None else main_extension
     main_file = f"{file_name}{main_extension}" if main_extension else file_name
-    patterns = [main_file, f"{file_name}.metadata.json"]
+    patterns = [
+        main_file,
+        os.path.basename(get_metadata_path(os.path.join(target_dir, main_file))),
+    ]
     for ext in PREVIEW_EXTENSIONS:
         patterns.append(f"{file_name}{ext}")
 
@@ -260,7 +264,7 @@ class ModelLifecycleService:
 
         _require_path_in_library_roots(file_path, self._scanner, label="File path")
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await self._metadata_loader(metadata_path)
         metadata["exclude"] = True
 
@@ -315,7 +319,7 @@ class ModelLifecycleService:
         if not os.path.exists(file_path):
             raise ValueError("Model file does not exist")
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata_payload = await self._metadata_loader(metadata_path)
         metadata_payload["exclude"] = False
 
@@ -384,10 +388,11 @@ class ModelLifecycleService:
         if os.path.exists(new_file_path):
             raise ValueError("A file with this name already exists")
 
+        metadata_filename = os.path.basename(get_metadata_path(file_path))
         patterns = [
             f"{old_file_name}{old_extension}",
-            f"{old_file_name}.metadata.json",
-            f"{old_file_name}.metadata.json.bak",
+            metadata_filename,
+            f"{metadata_filename}.bak",
         ]
         for ext in PREVIEW_EXTENSIONS:
             patterns.append(f"{old_file_name}{ext}")
@@ -398,7 +403,7 @@ class ModelLifecycleService:
             if os.path.exists(path):
                 existing_files.append((path, pattern))
 
-        metadata_path = os.path.join(target_dir, f"{old_file_name}.metadata.json")
+        metadata_path = get_metadata_path(file_path)
         metadata: Optional[Dict[str, object]] = None
         hash_value: Optional[str] = None
 

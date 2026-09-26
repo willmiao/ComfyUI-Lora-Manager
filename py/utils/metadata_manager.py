@@ -8,6 +8,7 @@ from typing import Any, Dict, Optional, Type, Union, cast
 from .models import BaseModelMetadata, CheckpointMetadata, EmbeddingMetadata, LoraMetadata
 from .file_utils import normalize_path, find_preview_file, calculate_sha256, calculate_autov3
 from .lora_metadata import extract_lora_metadata, extract_checkpoint_metadata
+from .sidecar_paths import get_metadata_path, resolve_metadata_path
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ class MetadataManager:
             - metadata: BaseModelMetadata instance or None
             - should_skip: True if corrupted metadata file exists and model should be skipped
         """
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         
         # Check if metadata file exists
         if not os.path.exists(metadata_path):
@@ -98,11 +99,7 @@ class MetadataManager:
                 payload.update(unknown_fields)
         else:
             if not should_skip:
-                metadata_path = (
-                    file_path
-                    if file_path.endswith(".metadata.json")
-                    else f"{os.path.splitext(file_path)[0]}.metadata.json"
-                )
+                metadata_path = resolve_metadata_path(file_path)
                 if os.path.exists(metadata_path):
                     try:
                         with open(metadata_path, "r", encoding="utf-8") as handle:
@@ -150,7 +147,7 @@ class MetadataManager:
             return model_data
 
         folder = model_data.get("folder")
-        metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = get_metadata_path(file_path)
         sidecar_exists = os.path.exists(metadata_path)
         cached = model_data.copy()
         payload = await MetadataManager.load_metadata_payload(file_path)
@@ -188,12 +185,7 @@ class MetadataManager:
           bool: Success or failure
         """
         # Determine if the input is a metadata path or a model file path
-        if path.endswith('.metadata.json'):
-            metadata_path = path
-        else:
-            # Use existing logic for model file paths
-            file_path = path
-            metadata_path = f"{os.path.splitext(file_path)[0]}.metadata.json"
+        metadata_path = resolve_metadata_path(path)
         temp_path = f"{metadata_path}.tmp"
         
         try:

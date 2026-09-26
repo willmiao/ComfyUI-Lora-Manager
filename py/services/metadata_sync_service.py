@@ -12,6 +12,7 @@ from ..services.settings_manager import SettingsManager
 from ..utils.civitai_utils import resolve_license_payload
 from ..utils.model_utils import determine_base_model
 from ..utils.models import autov3_from_civitai_files
+from ..utils.sidecar_paths import get_metadata_path
 from .connectivity_guard import OFFLINE_FRIENDLY_MESSAGE, is_expected_offline_error
 from .errors import RateLimitError
 from .model_sources import has_external_source
@@ -216,7 +217,7 @@ class MetadataSyncService:
             logger.error(error)
             return False, error
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         enable_archive = self._settings.get("enable_metadata_archive_db", False)
         previous_source = model_data.get("metadata_source") or (model_data.get("civitai") or {}).get("source")
 
@@ -485,7 +486,7 @@ class MetadataSyncService:
                 + (f" with version: {model_version_id}" if model_version_id else "")
             )
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         await self.update_model_metadata(
             metadata_path,
             metadata,
@@ -505,7 +506,7 @@ class MetadataSyncService:
     ) -> Dict[str, Any]:
         """Apply metadata updates and persist to disk and cache."""
 
-        metadata_path = os.path.splitext(file_path)[0] + ".metadata.json"
+        metadata_path = get_metadata_path(file_path)
         metadata = await metadata_loader(metadata_path)
 
         for key, value in updates.items():
@@ -554,7 +555,7 @@ class MetadataSyncService:
         }
 
         expected_hash: Optional[str] = None
-        first_metadata_path = os.path.splitext(file_paths[0])[0] + ".metadata.json"
+        first_metadata_path = get_metadata_path(file_paths[0])
         first_metadata = await metadata_loader(first_metadata_path)
         if first_metadata and "sha256" in first_metadata:
             expected_hash = first_metadata["sha256"].lower()
@@ -565,7 +566,7 @@ class MetadataSyncService:
 
             try:
                 actual_hash = await hash_calculator(path)
-                metadata_path = os.path.splitext(path)[0] + ".metadata.json"
+                metadata_path = get_metadata_path(path)
                 metadata = await metadata_loader(metadata_path)
                 stored_hash = metadata.get("sha256", "").lower()
 
