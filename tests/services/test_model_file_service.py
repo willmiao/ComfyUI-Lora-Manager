@@ -11,14 +11,18 @@ from py.services.model_file_service import ModelMoveService
 
 
 class FakeScanner:
-    def __init__(self, roots: List[Path]) -> None:
+    def __init__(self, roots: List[Path], excluded: List[str] | None = None) -> None:
         self._roots = [str(root) for root in roots]
         self.known_folders: List[str] = []
         self.removed_folders: List[str] = []
         self.renamed_folders: List[tuple] = []
+        self._excluded = list(excluded or [])
 
     def get_model_roots(self) -> List[str]:
         return list(self._roots)
+
+    def get_excluded_models(self) -> List[str]:
+        return list(self._excluded)
 
     async def add_known_folder(self, folder: str) -> None:
         self.known_folders.append(folder)
@@ -28,6 +32,12 @@ class FakeScanner:
 
     async def rename_known_folder(self, previous: str, current: str, **kwargs) -> None:
         self.renamed_folders.append((previous, current, kwargs))
+
+
+class ScannerWithoutExcludedAccessor(FakeScanner):
+    """Scanner stand-in predating ``get_excluded_models()``."""
+
+    get_excluded_models = None  # type: ignore[assignment]
 
 
 @pytest.mark.asyncio
@@ -149,9 +159,88 @@ async def test_delete_folder_refuses_when_models_live_below(tmp_path: Path):
     assert result["success"] is False
     assert result["code"] == "not_empty"
     assert result["manifest"]["model_count"] == 1
+    assert result["manifest"]["excluded_model_count"] == 0
     assert target.exists()
     assert model_file.exists()
     assert scanner.removed_folders == []
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_manifest_marks_models_excluded_from_the_library(tmp_path: Path):
+    """Excluded models are invisible to the model lists but still block the
+    cascade, so the manifest has to say so — the folder sidebar otherwise shows
+    the folder as empty and the refusal reads as a bug."""
+    target = _make_nested(tmp_path)
+    model_file = target / "hidden.safetensors"
+    model_file.write_text("weights", encoding="utf-8")
+    scanner = FakeScanner([tmp_path], excluded=[str(model_file)])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["success"] is False
+    assert result["code"] == "not_empty"
+    assert result["manifest"]["model_count"] == 1
+    assert result["manifest"]["excluded_model_count"] == 1
+    assert "excluded" in result["error"]
+    assert model_file.exists()
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_error_splits_excluded_from_visible_models(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    visible = target / "visible.safetensors"
+    hidden = target / "hidden.safetensors"
+    visible.write_text("weights", encoding="utf-8")
+    hidden.write_text("weights", encoding="utf-8")
+    scanner = FakeScanner([tmp_path], excluded=[str(hidden)])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["manifest"]["model_count"] == 2
+    assert result["manifest"]["excluded_model_count"] == 1
+    assert "1 of them excluded" in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_does_not_claim_excluded_for_visible_models(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    (target / "model.safetensors").write_text("weights", encoding="utf-8")
+    # An excluded model elsewhere in the library must not be attributed here.
+    scanner = FakeScanner([tmp_path], excluded=[str(tmp_path / "other" / "other.safetensors")])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["manifest"]["excluded_model_count"] == 0
+    assert "excluded" not in result["error"]
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_works_without_the_excluded_accessor(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    (target / "model.safetensors").write_text("weights", encoding="utf-8")
+    scanner = ScannerWithoutExcludedAccessor([tmp_path])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target))
+
+    assert result["success"] is False
+    assert result["manifest"]["excluded_model_count"] == 0
+
+
+@pytest.mark.asyncio
+async def test_delete_folder_success_manifest_carries_excluded_model_count(tmp_path: Path):
+    target = _make_nested(tmp_path)
+    (target / "leftover.webp").write_text("preview", encoding="utf-8")
+    scanner = FakeScanner([tmp_path], excluded=[str(tmp_path / "elsewhere.safetensors")])
+    service = ModelMoveService(scanner, "lora")
+
+    result = await service.delete_folder(str(target), dry_run=True)
+
+    assert result["success"] is True
+    assert result["excluded_model_count"] == 0
 
 
 @pytest.mark.asyncio

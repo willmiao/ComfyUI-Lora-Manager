@@ -15,6 +15,16 @@ from ..services.pending_delete_service import PENDING_DELETE_DIR_NAME
 logger = logging.getLogger(__name__)
 
 
+def _normalize_match_path(path: Any) -> str:
+    """Normalize a path for set membership tests.
+
+    Business paths only — symlinks are never resolved here, matching how the
+    scanner stores ``excluded_models``. The forward-slash form keeps Windows
+    comparisons working with the scanner's normalized entries.
+    """
+    return os.path.normpath(os.path.abspath(str(path))).replace(os.sep, "/")
+
+
 class ProgressCallback(ABC):
     """Abstract callback interface for progress reporting"""
     
@@ -567,8 +577,9 @@ class ModelMoveService:
 
         Returns:
             Dictionary with the success flag plus a removal manifest
-            (``model_count``/``file_count``/``dir_count``/``symlink_count``/
-            ``total_bytes``/``restorable``) on success.
+            (``model_count``/``excluded_model_count``/``file_count``/
+            ``dir_count``/``symlink_count``/``total_bytes``/``restorable``)
+            on success.
         """
         try:
             if not folder_path or not str(folder_path).strip():
@@ -608,13 +619,34 @@ class ModelMoveService:
                 }
 
             if manifest["model_count"] > 0:
+                model_count = manifest["model_count"]
+                excluded_count = manifest["excluded_model_count"]
+                # Excluded models are hidden from the library lists but are
+                # still real weight files, so they block the cascade just like
+                # any other model. Naming them is what makes the refusal
+                # actionable: the folder looks empty in the sidebar precisely
+                # because everything in it is excluded.
+                if excluded_count == model_count:
+                    error = (
+                        f"Folder still contains {model_count} model file(s), "
+                        "all excluded from the library; un-exclude or delete "
+                        "them first"
+                    )
+                elif excluded_count:
+                    error = (
+                        f"Folder still contains {model_count} model file(s), "
+                        f"{excluded_count} of them excluded from the library; "
+                        "delete or move them first"
+                    )
+                else:
+                    error = (
+                        f"Folder still contains {model_count} model "
+                        "file(s); delete or move them first"
+                    )
                 return {
                     "success": False,
                     "code": "not_empty",
-                    "error": (
-                        f"Folder still contains {manifest['model_count']} model "
-                        "file(s); delete or move them first"
-                    ),
+                    "error": error,
                     "manifest": manifest,
                 }
 
@@ -667,13 +699,20 @@ class ModelMoveService:
         Symbolic links are never followed (``os.walk`` default) and are counted
         separately — ``shutil.rmtree`` unlinks them without touching their
         targets.
+
+        ``excluded_model_count`` splits the subset of ``model_count`` that the
+        library hides behind the ``exclude`` flag: those files still block the
+        delete, yet they are invisible to the model lists (and therefore to the
+        folder tree, which derives "empty" from them).
         """
         model_count = 0
+        excluded_model_count = 0
         file_count = 0
         dir_count = 0
         symlink_count = 0
         total_bytes = 0
         pending_delete_job = False
+        excluded_paths = self._excluded_model_paths()
 
         for dirpath, dirnames, filenames in os.walk(absolute_path):
             if PENDING_DELETE_DIR_NAME in dirnames:
@@ -692,6 +731,8 @@ class ModelMoveService:
                     continue
                 if self._is_model_file(name):
                     model_count += 1
+                    if _normalize_match_path(full_path) in excluded_paths:
+                        excluded_model_count += 1
                 else:
                     file_count += 1
                 try:
@@ -701,6 +742,7 @@ class ModelMoveService:
 
         return {
             "model_count": model_count,
+            "excluded_model_count": excluded_model_count,
             "file_count": file_count,
             "dir_count": dir_count,
             "symlink_count": symlink_count,
@@ -715,6 +757,21 @@ class ModelMoveService:
                 and symlink_count == 0
             ),
         }
+
+    def _excluded_model_paths(self) -> Set[str]:
+        """Absolute paths of the models the library hides behind ``exclude``.
+
+        Best-effort: scanner stand-ins that do not expose the accessor simply
+        report no excluded models.
+        """
+        get_excluded = getattr(self.scanner, "get_excluded_models", None)
+        if not callable(get_excluded):
+            return set()
+        try:
+            paths = get_excluded() or []
+        except Exception:  # pragma: no cover - defensive
+            return set()
+        return {_normalize_match_path(path) for path in paths if path}
 
     async def _forget_folder(self, relative_folder: str) -> None:
         """Drop a removed directory from the scanner's folder/cache records."""

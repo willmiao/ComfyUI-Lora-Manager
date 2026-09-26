@@ -1350,6 +1350,10 @@
       "emptyNote": "This folder contains no models. Any other files it holds will be deleted too.",
       "notEmptyTitle": "Folder is not empty",
       "notEmptyMessage": "This folder still contains models. Delete or move them first — deleting a folder never cascades over model files.",
+      "notEmptyMessageCount": "This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
+      "notEmptyMessageExcluded": "This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
+      "busyTitle": "A deletion is still pending",
+      "checking": "Checking the folder contents...",
       "confirm": "Delete folder"
     },
     "deleteFolderResult": {
@@ -1358,6 +1362,7 @@
       "restored": "Folder restored",
       "failed": "Failed to delete folder: {message}",
       "notEmpty": "This folder still contains models. Refresh the sidebar and try again.",
+      "notEmptyWithCount": "This folder still contains {count} model file(s). Refresh the sidebar and try again.",
       "busy": "A deletion is still pending inside this folder. Wait for the undo window to expire.",
       "unsupported": "Folder deletion is not supported on this page",
       "noRoot": "No model root is configured"

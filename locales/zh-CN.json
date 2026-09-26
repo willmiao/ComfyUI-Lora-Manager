@@ -1350,6 +1350,10 @@
             "emptyNote": "该文件夹中没有模型，其中的其他文件也会一并删除。",
             "notEmptyTitle": "文件夹不为空",
             "notEmptyMessage": "该文件夹中仍有模型，请先删除或移出这些模型 —— 删除文件夹不会级联删除模型文件。",
+            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
+            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
+            "busyTitle": "[TODO: Translate] A deletion is still pending",
+            "checking": "[TODO: Translate] Checking the folder contents...",
             "confirm": "删除文件夹"
         },
         "deleteFolderResult": {
@@ -1358,6 +1362,7 @@
             "restored": "文件夹已恢复",
             "failed": "删除文件夹失败: {message}",
             "notEmpty": "该文件夹中仍有模型。请刷新侧边栏后重试。",
+            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
             "busy": "该文件夹内仍有待处理的删除操作，请等待撤销窗口结束。",
             "unsupported": "此页面不支持删除文件夹",
             "noRoot": "未配置模型根目录"

@@ -1350,6 +1350,10 @@
             "emptyNote": "이 폴더에는 모델이 없습니다. 폴더 안의 다른 파일도 함께 삭제됩니다.",
             "notEmptyTitle": "폴더가 비어 있지 않습니다",
             "notEmptyMessage": "이 폴더에는 아직 모델이 있습니다. 먼저 해당 모델을 삭제하거나 이동하세요 —— 폴더를 삭제해도 모델 파일이 함께 삭제되지는 않습니다.",
+            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
+            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
+            "busyTitle": "[TODO: Translate] A deletion is still pending",
+            "checking": "[TODO: Translate] Checking the folder contents...",
             "confirm": "폴더 삭제"
         },
         "deleteFolderResult": {
@@ -1358,6 +1362,7 @@
             "restored": "폴더를 복원했습니다",
             "failed": "폴더 삭제 실패: {message}",
             "notEmpty": "이 폴더에는 아직 모델이 있습니다. 사이드바를 새로 고친 후 다시 시도하세요.",
+            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
             "busy": "이 폴더에 아직 대기 중인 삭제 작업이 있습니다. 되돌리기 시간이 끝날 때까지 기다리세요.",
             "unsupported": "이 페이지에서는 폴더를 삭제할 수 없습니다",
             "noRoot": "모델 루트가 설정되지 않았습니다"

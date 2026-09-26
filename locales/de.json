@@ -1350,6 +1350,10 @@
             "emptyNote": "Dieser Ordner enthält keine Modelle. Alle anderen darin enthaltenen Dateien werden ebenfalls gelöscht.",
             "notEmptyTitle": "Ordner ist nicht leer",
             "notEmptyMessage": "Dieser Ordner enthält noch Modelle. Löschen oder verschieben Sie diese zuerst — beim Löschen eines Ordners werden Modelldateien niemals mitgelöscht.",
+            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
+            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
+            "busyTitle": "[TODO: Translate] A deletion is still pending",
+            "checking": "[TODO: Translate] Checking the folder contents...",
             "confirm": "Ordner löschen"
         },
         "deleteFolderResult": {
@@ -1358,6 +1362,7 @@
             "restored": "Ordner wiederhergestellt",
             "failed": "Ordner konnte nicht gelöscht werden: {message}",
             "notEmpty": "Dieser Ordner enthält noch Modelle. Aktualisieren Sie die Seitenleiste und versuchen Sie es erneut.",
+            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
             "busy": "In diesem Ordner steht noch eine Löschung aus. Warten Sie, bis das Zeitfenster für das Rückgängigmachen abgelaufen ist.",
             "unsupported": "Das Löschen von Ordnern wird auf dieser Seite nicht unterstützt",
             "noRoot": "Es ist kein Modell-Stammverzeichnis konfiguriert"

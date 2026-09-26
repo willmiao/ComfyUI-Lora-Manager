@@ -52,6 +52,9 @@ export class SidebarManager {
         this._renameFolderNode = null;
         this._pendingDeleteFolderPath = null;
         this._deleteFolderModalWired = false;
+        // Bumped on every modal open/close so a late dry-run answer can never
+        // repaint a modal the user has already dismissed or retargeted.
+        this._deleteFolderProbeToken = 0;
 
         // Bind methods
         this.handleTreeClick = this.handleTreeClick.bind(this);
@@ -982,42 +985,71 @@ export class SidebarManager {
     /**
      * Open the folder delete modal for *path*.
      *
-     * The tree already knows whether the subtree holds models (the same
-     * models-only set that dims empty nodes), so the modal opens in one of two
-     * states without a round trip: a confirmation for a model-free folder, or
-     * an explanation when models would have to be cascaded over — a
-     * folder-level cascade would bypass the per-model lifecycle bookkeeping,
-     * so the backend refuses it and the UI says why.
+     * The models-only set that dims empty nodes is only a prediction: it is
+     * built from the scanned, non-excluded models, while the delete guard walks
+     * the folder on disk and refuses on any weight file — excluded ones
+     * included. So the modal opens on the prediction for an instant answer and
+     * is then corrected by a dry run of the very delete the user is about to
+     * confirm, which is the only way the button can never contradict the
+     * backend (see `_verifyFolderContents`).
      */
-    showDeleteFolderModal(path) {
+    async showDeleteFolderModal(path) {
         const modal = document.getElementById('deleteFolderModal');
         if (!modal) return;
 
         // Defensive: the modal may have been absent when listeners were wired.
         this._wireDeleteFolderModal();
 
+        // Opening the modal — or targeting another folder — retires any
+        // in-flight check from a previous open.
+        const token = ++this._deleteFolderProbeToken;
+
+        const holdsModels = this.nonEmptyFolders ? this.nonEmptyFolders.has(path) : false;
+        const prediction = holdsModels
+            ? {
+                state: 'blocked',
+                messageKey: 'sidebar.deleteFolderModal.notEmptyMessage',
+                messageFallback: 'This folder still contains models. Delete or move them first.',
+            }
+            : { state: 'confirm' };
+
+        const probePending = this._supportsFolderManagement()
+            && typeof this.apiClient.deleteFolder === 'function';
+
+        this._renderDeleteFolderModal(path, prediction.state, {
+            ...prediction,
+            checking: probePending,
+        });
+
+        modalManager.showModal('deleteFolderModal');
+
+        if (!probePending) return;
+
+        await this._verifyFolderContents(path, token, prediction);
+    }
+
+    /**
+     * Paint one state of the folder delete modal.
+     *
+     * `state` is 'confirm' (deletion may proceed), 'blocked' (models would be
+     * cascaded over, which the backend refuses) or 'busy' (a staged delete is
+     * still pending inside the folder). `checking` keeps the confirm button
+     * disabled while the authoritative server-side check runs.
+     */
+    _renderDeleteFolderModal(path, state, options = {}) {
+        const modal = document.getElementById('deleteFolderModal');
+        if (!modal) return;
+
         const title = modal.querySelector('[data-role="title"]');
         const message = modal.querySelector('[data-role="message"]');
         const info = modal.querySelector('[data-role="info"]');
         const confirmBtn = modal.querySelector('[data-action="confirm-delete-folder"]');
-
-        const holdsModels = this.nonEmptyFolders ? this.nonEmptyFolders.has(path) : false;
+        const checking = Boolean(options.checking);
 
         const pathLine = `<strong>${escapeHtml(translate('sidebar.deleteFolderModal.folderLabel', {}, 'Folder'))}:</strong> ${escapeHtml(path)}`;
+        const extraLines = [];
 
-        if (holdsModels) {
-            this._pendingDeleteFolderPath = null;
-            title.textContent = translate(
-                'sidebar.deleteFolderModal.notEmptyTitle', {}, 'Folder is not empty'
-            );
-            message.textContent = translate(
-                'sidebar.deleteFolderModal.notEmptyMessage', {},
-                'This folder still contains models. Delete or move them first.'
-            );
-            info.innerHTML = pathLine;
-            confirmBtn.style.display = 'none';
-            modal.dataset.state = 'blocked';
-        } else {
+        if (state === 'confirm') {
             this._pendingDeleteFolderPath = path;
             title.textContent = translate(
                 'sidebar.deleteFolderModal.title', {}, 'Delete folder?'
@@ -1026,18 +1058,146 @@ export class SidebarManager {
                 'sidebar.deleteFolderModal.message', {},
                 'The folder and everything inside it will be permanently removed from disk.'
             );
-            info.innerHTML = `${pathLine}<br>${escapeHtml(translate(
-                'sidebar.deleteFolderModal.emptyNote', {}, 'This folder contains no models.'
-            ))}`;
+            if (!checking) {
+                // While the check runs the "no models" claim is still only the
+                // sidebar's prediction, so it is not repeated as a fact.
+                extraLines.push(escapeHtml(translate(
+                    'sidebar.deleteFolderModal.emptyNote', {}, 'This folder contains no models.'
+                )));
+            }
             confirmBtn.style.display = '';
-            modal.dataset.state = 'confirm';
+            confirmBtn.disabled = checking;
+        } else {
+            this._pendingDeleteFolderPath = null;
+            if (state === 'busy') {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.busyTitle', {}, 'A deletion is still pending'
+                );
+                message.textContent = translate(
+                    'sidebar.deleteFolderResult.busy', {},
+                    'A deletion is still pending inside this folder. Wait for the undo window to expire.'
+                );
+            } else {
+                title.textContent = translate(
+                    'sidebar.deleteFolderModal.notEmptyTitle', {}, 'Folder is not empty'
+                );
+                message.textContent = translate(
+                    options.messageKey || 'sidebar.deleteFolderModal.notEmptyMessage',
+                    options.messageParams || {},
+                    options.messageFallback
+                        || 'This folder still contains models. Delete or move them first.'
+                );
+            }
+            confirmBtn.style.display = 'none';
+            confirmBtn.disabled = true;
         }
 
-        modalManager.showModal('deleteFolderModal');
+        if (checking) {
+            extraLines.push(escapeHtml(translate(
+                'sidebar.deleteFolderModal.checking', {}, 'Checking the folder contents...'
+            )));
+        }
+
+        info.innerHTML = [pathLine, ...extraLines].join('<br>');
+        modal.dataset.state = state;
+    }
+
+    /**
+     * Ask the backend what deleting *relativePath* would actually remove.
+     *
+     * The dry run is authoritative: it walks the folder on disk and applies the
+     * same guard the real delete uses, so it catches everything the sidebar
+     * prediction cannot know — excluded models, weight files no scanner indexes
+     * (a lora folder holding only a `.gguf`, say) and files added after the
+     * last scan. A check that fails for any other reason falls back to the
+     * prediction, leaving the real delete to report its own error.
+     */
+    async _verifyFolderContents(relativePath, token, prediction) {
+        let resolved = null;
+        try {
+            resolved = await this._resolveFolderAbsolutePath(relativePath);
+        } catch (error) {
+            console.error('[SidebarManager] Failed to resolve the folder path:', error);
+        }
+
+        if (token !== this._deleteFolderProbeToken) return;
+
+        if (!resolved) {
+            this._renderDeleteFolderModal(relativePath, prediction.state, prediction);
+            return;
+        }
+
+        try {
+            await this.apiClient.deleteFolder(resolved.absolutePath, { dryRun: true });
+            if (token !== this._deleteFolderProbeToken) return;
+            this._renderDeleteFolderModal(relativePath, 'confirm');
+        } catch (error) {
+            if (token !== this._deleteFolderProbeToken) return;
+            if (error?.code === 'not_empty') {
+                this._renderDeleteFolderModal(
+                    relativePath, 'blocked', this._notEmptyBlocker(error?.manifest)
+                );
+            } else if (error?.code === 'busy') {
+                this._renderDeleteFolderModal(relativePath, 'busy');
+            } else {
+                this._renderDeleteFolderModal(relativePath, prediction.state, prediction);
+            }
+        }
+    }
+
+    /**
+     * Message for a refused delete, split by whether the blocking models are
+     * excluded from the library — the case where the sidebar legitimately shows
+     * the folder as empty, which is exactly what used to be unexplained.
+     */
+    _notEmptyBlocker(manifest) {
+        const modelCount = Number(manifest?.model_count) || 0;
+        const excludedCount = Number(manifest?.excluded_model_count) || 0;
+
+        if (modelCount > 0 && excludedCount > 0) {
+            return {
+                messageKey: 'sidebar.deleteFolderModal.notEmptyMessageExcluded',
+                messageParams: { count: modelCount, excluded: excludedCount },
+                messageFallback: `This folder still contains ${modelCount} model file(s), `
+                    + `${excludedCount} of them excluded from the library. Un-exclude and `
+                    + 'delete them first — deleting a folder never cascades over model files.',
+            };
+        }
+        if (modelCount > 0) {
+            return {
+                messageKey: 'sidebar.deleteFolderModal.notEmptyMessageCount',
+                messageParams: { count: modelCount },
+                messageFallback: `This folder still contains ${modelCount} model file(s). `
+                    + 'Delete or move them first — deleting a folder never cascades over model files.',
+            };
+        }
+        return {
+            messageKey: 'sidebar.deleteFolderModal.notEmptyMessage',
+            messageFallback: 'This folder still contains models. Delete or move them first.',
+        };
+    }
+
+    /**
+     * Resolve a tree-relative folder path to the absolute business path the
+     * folder APIs expect, or null when no model root is configured.
+     */
+    async _resolveFolderAbsolutePath(relativePath) {
+        const rootsData = await this.apiClient.fetchModelRoots();
+        const roots = rootsData?.roots || [];
+        const root = this._resolveDefaultRoot(roots);
+        if (!root) return null;
+
+        return {
+            root,
+            absolutePath: this.combineRootAndRelativePath(root, relativePath),
+        };
     }
 
     hideDeleteFolderModal() {
         this._pendingDeleteFolderPath = null;
+        // Retire any in-flight check so a late answer cannot repaint a modal
+        // the user already dismissed.
+        this._deleteFolderProbeToken += 1;
         modalManager.closeModal('deleteFolderModal');
     }
 
@@ -1057,16 +1217,13 @@ export class SidebarManager {
         }
 
         try {
-            const rootsData = await this.apiClient.fetchModelRoots();
-            const roots = rootsData?.roots || [];
-            const root = this._resolveDefaultRoot(roots);
-            if (!root) {
+            const resolved = await this._resolveFolderAbsolutePath(relativePath);
+            if (!resolved) {
                 showToast('sidebar.deleteFolderResult.noRoot', {}, 'error');
                 return false;
             }
 
-            const absolutePath = this.combineRootAndRelativePath(root, relativePath);
-            const result = await this.apiClient.deleteFolder(absolutePath);
+            const result = await this.apiClient.deleteFolder(resolved.absolutePath);
 
             // Drop the node (and its subtree) from the persisted expand state
             // before refreshing, otherwise stale keys accumulate forever. A
@@ -1083,7 +1240,7 @@ export class SidebarManager {
                 // the same 20s undo affordance the model delete flow uses.
                 showActionToast('sidebar.deleteFolderResult.success', { name }, 'success', {
                     actionText: translate('toast.undo.action', {}, 'Undo'),
-                    onAction: () => this._restoreDeletedFolder(absolutePath, relativePath),
+                    onAction: () => this._restoreDeletedFolder(resolved.absolutePath, relativePath),
                 });
             } else {
                 showToast(
@@ -1097,7 +1254,18 @@ export class SidebarManager {
         } catch (error) {
             console.error('[SidebarManager] Error deleting folder:', error);
             if (error?.code === 'not_empty') {
-                showToast('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
+                // The dry run normally catches this before the user can
+                // confirm; reaching here means the folder changed in between.
+                const modelCount = Number(error?.manifest?.model_count) || 0;
+                if (modelCount > 0) {
+                    showToast(
+                        'sidebar.deleteFolderResult.notEmptyWithCount',
+                        { count: modelCount },
+                        'warning'
+                    );
+                } else {
+                    showToast('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
+                }
             } else if (error?.code === 'busy') {
                 showToast('sidebar.deleteFolderResult.busy', {}, 'warning');
             } else {

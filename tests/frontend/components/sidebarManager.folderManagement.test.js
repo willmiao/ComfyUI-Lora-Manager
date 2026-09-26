@@ -631,24 +631,38 @@ describe('SidebarManager folder deletion', () => {
     vi.clearAllMocks();
   });
 
-  it('opens the confirm state for a folder whose subtree holds no models', () => {
-    const manager = createManager(createApiClient());
+  it('opens the confirm state for a folder whose subtree holds no models', async () => {
+    const apiClient = createApiClient();
+    const manager = createManager(apiClient);
     manager.nonEmptyFolders = new Set(['', 'full']);
 
-    manager.showDeleteFolderModal('empty');
+    await manager.showDeleteFolderModal('empty');
 
     const modal = document.getElementById('deleteFolderModal');
     expect(modal.dataset.state).toBe('confirm');
     expect(confirmBtn().style.display).toBe('');
+    expect(confirmBtn().disabled).toBe(false);
     expect(manager._pendingDeleteFolderPath).toBe('empty');
     expect(modalManager.showModal).toHaveBeenCalledWith('deleteFolderModal');
+    // The prediction is confirmed against the real guard before the user can
+    // act on it.
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith(
+      '/models/loras/empty', { dryRun: true }
+    );
   });
 
-  it('explains the refusal when the subtree still holds models', () => {
-    const manager = createManager(createApiClient());
+  it('explains the refusal when the subtree still holds models', async () => {
+    const conflict = Object.assign(new Error('still contains models'), {
+      code: 'not_empty',
+      manifest: { model_count: 2, excluded_model_count: 0 },
+    });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
     manager.nonEmptyFolders = new Set(['', 'full']);
 
-    manager.showDeleteFolderModal('full');
+    await manager.showDeleteFolderModal('full');
 
     const modal = document.getElementById('deleteFolderModal');
     expect(modal.dataset.state).toBe('blocked');
@@ -656,15 +670,132 @@ describe('SidebarManager folder deletion', () => {
     expect(manager._pendingDeleteFolderPath).toBeNull();
   });
 
-  it('treats an unknown folder as model-free when the models-only set is missing', () => {
-    // nonEmptyFolders is null outside the include-empty tree; the server still
-    // refuses a non-empty folder, so the client falls back to the confirm state.
+  it('treats an unknown folder as model-free when the models-only set is missing', async () => {
+    // nonEmptyFolders is null outside the include-empty tree; the dry run is
+    // what actually decides, so the prediction is only a starting point.
     const manager = createManager(createApiClient());
     manager.nonEmptyFolders = null;
 
-    manager.showDeleteFolderModal('empty');
+    await manager.showDeleteFolderModal('empty');
 
     expect(document.getElementById('deleteFolderModal').dataset.state).toBe('confirm');
+  });
+
+  it('blocks a folder the tree shows as empty when only excluded models live there', async () => {
+    // The reported mismatch: excluded models are absent from the models-only
+    // set (so the node dims as empty), yet they are real weight files on disk
+    // and the delete guard refuses to cascade over them.
+    const conflict = Object.assign(
+      new Error('Folder still contains 3 model file(s), all excluded from the library'),
+      { code: 'not_empty', manifest: { model_count: 3, excluded_model_count: 3 } }
+    );
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    await manager.showDeleteFolderModal('Flux.1 D/test');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('blocked');
+    expect(confirmBtn().style.display).toBe('none');
+    expect(manager._pendingDeleteFolderPath).toBeNull();
+    // The message names the excluded models instead of contradicting the tree.
+    expect(modal.querySelector('[data-role="message"]').textContent)
+      .toContain('excluded from the library');
+    expect(apiClient.deleteFolder).toHaveBeenCalledWith(
+      '/models/loras/Flux.1 D/test', { dryRun: true }
+    );
+  });
+
+  it('reports how many model files block the delete when some are excluded', async () => {
+    const conflict = Object.assign(new Error('still contains models'), {
+      code: 'not_empty',
+      manifest: { model_count: 4, excluded_model_count: 1 },
+    });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    await manager.showDeleteFolderModal('mixed');
+
+    expect(
+      document.getElementById('deleteFolderModal')
+        .querySelector('[data-role="message"]').textContent
+    ).toContain('4 model file(s)');
+  });
+
+  it('blocks the delete while a staged delete is still pending', async () => {
+    const busy = Object.assign(new Error('staged delete pending'), { code: 'busy' });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(busy),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    await manager.showDeleteFolderModal('empty');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('busy');
+    expect(confirmBtn().style.display).toBe('none');
+  });
+
+  it('keeps the confirm button disabled until the check settles', async () => {
+    let release;
+    const apiClient = createApiClient({
+      fetchModelRoots: vi.fn(() => new Promise((resolve) => { release = resolve; })),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    const pending = manager.showDeleteFolderModal('empty');
+    expect(confirmBtn().disabled).toBe(true);
+
+    release({ roots: ['/models/loras'] });
+    await pending;
+
+    expect(confirmBtn().disabled).toBe(false);
+    expect(document.getElementById('deleteFolderModal').dataset.state).toBe('confirm');
+  });
+
+  it('ignores a dry-run answer that lands after the modal was dismissed', async () => {
+    let rejectProbe;
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn(() => new Promise((_resolve, reject) => { rejectProbe = reject; })),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    const pending = manager.showDeleteFolderModal('empty');
+    expect(document.getElementById('deleteFolderModal').dataset.state).toBe('confirm');
+
+    await vi.waitFor(() => expect(rejectProbe).toBeTypeOf('function'));
+
+    manager.hideDeleteFolderModal();
+    rejectProbe(Object.assign(new Error('still contains models'), {
+      code: 'not_empty',
+      manifest: { model_count: 1, excluded_model_count: 0 },
+    }));
+    await pending;
+
+    expect(document.getElementById('deleteFolderModal').dataset.state).toBe('confirm');
+  });
+
+  it('falls back to the tree prediction when the check fails for another reason', async () => {
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(new Error('network down')),
+    });
+    const manager = createManager(apiClient);
+    manager.nonEmptyFolders = new Set(['', 'full']);
+
+    await manager.showDeleteFolderModal('empty');
+
+    const modal = document.getElementById('deleteFolderModal');
+    expect(modal.dataset.state).toBe('confirm');
+    expect(confirmBtn().disabled).toBe(false);
   });
 
   it('deletes the folder and offers the undo affordance for an empty one', async () => {
@@ -730,6 +861,25 @@ describe('SidebarManager folder deletion', () => {
     expect(success).toBe(false);
     expect(showToast).toHaveBeenCalledWith('sidebar.deleteFolderResult.notEmpty', {}, 'warning');
     expect(manager.refresh).not.toHaveBeenCalled();
+  });
+
+  it('includes the model count in the stale-tree toast when the manifest has one', async () => {
+    const conflict = Object.assign(new Error('still contains models'), {
+      code: 'not_empty',
+      manifest: { model_count: 3, excluded_model_count: 3 },
+    });
+    const apiClient = createApiClient({
+      deleteFolder: vi.fn().mockRejectedValue(conflict),
+    });
+    const manager = createManager(apiClient);
+    manager.refresh = vi.fn().mockResolvedValue(undefined);
+
+    const success = await manager._deleteFolder('full');
+
+    expect(success).toBe(false);
+    expect(showToast).toHaveBeenCalledWith(
+      'sidebar.deleteFolderResult.notEmptyWithCount', { count: 3 }, 'warning'
+    );
   });
 
   it('surfaces a busy folder with a staged delete', async () => {
