@@ -383,7 +383,7 @@
             "exampleImages": "תמונות דוגמה",
             "autoOrganize": "ארגון אוטומטי",
             "metadata": "מטא-נתונים",
-            "sidecarStorage": "[TODO: Translate] Sidecar Storage",
+            "sidecarStorage": "אחסון קובצי לוואי",
             "proxySettings": "הגדרות פרוקסי"
         },
         "nav": {
@@ -791,26 +791,26 @@
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
         },
         "sidecarStorage": {
-            "mode": "[TODO: Translate] Sidecar Storage Mode",
-            "modeHelp": "[TODO: Translate] Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+            "mode": "מצב אחסון קובצי לוואי",
+            "modeHelp": "בחר היכן יאוחסנו קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה: לצד כל קובץ מודל, או בתיקייה מרכזית אחת שמשקפת את מבנה הספרייה שלך. קובצי .civitai.info נשארים תמיד לצד קובץ המודל.",
             "modeOptions": {
-                "alongside": "[TODO: Translate] Alongside model files (default)",
-                "centralized": "[TODO: Translate] Centralized storage"
+                "alongside": "לצד קובצי המודלים (ברירת מחדל)",
+                "centralized": "אחסון מרכזי"
             },
-            "path": "[TODO: Translate] Centralized Storage Path",
-            "pathHelp": "[TODO: Translate] Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
-            "pathPlaceholder": "[TODO: Translate] Empty = <settings dir>/sidecars",
-            "management": "[TODO: Translate] Sidecar Migration",
-            "managementHelp": "[TODO: Translate] Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
-            "migrateButton": "[TODO: Translate] Migrate Sidecars Now",
-            "migratingButton": "[TODO: Translate] Migrating...",
-            "migrating": "[TODO: Translate] Migrating sidecars...",
-            "migrateSuccess": "[TODO: Translate] Sidecar migration completed successfully",
-            "migrateFailed": "[TODO: Translate] Sidecar migration failed: {message}",
-            "migrationDeferred": "[TODO: Translate] Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
-            "confirmToCentralized": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmRelocateRoot": "[TODO: Translate] The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
+            "path": "נתיב האחסון המרכזי",
+            "pathHelp": "תיקיית השורש של אחסון קובצי הלוואי המרכזי. השאר ריק כדי להשתמש במיקום ברירת המחדל <settings dir>/sidecars.",
+            "pathPlaceholder": "ריק = <settings dir>/sidecars",
+            "management": "העברת קובצי לוואי",
+            "managementHelp": "העבר קובצי לוואי .metadata.json ותמונות תצוגה מקדימה קיימים בין אחסון לצד המודלים לאחסון המרכזי, בהתאם למצב שנבחר. שינוי המצב אינו מעביר קבצים קיימים באופן אוטומטי.",
+            "migrateButton": "העבר קובצי לוואי כעת",
+            "migratingButton": "מעביר...",
+            "migrating": "מעביר קובצי לוואי...",
+            "migrateSuccess": "העברת קובצי הלוואי הושלמה בהצלחה",
+            "migrateFailed": "העברת קובצי הלוואי נכשלה: {message}",
+            "migrationDeferred": "קובצי הלוואי הקיימים לא הועברו. ניתן להעביר אותם מאוחר יותר דרך הגדרות > ספרייה > אחסון קובצי לוואי.",
+            "confirmToCentralized": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להעביר אותם כעת לתיקיית האחסון המרכזי? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
+            "confirmToAlongside": "מצב האחסון השתנה, אך קובצי הלוואי .metadata.json ותמונות התצוגה המקדימה הקיימים אינם מועברים אוטומטית. להחזיר אותם כעת לצד קובצי המודל שלהם? ניתן לעשות זאת גם מאוחר יותר באמצעות הכפתור «העבר קובצי לוואי כעת».",
+            "confirmRelocateRoot": "תיקיית האחסון המרכזי השתנתה, אך קובצי הלוואי ותמונות התצוגה המקדימה הקיימים עדיין נמצאים בתיקייה הקודמת. להעביר אותם כעת לתיקייה החדשה?"
         },
         "proxySettings": {
             "enableProxy": "הפעל פרוקסי ברמת האפליקציה",
@@ -1666,10 +1666,10 @@
             "revertButton": "שחזר שמות קבצים מקוריים"
         },
         "sidecarMigrationConfirm": {
-            "titleToCentralized": "[TODO: Translate] Move sidecars to centralized storage?",
-            "titleToAlongside": "[TODO: Translate] Move sidecars back next to model files?",
-            "confirmButton": "[TODO: Translate] Migrate Now",
-            "titleRelocateRoot": "[TODO: Translate] Move sidecars to the new storage directory?"
+            "titleToCentralized": "להעביר את קובצי הלוואי לאחסון המרכזי?",
+            "titleToAlongside": "להחזיר את קובצי הלוואי לצד קובצי המודל?",
+            "confirmButton": "העבר כעת",
+            "titleRelocateRoot": "להעביר את קובצי הלוואי לתיקיית האחסון החדשה?"
         },
         "bulkAddTags": {
             "title": "הוסף תגיות למספר מודלים",

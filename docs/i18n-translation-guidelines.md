@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2105 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2128 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -86,6 +86,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `.notEmptyMessageExcluded`, `.busyTitle`, `.checking`, `sidebar.deleteFolderResult.notEmptyWithCount`);
 > all 9 locales are translated (terminology in §2, "Folder sidebar feature"), so the
 > "no remaining placeholders" claim holds again.
+
+> **Status (2026-09, sidecar storage):** optional centralized storage for `.metadata.json`
+> sidecars and preview images added 23 keys — `settings.sections.sidecarStorage`,
+> the 18 `settings.sidecarStorage.*` labels/help/status/confirm strings, and the 4
+> `modals.sidecarMigrationConfirm.*` titles/button. The pull request merged them as
+> `[TODO: Translate]` copies; all 9 locales are now translated (terminology in §2,
+> "Sidecar storage feature"), so no placeholder remains and the "no remaining placeholders"
+> claim holds again.
 
 ---
 
@@ -447,6 +455,45 @@ the **noun for arranging files**, matching each locale's existing
 | he | ארגון |
 
 zh-CN/zh-TW use 整理 ("tidying/arranging"), not 组织/組織 (an organization as a group).
+
+### Sidecar storage feature (centralized `.metadata.json` / preview storage)
+
+The Library settings tab hosts an optional mode that stores `.metadata.json` sidecars and
+preview images either **alongside** each model file or in a single **centralized** mirror tree,
+plus the manual migration that moves existing files between the two. Everything lives in
+`settings.sections.sidecarStorage` (the section header inside the Library tab),
+`settings.sidecarStorage.*` and `modals.sidecarMigrationConfirm.*`.
+
+- **`sidecar` is a technical noun, not a brand**, so each locale either borrows it or uses its
+  own companion-file word — one rendering per file:
+
+| Term | Rendering |
+|---|---|
+| sidecar (noun) | zh-CN 附属文件 · zh-TW 附屬檔案 · ja サイドカーファイル · ko 사이드카 파일 · fr fichier sidecar · de Sidecar-Datei · es archivo sidecar · ru sidecar-файл · he קובץ לוואי |
+| centralized storage | zh-CN 集中存储 · zh-TW 集中儲存 · ja 集中保存 · ko 중앙 집중식 저장 · fr stockage centralisé · de zentrale Speicherung · es almacenamiento centralizado · ru централизованное хранилище · he אחסון מרכזי |
+| alongside model files | zh-CN 与模型文件放在一起 · zh-TW 與模型檔案放在一起 · ja モデルファイルの隣 · ko 모델 파일 옆 · fr à côté des fichiers de modèle · de neben den Modelldateien · es junto a los archivos de modelo · ru рядом с файлами моделей · he לצד קובצי המודלים |
+| migrate (verb/noun) | zh-CN 迁移 · zh-TW 遷移 · ja 移動 · ko 이동 · fr migrer / migration · de verschieben / Migration · es migrar / migración · ru перенести / перенос · he להעביר / העברה |
+| mirror (verb) | zh-CN 镜像 · zh-TW 對應 · ja ミラーリング · ko 미러링 · fr refléter · de spiegeln · es reflejar · ru повторять структуру · he לשקף |
+| preview images | zh-CN 预览图片 · zh-TW 預覽圖片 · ja プレビュー画像 · ko 미리보기 이미지 · fr images d’aperçu · de Vorschaubilder · es imágenes de vista previa · ru изображения превью · he תמונות תצוגה מקדימה |
+
+- `ja`/`ko` follow the file's existing storage-relocation verb (ja 移動, ko 이동, from
+  `settings.folderSettings.recipesPathMigrating`) rather than a transliteration of "migration";
+  `ru` uses перенос for the same reason, and `de` keeps the loan noun `Migration` while the verbs
+  use `verschieben`.
+- **`.metadata.json`**, **`.civitai.info`** and the default-path literal
+  `(<settings dir>/sidecars)` stay byte-identical in every locale — they are file names and a
+  path, not prose (§6 exception). Hebrew drops the wrapping parentheses to avoid bidi mirroring
+  and writes the literal bare.
+- `migrationDeferred` names a navigation path ("Settings → Library → Sidecar Storage"), so each
+  locale renders it with its **own** settings label and Library tab label
+  (`common.actions.settings` + `settings.nav.library` + the new section label), using the same
+  arrow and quoting style its other nav-path strings already use — zh-CN “设置 → 库 → …”,
+  zh-TW/ja 「設定 > … > …」, ko `설정 → …` bare, fr/de/es bare
+  (`Paramètres` / `Einstellungen` / `Configuración` → …), ru «Настройки → …»,
+  he `הגדרות > …` bare (cf. `other.noPaths.descriptionStandalone`).
+- The migrate-button label is quoted inside `confirmToCentralized` / `confirmToAlongside` with
+  each locale's UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」, ko `' '`, fr/ru/es/he « »,
+  de „ “), matching `settings.sidecarStorage.migrateButton` verbatim so the two never drift.
 
 ### Filename Templates feature
 

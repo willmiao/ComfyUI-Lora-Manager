@@ -383,7 +383,7 @@
             "exampleImages": "示例图片",
             "autoOrganize": "自动整理",
             "metadata": "元数据",
-            "sidecarStorage": "[TODO: Translate] Sidecar Storage",
+            "sidecarStorage": "附属文件存储",
             "proxySettings": "代理设置"
         },
         "nav": {
@@ -791,26 +791,26 @@
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
         },
         "sidecarStorage": {
-            "mode": "[TODO: Translate] Sidecar Storage Mode",
-            "modeHelp": "[TODO: Translate] Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+            "mode": "附属文件存储模式",
+            "modeHelp": "选择 .metadata.json 附属文件和预览图片的存放位置：与每个模型文件放在一起，或集中存放在一个镜像模型库结构的目录中。.civitai.info 文件始终与模型文件放在一起。",
             "modeOptions": {
-                "alongside": "[TODO: Translate] Alongside model files (default)",
-                "centralized": "[TODO: Translate] Centralized storage"
+                "alongside": "与模型文件放在一起（默认）",
+                "centralized": "集中存储"
             },
-            "path": "[TODO: Translate] Centralized Storage Path",
-            "pathHelp": "[TODO: Translate] Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
-            "pathPlaceholder": "[TODO: Translate] Empty = <settings dir>/sidecars",
-            "management": "[TODO: Translate] Sidecar Migration",
-            "managementHelp": "[TODO: Translate] Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
-            "migrateButton": "[TODO: Translate] Migrate Sidecars Now",
-            "migratingButton": "[TODO: Translate] Migrating...",
-            "migrating": "[TODO: Translate] Migrating sidecars...",
-            "migrateSuccess": "[TODO: Translate] Sidecar migration completed successfully",
-            "migrateFailed": "[TODO: Translate] Sidecar migration failed: {message}",
-            "migrationDeferred": "[TODO: Translate] Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
-            "confirmToCentralized": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmRelocateRoot": "[TODO: Translate] The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
+            "path": "集中存储路径",
+            "pathHelp": "集中存储附属文件的根目录。留空则使用默认位置（<settings dir>/sidecars）。",
+            "pathPlaceholder": "留空 = <settings dir>/sidecars",
+            "management": "附属文件迁移",
+            "managementHelp": "在“与模型文件放在一起”和“集中存储”之间迁移现有的 .metadata.json 附属文件和预览图片，以匹配当前选择的模式。更改模式不会自动迁移现有文件。",
+            "migrateButton": "立即迁移附属文件",
+            "migratingButton": "迁移中...",
+            "migrating": "正在迁移附属文件...",
+            "migrateSuccess": "附属文件迁移完成",
+            "migrateFailed": "附属文件迁移失败：{message}",
+            "migrationDeferred": "现有附属文件未迁移。你可以稍后在“设置 → 库 → 附属文件存储”中迁移它们。",
+            "confirmToCentralized": "存储模式已更改，但现有的 .metadata.json 附属文件和预览图片不会自动迁移。要现在将它们移入集中存储目录吗？你也可以稍后使用“立即迁移附属文件”按钮完成。",
+            "confirmToAlongside": "存储模式已更改，但现有的 .metadata.json 附属文件和预览图片不会自动迁移。要现在将它们移回各自的模型文件旁边吗？你也可以稍后使用“立即迁移附属文件”按钮完成。",
+            "confirmRelocateRoot": "集中存储目录已更改，但现有的附属文件和预览图片仍在原目录中。要现在将它们移到新目录吗？"
         },
         "proxySettings": {
             "enableProxy": "启用应用级代理",
@@ -1666,10 +1666,10 @@
             "revertButton": "恢复原始文件名"
         },
         "sidecarMigrationConfirm": {
-            "titleToCentralized": "[TODO: Translate] Move sidecars to centralized storage?",
-            "titleToAlongside": "[TODO: Translate] Move sidecars back next to model files?",
-            "confirmButton": "[TODO: Translate] Migrate Now",
-            "titleRelocateRoot": "[TODO: Translate] Move sidecars to the new storage directory?"
+            "titleToCentralized": "要将附属文件移到集中存储吗？",
+            "titleToAlongside": "要将附属文件移回模型文件旁边吗？",
+            "confirmButton": "立即迁移",
+            "titleRelocateRoot": "要将附属文件移到新的存储目录吗？"
         },
         "bulkAddTags": {
             "title": "批量添加标签",

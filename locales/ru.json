@@ -383,7 +383,7 @@
             "exampleImages": "Примеры изображений",
             "autoOrganize": "Автоорганизация",
             "metadata": "Метаданные",
-            "sidecarStorage": "[TODO: Translate] Sidecar Storage",
+            "sidecarStorage": "Хранилище sidecar-файлов",
             "proxySettings": "Настройки прокси"
         },
         "nav": {
@@ -791,26 +791,26 @@
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
         },
         "sidecarStorage": {
-            "mode": "[TODO: Translate] Sidecar Storage Mode",
-            "modeHelp": "[TODO: Translate] Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+            "mode": "Режим хранения sidecar-файлов",
+            "modeHelp": "Выберите, где хранить sidecar-файлы .metadata.json и изображения превью: рядом с каждым файлом модели или в одном централизованном каталоге, повторяющем структуру вашей библиотеки. Файлы .civitai.info всегда остаются рядом с файлом модели.",
             "modeOptions": {
-                "alongside": "[TODO: Translate] Alongside model files (default)",
-                "centralized": "[TODO: Translate] Centralized storage"
+                "alongside": "Рядом с файлами моделей (по умолчанию)",
+                "centralized": "Централизованное хранилище"
             },
-            "path": "[TODO: Translate] Centralized Storage Path",
-            "pathHelp": "[TODO: Translate] Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
-            "pathPlaceholder": "[TODO: Translate] Empty = <settings dir>/sidecars",
-            "management": "[TODO: Translate] Sidecar Migration",
-            "managementHelp": "[TODO: Translate] Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
-            "migrateButton": "[TODO: Translate] Migrate Sidecars Now",
-            "migratingButton": "[TODO: Translate] Migrating...",
-            "migrating": "[TODO: Translate] Migrating sidecars...",
-            "migrateSuccess": "[TODO: Translate] Sidecar migration completed successfully",
-            "migrateFailed": "[TODO: Translate] Sidecar migration failed: {message}",
-            "migrationDeferred": "[TODO: Translate] Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
-            "confirmToCentralized": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmRelocateRoot": "[TODO: Translate] The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
+            "path": "Путь централизованного хранилища",
+            "pathHelp": "Корневой каталог централизованного хранилища sidecar-файлов. Оставьте пустым, чтобы использовать расположение по умолчанию (<settings dir>/sidecars).",
+            "pathPlaceholder": "Пусто = <settings dir>/sidecars",
+            "management": "Перенос sidecar-файлов",
+            "managementHelp": "Переносите существующие sidecar-файлы .metadata.json и изображения превью между хранением рядом с моделями и централизованным хранилищем в соответствии с выбранным режимом. Смена режима не переносит существующие файлы автоматически.",
+            "migrateButton": "Перенести sidecar-файлы сейчас",
+            "migratingButton": "Перенос...",
+            "migrating": "Перенос sidecar-файлов...",
+            "migrateSuccess": "Перенос sidecar-файлов успешно завершён",
+            "migrateFailed": "Не удалось перенести sidecar-файлы: {message}",
+            "migrationDeferred": "Существующие sidecar-файлы не были перенесены. Вы можете перенести их позже в разделе «Настройки → Библиотека → Хранилище sidecar-файлов».",
+            "confirmToCentralized": "Режим хранения изменён, но существующие sidecar-файлы .metadata.json и изображения превью не переносятся автоматически. Перенести их сейчас в централизованное хранилище? Это также можно сделать позже кнопкой «Перенести sidecar-файлы сейчас».",
+            "confirmToAlongside": "Режим хранения изменён, но существующие sidecar-файлы .metadata.json и изображения превью не переносятся автоматически. Вернуть их сейчас рядом с их файлами моделей? Это также можно сделать позже кнопкой «Перенести sidecar-файлы сейчас».",
+            "confirmRelocateRoot": "Каталог централизованного хранилища изменён, но существующие sidecar-файлы и изображения превью всё ещё находятся в прежнем каталоге. Перенести их сейчас в новый каталог?"
         },
         "proxySettings": {
             "enableProxy": "Включить прокси на уровне приложения",
@@ -1666,10 +1666,10 @@
             "revertButton": "Восстановить исходные имена файлов"
         },
         "sidecarMigrationConfirm": {
-            "titleToCentralized": "[TODO: Translate] Move sidecars to centralized storage?",
-            "titleToAlongside": "[TODO: Translate] Move sidecars back next to model files?",
-            "confirmButton": "[TODO: Translate] Migrate Now",
-            "titleRelocateRoot": "[TODO: Translate] Move sidecars to the new storage directory?"
+            "titleToCentralized": "Перенести sidecar-файлы в централизованное хранилище?",
+            "titleToAlongside": "Вернуть sidecar-файлы рядом с файлами моделей?",
+            "confirmButton": "Перенести сейчас",
+            "titleRelocateRoot": "Перенести sidecar-файлы в новый каталог хранилища?"
         },
         "bulkAddTags": {
             "title": "Добавить теги к нескольким моделям",

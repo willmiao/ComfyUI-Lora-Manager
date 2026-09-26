@@ -383,7 +383,7 @@
             "exampleImages": "例画像",
             "autoOrganize": "自動整理",
             "metadata": "メタデータ",
-            "sidecarStorage": "[TODO: Translate] Sidecar Storage",
+            "sidecarStorage": "サイドカーファイルの保存",
             "proxySettings": "プロキシ設定"
         },
         "nav": {
@@ -791,26 +791,26 @@
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
         },
         "sidecarStorage": {
-            "mode": "[TODO: Translate] Sidecar Storage Mode",
-            "modeHelp": "[TODO: Translate] Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+            "mode": "サイドカーファイルの保存モード",
+            "modeHelp": ".metadata.json サイドカーファイルとプレビュー画像の保存先を選択します。各モデルファイルの隣に保存するか、ライブラリ構造をミラーリングした単一の集中ディレクトリに保存します。.civitai.info ファイルは常にモデルファイルの隣に置かれます。",
             "modeOptions": {
-                "alongside": "[TODO: Translate] Alongside model files (default)",
-                "centralized": "[TODO: Translate] Centralized storage"
+                "alongside": "モデルファイルの隣（デフォルト）",
+                "centralized": "集中保存"
             },
-            "path": "[TODO: Translate] Centralized Storage Path",
-            "pathHelp": "[TODO: Translate] Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
-            "pathPlaceholder": "[TODO: Translate] Empty = <settings dir>/sidecars",
-            "management": "[TODO: Translate] Sidecar Migration",
-            "managementHelp": "[TODO: Translate] Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
-            "migrateButton": "[TODO: Translate] Migrate Sidecars Now",
-            "migratingButton": "[TODO: Translate] Migrating...",
-            "migrating": "[TODO: Translate] Migrating sidecars...",
-            "migrateSuccess": "[TODO: Translate] Sidecar migration completed successfully",
-            "migrateFailed": "[TODO: Translate] Sidecar migration failed: {message}",
-            "migrationDeferred": "[TODO: Translate] Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
-            "confirmToCentralized": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmRelocateRoot": "[TODO: Translate] The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
+            "path": "集中保存先パス",
+            "pathHelp": "サイドカーファイルを集中保存するルートディレクトリ。空欄の場合は既定の場所（<settings dir>/sidecars）を使用します。",
+            "pathPlaceholder": "空欄 = <settings dir>/sidecars",
+            "management": "サイドカーファイルの移動",
+            "managementHelp": "既存の .metadata.json サイドカーファイルとプレビュー画像を、現在選択されているモードに合わせて「モデルファイルの隣」と「集中保存」の間で移動します。モードを変更しても既存ファイルは自動では移動しません。",
+            "migrateButton": "今すぐサイドカーファイルを移動",
+            "migratingButton": "移動しています...",
+            "migrating": "サイドカーファイルを移動しています...",
+            "migrateSuccess": "サイドカーファイルの移動が完了しました",
+            "migrateFailed": "サイドカーファイルの移動に失敗しました：{message}",
+            "migrationDeferred": "既存のサイドカーファイルは移動されませんでした。後で「設定 > ライブラリ > サイドカーファイルの保存」から移動できます。",
+            "confirmToCentralized": "保存モードが変更されましたが、既存の .metadata.json サイドカーファイルとプレビュー画像は自動では移動しません。今すぐ集中保存ディレクトリに移動しますか？「今すぐサイドカーファイルを移動」ボタンで後から実行することもできます。",
+            "confirmToAlongside": "保存モードが変更されましたが、既存の .metadata.json サイドカーファイルとプレビュー画像は自動では移動しません。今すぐ各モデルファイルの隣に戻しますか？「今すぐサイドカーファイルを移動」ボタンで後から実行することもできます。",
+            "confirmRelocateRoot": "集中保存ディレクトリが変更されましたが、既存のサイドカーファイルとプレビュー画像はまだ以前のディレクトリにあります。今すぐ新しいディレクトリに移動しますか？"
         },
         "proxySettings": {
             "enableProxy": "アプリレベルのプロキシを有効化",
@@ -1666,10 +1666,10 @@
             "revertButton": "元のファイル名を復元"
         },
         "sidecarMigrationConfirm": {
-            "titleToCentralized": "[TODO: Translate] Move sidecars to centralized storage?",
-            "titleToAlongside": "[TODO: Translate] Move sidecars back next to model files?",
-            "confirmButton": "[TODO: Translate] Migrate Now",
-            "titleRelocateRoot": "[TODO: Translate] Move sidecars to the new storage directory?"
+            "titleToCentralized": "サイドカーファイルを集中保存に移動しますか？",
+            "titleToAlongside": "サイドカーファイルをモデルファイルの隣に戻しますか？",
+            "confirmButton": "今すぐ移動",
+            "titleRelocateRoot": "サイドカーファイルを新しい保存ディレクトリに移動しますか？"
         },
         "bulkAddTags": {
             "title": "複数モデルにタグを追加",

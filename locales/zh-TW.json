@@ -383,7 +383,7 @@
             "exampleImages": "範例圖片",
             "autoOrganize": "自動整理",
             "metadata": "中繼資料",
-            "sidecarStorage": "[TODO: Translate] Sidecar Storage",
+            "sidecarStorage": "附屬檔案儲存",
             "proxySettings": "代理設定"
         },
         "nav": {
@@ -791,26 +791,26 @@
             "providerOrderCivitaiSqliteArchive": "CivitAI → Archive DB → CivArchive"
         },
         "sidecarStorage": {
-            "mode": "[TODO: Translate] Sidecar Storage Mode",
-            "modeHelp": "[TODO: Translate] Choose where .metadata.json sidecars and preview images are stored: next to each model file, or in a single centralized directory that mirrors your library structure. .civitai.info files always stay next to the model file.",
+            "mode": "附屬檔案儲存模式",
+            "modeHelp": "選擇 .metadata.json 附屬檔案與預覽圖片的存放位置：與每個模型檔案放在一起，或集中在一個對應模型庫結構的目錄中。.civitai.info 檔案一律與模型檔案放在一起。",
             "modeOptions": {
-                "alongside": "[TODO: Translate] Alongside model files (default)",
-                "centralized": "[TODO: Translate] Centralized storage"
+                "alongside": "與模型檔案放在一起（預設）",
+                "centralized": "集中儲存"
             },
-            "path": "[TODO: Translate] Centralized Storage Path",
-            "pathHelp": "[TODO: Translate] Root directory for centralized sidecar storage. Leave empty to use the default location (<settings dir>/sidecars).",
-            "pathPlaceholder": "[TODO: Translate] Empty = <settings dir>/sidecars",
-            "management": "[TODO: Translate] Sidecar Migration",
-            "managementHelp": "[TODO: Translate] Move existing .metadata.json sidecars and preview images between alongside and centralized storage, matching the currently selected mode. Changing the mode does not move existing files automatically.",
-            "migrateButton": "[TODO: Translate] Migrate Sidecars Now",
-            "migratingButton": "[TODO: Translate] Migrating...",
-            "migrating": "[TODO: Translate] Migrating sidecars...",
-            "migrateSuccess": "[TODO: Translate] Sidecar migration completed successfully",
-            "migrateFailed": "[TODO: Translate] Sidecar migration failed: {message}",
-            "migrationDeferred": "[TODO: Translate] Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
-            "confirmToCentralized": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmRelocateRoot": "[TODO: Translate] The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
+            "path": "集中儲存路徑",
+            "pathHelp": "集中儲存附屬檔案的根目錄。留空則使用預設位置（<settings dir>/sidecars）。",
+            "pathPlaceholder": "留空 = <settings dir>/sidecars",
+            "management": "附屬檔案遷移",
+            "managementHelp": "在「與模型檔案放在一起」與「集中儲存」之間遷移現有的 .metadata.json 附屬檔案與預覽圖片，以符合目前選擇的模式。變更模式不會自動遷移現有檔案。",
+            "migrateButton": "立即遷移附屬檔案",
+            "migratingButton": "遷移中...",
+            "migrating": "正在遷移附屬檔案...",
+            "migrateSuccess": "附屬檔案遷移完成",
+            "migrateFailed": "附屬檔案遷移失敗：{message}",
+            "migrationDeferred": "現有附屬檔案未遷移。您稍後可以在「設定 > 模型庫 > 附屬檔案儲存」中遷移它們。",
+            "confirmToCentralized": "儲存模式已變更，但現有的 .metadata.json 附屬檔案與預覽圖片不會自動遷移。要現在將它們移入集中儲存目錄嗎？您也可以稍後使用「立即遷移附屬檔案」按鈕完成。",
+            "confirmToAlongside": "儲存模式已變更，但現有的 .metadata.json 附屬檔案與預覽圖片不會自動遷移。要現在將它們移回各自的模型檔案旁邊嗎？您也可以稍後使用「立即遷移附屬檔案」按鈕完成。",
+            "confirmRelocateRoot": "集中儲存目錄已變更，但現有的附屬檔案與預覽圖片仍在原目錄中。要現在將它們移到新目錄嗎？"
         },
         "proxySettings": {
             "enableProxy": "啟用應用程式代理",
@@ -1666,10 +1666,10 @@
             "revertButton": "還原原始檔案名稱"
         },
         "sidecarMigrationConfirm": {
-            "titleToCentralized": "[TODO: Translate] Move sidecars to centralized storage?",
-            "titleToAlongside": "[TODO: Translate] Move sidecars back next to model files?",
-            "confirmButton": "[TODO: Translate] Migrate Now",
-            "titleRelocateRoot": "[TODO: Translate] Move sidecars to the new storage directory?"
+            "titleToCentralized": "要將附屬檔案移到集中儲存嗎？",
+            "titleToAlongside": "要將附屬檔案移回模型檔案旁邊嗎？",
+            "confirmButton": "立即遷移",
+            "titleRelocateRoot": "要將附屬檔案移到新的儲存目錄嗎？"
         },
         "bulkAddTags": {
             "title": "新增標籤到多個模型",
