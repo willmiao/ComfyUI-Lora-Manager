@@ -4,7 +4,7 @@ This document is the canonical set of conventions for translating LoRA Manager U
 It applies to **human translators and AI agents** alike. Read it before editing anything in
 `locales/`.
 
-Source of truth: `locales/en.json` (10 locales, 2025 leaf keys; all locales share the exact
+Source of truth: `locales/en.json` (10 locales, 2105 leaf keys; all locales share the exact
 same key structure).
 
 Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
@@ -77,6 +77,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > `loras.bulkOperations.filenameTemplateProgress.*`, `modals.filenameTemplateConfirm.*` and
 > the `toast.loras.filenameTemplate*` / `toast.settings.filenameTemplates*` toasts. All 9
 > locales are translated (terminology in §2, "Filename Templates feature").
+
+> **Status (2026-09, folder delete verification):** the folder delete modal no longer trusts the
+> sidebar's "empty folder" prediction — it dry-runs the delete against the backend and renders
+> the answer, so a folder whose models are all *excluded* (invisible to the model lists, still
+> real weight files on disk) is refused with an explanation instead of contradicting itself.
+> That added 5 keys (`sidebar.deleteFolderModal.notEmptyMessageCount`,
+> `.notEmptyMessageExcluded`, `.busyTitle`, `.checking`, `sidebar.deleteFolderResult.notEmptyWithCount`);
+> all 9 locales are translated (terminology in §2, "Folder sidebar feature"), so the
+> "no remaining placeholders" claim holds again.
 
 ---
 
@@ -391,11 +400,32 @@ The model-root sidebar manages on-disk folders. "Folder" reuses the noun already
 | tree view / list view | zh-CN 树形视图 / 列表视图 · zh-TW 樹狀檢視 / 清單檢視 · ja ツリー表示 / リスト表示 · ko 트리 보기 / 목록 보기 · fr Vue arborescente / Vue liste · de Baumansicht / Listenansicht · es Vista de árbol / Vista de lista · ru Дерево / Список · he תצוגת עץ / תצוגת רשימה |
 | sidebar | reuse each locale's `sidebar.hideOnThisPage` noun: zh-CN 侧边栏 · zh-TW 側邊欄 · ja サイドバー · ko 사이드바 · fr barre latérale · de Seitenleiste · es barra lateral · ru боковая панель · he סרגל צד |
 
-Deleting a folder **never cascades over model files** — the backend refuses it and
-`sidebar.deleteFolderModal.notEmptyMessage` states the rule in every locale, so keep that
-clause (and its `—`) when the copy is edited. The `{name}` / `{count}` / `{message}` tokens in
-`sidebar.createFolderResult.*`, `sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*`
-are verbatim §1-R2 placeholders; `successWithFiles` is the only key carrying `{count}`.
+Deleting a folder **never cascades over model files** — the backend refuses it and the
+`sidebar.deleteFolderModal.notEmptyMessage*` keys state the rule in every locale, so keep that
+clause (and its `—`) when the copy is edited. The three variants split by what the modal knows:
+`notEmptyMessage` (no counts), `notEmptyMessageCount` (`{count}`, the blocking models are all
+listed) and `notEmptyMessageExcluded` (`{count}` + `{excluded}`, at least one is hidden by the
+`exclude` flag — the case where the folder legitimately looks empty). `checking` ("Checking the
+folder contents...", ASCII ellipsis) shows while the backend dry run is pending, `busyTitle`
+titles the already-pending-staged-delete state, and `notEmptyWithCount` mirrors
+`deleteFolderResult.notEmpty` with the count for the stale-tree toast.
+
+| Term | Rendering |
+|---|---|
+| excluded from the library | zh-CN 已从模型库中排除 · zh-TW 已從模型庫中排除 · ja ライブラリから除外 · ko 라이브러리에서 제외 · fr exclu de la bibliothèque · de von der Bibliothek ausgeschlossen · es excluido de la biblioteca · ru исключены из библиотеки · he מוחרגים מהספרייה |
+| un-exclude (verb) | zh-CN 取消排除 · zh-TW 取消排除 · ja 除外を解除 · ko 제외를 해제 · fr annuler l'exclusion · de den Ausschluss aufheben · es anular la exclusión · ru снять исключение · he לבטל את ההחרגה |
+| "Manage Excluded Models" quoted in prose | zh-CN “管理已排除的模型” · zh-TW 「管理已排除的模型」 · ja 「除外モデルを管理」 · ko '제외된 모델 관리' · fr « Gérer les modèles exclus » · de „Ausgeschlossene Modelle verwalten“ · es «Gestionar modelos excluidos» · ru «Управление исключёнными моделями» · he «ניהול מודלים מוחרגים» |
+
+A UI label quoted inside prose follows each locale's existing help-text style (zh-CN “ ”,
+zh-TW/ja 「 」, ko ASCII `' '`, fr/ru/es/he « », de „ “) — see `settings.hideEarlyAccessUpdates.help`
+/ `settings.civitaiHost.help` as the precedent. `קובצי מודלים` is the Hebrew model-file noun
+(`notEmptyMessage`); keep it identical in all four Hebrew keys.
+
+The `{name}` / `{count}` / `{excluded}` / `{message}` tokens in `sidebar.createFolderResult.*`,
+`sidebar.deleteFolderResult.*` and `sidebar.renameFolderResult.*` are verbatim §1-R2
+placeholders. The keys carrying `{count}` are `successWithFiles`, `notEmptyMessageCount`,
+`notEmptyMessageExcluded` and `notEmptyWithCount`; `notEmptyMessageExcluded` is the only key
+carrying `{excluded}`.
 
 ### Settings Organization tab
 

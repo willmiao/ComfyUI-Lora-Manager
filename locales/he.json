@@ -1350,10 +1350,10 @@
             "emptyNote": "אין מודלים בתיקייה זו. קבצים אחרים שבה יימחקו גם הם.",
             "notEmptyTitle": "התיקייה אינה ריקה",
             "notEmptyMessage": "בתיקייה זו עדיין יש מודלים. מחק או העבר אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
-            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
-            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
-            "busyTitle": "[TODO: Translate] A deletion is still pending",
-            "checking": "[TODO: Translate] Checking the folder contents...",
+            "notEmptyMessageCount": "בתיקייה זו עדיין יש {count} קובצי מודלים. מחק או העבר אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
+            "notEmptyMessageExcluded": "בתיקייה זו עדיין יש {count} קובצי מודלים, שמהם {excluded} מוחרגים מהספרייה. בטל את ההחרגה ב«ניהול מודלים מוחרגים» ומחק אותם תחילה — מחיקת תיקייה לעולם אינה מוחקת קובצי מודלים.",
+            "busyTitle": "מחיקה עדיין ממתינה",
+            "checking": "בודק את תוכן התיקייה...",
             "confirm": "מחק תיקייה"
         },
         "deleteFolderResult": {
@@ -1362,7 +1362,7 @@
             "restored": "התיקייה שוחזרה",
             "failed": "מחיקת התיקייה נכשלה: {message}",
             "notEmpty": "בתיקייה זו עדיין יש מודלים. רענן את סרגל הצד ונסה שוב.",
-            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
+            "notEmptyWithCount": "בתיקייה זו עדיין יש {count} קובצי מודלים. רענן את סרגל הצד ונסה שוב.",
             "busy": "מחיקה עדיין ממתינה בתיקייה זו. המתן לסיום חלון הביטול.",
             "unsupported": "מחיקת תיקיות אינה נתמכת בדף זה",
             "noRoot": "לא הוגדר שורש מודלים"

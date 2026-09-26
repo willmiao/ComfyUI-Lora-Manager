@@ -1350,10 +1350,10 @@
             "emptyNote": "該資料夾中沒有模型，其中的其他檔案也會一併刪除。",
             "notEmptyTitle": "資料夾不是空的",
             "notEmptyMessage": "該資料夾中仍有模型，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
-            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
-            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
-            "busyTitle": "[TODO: Translate] A deletion is still pending",
-            "checking": "[TODO: Translate] Checking the folder contents...",
+            "notEmptyMessageCount": "該資料夾中仍有 {count} 個模型檔案，請先刪除或移出這些模型 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "notEmptyMessageExcluded": "該資料夾中仍有 {count} 個模型檔案，其中 {excluded} 個已從模型庫中排除。請先在「管理已排除的模型」中取消排除並刪除它們 —— 刪除資料夾不會串聯刪除模型檔案。",
+            "busyTitle": "仍有刪除操作待處理",
+            "checking": "正在檢查資料夾內容...",
             "confirm": "刪除資料夾"
         },
         "deleteFolderResult": {
@@ -1362,7 +1362,7 @@
             "restored": "資料夾已還原",
             "failed": "刪除資料夾失敗: {message}",
             "notEmpty": "該資料夾中仍有模型。請重新整理側邊欄後再試。",
-            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
+            "notEmptyWithCount": "該資料夾中仍有 {count} 個模型檔案。請重新整理側邊欄後再試。",
             "busy": "該資料夾內仍有待處理的刪除操作，請等待復原時間結束。",
             "unsupported": "此頁面不支援刪除資料夾",
             "noRoot": "未設定模型根目錄"

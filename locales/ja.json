@@ -1350,10 +1350,10 @@
             "emptyNote": "このフォルダにはモデルがありません。他のファイルもすべて削除されます。",
             "notEmptyTitle": "フォルダが空ではありません",
             "notEmptyMessage": "このフォルダにはまだモデルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
-            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
-            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
-            "busyTitle": "[TODO: Translate] A deletion is still pending",
-            "checking": "[TODO: Translate] Checking the folder contents...",
+            "notEmptyMessageCount": "このフォルダにはまだ {count} 個のモデルファイルがあります。先に削除するか移動してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
+            "notEmptyMessageExcluded": "このフォルダにはまだ {count} 個のモデルファイルがあり、そのうち {excluded} 個はライブラリから除外されています。「除外モデルを管理」で除外を解除してから削除してください —— フォルダを削除してもモデルファイルがまとめて削除されることはありません。",
+            "busyTitle": "保留中の削除があります",
+            "checking": "フォルダの内容を確認しています...",
             "confirm": "フォルダを削除"
         },
         "deleteFolderResult": {
@@ -1362,7 +1362,7 @@
             "restored": "フォルダを復元しました",
             "failed": "フォルダの削除に失敗しました: {message}",
             "notEmpty": "このフォルダにはまだモデルがあります。サイドバーを再読み込みしてからもう一度お試しください。",
-            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
+            "notEmptyWithCount": "このフォルダにはまだ {count} 個のモデルファイルがあります。サイドバーを再読み込みしてからもう一度お試しください。",
             "busy": "このフォルダ内に保留中の削除があります。取り消し可能な時間が過ぎるまでお待ちください。",
             "unsupported": "このページではフォルダを削除できません",
             "noRoot": "モデルルートが設定されていません"

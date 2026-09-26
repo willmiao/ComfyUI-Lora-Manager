@@ -1350,10 +1350,10 @@
             "emptyNote": "Ce dossier ne contient aucun modèle. Les autres fichiers qu’il contient seront également supprimés.",
             "notEmptyTitle": "Le dossier n’est pas vide",
             "notEmptyMessage": "Ce dossier contient encore des modèles. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
-            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
-            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
-            "busyTitle": "[TODO: Translate] A deletion is still pending",
-            "checking": "[TODO: Translate] Checking the folder contents...",
+            "notEmptyMessageCount": "Ce dossier contient encore {count} fichier(s) de modèle. Supprimez-les ou déplacez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "notEmptyMessageExcluded": "Ce dossier contient encore {count} fichier(s) de modèle, dont {excluded} sont exclus de la bibliothèque. Annulez leur exclusion dans « Gérer les modèles exclus » et supprimez-les d’abord — la suppression d’un dossier n’entraîne jamais celle des fichiers de modèles.",
+            "busyTitle": "Une suppression est encore en attente",
+            "checking": "Vérification du contenu du dossier...",
             "confirm": "Supprimer le dossier"
         },
         "deleteFolderResult": {
@@ -1362,7 +1362,7 @@
             "restored": "Dossier restauré",
             "failed": "Échec de la suppression du dossier : {message}",
             "notEmpty": "Ce dossier contient encore des modèles. Actualisez la barre latérale et réessayez.",
-            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
+            "notEmptyWithCount": "Ce dossier contient encore {count} fichier(s) de modèle. Actualisez la barre latérale et réessayez.",
             "busy": "Une suppression est encore en attente dans ce dossier. Attendez la fin de la fenêtre d’annulation.",
             "unsupported": "La suppression de dossiers n’est pas prise en charge sur cette page",
             "noRoot": "Aucune racine de modèle n’est configurée"

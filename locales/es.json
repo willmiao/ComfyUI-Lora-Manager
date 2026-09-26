@@ -1350,10 +1350,10 @@
             "emptyNote": "Esta carpeta no contiene modelos. Los demás archivos que contenga también se eliminarán.",
             "notEmptyTitle": "La carpeta no está vacía",
             "notEmptyMessage": "Esta carpeta aún contiene modelos. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
-            "notEmptyMessageCount": "[TODO: Translate] This folder still contains {count} model file(s). Delete or move them first — deleting a folder never cascades over model files.",
-            "notEmptyMessageExcluded": "[TODO: Translate] This folder still contains {count} model file(s), {excluded} of them excluded from the library. Un-exclude them in Manage Excluded Models and delete them first — deleting a folder never cascades over model files.",
-            "busyTitle": "[TODO: Translate] A deletion is still pending",
-            "checking": "[TODO: Translate] Checking the folder contents...",
+            "notEmptyMessageCount": "Esta carpeta aún contiene {count} archivo(s) de modelo. Elimínalos o muévelos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
+            "notEmptyMessageExcluded": "Esta carpeta aún contiene {count} archivo(s) de modelo, de los cuales {excluded} están excluidos de la biblioteca. Anula su exclusión en «Gestionar modelos excluidos» y elimínalos primero — eliminar una carpeta nunca elimina los archivos de modelo en cascada.",
+            "busyTitle": "Todavía hay una eliminación pendiente",
+            "checking": "Comprobando el contenido de la carpeta...",
             "confirm": "Eliminar carpeta"
         },
         "deleteFolderResult": {
@@ -1362,7 +1362,7 @@
             "restored": "Carpeta restaurada",
             "failed": "Error al eliminar la carpeta: {message}",
             "notEmpty": "Esta carpeta aún contiene modelos. Actualiza la barra lateral e inténtalo de nuevo.",
-            "notEmptyWithCount": "[TODO: Translate] This folder still contains {count} model file(s). Refresh the sidebar and try again.",
+            "notEmptyWithCount": "Esta carpeta aún contiene {count} archivo(s) de modelo. Actualiza la barra lateral e inténtalo de nuevo.",
             "busy": "Todavía hay una eliminación pendiente dentro de esta carpeta. Espera a que caduque la ventana de deshacer.",
             "unsupported": "La eliminación de carpetas no es compatible con esta página",
             "noRoot": "No hay ninguna raíz de modelo configurada"
