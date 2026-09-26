@@ -809,7 +809,8 @@
             "migrateFailed": "[TODO: Translate] Sidecar migration failed: {message}",
             "migrationDeferred": "[TODO: Translate] Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
             "confirmToCentralized": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button."
+            "confirmToAlongside": "[TODO: Translate] The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
+            "confirmRelocateRoot": "[TODO: Translate] The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
         },
         "proxySettings": {
             "enableProxy": "Включить прокси на уровне приложения",
@@ -1662,7 +1663,8 @@
         "sidecarMigrationConfirm": {
             "titleToCentralized": "[TODO: Translate] Move sidecars to centralized storage?",
             "titleToAlongside": "[TODO: Translate] Move sidecars back next to model files?",
-            "confirmButton": "[TODO: Translate] Migrate Now"
+            "confirmButton": "[TODO: Translate] Migrate Now",
+            "titleRelocateRoot": "[TODO: Translate] Move sidecars to the new storage directory?"
         },
         "bulkAddTags": {
             "title": "Добавить теги к нескольким моделям",

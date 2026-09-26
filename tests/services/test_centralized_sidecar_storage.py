@@ -19,6 +19,7 @@ from py.services.model_lifecycle_service import (
 from py.services.pending_delete_service import PendingDeleteService
 from py.services.settings_manager import get_settings_manager
 from py.utils.metadata_manager import MetadataManager
+from py.utils.sidecar_paths import root_mirror_component
 
 
 def _normalize(path) -> str:
@@ -57,11 +58,12 @@ def centralized(library_root: Path, tmp_path: Path) -> Path:
     return sidecar_root
 
 
-def _mirror_dir(sidecar_root: Path, *rel: str) -> Path:
+def _mirror_dir(library_root: Path, sidecar_root: Path, *rel: str) -> Path:
     """Expected mirror directory for a library-relative path."""
 
     library = get_settings_manager().get_active_library_name()
-    return sidecar_root.joinpath(library, "checkpoints", *rel)
+    component = root_mirror_component(str(library_root))
+    return sidecar_root.joinpath(library, component, *rel)
 
 
 def _write_sidecar(
@@ -93,7 +95,7 @@ async def test_delete_model_artifacts_centralized(
 ):
     model = library_root / "model.safetensors"
     model.write_bytes(b"weights")
-    mirror = _mirror_dir(centralized)
+    mirror = _mirror_dir(library_root, centralized)
     _write_sidecar(mirror, "model", file_path=model, preview_name="model.preview.webp")
 
     deleted = await delete_model_artifacts(str(library_root), "model")
@@ -131,7 +133,7 @@ def test_enumerate_model_artifacts_centralized(
 ):
     model = library_root / "model.safetensors"
     model.write_bytes(b"weights")
-    mirror = _mirror_dir(centralized)
+    mirror = _mirror_dir(library_root, centralized)
     _write_sidecar(mirror, "model", file_path=model, preview_name="model.preview.png")
 
     service = PendingDeleteService.__new__(PendingDeleteService)
@@ -170,7 +172,7 @@ async def _json_metadata_loader(path: str) -> Dict[str, object]:
 async def test_rename_model_centralized(library_root: Path, centralized: Path):
     model = library_root / "model.safetensors"
     model.write_bytes(b"weights")
-    mirror = _mirror_dir(centralized)
+    mirror = _mirror_dir(library_root, centralized)
     _write_sidecar(mirror, "model", file_path=model, preview_name="model.preview.webp")
 
     service = ModelLifecycleService(
@@ -213,7 +215,7 @@ async def test_move_model_centralized(
     model.write_bytes(b"weights")
     target_dir = library_root / "new"
 
-    old_mirror = _mirror_dir(centralized, "old")
+    old_mirror = _mirror_dir(library_root, centralized, "old")
     _write_sidecar(
         old_mirror, "model", file_path=model, preview_name="model.preview.webp"
     )
@@ -230,7 +232,7 @@ async def test_move_model_centralized(
     assert moved_model.exists()
     assert not model.exists()
 
-    new_mirror = _mirror_dir(centralized, "new")
+    new_mirror = _mirror_dir(library_root, centralized, "new")
     assert (new_mirror / "model.metadata.json").exists()
     assert (new_mirror / "model.preview.webp").exists()
     assert not (old_mirror / "model.metadata.json").exists()
@@ -271,7 +273,7 @@ async def test_rename_known_folder_centralized(
     model.write_bytes(b"weights")
 
     old_model_path = old_dir / "model.safetensors"
-    old_mirror = _mirror_dir(centralized, "oldfolder")
+    old_mirror = _mirror_dir(library_root, centralized, "oldfolder")
     _write_sidecar(
         old_mirror, "model", file_path=old_model_path, preview_name="model.preview.webp"
     )
@@ -295,7 +297,7 @@ async def test_rename_known_folder_centralized(
 
     assert changed is True
 
-    new_mirror = _mirror_dir(centralized, "newfolder")
+    new_mirror = _mirror_dir(library_root, centralized, "newfolder")
     assert (new_mirror / "model.metadata.json").exists()
     assert (new_mirror / "model.preview.webp").exists()
     assert not old_mirror.exists()
@@ -315,7 +317,7 @@ async def test_rename_known_folder_centralized(
 async def test_pending_models_mirror_walk(library_root: Path, centralized: Path):
     model = library_root / "model.safetensors"
     model.write_bytes(b"weights")
-    mirror = _mirror_dir(centralized)
+    mirror = _mirror_dir(library_root, centralized)
     _write_sidecar(
         mirror,
         "model",
@@ -346,7 +348,7 @@ async def test_pending_models_mirror_walk_uses_stem_fallback(
 
     model = library_root / "model.safetensors"
     model.write_bytes(b"weights")
-    mirror = _mirror_dir(centralized)
+    mirror = _mirror_dir(library_root, centralized)
     _write_sidecar(
         mirror,
         "model",

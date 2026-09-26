@@ -12,6 +12,7 @@ import pytest
 from py.config import config
 from py.services.settings_manager import get_settings_manager
 from py.services.use_cases.sidecar_migration_use_case import SidecarMigrationUseCase
+from py.utils.sidecar_paths import root_mirror_component
 
 
 def _normalize(path) -> str:
@@ -52,11 +53,12 @@ def _set_mode(mode: str) -> None:
     get_settings_manager().set("sidecar_storage_mode", mode)
 
 
-def _mirror_dir(sidecar_root: Path, *rel: str) -> Path:
+def _mirror_dir(library_root: Path, sidecar_root: Path, *rel: str) -> Path:
     """Expected mirror directory for a library-relative path."""
 
     library = get_settings_manager().get_active_library_name()
-    return sidecar_root.joinpath(library, "loras", *rel)
+    component = root_mirror_component(str(library_root))
+    return sidecar_root.joinpath(library, component, *rel)
 
 
 def _write_model(directory: Path, stem: str) -> Path:
@@ -152,7 +154,7 @@ async def test_migrate_to_centralized_moves_sidecar_and_previews(
     assert summary["conflicts"] == 0
     assert summary["errors"] == []
 
-    mirror = _mirror_dir(sidecar_root, "sub")
+    mirror = _mirror_dir(library_root, sidecar_root, "sub")
     assert not sidecar.exists()
     assert not preview.exists()
     assert not extra_preview.exists()
@@ -186,7 +188,7 @@ async def test_migrate_to_alongside_reverses_layout(
 ):
     _set_mode("alongside")
     model = _write_model(library_root / "sub", "model")
-    mirror = _mirror_dir(sidecar_root, "sub")
+    mirror = _mirror_dir(library_root, sidecar_root, "sub")
     sidecar = _write_sidecar(mirror, "model", model)
     preview = mirror / "model.preview.webp"
     preview.write_bytes(b"preview")
@@ -221,7 +223,7 @@ async def test_migrate_conflict_keeps_newer_file(
     library_root: Path, sidecar_root: Path
 ):
     _set_mode("centralized")
-    mirror = _mirror_dir(sidecar_root)
+    mirror = _mirror_dir(library_root, sidecar_root)
 
     # Model A: destination (mirror) sidecar is newer -> destination wins.
     model_a = _write_model(library_root, "model_a")
@@ -384,6 +386,121 @@ async def test_migrate_reconcile_survives_per_model_errors(
     # The healthy model's cache entry is still reconciled and persisted.
     ok_entry = use_case._test_scanner._cache.raw_data[0]
     assert ok_entry["preview_url"] == _normalize(
-        _mirror_dir(sidecar_root) / "ok.preview.webp"
+        _mirror_dir(library_root, sidecar_root) / "ok.preview.webp"
     )
     assert use_case._test_scanner.persist_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_migrate_covers_mixed_case_and_example_previews(
+    library_root: Path, sidecar_root: Path
+):
+    """Previews like model.WEBP / model.example.0.jpeg migrate too (#225 compat)."""
+
+    _set_mode("centralized")
+    model = _write_model(library_root, "model")
+    _write_sidecar(library_root, "model", model, preview_ext=".preview.WEBP")
+    (library_root / "model.preview.WEBP").write_bytes(b"preview")
+    (library_root / "model.example.0.jpeg").write_bytes(b"example")
+
+    use_case = _make_use_case([str(model)])
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is True
+    assert summary["moved"] == 3  # sidecar + 2 previews
+
+    mirror = _mirror_dir(library_root, sidecar_root)
+    assert (mirror / "model.preview.WEBP").exists()
+    assert (mirror / "model.example.0.jpeg").exists()
+    assert not (library_root / "model.preview.WEBP").exists()
+    assert not (library_root / "model.example.0.jpeg").exists()
+
+    metadata = json.loads((mirror / "model.metadata.json").read_text(encoding="utf-8"))
+    assert metadata["preview_url"] == _normalize(mirror / "model.preview.WEBP")
+
+
+@pytest.mark.asyncio
+async def test_migrate_root_relocates_tree_and_reconciles(
+    library_root: Path, sidecar_root: Path, tmp_path: Path
+):
+    _set_mode("centralized")
+    library = get_settings_manager().get_active_library_name()
+    component = root_mirror_component(str(library_root))
+
+    # Assets under the OLD root, mirroring the layout.
+    old_root = tmp_path / "old_sidecars"
+    old_mirror = old_root / library / component / "sub"
+    old_mirror.mkdir(parents=True)
+    model = _write_model(library_root / "sub", "model")
+    payload = {
+        "file_name": "model",
+        "file_path": _normalize(model),
+        "preview_url": _normalize(old_mirror / "model.preview.png"),
+    }
+    (old_mirror / "model.metadata.json").write_text(json.dumps(payload), encoding="utf-8")
+    (old_mirror / "model.preview.png").write_bytes(b"preview")
+
+    entries = [
+        {
+            "file_path": str(model),
+            "preview_url": _normalize(old_mirror / "model.preview.png"),
+            "preview_nsfw_level": 2,
+        }
+    ]
+    use_case = _make_use_case_with_entries(entries)
+    summary = await use_case.migrate_root(str(old_root), force=True)
+
+    assert summary["success"] is True
+    assert summary["moved"] == 2
+
+    new_mirror = sidecar_root / library / component / "sub"
+    assert (new_mirror / "model.metadata.json").exists()
+    assert (new_mirror / "model.preview.png").exists()
+
+    # Sidecar preview_url rewritten onto the new root.
+    migrated = json.loads((new_mirror / "model.metadata.json").read_text(encoding="utf-8"))
+    assert migrated["preview_url"] == _normalize(new_mirror / "model.preview.png")
+    # Model path fields untouched — model files never move.
+    assert migrated["file_path"] == _normalize(model)
+
+    # Scanner cache preview URLs repointed and persisted.
+    entry = use_case._test_scanner._cache.raw_data[0]
+    assert entry["preview_url"] == _normalize(new_mirror / "model.preview.png")
+    assert use_case._test_scanner.persist_calls == 1
+
+    # Emptied old tree pruned.
+    assert not old_root.exists()
+
+
+@pytest.mark.asyncio
+async def test_migrate_root_guards(
+    library_root: Path, sidecar_root: Path, tmp_path: Path
+):
+    _set_mode("centralized")
+    use_case = _make_use_case([])
+
+    summary = await use_case.migrate_root("")
+    assert summary["success"] is False
+    assert "old_root is required" in summary["error"]
+
+    summary = await use_case.migrate_root(str(sidecar_root))
+    assert summary["success"] is False
+    assert "matches the configured" in summary["error"]
+
+    _set_mode("alongside")
+    summary = await use_case.migrate_root(str(tmp_path / "old_sidecars"))
+    assert summary["success"] is False
+    assert "not centralized" in summary["error"]
+
+
+@pytest.mark.asyncio
+async def test_migrate_root_missing_old_tree_is_noop(
+    library_root: Path, sidecar_root: Path, tmp_path: Path
+):
+    _set_mode("centralized")
+    use_case = _make_use_case([])
+
+    summary = await use_case.migrate_root(str(tmp_path / "nonexistent"), force=True)
+
+    assert summary["success"] is True
+    assert summary["moved"] == 0

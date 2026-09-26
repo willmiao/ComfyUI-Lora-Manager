@@ -4141,7 +4141,7 @@ class NodeRegistryHandler:
 class SidecarMigrationHandler:
     """Migrate sidecar metadata and previews between storage layouts."""
 
-    _VALID_DIRECTIONS = ("to_centralized", "to_alongside")
+    _VALID_DIRECTIONS = ("to_centralized", "to_alongside", "relocate_root")
 
     def __init__(
         self,
@@ -4168,12 +4168,18 @@ class SidecarMigrationHandler:
                 return web.json_response(
                     {
                         "success": False,
-                        "error": "direction must be 'to_centralized' or 'to_alongside'",
+                        "error": "direction must be 'to_centralized', 'to_alongside' or 'relocate_root'",
                     },
                     status=400,
                 )
 
             force = params.get("force") in (True, 1, "true", "1")
+            old_root = str(params.get("old_root") or "").strip()
+            if direction == "relocate_root" and not old_root:
+                return web.json_response(
+                    {"success": False, "error": "old_root is required for relocate_root"},
+                    status=400,
+                )
 
             use_case = self._use_case_factory()
             progress_cb = self._progress_callback_factory()
@@ -4181,6 +4187,7 @@ class SidecarMigrationHandler:
                 direction=direction,
                 progress_cb=progress_cb,
                 force=force,
+                old_root=old_root,
             )
             status = 200 if result.get("success") else 400
             return web.json_response(result, status=status)

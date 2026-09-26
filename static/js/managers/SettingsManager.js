@@ -1284,7 +1284,7 @@ export class SettingsManager {
             onAfterSelect: () => this.saveInputSetting('exampleImagesLocalRoot', 'example_images_local_root'),
         });
         this.attachPathField('sidecarStoragePath', {
-            onAfterSelect: () => this.saveInputSetting('sidecarStoragePath', 'sidecar_storage_path'),
+            onAfterSelect: () => this.handleSidecarStoragePathChange(),
         });
     }
 
@@ -3396,6 +3396,8 @@ export class SettingsManager {
         }
         // Baseline used to detect a mode change in handleSidecarStorageModeChange
         this._loadedSidecarStorageMode = currentMode;
+        // Baseline used to detect a root change in handleSidecarStoragePathChange
+        this._loadedSidecarStoragePath = state.global.settings.sidecar_storage_path || '';
 
         const pathInput = document.getElementById('sidecarStoragePath');
         if (pathInput) {
@@ -3438,6 +3440,30 @@ export class SettingsManager {
         }
     }
 
+    // Path change while centralized storage is active: the assets under the
+    // previous root do not move by themselves, so offer a root relocation.
+    async handleSidecarStoragePathChange() {
+        const pathInput = document.getElementById('sidecarStoragePath');
+        if (!pathInput) return;
+
+        const previousPath = this._loadedSidecarStoragePath || '';
+
+        await this.saveInputSetting('sidecarStoragePath', 'sidecar_storage_path');
+
+        const newPath = pathInput.value.trim();
+        this._loadedSidecarStoragePath = newPath;
+
+        const centralized = state.global.settings.sidecar_storage_mode === 'centralized';
+        if (centralized && previousPath && previousPath !== newPath) {
+            const confirmed = await this.confirmSidecarMigration('relocate_root');
+            if (confirmed) {
+                await this.migrateSidecars('relocate_root', { old_root: previousPath });
+            } else {
+                showToast('settings.sidecarStorage.migrationDeferred', {}, 'info');
+            }
+        }
+    }
+
     // Entry point for the "Migrate Sidecars Now" button: the direction follows
     // the currently saved storage mode.
     async confirmAndMigrateSidecars() {
@@ -3457,19 +3483,24 @@ export class SettingsManager {
         }
 
         const isToCentralized = direction === 'to_centralized';
+        const isRelocate = direction === 'relocate_root';
 
         const titleElement = modalElement.querySelector('[data-role="title"]');
         if (titleElement) {
-            titleElement.textContent = isToCentralized
-                ? translate('modals.sidecarMigrationConfirm.titleToCentralized', {}, 'Move sidecars to centralized storage?')
-                : translate('modals.sidecarMigrationConfirm.titleToAlongside', {}, 'Move sidecars back next to model files?');
+            titleElement.textContent = isRelocate
+                ? translate('modals.sidecarMigrationConfirm.titleRelocateRoot', {}, 'Move sidecars to the new storage directory?')
+                : isToCentralized
+                    ? translate('modals.sidecarMigrationConfirm.titleToCentralized', {}, 'Move sidecars to centralized storage?')
+                    : translate('modals.sidecarMigrationConfirm.titleToAlongside', {}, 'Move sidecars back next to model files?');
         }
 
         const messageElement = modalElement.querySelector('[data-role="message"]');
         if (messageElement) {
-            messageElement.textContent = isToCentralized
-                ? translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.')
-                : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.');
+            messageElement.textContent = isRelocate
+                ? translate('settings.sidecarStorage.confirmRelocateRoot', {}, 'The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?')
+                : isToCentralized
+                    ? translate('settings.sidecarStorage.confirmToCentralized', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the "Migrate Sidecars Now" button.')
+                    : translate('settings.sidecarStorage.confirmToAlongside', {}, 'The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the "Migrate Sidecars Now" button.');
         }
 
         const confirmButton = modalElement.querySelector('[data-action="confirm-sidecar-migration"]');
@@ -3528,7 +3559,7 @@ export class SettingsManager {
         });
     }
 
-    async migrateSidecars(direction) {
+    async migrateSidecars(direction, extraBody = {}) {
         const migrateBtn = document.getElementById('migrateSidecarsBtn');
         try {
             if (migrateBtn) {
@@ -3543,10 +3574,10 @@ export class SettingsManager {
             const response = await fetch('/api/lm/sidecars/migrate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // The new mode is already saved by the time migration runs,
+                // The new mode/path is already saved by the time migration runs,
                 // so the backend guard requires force=true to confirm the
                 // "switch first, then migrate" flow.
-                body: JSON.stringify({ direction, force: true }),
+                body: JSON.stringify({ direction, force: true, ...extraBody }),
             });
 
             const data = await response.json();

@@ -281,4 +281,60 @@ describe('SettingsManager sidecar storage', () => {
             expect(migrateBtn.disabled).toBe(false);
         });
     });
+
+    describe('handleSidecarStoragePathChange', () => {
+        it('offers root relocation when the path changes in centralized mode', async () => {
+            const manager = createManager();
+            const { pathInput } = appendSidecarControls();
+            const modal = appendMigrationModal();
+            state.global.settings = { sidecar_storage_mode: 'centralized', sidecar_storage_path: '/old/root' };
+            manager._loadedSidecarStoragePath = '/old/root';
+            pathInput.value = '/new/root';
+            mockFetchOk();
+
+            const changePromise = manager.handleSidecarStoragePathChange();
+            await vi.waitFor(() => expect(modal.classList.contains('show')).toBe(true));
+            modal.querySelector('[data-action="confirm-sidecar-migration"]').click();
+            await changePromise;
+
+            expect(global.fetch).toHaveBeenCalledWith('/api/lm/sidecars/migrate', expect.objectContaining({
+                body: JSON.stringify({ direction: 'relocate_root', force: true, old_root: '/old/root' }),
+            }));
+            expect(manager._loadedSidecarStoragePath).toBe('/new/root');
+        });
+
+        it('does not prompt when the path changes in alongside mode', async () => {
+            const manager = createManager();
+            const { pathInput } = appendSidecarControls();
+            appendMigrationModal();
+            state.global.settings = { sidecar_storage_mode: 'alongside', sidecar_storage_path: '/old/root' };
+            manager._loadedSidecarStoragePath = '/old/root';
+            pathInput.value = '/new/root';
+            mockFetchOk();
+
+            await manager.handleSidecarStoragePathChange();
+
+            const migrateCalls = global.fetch.mock.calls.filter(([url]) => url === '/api/lm/sidecars/migrate');
+            expect(migrateCalls).toHaveLength(0);
+        });
+
+        it('shows a deferred notice when relocation is cancelled', async () => {
+            const manager = createManager();
+            const { pathInput } = appendSidecarControls();
+            const modal = appendMigrationModal();
+            state.global.settings = { sidecar_storage_mode: 'centralized', sidecar_storage_path: '/old/root' };
+            manager._loadedSidecarStoragePath = '/old/root';
+            pathInput.value = '/new/root';
+            mockFetchOk();
+
+            const changePromise = manager.handleSidecarStoragePathChange();
+            await vi.waitFor(() => expect(modal.classList.contains('show')).toBe(true));
+            modal.querySelector('[data-action="cancel-sidecar-migration"]').click();
+            await changePromise;
+
+            const migrateCalls = global.fetch.mock.calls.filter(([url]) => url === '/api/lm/sidecars/migrate');
+            expect(migrateCalls).toHaveLength(0);
+            expect(showToast).toHaveBeenCalledWith('settings.sidecarStorage.migrationDeferred', {}, 'info');
+        });
+    });
 });

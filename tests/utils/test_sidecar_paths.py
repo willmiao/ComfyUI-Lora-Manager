@@ -22,6 +22,7 @@ from py.utils.sidecar_paths import (
     resolve_centralized_dir,
     resolve_centralized_dir_for_dir,
     resolve_metadata_path,
+    root_mirror_component,
     sanitize_path_component,
 )
 
@@ -117,15 +118,47 @@ class TestCentralizedMode:
     def test_mirror_layout(self, model_roots: dict, centralized: Path):
         model = model_roots["loras"] / "styles" / "anime" / "model.safetensors"
         library = get_settings_manager().get_active_library_name()
+        root_component = root_mirror_component(str(model_roots["loras"]))
 
         metadata_path = get_metadata_path(str(model))
 
         expected = os.path.join(
-            str(centralized), library, "loras", "styles", "anime", "model" + METADATA_SUFFIX
+            str(centralized), library, root_component, "styles", "anime", "model" + METADATA_SUFFIX
         )
         assert metadata_path == expected
         assert get_preview_dir(str(model)) == os.path.dirname(expected)
         assert is_centralized()
+
+    def test_same_basename_roots_get_distinct_mirrors(
+        self, model_roots: dict, centralized: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        from py.config import config
+
+        # Two roots sharing the basename "loras" must not share a mirror dir.
+        other_parent = tmp_path / "elsewhere"
+        other_root = other_parent / "loras"
+        other_root.mkdir(parents=True)
+        monkeypatch.setattr(
+            config,
+            "loras_roots",
+            [str(model_roots["loras"]), str(other_root)],
+            raising=False,
+        )
+
+        model_a = model_roots["loras"] / "model.safetensors"
+        model_b = other_root / "model.safetensors"
+
+        dir_a = resolve_centralized_dir(str(model_a))
+        dir_b = resolve_centralized_dir(str(model_b))
+        assert dir_a is not None and dir_b is not None
+        assert dir_a != dir_b
+        assert root_mirror_component(str(model_roots["loras"])) != root_mirror_component(
+            str(other_root)
+        )
+        # Same root always maps to the same component (stable hash).
+        assert root_mirror_component(str(model_roots["loras"])) == root_mirror_component(
+            str(model_roots["loras"]) + os.sep
+        )
 
     def test_longest_root_wins(self, model_roots: dict, centralized: Path, monkeypatch: pytest.MonkeyPatch):
         from py.config import config
@@ -142,7 +175,7 @@ class TestCentralizedMode:
 
         model = nested / "model.safetensors"
         assert get_metadata_path(str(model)) == os.path.join(
-            str(centralized), library, "nested", "model" + METADATA_SUFFIX
+            str(centralized), library, root_mirror_component(str(nested)), "model" + METADATA_SUFFIX
         )
 
     def test_outside_roots_falls_back_to_alongside(
@@ -174,7 +207,7 @@ class TestCentralizedMode:
         library = get_settings_manager().get_active_library_name()
 
         assert resolve_centralized_dir_for_dir(str(model_roots["loras"])) == os.path.join(
-            str(centralized), library, "loras"
+            str(centralized), library, root_mirror_component(str(model_roots["loras"]))
         )
 
     def test_empty_path_uses_default_sidecar_root(self, model_roots: dict, tmp_path: Path):
@@ -223,7 +256,9 @@ class TestModeIndependentResolution:
         assert resolve_centralized_dir_for_dir(str(model_dir)) is None
         assert resolve_centralized_dir_for_dir(
             str(model_dir), sidecar_root=str(sidecar_root)
-        ) == os.path.join(str(sidecar_root), library, "loras", "sub")
+        ) == os.path.join(
+            str(sidecar_root), library, root_mirror_component(str(model_roots["loras"])), "sub"
+        )
 
 
 class TestSettingsValidation:

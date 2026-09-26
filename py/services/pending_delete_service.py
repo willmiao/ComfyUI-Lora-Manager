@@ -777,7 +777,10 @@ class PendingDeleteService:
             if not os.path.exists(staged_path):
                 continue
             try:
-                os.rename(staged_path, original_path)
+                # EXDEV-tolerant: centralized sidecars may have been copied
+                # across filesystems into staging, so plain os.rename would
+                # fail here and strand the only copy.
+                self._restore_file(staged_path, original_path)
             except OSError as exc:  # pragma: no cover - best-effort rollback
                 logger.warning(
                     "Failed to roll back staged file %s -> %s: %s",

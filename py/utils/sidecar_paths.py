@@ -12,7 +12,7 @@ setting:
 - ``centralized``: sidecars and previews live under a configurable root
   (``sidecar_storage_path`` setting, default ``<settings_dir>/sidecars``),
   mirroring the library-relative directory structure:
-  ``<root>/<library>/<root_basename>/<rel_dir>/<name>.metadata.json``.
+  ``<root>/<library>/<root_basename-roothash>/<rel_dir>/<name>.metadata.json``.
 
 All helpers are pure path computations: no directory scans and no file I/O
 on the hot path. Settings lookups go through ``SettingsManager.get`` (a dict
@@ -21,6 +21,7 @@ read); config roots come from the already-initialized ``config`` singleton.
 
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import re
@@ -145,10 +146,25 @@ def _normalize_for_match(path: str) -> str:
     return os.path.normpath(os.path.abspath(path))
 
 
+def root_mirror_component(root_path: str) -> str:
+    """Return the mirror path component identifying a model root.
+
+    ``<sanitized basename>-<hash>`` where the hash is a short digest of the
+    normalized absolute root path. Two roots sharing a basename (e.g.
+    ``/mnt/a/loras`` and ``/mnt/b/loras``) would otherwise map to the same
+    mirror directory and overwrite each other's sidecars.
+    """
+
+    normalized = _normalize_for_match(root_path)
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:8]
+    return f"{sanitize_path_component(os.path.basename(normalized))}-{digest}"
+
+
 def resolve_centralized_dir(model_path: str) -> Optional[str]:
     """Return the centralized mirror directory for ``model_path``.
 
-    The mirror layout is ``<sidecar_root>/<library>/<root_basename>/<rel_dir>``
+    The mirror layout is
+    ``<sidecar_root>/<library>/<root_basename-roothash>/<rel_dir>``
     where ``rel_dir`` is the model's directory relative to the model root that
     contains it. The longest matching root wins so nested roots resolve to the
     most specific mirror. Returns ``None`` when centralized storage is inactive
@@ -201,7 +217,7 @@ def resolve_centralized_dir_for_dir(
         library = "default"
 
     rel_dir = os.path.relpath(normalized_dir, best_root)
-    parts = [root, sanitize_path_component(library), sanitize_path_component(os.path.basename(best_root))]
+    parts = [root, sanitize_path_component(library), root_mirror_component(best_root)]
     if rel_dir and rel_dir != os.curdir:
         parts.extend(sanitize_path_component(part) for part in rel_dir.split(os.sep) if part not in ("", os.curdir))
     return os.path.join(*parts)

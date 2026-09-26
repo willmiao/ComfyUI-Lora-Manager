@@ -354,7 +354,7 @@
                     <div class="text-input-wrapper">
                         <input type="text" id="sidecarStoragePath"
                                placeholder="{{ t('settings.sidecarStorage.pathPlaceholder') }}"
-                               onblur="settingsManager.saveInputSetting('sidecarStoragePath', 'sidecar_storage_path')"
+                               onblur="settingsManager.handleSidecarStoragePathChange()"
                                onkeydown="if(event.key === 'Enter') { this.blur(); }" />
                     </div>
                 </div>

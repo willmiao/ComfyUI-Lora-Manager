@@ -809,7 +809,8 @@
       "migrateFailed": "Sidecar migration failed: {message}",
       "migrationDeferred": "Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
       "confirmToCentralized": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
-      "confirmToAlongside": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button."
+      "confirmToAlongside": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them back next to their model files now? You can also do this later with the \"Migrate Sidecars Now\" button.",
+      "confirmRelocateRoot": "The centralized storage directory changed, but existing sidecars and preview images are still in the previous directory. Move them to the new directory now?"
     },
     "proxySettings": {
       "enableProxy": "Enable App-level Proxy",
@@ -1662,7 +1663,8 @@
     "sidecarMigrationConfirm": {
       "titleToCentralized": "Move sidecars to centralized storage?",
       "titleToAlongside": "Move sidecars back next to model files?",
-      "confirmButton": "Migrate Now"
+      "confirmButton": "Migrate Now",
+      "titleRelocateRoot": "Move sidecars to the new storage directory?"
     },
     "bulkAddTags": {
       "title": "Add Tags to Multiple Models",

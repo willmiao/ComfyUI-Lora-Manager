@@ -70,6 +70,27 @@ ScannerFactory = Callable[[], Awaitable[Any]]
 
 DIRECTION_TO_CENTRALIZED = "to_centralized"
 DIRECTION_TO_ALONGSIDE = "to_alongside"
+DIRECTION_RELOCATE_ROOT = "relocate_root"
+
+# Same candidate set find_preview_file recognizes: every PREVIEW_EXTENSIONS
+# suffix plus the legacy ".example.0.jpeg" (issue #225).
+_PREVIEW_CANDIDATE_EXTENSIONS = tuple(PREVIEW_EXTENSIONS) + (".example.0.jpeg",)
+
+
+def _enumerate_preview_names(directory: str, stem: str) -> List[str]:
+    """Return preview filenames for ``stem`` present in ``directory``.
+
+    Case-insensitive full-name match against the preview candidate set, so
+    files like ``model.WEBP`` or ``model.Png`` placed by external tools are
+    migrated along with the exact-case variants.
+    """
+
+    targets = {f"{stem.lower()}{ext}" for ext in _PREVIEW_CANDIDATE_EXTENSIONS}
+    try:
+        entries = os.listdir(directory)
+    except OSError:
+        return []
+    return [entry for entry in entries if entry.lower() in targets]
 
 
 class SidecarMigrationUseCase:
@@ -135,6 +156,179 @@ class SidecarMigrationUseCase:
             to_centralized=False,
             progress_cb=progress_cb,
         )
+
+    async def migrate_root(
+        self,
+        old_root: str,
+        progress_cb: Optional[SidecarMigrationProgressReporter] = None,
+        *,
+        force: bool = False,
+    ) -> Dict[str, Any]:
+        """Relocate the whole mirror tree from a previous root to the configured one.
+
+        Used after ``sidecar_storage_path`` changes while centralized storage
+        is active: without it, every asset under the old root would silently
+        disappear from the application. Moves every file keeping the
+        root-relative structure, rewrites the ``preview_url`` prefix inside
+        moved sidecars, reconciles scanner caches, and prunes the emptied old
+        tree. Keep-newer conflict resolution matches :meth:`_transfer`.
+        """
+
+        if not force and get_storage_mode() != STORAGE_MODE_CENTRALIZED:
+            return self._refusal(
+                DIRECTION_RELOCATE_ROOT,
+                "sidecar storage is not centralized; pass force=true to relocate anyway",
+            )
+        new_root = get_configured_sidecar_root()
+        if not new_root:
+            return self._refusal(
+                DIRECTION_RELOCATE_ROOT,
+                "cannot resolve the centralized sidecar root",
+            )
+        old = (
+            os.path.abspath(os.path.expanduser(old_root.strip()))
+            if isinstance(old_root, str) and old_root.strip()
+            else ""
+        )
+        if not old:
+            return self._refusal(DIRECTION_RELOCATE_ROOT, "old_root is required")
+        if os.path.normpath(old) == os.path.normpath(new_root):
+            return self._refusal(
+                DIRECTION_RELOCATE_ROOT,
+                "old_root matches the configured sidecar root",
+            )
+
+        files: List[Tuple[str, str]] = []
+        if os.path.isdir(old):
+            for dirpath, _dirnames, filenames in os.walk(old):
+                rel = os.path.relpath(dirpath, old)
+                target_dir = new_root if rel == os.curdir else os.path.join(new_root, rel)
+                for filename in filenames:
+                    files.append(
+                        (os.path.join(dirpath, filename), os.path.join(target_dir, filename))
+                    )
+
+        errors: List[Dict[str, str]] = []
+        counters: Dict[str, Any] = {"moved": 0, "conflicts": 0}
+        moved_sidecars: List[str] = []
+
+        async def emit(status: str, **extra: Any) -> None:
+            if progress_cb is None:
+                return
+            payload: Dict[str, Any] = {
+                "type": "sidecar_migration_progress",
+                "status": status,
+                "direction": DIRECTION_RELOCATE_ROOT,
+                "total": len(files),
+                "processed": extra.pop("processed", 0),
+                "moved": counters["moved"],
+                "skipped": 0,
+                "conflicts": counters["conflicts"],
+                "errors": len(errors),
+            }
+            payload.update(extra)
+            await progress_cb.on_progress(payload)
+
+        await emit("started")
+
+        for index, (src, dst) in enumerate(files, start=1):
+            try:
+                if self._transfer(src, dst, counters) and src.endswith(METADATA_SUFFIX):
+                    moved_sidecars.append(dst)
+            except Exception as exc:
+                self._logger.error(
+                    "Sidecar root relocation failed for %s: %s", src, exc, exc_info=True
+                )
+                errors.append({"model": os.path.basename(src), "error": str(exc)})
+            await emit("processing", processed=index, current=os.path.basename(src))
+
+        old_prefix = old.replace(os.sep, "/").rstrip("/") + "/"
+        new_prefix = new_root.replace(os.sep, "/").rstrip("/") + "/"
+        for sidecar in moved_sidecars:
+            self._rewrite_root_prefix(sidecar, old_prefix, new_prefix)
+        await self._reconcile_root_prefix(old_prefix, new_prefix)
+
+        # Prune the emptied old tree, best-effort.
+        if os.path.isdir(old):
+            for dirpath, dirnames, filenames in os.walk(old, topdown=False):
+                if filenames:
+                    continue
+                for dirname in dirnames:
+                    try:
+                        os.rmdir(os.path.join(dirpath, dirname))
+                    except OSError:
+                        pass
+                try:
+                    os.rmdir(dirpath)
+                except OSError:
+                    pass
+
+        await emit("completed")
+
+        return {
+            "success": not errors,
+            "direction": DIRECTION_RELOCATE_ROOT,
+            "models_total": len(files),
+            "models_processed": len(files),
+            "models_moved": 0,
+            "moved": counters["moved"],
+            "skipped": 0,
+            "conflicts": counters["conflicts"],
+            "errors": errors,
+            "error_count": len(errors),
+        }
+
+    def _rewrite_root_prefix(
+        self, sidecar_path: str, old_prefix: str, new_prefix: str
+    ) -> None:
+        """Repoint preview_url inside a relocated sidecar from old to new root."""
+
+        try:
+            with open(sidecar_path, "r", encoding="utf-8") as handle:
+                metadata = json.load(handle)
+        except (OSError, json.JSONDecodeError) as exc:
+            self._logger.warning(
+                "Sidecar root relocation: cannot read %s: %s", sidecar_path, exc
+            )
+            return
+
+        preview_url = metadata.get("preview_url")
+        if not isinstance(preview_url, str) or not preview_url.startswith(old_prefix):
+            return
+        metadata["preview_url"] = new_prefix + preview_url[len(old_prefix):]
+        try:
+            with open(sidecar_path, "w", encoding="utf-8") as handle:
+                json.dump(metadata, handle, ensure_ascii=False, indent=2)
+        except OSError as exc:
+            self._logger.warning(
+                "Sidecar root relocation: cannot rewrite %s: %s", sidecar_path, exc
+            )
+
+    async def _reconcile_root_prefix(self, old_prefix: str, new_prefix: str) -> None:
+        """Rewrite old-root preview URLs in every scanner cache after relocation."""
+
+        for model_type, factory in self._active_scanner_factories():
+            try:
+                scanner = await factory()
+                cache = await scanner.get_cached_data()
+                changed = False
+                for item in cache.raw_data:
+                    preview_url = item.get("preview_url")
+                    if (
+                        isinstance(preview_url, str)
+                        and preview_url.startswith(old_prefix)
+                    ):
+                        item["preview_url"] = new_prefix + preview_url[len(old_prefix):]
+                        changed = True
+                if changed and hasattr(scanner, "_persist_current_cache"):
+                    await scanner._persist_current_cache()
+            except Exception as exc:
+                self._logger.error(
+                    "Sidecar root relocation: failed to reconcile %s cache: %s",
+                    model_type,
+                    exc,
+                    exc_info=True,
+                )
 
     @staticmethod
     def _refusal(direction: str, message: str) -> Dict[str, Any]:
@@ -334,11 +528,9 @@ class SidecarMigrationUseCase:
         sidecar_name = stem + METADATA_SUFFIX
 
         moved_previews: List[str] = []
-        for ext in PREVIEW_EXTENSIONS:
-            src = os.path.join(src_dir, stem + ext)
-            if not os.path.exists(src):
-                continue
-            dst = os.path.join(dst_dir, stem + ext)
+        for preview_name in _enumerate_preview_names(src_dir, stem):
+            src = os.path.join(src_dir, preview_name)
+            dst = os.path.join(dst_dir, preview_name)
             if self._transfer(src, dst, result):
                 moved_previews.append(dst)
 
@@ -465,6 +657,7 @@ class SidecarMigrationUseCase:
         direction: str,
         progress_cb: Optional[SidecarMigrationProgressReporter] = None,
         force: bool = False,
+        old_root: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Wrapper providing progress notification on unexpected failures."""
 
@@ -473,8 +666,11 @@ class SidecarMigrationUseCase:
                 return await self.migrate_to_centralized(progress_cb, force=force)
             if direction == DIRECTION_TO_ALONGSIDE:
                 return await self.migrate_to_alongside(progress_cb, force=force)
+            if direction == DIRECTION_RELOCATE_ROOT:
+                return await self.migrate_root(old_root or "", progress_cb, force=force)
             raise ValueError(
-                f"direction must be {DIRECTION_TO_CENTRALIZED!r} or {DIRECTION_TO_ALONGSIDE!r}"
+                f"direction must be {DIRECTION_TO_CENTRALIZED!r}, "
+                f"{DIRECTION_TO_ALONGSIDE!r} or {DIRECTION_RELOCATE_ROOT!r}"
             )
         except Exception as exc:
             if progress_cb is not None:
