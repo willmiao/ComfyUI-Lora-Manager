@@ -83,13 +83,27 @@ class _FakeCache:
     def __init__(self, raw_data: List[Dict[str, Any]]) -> None:
         self.raw_data = raw_data
 
+    async def update_preview_url(
+        self, file_path: str, preview_url: str, preview_nsfw_level: int
+    ) -> bool:
+        for item in self.raw_data:
+            if item["file_path"] == file_path:
+                item["preview_url"] = preview_url
+                item["preview_nsfw_level"] = preview_nsfw_level
+                return True
+        return False
+
 
 class _FakeScanner:
     def __init__(self, raw_data: List[Dict[str, Any]]) -> None:
         self._cache = _FakeCache(raw_data)
+        self.persist_calls = 0
 
     async def get_cached_data(self) -> _FakeCache:
         return self._cache
+
+    async def _persist_current_cache(self) -> None:
+        self.persist_calls += 1
 
 
 def _make_use_case(model_paths: List[str]) -> SidecarMigrationUseCase:
@@ -98,10 +112,12 @@ def _make_use_case(model_paths: List[str]) -> SidecarMigrationUseCase:
     async def scanner_factory() -> _FakeScanner:
         return scanner
 
-    return SidecarMigrationUseCase(
+    use_case = SidecarMigrationUseCase(
         scanner_factories=(("lora", scanner_factory),),
         settings_service=get_settings_manager(),
     )
+    use_case._test_scanner = scanner  # expose for cache-reconcile assertions
+    return use_case
 
 
 class _ProgressRecorder:
@@ -158,6 +174,11 @@ async def test_migrate_to_centralized_moves_sidecar_and_previews(
     assert statuses[-1] == "completed"
     assert all(p["type"] == "sidecar_migration_progress" for p in recorder.payloads)
 
+    # Scanner cache was reconciled to the mirror preview and persisted.
+    entry = use_case._test_scanner._cache.raw_data[0]
+    assert entry["preview_url"] == _normalize(mirror / "model.preview.webp")
+    assert use_case._test_scanner.persist_calls == 1
+
 
 @pytest.mark.asyncio
 async def test_migrate_to_alongside_reverses_layout(
@@ -187,6 +208,12 @@ async def test_migrate_to_alongside_reverses_layout(
     assert metadata["preview_url"] == _normalize(
         library_root / "sub" / "model.preview.webp"
     )
+
+    entry = use_case._test_scanner._cache.raw_data[0]
+    assert entry["preview_url"] == _normalize(
+        library_root / "sub" / "model.preview.webp"
+    )
+    assert use_case._test_scanner.persist_calls == 1
 
 
 @pytest.mark.asyncio
@@ -292,3 +319,71 @@ async def test_migrate_to_alongside_refuses_when_already_alongside(
     assert summary["success"] is False
     assert "already alongside" in summary["error"]
     assert summary["moved"] == 0
+
+
+def _make_use_case_with_entries(entries: List[Dict[str, Any]]) -> SidecarMigrationUseCase:
+    scanner = _FakeScanner(entries)
+
+    async def scanner_factory() -> _FakeScanner:
+        return scanner
+
+    use_case = SidecarMigrationUseCase(
+        scanner_factories=(("lora", scanner_factory),),
+        settings_service=get_settings_manager(),
+    )
+    use_case._test_scanner = scanner
+    return use_case
+
+
+@pytest.mark.asyncio
+async def test_migrate_reconcile_clears_stale_preview_when_none_remains(
+    library_root: Path, sidecar_root: Path
+):
+    _set_mode("centralized")
+    model = _write_model(library_root, "model")
+    _write_sidecar(library_root, "model", model, preview_ext=None)
+
+    stale_url = _normalize(library_root / "model.preview.webp")
+    entries = [
+        {"file_path": str(model), "preview_url": stale_url, "preview_nsfw_level": 4}
+    ]
+    use_case = _make_use_case_with_entries(entries)
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is True
+    entry = use_case._test_scanner._cache.raw_data[0]
+    # No preview exists in either layout: the stale reference is cleared.
+    assert entry["preview_url"] == ""
+    assert use_case._test_scanner.persist_calls == 1
+
+
+@pytest.mark.asyncio
+async def test_migrate_reconcile_survives_per_model_errors(
+    library_root: Path, sidecar_root: Path, monkeypatch: pytest.MonkeyPatch
+):
+    _set_mode("centralized")
+    model_ok = _write_model(library_root, "ok")
+    _write_sidecar(library_root, "ok", model_ok)
+    (library_root / "ok.preview.webp").write_bytes(b"preview")
+    model_bad = _write_model(library_root, "bad")
+    _write_sidecar(library_root, "bad", model_bad, preview_ext=None)
+
+    use_case = _make_use_case([str(model_ok), str(model_bad)])
+    original = use_case._migrate_model
+
+    async def failing_migrate(model_path: str, **kwargs):
+        if os.path.basename(model_path) == "bad.safetensors":
+            raise RuntimeError("boom")
+        return await original(model_path, **kwargs)
+
+    monkeypatch.setattr(use_case, "_migrate_model", failing_migrate)
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is False
+    assert summary["error_count"] == 1
+    # The healthy model's cache entry is still reconciled and persisted.
+    ok_entry = use_case._test_scanner._cache.raw_data[0]
+    assert ok_entry["preview_url"] == _normalize(
+        _mirror_dir(sidecar_root) / "ok.preview.webp"
+    )
+    assert use_case._test_scanner.persist_calls == 1

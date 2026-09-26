@@ -11,6 +11,8 @@ This use case moves the ``.metadata.json`` sidecar and preview files for every
 known model from one layout to the other. Model files themselves NEVER move.
 Paths inside the moved sidecar (``file_path``, ``file_name``, ``preview_url``)
 are rewritten the same way :meth:`ModelScanner._update_metadata_paths` does.
+After the move, scanner caches are reconciled so the list API immediately
+serves the new preview locations instead of stale pre-migration URLs.
 
 Intended flow (settings-first):
 
@@ -45,7 +47,7 @@ from typing import Any, Awaitable, Callable, Dict, List, Optional, Protocol, Seq
 from ..service_registry import ServiceRegistry
 from ..settings_manager import get_settings_manager
 from ...utils.constants import PREVIEW_EXTENSIONS
-from ...utils.file_utils import get_preview_extension
+from ...utils.file_utils import find_preview_file, get_preview_extension
 from ...utils.metadata_manager import MetadataManager
 from ...utils.sidecar_paths import (
     METADATA_SUFFIX,
@@ -157,10 +159,12 @@ class SidecarMigrationUseCase:
             return self._scanner_factories
         return tuple(entry for entry in self._scanner_factories if entry[0] != "other")
 
-    async def _collect_model_paths(self, errors: List[Dict[str, str]]) -> List[str]:
-        """Enumerate model file paths across every active scanner's cache."""
+    async def _collect_model_paths(
+        self, errors: List[Dict[str, str]]
+    ) -> List[Tuple[Any, List[str]]]:
+        """Enumerate model file paths grouped by the scanner that owns them."""
 
-        paths: List[str] = []
+        groups: List[Tuple[Any, List[str]]] = []
         for model_type, factory in self._active_scanner_factories():
             try:
                 scanner = await factory()
@@ -173,11 +177,13 @@ class SidecarMigrationUseCase:
                 )
                 errors.append({"model": model_type, "error": f"enumeration failed: {exc}"})
                 continue
-            for entry in cache.raw_data:
-                file_path = entry.get("file_path")
-                if file_path:
-                    paths.append(file_path)
-        return paths
+            paths = [
+                entry["file_path"]
+                for entry in cache.raw_data
+                if entry.get("file_path")
+            ]
+            groups.append((scanner, paths))
+        return groups
 
     @staticmethod
     def _move_file(src: str, dst: str) -> None:
@@ -207,14 +213,17 @@ class SidecarMigrationUseCase:
             )
 
         errors: List[Dict[str, str]] = []
-        model_paths = await self._collect_model_paths(errors)
+        scanner_groups = await self._collect_model_paths(errors)
 
-        total = len(model_paths)
+        total = sum(len(paths) for _, paths in scanner_groups)
         processed = 0
         models_moved = 0
         moved = 0
         skipped = 0
         conflicts = 0
+        # (file_path, final preview path at the destination layout), grouped
+        # by scanner so caches can be reconciled after the move.
+        preview_updates: List[Tuple[Any, List[Tuple[str, str]]]] = []
 
         async def emit(status: str, **extra: Any) -> None:
             if progress_cb is None:
@@ -235,27 +244,34 @@ class SidecarMigrationUseCase:
 
         await emit("started")
 
-        for model_path in model_paths:
-            processed += 1
-            current = os.path.basename(model_path)
-            try:
-                result = await self._migrate_model(
-                    model_path,
-                    root=root,
-                    to_centralized=to_centralized,
-                )
-                moved += result["moved"]
-                conflicts += result["conflicts"]
-                if result["skipped"]:
-                    skipped += 1
-                if result["moved"]:
-                    models_moved += 1
-            except Exception as exc:
-                self._logger.error(
-                    "Sidecar migration failed for %s: %s", model_path, exc, exc_info=True
-                )
-                errors.append({"model": current, "error": str(exc)})
-            await emit("processing", current=current)
+        for scanner, model_paths in scanner_groups:
+            updates: List[Tuple[str, str]] = []
+            for model_path in model_paths:
+                processed += 1
+                current = os.path.basename(model_path)
+                try:
+                    result = await self._migrate_model(
+                        model_path,
+                        root=root,
+                        to_centralized=to_centralized,
+                    )
+                    moved += result["moved"]
+                    conflicts += result["conflicts"]
+                    if result["skipped"]:
+                        skipped += 1
+                    else:
+                        updates.append((model_path, result["preview_url"]))
+                    if result["moved"]:
+                        models_moved += 1
+                except Exception as exc:
+                    self._logger.error(
+                        "Sidecar migration failed for %s: %s", model_path, exc, exc_info=True
+                    )
+                    errors.append({"model": current, "error": str(exc)})
+                await emit("processing", current=current)
+            preview_updates.append((scanner, updates))
+
+        await self._reconcile_scanner_caches(preview_updates)
 
         await emit("completed")
 
@@ -278,10 +294,14 @@ class SidecarMigrationUseCase:
         *,
         root: str,
         to_centralized: bool,
-    ) -> Dict[str, int]:
-        """Migrate one model's sidecar + previews; return per-model counters."""
+    ) -> Dict[str, Any]:
+        """Migrate one model's sidecar + previews; return per-model counters.
 
-        result = {"moved": 0, "conflicts": 0, "skipped": 0}
+        ``preview_url`` in the result is the model's final preview path in the
+        destination layout ("" when none), used to reconcile scanner caches.
+        """
+
+        result: Dict[str, Any] = {"moved": 0, "conflicts": 0, "skipped": 0, "preview_url": ""}
 
         model_path = os.path.abspath(model_path)
         if not os.path.exists(model_path):
@@ -331,9 +351,60 @@ class SidecarMigrationUseCase:
         if sidecar_moved:
             await self._rewrite_sidecar_paths(sidecar_dst, model_path, moved_previews)
 
+        # Ground truth from the destination directory: covers conflict-keep
+        # and partial moves, not just the previews transferred in this run.
+        final_preview = find_preview_file(stem, dst_dir)
+        if final_preview:
+            result["preview_url"] = final_preview.replace(os.sep, "/")
+
         return result
 
-    def _transfer(self, src: str, dst: str, result: Dict[str, int]) -> bool:
+    async def _reconcile_scanner_caches(
+        self, preview_updates: List[Tuple[Any, List[Tuple[str, str]]]]
+    ) -> None:
+        """Point scanner cache entries at the post-migration preview locations.
+
+        Without this the list API keeps serving pre-migration ``preview_url``
+        values whose files no longer exist; hitting one triggers the preview
+        route's stale-URL cleanup, which would wipe the reference for good.
+        A failing scanner is logged and skipped — the on-disk migration has
+        already succeeded, and a full rescan repairs the cache.
+        """
+
+        for scanner, updates in preview_updates:
+            if not updates:
+                continue
+            try:
+                cache = await scanner.get_cached_data()
+                changed = False
+                for file_path, preview_url in updates:
+                    entry = next(
+                        (item for item in cache.raw_data if item.get("file_path") == file_path),
+                        None,
+                    )
+                    if entry is None:
+                        continue
+                    if entry.get("preview_url", "") == preview_url:
+                        continue
+                    if hasattr(cache, "update_preview_url"):
+                        await cache.update_preview_url(
+                            file_path,
+                            preview_url,
+                            entry.get("preview_nsfw_level", 0),
+                        )
+                    else:  # pragma: no cover - minimal cache doubles
+                        entry["preview_url"] = preview_url
+                    changed = True
+                if changed and hasattr(scanner, "_persist_current_cache"):
+                    await scanner._persist_current_cache()
+            except Exception as exc:
+                self._logger.error(
+                    "Sidecar migration: failed to reconcile scanner cache: %s",
+                    exc,
+                    exc_info=True,
+                )
+
+    def _transfer(self, src: str, dst: str, result: Dict[str, Any]) -> bool:
         """Move ``src`` to ``dst`` with keep-newer conflict resolution.
 
         Returns True when the file was actually moved to the destination. On a
