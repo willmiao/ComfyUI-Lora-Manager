@@ -81,7 +81,7 @@ body {
     --badge-skip-refresh-glow: var(--color-skip-refresh-glow);
 }
 
-[data-theme="dark"] {
+:root[data-theme="dark"] {
     --bg-color: var(--bg-base);
     --text-color: var(--text-primary);
     --text-muted: var(--text-secondary);

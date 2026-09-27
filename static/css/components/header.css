@@ -572,7 +572,7 @@
 }
 
 /* Dark mode: use each preset's dark-mode accent lightness for visibility.
-   These match the --color-accent-l values from [data-theme="dark"][data-theme-preset="..."]
+   These match the --color-accent-l values from :root[data-theme="dark"][data-theme-preset="..."]
    in tokens/colors.css so the swatch accurately previews what the theme looks like. */
 
 [data-theme="dark"] .preset-swatch-default {

@@ -78,7 +78,7 @@
   --favorite-glow: oklch(65% 0.15 85 / 0.5);
 }
 
-[data-theme="dark"] {
+:root[data-theme="dark"] {
   --bg-base: #1a1a1a;
   --bg-elevated: oklch(25% 0.02 256 / 0.98);
   --bg-overlay: oklch(0% 0 0 / 0.75);
@@ -118,7 +118,7 @@
 
 /* ── Preset: Nord ──────────────────────────────────────────── */
 
-[data-theme-preset="nord"] {
+:root[data-theme-preset="nord"] {
   --color-accent-h: 213;
   --color-accent-c: 0.18;
   --color-accent-l: 62%;
@@ -152,7 +152,7 @@
   --favorite-glow: oklch(72% 0.14 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="nord"] {
+:root[data-theme="dark"][data-theme-preset="nord"] {
   --color-accent-h: 213;
   --color-accent-c: 0.18;
   --color-accent-l: 68%;
@@ -188,7 +188,7 @@
 
 /* ── Preset: Midnight ───────────────────────────────────────── */
 
-[data-theme-preset="midnight"] {
+:root[data-theme-preset="midnight"] {
   --color-accent-h: 300;
   --color-accent-c: 0.15;
   --color-accent-l: 52%;
@@ -222,7 +222,7 @@
   --favorite-glow: oklch(72% 0.16 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="midnight"] {
+:root[data-theme="dark"][data-theme-preset="midnight"] {
   --color-accent-h: 300;
   --color-accent-c: 0.14;
   --color-accent-l: 68%;
@@ -258,7 +258,7 @@
 
 /* ── Preset: Monokai ───────────────────────────────────────── */
 
-[data-theme-preset="monokai"] {
+:root[data-theme-preset="monokai"] {
   --color-accent-h: 190;
   --color-accent-c: 0.24;
   --color-accent-l: 72%;
@@ -291,7 +291,7 @@
   --favorite-glow: oklch(72% 0.16 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="monokai"] {
+:root[data-theme="dark"][data-theme-preset="monokai"] {
   --color-accent-h: 190;
   --color-accent-c: 0.24;
   --color-accent-l: 72%;
@@ -326,7 +326,7 @@
 
 /* ── Preset: Dracula ───────────────────────────────────────── */
 
-[data-theme-preset="dracula"] {
+:root[data-theme-preset="dracula"] {
   --color-accent-h: 265;
   --color-accent-c: 0.24;
   --color-accent-l: 68%;
@@ -359,7 +359,7 @@
   --favorite-glow: oklch(72% 0.16 85 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="dracula"] {
+:root[data-theme="dark"][data-theme-preset="dracula"] {
   --color-accent-h: 265;
   --color-accent-c: 0.24;
   --color-accent-l: 72%;
@@ -394,7 +394,7 @@
 
 /* ── Preset: Solarized ─────────────────────────────────────── */
 
-[data-theme-preset="solarized"] {
+:root[data-theme-preset="solarized"] {
   --color-accent-h: 175;
   --color-accent-c: 0.18;
   --color-accent-l: 55%;
@@ -429,7 +429,7 @@
   --favorite-glow: oklch(68% 0.16 75 / 0.5);
 }
 
-[data-theme="dark"][data-theme-preset="solarized"] {
+:root[data-theme="dark"][data-theme-preset="solarized"] {
   --color-accent-h: 175;
   --color-accent-c: 0.18;
   --color-accent-l: 60%;
