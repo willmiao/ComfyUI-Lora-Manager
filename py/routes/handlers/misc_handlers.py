@@ -3378,6 +3378,18 @@ class FileSystemHandler:
             elif sys.platform == "darwin":
                 subprocess.Popen(["open", path])
             else:
+                if not _has_gui_display():
+                    # Headless/SSH session: xdg-open cannot open a file
+                    # manager, so hand the path to the browser for copying
+                    # instead of reporting a success that never happened.
+                    return web.json_response(
+                        {
+                            "success": True,
+                            "message": "Headless session: path available for copying",
+                            "path": path,
+                            "mode": "clipboard",
+                        }
+                    )
                 subprocess.Popen(["xdg-open", path])
 
         return web.json_response(
