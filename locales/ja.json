@@ -805,19 +805,18 @@
             "migrateButton": "今すぐサイドカーファイルを移動",
             "migratingButton": "移動しています...",
             "migrating": "サイドカーファイルを移動しています...",
-            "migrateSuccess": "サイドカーファイルの移動が完了しました",
             "migrateFailed": "サイドカーファイルの移動に失敗しました：{message}",
             "migrationDeferred": "既存のサイドカーファイルは移動されませんでした。後で「設定 > ライブラリ > サイドカーファイルの保存」から移動できます。",
             "confirmToCentralized": "保存モードが変更されましたが、既存の .metadata.json サイドカーファイルとプレビュー画像は自動では移動しません。今すぐ集中保存ディレクトリに移動しますか？「今すぐサイドカーファイルを移動」ボタンで後から実行することもできます。",
             "confirmToAlongside": "保存モードが変更されましたが、既存の .metadata.json サイドカーファイルとプレビュー画像は自動では移動しません。今すぐ各モデルファイルの隣に戻しますか？「今すぐサイドカーファイルを移動」ボタンで後から実行することもできます。",
             "confirmRelocateRoot": "集中保存ディレクトリが変更されましたが、既存のサイドカーファイルとプレビュー画像はまだ以前のディレクトリにあります。今すぐ新しいディレクトリに移動しますか？",
-            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
-            "openFolderButton": "[TODO: Translate] Open Folder",
-            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
-            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
-            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
-            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
-            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
+            "effectivePathLabel": "実際の保存場所：",
+            "openFolderButton": "フォルダを開く",
+            "repoWarning": "実際の保存場所が LoRA Manager のインストールフォルダ内にあります。プラグインの再インストールやクリーンアップデートで削除される可能性があります。インストールフォルダの外に明示的な保存パスを設定してください。",
+            "openLocationSuccess": "サイドカーファイルの保存フォルダを開きました",
+            "openLocationCopied": "サイドカーファイルの保存パスをクリップボードにコピーしました：{path}",
+            "openLocationClipboardFallback": "サイドカーファイルの保存パスを手動でコピーしてください：{path}",
+            "openLocationFailed": "サイドカーファイルの保存フォルダを開けませんでした"
         },
         "proxySettings": {
             "enableProxy": "アプリレベルのプロキシを有効化",
@@ -1677,13 +1676,22 @@
             "titleToAlongside": "サイドカーファイルをモデルファイルの隣に戻しますか？",
             "confirmButton": "今すぐ移動",
             "titleRelocateRoot": "サイドカーファイルを新しい保存ディレクトリに移動しますか？",
-            "destination": "[TODO: Translate] Destination: {path}"
+            "destination": "移動先：{path}"
         },
         "sidecarMigrationResult": {
-            "title": "[TODO: Translate] Sidecar migration completed",
-            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
-            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
-            "location": "[TODO: Translate] Storage location: {path}"
+            "title": "サイドカーファイル移動の概要",
+            "completedSuccessfully": "移動が正常に完了しました",
+            "completedWithErrors": "{count} 件のエラーで完了しました",
+            "statMoved": "移動したファイル",
+            "statModels": "モデル",
+            "statSkipped": "スキップ",
+            "statConflicts": "解決した競合",
+            "statErrors": "エラー",
+            "failedItems": "失敗した項目（{count}）",
+            "columnModel": "モデル",
+            "columnError": "エラー",
+            "successMessage": "{models} 個のモデルの {moved} 個のファイルを移動しました",
+            "location": "保存場所：{path}"
         },
         "bulkAddTags": {
             "title": "複数モデルにタグを追加",

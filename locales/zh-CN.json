@@ -805,19 +805,18 @@
             "migrateButton": "立即迁移附属文件",
             "migratingButton": "迁移中...",
             "migrating": "正在迁移附属文件...",
-            "migrateSuccess": "附属文件迁移完成",
             "migrateFailed": "附属文件迁移失败：{message}",
             "migrationDeferred": "现有附属文件未迁移。你可以稍后在“设置 → 库 → 附属文件存储”中迁移它们。",
             "confirmToCentralized": "存储模式已更改，但现有的 .metadata.json 附属文件和预览图片不会自动迁移。要现在将它们移入集中存储目录吗？你也可以稍后使用“立即迁移附属文件”按钮完成。",
             "confirmToAlongside": "存储模式已更改，但现有的 .metadata.json 附属文件和预览图片不会自动迁移。要现在将它们移回各自的模型文件旁边吗？你也可以稍后使用“立即迁移附属文件”按钮完成。",
             "confirmRelocateRoot": "集中存储目录已更改，但现有的附属文件和预览图片仍在原目录中。要现在将它们移到新目录吗？",
-            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
-            "openFolderButton": "[TODO: Translate] Open Folder",
-            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
-            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
-            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
-            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
-            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
+            "effectivePathLabel": "实际存储位置：",
+            "openFolderButton": "打开文件夹",
+            "repoWarning": "实际存储位置位于 LoRA Manager 安装目录内。重新安装插件或干净更新可能会将其删除——请在安装目录之外设置一个明确的存储路径。",
+            "openLocationSuccess": "已打开附属文件存储文件夹",
+            "openLocationCopied": "附属文件存储路径已复制到剪贴板：{path}",
+            "openLocationClipboardFallback": "请手动复制附属文件存储路径：{path}",
+            "openLocationFailed": "打开附属文件存储文件夹失败"
         },
         "proxySettings": {
             "enableProxy": "启用应用级代理",
@@ -1677,13 +1676,22 @@
             "titleToAlongside": "要将附属文件移回模型文件旁边吗？",
             "confirmButton": "立即迁移",
             "titleRelocateRoot": "要将附属文件移到新的存储目录吗？",
-            "destination": "[TODO: Translate] Destination: {path}"
+            "destination": "目标位置：{path}"
         },
         "sidecarMigrationResult": {
-            "title": "[TODO: Translate] Sidecar migration completed",
-            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
-            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
-            "location": "[TODO: Translate] Storage location: {path}"
+            "title": "附属文件迁移摘要",
+            "completedSuccessfully": "迁移已成功完成",
+            "completedWithErrors": "完成，但有 {count} 个错误",
+            "statMoved": "已迁移文件",
+            "statModels": "模型",
+            "statSkipped": "已跳过",
+            "statConflicts": "已解决冲突",
+            "statErrors": "错误",
+            "failedItems": "失败项（{count}）",
+            "columnModel": "模型",
+            "columnError": "错误",
+            "successMessage": "已为 {models} 个模型迁移 {moved} 个文件",
+            "location": "存储位置：{path}"
         },
         "bulkAddTags": {
             "title": "批量添加标签",

@@ -805,19 +805,18 @@
             "migrateButton": "Migrer les fichiers sidecar maintenant",
             "migratingButton": "Migration en cours...",
             "migrating": "Migration des fichiers sidecar en cours...",
-            "migrateSuccess": "Migration des fichiers sidecar terminée",
             "migrateFailed": "Échec de la migration des fichiers sidecar : {message}",
             "migrationDeferred": "Les fichiers sidecar existants n’ont pas été déplacés. Vous pouvez les migrer plus tard depuis Paramètres → Bibliothèque → Stockage des fichiers sidecar.",
             "confirmToCentralized": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les déplacer maintenant dans le dossier de stockage centralisé ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
             "confirmToAlongside": "Le mode de stockage a changé, mais les fichiers sidecar .metadata.json et les images d’aperçu existants ne sont pas déplacés automatiquement. Les remettre maintenant à côté de leurs fichiers de modèle ? Vous pouvez aussi le faire plus tard avec le bouton « Migrer les fichiers sidecar maintenant ».",
             "confirmRelocateRoot": "Le dossier de stockage centralisé a changé, mais les fichiers sidecar et les images d’aperçu existants se trouvent encore dans le dossier précédent. Les déplacer maintenant dans le nouveau dossier ?",
-            "effectivePathLabel": "[TODO: Translate] Effective storage location:",
-            "openFolderButton": "[TODO: Translate] Open Folder",
-            "repoWarning": "[TODO: Translate] The effective storage location is inside the LoRA Manager installation folder. Reinstalling the plugin or a clean update can delete it — set an explicit storage path outside the installation folder.",
-            "openLocationSuccess": "[TODO: Translate] Opened sidecar storage folder",
-            "openLocationCopied": "[TODO: Translate] Sidecar storage path copied to clipboard: {path}",
-            "openLocationClipboardFallback": "[TODO: Translate] Copy the sidecar storage path manually: {path}",
-            "openLocationFailed": "[TODO: Translate] Failed to open the sidecar storage folder"
+            "effectivePathLabel": "Emplacement de stockage effectif :",
+            "openFolderButton": "Ouvrir le dossier",
+            "repoWarning": "L’emplacement de stockage effectif se trouve dans le dossier d’installation de LoRA Manager. Une réinstallation de l’extension ou une mise à jour propre peut le supprimer — définissez un chemin de stockage explicite en dehors du dossier d’installation.",
+            "openLocationSuccess": "Dossier de stockage des fichiers sidecar ouvert",
+            "openLocationCopied": "Chemin de stockage des fichiers sidecar copié dans le presse-papiers : {path}",
+            "openLocationClipboardFallback": "Copiez manuellement le chemin de stockage des fichiers sidecar : {path}",
+            "openLocationFailed": "Échec de l’ouverture du dossier de stockage des fichiers sidecar"
         },
         "proxySettings": {
             "enableProxy": "Activer le proxy au niveau de l'application",
@@ -1677,13 +1676,22 @@
             "titleToAlongside": "Remettre les fichiers sidecar à côté des fichiers de modèle ?",
             "confirmButton": "Migrer maintenant",
             "titleRelocateRoot": "Déplacer les fichiers sidecar vers le nouveau dossier de stockage ?",
-            "destination": "[TODO: Translate] Destination: {path}"
+            "destination": "Destination : {path}"
         },
         "sidecarMigrationResult": {
-            "title": "[TODO: Translate] Sidecar migration completed",
-            "titleWithErrors": "[TODO: Translate] Sidecar migration completed with {count} error(s)",
-            "summary": "[TODO: Translate] Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
-            "location": "[TODO: Translate] Storage location: {path}"
+            "title": "Résumé de la migration des fichiers sidecar",
+            "completedSuccessfully": "Migration terminée avec succès",
+            "completedWithErrors": "Terminé avec {count} erreur(s)",
+            "statMoved": "Fichiers déplacés",
+            "statModels": "Modèles",
+            "statSkipped": "Ignorés",
+            "statConflicts": "Conflits résolus",
+            "statErrors": "Erreurs",
+            "failedItems": "Éléments en échec ({count})",
+            "columnModel": "Modèle",
+            "columnError": "Erreur",
+            "successMessage": "{moved} fichiers déplacés pour {models} modèles",
+            "location": "Emplacement de stockage : {path}"
         },
         "bulkAddTags": {
             "title": "Ajouter des tags à plusieurs modèles",
