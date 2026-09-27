@@ -221,9 +221,15 @@ describe('SettingsManager sidecar storage', () => {
                 method: 'POST',
                 body: JSON.stringify({ direction: 'to_centralized', force: true }),
             }));
-            expect(showToast).toHaveBeenCalledWith('settings.sidecarStorage.migrateSuccess', {}, 'success');
-            expect(resetAndReload).toHaveBeenCalledWith(true);
+            // The summary modal stacks above the settings modal; the reload
+            // only happens once the user dismisses it.
+            const summaryModal = document.getElementById('sidecarMigrationSummaryModal');
+            expect(summaryModal).not.toBeNull();
+            expect(resetAndReload).not.toHaveBeenCalled();
             expect(modal.classList.contains('show')).toBe(false);
+
+            summaryModal.querySelector('[data-action="close-modal"]').click();
+            expect(resetAndReload).toHaveBeenCalledWith(true);
         });
 
         it('names the resolved destination in the confirm dialog', async () => {
@@ -432,80 +438,90 @@ describe('SettingsManager sidecar storage', () => {
     });
 
     describe('showSidecarMigrationResult', () => {
-        const appendResultModal = () => {
-            const modal = document.createElement('div');
-            modal.id = 'sidecarMigrationResultModal';
-            modal.innerHTML = `
-                <h2 data-role="title"></h2>
-                <p data-role="message"></p>
-                <p data-role="destination" style="display:none"></p>
-                <button data-action="open-sidecar-location" style="display:none"></button>
-                <button data-action="close-sidecar-result"></button>`;
-            document.body.appendChild(modal);
-            return modal;
+        const baseResult = {
+            success: true,
+            direction: 'to_centralized',
+            moved: 12,
+            models_moved: 5,
+            models_total: 6,
+            skipped: 1,
+            conflicts: 2,
+            errors: [],
+            error_count: 0,
+            sidecar_root: '/data/sidecars',
         };
 
-        it('renders counters and location, reloads only when closed', async () => {
+        it('renders stat cards and location, reloads only when closed', async () => {
             const manager = createManager();
-            const modal = appendResultModal();
             mockFetchOk({ success: true });
 
-            manager.showSidecarMigrationResult({
-                success: true,
-                direction: 'to_centralized',
-                moved: 12,
-                models_moved: 5,
-                skipped: 1,
-                conflicts: 2,
-                error_count: 0,
-                sidecar_root: '/data/sidecars',
-            });
+            manager.showSidecarMigrationResult(baseResult);
 
-            expect(modal.classList.contains('show')).toBe(true);
-            expect(modal.querySelector('[data-role="message"]').textContent).toContain('12');
-            expect(modal.querySelector('[data-role="destination"]').textContent).toContain('/data/sidecars');
-            expect(modal.querySelector('[data-action="open-sidecar-location"]').style.display).not.toBe('none');
+            const modal = document.getElementById('sidecarMigrationSummaryModal');
+            expect(modal).not.toBeNull();
+            const statValues = [...modal.querySelectorAll('.stat-card-value')].map((el) => el.textContent);
+            expect(statValues).toEqual(['12', '5', '1', '2']);
+            expect(modal.querySelector('.sidecar-migration-location').textContent).toContain('/data/sidecars');
+            expect(modal.querySelector('[data-action="open-sidecar-location"]')).not.toBeNull();
+            expect(modal.querySelector('.refresh-success-message')).not.toBeNull();
             expect(resetAndReload).not.toHaveBeenCalled();
 
-            // "Open Folder" keeps the result modal open.
+            // "Open Folder" keeps the summary modal open.
             modal.querySelector('[data-action="open-sidecar-location"]').click();
             await vi.waitFor(() => expect(global.fetch).toHaveBeenCalledWith(
                 '/api/lm/sidecars/open-location',
                 { method: 'POST' }
             ));
-            expect(modal.classList.contains('show')).toBe(true);
+            expect(document.getElementById('sidecarMigrationSummaryModal')).not.toBeNull();
 
-            modal.querySelector('[data-action="close-sidecar-result"]').click();
-            expect(modal.classList.contains('show')).toBe(false);
+            modal.querySelector('[data-action="close-modal"]').click();
+            expect(document.getElementById('sidecarMigrationSummaryModal')).toBeNull();
             expect(resetAndReload).toHaveBeenCalledWith(true);
         });
 
-        it('hides the location row and open button when migrating back alongside', () => {
+        it('hides the location line and open button when migrating back alongside', () => {
             const manager = createManager();
-            const modal = appendResultModal();
+
+            manager.showSidecarMigrationResult({ ...baseResult, direction: 'to_alongside' });
+
+            const modal = document.getElementById('sidecarMigrationSummaryModal');
+            expect(modal.querySelector('.sidecar-migration-location')).toBeNull();
+            expect(modal.querySelector('[data-action="open-sidecar-location"]')).toBeNull();
+        });
+
+        it('renders the failure table when errors occurred', () => {
+            const manager = createManager();
 
             manager.showSidecarMigrationResult({
-                success: true,
-                direction: 'to_alongside',
-                moved: 3,
-                models_moved: 3,
-                skipped: 0,
-                conflicts: 0,
-                error_count: 0,
-                sidecar_root: '/data/sidecars',
+                ...baseResult,
+                errors: [{ model: 'broken.safetensors', error: 'permission denied' }],
+                error_count: 1,
             });
 
-            expect(modal.querySelector('[data-role="destination"]').style.display).toBe('none');
-            expect(modal.querySelector('[data-action="open-sidecar-location"]').style.display).toBe('none');
+            const modal = document.getElementById('sidecarMigrationSummaryModal');
+            expect(modal.querySelector('.summary-header').classList.contains('warning')).toBe(true);
+            expect(modal.querySelector('.refresh-success-message')).toBeNull();
+            const rows = modal.querySelectorAll('.failure-table tbody tr');
+            expect(rows).toHaveLength(1);
+            expect(rows[0].textContent).toContain('broken.safetensors');
+            expect(rows[0].textContent).toContain('permission denied');
+            const statValues = [...modal.querySelectorAll('.stat-card-value')].map((el) => el.textContent);
+            expect(statValues).toContain('1');
         });
 
-        it('falls back to toast plus reload when the modal is absent', () => {
+        it('closes on ESC without leaking the keydown to the settings modal', () => {
             const manager = createManager();
+            const underlyingHandler = vi.fn();
+            document.addEventListener('keydown', underlyingHandler);
 
-            manager.showSidecarMigrationResult({ success: true, direction: 'to_centralized' });
+            manager.showSidecarMigrationResult(baseResult);
 
-            expect(showToast).toHaveBeenCalledWith('settings.sidecarStorage.migrateSuccess', {}, 'success');
+            document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
+
+            expect(document.getElementById('sidecarMigrationSummaryModal')).toBeNull();
             expect(resetAndReload).toHaveBeenCalledWith(true);
+            expect(underlyingHandler).not.toHaveBeenCalled();
+            document.removeEventListener('keydown', underlyingHandler);
         });
     });
 });

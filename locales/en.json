@@ -805,7 +805,6 @@
       "migrateButton": "Migrate Sidecars Now",
       "migratingButton": "Migrating...",
       "migrating": "Migrating sidecars...",
-      "migrateSuccess": "Sidecar migration completed successfully",
       "migrateFailed": "Sidecar migration failed: {message}",
       "migrationDeferred": "Existing sidecars were not moved. You can migrate them later from Settings → Library → Sidecar Storage.",
       "confirmToCentralized": "The storage mode changed, but existing .metadata.json sidecars and preview images are not moved automatically. Move them into the centralized storage directory now? You can also do this later with the \"Migrate Sidecars Now\" button.",
@@ -1680,9 +1679,18 @@
       "destination": "Destination: {path}"
     },
     "sidecarMigrationResult": {
-      "title": "Sidecar migration completed",
-      "titleWithErrors": "Sidecar migration completed with {count} error(s)",
-      "summary": "Moved {moved} files for {models} models. Skipped: {skipped}, conflicts resolved: {conflicts}.",
+      "title": "Sidecar Migration Summary",
+      "completedSuccessfully": "Migration completed successfully",
+      "completedWithErrors": "Completed with {count} error(s)",
+      "statMoved": "Moved Files",
+      "statModels": "Models",
+      "statSkipped": "Skipped",
+      "statConflicts": "Conflicts Resolved",
+      "statErrors": "Errors",
+      "failedItems": "Failed Items ({count})",
+      "columnModel": "Model",
+      "columnError": "Error",
+      "successMessage": "Moved {moved} files for {models} models",
       "location": "Storage location: {path}"
     },
     "bulkAddTags": {

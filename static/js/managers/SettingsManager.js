@@ -18,6 +18,7 @@ import { configureModelCardVideo } from '../components/shared/ModelCard.js';
 import { validatePriorityTagString, getPriorityTagSuggestionsMap, invalidatePriorityTagSuggestionsCache } from '../utils/priorityTagHelpers.js';
 import { bannerService } from './BannerService.js';
 import { directoryPickerModal } from '../components/DirectoryPickerModal.js';
+import { showSidecarMigrationSummary } from '../components/SidecarMigrationSummaryModal.js';
 
 const VALID_MATURE_BLUR_LEVELS = new Set(['PG13', 'R', 'X', 'XXX']);
 
@@ -3682,103 +3683,14 @@ export class SettingsManager {
     // Post-migration summary: counters + storage location, with an "open
     // folder" shortcut. Closing reloads so cards pick up the new paths.
     showSidecarMigrationResult(result) {
-        const modalElement = document.getElementById('sidecarMigrationResultModal');
-        if (!modalElement) {
-            showToast('settings.sidecarStorage.migrateSuccess', {}, 'success');
-            resetAndReload(true);
-            return;
-        }
-
-        const errorCount = result.error_count || 0;
-
-        const titleElement = modalElement.querySelector('[data-role="title"]');
-        if (titleElement) {
-            titleElement.textContent = errorCount
-                ? translate('modals.sidecarMigrationResult.titleWithErrors', { count: errorCount }, `Sidecar migration completed with ${errorCount} error(s)`)
-                : translate('modals.sidecarMigrationResult.title', {}, 'Sidecar migration completed');
-        }
-
-        const messageElement = modalElement.querySelector('[data-role="message"]');
-        if (messageElement) {
-            messageElement.textContent = translate(
-                'modals.sidecarMigrationResult.summary',
-                {
-                    moved: result.moved || 0,
-                    models: result.models_moved || 0,
-                    skipped: result.skipped || 0,
-                    conflicts: result.conflicts || 0,
-                },
-                `Moved ${result.moved || 0} files for ${result.models_moved || 0} models. Skipped: ${result.skipped || 0}, conflicts resolved: ${result.conflicts || 0}.`
-            );
-        }
-
-        const showLocation = result.direction !== 'to_alongside' && !!result.sidecar_root;
-
-        const destinationElement = modalElement.querySelector('[data-role="destination"]');
-        if (destinationElement) {
-            if (showLocation) {
-                destinationElement.textContent = translate(
-                    'modals.sidecarMigrationResult.location',
-                    { path: result.sidecar_root },
-                    `Storage location: ${result.sidecar_root}`
-                );
-                destinationElement.style.display = 'block';
-            } else {
-                destinationElement.style.display = 'none';
-            }
-        }
-
-        const openButton = modalElement.querySelector('[data-action="open-sidecar-location"]');
-        const closeButton = modalElement.querySelector('[data-action="close-sidecar-result"]');
-        if (!closeButton) {
-            resetAndReload(true);
-            return;
-        }
-
-        if (openButton) {
-            openButton.style.display = showLocation ? '' : 'none';
-        }
-
-        const cleanup = () => {
-            closeButton.removeEventListener('click', handleClose);
-            if (openButton) {
-                openButton.removeEventListener('click', handleOpen);
-            }
-            document.removeEventListener('keydown', handleEscape, true);
-        };
-
-        const handleClose = (event) => {
-            event.preventDefault();
-            cleanup();
-            modalElement.classList.remove('show');
+        showSidecarMigrationSummary({
+            result,
             // Reload so cards pick up metadata/preview paths from the new location
-            resetAndReload(true);
-        };
-
-        // Opening the folder keeps the result modal open; the reload happens
-        // when the user closes it.
-        const handleOpen = (event) => {
-            event.preventDefault();
-            this.openSidecarStorageLocation();
-        };
-
-        // Capture phase + stopPropagation so ESC never reaches the settings
-        // modal's own ESC handler underneath.
-        const handleEscape = (event) => {
-            if (event.key === 'Escape') {
-                event.stopPropagation();
-                handleClose(event);
-            }
-        };
-
-        closeButton.addEventListener('click', handleClose);
-        if (openButton) {
-            openButton.addEventListener('click', handleOpen);
-        }
-        document.addEventListener('keydown', handleEscape, true);
-
-        modalElement.classList.add('show');
-        closeButton.focus();
+            onClose: () => resetAndReload(true),
+            // Opening the folder keeps the result modal open; the reload
+            // happens when the user closes it.
+            onOpenLocation: () => this.openSidecarStorageLocation(),
+        });
     }
 
     async loadMetadataArchiveSettings() {
