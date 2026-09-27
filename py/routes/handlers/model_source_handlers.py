@@ -39,7 +39,12 @@ from ...services.settings_manager import get_settings_manager
 from ...services.service_registry import ServiceRegistry
 from ...services.websocket_manager import ws_manager
 from ...utils.metadata_manager import MetadataManager
-from ...utils.models import LoraMetadata, CheckpointMetadata, EmbeddingMetadata
+from ...utils.models import (
+    LoraMetadata,
+    CheckpointMetadata,
+    EmbeddingMetadata,
+    OtherModelMetadata,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +82,11 @@ def _infer_model_type(model_root: str) -> tuple[Any, str]:
     for p in (config.embeddings_roots or []) + (config.extra_embeddings_roots or []):
         if os.path.normpath(p).replace(os.sep, "/") == norm:
             return EmbeddingMetadata, "get_embedding_scanner"
+
+    # Other-model roots (VAE, text encoders, upscalers, ...)
+    for p in config.other_roots or []:
+        if os.path.normpath(p).replace(os.sep, "/") == norm:
+            return OtherModelMetadata, "get_other_scanner"
 
     # Fallback — should not happen in normal use
     logger.warning(
@@ -213,12 +223,14 @@ def _find_matching_root(dest_dir: str) -> str | None:
         config.extra_unet_roots or [],
         config.embeddings_roots or [],
         config.extra_embeddings_roots or [],
+        config.other_roots or [],
     ):
         all_roots.extend([os.path.normpath(p).replace(os.sep, "/") for p in root_list])
-    # Find the longest matching prefix
+    # Find the longest matching prefix. The boundary check prevents a root like
+    # `/models/vae` from swallowing a sibling directory like `/models/vae-old`.
     match: str | None = None
     for root in all_roots:
-        if norm.startswith(root):
+        if norm == root or norm.startswith(root + "/"):
             if match is None or len(root) > len(match):
                 match = root
     return match

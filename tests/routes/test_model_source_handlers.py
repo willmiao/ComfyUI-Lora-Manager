@@ -330,6 +330,106 @@ async def test_get_model_sources_lists_capabilities():
 
 
 # ---------------------------------------------------------------------------
+# Root matching (linking must recognise every configured model category)
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def isolated_config_roots(monkeypatch, tmp_path):
+    """Clear every configured root so root matching is fully test-controlled."""
+    from py.config import config
+
+    for attr in (
+        "loras_roots",
+        "extra_loras_roots",
+        "checkpoints_roots",
+        "extra_checkpoints_roots",
+        "unet_roots",
+        "extra_unet_roots",
+        "embeddings_roots",
+        "extra_embeddings_roots",
+        "other_roots",
+    ):
+        monkeypatch.setattr(config, attr, [])
+    return config
+
+
+@pytest.mark.asyncio
+async def test_set_hf_url_links_model_in_other_root(
+    isolated_config_roots, tmp_path, monkeypatch
+):
+    """"Other" category files live under config.other_roots; linking one to an
+    external source must not fail with 'not within any configured model
+    directory' and must update the Other scanner's cache, not the LoRA one."""
+    vae_root = tmp_path / "vae"
+    vae_root.mkdir()
+    isolated_config_roots.other_roots = [str(vae_root)]
+    model_path = vae_root / "some_vae.safetensors"
+    await _write_plain_model(model_path)
+
+    other_scanner = SimpleNamespace(update_single_model_cache=AsyncMock())
+    lora_scanner = SimpleNamespace(update_single_model_cache=AsyncMock())
+    monkeypatch.setattr(
+        ServiceRegistry, "get_other_scanner", AsyncMock(return_value=other_scanner)
+    )
+    monkeypatch.setattr(
+        ServiceRegistry, "get_lora_scanner", AsyncMock(return_value=lora_scanner)
+    )
+
+    response = await ModelSourceHandler().set_hf_url(
+        FakeRequest(
+            json_data={
+                "file_path": str(model_path),
+                "source_url": "https://huggingface.co/user/repo",
+            }
+        )
+    )
+
+    assert response.status == 200
+    payload = _json_payload(response)
+    assert payload["success"] is True
+    assert payload["source_platform"] == "huggingface"
+
+    saved = json.loads(open(_sidecar_path(model_path), encoding="utf-8").read())
+    assert saved["source_platform"] == "huggingface"
+    assert saved["hf_url"] == "https://huggingface.co/user/repo"
+
+    other_scanner.update_single_model_cache.assert_awaited_once()
+    lora_scanner.update_single_model_cache.assert_not_awaited()
+
+
+def test_find_matching_root_includes_other_roots(isolated_config_roots, tmp_path):
+    vae_root = tmp_path / "vae"
+    isolated_config_roots.other_roots = [str(vae_root)]
+
+    assert model_source_handlers._find_matching_root(str(vae_root / "sub")) == str(
+        vae_root
+    )
+
+
+def test_find_matching_root_respects_path_boundaries(isolated_config_roots, tmp_path):
+    """A root must not swallow a sibling that merely shares its name prefix."""
+    vae_root = tmp_path / "vae"
+    isolated_config_roots.other_roots = [str(vae_root)]
+
+    assert (
+        model_source_handlers._find_matching_root(str(tmp_path / "vae-old")) is None
+    )
+
+
+def test_infer_model_type_recognises_other_roots(isolated_config_roots, tmp_path):
+    from py.utils.models import OtherModelMetadata
+
+    vae_root = tmp_path / "vae"
+    isolated_config_roots.other_roots = [str(vae_root)]
+
+    assert model_source_handlers._infer_model_type(str(vae_root)) == (
+        OtherModelMetadata,
+        "get_other_scanner",
+    )
+
+
+# ---------------------------------------------------------------------------
 # File listing
 # ---------------------------------------------------------------------------
 
