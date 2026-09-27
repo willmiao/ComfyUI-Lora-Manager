@@ -523,6 +523,7 @@ async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatc
     monkeypatch.setattr(subprocess, "Popen", fake_popen)
     monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
     monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+    monkeypatch.setenv("DISPLAY", ":0")
 
     response = await handler.open_backup_location(FakeRequest())  # pyright: ignore[reportArgumentType]
     payload = _json_payload(response)
@@ -531,6 +532,88 @@ async def test_open_backup_location_uses_settings_directory(tmp_path, monkeypatc
     assert payload["success"] is True
     assert payload["path"] == str(backup_dir)
     assert calls == [["xdg-open", str(backup_dir)]]
+
+
+@pytest.mark.asyncio
+async def test_open_sidecar_location_opens_configured_root(tmp_path, monkeypatch):
+    from py.services.settings_manager import get_settings_manager
+
+    root = tmp_path / "sidecars"
+    get_settings_manager().set("sidecar_storage_path", str(root))
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    calls = []
+
+    def fake_popen(args):
+        calls.append(args)
+        return MagicMock()
+
+    monkeypatch.setattr(subprocess, "Popen", fake_popen)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+    monkeypatch.setenv("DISPLAY", ":0")
+
+    response = await handler.open_sidecar_location(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["path"] == str(root)
+    # Created on demand so the button works before any migration ran.
+    assert root.is_dir()
+    assert calls == [["xdg-open", str(root)]]
+
+
+@pytest.mark.asyncio
+async def test_open_sidecar_location_headless_returns_clipboard_mode(tmp_path, monkeypatch):
+    """Without a GUI session xdg-open cannot work; the handler must hand the
+    path to the browser instead of reporting a success that never happened."""
+    from py.services.settings_manager import get_settings_manager
+
+    root = tmp_path / "sidecars"
+    get_settings_manager().set("sidecar_storage_path", str(root))
+
+    handler = FileSystemHandler(settings_service=SimpleNamespace())
+
+    monkeypatch.delenv("DISPLAY", raising=False)
+    monkeypatch.delenv("WAYLAND_DISPLAY", raising=False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
+    monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+
+    popen_calls = []
+    monkeypatch.setattr(subprocess, "Popen", lambda *args, **kwargs: popen_calls.append(args))
+
+    response = await handler.open_sidecar_location(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["mode"] == "clipboard"
+    assert payload["path"] == str(root)
+    assert popen_calls == []
+
+
+@pytest.mark.asyncio
+async def test_get_settings_includes_resolved_sidecar_root(tmp_path):
+    from py.services.settings_manager import get_settings_manager
+
+    root = tmp_path / "sidecars-custom"
+    get_settings_manager().set("sidecar_storage_path", str(root))
+
+    handler = SettingsHandler(
+        settings_service=DummySettings(),
+        metadata_provider_updater=noop_async,
+        downloader_factory=dummy_downloader_factory,
+    )
+
+    response = await handler.get_settings(FakeRequest())  # pyright: ignore[reportArgumentType]
+    payload = _json_payload(response)
+
+    assert payload["success"] is True
+    assert payload["settings"]["sidecar_storage_root"] == str(root)
+    assert payload["settings"]["sidecar_storage_root_is_default"] is False
+    assert payload["settings"]["sidecar_storage_root_in_repo"] is False
 
 
 @pytest.mark.asyncio
@@ -604,6 +687,7 @@ async def test_open_wildcards_location_creates_and_opens_directory(tmp_path, mon
     monkeypatch.setattr(subprocess, "Popen", fake_popen)
     monkeypatch.setattr("py.routes.handlers.misc_handlers._is_docker", lambda: False)
     monkeypatch.setattr("py.routes.handlers.misc_handlers._is_wsl", lambda: False)
+    monkeypatch.setenv("DISPLAY", ":0")
     monkeypatch.setattr(
         "py.services.wildcard_service.get_wildcards_dir",
         lambda create=False: str(wildcards_dir.mkdir(parents=True, exist_ok=True) or wildcards_dir)

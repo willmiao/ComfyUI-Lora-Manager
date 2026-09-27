@@ -97,19 +97,29 @@ class _FakeCache:
 
 
 class _FakeScanner:
-    def __init__(self, raw_data: List[Dict[str, Any]]) -> None:
+    def __init__(
+        self, raw_data: List[Dict[str, Any]], excluded: List[str] | None = None
+    ) -> None:
         self._cache = _FakeCache(raw_data)
+        self._excluded = list(excluded or [])
         self.persist_calls = 0
 
     async def get_cached_data(self) -> _FakeCache:
         return self._cache
 
+    def get_excluded_models(self) -> List[str]:
+        return list(self._excluded)
+
     async def _persist_current_cache(self) -> None:
         self.persist_calls += 1
 
 
-def _make_use_case(model_paths: List[str]) -> SidecarMigrationUseCase:
-    scanner = _FakeScanner([{"file_path": path} for path in model_paths])
+def _make_use_case(
+    model_paths: List[str], excluded: List[str] | None = None
+) -> SidecarMigrationUseCase:
+    scanner = _FakeScanner(
+        [{"file_path": path} for path in model_paths], excluded=excluded
+    )
 
     async def scanner_factory() -> _FakeScanner:
         return scanner
@@ -504,3 +514,40 @@ async def test_migrate_root_missing_old_tree_is_noop(
 
     assert summary["success"] is True
     assert summary["moved"] == 0
+
+
+@pytest.mark.asyncio
+async def test_migrate_covers_excluded_models(
+    library_root: Path, sidecar_root: Path
+):
+    """Excluded models are absent from the cache; their sidecars still move.
+
+    Otherwise un-excluding a model later would leave the scanner looking for
+    a sidecar in the new layout that was never migrated.
+    """
+
+    _set_mode("centralized")
+    cached = _write_model(library_root, "cached")
+    _write_sidecar(library_root, "cached", cached)
+    (library_root / "cached.preview.webp").write_bytes(b"preview")
+    excluded = _write_model(library_root / "hidden", "excluded")
+    _write_sidecar(library_root / "hidden", "excluded", excluded, preview_ext=None)
+    (library_root / "hidden" / "excluded.preview.webp").write_bytes(b"preview")
+
+    use_case = _make_use_case([str(cached)], excluded=[str(excluded)])
+    summary = await use_case.migrate_to_centralized(force=True)
+
+    assert summary["success"] is True
+    assert summary["models_total"] == 2
+    assert summary["moved"] == 4
+    assert summary["sidecar_root"] == str(sidecar_root)
+
+    mirror = _mirror_dir(library_root, sidecar_root, "hidden")
+    assert (mirror / "excluded.metadata.json").exists()
+    assert (mirror / "excluded.preview.webp").exists()
+    assert not (library_root / "hidden" / "excluded.metadata.json").exists()
+    assert not (library_root / "hidden" / "excluded.preview.webp").exists()
+
+    # The excluded model is not in the cache, so cache reconciliation is a
+    # no-op for it and only the cached entry gets persisted.
+    assert use_case._test_scanner.persist_calls == 1

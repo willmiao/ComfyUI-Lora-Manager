@@ -95,6 +95,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > "Sidecar storage feature"), so no placeholder remains and the "no remaining placeholders"
 > claim holds again.
 
+> **Status (2026-09, sidecar storage UX follow-up):** the migration UX follow-up added
+> 7 `settings.sidecarStorage.open*`/path-display keys, `modals.sidecarMigrationConfirm.destination`,
+> and the 13-key `modals.sidecarMigrationResult.*` summary block (which replaces
+> `settings.sidecarStorage.migrateSuccess` — the result modal is now the success feedback,
+> mirroring `modals.metadataFetchSummary.*`/`modals.downloadBatchSummary.*` stat-card and
+> failure-table conventions; reuse each locale's existing renderings of those sibling keys).
+> All 9 locales are translated in the same pass (terminology in §2, "Sidecar storage feature").
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -475,6 +483,9 @@ plus the manual migration that moves existing files between the two. Everything 
 | migrate (verb/noun) | zh-CN 迁移 · zh-TW 遷移 · ja 移動 · ko 이동 · fr migrer / migration · de verschieben / Migration · es migrar / migración · ru перенести / перенос · he להעביר / העברה |
 | mirror (verb) | zh-CN 镜像 · zh-TW 對應 · ja ミラーリング · ko 미러링 · fr refléter · de spiegeln · es reflejar · ru повторять структуру · he לשקף |
 | preview images | zh-CN 预览图片 · zh-TW 預覽圖片 · ja プレビュー画像 · ko 미리보기 이미지 · fr images d’aperçu · de Vorschaubilder · es imágenes de vista previa · ru изображения превью · he תמונות תצוגה מקדימה |
+| (effective) storage location | zh-CN （实际）存储位置 · zh-TW （實際）儲存位置 · ja （実際の）保存場所 · ko （실제） 저장 위치 · fr emplacement de stockage (effectif) · de (tatsächlicher) Speicherort · es ubicación de almacenamiento (efectiva) · ru (фактическое) расположение хранилища · he מיקום האחסון (בפועל) |
+| Open Folder (button) | zh-CN 打开文件夹 · zh-TW 開啟資料夾 · ja フォルダを開く · ko 폴더 열기 · fr Ouvrir le dossier · de Ordner öffnen · es Abrir carpeta · ru Открыть папку · he פתח תיקייה |
+| installation folder | zh-CN 安装目录 · zh-TW 安裝目錄 · ja インストールフォルダ · ko 설치 폴더 · fr dossier d’installation · de Installationsordner · es carpeta de instalación · ru папка установки · he תיקיית ההתקנה |
 
 - `ja`/`ko` follow the file's existing storage-relocation verb (ja 移動, ko 이동, from
   `settings.folderSettings.recipesPathMigrating`) rather than a transliteration of "migration";

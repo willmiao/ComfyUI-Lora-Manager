@@ -43,6 +43,7 @@
 @import 'components/media-viewer.css';
 @import 'components/metadata-refresh-result.css';
 @import 'components/download-batch-summary.css';
+@import 'components/sidecar-migration-summary.css';
 
 .initialization-notice {
     display: flex;

@@ -805,12 +805,18 @@
             "migrateButton": "Sidecar-Dateien jetzt verschieben",
             "migratingButton": "Wird verschoben...",
             "migrating": "Sidecar-Dateien werden verschoben...",
-            "migrateSuccess": "Sidecar-Migration erfolgreich abgeschlossen",
             "migrateFailed": "Sidecar-Migration fehlgeschlagen: {message}",
             "migrationDeferred": "Vorhandene Sidecar-Dateien wurden nicht verschoben. Sie können sie später unter Einstellungen → Bibliothek → Sidecar-Speicherung verschieben.",
             "confirmToCentralized": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt in das zentrale Speicherverzeichnis verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
             "confirmToAlongside": "Der Speichermodus wurde geändert, aber vorhandene .metadata.json-Sidecar-Dateien und Vorschaubilder werden nicht automatisch verschoben. Jetzt wieder neben ihre Modelldateien verschieben? Sie können das auch später über die Schaltfläche „Sidecar-Dateien jetzt verschieben“ tun.",
-            "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?"
+            "confirmRelocateRoot": "Das zentrale Speicherverzeichnis wurde geändert, aber vorhandene Sidecar-Dateien und Vorschaubilder liegen noch im vorherigen Verzeichnis. Jetzt in das neue Verzeichnis verschieben?",
+            "effectivePathLabel": "Tatsächlicher Speicherort:",
+            "openFolderButton": "Ordner öffnen",
+            "repoWarning": "Der tatsächliche Speicherort liegt innerhalb des LoRA-Manager-Installationsordners. Eine Neuinstallation des Plugins oder eine saubere Aktualisierung kann ihn löschen — legen Sie einen expliziten Speicherpfad außerhalb des Installationsordners fest.",
+            "openLocationSuccess": "Sidecar-Speicherordner geöffnet",
+            "openLocationCopied": "Sidecar-Speicherpfad in die Zwischenablage kopiert: {path}",
+            "openLocationClipboardFallback": "Kopieren Sie den Sidecar-Speicherpfad manuell: {path}",
+            "openLocationFailed": "Sidecar-Speicherordner konnte nicht geöffnet werden"
         },
         "proxySettings": {
             "enableProxy": "App-Proxy aktivieren",
@@ -1669,7 +1675,23 @@
             "titleToCentralized": "Sidecar-Dateien in die zentrale Speicherung verschieben?",
             "titleToAlongside": "Sidecar-Dateien zurück neben die Modelldateien verschieben?",
             "confirmButton": "Jetzt verschieben",
-            "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?"
+            "titleRelocateRoot": "Sidecar-Dateien in das neue Speicherverzeichnis verschieben?",
+            "destination": "Ziel: {path}"
+        },
+        "sidecarMigrationResult": {
+            "title": "Sidecar-Migrationsübersicht",
+            "completedSuccessfully": "Migration erfolgreich abgeschlossen",
+            "completedWithErrors": "Abgeschlossen mit {count} Fehler(n)",
+            "statMoved": "Verschobene Dateien",
+            "statModels": "Modelle",
+            "statSkipped": "Übersprungen",
+            "statConflicts": "Gelöste Konflikte",
+            "statErrors": "Fehler",
+            "failedItems": "Fehlgeschlagene Elemente ({count})",
+            "columnModel": "Modell",
+            "columnError": "Fehler",
+            "successMessage": "{moved} Dateien für {models} Modelle verschoben",
+            "location": "Speicherort: {path}"
         },
         "bulkAddTags": {
             "title": "Tags zu mehreren Modellen hinzufügen",

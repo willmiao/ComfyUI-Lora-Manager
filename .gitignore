@@ -10,6 +10,9 @@ civitai/
 stats/
 wildcards/
 backups/
+# Portable-mode centralized sidecar storage (<repo>/sidecars): user data that
+# must survive pulls and stay out of git status
+/sidecars/
 logs/
 node_modules/
 coverage/

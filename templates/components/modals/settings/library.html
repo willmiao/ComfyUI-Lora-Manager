@@ -359,6 +359,23 @@
                     </div>
                 </div>
             </div>
+            <div class="setting-row">
+                <div class="setting-info">
+                    <div class="input-help sidecar-storage-location">
+                        {{ t('settings.sidecarStorage.effectivePathLabel') }}
+                        <code id="sidecarStorageResolvedPath" class="backup-location-path"></code>
+                    </div>
+                    <div class="input-help sidecar-storage-repo-warning" id="sidecarStorageRepoWarning" style="display: none;">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {{ t('settings.sidecarStorage.repoWarning') }}
+                    </div>
+                </div>
+                <div class="setting-control">
+                    <button type="button" class="secondary-btn" id="sidecarStorageOpenBtn" onclick="settingsManager.openSidecarStorageLocation()">
+                        {{ t('settings.sidecarStorage.openFolderButton') }}
+                    </button>
+                </div>
+            </div>
         </div>
 
         <div class="setting-item">

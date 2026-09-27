@@ -276,6 +276,7 @@ class SidecarMigrationUseCase:
             "conflicts": counters["conflicts"],
             "errors": errors,
             "error_count": len(errors),
+            "sidecar_root": new_root,
         }
 
     def _rewrite_root_prefix(
@@ -344,6 +345,7 @@ class SidecarMigrationUseCase:
             "conflicts": 0,
             "errors": [],
             "error_count": 0,
+            "sidecar_root": get_configured_sidecar_root() or "",
         }
 
     def _active_scanner_factories(self) -> Tuple[Tuple[str, ScannerFactory], ...]:
@@ -356,7 +358,13 @@ class SidecarMigrationUseCase:
     async def _collect_model_paths(
         self, errors: List[Dict[str, str]]
     ) -> List[Tuple[Any, List[str]]]:
-        """Enumerate model file paths grouped by the scanner that owns them."""
+        """Enumerate model file paths grouped by the scanner that owns them.
+
+        Excluded models are included: they are absent from the cache but still
+        on disk, and leaving their sidecars behind would strand the metadata
+        if the user later un-excludes them (the scanner would then look the
+        sidecar up in the NEW layout and find nothing).
+        """
 
         groups: List[Tuple[Any, List[str]]] = []
         for model_type, factory in self._active_scanner_factories():
@@ -376,6 +384,19 @@ class SidecarMigrationUseCase:
                 for entry in cache.raw_data
                 if entry.get("file_path")
             ]
+            get_excluded = getattr(scanner, "get_excluded_models", None)
+            if callable(get_excluded):
+                try:
+                    known = set(paths)
+                    paths.extend(
+                        path for path in get_excluded() if path and path not in known
+                    )
+                except Exception as exc:
+                    self._logger.error(
+                        "Sidecar migration: failed to enumerate excluded %s models: %s",
+                        model_type,
+                        exc,
+                    )
             groups.append((scanner, paths))
         return groups
 
@@ -480,6 +501,9 @@ class SidecarMigrationUseCase:
             "conflicts": conflicts,
             "errors": errors,
             "error_count": len(errors),
+            # Effective centralized root, so the UI can show/offer to open the
+            # destination (or, for to_alongside, the source) after the run.
+            "sidecar_root": root,
         }
 
     async def _migrate_model(
