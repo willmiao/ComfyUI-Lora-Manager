@@ -341,29 +341,125 @@ class ExifUtils:
 
             metadata_fields = ExifUtils._load_structured_metadata(image_path)
             metadata_fields["parameters"] = metadata
-
-            with Image.open(image_path) as img:
-                img_format = img.format
-
-                if img_format == "PNG":
-                    png_info = ExifUtils._build_pnginfo(img, metadata_fields)
-                    img.save(image_path, format="PNG", pnginfo=png_info)
-                    return image_path
-
-                exif_bytes = ExifUtils._build_exif_bytes(
-                    metadata_fields, img.info.get("exif")
-                )
-                save_kwargs: dict[str, Any] = {"exif": exif_bytes}
-                if img_format == "WEBP":
-                    save_kwargs["quality"] = 85
-
-                img.save(image_path, format=img_format, **save_kwargs)
-
-            return image_path
+            return ExifUtils._write_structured_metadata(image_path, metadata_fields)
         except Exception as e:
             logger.error(f"Error updating metadata in {image_path}: {e}")
             return image_path
-            
+
+    @staticmethod
+    def _write_structured_metadata(
+        image_path: str, metadata_fields: dict[str, Optional[str]]
+    ) -> str:
+        """Write structured metadata fields back into an image.
+
+        PNG keeps them as text chunks (``parameters``/``prompt``/``workflow``);
+        every other supported container stores them in EXIF, where the workflow
+        travels in ``ImageDescription`` behind a ``Workflow:`` prefix (see
+        :meth:`_build_exif_bytes`).
+        """
+        with Image.open(image_path) as img:
+            img_format = img.format
+
+            if img_format == "PNG":
+                png_info = ExifUtils._build_pnginfo(img, metadata_fields)
+                img.save(image_path, format="PNG", pnginfo=png_info)
+                return image_path
+
+            exif_bytes = ExifUtils._build_exif_bytes(
+                metadata_fields, img.info.get("exif")
+            )
+            save_kwargs: dict[str, Any] = {"exif": exif_bytes}
+            if img_format == "WEBP":
+                save_kwargs["quality"] = 85
+
+            img.save(image_path, format=img_format, **save_kwargs)
+
+        return image_path
+
+    @staticmethod
+    def normalise_workflow(workflow: Any) -> Optional[str]:
+        """Coerce a workflow payload into the JSON string metadata form.
+
+        Accepts the string form stored in image chunks as well as already
+        decoded dict/list payloads; anything else yields ``None``.
+        """
+        if isinstance(workflow, str):
+            return workflow or None
+        if isinstance(workflow, (dict, list)):
+            try:
+                return json.dumps(workflow)
+            except (TypeError, ValueError):
+                return None
+        return None
+
+    @staticmethod
+    def _merge_workflow(
+        metadata_fields: Optional[dict[str, Optional[str]]], workflow: Any
+    ) -> Optional[dict[str, Optional[str]]]:
+        """Add a caller-supplied workflow to extracted metadata fields.
+
+        Returns ``metadata_fields`` untouched when there is nothing to add, and
+        never overwrites a workflow the source image already carries.
+        """
+        workflow_json = ExifUtils.normalise_workflow(workflow)
+        if not workflow_json:
+            return metadata_fields
+        if metadata_fields is None:
+            metadata_fields = {
+                "parameters": None,
+                "prompt": None,
+                "workflow": None,
+                "comment": None,
+            }
+        if not metadata_fields.get("workflow"):
+            metadata_fields["workflow"] = workflow_json
+        return metadata_fields
+
+    @staticmethod
+    def embed_workflow(image_path: str, workflow: Any) -> str:
+        """Embed a ComfyUI workflow into an image that does not carry one.
+
+        Recipe imports recover the workflow from the source's original
+        rendition (CivitAI's optimized preview is re-encoded and metadata-free)
+        and hand it over as data rather than as image bytes. Images that
+        already embed a workflow are left untouched.
+
+        WebP files are patched at the byte level so preview pixels are not
+        re-encoded a second time.
+        """
+        workflow_json = ExifUtils.normalise_workflow(workflow)
+        if not image_path or not workflow_json:
+            return image_path
+
+        ext = os.path.splitext(image_path)[1].lower()
+        if ext in ['.mp4', '.webm', '.avif', '.jxl']:
+            return image_path
+
+        try:
+            metadata_fields = ExifUtils._load_structured_metadata(image_path)
+            if metadata_fields.get("workflow"):
+                return image_path
+            metadata_fields["workflow"] = workflow_json
+
+            if ext == '.webp':
+                try:
+                    exif_bytes = ExifUtils._build_exif_bytes(metadata_fields)
+                    with open(image_path, "rb") as file_obj:
+                        image_bytes = file_obj.read()
+                    updated = ExifUtils._replace_webp_exif(image_bytes, exif_bytes)
+                    with open(image_path, "wb") as file_obj:
+                        file_obj.write(updated)
+                    return image_path
+                except ValueError:
+                    # Container without an EXIF chunk: fall through to a full
+                    # rewrite so the workflow is still embedded.
+                    pass
+
+            return ExifUtils._write_structured_metadata(image_path, metadata_fields)
+        except Exception as e:
+            logger.error(f"Error embedding workflow in {image_path}: {e}")
+            return image_path
+
     @staticmethod
     def append_recipe_metadata(image_path, recipe_data, pixel_preserving=False) -> str:
         """Append recipe metadata to an image's EXIF data
@@ -550,7 +646,7 @@ class ExifUtils:
             return None
 
     @staticmethod
-    def optimize_image(image_data, target_width=250, format='webp', quality=85, preserve_metadata=False):
+    def optimize_image(image_data, target_width=250, format='webp', quality=85, preserve_metadata=False, workflow=None):
         """
         Optimize an image by resizing and converting to WebP format
         
@@ -560,10 +656,19 @@ class ExifUtils:
             format: Output format (default: webp)
             quality: Output quality (0-100)
             preserve_metadata: Whether to preserve EXIF metadata
+            workflow: Optional ComfyUI workflow (JSON string, dict or list) to
+                embed when the source image does not carry one. Used by import
+                paths that recover the workflow from a higher-fidelity source
+                (e.g. CivitAI's original rendition) while the preview pixels
+                come from a metadata-free optimized rendition.
             
         Returns:
             Tuple of (optimized_image_data, extension)
         """
+        # A supplied workflow can only survive when metadata is embedded, so
+        # treat it as an implicit request for preservation.
+        if workflow is not None:
+            preserve_metadata = True
         try:
             if isinstance(image_data, str) and os.path.exists(image_data):
                 ext = os.path.splitext(image_data)[1].lower()
@@ -627,6 +732,12 @@ class ExifUtils:
                     logger.warning(f"Failed to extract metadata, continuing without it: {e}")
                     # Continue without metadata
 
+            # Merge in a workflow recovered elsewhere (e.g. from CivitAI's
+            # original rendition). The source image wins when it already has
+            # one, and this is what lets the metadata-free optimized preview
+            # still end up with the workflow embedded.
+            metadata_fields = ExifUtils._merge_workflow(metadata_fields, workflow)
+
             # Calculate new height to maintain aspect ratio
             width, height = img.size
             new_height = int(height * (target_width / width))
@@ -686,8 +797,8 @@ class ExifUtils:
                             temp_file.write(optimized_data)
                         
                         try:
-                            ExifUtils.update_image_metadata(
-                                temp_path, metadata_fields.get("parameters") or ""
+                            ExifUtils._write_structured_metadata(
+                                temp_path, metadata_fields
                             )
                             # Read back the file
                             with open(temp_path, 'rb') as f:

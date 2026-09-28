@@ -73,6 +73,11 @@ class RecipePersistenceService:
                 byte-level EXIF update that leaves the pixels untouched). Used
                 by local re-import, where the source is the recipe's own
                 already-optimized preview image.
+
+        ``metadata`` may carry a ``workflow`` entry (JSON string, dict or
+        list) recovered from the source's original rendition; it is embedded
+        into the stored image so the recipe reports ``has_workflow`` and can
+        send the workflow back to ComfyUI.
         """
 
         missing_fields = []
@@ -86,6 +91,13 @@ class RecipePersistenceService:
             )
 
         assert metadata is not None
+
+        # A workflow recovered from a higher-fidelity source (CivitAI's
+        # original rendition — its optimized preview is re-encoded and carries
+        # no metadata) travels as data instead of as image bytes. It is
+        # embedded below so ``has_workflow`` and the "send workflow to ComfyUI"
+        # action work for imports whose preview pixels are metadata-free.
+        workflow = metadata.get("workflow")
 
         resolved_image_bytes = self._resolve_image_bytes(image_bytes, image_base64)
         recipes_dir = target_dir or recipe_scanner.recipes_dir
@@ -108,6 +120,7 @@ class RecipePersistenceService:
                 format="webp",
                 quality=85,
                 preserve_metadata=True,
+                workflow=workflow,
             )
             
         image_filename = f"{recipe_id}{extension}"
@@ -115,6 +128,12 @@ class RecipePersistenceService:
         normalized_image_path = os.path.normpath(image_path)
         with open(normalized_image_path, "wb") as file_obj:
             file_obj.write(optimized_image)
+
+        # The optimization branch above embeds the workflow while re-encoding;
+        # the verbatim (skip_optimize) branch still needs it added, and this is
+        # also the safety net when re-encoding dropped it.
+        if workflow and not is_video:
+            self._exif_utils.embed_workflow(normalized_image_path, workflow)
 
         current_time = time.time()
         loras_data = [self._normalise_lora_entry(lora) for lora in (metadata.get("loras") or [])]

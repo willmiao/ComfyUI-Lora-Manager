@@ -72,6 +72,15 @@ export class DownloadManager {
                     completeMetadata.diagnostics = diagnostics;
                 }
 
+                // A ComfyUI workflow recovered from the source's original
+                // rendition: CivitAI's optimized preview is re-encoded and
+                // metadata-free, so the workflow travels as data and the
+                // backend embeds it into the stored image.
+                const workflow = this.importManager.recipeData.workflow;
+                if (workflow) {
+                    completeMetadata.workflow = workflow;
+                }
+
                 // Preserve preview_nsfw_level from analysis so the saved
                 // recipe applies the correct NSFW blur on the preview image.
                 const nsfwLevel = this.importManager.recipeData.preview_nsfw_level;

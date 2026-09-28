@@ -1284,6 +1284,21 @@ class RecipeManagementHandler:
             _original_image_url,
         ) = await self._download_remote_media(image_url)
 
+        # CivitAI's optimized rendition is re-encoded and metadata-free, so an
+        # embedded ComfyUI workflow only exists in the original. Fetch it
+        # lazily: unlike the URL import path (which needs the original for
+        # metadata parsing anyway), this path would download it purely for the
+        # workflow, so it is skipped unless the API reports one.
+        original_workflow = None
+        if _original_image_url and self._meta_indicates_comfy_workflow(
+            civitai_meta_raw
+        ):
+            _raw_original, original_workflow = await self._fetch_original_media(
+                _original_image_url
+            )
+        if original_workflow:
+            metadata["workflow"] = original_workflow
+
         # Build a version-cached map of local model hashes to cache items so
         # CivitaiApiMetadataParser can skip CivitAI API calls for models that
         # exist on disk. Built once and shared by every parse pass below.
@@ -2090,6 +2105,90 @@ class RecipeManagementHandler:
                 except FileNotFoundError:
                     pass
 
+    def _read_embedded_workflow(self, image_path: Optional[str]) -> Optional[str]:
+        """Return a ComfyUI workflow embedded in ``image_path``, if any.
+
+        ``ExifUtils.extract_image_metadata`` stops at the generation
+        parameters, so the UI-format workflow has to be read through the
+        structured metadata reader. Failures map to ``None``.
+        """
+        if not image_path or not os.path.exists(image_path):
+            return None
+        try:
+            metadata = ExifUtils._load_structured_metadata(image_path)
+        except Exception as exc:
+            self._logger.debug(
+                "Failed to read embedded workflow from %s: %s", image_path, exc
+            )
+            return None
+        workflow = metadata.get("workflow") if isinstance(metadata, dict) else None
+        return workflow if isinstance(workflow, str) and workflow else None
+
+    @staticmethod
+    def _meta_indicates_comfy_workflow(civitai_meta_raw: Any) -> bool:
+        """Whether CivitAI reports an embedded ComfyUI workflow for an image.
+
+        ``meta.comfy`` is the payload CivitAI captured from the original image,
+        so its presence is the signal that fetching the original is worth the
+        bandwidth when the caller does not already need it for metadata
+        parsing.
+        """
+        if not isinstance(civitai_meta_raw, dict):
+            return False
+        inner = civitai_meta_raw.get("meta")
+        if isinstance(inner, dict) and inner.get("comfy"):
+            return True
+        return bool(civitai_meta_raw.get("comfy"))
+
+    async def _fetch_original_media(
+        self, original_image_url: Optional[str]
+    ) -> tuple[Optional[str], Optional[str]]:
+        """Download the original rendition and read its embedded media.
+
+        CivitAI's optimized renditions are re-encoded and carry no metadata, so
+        the original is the only source for embedded generation metadata and
+        for the UI-format ComfyUI workflow (the raw extractor's fallback chain
+        ends at ``workflow`` only when no prompt is present).
+
+        Returns ``(raw_metadata, workflow)``; either element is ``None`` when
+        unavailable. Failures never raise — imports keep working with the
+        optimized rendition when the original cannot be fetched.
+        """
+        if not original_image_url:
+            return None, None
+
+        with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as temp_file:
+            temp_path = temp_file.name
+        try:
+            downloader = await self._downloader_factory()
+            success, _result = await downloader.download_file(
+                original_image_url, temp_path, use_auth=False
+            )
+            if not success:
+                self._logger.warning(
+                    "Failed to download original rendition: %s", original_image_url
+                )
+                return None, None
+
+            raw_metadata = await asyncio.to_thread(
+                ExifUtils.extract_image_metadata, temp_path
+            )
+            workflow = await asyncio.to_thread(
+                self._read_embedded_workflow, temp_path
+            )
+            return raw_metadata, workflow
+        except Exception as exc:
+            self._logger.warning(
+                "Failed to read original rendition %s: %s", original_image_url, exc
+            )
+            return None, None
+        finally:
+            try:
+                if os.path.exists(temp_path):
+                    os.unlink(temp_path)
+            except OSError:
+                pass
+
     def _safe_int(self, value: Any) -> int:
         try:
             return int(value)
@@ -2295,6 +2394,7 @@ class RecipeManagementHandler:
                 "Failed to extract embedded metadata: %s", exc
             )
 
+        original_workflow: Optional[str] = None
         if not parsed_embedded and original_image_url:
             self._logger.debug(
                 "Optimized image has no embedded metadata, "
@@ -2302,48 +2402,32 @@ class RecipeManagementHandler:
                 original_image_url,
             )
             try:
-                downloader = await self._downloader_factory()
-                with tempfile.NamedTemporaryFile(
-                    suffix=".png", delete=False
-                ) as tmp:
-                    orig_tmp_path = tmp.name
-                try:
-                    success, _ = await downloader.download_file(
-                        original_image_url, orig_tmp_path, use_auth=False
-                    )
-                    if success:
-                        raw_orig = await asyncio.to_thread(
-                            ExifUtils.extract_image_metadata, orig_tmp_path
+                raw_orig, original_workflow = await self._fetch_original_media(
+                    original_image_url
+                )
+                diagnostics["exif_present"] = bool(raw_orig) or bool(
+                    diagnostics.get("exif_present")
+                )
+                if raw_orig:
+                    parser = (
+                        self._analysis_service._recipe_parser_factory.create_parser(
+                            raw_orig
                         )
-                        diagnostics["exif_present"] = bool(raw_orig)
-                        if raw_orig:
-                            parser = (
-                                self._analysis_service._recipe_parser_factory.create_parser(
-                                    raw_orig
-                                )
+                    )
+                    if parser:
+                        diagnostics["exif_parser"] = parser.__class__.__name__
+                        if isinstance(parser, CivitaiApiMetadataParser):
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_orig,
+                                recipe_scanner=recipe_scanner,
+                                local_cache=local_cache,
                             )
-                            if parser:
-                                diagnostics["exif_parser"] = parser.__class__.__name__
-                                if isinstance(parser, CivitaiApiMetadataParser):
-                                    parsed_embedded = await parser.parse_metadata(
-                                        raw_orig,
-                                        recipe_scanner=recipe_scanner,
-                                        local_cache=local_cache,
-                                    )
-                                else:
-                                    parsed_embedded = await parser.parse_metadata(
-                                        raw_orig, recipe_scanner=recipe_scanner
-                                    )
-                                if (
-                                    parsed_embedded
-                                    and "gen_params" in parsed_embedded
-                                ):
-                                    embedded_gen_params = parsed_embedded[
-                                        "gen_params"
-                                    ]
-                finally:
-                    if os.path.exists(orig_tmp_path):
-                        os.unlink(orig_tmp_path)
+                        else:
+                            parsed_embedded = await parser.parse_metadata(
+                                raw_orig, recipe_scanner=recipe_scanner
+                            )
+                        if parsed_embedded and "gen_params" in parsed_embedded:
+                            embedded_gen_params = parsed_embedded["gen_params"]
             except Exception as exc:
                 self._logger.warning(
                     "Failed to extract metadata from original image: %s", exc
@@ -2391,6 +2475,8 @@ class RecipeManagementHandler:
             "gen_params": embedded_gen_params or {},
             "source_path": image_url,
         }
+        if original_workflow:
+            metadata["workflow"] = original_workflow
 
         # Extract preview_nsfw_level from the CivitAI API response
         # (injected into civitai_meta_raw by _download_remote_media).

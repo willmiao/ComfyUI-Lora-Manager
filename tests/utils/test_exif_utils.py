@@ -211,6 +211,104 @@ def test_update_image_metadata_preserves_png_workflow(tmp_path):
         )
 
 
+def test_optimize_image_embeds_supplied_workflow_when_source_has_none(tmp_path):
+    """Import paths hand the workflow over as data when the preview source is
+    metadata-free (CivitAI's optimized rendition); optimize_image must embed
+    it while re-encoding, otherwise the recipe loses has_workflow."""
+    image_path = tmp_path / "optimized.webp"
+    Image.new("RGB", (64, 32), color="red").save(image_path, format="WEBP", quality=85)
+
+    workflow = {"nodes": [{"id": 1}], "last_node_id": 1}
+    optimized_data, extension = ExifUtils.optimize_image(
+        str(image_path),
+        target_width=32,
+        format="webp",
+        quality=85,
+        preserve_metadata=True,
+        workflow=workflow,
+    )
+
+    optimized_path = tmp_path / f"embedded{extension}"
+    optimized_path.write_bytes(optimized_data)
+
+    metadata = ExifUtils._load_structured_metadata(str(optimized_path))
+    assert metadata["workflow"] == json.dumps(workflow)
+
+
+def test_optimize_image_keeps_source_workflow_over_supplied(tmp_path):
+    image_path = tmp_path / "source.png"
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("workflow", '{"nodes":[{"id":7}]}')
+    Image.new("RGB", (64, 32), color="red").save(image_path, pnginfo=png_info)
+
+    optimized_data, extension = ExifUtils.optimize_image(
+        str(image_path),
+        target_width=32,
+        format="webp",
+        quality=85,
+        preserve_metadata=True,
+        workflow={"nodes": [{"id": 1}]},
+    )
+
+    optimized_path = tmp_path / f"sourcewins{extension}"
+    optimized_path.write_bytes(optimized_data)
+
+    metadata = ExifUtils._load_structured_metadata(str(optimized_path))
+    assert metadata["workflow"] == '{"nodes":[{"id":7}]}'
+
+
+def test_embed_workflow_adds_workflow_to_metadata_free_webp(tmp_path):
+    image_path = tmp_path / "preview.webp"
+    Image.new("RGB", (32, 32), color="blue").save(image_path, format="WEBP", quality=85)
+
+    workflow = json.dumps({"nodes": [{"id": 1}]})
+    returned = ExifUtils.embed_workflow(str(image_path), workflow)
+
+    assert returned == str(image_path)
+    metadata = ExifUtils._load_structured_metadata(str(image_path))
+    assert metadata["workflow"] == workflow
+    with Image.open(image_path) as img:
+        assert img.size == (32, 32)
+
+
+def test_embed_workflow_adds_workflow_to_metadata_free_png(tmp_path):
+    image_path = tmp_path / "preview.png"
+    Image.new("RGB", (32, 32), color="blue").save(image_path)
+
+    workflow = {"nodes": [{"id": 3}]}
+    ExifUtils.embed_workflow(str(image_path), workflow)
+
+    metadata = ExifUtils._load_structured_metadata(str(image_path))
+    assert metadata["workflow"] == json.dumps(workflow)
+
+
+def test_embed_workflow_leaves_existing_workflow_untouched(tmp_path):
+    image_path = tmp_path / "preview.png"
+    png_info = PngImagePlugin.PngInfo()
+    png_info.add_text("workflow", '{"nodes":[{"id":9}]}')
+    Image.new("RGB", (32, 32), color="green").save(image_path, pnginfo=png_info)
+
+    ExifUtils.embed_workflow(str(image_path), {"nodes": [{"id": 1}]})
+
+    with Image.open(image_path) as img:
+        assert img.info["workflow"] == '{"nodes":[{"id":9}]}'
+
+
+def test_embed_workflow_ignores_unsupported_payloads_and_containers(tmp_path):
+    image_path = tmp_path / "preview.webp"
+    Image.new("RGB", (16, 16), color="black").save(image_path, format="WEBP")
+
+    # Nothing to embed / unsupported payload types are no-ops.
+    assert ExifUtils.embed_workflow(str(image_path), None) == str(image_path)
+    assert ExifUtils.embed_workflow(str(image_path), "") == str(image_path)
+    assert ExifUtils.embed_workflow(str(image_path), 123) == str(image_path)
+    assert ExifUtils._load_structured_metadata(str(image_path))["workflow"] is None
+
+    video_path = tmp_path / "clip.mp4"
+    video_path.write_bytes(b"video")
+    assert ExifUtils.embed_workflow(str(video_path), {"nodes": []}) == str(video_path)
+
+
 # --- ISOBMFF / brotli extraction tests ---
 
 import struct

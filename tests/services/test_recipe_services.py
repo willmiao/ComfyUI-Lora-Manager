@@ -27,13 +27,28 @@ class DummyExifUtils:
         self.appended = None
         self.optimized_calls = 0
         self.workflow_value = None
+        self.optimized_workflow = None
+        self.embedded_workflows = []
 
-    def optimize_image(self, image_data, target_width, format, quality, preserve_metadata):
+    def optimize_image(
+        self,
+        image_data,
+        target_width,
+        format,
+        quality,
+        preserve_metadata,
+        workflow=None,
+    ):
         self.optimized_calls += 1
+        self.optimized_workflow = workflow
         return image_data, ".webp"
 
     def append_recipe_metadata(self, image_path, recipe_data, pixel_preserving=False):
         self.appended = (image_path, recipe_data, pixel_preserving)
+
+    def embed_workflow(self, image_path, workflow):
+        self.embedded_workflows.append((image_path, workflow))
+        return image_path
 
     def extract_image_metadata(self, path):
         return {}
@@ -129,6 +144,55 @@ async def test_save_recipe_skip_optimize_preserves_image_bytes(tmp_path):
     # Metadata is still embedded, but through the pixel-preserving path.
     assert exif_utils.appended is not None
     assert exif_utils.appended[2] is True
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_skip_optimize_still_embeds_recovered_workflow(tmp_path):
+    """The verbatim branch bypasses optimize_image, so the recovered workflow
+    has to be embedded by the explicit safety net."""
+    image_buffer = BytesIO()
+    Image.new("RGB", (96, 48), color="olive").save(
+        image_buffer, format="WEBP", quality=85
+    )
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root / "recipes")
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    service = RecipePersistenceService(
+        exif_utils=ExifUtils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    workflow = {"nodes": [{"id": 8}]}
+    result = await service.save_recipe(
+        recipe_scanner=DummyScanner(tmp_path),
+        image_bytes=image_buffer.getvalue(),
+        image_base64=None,
+        name="Verbatim Workflow",
+        tags=[],
+        metadata={"base_model": "sd", "loras": [], "workflow": workflow},
+        extension=".webp",
+        skip_optimize=True,
+    )
+
+    image_path = Path(result.payload["image_path"])
+    with Image.open(image_path) as img:
+        assert img.size == (96, 48)
+        assert img.format == "WEBP"
+    assert ExifUtils._load_structured_metadata(str(image_path))["workflow"] == (
+        json.dumps(workflow)
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["has_workflow"] is True
 
 
 @pytest.mark.asyncio
@@ -651,6 +715,88 @@ async def test_save_recipe_preserves_workflow_when_png_is_converted_to_webp(tmp_
 
 
 @pytest.mark.asyncio
+async def test_save_recipe_embeds_workflow_recovered_from_source(tmp_path):
+    """Import paths hand the workflow over as metadata when their preview bytes
+    are metadata-free (CivitAI's optimized rendition); save_recipe must embed
+    it so the recipe reports has_workflow and can send it to ComfyUI."""
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    image_buffer = BytesIO()
+    Image.new("RGB", (96, 48), color="teal").save(
+        image_buffer, format="WEBP", quality=85
+    )
+
+    service = RecipePersistenceService(
+        exif_utils=ExifUtils,
+        card_preview_width=64,
+        logger=logging.getLogger("test"),
+    )
+
+    workflow = {"nodes": [{"id": 1}], "last_node_id": 1}
+    result = await service.save_recipe(
+        recipe_scanner=DummyScanner(tmp_path),
+        image_bytes=image_buffer.getvalue(),
+        image_base64=None,
+        name="Recovered Workflow",
+        tags=["workflow"],
+        metadata={"base_model": "sd", "loras": [], "workflow": workflow},
+        extension=".webp",
+    )
+
+    image_path = Path(result.payload["image_path"])
+    assert ExifUtils._load_structured_metadata(str(image_path))["workflow"] == (
+        json.dumps(workflow)
+    )
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["has_workflow"] is True
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_passes_recovered_workflow_to_optimizer(tmp_path):
+    """The workflow travels through optimize_image (single encode pass) rather
+    than being patched in afterwards."""
+    exif_utils = DummyExifUtils()
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    workflow = '{"nodes": [{"id": 2}]}'
+    service = RecipePersistenceService(
+        exif_utils=exif_utils,
+        card_preview_width=512,
+        logger=logging.getLogger("test"),
+    )
+
+    await service.save_recipe(
+        recipe_scanner=DummyScanner(tmp_path),
+        image_bytes=b"image-bytes",
+        image_base64=None,
+        name="Recovered Workflow",
+        tags=[],
+        metadata={"base_model": "sd", "loras": [], "workflow": workflow},
+        extension=".webp",
+    )
+
+    assert exif_utils.optimized_workflow == workflow
+
+
+@pytest.mark.asyncio
 async def test_save_recipe_strips_checkpoint_local_fields(tmp_path):
     exif_utils = DummyExifUtils()
 
@@ -1069,6 +1215,83 @@ async def test_analyze_remote_image_supports_civitai_red():
 
     assert client.calls == [("123", "https://civitai.red/images/123")]
     assert result.payload["loras"] == []
+
+
+@pytest.mark.asyncio
+async def test_analyze_remote_image_returns_workflow_from_original_rendition():
+    """CivitAI's optimized rendition is re-encoded and metadata-free, so an
+    embedded workflow only exists in the original. Analysis must surface it so
+    the save step can embed it while the stored preview stays the optimized
+    image."""
+    workflow = json.dumps({"nodes": [{"id": 1}], "last_node_id": 1})
+
+    class FakeExif:
+        def extract_image_metadata(self, path):
+            # The optimized rendition carries no metadata at all.
+            return None
+
+        def _load_structured_metadata(self, path):
+            # Only the original rendition (fetched to a .png temp file)
+            # carries the embedded workflow.
+            return {
+                "parameters": None,
+                "prompt": None,
+                "workflow": workflow if str(path).endswith(".png") else None,
+                "comment": None,
+            }
+
+    downloaded: list[str] = []
+
+    async def downloader_factory():
+        class Downloader:
+            async def download_file(self, url, path, use_auth=False):
+                downloaded.append(url)
+                Path(path).write_bytes(b"fake-image")
+                return True, "success"
+
+        return Downloader()
+
+    class DummyFactory:
+        def create_parser(self, metadata):
+            async def parse_metadata(m, recipe_scanner=None, civitai_client=None):
+                return {"loras": [], "gen_params": {"prompt": "p"}}
+
+            return SimpleNamespace(parse_metadata=parse_metadata)
+
+    service = RecipeAnalysisService(
+        exif_utils=FakeExif(),
+        recipe_parser_factory=DummyFactory(),
+        downloader_factory=downloader_factory,
+        metadata_collector=None,
+        metadata_processor_cls=None,
+        metadata_registry_cls=None,
+        standalone_mode=False,
+        logger=logging.getLogger("test"),
+    )
+
+    class DummyClient:
+        async def get_image_info(self, image_id, source_url=None):
+            return {
+                "url": "https://image.civitai.com/x/original=true/sample.jpeg",
+                "type": "image",
+                "meta": {"prompt": "p"},
+            }
+
+    class DummyScanner:
+        async def find_recipes_by_fingerprint(self, fingerprint):
+            return []
+
+    result = await service.analyze_remote_image(
+        url="https://civitai.red/images/143518055",
+        recipe_scanner=DummyScanner(),
+        civitai_client=DummyClient(),
+    )
+
+    assert result.payload["workflow"] == workflow
+    # The optimized rendition is used as the preview, the original only as the
+    # metadata/workflow fallback.
+    assert any("width=450,optimized=true" in url for url in downloaded)
+    assert any("original=true" in url for url in downloaded)
 
 
 def _exif_utils_returning(metadata):

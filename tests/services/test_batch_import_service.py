@@ -590,6 +590,49 @@ class TestBatchImportServiceEdgeCases:
             assert "test" in persistence_service.saved_recipes[0]["tags"]
 
     @pytest.mark.asyncio
+    async def test_workflow_from_analysis_is_passed_to_persistence(self, tmp_path):
+        """A workflow recovered from the source's original rendition travels in
+        the analysis payload and must reach save_recipe as metadata."""
+        workflow = '{"nodes": [{"id": 1}]}'
+        ws_manager = MockWebSocketManager()
+        analysis_service = MockAnalysisService(
+            {
+                "https://civitai.red/images/1": MockAnalysisResult(
+                    {
+                        "loras": [{"name": "test-lora"}],
+                        "workflow": workflow,
+                    }
+                ),
+            }
+        )
+        persistence_service = MockPersistenceService()
+        logger = logging.getLogger("test")
+
+        service = BatchImportService(
+            analysis_service=analysis_service,  # pyright: ignore[reportArgumentType]
+            persistence_service=persistence_service,  # pyright: ignore[reportArgumentType]
+            ws_manager=ws_manager,
+            logger=logger,
+        )
+
+        recipe_scanner_getter = lambda: SimpleNamespace(
+            find_recipes_by_fingerprint=lambda x: [],
+        )
+        civitai_client_getter = lambda: SimpleNamespace()
+
+        await service.start_batch_import(
+            recipe_scanner_getter=recipe_scanner_getter,
+            civitai_client_getter=civitai_client_getter,
+            items=[{"source": "https://civitai.red/images/1"}],
+            tags=[],
+        )
+
+        await asyncio.sleep(0.3)
+
+        assert persistence_service.saved_recipes
+        assert persistence_service.saved_recipes[0]["metadata"]["workflow"] == workflow
+
+    @pytest.mark.asyncio
     async def test_skip_duplicates_parameter(self, service):
         recipe_scanner_getter = lambda: SimpleNamespace()
         civitai_client_getter = lambda: SimpleNamespace()

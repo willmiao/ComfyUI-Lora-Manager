@@ -645,6 +645,11 @@ class BatchImportService:
                 if payload.get("checkpoint"):
                     metadata["checkpoint"] = payload["checkpoint"]
 
+                # A workflow recovered from the source's original rendition
+                # travels as metadata and is embedded into the stored image.
+                if payload.get("workflow"):
+                    metadata["workflow"] = payload["workflow"]
+
                 nsfw = payload.get("preview_nsfw_level")
                 if isinstance(nsfw, int) and nsfw > 0:
                     metadata["preview_nsfw_level"] = nsfw

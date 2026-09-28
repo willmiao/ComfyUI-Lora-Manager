@@ -117,6 +117,10 @@ class RecipeAnalysisService:
         image_info: Optional[dict[str, Any]] = None
         is_video = False
         extension = ".jpg"  # Default
+        # Workflow recovered from the image. CivitAI's optimized renditions are
+        # re-encoded and carry no metadata, so for those the workflow only
+        # exists in the original rendition, fetched below for EXIF extraction.
+        recovered_workflow: Optional[str] = None
         # Diagnostics collected during analysis; surfaced in the payload so
         # callers can persist an import_info block explaining empty LoRA lists.
         diagnostics: dict[str, Any] = {"channel": "url"}
@@ -238,6 +242,9 @@ class RecipeAnalysisService:
                 exif_metadata = await asyncio.to_thread(
                     self._exif_utils.extract_image_metadata, temp_path
                 )
+                recovered_workflow = await asyncio.to_thread(
+                    self._read_embedded_workflow, temp_path
+                )
 
             # Fallback: try the original (non-optimized) image for EXIF data
             if not exif_metadata and civitai_image_id and image_info:
@@ -254,6 +261,16 @@ class RecipeAnalysisService:
                         exif_metadata = await asyncio.to_thread(
                             self._exif_utils.extract_image_metadata,
                             orig_temp_path,
+                        )
+                        # The original is also the only place a ComfyUI
+                        # workflow survives; carry it so the save step can
+                        # embed it even though the stored preview stays the
+                        # small, metadata-free optimized rendition.
+                        recovered_workflow = (
+                            await asyncio.to_thread(
+                                self._read_embedded_workflow, orig_temp_path
+                            )
+                            or recovered_workflow
                         )
                     finally:
                         self._safe_cleanup(orig_temp_path)
@@ -358,6 +375,8 @@ class RecipeAnalysisService:
 
             diagnostics["is_video"] = is_video
             result.payload["diagnostics"] = diagnostics
+            if recovered_workflow:
+                result.payload["workflow"] = recovered_workflow
             return result
         finally:
             if temp_path:
@@ -544,6 +563,25 @@ class RecipeAnalysisService:
         success, result = await downloader.download_file(url, temp_path, use_auth=False)
         if not success:
             raise RecipeDownloadError(f"Failed to download image from URL: {result}")
+
+    def _read_embedded_workflow(self, image_path: Optional[str]) -> Optional[str]:
+        """Return a ComfyUI workflow embedded in ``image_path``, if any.
+
+        The raw metadata string extractor stops at the generation parameters
+        (``prompt``/``parameters``), so the UI-format workflow has to be read
+        through the structured metadata reader. Failures map to ``None``.
+        """
+        if not image_path or not os.path.exists(image_path):
+            return None
+        try:
+            metadata = self._exif_utils._load_structured_metadata(image_path)
+        except Exception as exc:
+            self._logger.debug(
+                "Failed to read embedded workflow from %s: %s", image_path, exc
+            )
+            return None
+        workflow = metadata.get("workflow") if isinstance(metadata, dict) else None
+        return workflow if isinstance(workflow, str) and workflow else None
 
     def _metadata_not_found_response(self, path: str) -> AnalysisResult:
         payload: dict[str, Any] = {
