@@ -357,11 +357,8 @@ def _persistable(sidecar_root: str) -> bool:
     return bool(probe) and os.access(probe, os.W_OK)
 
 
-def _save_root_map(sidecar_root: str, state: _RootMapState) -> bool:
-    """Atomically persist the root map; returns False when it cannot be written."""
-
-    if state.persist_disabled:
-        return False
+def _write_root_map(sidecar_root: str, entries: Dict[str, Dict[str, object]]) -> bool:
+    """Atomically persist ``entries`` as the root map for ``sidecar_root``."""
 
     path = _root_map_path(sidecar_root)
     # Snapshot before serializing: sample directories are appended from the
@@ -375,7 +372,7 @@ def _save_root_map(sidecar_root: str, state: _RootMapState) -> bool:
                 "last_path": entry.get("last_path", ""),
                 "sample_rel_dirs": list(entry.get("sample_rel_dirs") or []),
             }
-            for root_id, entry in state.entries.items()
+            for root_id, entry in entries.items()
         },
     }
     temp_path = f"{path}.tmp"
@@ -385,16 +382,82 @@ def _save_root_map(sidecar_root: str, state: _RootMapState) -> bool:
             json.dump(payload, handle, indent=2, ensure_ascii=False)
         os.replace(temp_path, path)
     except OSError as exc:
+        logger.warning("sidecar_paths: cannot persist the root map %s: %s", path, exc)
+        return False
+    return True
+
+
+def _save_root_map(sidecar_root: str, state: _RootMapState) -> bool:
+    """Persist a reconciled state; disables persistence when it cannot write."""
+
+    if state.persist_disabled:
+        return False
+
+    if not _write_root_map(sidecar_root, state.entries):
         state.persist_disabled = True
         logger.warning(
-            "sidecar_paths: cannot persist the root map %s (%s); mirror directory "
-            "names fall back to path-derived components",
-            path,
-            exc,
+            "sidecar_paths: mirror directory names fall back to path-derived "
+            "components for %s",
+            sidecar_root,
         )
         return False
     state.dirty_samples = False
     state.last_save = time.monotonic()
+    return True
+
+
+def relocate_root_map(source_root: str, destination_root: str) -> bool:
+    """Carry the root map from a relocated sidecar root to its destination.
+
+    Call this after the mirror tree itself has been moved. Entries recorded
+    under ``source_root`` win over any identity the destination picked up on
+    its own: resolving against the new sidecar path *before* the relocation
+    writes a map that names mirrors after the current model-root path, while
+    the directories actually being moved are still named after the pinned
+    identity. Destination-only entries are preserved, and the source file is
+    always removed so the emptied tree can be pruned.
+
+    Returns False only when a source map existed but could not be written to
+    the destination — the caller must surface that, since the moved metadata
+    would otherwise be unreachable. Cached state is dropped either way so the
+    next resolution reloads the merged map.
+    """
+
+    source_path = _root_map_path(source_root)
+    source_entries = _load_root_map(source_root)
+
+    with _ROOT_MAPS_LOCK:
+        if source_entries:
+            destination_path = _root_map_path(destination_root)
+            merged: Dict[str, Dict[str, object]] = {}
+            if os.path.exists(destination_path):
+                merged.update(_load_root_map(destination_root))
+            source_paths = {
+                _normalize_for_match(str(entry["last_path"]))
+                for entry in source_entries.values()
+                if entry.get("last_path")
+            }
+            preserved = {
+                root_id: entry
+                for root_id, entry in merged.items()
+                if not entry.get("last_path")
+                or _normalize_for_match(str(entry.get("last_path"))) not in source_paths
+            }
+            preserved.update(source_entries)
+            if not _write_root_map(destination_root, preserved):
+                return False
+
+        if os.path.exists(source_path):
+            try:
+                os.remove(source_path)
+            except OSError as exc:  # pragma: no cover - defensive cleanup
+                logger.debug(
+                    "sidecar_paths: cannot remove relocated root map %s: %s",
+                    source_path,
+                    exc,
+                )
+
+    reset_root_map_cache()
     return True
 
 

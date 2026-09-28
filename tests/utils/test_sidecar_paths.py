@@ -24,12 +24,22 @@ from py.utils.sidecar_paths import (
     get_unmatched_sidecar_components,
     is_centralized,
     is_metadata_path,
+    relocate_root_map,
     resolve_centralized_dir,
     resolve_centralized_dir_for_dir,
     resolve_metadata_path,
     root_mirror_component,
     sanitize_path_component,
 )
+
+
+def _write_map(root: Path, entries: dict) -> Path:
+    root.mkdir(parents=True, exist_ok=True)
+    path = root / ROOT_MAP_FILENAME
+    path.write_text(
+        json.dumps({"version": 1, "roots": entries}), encoding="utf-8"
+    )
+    return path
 
 
 def _normalize(path: Path) -> str:
@@ -466,6 +476,72 @@ class TestRootIdentityMap:
         sidecar_paths.reset_root_map_cache()
         assert Path(get_metadata_path(str(model))) == expected
         assert json.loads(expected.read_text(encoding="utf-8")) == {"favorite": True}
+
+    def test_relocate_root_map_prefers_the_source_entries(self, tmp_path: Path):
+        """A map written at the destination before a relocation must not win."""
+
+        source = tmp_path / "old-sidecars"
+        destination = tmp_path / "new-sidecars"
+        _write_map(
+            source,
+            {
+                "aaaa1111": {
+                    "component": "loras-pinned",
+                    "basename": "loras",
+                    "last_path": "/models/loras",
+                    "sample_rel_dirs": [],
+                }
+            },
+        )
+        _write_map(
+            destination,
+            {
+                "bbbb2222": {
+                    "component": "loras-recomputed",
+                    "basename": "loras",
+                    "last_path": "/models/loras",
+                    "sample_rel_dirs": [],
+                },
+                "cccc3333": {
+                    "component": "vae-other",
+                    "basename": "vae",
+                    "last_path": "/models/vae",
+                    "sample_rel_dirs": [],
+                },
+            },
+        )
+
+        assert relocate_root_map(str(source), str(destination)) is True
+
+        merged = json.loads(
+            (destination / ROOT_MAP_FILENAME).read_text(encoding="utf-8")
+        )["roots"]
+        assert merged["aaaa1111"]["component"] == "loras-pinned"
+        assert "bbbb2222" not in merged  # superseded for the same root path
+        assert merged["cccc3333"]["component"] == "vae-other"
+        assert not (source / ROOT_MAP_FILENAME).exists()
+
+    def test_relocate_root_map_without_a_source_map_is_a_noop(self, tmp_path: Path):
+        source = tmp_path / "old-sidecars"
+        destination = tmp_path / "new-sidecars"
+        _write_map(
+            destination,
+            {
+                "bbbb2222": {
+                    "component": "loras-keep",
+                    "basename": "loras",
+                    "last_path": "/models/loras",
+                    "sample_rel_dirs": [],
+                }
+            },
+        )
+
+        assert relocate_root_map(str(source), str(destination)) is True
+
+        kept = json.loads(
+            (destination / ROOT_MAP_FILENAME).read_text(encoding="utf-8")
+        )["roots"]
+        assert kept["bbbb2222"]["component"] == "loras-keep"
 
     def test_corrupt_map_file_is_ignored_and_rebuilt(
         self, model_roots: dict, centralized: Path
