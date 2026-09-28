@@ -5,7 +5,8 @@ Two storage layouts exist (see :mod:`py.utils.sidecar_paths`):
 - ``alongside``: ``<model_dir>/<name>.metadata.json`` and preview files live
   next to the model file.
 - ``centralized``: the same files live under the configured sidecar root,
-  mirroring the library-relative directory structure.
+  mirroring each model root's directory structure under a per-root identity
+  component (see :func:`py.utils.sidecar_paths.root_mirror_component`).
 
 This use case moves the ``.metadata.json`` sidecar and preview files for every
 known model from one layout to the other. Model files themselves NEVER move.

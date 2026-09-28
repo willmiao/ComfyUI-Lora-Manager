@@ -2,7 +2,10 @@
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
+import shutil
 from pathlib import Path
 
 import pytest
@@ -11,12 +14,14 @@ from py.services.settings_manager import get_settings_manager
 from py.utils import sidecar_paths
 from py.utils.sidecar_paths import (
     METADATA_SUFFIX,
+    ROOT_MAP_FILENAME,
     get_configured_sidecar_root,
     get_metadata_path,
     get_preview_dir,
     get_sidecar_dir,
     get_sidecar_root,
     get_storage_mode,
+    get_unmatched_sidecar_components,
     is_centralized,
     is_metadata_path,
     resolve_centralized_dir,
@@ -29,6 +34,23 @@ from py.utils.sidecar_paths import (
 
 def _normalize(path: Path) -> str:
     return str(path).replace(os.sep, "/")
+
+
+def _legacy_component(root) -> str:
+    """Independent reimplementation of the pre-identity-map component name."""
+
+    normalized = os.path.normpath(os.path.abspath(str(root)))
+    digest = hashlib.sha256(normalized.encode("utf-8")).hexdigest()[:8]
+    return f"{sanitize_path_component(os.path.basename(normalized))}-{digest}"
+
+
+@pytest.fixture(autouse=True)
+def _reset_root_map_cache():
+    """Identities are cached per sidecar root; keep tests order-independent."""
+
+    sidecar_paths.reset_root_map_cache()
+    yield
+    sidecar_paths.reset_root_map_cache()
 
 
 @pytest.fixture
@@ -68,6 +90,17 @@ def centralized(model_roots: dict, tmp_path: Path) -> Path:
     return sidecar_root
 
 
+def _write_sidecar(model_path: Path, payload: dict | None = None) -> Path:
+    """Create the model file and its sidecar at the module-resolved path."""
+
+    model_path.parent.mkdir(parents=True, exist_ok=True)
+    model_path.write_bytes(b"weights")
+    sidecar = Path(get_metadata_path(str(model_path)))
+    sidecar.parent.mkdir(parents=True, exist_ok=True)
+    sidecar.write_text(json.dumps(payload or {"favorite": True}), encoding="utf-8")
+    return sidecar
+
+
 class TestAlongsideMode:
     def test_default_mode_is_alongside(self):
         assert get_storage_mode() == "alongside"
@@ -85,6 +118,26 @@ class TestAlongsideMode:
         expected = os.path.dirname(os.path.abspath(str(model)))
         assert get_sidecar_dir(str(model)) == expected
         assert get_preview_dir(str(model)) == expected
+
+    def test_alongside_resolution_touches_nothing(
+        self, model_roots: dict, tmp_path: Path
+    ):
+        """The default branch must not load, create, or scan the mirror tree."""
+
+        sidecar_root = tmp_path / "sidecars"
+        settings = get_settings_manager()
+        settings.set("sidecar_storage_mode", "alongside")
+        settings.set("sidecar_storage_path", str(sidecar_root))
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        assert get_metadata_path(str(model)) == os.path.join(
+            str(model_roots["loras"]), "sub", "model" + METADATA_SUFFIX
+        )
+        assert get_preview_dir(str(model)) == os.path.join(
+            str(model_roots["loras"]), "sub"
+        )
+        assert not sidecar_root.exists()
+        assert sidecar_paths._ROOT_MAPS == {}
 
 
 class TestPathPredicates:
@@ -117,13 +170,12 @@ class TestSanitizePathComponent:
 class TestCentralizedMode:
     def test_mirror_layout(self, model_roots: dict, centralized: Path):
         model = model_roots["loras"] / "styles" / "anime" / "model.safetensors"
-        library = get_settings_manager().get_active_library_name()
         root_component = root_mirror_component(str(model_roots["loras"]))
 
         metadata_path = get_metadata_path(str(model))
 
         expected = os.path.join(
-            str(centralized), library, root_component, "styles", "anime", "model" + METADATA_SUFFIX
+            str(centralized), root_component, "styles", "anime", "model" + METADATA_SUFFIX
         )
         assert metadata_path == expected
         assert get_preview_dir(str(model)) == os.path.dirname(expected)
@@ -155,7 +207,7 @@ class TestCentralizedMode:
         assert root_mirror_component(str(model_roots["loras"])) != root_mirror_component(
             str(other_root)
         )
-        # Same root always maps to the same component (stable hash).
+        # Same root always maps to the same component (pinned identity).
         assert root_mirror_component(str(model_roots["loras"])) == root_mirror_component(
             str(model_roots["loras"]) + os.sep
         )
@@ -171,11 +223,10 @@ class TestCentralizedMode:
             [str(model_roots["loras"]), str(nested)],
             raising=False,
         )
-        library = get_settings_manager().get_active_library_name()
 
         model = nested / "model.safetensors"
         assert get_metadata_path(str(model)) == os.path.join(
-            str(centralized), library, root_mirror_component(str(nested)), "model" + METADATA_SUFFIX
+            str(centralized), root_mirror_component(str(nested)), "model" + METADATA_SUFFIX
         )
 
     def test_outside_roots_falls_back_to_alongside(
@@ -204,10 +255,8 @@ class TestCentralizedMode:
     def test_resolve_centralized_dir_for_dir_root_maps_to_mirror_base(
         self, model_roots: dict, centralized: Path
     ):
-        library = get_settings_manager().get_active_library_name()
-
         assert resolve_centralized_dir_for_dir(str(model_roots["loras"])) == os.path.join(
-            str(centralized), library, root_mirror_component(str(model_roots["loras"]))
+            str(centralized), root_mirror_component(str(model_roots["loras"]))
         )
 
     def test_empty_path_uses_default_sidecar_root(self, model_roots: dict, tmp_path: Path):
@@ -219,6 +268,227 @@ class TestCentralizedMode:
         assert root
         assert root.endswith(os.sep + "sidecars")
         assert is_centralized()
+
+
+class TestRootIdentityMap:
+    """The root component is a remembered identity, not a path hash."""
+
+    def test_component_is_pinned_in_the_map_file(
+        self, model_roots: dict, centralized: Path
+    ):
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        first = get_metadata_path(str(model))
+
+        map_path = centralized / ROOT_MAP_FILENAME
+        assert map_path.exists()
+        payload = json.loads(map_path.read_text(encoding="utf-8"))
+        persisted = {entry["component"] for entry in payload["roots"].values()}
+        assert root_mirror_component(str(model_roots["loras"])) in persisted
+
+        # Restarting the process must resolve the exact same location.
+        sidecar_paths.reset_root_map_cache()
+        assert get_metadata_path(str(model)) == first
+
+    def test_component_is_deterministic_and_survives_a_lost_map(
+        self, model_roots: dict, centralized: Path
+    ):
+        """Deleting the map must not strand a mirror whose root has not moved."""
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        first = _write_sidecar(model)
+        assert Path(get_metadata_path(str(model))) == first
+
+        (centralized / ROOT_MAP_FILENAME).unlink()
+        sidecar_paths.reset_root_map_cache()
+
+        assert Path(get_metadata_path(str(model))) == first
+        assert root_mirror_component(str(model_roots["loras"])) == _legacy_component(
+            model_roots["loras"]
+        )
+
+    def test_legacy_path_derived_component_is_adopted(
+        self, model_roots: dict, centralized: Path
+    ):
+        """Upgrading from the hash-named layout keeps existing mirrors usable."""
+
+        legacy = _legacy_component(model_roots["loras"])
+
+        sidecar = centralized / legacy / "sub" / ("model" + METADATA_SUFFIX)
+        sidecar.parent.mkdir(parents=True)
+        sidecar.write_text(json.dumps({"favorite": True}), encoding="utf-8")
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        assert get_metadata_path(str(model)) == str(sidecar)
+        assert root_mirror_component(str(model_roots["loras"])) == legacy
+
+    def test_pre_identity_map_library_nested_component_is_adopted(
+        self, model_roots: dict, centralized: Path
+    ):
+        """Mirrors created by the pre-identity-map build nested under a library."""
+
+        legacy = _legacy_component(model_roots["loras"])
+        sidecar = (
+            centralized / "comfyui" / legacy / "sub" / ("model" + METADATA_SUFFIX)
+        )
+        sidecar.parent.mkdir(parents=True)
+        sidecar.write_text(json.dumps({"favorite": True}), encoding="utf-8")
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        assert get_metadata_path(str(model)) == str(sidecar)
+        assert root_mirror_component(str(model_roots["loras"])) == f"comfyui/{legacy}"
+        # The adopted tree counts as linked, not orphaned.
+        assert get_unmatched_sidecar_components() == []
+
+    def test_moved_root_reuses_its_mirror(
+        self, model_roots: dict, centralized: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        """A relocated (and reconfigured) root keeps its remembered identity."""
+
+        from py.config import config
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        before = _write_sidecar(model)
+
+        moved_root = tmp_path / "relocated" / "loras"
+        shutil.copytree(model_roots["loras"], moved_root)
+        monkeypatch.setattr(config, "loras_roots", [str(moved_root)], raising=False)
+        sidecar_paths.reset_root_map_cache()
+
+        moved_model = moved_root / "sub" / "model.safetensors"
+        after = Path(get_metadata_path(str(moved_model)))
+
+        assert after == before
+        assert json.loads(after.read_text(encoding="utf-8")) == {"favorite": True}
+
+    def test_renamed_root_reanchors_via_directory_overlap(
+        self, model_roots: dict, centralized: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        """A rename that changes the basename still re-anchors when the tree matches."""
+
+        from py.config import config
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        before = _write_sidecar(model)
+
+        renamed_root = tmp_path / "brand-new-name"
+        shutil.copytree(model_roots["loras"], renamed_root)
+        monkeypatch.setattr(config, "loras_roots", [str(renamed_root)], raising=False)
+        sidecar_paths.reset_root_map_cache()
+
+        renamed_model = renamed_root / "sub" / "model.safetensors"
+        assert Path(get_metadata_path(str(renamed_model))) == before
+
+    def test_ambiguous_reanchor_reports_orphans_instead_of_guessing(
+        self, model_roots: dict, centralized: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        from py.config import config
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        before = _write_sidecar(model)
+        component = before.parent.parent.name
+
+        # Two equally plausible candidates: never silently pick one.
+        candidate_a = tmp_path / "a" / "loras"
+        candidate_b = tmp_path / "b" / "loras"
+        shutil.copytree(model_roots["loras"], candidate_a)
+        shutil.copytree(model_roots["loras"], candidate_b)
+        monkeypatch.setattr(
+            config, "loras_roots", [str(candidate_a), str(candidate_b)], raising=False
+        )
+        sidecar_paths.reset_root_map_cache()
+
+        for candidate in (candidate_a, candidate_b):
+            resolved = Path(
+                get_metadata_path(str(candidate / "sub" / "model.safetensors"))
+            )
+            assert resolved != before
+            assert component not in str(resolved)
+
+        orphans = get_unmatched_sidecar_components()
+        assert [item["component"] for item in orphans] == [component]
+
+    def test_removed_root_surfaces_its_component_as_orphan(
+        self, model_roots: dict, centralized: Path, monkeypatch: pytest.MonkeyPatch
+    ):
+        from py.config import config
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        sidecar = _write_sidecar(model)
+        component = sidecar.parent.parent.name
+
+        monkeypatch.setattr(config, "loras_roots", [], raising=False)
+        sidecar_paths.reset_root_map_cache()
+
+        assert [item["component"] for item in get_unmatched_sidecar_components()] == [
+            component
+        ]
+
+    def test_unmatched_helper_is_empty_in_alongside_mode(
+        self, model_roots: dict, tmp_path: Path
+    ):
+        settings = get_settings_manager()
+        settings.set("sidecar_storage_mode", "alongside")
+        settings.set("sidecar_storage_path", str(tmp_path / "sidecars"))
+
+        assert get_unmatched_sidecar_components() == []
+        assert not (tmp_path / "sidecars").exists()
+
+    def test_relocated_sidecar_root_resolves_after_map_written_first(
+        self, model_roots: dict, tmp_path: Path
+    ):
+        """A resolve before the mirror tree is relocated must not rename it."""
+
+        settings = get_settings_manager()
+        old_root = tmp_path / "old-sidecars"
+        new_root = tmp_path / "new-sidecars"
+        settings.set("sidecar_storage_mode", "centralized")
+        settings.set("sidecar_storage_path", str(old_root))
+
+        model = model_roots["loras"] / "sub" / "model.safetensors"
+        sidecar = _write_sidecar(model)
+
+        # The path setting changes first, and something resolves against the
+        # new root before the user runs the relocation.
+        settings.set("sidecar_storage_path", str(new_root))
+        sidecar_paths.reset_root_map_cache()
+        expected = new_root / sidecar.relative_to(old_root)
+        assert Path(get_metadata_path(str(model))) == expected
+        assert not expected.exists()
+
+        # Now the mirror tree moves, exactly as migrate_root does.
+        for dirpath, _dirnames, filenames in os.walk(old_root):
+            rel = os.path.relpath(dirpath, old_root)
+            target_dir = new_root if rel == os.curdir else new_root / rel
+            target_dir.mkdir(parents=True, exist_ok=True)
+            for filename in filenames:
+                shutil.move(str(Path(dirpath) / filename), str(target_dir / filename))
+
+        sidecar_paths.reset_root_map_cache()
+        assert Path(get_metadata_path(str(model))) == expected
+        assert json.loads(expected.read_text(encoding="utf-8")) == {"favorite": True}
+
+    def test_corrupt_map_file_is_ignored_and_rebuilt(
+        self, model_roots: dict, centralized: Path
+    ):
+        model = model_roots["loras"] / "model.safetensors"
+        map_path = centralized / ROOT_MAP_FILENAME
+
+        get_metadata_path(str(model))
+        map_path.write_text("{not json", encoding="utf-8")
+        sidecar_paths.reset_root_map_cache()
+
+        path_after = get_metadata_path(str(model))
+        assert json.loads(map_path.read_text(encoding="utf-8"))["roots"]
+        assert os.path.basename(os.path.dirname(path_after)).startswith("loras-")
+
+    def test_root_map_file_is_not_mistaken_for_a_component(
+        self, model_roots: dict, centralized: Path
+    ):
+        model = model_roots["loras"] / "model.safetensors"
+        get_metadata_path(str(model))
+
+        assert (centralized / ROOT_MAP_FILENAME).is_file()
+        assert get_unmatched_sidecar_components() == []
 
 
 class TestModeIndependentResolution:
@@ -248,17 +518,18 @@ class TestModeIndependentResolution:
         sidecar_root = tmp_path / "sidecars"
         settings = get_settings_manager()
         settings.set("sidecar_storage_mode", "alongside")
-        library = settings.get_active_library_name()
+        settings.set("sidecar_storage_path", str(sidecar_root))
 
         model_dir = model_roots["loras"] / "sub"
+        component = root_mirror_component(
+            str(model_roots["loras"]), sidecar_root=str(sidecar_root)
+        )
 
         # Alongside mode: no root resolves without the override.
         assert resolve_centralized_dir_for_dir(str(model_dir)) is None
         assert resolve_centralized_dir_for_dir(
             str(model_dir), sidecar_root=str(sidecar_root)
-        ) == os.path.join(
-            str(sidecar_root), library, root_mirror_component(str(model_roots["loras"])), "sub"
-        )
+        ) == os.path.join(str(sidecar_root), component, "sub")
 
 
 class TestSettingsValidation:
