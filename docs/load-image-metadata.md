@@ -24,11 +24,16 @@ this change and refresh the page. This Python node needs no Vue widget build.
    model/LoRA names, local resolution status and warnings. The original `report`
    output remains notes followed by formatted JSON; it is not a pure JSON string.
 
-`model_name`, `sampler_name`, and `scheduler` use COMBO outputs for converted
-dropdown inputs in current ComfyUI. `model_name` contains the matching local
-checkpoint or diffusion-model filename. The report identifies the resolved type;
-connect it to the appropriate loader. Lookup searches both categories regardless
-of how the original metadata labels the model.
+`model_name`, `sampler_name`, and `scheduler` are declared as untyped (`*`)
+outputs so they can feed the dropdown widget inputs on both
+**Load Checkpoint**/**KSampler** and the LoRA Manager loaders. Typing them
+`COMBO` does not work: ComfyUI only accepts a `COMBO` output into a node that
+declares its dropdown as `COMBO`/`IO.Combo`, while classic dropdowns expose a
+plain option list, and the server rejects the link with "Return type mismatch
+between linked nodes". `model_name` contains the matching local checkpoint or
+diffusion-model filename. The report identifies the resolved type; connect it to
+the appropriate loader. Lookup searches both categories regardless of how the
+original metadata labels the model.
 
 For a diffusion-model workflow, connect `model_name` to **Unet Loader
 (LoraManager)** and select the correct text encoder(s), VAE, latent node and

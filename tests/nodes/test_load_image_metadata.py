@@ -61,6 +61,22 @@ def test_full_node_contract_with_real_png_metadata(runtime):
     assert LoadImageMetadataLM.INPUT_TYPES()["required"]["image"][1]["image_upload"]
 
 
+def test_value_selector_outputs_stay_untyped():
+    """These sockets must not be typed COMBO/STRING.
+
+    Load Checkpoint, KSampler and the LoRA Manager loaders declare their name
+    dropdowns as plain option lists ("classic" combos). ComfyUI's
+    comfy_execution.validation rejects any non-string input type for those, so a
+    COMBO (or STRING) output linked into them fails at queue time with
+    "Return type mismatch between linked nodes". Only an untyped ("*") output
+    works, which is also what ComfyUI's own Primitive node uses for widgets.
+    """
+    types = LoadImageMetadataLM.RETURN_TYPES
+    names = LoadImageMetadataLM.RETURN_NAMES
+    for output in ("model_name", "sampler_name", "scheduler"):
+        assert types[names.index(output)] == "*", output
+
+
 @pytest.mark.parametrize("extension", ["webp", "jpg"])
 def test_exif_parameters_from_real_image(runtime, extension):
     image_path, *_ = runtime

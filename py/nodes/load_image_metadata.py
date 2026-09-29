@@ -118,9 +118,16 @@ class LoadImageMetadataLM:
         "Connect lora_stack to Lora Loader. Convert loader/sampler widgets to inputs for the other outputs. "
         "Extraction failures use starter defaults and are shown as ERROR messages in readable_report."
     )
+    # model_name, sampler_name and scheduler select a value from a loader or
+    # sampler dropdown. They must stay untyped (Any, "*"): ComfyUI rejects a
+    # "COMBO" (and a "STRING") output linked into the classic list-style combo
+    # inputs used by Load Checkpoint, KSampler, and the LoRA Manager loaders
+    # (comfy_execution/validation.py refuses a non-string input type), which
+    # surfaced as "Return type mismatch between linked nodes" at queue time.
+    # "*" is the same type ComfyUI's own Primitive node uses to feed widgets.
     RETURN_TYPES = (
-        "IMAGE", "MASK", "STRING", "STRING", "COMBO", "LORA_STACK", "STRING",
-        "INT", "INT", "FLOAT", "COMBO", "COMBO", "INT", "INT", "FLOAT", "STRING", "STRING", "STRING",
+        "IMAGE", "MASK", "STRING", "STRING", "*", "LORA_STACK", "STRING",
+        "INT", "INT", "FLOAT", "*", "*", "INT", "INT", "FLOAT", "STRING", "STRING", "STRING",
     )
     RETURN_NAMES = (
         "image", "mask", "positive", "negative", "model_name", "lora_stack", "lora_stack_text",
