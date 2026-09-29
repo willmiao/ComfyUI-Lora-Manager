@@ -50,6 +50,13 @@ class DummyExifUtils:
         self.embedded_workflows.append((image_path, workflow))
         return image_path
 
+    def normalise_workflow(self, workflow):
+        if isinstance(workflow, str):
+            return workflow or None
+        if isinstance(workflow, (dict, list)):
+            return json.dumps(workflow)
+        return None
+
     def extract_image_metadata(self, path):
         return {}
 
@@ -979,6 +986,137 @@ async def test_save_recipe_from_widget_enriches_checkpoint_from_local_cache(tmp_
         "modelVersionName": "v1.0",
         "baseModel": "Illustrious",
     }
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_from_widget_embeds_opted_in_workflow(tmp_path):
+    """Opt-in widget saves embed the live graph so the recipe can send its
+    workflow back to ComfyUI, mirroring imported recipes."""
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+            self.added = []
+
+        async def get_local_lora(self, name):  # pragma: no cover - no loras
+            return None
+
+        async def add_recipe(self, recipe_data):
+            self.added.append(recipe_data)
+
+    image_buffer = BytesIO()
+    Image.new("RGB", (96, 48), color="navy").save(
+        image_buffer, format="PNG"
+    )
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=ExifUtils,
+        card_preview_width=64,
+        logger=logging.getLogger("test"),
+    )
+
+    workflow = {"nodes": [{"id": 1}], "last_node_id": 1}
+    result = await service.save_recipe_from_widget(
+        recipe_scanner=scanner,
+        metadata={"loras": "", "prompt": "a calm scene"},
+        image_bytes=image_buffer.getvalue(),
+        workflow=workflow,
+    )
+
+    assert result.payload["has_workflow"] is True
+    assert "workflow_skipped" not in result.payload
+
+    stored = json.loads(Path(result.payload["json_path"]).read_text())
+    assert stored["has_workflow"] is True
+    assert ExifUtils._load_structured_metadata(result.payload["image_path"])[
+        "workflow"
+    ] == json.dumps(workflow)
+    assert scanner.added[0]["has_workflow"] is True
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_from_widget_without_workflow_stays_unflagged(tmp_path):
+    """The default action must keep saving a workflow-free preview."""
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+
+        async def get_local_lora(self, name):  # pragma: no cover - no loras
+            return None
+
+        async def add_recipe(self, recipe_data):
+            return None
+
+    image_buffer = BytesIO()
+    Image.new("RGB", (96, 48), color="navy").save(
+        image_buffer, format="PNG"
+    )
+
+    service = RecipePersistenceService(
+        exif_utils=ExifUtils,
+        card_preview_width=64,
+        logger=logging.getLogger("test"),
+    )
+
+    result = await service.save_recipe_from_widget(
+        recipe_scanner=DummyScanner(tmp_path),
+        metadata={"loras": "", "prompt": "a calm scene"},
+        image_bytes=image_buffer.getvalue(),
+    )
+
+    assert result.payload["has_workflow"] is False
+    assert ExifUtils._load_structured_metadata(result.payload["image_path"])[
+        "workflow"
+    ] is None
+
+
+@pytest.mark.asyncio
+async def test_save_recipe_from_widget_skips_oversized_workflow(
+    tmp_path, monkeypatch
+):
+    """A pathological graph is dropped instead of inflating the preview."""
+    monkeypatch.setattr(
+        "py.services.recipes.persistence_service.MAX_WORKFLOW_EMBED_BYTES", 32
+    )
+
+    class DummyScanner:
+        def __init__(self, root):
+            self.recipes_dir = str(root)
+            self.added = []
+
+        async def get_local_lora(self, name):  # pragma: no cover - no loras
+            return None
+
+        async def add_recipe(self, recipe_data):
+            self.added.append(recipe_data)
+
+    image_buffer = BytesIO()
+    Image.new("RGB", (96, 48), color="navy").save(
+        image_buffer, format="PNG"
+    )
+
+    scanner = DummyScanner(tmp_path)
+    service = RecipePersistenceService(
+        exif_utils=ExifUtils,
+        card_preview_width=64,
+        logger=logging.getLogger("test"),
+    )
+
+    workflow = {"nodes": [{"id": index} for index in range(20)]}
+    result = await service.save_recipe_from_widget(
+        recipe_scanner=scanner,
+        metadata={"loras": "", "prompt": "a calm scene"},
+        image_bytes=image_buffer.getvalue(),
+        workflow=workflow,
+    )
+
+    assert result.payload["workflow_skipped"] == "too_large"
+    assert result.payload["has_workflow"] is False
+    assert ExifUtils._load_structured_metadata(result.payload["image_path"])[
+        "workflow"
+    ] is None
+    assert scanner.added[0]["has_workflow"] is False
 
 
 @pytest.mark.asyncio

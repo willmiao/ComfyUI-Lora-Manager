@@ -18,6 +18,7 @@ from ...utils.base_model import (
     RELATION_INCOMPATIBLE,
     base_model_relation,
 )
+from ...utils.constants import MAX_WORKFLOW_EMBED_BYTES
 from ...utils.utils import calculate_recipe_fingerprint
 from ..pending_delete_service import get_pending_delete_service
 from .errors import RecipeNotFoundError, RecipeValidationError
@@ -874,8 +875,15 @@ class RecipePersistenceService:
         recipe_scanner,
         metadata: dict[str, Any],
         image_bytes: bytes,
+        workflow: Any = None,
     ) -> PersistenceResult:
-        """Save a recipe constructed from widget metadata."""
+        """Save a recipe constructed from widget metadata.
+
+        ``workflow`` is the caller's ComfyUI graph (UI or API format) to embed
+        in the stored preview. Embedding is opt-in because the graph is by far
+        the largest metadata field and its widget values may contain sensitive
+        data; an oversized graph is dropped rather than inflating the preview.
+        """
 
         if not metadata:
             raise RecipeValidationError("No generation metadata found")
@@ -884,12 +892,25 @@ class RecipePersistenceService:
         os.makedirs(recipes_dir, exist_ok=True)
 
         recipe_id = str(uuid.uuid4())
+
+        workflow_json = self._exif_utils.normalise_workflow(workflow)
+        workflow_skipped: Optional[str] = None
+        if workflow_json and len(workflow_json.encode("utf-8")) > MAX_WORKFLOW_EMBED_BYTES:
+            self._logger.warning(
+                "Widget workflow is %d bytes (limit %d); saving recipe without it",
+                len(workflow_json),
+                MAX_WORKFLOW_EMBED_BYTES,
+            )
+            workflow_json = None
+            workflow_skipped = "too_large"
+
         optimized_image, extension = self._exif_utils.optimize_image(
             image_data=image_bytes,
             target_width=self._card_preview_width,
             format="webp",
             quality=85,
             preserve_metadata=True,
+            workflow=workflow_json,
         )
         image_filename = f"{recipe_id}{extension}"
         image_path = os.path.join(recipes_dir, image_filename)
@@ -943,9 +964,9 @@ class RecipePersistenceService:
                 if key not in ["checkpoint", "loras"]
             },
             "loras_stack": lora_stack,
-            # Widget saves re-encode an in-memory tensor to PNG/WebP with no
-            # embedded metadata chunks, so a workflow can never be present.
-            "has_workflow": False,
+            # Set by detection below: the workflow is embedded during
+            # re-encoding only when the caller opted in and it fit the cap.
+            "has_workflow": self._detect_has_workflow(image_path),
             # Widget saves read LoRAs straight from the current workflow; an
             # empty list means the workflow used no LoRAs.
             "import_info": build_import_info(CHANNEL_WIDGET, None, loras_data),
@@ -961,15 +982,17 @@ class RecipePersistenceService:
         self._exif_utils.append_recipe_metadata(image_path, recipe_data)
         await recipe_scanner.add_recipe(recipe_data)
 
-        return PersistenceResult(
-            {
-                "success": True,
-                "recipe_id": recipe_id,
-                "image_path": image_path,
-                "json_path": json_path,
-                "recipe_name": recipe_name,
-            }
-        )
+        payload: dict[str, Any] = {
+            "success": True,
+            "recipe_id": recipe_id,
+            "image_path": image_path,
+            "json_path": json_path,
+            "recipe_name": recipe_name,
+            "has_workflow": recipe_data["has_workflow"],
+        }
+        if workflow_skipped:
+            payload["workflow_skipped"] = workflow_skipped
+        return PersistenceResult(payload)
 
     # Helper methods ---------------------------------------------------
 

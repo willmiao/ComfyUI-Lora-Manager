@@ -1821,6 +1821,10 @@ class RecipeManagementHandler:
             if recipe_scanner is None:
                 raise RuntimeError("Recipe scanner unavailable")
 
+            # Opt-in workflow embedding. The widget historically POSTs with no
+            # body at all, so a missing/empty body is not an error.
+            workflow = await self._read_optional_json_field(request, "workflow")
+
             analysis = await self._analysis_service.analyze_widget_metadata(
                 recipe_scanner=recipe_scanner
             )
@@ -1833,6 +1837,7 @@ class RecipeManagementHandler:
                 recipe_scanner=recipe_scanner,
                 metadata=metadata,
                 image_bytes=image_bytes,
+                workflow=workflow,
             )
             return web.json_response(result.payload, status=result.status)
         except RecipeValidationError as exc:
@@ -1896,6 +1901,24 @@ class RecipeManagementHandler:
         if not tag_text:
             return []
         return [tag.strip() for tag in tag_text.split(",") if tag.strip()]
+
+    async def _read_optional_json_field(
+        self, request: web.Request, field: str
+    ) -> Any:
+        """Read one field from an optional JSON request body.
+
+        Some callers (notably the widget's long-standing "Save Recipe" action)
+        POST with no body at all, and a stale cached extension may still do so
+        after a body is introduced. A missing, empty or malformed body is
+        therefore treated as "no value" rather than a request error.
+        """
+        if not request.can_read_body:
+            return None
+        try:
+            data = await request.json()
+        except Exception:
+            return None
+        return data.get(field) if isinstance(data, dict) else None
 
     async def _count_recipe_loras(
         self, recipe_scanner: Any, recipe_id: Optional[str]

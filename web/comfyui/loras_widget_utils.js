@@ -460,15 +460,29 @@ export function syncClipStrengthIfCollapsed(loraData) {
 }
 
 // Function to directly save the recipe without dialog
-export async function saveRecipeDirectly() {
+export async function saveRecipeDirectly({ embedWorkflow = false } = {}) {
   try {
     const prompt = await app.graphToPrompt();
     console.log('Prompt:', prompt); // for debugging purposes
+
+    // Embedding the graph is opt-in: it is by far the largest metadata field
+    // and its widget values can contain sensitive data (paths, API keys). The
+    // UI-format graph is sent rather than the API prompt so node layout and
+    // groups survive — that is what "Send Workflow to ComfyUI" restores.
+    const requestBody = {};
+    if (embedWorkflow) {
+      if (prompt && prompt.workflow) {
+        requestBody.workflow = prompt.workflow;
+      } else {
+        showToast('No workflow available to embed; saving the recipe without it', 'warning');
+      }
+    }
+
     // Show loading toast
     if (app && app.extensionManager && app.extensionManager.toast) {
       app.extensionManager.toast.add({
         severity: 'info',
-        summary: 'Saving Recipe',
+        summary: embedWorkflow ? 'Saving Recipe with Workflow' : 'Saving Recipe',
         detail: 'Please wait...',
         life: 2000
       });
@@ -476,7 +490,9 @@ export async function saveRecipeDirectly() {
     
     // Send the request to the backend API
     const response = await fetch(lmUrl('/api/lm/recipes/save-from-widget'), {
-      method: 'POST'
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(requestBody)
     });
     
     const result = await response.json();
@@ -484,12 +500,23 @@ export async function saveRecipeDirectly() {
     // Show result toast
     if (app && app.extensionManager && app.extensionManager.toast) {
       if (result.success) {
-        app.extensionManager.toast.add({
-          severity: 'success',
-          summary: 'Recipe Saved',
-          detail: 'Recipe has been saved successfully',
-          life: 3000
-        });
+        let severity = 'success';
+        let summary = embedWorkflow ? 'Recipe Saved with Workflow' : 'Recipe Saved';
+        let detail = embedWorkflow
+          ? 'Recipe and the current workflow have been saved'
+          : 'Recipe has been saved successfully';
+
+        if (embedWorkflow && result.workflow_skipped === 'too_large') {
+          severity = 'warn';
+          summary = 'Recipe Saved without Workflow';
+          detail = 'The workflow is too large to embed; the recipe was saved without it';
+        } else if (embedWorkflow && result.has_workflow !== true) {
+          severity = 'warn';
+          summary = 'Recipe Saved without Workflow';
+          detail = 'The workflow could not be embedded in the recipe image';
+        }
+
+        app.extensionManager.toast.add({ severity, summary, detail, life: 5000 });
       } else {
         app.extensionManager.toast.add({
           severity: 'error',

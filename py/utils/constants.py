@@ -41,6 +41,14 @@ PREVIEW_EXTENSIONS = [
 # Card preview image width
 CARD_PREVIEW_WIDTH = 480
 
+# Upper bound for a ComfyUI workflow embedded into a recipe preview on the
+# opt-in widget save path. The workflow is by far the largest metadata field
+# (tens of KB for a simple graph), so an anomalous graph — e.g. one carrying
+# base64 blobs in widget values — is skipped instead of inflating the preview.
+# Imports are deliberately not capped: their workflow comes from an image the
+# user already chose, and preserving it is the point.
+MAX_WORKFLOW_EMBED_BYTES = 256 * 1024
+
 # Width for optimized example images
 EXAMPLE_IMAGE_WIDTH = 832
 

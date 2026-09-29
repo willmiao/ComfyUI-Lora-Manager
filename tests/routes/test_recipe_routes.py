@@ -208,6 +208,11 @@ class StubAnalysisService:
         self.remote_calls: List[Optional[str]] = []
         self.local_calls: List[Optional[str]] = []
         self.local_ignore_recipe_metadata_calls: List[bool] = []
+        self.widget_analysis_calls: List[Any] = []
+        self.widget_result = SimpleNamespace(
+            payload={"metadata": {"loras": ""}, "image_bytes": b"widget-image"},
+            status=200,
+        )
         self.result = SimpleNamespace(payload={"loras": []}, status=200)
         self._recipe_parser_factory: Any = None
         StubAnalysisService.instances.append(self)
@@ -242,7 +247,8 @@ class StubAnalysisService:
         return self.result
 
     async def analyze_widget_metadata(self, *, recipe_scanner) -> SimpleNamespace:
-        return SimpleNamespace(payload={"metadata": {}, "image_bytes": b""}, status=200)
+        self.widget_analysis_calls.append(recipe_scanner)
+        return self.widget_result
 
 
 class StubPersistenceService:
@@ -252,6 +258,7 @@ class StubPersistenceService:
 
     def __init__(self, **_: Any) -> None:
         self.save_calls: List[Dict[str, Any]] = []
+        self.widget_calls: List[Dict[str, Any]] = []
         self.delete_calls: List[str] = []
         self.move_calls: List[Dict[str, str]] = []
         self.update_calls: List[Dict[str, Any]] = []
@@ -359,9 +366,24 @@ class StubPersistenceService:
         )
 
     async def save_recipe_from_widget(
-        self, *, recipe_scanner, metadata: Dict[str, Any], image_bytes: bytes
+        self,
+        *,
+        recipe_scanner,
+        metadata: Dict[str, Any],
+        image_bytes: bytes,
+        workflow: Any = None,
     ) -> SimpleNamespace:  # pragma: no cover
-        return SimpleNamespace(payload={"success": True}, status=200)
+        self.widget_calls.append(
+            {
+                "recipe_scanner": recipe_scanner,
+                "metadata": metadata,
+                "image_bytes": image_bytes,
+                "workflow": workflow,
+            }
+        )
+        return SimpleNamespace(
+            payload={"success": True, "has_workflow": workflow is not None}, status=200
+        )
 
 
 class StubSharingService:
@@ -479,6 +501,33 @@ async def recipe_harness(
         StubAnalysisService.instances.clear()
         StubPersistenceService.instances.clear()
         StubSharingService.instances.clear()
+
+
+async def test_save_from_widget_forwards_workflow_body(monkeypatch, tmp_path: Path) -> None:
+    """The opt-in workflow arrives through a real JSON body and is handed to
+    the persistence layer; the response reports whether it was embedded."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        workflow = {"nodes": [{"id": 1}], "last_node_id": 1}
+
+        response = await harness.client.post(
+            "/api/lm/recipes/save-from-widget", json={"workflow": workflow}
+        )
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["has_workflow"] is True
+        assert harness.persistence.widget_calls[0]["workflow"] == workflow
+
+
+async def test_save_from_widget_without_body_still_saves(monkeypatch, tmp_path: Path) -> None:
+    """The long-standing body-less POST must keep working unchanged."""
+    async with recipe_harness(monkeypatch, tmp_path) as harness:
+        response = await harness.client.post("/api/lm/recipes/save-from-widget")
+        payload = await response.json()
+
+        assert response.status == 200
+        assert payload["has_workflow"] is False
+        assert harness.persistence.widget_calls[0]["workflow"] is None
 
 
 async def test_list_recipes_provides_file_urls(monkeypatch, tmp_path: Path) -> None:
