@@ -5,7 +5,8 @@ Two storage layouts exist (see :mod:`py.utils.sidecar_paths`):
 - ``alongside``: ``<model_dir>/<name>.metadata.json`` and preview files live
   next to the model file.
 - ``centralized``: the same files live under the configured sidecar root,
-  mirroring the library-relative directory structure.
+  mirroring each model root's directory structure under a per-root identity
+  component (see :func:`py.utils.sidecar_paths.root_mirror_component`).
 
 This use case moves the ``.metadata.json`` sidecar and preview files for every
 known model from one layout to the other. Model files themselves NEVER move.
@@ -51,10 +52,12 @@ from ...utils.file_utils import find_preview_file, get_preview_extension
 from ...utils.metadata_manager import MetadataManager
 from ...utils.sidecar_paths import (
     METADATA_SUFFIX,
+    ROOT_MAP_FILENAME,
     STORAGE_MODE_CENTRALIZED,
     get_configured_sidecar_root,
     get_sidecar_root,
     get_storage_mode,
+    relocate_root_map,
     resolve_centralized_dir_for_dir,
 )
 
@@ -199,14 +202,19 @@ class SidecarMigrationUseCase:
             )
 
         files: List[Tuple[str, str]] = []
+        source_map_path = os.path.join(old, ROOT_MAP_FILENAME)
         if os.path.isdir(old):
             for dirpath, _dirnames, filenames in os.walk(old):
                 rel = os.path.relpath(dirpath, old)
                 target_dir = new_root if rel == os.curdir else os.path.join(new_root, rel)
                 for filename in filenames:
-                    files.append(
-                        (os.path.join(dirpath, filename), os.path.join(target_dir, filename))
-                    )
+                    source = os.path.join(dirpath, filename)
+                    # The identity map is handled by relocate_root_map below:
+                    # _transfer's keep-newer rule would let a destination map
+                    # written before the relocation displace it.
+                    if source == source_map_path:
+                        continue
+                    files.append((source, os.path.join(target_dir, filename)))
 
         errors: List[Dict[str, str]] = []
         counters: Dict[str, Any] = {"moved": 0, "conflicts": 0}
@@ -241,6 +249,23 @@ class SidecarMigrationUseCase:
                 )
                 errors.append({"model": os.path.basename(src), "error": str(exc)})
             await emit("processing", processed=index, current=os.path.basename(src))
+
+        # The identity map names the directories just moved, so it travels with
+        # them and wins over any map the destination acquired beforehand.
+        # A failure here strands the moved metadata, so it is a real error.
+        try:
+            if not relocate_root_map(old, new_root):
+                errors.append(
+                    {
+                        "model": ROOT_MAP_FILENAME,
+                        "error": "sidecar root map could not be written to the new root",
+                    }
+                )
+        except Exception as exc:
+            self._logger.error(
+                "Sidecar root relocation failed for the root map: %s", exc, exc_info=True
+            )
+            errors.append({"model": ROOT_MAP_FILENAME, "error": str(exc)})
 
         old_prefix = old.replace(os.sep, "/").rstrip("/") + "/"
         new_prefix = new_root.replace(os.sep, "/").rstrip("/") + "/"

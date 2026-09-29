@@ -20,18 +20,21 @@ By default, `.metadata.json` sidecars and preview images live **alongside** thei
 | `sidecar_storage_mode` | `"alongside"` \| `"centralized"` | `"alongside"` |
 | `sidecar_storage_path` | Absolute path string; empty = `<settings dir>/sidecars` | `""` |
 
-In centralized mode, sidecars and previews mirror the library-relative directory structure:
+In centralized mode, sidecars and previews mirror each model root's directory structure:
 
 ```
-<sidecar_root>/<library>/<root_basename-roothash>/<rel_dir>/<name>.metadata.json
+<sidecar_root>/<root_component>/<rel_dir>/<name>.metadata.json
 ```
 
-- `<library>` is the active library name and `<rel_dir>` the model's directory relative to the model root containing the file. `<root_basename-roothash>` combines the root's basename with a short hash of its full path so two roots sharing a basename (e.g. `/mnt/a/loras` and `/mnt/b/loras`) never collide. Each component is sanitized to filesystem-safe characters.
+- `<rel_dir>` is the model's directory relative to the model root containing the file; the longest matching root wins, so nested roots mirror under the most specific root.
+- `<root_component>` identifies the model root and **survives the root being moved or renamed**. It starts as the deterministic `<sanitized basename>-<path digest>` — so mirrors created by older builds, and mirrors left behind by a relocated sidecar root, still resolve — and is then pinned in `<sidecar_root>/.lm-sidecar-roots.json` alongside the root's last known path and a few sample subdirectories. Two roots sharing a basename (e.g. `/mnt/a/loras` and `/mnt/b/loras`) always get distinct components and never collide. Each path component is sanitized to filesystem-safe characters.
+- **Moving or renaming a model root does not strand its sidecars.** On the next run the mirror identity is re-anchored to the root's new path (matched by basename and recorded sample directories), so favorites, notes, tags and usage tips keep resolving. An existing hash-named mirror from an older build is adopted as-is on first use.
+- If an identity cannot be re-anchored unambiguously (e.g. two same-named candidate roots), nothing is guessed: the mirror stays on disk untouched and surfaces as an orphan in **Doctor → Centralized Sidecars** (and in the log). Restoring the original root path re-links it automatically.
 - `.civitai.info` files always stay next to the model file, in both modes.
 - Changing the mode does **not** move existing files automatically — run the migration (`POST /api/lm/sidecars/migrate` with `{"direction": "to_centralized" | "to_alongside"}`, or the "Migrate Sidecars Now" button in settings). The migration covers excluded (hidden) models too, so un-excluding one later never strands its sidecar in the old layout. The result payload includes a `sidecar_root` field with the resolved centralized root, and the settings UI shows the outcome counters plus an "Open Folder" shortcut.
-- Changing `sidecar_storage_path` while centralized likewise needs a root relocation: `{"direction": "relocate_root", "old_root": "<previous path>"}` moves the whole mirror tree to the new root (the settings UI offers this automatically).
+- Changing `sidecar_storage_path` while centralized likewise needs a root relocation: `{"direction": "relocate_root", "old_root": "<previous path>"}` moves the whole mirror tree to the new root (the settings UI offers this automatically). The identity map travels with the tree, and its entries win over any map the destination acquired beforehand — so a mirror that was re-anchored earlier keeps its name even if something resolved against the new path before the relocation ran.
 - The settings UI always shows the resolved effective storage root (via the `sidecar_storage_root*` fields in `GET /api/lm/settings`), with `POST /api/lm/sidecars/open-location` opening it in the file manager. When the resolved root lies inside the plugin installation folder (portable settings mode), the UI warns: reinstalling or clean-updating the plugin would delete the sidecars, so an explicit path outside the installation folder is recommended. The repo `.gitignore` excludes the portable-mode default (`/sidecars/`).
-- All sidecar/preview path derivation goes through the helpers in `py/utils/sidecar_paths.py`; never construct paths inline.
+- All sidecar/preview path derivation goes through the helpers in `py/utils/sidecar_paths.py`; never construct paths inline. In the default `alongside` mode these helpers do no extra I/O at all — the identity map is only loaded and reconciled when centralized storage is actually in use.
 
 ---
 

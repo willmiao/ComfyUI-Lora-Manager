@@ -75,6 +75,8 @@ from ...utils.sidecar_paths import (
     get_configured_sidecar_root,
     get_metadata_path,
     get_preview_dir,
+    get_storage_mode,
+    get_unmatched_sidecar_components,
 )
 from ...utils.usage_stats import UsageStats
 from .base_model_handlers import BaseModelHandlerSet
@@ -806,6 +808,7 @@ class DoctorHandler:
                 await self._check_civitai_api_key(),
                 await self._check_cache_health(),
                 await self._check_filename_conflicts(),
+                self._check_sidecar_mirror_orphans(),
                 self._check_ui_version(client_version, app_version),
             ]
 
@@ -1041,6 +1044,71 @@ class DoctorHandler:
         except Exception as exc:  # pragma: no cover - defensive logging
             logger.error("Error exporting doctor bundle: %s", exc, exc_info=True)
             return web.json_response({"success": False, "error": str(exc)}, status=500)
+
+    def _check_sidecar_mirror_orphans(self) -> dict[str, Any]:
+        """Flag centralized sidecars stranded by a moved/removed model root.
+
+        Centralized sidecars live under a per-root mirror directory. A root
+        that was moved, renamed, or dropped from the configuration leaves its
+        mirror behind; without this check the loss is silent, because the
+        scanner simply rebuilds default metadata at the new location.
+        """
+
+        actions = [{"id": "open-settings", "label": "Open Settings"}]
+        try:
+            mode = get_storage_mode()
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            logger.debug("Doctor: sidecar mode lookup failed: %s", exc)
+            mode = "alongside"
+
+        if mode != "centralized":
+            return {
+                "id": "sidecar_mirror_orphans",
+                "title": "Centralized Sidecars",
+                "status": "ok",
+                "summary": "Sidecar metadata is stored alongside the models.",
+                "details": [],
+                "actions": actions,
+            }
+
+        try:
+            orphans = get_unmatched_sidecar_components()
+        except Exception as exc:  # pragma: no cover - defensive fallback
+            logger.warning("Doctor: sidecar orphan check failed: %s", exc)
+            orphans = []
+
+        if not orphans:
+            return {
+                "id": "sidecar_mirror_orphans",
+                "title": "Centralized Sidecars",
+                "status": "ok",
+                "summary": "Every mirrored sidecar directory is linked to a model root.",
+                "details": [f"Root: {describe_sidecar_root().get('root', '')}"],
+                "actions": actions,
+            }
+
+        details = [
+            "Metadata (favorites, notes, tags, usage tips) for these models is on disk but is not being read.",
+            "This usually means a model root was moved, renamed, or removed. Restore the original root path in Settings; the mirror is re-linked automatically.",
+        ]
+        details.extend(
+            f"{item['component']} — last known root: {item['last_path'] or 'unknown'}"
+            for item in orphans[:5]
+        )
+        if len(orphans) > 5:
+            details.append(f"… and {len(orphans) - 5} more")
+        return {
+            "id": "sidecar_mirror_orphans",
+            "title": "Centralized Sidecars",
+            "status": "warning",
+            "summary": (
+                f"{len(orphans)} sidecar "
+                f"director{'y' if len(orphans) == 1 else 'ies'} could not be "
+                "linked to a configured model root."
+            ),
+            "details": details,
+            "actions": actions,
+        }
 
     async def _check_civitai_api_key(self) -> dict[str, Any]:
         api_key = (self._settings.get("civitai_api_key", "") or "").strip()

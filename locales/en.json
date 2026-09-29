@@ -2769,6 +2769,9 @@
       "filename_conflicts": {
         "title": "Duplicate Filename Conflicts"
       },
+      "sidecar_mirror_orphans": {
+        "title": "Centralized Sidecars"
+      },
       "ui_version": {
         "title": "UI Version"
       }

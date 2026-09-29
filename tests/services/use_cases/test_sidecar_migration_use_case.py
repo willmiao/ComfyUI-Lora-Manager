@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 from pathlib import Path
 from typing import Any, Dict, List
 
@@ -12,11 +13,24 @@ import pytest
 from py.config import config
 from py.services.settings_manager import get_settings_manager
 from py.services.use_cases.sidecar_migration_use_case import SidecarMigrationUseCase
-from py.utils.sidecar_paths import root_mirror_component
+from py.utils.sidecar_paths import (
+    get_metadata_path,
+    reset_root_map_cache,
+    root_mirror_component,
+)
 
 
 def _normalize(path) -> str:
     return str(path).replace(os.sep, "/")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_root_map():
+    """Root identities are cached per sidecar root; keep tests independent."""
+
+    reset_root_map_cache()
+    yield
+    reset_root_map_cache()
 
 
 @pytest.fixture
@@ -54,11 +68,10 @@ def _set_mode(mode: str) -> None:
 
 
 def _mirror_dir(library_root: Path, sidecar_root: Path, *rel: str) -> Path:
-    """Expected mirror directory for a library-relative path."""
+    """Expected mirror directory for a root-relative path."""
 
-    library = get_settings_manager().get_active_library_name()
-    component = root_mirror_component(str(library_root))
-    return sidecar_root.joinpath(library, component, *rel)
+    component = root_mirror_component(str(library_root), sidecar_root=str(sidecar_root))
+    return sidecar_root.joinpath(component, *rel)
 
 
 def _write_model(directory: Path, stem: str) -> Path:
@@ -480,6 +493,61 @@ async def test_migrate_root_relocates_tree_and_reconciles(
 
     # Emptied old tree pruned.
     assert not old_root.exists()
+
+
+@pytest.mark.asyncio
+async def test_migrate_root_preserves_a_reanchored_identity(
+    library_root: Path, sidecar_root: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
+    """Relocating the sidecar root must not displace a pinned mirror name.
+
+    A root that moved earlier is mirrored under a name derived from its *old*
+    path. If anything resolves against the destination sidecar root before the
+    relocation runs, it writes a map naming the mirror after the *current*
+    path; the relocation must keep the pinned entry, because the directories
+    actually being moved are named after it.
+    """
+
+    _set_mode("centralized")
+    first_sidecars = tmp_path / "first_sidecars"
+    get_settings_manager().set("sidecar_storage_path", str(first_sidecars))
+    reset_root_map_cache()
+
+    model = _write_model(library_root / "sub", "model")
+    pinned = root_mirror_component(str(library_root))
+    original = Path(get_metadata_path(str(model)))
+    original.parent.mkdir(parents=True, exist_ok=True)
+    original.write_text(json.dumps({"favorite": True}), encoding="utf-8")
+
+    # The model root moves; the recorded identity is re-anchored to it.
+    moved_root = tmp_path / "relocated" / "loras"
+    shutil.copytree(library_root, moved_root)
+    monkeypatch.setattr(config, "loras_roots", [str(moved_root)], raising=False)
+    reset_root_map_cache()
+    moved_model = moved_root / "sub" / "model.safetensors"
+    assert Path(get_metadata_path(str(moved_model))) == original
+    assert root_mirror_component(str(moved_root)) == pinned
+
+    # Settings now point at the destination and something resolves first: the
+    # destination map is written naming the mirror after the *current* path.
+    get_settings_manager().set("sidecar_storage_path", str(sidecar_root))
+    reset_root_map_cache()
+    before_move = Path(get_metadata_path(str(moved_model)))
+    assert before_move.parent.parent.name != pinned
+    assert not before_move.exists()
+
+    use_case = _make_use_case([str(moved_model)])
+    summary = await use_case.migrate_root(str(first_sidecars), force=True)
+    assert summary["success"] is True
+
+    # The metadata travelled with the tree and is still found under the
+    # pinned identity that names it.
+    relocated = sidecar_root / original.relative_to(first_sidecars)
+    assert relocated.exists()
+    assert json.loads(relocated.read_text(encoding="utf-8")) == {"favorite": True}
+
+    reset_root_map_cache()
+    assert Path(get_metadata_path(str(moved_model))) == relocated
 
 
 @pytest.mark.asyncio

@@ -2769,6 +2769,9 @@
             "filename_conflicts": {
                 "title": "Konflikte durch doppelte Dateinamen"
             },
+            "sidecar_mirror_orphans": {
+                "title": "[TODO: Translate] Centralized Sidecars"
+            },
             "ui_version": {
                 "title": "UI-Version"
             }

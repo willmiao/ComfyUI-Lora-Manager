@@ -2769,6 +2769,9 @@
             "filename_conflicts": {
                 "title": "התנגשויות שמות קבצים כפולים"
             },
+            "sidecar_mirror_orphans": {
+                "title": "[TODO: Translate] Centralized Sidecars"
+            },
             "ui_version": {
                 "title": "גרסת הממשק"
             }

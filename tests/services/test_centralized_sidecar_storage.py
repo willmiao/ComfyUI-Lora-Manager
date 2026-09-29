@@ -19,11 +19,20 @@ from py.services.model_lifecycle_service import (
 from py.services.pending_delete_service import PendingDeleteService
 from py.services.settings_manager import get_settings_manager
 from py.utils.metadata_manager import MetadataManager
-from py.utils.sidecar_paths import root_mirror_component
+from py.utils.sidecar_paths import reset_root_map_cache, root_mirror_component
 
 
 def _normalize(path) -> str:
     return str(path).replace(os.sep, "/")
+
+
+@pytest.fixture(autouse=True)
+def _isolate_root_map():
+    """Root identities are cached per sidecar root; keep tests independent."""
+
+    reset_root_map_cache()
+    yield
+    reset_root_map_cache()
 
 
 @pytest.fixture
@@ -59,11 +68,10 @@ def centralized(library_root: Path, tmp_path: Path) -> Path:
 
 
 def _mirror_dir(library_root: Path, sidecar_root: Path, *rel: str) -> Path:
-    """Expected mirror directory for a library-relative path."""
+    """Expected mirror directory for a root-relative path."""
 
-    library = get_settings_manager().get_active_library_name()
-    component = root_mirror_component(str(library_root))
-    return sidecar_root.joinpath(library, component, *rel)
+    component = root_mirror_component(str(library_root), sidecar_root=str(sidecar_root))
+    return sidecar_root.joinpath(component, *rel)
 
 
 def _write_sidecar(
