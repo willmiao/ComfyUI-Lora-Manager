@@ -968,6 +968,10 @@ export function addTagsWidget(node, name, opts, callback, wheelSensitivity = 0.0
     getMinHeight: () => MIN_HEIGHT,
     hideOnZoom: true,
     selectOn: ["click", "focus"],
+    // Keep this DOM widget out of the right-side Properties Panel: the panel
+    // falls back to WidgetLegacy for unknown widget types and writes
+    // widget.width, which squashes the canvas overlay (frontend #11574).
+    hideInPanel: true,
   });
 
   widget.value = initialTagsData;
