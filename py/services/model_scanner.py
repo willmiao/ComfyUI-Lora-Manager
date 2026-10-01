@@ -161,6 +161,7 @@ class ModelScanner:
         self._persistent_cache = get_persistent_cache()
         self._name_display_mode = self._resolve_name_display_mode()
         self._cancel_requested = False  # Flag for cancellation
+        self._move_locks: Dict[str, asyncio.Lock] = {}  # Per-source-file move locks
         self._autov3_backfill_scheduled = False  # One-time AutoV3 backfill trigger per process
         # Guard against concurrent all-folders backfill walks (cold fallback
         # for persisted snapshots that predate folder recording).
@@ -2408,18 +2409,31 @@ class ModelScanner:
     
     async def move_model(self, source_path: str, target_path: str) -> Optional[Dict[str, Any]]:
         """Move a model and its associated files to a new location
-        
+
         Args:
             source_path: Original file path
             target_path: Target directory path
-            
+
         Returns:
             Optional[str]: New file path if successful, None if failed
         """
+        source_path = source_path.replace(os.sep, '/')
+        target_path = target_path.replace(os.sep, '/')
+
+        # Serialize moves per source file: concurrent requests for the same
+        # model (auto-organize racing a manual move, duplicate clicks) must
+        # not interleave, or the second mover hits a missing source file.
+        lock_key = os.path.normcase(os.path.abspath(os.path.normpath(source_path)))
+        lock = self._move_locks.setdefault(lock_key, asyncio.Lock())
         try:
-            source_path = source_path.replace(os.sep, '/')
-            target_path = target_path.replace(os.sep, '/')
-            
+            async with lock:
+                return await self._move_model_locked(source_path, target_path)
+        finally:
+            if not lock.locked():
+                self._move_locks.pop(lock_key, None)
+
+    async def _move_model_locked(self, source_path: str, target_path: str) -> Optional[Dict[str, Any]]:
+        try:
             file_ext = os.path.splitext(source_path)[1]
             
             if not file_ext or file_ext.lower() not in self.file_extensions:
@@ -2450,10 +2464,20 @@ class ModelScanner:
             if final_filename != f"{base_name}{file_ext}":
                 logger.info(f"Renamed {base_name}{file_ext} to {final_filename} to avoid filename conflict")
 
-            real_source = os.path.realpath(source_path)
-            real_target = os.path.realpath(target_file)
-            
-            shutil.move(real_source, real_target)
+            # Business paths (abspath, symlinks NOT resolved) per project
+            # convention: file mutations must operate on the paths as they
+            # appear under the configured model roots.
+            move_source = os.path.abspath(source_path)
+            move_target = os.path.abspath(target_file)
+
+            if not os.path.exists(move_source):
+                # The source is gone — typically a previous move already
+                # succeeded but the cache/metadata were left pointing at the
+                # old path. Repair that state instead of failing.
+                natural_target = os.path.join(target_path, f"{base_name}{file_ext}").replace(os.sep, '/')
+                return await self._reconcile_already_moved(source_path, [target_file, natural_target])
+
+            shutil.move(move_source, move_target)
             
             # Move all associated files with the same base name
             source_metadata = None
@@ -2532,7 +2556,70 @@ class ModelScanner:
         except Exception as e:
             logger.error(f"Error moving model: {e}", exc_info=True)
             return None
-    
+
+    async def _reconcile_already_moved(self, source_path: str, target_candidates: List[str]) -> Optional[Dict[str, Any]]:
+        """Repair state when a move's source file is already gone.
+
+        A previous move may have relocated the file while the cache/metadata
+        still point at the old path (crash mid-move, concurrent request, or
+        external tools). If the model is found at its new location, update
+        the cache and metadata to match reality instead of failing.
+        """
+        candidates: List[str] = []
+        source_hash = self.get_hash_by_path(source_path)
+        if source_hash:
+            indexed_path = self.get_path_by_hash(source_hash)
+            if indexed_path:
+                candidates.append(indexed_path)
+        candidates.extend(target_candidates)
+
+        for candidate in candidates:
+            if not candidate or os.path.normpath(candidate) == os.path.normpath(source_path):
+                continue
+            if not os.path.exists(os.path.abspath(candidate)):
+                continue
+
+            new_path = candidate.replace(os.sep, '/')
+            logger.info(
+                f"Move source {source_path} no longer exists; the model is already "
+                f"at {new_path}. Reconciling cache and metadata."
+            )
+
+            cache = await self.get_cached_data()
+            existing_at_target = next((item for item in cache.raw_data if item['file_path'] == new_path), None)
+            if existing_at_target is not None:
+                # Cache already tracks the moved file (a previous move updated
+                # it); just drop the stale source entry without appending a
+                # duplicate.
+                await self.update_single_model_cache(source_path, new_path, None)
+                return {"new_path": new_path, "cache_entry": existing_at_target}
+
+            metadata = None
+            metadata_path = get_metadata_path(new_path)
+            if os.path.exists(metadata_path):
+                metadata = await self._update_metadata_paths(metadata_path, new_path)
+
+            if metadata is None:
+                # No sidecar at the new location — reuse the stale cache entry
+                # so the model card keeps its data under the corrected path.
+                existing_item = next((item for item in cache.raw_data if item['file_path'] == source_path), None)
+                if existing_item:
+                    metadata = dict(existing_item)
+                    metadata['file_path'] = new_path
+                    metadata['file_name'] = os.path.splitext(os.path.basename(new_path))[0]
+
+            update_result = await self.update_single_model_cache(source_path, new_path, metadata, recalculate_type=True)
+            return {
+                "new_path": new_path,
+                "cache_entry": update_result if isinstance(update_result, dict) else None,
+            }
+
+        logger.error(
+            f"Cannot move model: source file not found: {source_path} "
+            f"(already moved or deleted outside LoRA Manager?)"
+        )
+        return None
+
     async def _update_metadata_paths(self, metadata_path: str, model_path: str) -> Optional[Dict[str, Any]]:
         """Update file paths in metadata file"""
         try:

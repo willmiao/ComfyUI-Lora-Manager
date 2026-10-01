@@ -164,6 +164,7 @@ def _make_move_scanner(ckpt_root: Path, unet_root: Path) -> CheckpointScanner:
     scanner._persistent_cache = MagicMock()
     scanner._name_display_mode = "model_name"
     scanner._cancel_requested = False
+    scanner._move_locks = {}
     scanner._all_folders_backfill_running = False
     roots = [str(ckpt_root), str(unet_root)]
     scanner.get_model_roots = lambda: roots
