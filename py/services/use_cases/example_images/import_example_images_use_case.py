@@ -29,6 +29,7 @@ class ImportExampleImagesUseCase:
 
     async def execute(self, request: web.Request) -> Dict[str, Any]:
         model_hash: str | None = None
+        model_path: str | None = None
         files_to_import: List[str] = []
         temp_files: List[str] = []
 
@@ -40,6 +41,8 @@ class ImportExampleImagesUseCase:
                 first_field = cast(BodyPartReader, first_field_raw) if first_field_raw is not None else None
                 if first_field and first_field.name == "model_hash":
                     model_hash = await first_field.text()
+                elif first_field and first_field.name == "model_path":
+                    model_path = await first_field.text()
                 else:
                     # Support clients that send files first and hash later
                     if first_field is not None:
@@ -49,12 +52,21 @@ class ImportExampleImagesUseCase:
                     field = cast(BodyPartReader, raw_field)
                     if field.name == "model_hash" and not model_hash:
                         model_hash = await field.text()
+                    elif field.name == "model_path" and not model_path:
+                        model_path = await field.text()
                     elif field.name == "files":
                         await self._collect_upload_file(field, files_to_import, temp_files)
             else:
                 data = await request.json()
                 model_hash = data.get("model_hash")
+                model_path = data.get("model_path")
                 files_to_import = list(data.get("file_paths", []))
+
+            # Models with a deferred hash (checkpoints, Other) send an empty
+            # model_hash; locate them by file path and compute the hash on
+            # demand, since example-image folders are keyed by hash.
+            if not model_hash and model_path:
+                model_hash = await self._processor.resolve_hash_for_file_path(model_path)
 
             if not model_hash:
                 raise ImportExampleImagesValidationError("Missing model_hash parameter")

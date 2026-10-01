@@ -183,6 +183,7 @@ def stub_scanners(monkeypatch: pytest.MonkeyPatch, tmp_path) -> StubScanner:
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_lora_scanner", classmethod(_return_scanner))
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_checkpoint_scanner", classmethod(_return_scanner))
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_embedding_scanner", classmethod(_return_scanner))
+    monkeypatch.setattr(processor_module.ServiceRegistry, "get_other_scanner", classmethod(_return_scanner))
 
     return scanner
 
@@ -240,6 +241,7 @@ async def test_import_images_raises_when_model_not_found(monkeypatch: pytest.Mon
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_lora_scanner", classmethod(_empty_scanner))
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_checkpoint_scanner", classmethod(_empty_scanner))
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_embedding_scanner", classmethod(_empty_scanner))
+    monkeypatch.setattr(processor_module.ServiceRegistry, "get_other_scanner", classmethod(_empty_scanner))
 
     with pytest.raises(processor_module.ExampleImagesImportError):
         await processor_module.ExampleImagesProcessor.import_images("a" * 64, [str(tmp_path / "missing.png")])
@@ -288,6 +290,7 @@ async def test_delete_custom_image_preserves_existing_metadata(monkeypatch: pyte
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_lora_scanner", classmethod(_return_scanner))
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_checkpoint_scanner", classmethod(_return_scanner))
     monkeypatch.setattr(processor_module.ServiceRegistry, "get_embedding_scanner", classmethod(_return_scanner))
+    monkeypatch.setattr(processor_module.ServiceRegistry, "get_other_scanner", classmethod(_return_scanner))
 
     model_folder = get_model_folder(model_hash)
     os.makedirs(model_folder, exist_ok=True)
@@ -329,3 +332,135 @@ async def test_delete_custom_image_preserves_existing_metadata(monkeypatch: pyte
     _, _, updated_metadata = scanner.updated[-1]
     assert updated_metadata["civitai"]["images"] == existing_metadata["civitai"]["images"]
     assert updated_metadata["civitai"]["customImages"] == []
+
+
+def _patch_scanner_getters(monkeypatch: pytest.MonkeyPatch, **scanners) -> None:
+    """Point every model-scanner getter at the given stub (empty by default)."""
+
+    async def _empty(cls=None):
+        return StubScanner([])
+
+    for name in (
+        "get_lora_scanner",
+        "get_checkpoint_scanner",
+        "get_embedding_scanner",
+        "get_other_scanner",
+    ):
+        stub = scanners.get(name)
+        if stub is None:
+            getter = _empty
+        else:
+            async def getter(cls=None, _stub=stub):  # noqa: B023 - bound per iteration
+                return _stub
+        monkeypatch.setattr(
+            processor_module.ServiceRegistry, name, classmethod(getter)
+        )
+
+
+@pytest.mark.asyncio
+async def test_import_images_finds_model_in_other_scanner(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """Other-category models (VAEs, text encoders) live in the Other scanner;
+    importing example images must search it too."""
+    settings_manager = get_settings_manager()
+    settings_manager.settings["example_images_path"] = str(tmp_path / "examples")
+    settings_manager.settings["libraries"] = {"default": {}}
+    settings_manager.settings["active_library"] = "default"
+
+    model_hash = "b" * 64
+    model_data = {
+        "sha256": model_hash,
+        "model_name": "VAE",
+        "file_path": str(tmp_path / "vae.safetensors"),
+        "civitai": {},
+    }
+    other_scanner = StubScanner([model_data])
+    _patch_scanner_getters(monkeypatch, get_other_scanner=other_scanner)
+
+    source_file = tmp_path / "upload.png"
+    source_file.write_bytes(b"PNG data")
+    monkeypatch.setattr(
+        processor_module.ExampleImagesProcessor,
+        "generate_short_id",
+        staticmethod(lambda: "short"),
+    )
+
+    recorded: Dict[str, Any] = {}
+
+    async def fake_update_metadata(model_hash, model_data, scanner, paths):
+        recorded["scanner"] = scanner
+        return [], []
+
+    monkeypatch.setattr(
+        processor_module.MetadataUpdater,
+        "update_metadata_after_import",
+        staticmethod(fake_update_metadata),
+    )
+
+    result = await processor_module.ExampleImagesProcessor.import_images(
+        model_hash, [str(source_file)]
+    )
+
+    assert result["success"] is True
+    assert result["model_hash"] == model_hash
+    assert recorded["scanner"] is other_scanner
+
+
+@pytest.mark.asyncio
+async def test_resolve_hash_for_file_path_computes_pending_hash(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    """A model whose hash is still pending gets it computed on demand."""
+    model_path = str(tmp_path / "encoder.safetensors").replace(os.sep, "/")
+    item = {"file_path": model_path, "sha256": "", "hash_status": "pending"}
+
+    calculated: list[str] = []
+
+    class PendingScanner(StubScanner):
+        async def calculate_hash_for_model(self, file_path: str):
+            calculated.append(file_path)
+            return "f" * 64
+
+    _patch_scanner_getters(monkeypatch, get_other_scanner=PendingScanner([item]))
+
+    result = await processor_module.ExampleImagesProcessor.resolve_hash_for_file_path(
+        model_path
+    )
+
+    assert result == "f" * 64
+    assert calculated == [model_path]
+
+
+@pytest.mark.asyncio
+async def test_resolve_hash_for_file_path_returns_completed_hash_without_recompute(
+    monkeypatch: pytest.MonkeyPatch, tmp_path
+) -> None:
+    model_path = str(tmp_path / "model.safetensors").replace(os.sep, "/")
+    item = {"file_path": model_path, "sha256": "c" * 64, "hash_status": "completed"}
+
+    class EagerScanner(StubScanner):
+        async def calculate_hash_for_model(self, file_path: str):  # pragma: no cover
+            raise AssertionError("must not recompute a completed hash")
+
+    _patch_scanner_getters(monkeypatch, get_lora_scanner=EagerScanner([item]))
+
+    result = await processor_module.ExampleImagesProcessor.resolve_hash_for_file_path(
+        model_path
+    )
+
+    assert result == "c" * 64
+
+
+@pytest.mark.asyncio
+async def test_resolve_hash_for_file_path_unknown_file_returns_empty(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _patch_scanner_getters(monkeypatch)
+
+    assert (
+        await processor_module.ExampleImagesProcessor.resolve_hash_for_file_path(
+            "/models/nope.safetensors"
+        )
+        == ""
+    )

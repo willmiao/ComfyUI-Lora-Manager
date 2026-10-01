@@ -1162,10 +1162,20 @@ async function handleImportFiles(files, modelHash, importContainer) {
         let successCount = 0;
         const errors = [];
 
+        // The showcase section carries the freshest hash (an import may have
+        // resolved a deferred hash) plus the file path the backend needs to
+        // locate models whose hash is still pending.
+        const showcaseSection = document.querySelector('.showcase-section');
+        const modelPath = showcaseSection?.dataset.filepath || '';
+        const currentHash = showcaseSection?.dataset.modelHash || modelHash;
+
         for (const file of validFiles) {
             try {
                 const formData = new FormData();
-                formData.append('model_hash', modelHash);
+                formData.append('model_hash', currentHash);
+                if (modelPath) {
+                    formData.append('model_path', modelPath);
+                }
                 formData.append('files', file);
 
                 const response = await fetch('/api/lm/import-example-images', {
@@ -1192,8 +1202,17 @@ async function handleImportFiles(files, modelHash, importContainer) {
 
         const result = lastSuccessResult;
 
+        // A model with a deferred hash (checkpoint / Other) is imported via
+        // model_path; the backend resolves and returns the real hash. Persist
+        // it so every follow-up (file list, NSFW toggle, delete, re-render)
+        // targets the hash-keyed example folder.
+        const effectiveHash = result.model_hash || currentHash;
+        if (showcaseSection && effectiveHash) {
+            showcaseSection.dataset.modelHash = effectiveHash;
+        }
+
         // Get updated local files
-        const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${modelHash}`);
+        const updatedFilesResponse = await fetch(`/api/lm/example-image-files?model_hash=${effectiveHash}`);
         const updatedFilesResult = await updatedFilesResponse.json();
 
         if (!updatedFilesResult.success) {
@@ -1221,7 +1240,7 @@ async function handleImportFiles(files, modelHash, importContainer) {
             }
 
             // Initialize the import UI for the new content
-            initExampleImport(modelHash, showcaseTab);
+            initExampleImport(effectiveHash, showcaseTab);
 
             if (errors.length > 0) {
                 showToast('toast.import.imagesPartial', { success: successCount, failed: errors.length }, 'warning');
