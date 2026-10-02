@@ -353,6 +353,14 @@
       "placeholder": "Leave empty to use aria2c from PATH"
     },
     "aria2HelpLink": "Learn how to set up the aria2 download backend",
+    "unknownBaseModelRouting": {
+      "label": "Unknown base model routing",
+      "help": "Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+      "options": {
+        "diffusionModel": "Diffusion models (recommended)",
+        "checkpoint": "Checkpoints"
+      }
+    },
     "civitaiHostBanner": {
       "title": "CivitAI host preference available",
       "content": "CivitAI now uses civitai.com for SFW content and civitai.red for unrestricted content. You can change which site opens by default in Settings.",

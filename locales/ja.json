@@ -353,6 +353,14 @@
             "placeholder": "空欄のままにすると PATH 上の aria2c を使用します"
         },
         "aria2HelpLink": "aria2 ダウンロードバックエンドの設定方法",
+        "unknownBaseModelRouting": {
+            "label": "[TODO: Translate] Unknown base model routing",
+            "help": "[TODO: Translate] Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+            "options": {
+                "diffusionModel": "[TODO: Translate] Diffusion models (recommended)",
+                "checkpoint": "[TODO: Translate] Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
             "title": "CivitAI ホスト設定を利用できます",
             "content": "CivitAI は現在、SFW コンテンツには civitai.com、制限なしコンテンツには civitai.red を使用しています。設定で既定で開くサイトを変更できます。",

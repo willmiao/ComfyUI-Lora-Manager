@@ -1670,6 +1670,9 @@ class DownloadManager:
                 model_type,
                 file_types=(f.get("type", "") for f in version_info.get("files", [])),
                 base_model=base_model_value,
+                unknown_base_model_default=get_settings_manager().get(
+                    "unknown_base_model_routing", "diffusion_model"
+                ),
             )
 
             # Existence check after the metadata fetch (#1058):

@@ -371,12 +371,46 @@ DIFFUSION_MODEL_BASE_MODELS = frozenset(
         # Other diffusion models
         "Ernie",
         "Ernie Turbo",
+        "MiniMax H3",
         "Nucleus",
         "Qwen",
         "ZImageBase",
         "ZImageTurbo",
         # Krea 2 — loaded via UNETLoader in ComfyUI
         "Krea 2",
+    ]
+)
+
+# baseModel values from CivitAI that are true full checkpoints (loaded via
+# CheckpointLoaderSimple in ComfyUI). New DiT families appear on CivitAI all
+# the time, so download routing inverts the fallback: anything NOT in this
+# closed set (and not a known diffusion model) is treated as a diffusion
+# model by default (see py/services/download_routing.py).
+# "Pony V7" is deliberately excluded: it is not an SDXL-derivative full
+# checkpoint, so it follows the unknown-base-model default (diffusion).
+CHECKPOINT_BASE_MODELS = frozenset(
+    [
+        # Stable Diffusion 1.x
+        "SD 1.4",
+        "SD 1.5",
+        "SD 1.5 LCM",
+        "SD 1.5 Hyper",
+        # Stable Diffusion 2.x
+        "SD 2.0",
+        "SD 2.1",
+        # Stable Diffusion 3.x
+        "SD 3",
+        "SD 3.5",
+        "SD 3.5 Medium",
+        "SD 3.5 Large",
+        "SD 3.5 Large Turbo",
+        # SDXL and its full-checkpoint derivatives
+        "SDXL 1.0",
+        "SDXL Lightning",
+        "SDXL Hyper",
+        "Pony",
+        "Illustrious",
+        "NoobAI",
     ]
 )
 

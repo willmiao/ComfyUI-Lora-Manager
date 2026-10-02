@@ -2209,7 +2209,7 @@ async def test_download_falls_back_to_rest_name_when_mini_fails(
     metadata_provider.payload = {
         "id": 42,
         "model": {"type": "Checkpoint", "tags": ["fantasy"]},
-        "baseModel": "BaseModel",
+        "baseModel": "SDXL 1.0",
         "creator": {"username": "Author"},
         "files": [
             {

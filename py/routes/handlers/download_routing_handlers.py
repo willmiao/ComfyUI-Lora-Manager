@@ -96,10 +96,15 @@ class DownloadRoutingHandler:
                 }
             )
 
+        from ...services.settings_manager import get_settings_manager
+
         is_diffusion = is_diffusion_model_download(
             model_type,
             file_types=(str(t) for t in file_types),
             base_model=base_model,
+            unknown_base_model_default=get_settings_manager().get(
+                "unknown_base_model_routing", "diffusion_model"
+            ),
         )
         return web.json_response(
             {

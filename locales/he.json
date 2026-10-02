@@ -353,6 +353,14 @@
             "placeholder": "השאר ריק כדי להשתמש ב-aria2c מתוך ה-PATH"
         },
         "aria2HelpLink": "למד כיצד להגדיר את מנוע ההורדה aria2",
+        "unknownBaseModelRouting": {
+            "label": "[TODO: Translate] Unknown base model routing",
+            "help": "[TODO: Translate] Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+            "options": {
+                "diffusionModel": "[TODO: Translate] Diffusion models (recommended)",
+                "checkpoint": "[TODO: Translate] Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
             "title": "העדפת מארח CivitAI זמינה",
             "content": "CivitAI משתמש כעת ב-civitai.com עבור תוכן SFW וב-civitai.red עבור תוכן ללא הגבלות. ניתן לשנות בהגדרות איזה אתר ייפתח כברירת מחדל.",

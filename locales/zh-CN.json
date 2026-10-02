@@ -353,6 +353,14 @@
             "placeholder": "留空则使用 PATH 中的 aria2c"
         },
         "aria2HelpLink": "了解如何配置 aria2 下载后端",
+        "unknownBaseModelRouting": {
+            "label": "[TODO: Translate] Unknown base model routing",
+            "help": "[TODO: Translate] Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+            "options": {
+                "diffusionModel": "[TODO: Translate] Diffusion models (recommended)",
+                "checkpoint": "[TODO: Translate] Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
             "title": "已提供 CivitAI 站点偏好设置",
             "content": "CivitAI 现在使用 civitai.com 提供 SFW 内容，使用 civitai.red 提供无限制内容。你可以在设置中更改默认打开的站点。",

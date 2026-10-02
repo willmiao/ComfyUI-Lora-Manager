@@ -74,6 +74,42 @@ async def test_regular_checkpoint_stays_on_checkpoint_root():
 
 
 @pytest.mark.asyncio
+async def test_unknown_base_model_routes_to_unet_by_default():
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {
+                "model_type": "checkpoint",
+                "base_model": "Brand New Arch",
+                "file_types": ["Model"],
+            }
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["is_diffusion_model"] is True
+    assert payload["root_kind"] == "unet"
+
+
+@pytest.mark.asyncio
+async def test_unknown_base_model_honors_checkpoint_routing_setting():
+    get_settings_manager().settings["unknown_base_model_routing"] = "checkpoint"
+
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {
+                "model_type": "checkpoint",
+                "base_model": "Brand New Arch",
+                "file_types": ["Model"],
+            }
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["is_diffusion_model"] is False
+    assert payload["root_kind"] == "checkpoint"
+
+
+@pytest.mark.asyncio
 async def test_lora_is_never_diffusion():
     handler = DownloadRoutingHandler()
     response = await handler.get_download_routing(

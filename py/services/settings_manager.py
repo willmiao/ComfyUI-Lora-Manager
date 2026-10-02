@@ -130,6 +130,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "metadata_refresh_skip_paths": [],
     "skip_previously_downloaded_model_versions": False,
     "download_skip_base_models": [],
+    # Routing target for checkpoint downloads whose baseModel is neither a
+    # known diffusion model nor a known full checkpoint (CHECKPOINT_BASE_MODELS).
+    "unknown_base_model_routing": "diffusion_model",
     "backup_auto_enabled": True,
     "backup_retention_count": 5,
     "use_new_license_icons": True,
@@ -1628,6 +1631,16 @@ class SettingsManager:
                 return normalized
         return "alongside"
 
+    @staticmethod
+    def _normalize_unknown_base_model_routing(value: Any) -> str:
+        """Return a valid unknown-base-model routing target, falling back to ``diffusion_model``."""
+
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in ("diffusion_model", "checkpoint"):
+                return normalized
+        return "diffusion_model"
+
     def _refresh_sidecar_storage_config(self) -> None:
         """Rebuild dependent config state after sidecar storage settings change."""
 
@@ -1840,6 +1853,8 @@ class SettingsManager:
             self._migrate_recipes_directory(current_recipes_dir, target_recipes_dir)
         elif key == "sidecar_storage_mode":
             value = self._normalize_sidecar_storage_mode(value)
+        elif key == "unknown_base_model_routing":
+            value = self._normalize_unknown_base_model_routing(value)
         elif key == "sidecar_storage_path":
             value = self._normalize_recipes_path_value(value)
         self.settings[key] = value

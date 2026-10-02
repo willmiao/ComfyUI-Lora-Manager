@@ -13,6 +13,7 @@ import logging
 from typing import Iterable, Optional
 
 from ..utils.constants import (
+    CHECKPOINT_BASE_MODELS,
     CIVITAI_FILE_TYPE_TO_OTHER_SUB_TYPE,
     CIVITAI_TYPE_TO_OTHER_SUB_TYPE,
     DIFFUSION_MODEL_BASE_MODELS,
@@ -24,17 +25,27 @@ logger = logging.getLogger(__name__)
 # model (loaded via UNETLoader in ComfyUI) rather than a full checkpoint.
 DIFFUSION_FILE_TYPES = frozenset({"UNet", "Diffusion Model"})
 
+# Allowed values for the "unknown_base_model_routing" setting / the
+# unknown_base_model_default parameter below.
+ROUTING_DIFFUSION_MODEL = "diffusion_model"
+ROUTING_CHECKPOINT = "checkpoint"
+
 
 def is_diffusion_model_download(
     model_type: str,
     file_types: Iterable[str] = (),
     base_model: str = "",
+    unknown_base_model_default: str = ROUTING_DIFFUSION_MODEL,
 ) -> bool:
     """Return True when a download should be routed to the unet roots.
 
     Only applies to downloads initiated from the checkpoint library.
     Priority: (1) any file has type "UNet" or "Diffusion Model" (the more
-    direct signal from CivitAI), (2) baseModel is a known diffusion model.
+    direct signal from CivitAI), (2) baseModel is a known diffusion model,
+    (3) baseModel is a known full checkpoint -> not diffusion, (4) unknown
+    or empty baseModel -> the ``unknown_base_model_default`` setting, which
+    defaults to diffusion because the set of true checkpoint families is
+    closed while new DiT base models appear all the time.
     """
     if model_type != "checkpoint":
         return False
@@ -54,7 +65,16 @@ def is_diffusion_model_download(
         )
         return True
 
-    return False
+    if base_model in CHECKPOINT_BASE_MODELS:
+        return False
+
+    is_diffusion = unknown_base_model_default != ROUTING_CHECKPOINT
+    logger.info(
+        "baseModel '%s' is unknown, routing to %s folder (unknown_base_model_routing)",
+        base_model,
+        "unet" if is_diffusion else "checkpoint",
+    )
+    return is_diffusion
 
 
 def resolve_other_download_sub_type(

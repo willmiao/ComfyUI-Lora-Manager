@@ -1300,6 +1300,21 @@ def test_setting_download_skip_base_models_normalizes_string_input(manager):
     assert manager.get("download_skip_base_models") == ["SDXL 1.0", "Pony"]
 
 
+def test_unknown_base_model_routing_defaults_to_diffusion_model(manager):
+    assert manager.get("unknown_base_model_routing") == "diffusion_model"
+
+
+def test_unknown_base_model_routing_is_normalized(manager):
+    manager.set("unknown_base_model_routing", "CHECKPOINT")
+    assert manager.get("unknown_base_model_routing") == "checkpoint"
+
+    manager.set("unknown_base_model_routing", "bogus")
+    assert manager.get("unknown_base_model_routing") == "diffusion_model"
+
+    manager.set("unknown_base_model_routing", None)
+    assert manager.get("unknown_base_model_routing") == "diffusion_model"
+
+
 def test_skip_previously_downloaded_model_versions_defaults_false(manager):
     assert manager.get_skip_previously_downloaded_model_versions() is False
 
