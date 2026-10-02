@@ -354,11 +354,11 @@
         },
         "aria2HelpLink": "למד כיצד להגדיר את מנוע ההורדה aria2",
         "unknownBaseModelRouting": {
-            "label": "[TODO: Translate] Unknown base model routing",
-            "help": "[TODO: Translate] Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+            "label": "ניתוב מודל בסיס לא מוכר",
+            "help": "קובע לאן מועברות הורדות של Checkpoint כאשר CivitAI מדווח על מודל בסיס שהוא לא Checkpoint מוכר (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) ולא מודל דיפוזיה מוכר. ארכיטקטורות דיפוזיה חדשות מופיעות לעיתים קרובות, ולכן ניתוב שלהן למודלי דיפוזיה הוא בדרך כלל הנכון.",
             "options": {
-                "diffusionModel": "[TODO: Translate] Diffusion models (recommended)",
-                "checkpoint": "[TODO: Translate] Checkpoints"
+                "diffusionModel": "מודלי דיפוזיה",
+                "checkpoint": "Checkpoints"
             }
         },
         "civitaiHostBanner": {
@@ -2778,7 +2778,7 @@
                 "title": "התנגשויות שמות קבצים כפולים"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "קבצי לוואי מרוכזים"
             },
             "ui_version": {
                 "title": "גרסת הממשק"

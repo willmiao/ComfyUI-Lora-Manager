@@ -354,11 +354,11 @@
         },
         "aria2HelpLink": "Erfahren Sie, wie Sie das aria2-Download-Backend einrichten",
         "unknownBaseModelRouting": {
-            "label": "[TODO: Translate] Unknown base model routing",
-            "help": "[TODO: Translate] Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+            "label": "Routing unbekannter Basismodelle",
+            "help": "Legt fest, wohin Checkpoint-Downloads gehen, wenn CivitAI ein Basismodell meldet, das weder ein bekanntes Checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) noch ein bekanntes Diffusionsmodell ist. Neue Diffusionsarchitekturen erscheinen häufig, daher ist das Routing zu Diffusionsmodellen meist korrekt.",
             "options": {
-                "diffusionModel": "[TODO: Translate] Diffusion models (recommended)",
-                "checkpoint": "[TODO: Translate] Checkpoints"
+                "diffusionModel": "Diffusionsmodelle",
+                "checkpoint": "Checkpoints"
             }
         },
         "civitaiHostBanner": {
@@ -2778,7 +2778,7 @@
                 "title": "Konflikte durch doppelte Dateinamen"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "Zentralisierte Sidecar-Dateien"
             },
             "ui_version": {
                 "title": "UI-Version"

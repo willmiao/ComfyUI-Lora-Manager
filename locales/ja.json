@@ -354,11 +354,11 @@
         },
         "aria2HelpLink": "aria2 ダウンロードバックエンドの設定方法",
         "unknownBaseModelRouting": {
-            "label": "[TODO: Translate] Unknown base model routing",
-            "help": "[TODO: Translate] Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
+            "label": "不明なベースモデルの振り分け",
+            "help": "CivitAIが報告するベースモデルが既知のCheckpoint（SD 1.x/2.x/3.x、SDXL、Pony、Illustrious、NoobAI）でも既知のDiffusion Modelでもない場合に、Checkpointのダウンロードの保存先を決定します。新しい拡散アーキテクチャは頻繁に登場するため、通常はDiffusion Modelへの振り分けが正しい選択です。",
             "options": {
-                "diffusionModel": "[TODO: Translate] Diffusion models (recommended)",
-                "checkpoint": "[TODO: Translate] Checkpoints"
+                "diffusionModel": "Diffusion Model",
+                "checkpoint": "Checkpoint"
             }
         },
         "civitaiHostBanner": {
@@ -2778,7 +2778,7 @@
                 "title": "ファイル名重複競合"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "集中保存のサイドカーファイル"
             },
             "ui_version": {
                 "title": "UI バージョン"
