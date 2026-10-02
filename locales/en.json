@@ -357,7 +357,7 @@
       "label": "Unknown base model routing",
       "help": "Decides where checkpoint downloads go when CivitAI reports a base model that is neither a known checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) nor a known diffusion model. New diffusion architectures appear frequently, so routing them to diffusion models is usually correct.",
       "options": {
-        "diffusionModel": "Diffusion models (recommended)",
+        "diffusionModel": "Diffusion models",
         "checkpoint": "Checkpoints"
       }
     },
