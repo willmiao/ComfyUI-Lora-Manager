@@ -9,6 +9,8 @@ with ``success: false``, not 404. The browser extension's apiFetch treats any
 import json
 import logging
 from pathlib import Path
+from types import SimpleNamespace
+from unittest.mock import AsyncMock
 
 import pytest
 from aiohttp import web
@@ -184,3 +186,83 @@ async def test_retry_failed_history_returns_success(
     queue = await queue_service.get_queue()
     assert len(queue) == 1
     assert queue[0]["status"] == "queued"
+
+
+# ----------------------------------------------------------------------
+# Structured 429 rate-limit responses (download queue contract)
+# ----------------------------------------------------------------------
+
+_RATE_LIMITED_RESULT = {
+    "success": False,
+    "reason": "rate_limited",
+    "retry_after": 120,
+    "error": "Download rate limited (429), retry after 120s",
+    "download_id": "dl-1",
+}
+
+
+def _make_download_handler(result: dict) -> ModelDownloadHandler:
+    return ModelDownloadHandler(
+        ws_manager=None,  # pyright: ignore[reportArgumentType] - unused by download endpoints
+        logger=logging.getLogger("test-download-rate-limit"),
+        download_use_case=SimpleNamespace(execute=AsyncMock(return_value=result)),  # pyright: ignore[reportArgumentType]
+        download_coordinator=None,  # pyright: ignore[reportArgumentType] - unused by download endpoints
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_model_post_returns_429_when_rate_limited() -> None:
+    """POST /download-model maps reason="rate_limited" to HTTP 429."""
+    handler = _make_download_handler(dict(_RATE_LIMITED_RESULT))
+    request = SimpleNamespace(json=AsyncMock(return_value={"model_id": 1}))
+
+    response = await handler.download_model(request)
+
+    assert response.status == 429
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert payload["reason"] == "rate_limited"
+    assert payload["retry_after"] == 120
+    assert payload["error"]
+
+
+@pytest.mark.asyncio
+async def test_download_model_post_keeps_500_for_other_failures() -> None:
+    handler = _make_download_handler({"success": False, "error": "boom"})
+    request = SimpleNamespace(json=AsyncMock(return_value={"model_id": 1}))
+
+    response = await handler.download_model(request)
+
+    assert response.status == 500
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "reason" not in payload
+
+
+@pytest.mark.asyncio
+async def test_download_model_get_returns_429_when_rate_limited() -> None:
+    """GET /download-model-get (extension queue driver) gets the same 429."""
+    handler = _make_download_handler(dict(_RATE_LIMITED_RESULT))
+    request = _queue_request("/api/lm/download-model-get", {"model_id": "1"})
+
+    response = await handler.download_model_get(request)
+
+    assert response.status == 429
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert payload["reason"] == "rate_limited"
+    assert payload["retry_after"] == 120
+    assert payload["error"]
+
+
+@pytest.mark.asyncio
+async def test_download_model_get_keeps_500_for_other_failures() -> None:
+    handler = _make_download_handler({"success": False, "error": "boom"})
+    request = _queue_request("/api/lm/download-model-get", {"model_id": "1"})
+
+    response = await handler.download_model_get(request)
+
+    assert response.status == 500
+    payload = json.loads(response.text)
+    assert payload["success"] is False
+    assert "reason" not in payload

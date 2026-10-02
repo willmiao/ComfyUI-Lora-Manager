@@ -44,7 +44,8 @@ from .download_routing import is_diffusion_model_download, resolve_other_downloa
 from .settings_manager import get_settings_manager
 from .metadata_service import get_default_metadata_provider, get_metadata_provider
 from .downloader import get_downloader, DownloadProgress, DownloadStreamControl
-from .errors import RateLimitError
+from .errors import DownloadRateLimitError, RateLimitError
+from .rate_limit_coordinator import RateLimitCoordinator
 from .aria2_downloader import Aria2Error, get_aria2_downloader
 from .aria2_transfer_state import Aria2TransferStateStore
 from .download_queue_service import DownloadQueueService
@@ -59,6 +60,15 @@ CIVITAI_DOWNLOAD_URL_PREFIXES = (
     "https://civitai.com/api/download/",
     "https://civitai.red/api/download/",
 )
+
+# Hosts a model download may hit (metadata + file transfer). The pre-flight
+# cooldown gate consults the RateLimitCoordinator for these before a download
+# occupies a concurrency slot.
+DOWNLOAD_PREFLIGHT_HOSTS = ("civitai.com", "civitai.red", "civarchive.com")
+
+# Fallback retry_after when neither the vendor nor the coordinator can supply
+# a number (matches the Retry-After parsing default in downloader.py).
+DEFAULT_RATE_LIMIT_RETRY_AFTER_SECONDS = 60
 
 
 # File types that are never the intended download target even when CivitAI
@@ -203,11 +213,30 @@ class DownloadManager:
                 )
             except Aria2Error as exc:
                 logger.error("aria2 download failed for %s: %s", download_url, exc)
+                # Best-effort 429 detection: aria2 reports HTTP status errors
+                # via its error message (e.g. "status=429") without exposing
+                # the vendor's Retry-After. Surface the structured rate-limit
+                # error so the queue contract behaves the same as the python
+                # backend; the coordinator backoff supplies the wait time.
+                message = str(exc)
+                if "429" in message or "rate limit" in message.lower():
+                    host = self._url_host(download_url)
+                    coordinator = await RateLimitCoordinator.get_instance()
+                    if coordinator.enabled:
+                        coordinator.register_rate_limit(host, None)
+                    raise DownloadRateLimitError(
+                        f"Download rate limited (429): {message}",
+                        retry_after=None,
+                        host=host,
+                    ) from exc
                 return False, str(exc)
 
         download_kwargs: Dict[str, Any] = {
             "progress_callback": progress_callback,
             "use_auth": use_auth,
+            # The model download queue contract requires structured 429
+            # propagation (reason="rate_limited"), not a plain error string.
+            "raise_on_rate_limit": True,
         }
 
         if pause_control is not None:
@@ -215,6 +244,88 @@ class DownloadManager:
 
         downloader = await get_downloader()
         return await downloader.download_file(download_url, save_path, **download_kwargs)
+
+    @staticmethod
+    def _url_host(url: str) -> str:
+        """Extract the normalized hostname from a URL (fallback: ``unknown``)."""
+        hostname = urlparse(url).hostname
+        return hostname.lower() if hostname else "unknown"
+
+    async def _preflight_rate_limit_error(self) -> Optional[DownloadRateLimitError]:
+        """Fail fast when a download target host is in a rate-limit cooldown.
+
+        Consults the RateLimitCoordinator's per-host cooldown state for the
+        hosts a model download may hit. Runs BEFORE the concurrency semaphore
+        is acquired so queued items never occupy a slot during a 429 episode.
+        Deliberately non-blocking: the caller is expected to pace itself (the
+        companion extension auto-pauses on the structured 429 response).
+        """
+        coordinator = await RateLimitCoordinator.get_instance()
+        worst_host: Optional[str] = None
+        worst_remaining = 0.0
+        for host in DOWNLOAD_PREFLIGHT_HOSTS:
+            remaining = coordinator.remaining_seconds(host)
+            if remaining > worst_remaining:
+                worst_host = host
+                worst_remaining = remaining
+        if worst_host is None or worst_remaining <= 0:
+            return None
+        retry_after = max(1, int(worst_remaining + 0.5))
+        return DownloadRateLimitError(
+            f"Download rate limited: '{worst_host}' is in cooldown, "
+            f"retry after {retry_after}s",
+            retry_after=worst_remaining,
+            host=worst_host,
+        )
+
+    async def _handle_rate_limited_download(
+        self,
+        task_id: str,
+        exc: RateLimitError,
+    ) -> Dict[str, Any]:
+        """Build the structured rate-limit result for a failed download.
+
+        The queue row goes back to ``queued`` (NOT history) so a later retry
+        simply starts the download again — this is what lets the companion
+        extension auto-pause the queue during a 429 episode and resume it
+        after ``retry_after`` seconds.
+        """
+        retry_after = exc.retry_after
+        host = getattr(exc, "host", None) or exc.provider
+        if retry_after is None or retry_after <= 0:
+            # The coordinator clamps/backoffs via register_rate_limit, so its
+            # remaining cooldown supplies the number when the vendor didn't.
+            coordinator = await RateLimitCoordinator.get_instance()
+            remaining = coordinator.remaining_seconds(host)
+            if remaining > 0:
+                retry_after = remaining
+        if retry_after is None or retry_after <= 0:
+            retry_after = float(DEFAULT_RATE_LIMIT_RETRY_AFTER_SECONDS)
+        retry_after_seconds = max(1, int(retry_after + 0.5))
+
+        message = str(exc) or (
+            f"Download rate limited, retry after {retry_after_seconds}s"
+        )
+
+        if task_id in self._active_downloads:
+            self._active_downloads[task_id]["status"] = "queued"
+            self._active_downloads[task_id]["error"] = message
+            self._active_downloads[task_id]["bytes_per_second"] = 0.0
+
+        try:
+            queue_service = await DownloadQueueService.get_instance()
+            await queue_service.update_status(task_id, "queued", error=message)
+        except Exception:
+            logger.warning(
+                "Failed to re-queue rate-limited download %s", task_id, exc_info=True
+            )
+
+        return {
+            "success": False,
+            "reason": "rate_limited",
+            "retry_after": retry_after_seconds,
+            "error": message,
+        }
 
     async def _get_lora_scanner(self):
         """Get the lora scanner from registry"""
@@ -558,6 +669,15 @@ class DownloadManager:
                     original_callback, snapshot, progress_value
                 )
 
+        # Pre-flight cooldown gate: fail fast (without holding a semaphore
+        # slot) when a target host is still cooling down from an earlier 429.
+        preflight_error = await self._preflight_rate_limit_error()
+        if preflight_error is not None:
+            logger.info(
+                "Download %s skipped: %s", task_id, preflight_error
+            )
+            return await self._handle_rate_limited_download(task_id, preflight_error)
+
         # Acquire semaphore to limit concurrent downloads
         try:
             async with self._download_semaphore:
@@ -662,6 +782,12 @@ class DownloadManager:
 
                     logger.info(f"Download cancelled for task {task_id}")
                     raise
+                except RateLimitError as e:
+                    # 429 (real vendor response or cooldown gate): re-queue
+                    # instead of completing as failed so a later retry just
+                    # starts the download again.
+                    logger.info(f"Download rate limited for task {task_id}: {e}")
+                    return await self._handle_rate_limited_download(task_id, e)
                 except Exception as e:
                     # Handle other errors
                     logger.error(
@@ -2115,6 +2241,10 @@ class DownloadManager:
 
             return result
 
+        except RateLimitError:
+            # Structured 429 propagation must reach _download_with_semaphore
+            # unmodified so the queue row is re-queued instead of failed.
+            raise
         except Exception as e:
             logger.error(f"Error in download_from_civitai: {e}", exc_info=True)
             # Check if this might be an early access error
@@ -2837,6 +2967,10 @@ class DownloadManager:
 
             return {"success": True}
 
+        except RateLimitError:
+            # Structured 429 propagation must reach _download_with_semaphore
+            # unmodified so the queue row is re-queued instead of failed.
+            raise
         except Exception as e:
             logger.error(f"Error in _execute_download: {e}", exc_info=True)
             cleanup_targets = {

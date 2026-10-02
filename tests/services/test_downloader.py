@@ -5,7 +5,20 @@ from typing import Sequence
 
 import pytest
 
+from py.services.connectivity_guard import ConnectivityGuard
 from py.services.downloader import Downloader
+from py.services.errors import DownloadRateLimitError
+from py.services.rate_limit_coordinator import RateLimitCoordinator
+
+
+@pytest.fixture(autouse=True)
+def _reset_rate_limit_singletons():
+    """429 handling mutates the global coordinator/guard; isolate per test."""
+    RateLimitCoordinator._instance = None
+    ConnectivityGuard._instance = None
+    yield
+    RateLimitCoordinator._instance = None
+    ConnectivityGuard._instance = None
 
 
 class FakeStream:
@@ -297,3 +310,105 @@ async def test_disable_netrc_auth_ignores_netrc_file(tmp_path, monkeypatch):
 
         _disable_netrc_auth(session)
         assert session._get_netrc_auth("civitai.red") is None
+
+
+@pytest.mark.asyncio
+async def test_download_file_rate_limit_raises_structured_error_when_enabled(tmp_path):
+    """With raise_on_rate_limit=True a 429 raises DownloadRateLimitError."""
+    target_path = tmp_path / "model" / "file.bin"
+    target_path.parent.mkdir()
+
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "120"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    with pytest.raises(DownloadRateLimitError) as exc_info:
+        await downloader.download_file(
+            "https://example.com/file",
+            str(target_path),
+            raise_on_rate_limit=True,
+        )
+
+    assert exc_info.value.retry_after == 120.0
+    assert exc_info.value.host == "example.com"
+    # The cooldown was registered with the coordinator for the target host.
+    coordinator = await RateLimitCoordinator.get_instance()
+    assert coordinator.remaining_seconds("example.com") > 0
+    # 429 is never retried in-band.
+    assert _session(downloader)._get_calls == 1
+    assert not Path(str(target_path) + ".part").exists()
+
+
+@pytest.mark.asyncio
+async def test_download_file_rate_limit_keeps_legacy_tuple_by_default(tmp_path):
+    """Default behavior (other callers) stays the plain error string."""
+    target_path = tmp_path / "model" / "file.bin"
+    target_path.parent.mkdir()
+
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "120"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    success, message = await downloader.download_file(
+        "https://example.com/file", str(target_path)
+    )
+
+    assert success is False
+    assert message == "Download rate limited (429), retry after 120.0s"
+
+
+@pytest.mark.asyncio
+async def test_download_to_memory_rate_limit_raises_structured_error_when_enabled():
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "90"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    with pytest.raises(DownloadRateLimitError) as exc_info:
+        await downloader.download_to_memory(
+            "https://example.com/preview.png",
+            raise_on_rate_limit=True,
+        )
+
+    assert exc_info.value.retry_after == 90
+    assert exc_info.value.host == "example.com"
+    coordinator = await RateLimitCoordinator.get_instance()
+    assert coordinator.remaining_seconds("example.com") > 0
+
+
+@pytest.mark.asyncio
+async def test_download_to_memory_rate_limit_keeps_legacy_tuple_by_default():
+    responses = [
+        lambda: FakeResponse(
+            status=429,
+            headers={"Retry-After": "90"},
+            chunks=[],
+        )
+    ]
+
+    downloader = _build_downloader(responses)
+
+    success, message, headers = await downloader.download_to_memory(
+        "https://example.com/preview.png"
+    )
+
+    assert success is False
+    assert message == "Rate limited (429), retry after 90s"
+    assert headers is None

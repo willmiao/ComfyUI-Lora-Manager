@@ -130,7 +130,7 @@ async def test_execute_download_uses_rewritten_civitai_preview(monkeypatch, tmp_
             self.file_calls: list[tuple[str, str]] = []
             self.memory_calls = 0
 
-        async def download_file(self, url, path, progress_callback=None, use_auth=None):
+        async def download_file(self, url, path, progress_callback=None, use_auth=None, **_kwargs):
             self.file_calls.append((url, path))
             if url.endswith(".jpeg"):
                 Path(path).write_bytes(b"preview")
@@ -248,7 +248,7 @@ async def test_execute_download_respects_blur_setting(monkeypatch, tmp_path):
         def __init__(self):
             self.file_calls: list[tuple[str, str]] = []
 
-        async def download_file(self, url, path, progress_callback=None, use_auth=None):
+        async def download_file(self, url, path, progress_callback=None, use_auth=None, **_kwargs):
             self.file_calls.append((url, path))
             if url.endswith(".safetensors"):
                 Path(path).write_bytes(b"model")

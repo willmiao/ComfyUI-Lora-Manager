@@ -1761,7 +1761,8 @@ class ModelDownloadHandler:
             payload = await request.json()
             result = await self._download_use_case.execute(payload)
             if not result.get("success", False):
-                return web.json_response(result, status=500)
+                status = 429 if result.get("reason") == "rate_limited" else 500
+                return web.json_response(result, status=status)
             return web.json_response(result)
         except DownloadModelValidationError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)
@@ -1819,7 +1820,8 @@ class ModelDownloadHandler:
             mock_request = type("MockRequest", (), {"json": lambda self=None: future})()
             result = await self._download_use_case.execute(data)
             if not result.get("success", False):
-                return web.json_response(result, status=500)
+                status = 429 if result.get("reason") == "rate_limited" else 500
+                return web.json_response(result, status=status)
             return web.json_response(result)
         except DownloadModelValidationError as exc:
             return web.json_response({"success": False, "error": str(exc)}, status=400)

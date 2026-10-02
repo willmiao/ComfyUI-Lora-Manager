@@ -20,6 +20,25 @@ class RateLimitError(RuntimeError):
         self.provider = provider
 
 
+class DownloadRateLimitError(RateLimitError):
+    """Raised when a file download is rejected with HTTP 429.
+
+    Carries the vendor's ``Retry-After`` hint (when present) and the target
+    host so the download manager can build the structured rate-limit result
+    the download queue contract expects.
+    """
+
+    def __init__(
+        self,
+        message: str,
+        *,
+        retry_after: Optional[float] = None,
+        host: Optional[str] = None,
+    ) -> None:
+        super().__init__(message, retry_after=retry_after)
+        self.host = host
+
+
 class ResourceNotFoundError(RuntimeError):
     """Raised when a remote resource is permanently missing."""
 

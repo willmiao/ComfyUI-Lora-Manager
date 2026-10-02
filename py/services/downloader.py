@@ -31,7 +31,7 @@ from .connectivity_guard import (
     OFFLINE_FRIENDLY_MESSAGE,
     ConnectivityGuard,
 )
-from .errors import RateLimitError
+from .errors import DownloadRateLimitError, RateLimitError
 from .rate_limit_coordinator import RateLimitCoordinator
 
 logger = logging.getLogger(__name__)
@@ -434,6 +434,7 @@ class Downloader:
         custom_headers: Optional[Dict[str, str]] = None,
         allow_resume: bool = True,
         pause_event: Optional[DownloadStreamControl] = None,
+        raise_on_rate_limit: bool = False,
     ) -> Tuple[bool, str]:
         """
         Download a file with resumable downloads and retry mechanism
@@ -446,6 +447,11 @@ class Downloader:
             custom_headers: Additional headers to include in request
             allow_resume: Whether to support resumable downloads
             pause_event: Optional stream control used to pause/resume and request reconnects
+            raise_on_rate_limit: When True, a 429 response raises
+                ``DownloadRateLimitError`` instead of returning a plain error
+                string, so callers (the model download manager) can build the
+                structured rate-limit result required by the download queue
+                contract. Defaults to the legacy tuple behavior.
 
         Returns:
             Tuple[bool, str]: (success, save_path or error message)
@@ -610,6 +616,12 @@ class Downloader:
                         logger.warning(
                             f"Rate limited (429) for {url}, retry_after={retry_after}"
                         )
+                        if raise_on_rate_limit:
+                            raise DownloadRateLimitError(
+                                f"Download rate limited (429), retry after {retry_after}s",
+                                retry_after=retry_after,
+                                host=self._guard_destination(url),
+                            )
                         return False, f"Download rate limited (429), retry after {retry_after}s"
                     else:
                         logger.error(
@@ -902,6 +914,11 @@ class Downloader:
                         f"Network error after {self.max_retries + 1} attempts: {str(e)}",
                     )
 
+            except DownloadRateLimitError:
+                # 429s are never retried in-band; the structured error must
+                # reach the caller (download manager) unmodified.
+                raise
+
             except Exception as e:
                 logger.error(f"Unexpected download error: {e}")
                 return False, str(e)
@@ -931,6 +948,7 @@ class Downloader:
         use_auth: bool = False,
         custom_headers: Optional[Dict[str, str]] = None,
         return_headers: bool = False,
+        raise_on_rate_limit: bool = False,
     ) -> Tuple[bool, Union[bytes, str], Optional[Dict[str, Any]]]:
         """
         Download a file to memory (for small files like preview images)
@@ -940,6 +958,10 @@ class Downloader:
             use_auth: Whether to include authentication headers
             custom_headers: Additional headers to include in request
             return_headers: Whether to return response headers along with content
+            raise_on_rate_limit: When True, a 429 response raises
+                ``DownloadRateLimitError`` instead of returning a plain error
+                string (see ``download_file``). Defaults to the legacy tuple
+                behavior.
 
         Returns:
             Tuple[bool, Union[bytes, str], Optional[Dict]]: (success, content or error message, response headers if requested)
@@ -1002,10 +1024,20 @@ class Downloader:
                             "Rate limited (429) for %s, no Retry-After header; defaulting to %ss",
                             url, retry_after,
                         )
+                    if raise_on_rate_limit:
+                        raise DownloadRateLimitError(
+                            f"Rate limited (429), retry after {retry_after}s",
+                            retry_after=retry_after,
+                            host=destination,
+                        )
                     return False, f"Rate limited (429), retry after {retry_after}s", None
                 else:
                     error_msg = f"Download failed with status {response.status}"
                     return False, error_msg, None
+
+        except DownloadRateLimitError:
+            # Structured rate-limit errors must reach the caller unmodified.
+            raise
 
         except Exception as e:
             if guard.is_network_unreachable_error(e):
