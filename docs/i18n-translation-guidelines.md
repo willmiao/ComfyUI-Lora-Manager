@@ -112,6 +112,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > so the "no remaining placeholders" claim holds again. Terminology in §2, "Download
 > routing feature".
 
+> **Status (2026-10, routing-override follow-up):** the download modal's location step
+> gained a manual "Destination type" toggle (Checkpoint | Diffusion Model) for when the
+> auto routing misdetects, adding 2 keys (`modals.download.routingOverride.label`,
+> `.tooltip`). The tooltip quotes each locale's `modals.download.useDefaultPath` label
+> verbatim (switching turns it off for the session), using that locale's UI-label quoting
+> style. All 9 locales are translated (terminology in §2, "Download routing feature"),
+> so the "no remaining placeholders" claim holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -567,9 +575,16 @@ ru Диффузионные модели, he מודלי דיפוזיה; CJK stay
 |---|---|
 | routing (noun, of a download into a library) | zh-CN 路由 · zh-TW 路由 · ja 振り分け · ko 라우팅 · fr routage · de Routing · es enrutamiento · ru маршрутизация · he ניתוב |
 | unknown base model | zh-CN 未知基础模型 · zh-TW 未知基礎模型 · ja 不明なベースモデル · ko 알 수 없는 베이스 모델 · fr modèle de base inconnu · de unbekanntes Basismodell · es modelo base desconocido · ru неизвестная базовая модель · he מודל בסיס לא מוכר |
+| destination type (download-modal toggle label) | zh-CN 目标类型 · zh-TW 目標類型 · ja 保存先タイプ · ko 대상 유형 · fr type de destination · de Zieltyp · es tipo de destino · ru тип назначения · he סוג יעד |
 
 The baseModel family names in the help text (`SD 1.x/2.x/3.x, SDXL, Pony, Illustrious,
 NoobAI`) are CivitAI baseModel values and stay verbatim in every locale.
+
+The routing-override toggle (`modals.download.routingOverride.*`) sits on the checkpoints
+page of the download modal; its two button labels come from `checkpoints.modelTypes.*`
+directly (model-type names, R3). The tooltip quotes the `modals.download.useDefaultPath`
+label verbatim with each locale's UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」,
+ko `' '`, fr « … », de „ … “, es/ru/he «…»).
 
 ---
 

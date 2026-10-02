@@ -1564,8 +1564,8 @@
             "selectModelRoot": "Sélectionner la racine du modèle :",
             "selectTypeRoot": "Sélectionner la racine {type} :",
             "routingOverride": {
-                "label": "[TODO: Translate] Destination type:",
-                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+                "label": "Type de destination :",
+                "tooltip": "Détecté automatiquement à partir des métadonnées du modèle. Changez si la détection est incorrecte ; changer désactive « Utiliser le chemin par défaut » pour ce téléchargement."
             },
             "targetFolderPath": "Chemin du dossier cible :",
             "browseFolders": "Parcourir les dossiers :",
