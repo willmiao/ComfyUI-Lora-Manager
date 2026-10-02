@@ -1523,7 +1523,11 @@ class DownloadManager:
                 return {"success": False, "error": "Failed to fetch model metadata"}
 
             model_type_from_info = version_info.get("model", {}).get("type", "").lower()
-            if model_type_from_info == "checkpoint":
+            # CivitAI ModelType has no model-level diffusion variant: DiT
+            # models are uploaded as "Checkpoint" or "UNet". Both go through
+            # the checkpoint branch so the standard diffusion routing chain
+            # (file type -> baseModel lists -> unknown default) applies.
+            if model_type_from_info in ("checkpoint", "unet"):
                 model_type = "checkpoint"
             elif model_type_from_info in VALID_LORA_TYPES:
                 model_type = "lora"

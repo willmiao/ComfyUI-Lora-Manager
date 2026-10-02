@@ -20,6 +20,15 @@ def test_base_model_fallback_routes_to_unet():
     )
 
 
+@pytest.mark.parametrize("base_model", ["SVD XT", "Boogu", "Wan Video 3.0", "Flux 3 Video"])
+def test_new_diffusion_families_route_to_unet(base_model):
+    """DiT families from CivitAI's official baseModel list that plain
+    "Model"-typed files must not strand on the checkpoint roots."""
+    assert is_diffusion_model_download(
+        "checkpoint", file_types=["Model"], base_model=base_model
+    )
+
+
 def test_minimax_h3_routes_to_unet():
     """CivitAI model 2877206: type "Checkpoint", baseModel "MiniMax H3",
     all file entries typed "Model"."""
@@ -28,7 +37,19 @@ def test_minimax_h3_routes_to_unet():
     )
 
 
-@pytest.mark.parametrize("base_model", ["SDXL 1.0", "Illustrious", "SD 1.5", "SD 3.5 Large"])
+@pytest.mark.parametrize(
+    "base_model",
+    [
+        "SDXL 1.0",
+        "Illustrious",
+        "SD 1.5",
+        "SD 2.1 768",
+        "SD 3.5 Large",
+        "SDXL Turbo",
+        "Playground v2",
+        "Stable Cascade",
+    ],
+)
 def test_known_checkpoint_base_models_stay_on_checkpoint_roots(base_model):
     """CHECKPOINT_BASE_MODELS members never route to unet, even when the
     unknown-base-model default is diffusion."""

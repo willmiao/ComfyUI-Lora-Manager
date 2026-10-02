@@ -110,6 +110,21 @@ async def test_unknown_base_model_honors_checkpoint_routing_setting():
 
 
 @pytest.mark.asyncio
+async def test_unet_model_type_uses_checkpoint_branch():
+    """CivitAI ModelType.UNet has no branch of its own: it goes through the
+    checkpoint branch, where its UNet-typed files route to the unet roots."""
+    handler = DownloadRoutingHandler()
+    response = await handler.get_download_routing(
+        FakeRequest(
+            {"model_type": "unet", "base_model": "MiniMax H3", "file_types": ["UNet"]}
+        )
+    )
+    payload = json.loads(response.text)
+    assert payload["is_diffusion_model"] is True
+    assert payload["root_kind"] == "unet"
+
+
+@pytest.mark.asyncio
 async def test_lora_is_never_diffusion():
     handler = DownloadRoutingHandler()
     response = await handler.get_download_routing(
