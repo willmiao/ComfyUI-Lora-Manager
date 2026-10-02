@@ -80,6 +80,14 @@
                 </div>
 
                 <!-- Model Root Selection (always visible) -->
+                <div class="input-group routing-override-group" id="routingOverrideGroup" style="display: none;"
+                     title="{{ t('modals.download.routingOverride.tooltip') }}">
+                    <label id="routingOverrideLabel">{{ t('modals.download.routingOverride.label') }}</label>
+                    <div class="routing-override-toggle" role="group" aria-label="{{ t('modals.download.routingOverride.label') }}">
+                        <button type="button" class="routing-override-option" data-routing="checkpoint">{{ t('checkpoints.modelTypes.checkpoint') }}</button>
+                        <button type="button" class="routing-override-option" data-routing="diffusion">{{ t('checkpoints.modelTypes.diffusion_model') }}</button>
+                    </div>
+                </div>
                 <div class="input-group">
                     <label for="modelRoot" id="modelRootLabel">{{ t('modals.download.selectModelRoot') }}</label>
                     <select id="modelRoot"></select>

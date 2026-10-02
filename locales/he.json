@@ -1563,6 +1563,10 @@
             "selectRootDirectory": "בחר ספריית שורש",
             "selectModelRoot": "בחר שורש מודל:",
             "selectTypeRoot": "בחר שורש {type}:",
+            "routingOverride": {
+                "label": "[TODO: Translate] Destination type:",
+                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+            },
             "targetFolderPath": "נתיב תיקיית יעד:",
             "browseFolders": "דפדף בתיקיות:",
             "createNewFolder": "צור תיקייה חדשה",

@@ -1563,6 +1563,10 @@
             "selectRootDirectory": "Выберите корневую папку",
             "selectModelRoot": "Выберите корень моделей:",
             "selectTypeRoot": "Выберите корень {type}:",
+            "routingOverride": {
+                "label": "[TODO: Translate] Destination type:",
+                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+            },
             "targetFolderPath": "Путь к целевой папке:",
             "browseFolders": "Обзор папок:",
             "createNewFolder": "Создать новую папку",

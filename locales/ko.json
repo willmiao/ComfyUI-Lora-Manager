@@ -1563,6 +1563,10 @@
             "selectRootDirectory": "루트 디렉토리를 선택하세요",
             "selectModelRoot": "모델 루트 선택:",
             "selectTypeRoot": "{type} 루트 선택:",
+            "routingOverride": {
+                "label": "[TODO: Translate] Destination type:",
+                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+            },
             "targetFolderPath": "대상 폴더 경로:",
             "browseFolders": "폴더 탐색:",
             "createNewFolder": "새 폴더 만들기",

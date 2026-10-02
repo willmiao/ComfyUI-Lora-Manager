@@ -1563,6 +1563,10 @@
             "selectRootDirectory": "Sélectionner un répertoire racine",
             "selectModelRoot": "Sélectionner la racine du modèle :",
             "selectTypeRoot": "Sélectionner la racine {type} :",
+            "routingOverride": {
+                "label": "[TODO: Translate] Destination type:",
+                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+            },
             "targetFolderPath": "Chemin du dossier cible :",
             "browseFolders": "Parcourir les dossiers :",
             "createNewFolder": "Créer un nouveau dossier",

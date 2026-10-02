@@ -1563,6 +1563,10 @@
             "selectRootDirectory": "ルートディレクトリを選択",
             "selectModelRoot": "モデルルートを選択：",
             "selectTypeRoot": "{type}ルートを選択：",
+            "routingOverride": {
+                "label": "[TODO: Translate] Destination type:",
+                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+            },
             "targetFolderPath": "ターゲットフォルダパス：",
             "browseFolders": "フォルダを参照：",
             "createNewFolder": "新しいフォルダを作成",

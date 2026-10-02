@@ -1563,6 +1563,10 @@
             "selectRootDirectory": "选择根目录",
             "selectModelRoot": "选择模型根目录：",
             "selectTypeRoot": "选择 {type} 根目录：",
+            "routingOverride": {
+                "label": "[TODO: Translate] Destination type:",
+                "tooltip": "[TODO: Translate] Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+            },
             "targetFolderPath": "目标文件夹路径：",
             "browseFolders": "浏览文件夹：",
             "createNewFolder": "新建文件夹",

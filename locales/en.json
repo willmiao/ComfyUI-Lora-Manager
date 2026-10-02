@@ -1563,6 +1563,10 @@
       "selectRootDirectory": "Select a root directory",
       "selectModelRoot": "Select Model Root:",
       "selectTypeRoot": "Select {type} Root:",
+      "routingOverride": {
+        "label": "Destination type:",
+        "tooltip": "Auto-detected from the model metadata. Switch if it was misdetected; switching turns off \"Use Default Path\" for this download."
+      },
       "targetFolderPath": "Target Folder Path:",
       "browseFolders": "Browse Folders:",
       "createNewFolder": "Create new folder",

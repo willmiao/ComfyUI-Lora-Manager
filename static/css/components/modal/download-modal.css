@@ -1088,3 +1088,56 @@
 [data-theme="dark"] .batch-preview-group-body {
     background: var(--border-color);
 }
+
+
+/* Routing override segmented toggle (Checkpoint / Diffusion Model) shown on
+   the checkpoints page of the download modal when auto-routing can misdetect. */
+.routing-override-group {
+    margin-bottom: var(--space-2);
+}
+
+.routing-override-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-color);
+}
+
+.routing-override-toggle {
+    display: flex;
+    gap: 0;
+}
+
+.routing-override-option {
+    flex: 1;
+    padding: 6px 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-color);
+    color: var(--text-color);
+    opacity: 0.75;
+    cursor: pointer;
+    transition: var(--transition-base);
+    font-size: 0.9em;
+}
+
+.routing-override-option:first-child {
+    border-radius: var(--border-radius-xs) 0 0 var(--border-radius-xs);
+    border-right: none;
+}
+
+.routing-override-option:last-child {
+    border-radius: 0 var(--border-radius-xs) var(--border-radius-xs) 0;
+}
+
+.routing-override-option:not(.active):hover,
+.routing-override-option:not(.active):focus-visible {
+    border-color: var(--lora-accent);
+    opacity: 1;
+}
+
+.routing-override-option.active {
+    background: var(--lora-accent);
+    color: white;
+    border-color: var(--lora-accent);
+    opacity: 1;
+    cursor: default;
+}

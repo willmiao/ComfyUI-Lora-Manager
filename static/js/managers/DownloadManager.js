@@ -34,6 +34,9 @@ export class DownloadManager {
         this.selectedFolder = '';
         this.apiClient = null;
         this.useDefaultPath = false;
+        // Manual checkpoint/diffusion root override on the location step:
+        // null follows the auto classification, true/false is user-picked.
+        this._routingOverride = null;
 
         // Multi-file selection state: selectedFile stays the first selected
         // file for backward compatibility with single-file flows (#1058).
@@ -127,6 +130,11 @@ export class DownloadManager {
         // Default path toggle handler
         document.getElementById('useDefaultPath').addEventListener('change', this.handleToggleDefaultPath);
 
+        // Checkpoint/diffusion routing override toggle (checkpoints page only)
+        document.querySelectorAll('#routingOverrideGroup .routing-override-option').forEach(btn => {
+            btn.addEventListener('click', () => this.handleRoutingOverrideChange(btn.dataset.routing === 'diffusion'));
+        });
+
         // Auto-append newline after pasting a URL so users can paste multiple URLs in succession
         setupAutoNewlineOnPaste('modelUrl');
     }
@@ -180,6 +188,7 @@ export class DownloadManager {
         this.selectedFiles = [];
         this._lastDownloadError = null;
         this._isDiffusionModel = false;
+        this._routingOverride = null;
 
         this.selectedFolder = '';
         this.batchModels = [];
@@ -974,48 +983,12 @@ export class DownloadManager {
         try {
             this._isDiffusionModel = await this._resolveIsDiffusionModel();
             this._otherSubType = await this._resolveOtherSubType();
+            // Each location-step entry starts from the auto classification;
+            // the user can override it via the checkpoint/diffusion toggle.
+            this._routingOverride = null;
+            this._syncRoutingOverrideToggle();
 
-            let rootsData;
-            if (this._isDiffusionModel && this.apiClient.modelType === 'checkpoints') {
-                rootsData = await this.apiClient.fetchModelRoots('diffusion_model');
-            } else if (this.apiClient.modelType === 'other' && this._otherSubType) {
-                rootsData = await this.apiClient.fetchModelRoots(this._otherSubType);
-            } else {
-                // An undecidable other sub_type (null) intentionally lands
-                // here: fetchModelRoots() lists all other roots so the user
-                // can pick manually.
-                rootsData = await this.apiClient.fetchModelRoots();
-            }
-            const modelRoot = document.getElementById('modelRoot');
-            modelRoot.innerHTML = rootsData.roots.map(root =>
-                `<option value="${root}">${root}</option>`
-            ).join('');
-
-            let defaultRoot;
-            let subtypeDisplay;
-            if (this.apiClient.modelType === 'other') {
-                const otherDefaultRoots = state.global.settings.default_other_roots || {};
-                defaultRoot = this._otherSubType ? (otherDefaultRoots[this._otherSubType] || '') : '';
-                subtypeDisplay = this._otherSubType
-                    ? (MODEL_SUBTYPE_DISPLAY_NAMES[this._otherSubType] || this._otherSubType)
-                    : this.apiClient.apiConfig.config.displayName;
-            } else {
-                const singularType = this._isDiffusionModel
-                    ? 'unet'
-                    : this.apiClient.modelType.replace(/s$/, '');
-                const defaultRootKey = `default_${singularType}_root`;
-                defaultRoot = state.global.settings[defaultRootKey];
-                subtypeDisplay = this._isDiffusionModel ? 'Diffusion Model' : this.apiClient.apiConfig.config.displayName;
-            }
-            console.log('Default root:', defaultRoot);
-            console.log('Available roots:', rootsData.roots);
-            if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
-                console.log(`Setting default root: ${defaultRoot}`);
-                modelRoot.value = defaultRoot;
-            }
-
-            document.getElementById('modelRootLabel').textContent =
-                translate('modals.download.selectTypeRoot', { type: subtypeDisplay });
+            await this._populateModelRoots();
 
             // Set autocomplete="off" on folderPath input
             const folderPathInput = document.getElementById('folderPath');
@@ -1035,6 +1008,7 @@ export class DownloadManager {
             });
 
             // Setup model root change handler
+            const modelRoot = document.getElementById('modelRoot');
             modelRoot.addEventListener('change', async () => {
                 await this.initializeFolderTree();
                 this.updateTargetPath();
@@ -1044,6 +1018,116 @@ export class DownloadManager {
             this.loadDefaultPathSetting();
 
             this.updateTargetPath();
+        } catch (error) {
+            showToast('toast.downloads.loadError', { message: error.message }, 'error');
+        }
+    }
+
+    /**
+     * Effective checkpoint/diffusion routing for the location step: the
+     * user's manual override when set, otherwise the auto classification.
+     */
+    _getEffectiveIsDiffusionModel() {
+        return this._routingOverride ?? this._isDiffusionModel;
+    }
+
+    /**
+     * Fetch the root list for the effective routing group and repopulate
+     * the root dropdown, preselecting the matching default root and
+     * updating the root label.
+     */
+    async _populateModelRoots() {
+        const isDiffusion = this._getEffectiveIsDiffusionModel();
+
+        let rootsData;
+        if (isDiffusion && this.apiClient.modelType === 'checkpoints') {
+            rootsData = await this.apiClient.fetchModelRoots('diffusion_model');
+        } else if (this.apiClient.modelType === 'other' && this._otherSubType) {
+            rootsData = await this.apiClient.fetchModelRoots(this._otherSubType);
+        } else {
+            // An undecidable other sub_type (null) intentionally lands
+            // here: fetchModelRoots() lists all other roots so the user
+            // can pick manually.
+            rootsData = await this.apiClient.fetchModelRoots();
+        }
+        const modelRoot = document.getElementById('modelRoot');
+        modelRoot.innerHTML = rootsData.roots.map(root =>
+            `<option value="${root}">${root}</option>`
+        ).join('');
+
+        let defaultRoot;
+        let subtypeDisplay;
+        if (this.apiClient.modelType === 'other') {
+            const otherDefaultRoots = state.global.settings.default_other_roots || {};
+            defaultRoot = this._otherSubType ? (otherDefaultRoots[this._otherSubType] || '') : '';
+            subtypeDisplay = this._otherSubType
+                ? (MODEL_SUBTYPE_DISPLAY_NAMES[this._otherSubType] || this._otherSubType)
+                : this.apiClient.apiConfig.config.displayName;
+        } else {
+            const singularType = isDiffusion
+                ? 'unet'
+                : this.apiClient.modelType.replace(/s$/, '');
+            const defaultRootKey = `default_${singularType}_root`;
+            defaultRoot = state.global.settings[defaultRootKey];
+            subtypeDisplay = isDiffusion ? 'Diffusion Model' : this.apiClient.apiConfig.config.displayName;
+        }
+        console.log('Default root:', defaultRoot);
+        console.log('Available roots:', rootsData.roots);
+        if (defaultRoot && rootsData.roots.includes(defaultRoot)) {
+            console.log(`Setting default root: ${defaultRoot}`);
+            modelRoot.value = defaultRoot;
+        }
+
+        document.getElementById('modelRootLabel').textContent =
+            translate('modals.download.selectTypeRoot', { type: subtypeDisplay });
+    }
+
+    /**
+     * Show the checkpoint/diffusion override toggle on the checkpoints page
+     * (hidden elsewhere) and reflect the effective routing on its options.
+     */
+    _syncRoutingOverrideToggle() {
+        const group = document.getElementById('routingOverrideGroup');
+        if (!group) return;
+        const isCheckpoints = this.apiClient.modelType === 'checkpoints';
+        group.style.display = isCheckpoints ? '' : 'none';
+        if (!isCheckpoints) return;
+
+        const effective = this._getEffectiveIsDiffusionModel();
+        group.querySelectorAll('.routing-override-option').forEach(btn => {
+            const active = (btn.dataset.routing === 'diffusion') === effective;
+            btn.classList.toggle('active', active);
+            btn.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+    }
+
+    /**
+     * Handle the user switching the checkpoint/diffusion routing toggle.
+     * The override must never be silently ignored: the backend re-derives
+     * the routing group only under "use default path", so overriding turns
+     * that off for this session (the localStorage preference is left
+     * untouched) to guarantee the picked root is the actual destination.
+     */
+    async handleRoutingOverrideChange(isDiffusion) {
+        if (this.apiClient.modelType !== 'checkpoints') return;
+
+        const overridden = isDiffusion !== this._isDiffusionModel;
+        this._routingOverride = overridden ? isDiffusion : null;
+
+        if (overridden && this.useDefaultPath) {
+            this.useDefaultPath = false;
+            const toggleInput = document.getElementById('useDefaultPath');
+            if (toggleInput) {
+                toggleInput.checked = false;
+            }
+        }
+
+        this._syncRoutingOverrideToggle();
+
+        try {
+            await this._populateModelRoots();
+            await this.initializeFolderTree();
+            this.updatePathSelectionUI();
         } catch (error) {
             showToast('toast.downloads.loadError', { message: error.message }, 'error');
         }
@@ -2554,13 +2638,13 @@ export class DownloadManager {
         const modelRoot = document.getElementById('modelRoot').value;
         const config = this.apiClient.apiConfig.config;
 
-        const subtypeDisplay = this._isDiffusionModel ? 'Diffusion Model' : config.displayName;
+        const subtypeDisplay = this._getEffectiveIsDiffusionModel() ? 'Diffusion Model' : config.displayName;
         let fullPath = modelRoot || translate('modals.download.selectTypeRoot', { type: subtypeDisplay });
 
         if (modelRoot) {
             if (this.useDefaultPath) {
                 try {
-                    const singularType = this._isDiffusionModel
+                    const singularType = this._getEffectiveIsDiffusionModel()
                         ? 'unet'
                         : this.apiClient.modelType.replace(/s$/, '');
                     const templates = state.global?.settings?.download_path_templates;
