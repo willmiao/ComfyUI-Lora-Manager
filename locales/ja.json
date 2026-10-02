@@ -353,6 +353,14 @@
             "placeholder": "空欄のままにすると PATH 上の aria2c を使用します"
         },
         "aria2HelpLink": "aria2 ダウンロードバックエンドの設定方法",
+        "unknownBaseModelRouting": {
+            "label": "不明なベースモデルの振り分け",
+            "help": "CivitAIが報告するベースモデルが既知のCheckpoint（SD 1.x/2.x/3.x、SDXL、Pony、Illustrious、NoobAI）でも既知のDiffusion Modelでもない場合に、Checkpointのダウンロードの保存先を決定します。新しい拡散アーキテクチャは頻繁に登場するため、通常はDiffusion Modelへの振り分けが正しい選択です。",
+            "options": {
+                "diffusionModel": "Diffusion Model",
+                "checkpoint": "Checkpoint"
+            }
+        },
         "civitaiHostBanner": {
             "title": "CivitAI ホスト設定を利用できます",
             "content": "CivitAI は現在、SFW コンテンツには civitai.com、制限なしコンテンツには civitai.red を使用しています。設定で既定で開くサイトを変更できます。",
@@ -2770,7 +2778,7 @@
                 "title": "ファイル名重複競合"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "集中保存のサイドカーファイル"
             },
             "ui_version": {
                 "title": "UI バージョン"

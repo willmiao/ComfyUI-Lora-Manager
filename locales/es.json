@@ -353,6 +353,14 @@
             "placeholder": "Déjalo vacío para usar aria2c desde el PATH"
         },
         "aria2HelpLink": "Aprende a configurar el backend de descarga aria2",
+        "unknownBaseModelRouting": {
+            "label": "Enrutamiento de modelos base desconocidos",
+            "help": "Decide a dónde van las descargas de Checkpoint cuando CivitAI informa de un modelo base que no es ni un Checkpoint conocido (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI) ni un modelo de difusión conocido. Las nuevas arquitecturas de difusión aparecen con frecuencia, por lo que enrutarlas a modelos de difusión suele ser correcto.",
+            "options": {
+                "diffusionModel": "Modelos de difusión",
+                "checkpoint": "Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
             "title": "Preferencia de host de CivitAI disponible",
             "content": "CivitAI ahora usa civitai.com para contenido SFW y civitai.red para contenido sin restricciones. Puedes cambiar en Ajustes qué sitio se abre por defecto.",
@@ -2770,7 +2778,7 @@
                 "title": "Conflictos de nombres de archivo duplicados"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "Archivos sidecar centralizados"
             },
             "ui_version": {
                 "title": "Versión de la interfaz"

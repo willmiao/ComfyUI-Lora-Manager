@@ -26,6 +26,11 @@
 
         {{ sm.setting_select('defaultUnetRoot', 'default_unet_root', 'settings.folderSettings.defaultUnetRoot', [], 'settings.folderSettings.defaultUnetRootHelp') }}
 
+        {{ sm.setting_select('unknownBaseModelRouting', 'unknown_base_model_routing', 'settings.unknownBaseModelRouting.label', [
+            ('diffusion_model', 'settings.unknownBaseModelRouting.options.diffusionModel'),
+            ('checkpoint', 'settings.unknownBaseModelRouting.options.checkpoint'),
+        ], 'settings.unknownBaseModelRouting.help') }}
+
         {{ sm.setting_select('defaultEmbeddingRoot', 'default_embedding_root', 'settings.folderSettings.defaultEmbeddingRoot', [], 'settings.folderSettings.defaultEmbeddingRootHelp') }}
 
         {{ sm.setting_toggle('enableOtherModels', 'enable_other_models', 'settings.folderSettings.enableOtherModels', 'settings.folderSettings.enableOtherModelsHelp') }}

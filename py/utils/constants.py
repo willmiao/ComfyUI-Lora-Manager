@@ -352,12 +352,15 @@ DIFFUSION_MODEL_BASE_MODELS = frozenset(
         "PixArt E",
         # Video diffusion models
         "CogVideoX",
+        "Flux 3 Video",
         "Hunyuan Video",
         "LTXV",
         "LTXV2",
         "LTXV 2.3",
+        "LTXV 2.5",
         "Mochi",
         "SVD",
+        "SVD XT",
         "Wan Video",
         "Wan Video 1.3B t2v",
         "Wan Video 14B t2v",
@@ -368,15 +371,70 @@ DIFFUSION_MODEL_BASE_MODELS = frozenset(
         "Wan Video 2.2 T2V-A14B",
         "Wan Video 2.5 T2V",
         "Wan Video 2.5 I2V",
+        "Wan Video 2.7",
+        "Wan Video 3.0",
         # Other diffusion models
+        "Boogu",
         "Ernie",
         "Ernie Turbo",
+        "HiDream-O1",
+        "Ming Image Design 0.1",
+        "Ming Image Design Layer 0.1",
+        "MiniMax H3",
         "Nucleus",
         "Qwen",
+        "Wan Image 2.7",
         "ZImageBase",
         "ZImageTurbo",
         # Krea 2 — loaded via UNETLoader in ComfyUI
         "Krea 2",
+    ]
+)
+
+# baseModel values from CivitAI that are true full checkpoints (loaded via
+# CheckpointLoaderSimple in ComfyUI). New DiT families appear on CivitAI all
+# the time, so download routing inverts the fallback: anything NOT in this
+# closed set (and not a known diffusion model) is treated as a diffusion
+# model by default (see py/services/download_routing.py). Cross-checked
+# against CivitAI's official baseModelRecords (packages/civitai-shared
+# src/basemodel.constants.ts), not only the download skip list.
+# "Pony V7" is deliberately excluded: verified via the live API (model
+# 1901521) to be AuraFlow-architecture shipping .gguf variants (UNETLoader),
+# so it follows the unknown-base-model default (diffusion).
+CHECKPOINT_BASE_MODELS = frozenset(
+    [
+        # Stable Diffusion 1.x
+        "SD 1.4",
+        "SD 1.5",
+        "SD 1.5 LCM",
+        "SD 1.5 Hyper",
+        # Stable Diffusion 2.x
+        "SD 2.0",
+        "SD 2.0 768",
+        "SD 2.1",
+        "SD 2.1 768",
+        "SD 2.1 Unclip",
+        # Stable Diffusion 3.x
+        "SD 3",
+        "SD 3.5",
+        "SD 3.5 Medium",
+        "SD 3.5 Large",
+        "SD 3.5 Large Turbo",
+        # SDXL and its full-checkpoint derivatives
+        "SDXL 0.9",
+        "SDXL 1.0",
+        "SDXL 1.0 LCM",
+        "SDXL Lightning",
+        "SDXL Hyper",
+        "SDXL Turbo",
+        "SDXL Distilled",
+        "Pony",
+        "Illustrious",
+        "NoobAI",
+        # Other full-checkpoint families
+        "Playground v2",
+        # Stable Cascade is unCLIP-style but loads via CheckpointLoader
+        "Stable Cascade",
     ]
 )
 

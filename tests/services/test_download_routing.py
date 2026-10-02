@@ -20,9 +20,68 @@ def test_base_model_fallback_routes_to_unet():
     )
 
 
-def test_regular_checkpoint_stays_on_checkpoint_roots():
+@pytest.mark.parametrize("base_model", ["SVD XT", "Boogu", "Wan Video 3.0", "Flux 3 Video"])
+def test_new_diffusion_families_route_to_unet(base_model):
+    """DiT families from CivitAI's official baseModel list that plain
+    "Model"-typed files must not strand on the checkpoint roots."""
+    assert is_diffusion_model_download(
+        "checkpoint", file_types=["Model"], base_model=base_model
+    )
+
+
+def test_minimax_h3_routes_to_unet():
+    """CivitAI model 2877206: type "Checkpoint", baseModel "MiniMax H3",
+    all file entries typed "Model"."""
+    assert is_diffusion_model_download(
+        "checkpoint", file_types=["Model"], base_model="MiniMax H3"
+    )
+
+
+@pytest.mark.parametrize(
+    "base_model",
+    [
+        "SDXL 1.0",
+        "Illustrious",
+        "SD 1.5",
+        "SD 2.1 768",
+        "SD 3.5 Large",
+        "SDXL Turbo",
+        "Playground v2",
+        "Stable Cascade",
+    ],
+)
+def test_known_checkpoint_base_models_stay_on_checkpoint_roots(base_model):
+    """CHECKPOINT_BASE_MODELS members never route to unet, even when the
+    unknown-base-model default is diffusion."""
     assert not is_diffusion_model_download(
-        "checkpoint", file_types=["Model"], base_model="SDXL 1.0"
+        "checkpoint", file_types=["Model"], base_model=base_model
+    )
+
+
+def test_unknown_base_model_defaults_to_unet():
+    """New DiT families appear faster than the allowlist can track them, so
+    unknown baseModels route to unet by default."""
+    assert is_diffusion_model_download(
+        "checkpoint", file_types=["Model"], base_model="Brand New Arch"
+    )
+
+
+def test_unknown_base_model_honors_checkpoint_setting():
+    assert not is_diffusion_model_download(
+        "checkpoint",
+        file_types=["Model"],
+        base_model="Brand New Arch",
+        unknown_base_model_default="checkpoint",
+    )
+
+
+def test_unknown_base_model_checkpoint_setting_still_loses_to_file_type():
+    """The file-type signal stays first regardless of the setting."""
+    assert is_diffusion_model_download(
+        "checkpoint",
+        file_types=["Diffusion Model"],
+        base_model="SDXL 1.0",
+        unknown_base_model_default="checkpoint",
     )
 
 
@@ -35,9 +94,15 @@ def test_non_checkpoint_types_never_route_to_unet():
     )
 
 
-def test_empty_inputs_stay_on_checkpoint_roots():
-    assert not is_diffusion_model_download("checkpoint")
-    assert not is_diffusion_model_download("checkpoint", file_types=[], base_model="")
+def test_empty_base_model_follows_unknown_default():
+    assert is_diffusion_model_download("checkpoint")
+    assert is_diffusion_model_download("checkpoint", file_types=[], base_model="")
+    assert not is_diffusion_model_download(
+        "checkpoint",
+        file_types=[],
+        base_model="",
+        unknown_base_model_default="checkpoint",
+    )
 
 
 from py.services.download_routing import resolve_other_download_sub_type

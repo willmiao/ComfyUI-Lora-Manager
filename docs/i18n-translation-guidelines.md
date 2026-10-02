@@ -103,6 +103,15 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > failure-table conventions; reuse each locale's existing renderings of those sibling keys).
 > All 9 locales are translated in the same pass (terminology in §2, "Sidecar storage feature").
 
+> **Status (2026-10, unknown base model routing):** the download-routing inversion added
+> 4 keys (`settings.unknownBaseModelRouting.label`, `.help`, `.options.diffusionModel`,
+> `.options.checkpoint`) — the option labels reuse each locale's existing
+> `checkpoints.modelTypes.diffusion_model` / `.checkpoint` renderings. The same pass also
+> translated the leftover `doctor.issues.sidecar_mirror_orphans.title` ("Centralized
+> Sidecars", §2 "Sidecar storage feature" terminology). All 9 locales are translated,
+> so the "no remaining placeholders" claim holds again. Terminology in §2, "Download
+> routing feature".
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -542,6 +551,25 @@ short and imperative and do not append a keyboard hint in any locale.
 | drag to reorder | zh-CN 拖拽以调整顺序 · zh-TW 拖曳以調整順序 · ja ドラッグして並べ替え · ko 드래그하여 순서 변경 · fr Glisser pour réordonner · de Zum Neuordnen ziehen · es Arrastra para reordenar · ru Перетащите, чтобы изменить порядок · he גרור כדי לשנות סדר |
 
 The grip itself is an icon and is never translated.
+
+### Download routing feature (unknown base model routing)
+
+The `settings.unknownBaseModelRouting.*` keys (Settings → Library → Folder Settings) decide
+which library a checkpoint download lands in when CivitAI reports a baseModel that is in
+neither the known-checkpoint nor the known-diffusion-model list. The option labels reuse
+each locale's `checkpoints.modelTypes.diffusion_model` / `.checkpoint` renderings
+(model-type names, R3 — ja/ko keep the Latin loanword), pluralized only where the locale
+pluralizes (de Diffusionsmodelle, es Modelos de difusión, fr Modèles de diffusion,
+ru Диффузионные модели, he מודלי דיפוזיה; CJK stays singular, "Checkpoint(s)" follows
+`header.navigation.checkpoints`).
+
+| Term | Rendering |
+|---|---|
+| routing (noun, of a download into a library) | zh-CN 路由 · zh-TW 路由 · ja 振り分け · ko 라우팅 · fr routage · de Routing · es enrutamiento · ru маршрутизация · he ניתוב |
+| unknown base model | zh-CN 未知基础模型 · zh-TW 未知基礎模型 · ja 不明なベースモデル · ko 알 수 없는 베이스 모델 · fr modèle de base inconnu · de unbekanntes Basismodell · es modelo base desconocido · ru неизвестная базовая модель · he מודל בסיס לא מוכר |
+
+The baseModel family names in the help text (`SD 1.x/2.x/3.x, SDXL, Pony, Illustrious,
+NoobAI`) are CivitAI baseModel values and stay verbatim in every locale.
 
 ---
 

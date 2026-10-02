@@ -353,6 +353,14 @@
             "placeholder": "비워 두면 PATH의 aria2c를 사용합니다"
         },
         "aria2HelpLink": "aria2 다운로드 백엔드 설정 방법 알아보기",
+        "unknownBaseModelRouting": {
+            "label": "알 수 없는 베이스 모델 라우팅",
+            "help": "CivitAI가 보고한 베이스 모델이 알려진 Checkpoint(SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI)도 알려진 Diffusion Model도 아닐 때 Checkpoint 다운로드의 저장 위치를 결정합니다. 새로운 확산 아키텍처는 자주 등장하므로 일반적으로 Diffusion Model로 라우팅하는 것이 올바릅니다.",
+            "options": {
+                "diffusionModel": "Diffusion Model",
+                "checkpoint": "Checkpoint"
+            }
+        },
         "civitaiHostBanner": {
             "title": "CivitAI 호스트 기본 설정 사용 가능",
             "content": "이제 CivitAI는 SFW 콘텐츠에 civitai.com을, 무제한 콘텐츠에 civitai.red를 사용합니다. 설정에서 기본으로 열 사이트를 변경할 수 있습니다.",
@@ -2770,7 +2778,7 @@
                 "title": "파일명 중복 충돌"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "중앙 집중식 사이드카 파일"
             },
             "ui_version": {
                 "title": "UI 버전"

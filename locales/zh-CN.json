@@ -353,6 +353,14 @@
             "placeholder": "留空则使用 PATH 中的 aria2c"
         },
         "aria2HelpLink": "了解如何配置 aria2 下载后端",
+        "unknownBaseModelRouting": {
+            "label": "未知基础模型路由",
+            "help": "当 CivitAI 报告的基础模型既不是已知的 Checkpoint（SD 1.x/2.x/3.x、SDXL、Pony、Illustrious、NoobAI），也不是已知的扩散模型时，决定 Checkpoint 下载的保存位置。新的扩散架构频繁出现，因此将其路由到扩散模型通常是正确的。",
+            "options": {
+                "diffusionModel": "扩散模型",
+                "checkpoint": "Checkpoint"
+            }
+        },
         "civitaiHostBanner": {
             "title": "已提供 CivitAI 站点偏好设置",
             "content": "CivitAI 现在使用 civitai.com 提供 SFW 内容，使用 civitai.red 提供无限制内容。你可以在设置中更改默认打开的站点。",
@@ -2770,7 +2778,7 @@
                 "title": "文件名重复冲突"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "集中存储的附属文件"
             },
             "ui_version": {
                 "title": "UI 版本"

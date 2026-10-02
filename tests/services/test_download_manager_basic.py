@@ -2201,6 +2201,54 @@ async def test_download_uses_raw_file_name_from_mini_endpoint(
 
 
 @pytest.mark.asyncio
+async def test_unet_model_type_download_lands_in_unet_roots(
+    monkeypatch, scanners, metadata_provider, tmp_path
+):
+    """CivitAI ModelType.UNet goes through the checkpoint branch: its
+    UNet-typed files route to the unet roots like any diffusion model."""
+    manager = DownloadManager()
+    unet_root = tmp_path / "unet"
+    get_settings_manager().settings["default_unet_root"] = str(unet_root)
+    metadata_provider.payload = {
+        "id": 42,
+        "model": {"type": "UNet", "tags": ["fantasy"]},
+        "baseModel": "MiniMax H3",
+        "creator": {"username": "Author"},
+        "files": [
+            {
+                "id": 1001,
+                "type": "UNet",
+                "primary": True,
+                "name": "minimax_h3.safetensors",
+                "downloadUrl": "https://example.invalid/file.safetensors",
+            }
+        ],
+    }
+
+    captured = {}
+
+    async def fake_execute_download(self, **kwargs):
+        captured["file_path"] = kwargs["metadata"].file_path
+        return {"success": True}
+
+    monkeypatch.setattr(
+        DownloadManager, "_execute_download", fake_execute_download, raising=False
+    )
+
+    result = await manager.download_from_civitai(
+        model_version_id=42,
+        save_dir=str(tmp_path),
+        use_default_paths=True,
+        progress_callback=None,
+        source=None,
+    )
+
+    assert result["success"] is True, result
+    assert captured["file_path"].startswith(str(unet_root))
+    assert captured["file_path"].endswith("minimax_h3.safetensors")
+
+
+@pytest.mark.asyncio
 async def test_download_falls_back_to_rest_name_when_mini_fails(
     monkeypatch, scanners, metadata_provider, tmp_path
 ):
@@ -2209,7 +2257,7 @@ async def test_download_falls_back_to_rest_name_when_mini_fails(
     metadata_provider.payload = {
         "id": 42,
         "model": {"type": "Checkpoint", "tags": ["fantasy"]},
-        "baseModel": "BaseModel",
+        "baseModel": "SDXL 1.0",
         "creator": {"username": "Author"},
         "files": [
             {

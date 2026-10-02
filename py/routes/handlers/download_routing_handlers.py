@@ -55,6 +55,11 @@ class DownloadRoutingHandler:
                 status=400,
             )
 
+        # CivitAI ModelType.UNet downloads go through the checkpoint branch,
+        # same as in the download manager.
+        if model_type.lower() == "unet":
+            model_type = "checkpoint"
+
         if model_type.lower() in VALID_OTHER_CIVITAI_TYPES:
             from ...services.settings_manager import get_settings_manager
 
@@ -96,10 +101,15 @@ class DownloadRoutingHandler:
                 }
             )
 
+        from ...services.settings_manager import get_settings_manager
+
         is_diffusion = is_diffusion_model_download(
             model_type,
             file_types=(str(t) for t in file_types),
             base_model=base_model,
+            unknown_base_model_default=get_settings_manager().get(
+                "unknown_base_model_routing", "diffusion_model"
+            ),
         )
         return web.json_response(
             {

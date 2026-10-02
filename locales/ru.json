@@ -353,6 +353,14 @@
             "placeholder": "Оставьте пустым, чтобы использовать aria2c из PATH"
         },
         "aria2HelpLink": "Узнайте, как настроить сервер загрузки aria2",
+        "unknownBaseModelRouting": {
+            "label": "Маршрутизация неизвестных базовых моделей",
+            "help": "Определяет, куда отправляются загрузки Checkpoint, когда CivitAI сообщает базовую модель, которая не является ни известным Checkpoint (SD 1.x/2.x/3.x, SDXL, Pony, Illustrious, NoobAI), ни известной диффузионной моделью. Новые диффузионные архитектуры появляются часто, поэтому маршрутизация их в диффузионные модели обычно правильная.",
+            "options": {
+                "diffusionModel": "Диффузионные модели",
+                "checkpoint": "Checkpoints"
+            }
+        },
         "civitaiHostBanner": {
             "title": "Доступна настройка хоста CivitAI",
             "content": "Теперь CivitAI использует civitai.com для контента SFW и civitai.red для контента без ограничений. В настройках можно изменить, какой сайт открывать по умолчанию.",
@@ -2770,7 +2778,7 @@
                 "title": "Конфликты дублирующихся имён файлов"
             },
             "sidecar_mirror_orphans": {
-                "title": "[TODO: Translate] Centralized Sidecars"
+                "title": "Централизованные sidecar-файлы"
             },
             "ui_version": {
                 "title": "Версия интерфейса"
