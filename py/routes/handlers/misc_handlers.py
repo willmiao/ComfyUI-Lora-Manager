@@ -1807,6 +1807,7 @@ class SettingsHandler:
                 if key in (
                     "enable_metadata_archive_db",
                     "enable_civarchive_api",
+                    "enable_openmodeldb_api",
                     "metadata_provider_order",
                 ):
                     await self._metadata_provider_updater()

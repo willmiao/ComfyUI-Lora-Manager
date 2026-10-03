@@ -1,5 +1,5 @@
 /**
- * External model source helpers (Hugging Face / ModelScope / TensorArt).
+ * External model source helpers (Hugging Face / ModelScope / TensorArt / OpenModelDB).
  *
  * Mirrors `py/services/model_sources/registry.py` so the frontend and the
  * backend agree on URL recognition, version-group keys, and which sites
@@ -90,6 +90,26 @@ export const MODEL_SOURCES = [
     pattern: /^https?:\/\/(?:www\.)?(?:tensor\.art|tusi\.cn)\/models\/(\d+)/i,
     filePattern: null,
     canonical: (id) => `https://tensor.art/models/${id}`,
+    filePage: null,
+  },
+  {
+    // Flat catalogue of upscalers: the id IS the published-model identity
+    // (no owner/repo split, no revisions, no per-file page).
+    platform: 'openmodeldb',
+    label: 'OpenModelDB',
+    groupPrefix: 'omdb',
+    groupKey: 'repo',
+    supportsEnrichment: true,
+    supportsDownload: true,
+    defaultRevision: '',
+    defaultSubdir: 'openmodeldb',
+    exampleUrl: 'https://openmodeldb.info/models/4x-UltraSharp',
+    placeholder: 'https://openmodeldb.info/models/4x-UltraSharp',
+    pattern: /^https?:\/\/(?:www\.)?openmodeldb\.info\/models\/([A-Za-z0-9_][A-Za-z0-9_.-]*)/i,
+    filePattern: null,
+    // Flat model ids (no owner/name split).
+    flatId: true,
+    canonical: (id) => `https://openmodeldb.info/models/${id}`,
     filePage: null,
   },
 ];
@@ -255,6 +275,18 @@ export function isValidRepoId(repo) {
   return repo
     .split('/')
     .every((part) => part && part !== '.' && part !== '..' && /^[A-Za-z0-9_][\w.-]*$/.test(part));
+}
+
+/**
+ * Source-aware id validation, mirroring `ModelSource.is_valid_source_id`:
+ * `owner/name` for repository sites, a flat token for OpenModelDB.
+ */
+export function isValidSourceId(platform, repo) {
+  const source = getModelSource(platform);
+  if (source?.flatId) {
+    return typeof repo === 'string' && /^[A-Za-z0-9_][A-Za-z0-9_.-]*$/.test(repo);
+  }
+  return isValidRepoId(repo);
 }
 
 /**

@@ -792,6 +792,8 @@
       "downloadComplete": "Download completed successfully",
       "enableCivarchiveApi": "Enable CivArchive API as metadata provider",
       "enableCivarchiveApiHelp": "When on, CivArchive API is used as a fallback source for model metadata (e.g. for models deleted from CivitAI). Turn off to avoid CivArchive rate limits entirely.",
+      "enableOpenmodeldbApi": "Enable OpenModelDB as metadata provider",
+      "enableOpenmodeldbApiHelp": "When on, upscaler metadata is also looked up in the OpenModelDB catalogue (openmodeldb.info) when CivitAI has no record. The catalogue is cached locally and refreshed daily.",
       "providerOrder": "Metadata provider fallback order",
       "providerOrderHelp": "CivitAI API is always tried first. Choose the order of the remaining providers when looking up metadata.",
       "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",

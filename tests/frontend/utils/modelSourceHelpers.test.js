@@ -18,6 +18,7 @@ const {
   canEnrichModelSource,
   getModelSourceViewTitle,
   parseModelSourceGroupKey,
+  isValidSourceId,
   openModelSource,
 } = await import('../../../static/js/utils/modelSourceHelpers.js');
 
@@ -28,6 +29,7 @@ describe('modelSourceHelpers', () => {
       'modelscope',
       'modelscope-ai',
       'tensorart',
+      'openmodeldb',
     ]);
   });
 
@@ -62,6 +64,16 @@ describe('modelSourceHelpers', () => {
       expect(info.platform).toBe('tensorart');
       expect(info.sourceId).toBe('827823520299086029');
       expect(info.url).toBe('https://tensor.art/models/827823520299086029');
+    });
+
+    it('recognises OpenModelDB URLs with flat model ids', () => {
+      const info = parseModelSourceUrl('https://openmodeldb.info/models/4x-UltraSharp');
+      expect(info.platform).toBe('openmodeldb');
+      expect(info.groupPrefix).toBe('omdb');
+      expect(info.sourceId).toBe('4x-UltraSharp');
+      expect(info.url).toBe('https://openmodeldb.info/models/4x-UltraSharp');
+      expect(info.supportsDownload).toBe(true);
+      expect(info.supportsEnrichment).toBe(true);
     });
 
     it('rejects unsupported URLs', () => {
@@ -109,6 +121,10 @@ describe('modelSourceHelpers', () => {
       expect(getModelSourceGroupKey({ source_url: 'https://tensor.art/models/123' })).toBe(
         'ta:123'
       );
+      // OpenModelDB's flat model id is the published-model identity.
+      expect(
+        getModelSourceGroupKey({ source_url: 'https://openmodeldb.info/models/4x-UltraSharp' })
+      ).toBe('omdb:4x-UltraSharp');
       // ModelScope groups by the site-native published-model id.
       expect(
         getModelSourceGroupKey({
@@ -181,6 +197,11 @@ describe('modelSourceHelpers', () => {
       });
       expect(parseModelSourceGroupKey('ms:user/repo').platform).toBe('modelscope');
       expect(parseModelSourceGroupKey('ta:123').platform).toBe('tensorart');
+      expect(parseModelSourceGroupKey('omdb:4x-UltraSharp')).toEqual({
+        platform: 'openmodeldb',
+        label: 'OpenModelDB',
+        sourceId: '4x-UltraSharp',
+      });
     });
 
     it('rejects numeric CivitAI model ids and unknown prefixes', () => {
@@ -189,6 +210,21 @@ describe('modelSourceHelpers', () => {
       expect(parseModelSourceGroupKey('unknown:1')).toBeNull();
       expect(parseModelSourceGroupKey('')).toBeNull();
       expect(parseModelSourceGroupKey(null)).toBeNull();
+    });
+  });
+
+  describe('isValidSourceId', () => {
+    it('requires owner/name for repository sites', () => {
+      expect(isValidSourceId('huggingface', 'user/repo')).toBe(true);
+      expect(isValidSourceId('huggingface', '4x-UltraSharp')).toBe(false);
+      expect(isValidSourceId('modelscope', 'u/..')).toBe(false);
+    });
+
+    it('accepts flat model ids for OpenModelDB', () => {
+      expect(isValidSourceId('openmodeldb', '4x-UltraSharp')).toBe(true);
+      expect(isValidSourceId('openmodeldb', 'owner/name')).toBe(false);
+      expect(isValidSourceId('openmodeldb', '../escape')).toBe(false);
+      expect(isValidSourceId('openmodeldb', '')).toBe(false);
     });
   });
 

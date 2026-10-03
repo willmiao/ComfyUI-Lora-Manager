@@ -792,6 +792,8 @@
             "downloadComplete": "Descarga completada exitosamente",
             "enableCivarchiveApi": "Habilitar CivArchive API como proveedor de metadatos",
             "enableCivarchiveApiHelp": "Al activarlo, la API de CivArchive se usa como fuente alternativa de metadatos de modelos (p. ej. para modelos eliminados de CivitAI). Desactívelo para evitar por completo los límites de velocidad de CivArchive.",
+            "enableOpenmodeldbApi": "Habilitar OpenModelDB como proveedor de metadatos",
+            "enableOpenmodeldbApiHelp": "Al activarlo, los metadatos de Upscaler también se consultan en el catálogo de OpenModelDB (openmodeldb.info) cuando CivitAI no tiene ningún registro. El catálogo se almacena en caché localmente y se actualiza a diario.",
             "providerOrder": "Orden de proveedores de metadatos de respaldo",
             "providerOrderHelp": "La API de CivitAI siempre se intenta primero. Elija el orden de los demás proveedores al buscar metadatos.",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",

@@ -792,6 +792,8 @@
             "downloadComplete": "ダウンロードが正常に完了しました",
             "enableCivarchiveApi": "CivArchive API をメタデータプロバイダーとして有効化",
             "enableCivarchiveApiHelp": "有効にすると、CivArchive API がモデルメタデータの代替ソースとして使用されます（例：CivitAI から削除されたモデルの場合）。オフにすると、CivArchive のレート制限を完全に回避できます。",
+            "enableOpenmodeldbApi": "OpenModelDB をメタデータプロバイダーとして有効化",
+            "enableOpenmodeldbApiHelp": "有効にすると、CivitAI に記録がない場合に、OpenModelDB カタログ（openmodeldb.info）でも Upscaler のメタデータを検索します。カタログはローカルにキャッシュされ、毎日更新されます。",
             "providerOrder": "メタデータプロバイダーのフォールバック順序",
             "providerOrderHelp": "CivitAI API が常に最初に試行されます。メタデータ検索時の残りのプロバイダーの順序を選択してください。",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",

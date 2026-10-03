@@ -312,6 +312,7 @@ async def test_get_model_sources_lists_capabilities():
         "modelscope",
         "modelscope-ai",
         "tensorart",
+        "openmodeldb",
     }
     assert by_platform["huggingface"]["supports_enrichment"] is True
     assert by_platform["modelscope"]["supports_enrichment"] is True
@@ -1305,3 +1306,125 @@ async def test_download_model_source_sends_no_headers_without_hf_token(
 
     assert response.status == 200
     assert captured["custom_headers"] is None
+
+
+# ---------------------------------------------------------------------------
+# OpenModelDB downloads
+# ---------------------------------------------------------------------------
+
+
+def _seed_openmodeldb_client(tmp_path, monkeypatch) -> None:
+    """Install a catalogue-loaded OpenModelDB client as the singleton."""
+    from py.services.openmodeldb_client import OpenModelDBClient
+
+    client = OpenModelDBClient(cache_dir=str(tmp_path / "omdb-cache"))
+    client._install_payloads(
+        {
+            "models": {
+                "4x-UltraSharp": {
+                    "name": "4x UltraSharp",
+                    "resources": [
+                        {
+                            "platform": "pytorch",
+                            "type": "pth",
+                            "size": 67_000_000,
+                            "sha256": "a" * 64,
+                            "urls": ["https://files.example.com/4x-UltraSharp.pth"],
+                        }
+                    ],
+                }
+            },
+            "users": {},
+            "tags": {},
+            "architectures": {},
+        }
+    )
+    monkeypatch.setattr(
+        OpenModelDBClient, "get_instance", AsyncMock(return_value=client)
+    )
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_openmodeldb_default_paths(tmp_path, monkeypatch):
+    captured = _stub_download_backend(monkeypatch)
+    saved = AsyncMock()
+    monkeypatch.setattr(model_source_handlers, "_save_source_metadata", saved)
+    _seed_openmodeldb_client(tmp_path, monkeypatch)
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "openmodeldb",
+                # Flat catalogue id — no owner/name split.
+                "repo": "4x-UltraSharp",
+                "filename": "4x-UltraSharp.pth",
+                "model_root": str(tmp_path),
+                "use_default_paths": True,
+            }
+        )
+    )
+
+    assert response.status == 200
+    assert captured["url"] == "https://files.example.com/4x-UltraSharp.pth"
+    # Flat layout: the site sub-directory only, no owner/repo namespaces.
+    assert captured["save_path"] == str(
+        tmp_path / "openmodeldb" / "4x-UltraSharp.pth"
+    )
+
+    ref = saved.await_args.args[1]
+    assert ref.platform == "openmodeldb"
+    assert ref.source_id == "4x-UltraSharp"
+    assert ref.url == "https://openmodeldb.info/models/4x-UltraSharp"
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_openmodeldb_unknown_model_returns_404(
+    tmp_path, monkeypatch
+):
+    _stub_download_backend(monkeypatch)
+    _seed_openmodeldb_client(tmp_path, monkeypatch)
+
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "openmodeldb",
+                "repo": "nope",
+                "filename": "f.pth",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 404
+    assert "not found" in _json_payload(response)["error"]
+
+
+@pytest.mark.asyncio
+async def test_download_model_source_openmodeldb_rejects_repo_style_id(tmp_path):
+    response = await ModelSourceHandler().download_model_source(
+        FakeRequest(
+            json_data={
+                "platform": "openmodeldb",
+                "repo": "owner/name",
+                "filename": "f.pth",
+                "model_root": str(tmp_path),
+            }
+        )
+    )
+
+    assert response.status == 400
+    assert "Invalid repo format" in _json_payload(response)["error"]
+
+
+@pytest.mark.asyncio
+async def test_list_model_source_files_openmodeldb(tmp_path, monkeypatch):
+    _seed_openmodeldb_client(tmp_path, monkeypatch)
+
+    response = await ModelSourceHandler().list_model_source_files(
+        FakeRequest(query={"platform": "openmodeldb", "repo": "4x-UltraSharp"})
+    )
+
+    assert response.status == 200
+    assert _json_payload(response) == [
+        {"filename": "4x-UltraSharp.pth", "size": 67_000_000}
+    ]

@@ -42,6 +42,7 @@ class TensorArtSource(ModelSource):
     label = "TensorArt"
     supports_enrichment = False
     supports_download = False
+    example_source_id = "827823520299086029"
     url_pattern = _URL_PATTERN
     strict_url_pattern = _STRICT_URL_PATTERN
 

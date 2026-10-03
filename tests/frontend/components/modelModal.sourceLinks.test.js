@@ -188,4 +188,41 @@ describe('Model modal source links (#1094)', () => {
     expect(civitaiLink()).toBeNull();
     expect(hfLink()).toBeNull();
   });
+
+  it('renders an OpenModelDB link from the enriched civitai payload', async () => {
+    // Hash-enriched upscalers carry no `source_url`; the page link lives in
+    // `civitai.openmodeldb.url` instead.
+    await renderModal(
+      makeModel({
+        from_civitai: false,
+        civitai: {
+          source: 'openmodeldb',
+          openmodeldb: { id: '4x-UltraSharp', url: 'https://openmodeldb.info/models/4x-UltraSharp' },
+        },
+      })
+    );
+
+    const link = document.querySelector('[data-action="view-model-source"]');
+    expect(link).not.toBeNull();
+    expect(link.dataset.sourceUrl).toBe('https://openmodeldb.info/models/4x-UltraSharp');
+    expect(civitaiLink()).toBeNull();
+  });
+
+  it('prefers source_url over the openmodeldb payload fallback', async () => {
+    await renderModal(
+      makeModel({
+        from_civitai: false,
+        source_url: 'https://openmodeldb.info/models/1x-DeJPG',
+        source_platform: 'openmodeldb',
+        civitai: {
+          source: 'openmodeldb',
+          openmodeldb: { id: '4x-UltraSharp', url: 'https://openmodeldb.info/models/4x-UltraSharp' },
+        },
+      })
+    );
+
+    const links = document.querySelectorAll('[data-action="view-model-source"]');
+    expect(links.length).toBe(1);
+    expect(links[0].dataset.sourceUrl).toBe('https://openmodeldb.info/models/1x-DeJPG');
+  });
 });

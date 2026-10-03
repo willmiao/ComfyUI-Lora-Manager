@@ -31,7 +31,6 @@ from ...services.model_sources import (
     detect_source,
     get_download_source,
     hydrate_from_source,
-    is_valid_source_id,
     list_sources,
     normalize_metadata_source,
 )
@@ -277,9 +276,7 @@ class ModelSourceHandler:
                 "supports_enrichment": source.supports_enrichment,
                 "supports_download": source.supports_download,
                 "default_revision": source.default_revision,
-                "example_url": source.canonical_url(
-                    "user/repo" if source.platform != "tensorart" else "827823520299086029"
-                ),
+                "example_url": source.canonical_url(source.example_source_id),
             }
             for source in list_sources()
         ])
@@ -326,9 +323,7 @@ class ModelSourceHandler:
                     "error": (
                         "Unsupported model URL. Supported formats: "
                         + ", ".join(
-                            f"{s.label} ({s.canonical_url('user/repo')})"
-                            if s.platform != "tensorart"
-                            else f"{s.label} (https://tensor.art/models/<id>)"
+                            f"{s.label} ({s.canonical_url(s.example_source_id)})"
                             for s in list_sources()
                         )
                     ),
@@ -424,9 +419,9 @@ class ModelSourceHandler:
         source = get_download_source(platform)
         if source is None:
             return _unsupported_platform_error(platform)
-        if not is_valid_source_id(repo):
+        if not source.is_valid_source_id(repo):
             return web.json_response(
-                {"error": "Missing or invalid 'repo' parameter (expected owner/name)"},
+                {"error": "Missing or invalid 'repo' parameter"},
                 status=400,
             )
 
@@ -492,10 +487,11 @@ class ModelSourceHandler:
                 {"error": "Missing required fields: 'repo' and 'filename'"}, status=400
             )
 
-        # `owner/name` only; the components become path segments below.
-        if not is_valid_source_id(repo):
+        # The id becomes a path segment below; each site defines what a safe
+        # id looks like (`owner/name` for repository sites, a flat token for
+        # OpenModelDB).
+        if not source.is_valid_source_id(repo):
             return web.json_response({"error": f"Invalid repo format: {repo}"}, status=400)
-        owner, repo_name = repo.split("/", 1)
 
         # Validate filename — must not contain path traversal
         if ".." in filename:
@@ -521,7 +517,7 @@ class ModelSourceHandler:
             base_dir = os.path.normpath(os.path.join(os.getcwd(), "models", model_root))
 
         if use_default_paths:
-            target_dir = os.path.join(base_dir, source.default_subdir, owner, repo_name)
+            target_dir = os.path.join(base_dir, *source.default_subdir_parts(repo))
         elif relative_path:
             target_dir = os.path.join(base_dir, relative_path)
         else:
@@ -536,7 +532,10 @@ class ModelSourceHandler:
 
         # Built per request: sites that redirect to a CDN hand out a
         # time-limited token in the redirect, so the URL must never be cached.
-        resolve_url = source.file_download_url(repo, filename, revision)
+        try:
+            resolve_url = await source.resolve_download_url(repo, filename, revision)
+        except ModelSourceError as exc:
+            return web.json_response({"error": str(exc)}, status=exc.status)
         ref = SourceRef(
             platform=source.platform, source_id=repo, url=source.canonical_url(repo)
         )

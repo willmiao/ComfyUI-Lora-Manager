@@ -195,6 +195,7 @@ class TestCapabilities:
             "modelscope",
             "modelscope-ai",
             "tensorart",
+            "openmodeldb",
         }
 
     def test_labels_are_brand_names(self):
@@ -202,6 +203,7 @@ class TestCapabilities:
         assert source_label("modelscope") == "ModelScope"
         assert source_label("modelscope-ai") == "ModelScope (International)"
         assert source_label("tensorart") == "TensorArt"
+        assert source_label("openmodeldb") == "OpenModelDB"
         assert source_label("unknown", "fallback") == "fallback"
 
 
@@ -920,7 +922,7 @@ class TestSourceIdValidation:
 class TestDownloadSourceRegistry:
     def test_downloadable_sources_excludes_link_only_sites(self):
         platforms = {source.platform for source in downloadable_sources()}
-        assert platforms == {"huggingface", "modelscope", "modelscope-ai"}
+        assert platforms == {"huggingface", "modelscope", "modelscope-ai", "openmodeldb"}
 
     def test_get_download_source_rejects_link_only_platform(self):
         assert get_download_source("tensorart") is None

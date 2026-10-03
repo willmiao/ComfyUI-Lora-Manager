@@ -10,6 +10,7 @@ from .model_metadata_provider import (
     SQLiteModelMetadataProvider,
     CivitaiModelMetadataProvider,
     CivArchiveModelMetadataProvider,
+    OpenModelDBModelMetadataProvider,
     FallbackMetadataProvider,
     RateLimitRetryingProvider,
 )
@@ -22,12 +23,18 @@ logger = logging.getLogger(__name__)
 _PROVIDER_DISPLAY_NAMES = {
     "civitai_api": "CivitAI",
     "civarchive_api": "CivArchive",
+    "openmodeldb_api": "OpenModelDB",
     "sqlite": "Archive DB",
 }
 
+# Preset fallback chains. civitai_api is always first (richest metadata).
+# openmodeldb_api sits right after it: its lookups are local index hits over a
+# cached bulk dump (no rate-limit budget spent), and it covers upscalers that
+# CivArchive only has when they once existed on CivitAI. Providers that are not
+# registered (disabled/unavailable) are skipped, so presets degrade gracefully.
 _PRESET_PROVIDER_ORDERS = {
-    "civitai_archive_sqlite": ["civitai_api", "civarchive_api", "sqlite"],
-    "civitai_sqlite_archive": ["civitai_api", "sqlite", "civarchive_api"],
+    "civitai_archive_sqlite": ["civitai_api", "openmodeldb_api", "civarchive_api", "sqlite"],
+    "civitai_sqlite_archive": ["civitai_api", "openmodeldb_api", "sqlite", "civarchive_api"],
 }
 
 async def initialize_metadata_providers():
@@ -42,6 +49,7 @@ async def initialize_metadata_providers():
     settings_manager = get_settings_manager()
     enable_archive_db = settings_manager.get('enable_metadata_archive_db', False)
     enable_civarchive_api = settings_manager.get('enable_civarchive_api', True)
+    enable_openmodeldb_api = settings_manager.get('enable_openmodeldb_api', True)
     provider_order = settings_manager.get('metadata_provider_order', 'civitai_archive_sqlite')
 
     providers = []
@@ -92,6 +100,22 @@ async def initialize_metadata_providers():
     else:
         logger.debug("CivArchive metadata provider disabled by setting 'enable_civarchive_api'")
 
+    # Register the OpenModelDB provider when enabled. It only covers upscaler
+    # models (hash-matched against its catalogue dump), so it complements
+    # rather than replaces the CivitAI-family providers; disabling it avoids
+    # the one-time bulk dump download entirely.
+    if enable_openmodeldb_api:
+        try:
+            openmodeldb_client = await ServiceRegistry.get_openmodeldb_client()
+            openmodeldb_provider = OpenModelDBModelMetadataProvider(openmodeldb_client)
+            provider_manager.register_provider('openmodeldb_api', openmodeldb_provider)
+            providers.append(('openmodeldb_api', openmodeldb_provider))
+            logger.debug("OpenModelDB metadata provider registered (also included in fallback)")
+        except Exception as e:
+            logger.error(f"Failed to initialize OpenModelDB metadata provider: {e}")
+    else:
+        logger.debug("OpenModelDB metadata provider disabled by setting 'enable_openmodeldb_api'")
+
     # Preset fallback orderings (see module-level _PRESET_PROVIDER_ORDERS).
     # civitai_api is always first (better metadata); the remaining providers
     # are arranged by the configured preset.  Providers that are not
@@ -135,6 +159,7 @@ async def update_metadata_providers():
         settings_manager = get_settings_manager()
         enable_archive_db = settings_manager.get('enable_metadata_archive_db', False)
         enable_civarchive_api = settings_manager.get('enable_civarchive_api', True)
+        enable_openmodeldb_api = settings_manager.get('enable_openmodeldb_api', True)
         provider_order = settings_manager.get('metadata_provider_order', 'civitai_archive_sqlite')
         
         # Reinitialize all providers with new settings
@@ -153,9 +178,10 @@ async def update_metadata_providers():
         )
         
         logger.info(
-            "Updated metadata providers: archive_db=%s, civarchive_api=%s, chain=%s",
+            "Updated metadata providers: archive_db=%s, civarchive_api=%s, openmodeldb_api=%s, chain=%s",
             enable_archive_db,
             enable_civarchive_api,
+            enable_openmodeldb_api,
             chain,
         )
         return provider_manager

@@ -79,6 +79,9 @@ DEFAULT_SETTINGS: Dict[str, Any] = {
     "dismissed_banners": [],
     "enable_metadata_archive_db": False,
     "enable_civarchive_api": True,
+    # OpenModelDB supplies read-only metadata for upscaler models (the "other"
+    # page's upscaler sub_type) via hash matching against its bulk catalogue.
+    "enable_openmodeldb_api": True,
     "metadata_provider_order": "civitai_archive_sqlite",
     "rate_limit_gate_enabled": True,
     "rate_limit_max_wait_seconds": 300,

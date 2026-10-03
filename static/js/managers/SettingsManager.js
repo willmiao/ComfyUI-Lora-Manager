@@ -3711,6 +3711,11 @@ export class SettingsManager {
                 enableCivarchiveApiCheckbox.checked = state.global.settings.enable_civarchive_api ?? true;
             }
 
+            const enableOpenmodeldbApiCheckbox = document.getElementById('enableOpenmodeldbApi');
+            if (enableOpenmodeldbApiCheckbox) {
+                enableOpenmodeldbApiCheckbox.checked = state.global.settings.enable_openmodeldb_api ?? true;
+            }
+
             const metadataProviderOrderSelect = document.getElementById('metadataProviderOrder');
             if (metadataProviderOrderSelect) {
                 metadataProviderOrderSelect.value = state.global.settings.metadata_provider_order || 'civitai_archive_sqlite';
