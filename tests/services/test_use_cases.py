@@ -1,8 +1,9 @@
 import asyncio
 import logging
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from types import SimpleNamespace
-from typing import Any, Dict, List, Optional
+from typing import Any, AsyncIterator, Dict, List, Optional
 
 import pytest
 
@@ -547,7 +548,13 @@ class StubLifecycleService:
         self.cancel_on_rename = False
         self._scanner = scanner
 
-    async def rename_model(self, *, file_path: str, new_file_name: str) -> Dict[str, Any]:
+    @asynccontextmanager
+    async def bulk_rename_session(self) -> AsyncIterator[None]:
+        yield None
+
+    async def rename_model(
+        self, *, file_path: str, new_file_name: str, bulk_context: Any = None
+    ) -> Dict[str, Any]:
         if self.error is not None:
             raise self.error
         self.renames.append({"file_path": file_path, "new_file_name": new_file_name})

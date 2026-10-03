@@ -4,6 +4,7 @@ import logging
 import asyncio
 import time
 import shutil
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable, Dict, List, Mapping, Optional, Sequence, Set, Tuple, Type, Union, cast
 
@@ -162,6 +163,13 @@ class ModelScanner:
         self._name_display_mode = self._resolve_name_display_mode()
         self._cancel_requested = False  # Flag for cancellation
         self._move_locks: Dict[str, asyncio.Lock] = {}  # Per-source-file move locks
+        # Bulk-operation deferral: while _defer_persist_depth > 0,
+        # update_single_model_cache() skips the per-call resort/persist and
+        # only marks _deferred_persist_pending; the exit of the outermost
+        # defer_cache_persist() context finalizes once (see
+        # _finalize_deferred_cache_persist).
+        self._defer_persist_depth = 0
+        self._deferred_persist_pending = False
         self._autov3_backfill_scheduled = False  # One-time AutoV3 backfill trigger per process
         # Guard against concurrent all-folders backfill walks (cold fallback
         # for persisted snapshots that predate folder recording).
@@ -773,11 +781,11 @@ class ModelScanner:
         except Exception as exc:
             logger.warning("AutoV3 backfill failed: %s", exc)
 
-    async def _save_persistent_cache(self, scan_result: CacheBuildResult) -> None:
+    async def _save_persistent_cache(self, scan_result: CacheBuildResult, *, force: bool = False) -> None:
         if not scan_result or not getattr(self, '_persistent_cache', None):
             return
 
-        if self.is_cancelled():
+        if self.is_cancelled() and not force:
             logger.info(
                 f"{self.model_type.capitalize()} Scanner: Skipping _save_persistent_cache "
                 "after cancellation"
@@ -836,7 +844,7 @@ class ModelScanner:
                 bucket.append(path)
         return snapshot
 
-    async def _persist_current_cache(self) -> None:
+    async def _persist_current_cache(self, *, force: bool = False) -> None:
         if self._cache is None or not getattr(self, '_persistent_cache', None):
             return
 
@@ -851,7 +859,7 @@ class ModelScanner:
                 else None
             ),
         )
-        await self._save_persistent_cache(snapshot)
+        await self._save_persistent_cache(snapshot, force=force)
         await self._sync_download_history(snapshot.raw_data, source='scan')
     def _count_model_files(self) -> int:
         """Count all model files with supported extensions in all roots
@@ -2646,11 +2654,85 @@ class ModelScanner:
             logger.error(f"Error updating metadata paths: {e}", exc_info=True)
             return None
 
+    @asynccontextmanager
+    async def defer_cache_persist(self):
+        """Defer heavyweight cache maintenance for a bulk operation.
+
+        While at least one ``defer_cache_persist`` context is active,
+        :meth:`update_single_model_cache` performs only the in-memory entry
+        swap plus incremental index updates — it skips the full version-index
+        rebuild, the natsort resort, and the whole-table SQLite persist plus
+        download-history sync that normally run per call. When the outermost
+        context exits, the pending maintenance runs **once** (resort, persist,
+        download-history sync).
+
+        The final persist is forced: it runs even when the scanner's
+        cancellation flag is set or the wrapped block raised, because callers
+        use this around operations that already mutated files on disk and the
+        cache must not be left diverging from reality.
+
+        Intended for bulk rename/move loops (e.g. the filename-template "Apply
+        to Library" flow). Single-shot callers keep the immediate per-call
+        behavior by not entering this context.
+        """
+        self._defer_persist_depth = getattr(self, "_defer_persist_depth", 0) + 1
+        try:
+            yield
+        finally:
+            self._defer_persist_depth -= 1
+            if self._defer_persist_depth == 0:
+                await self._finalize_deferred_cache_persist()
+
+    @property
+    def _cache_persist_deferred(self) -> bool:
+        """True while cache resort/persist is deferred to a bulk finalize."""
+        return getattr(self, "_defer_persist_depth", 0) > 0
+
+    async def _finalize_deferred_cache_persist(self) -> None:
+        """Run the resort + persist deferred by ``defer_cache_persist``.
+
+        Best-effort: failures are logged, never raised, so an error here
+        cannot mask the outcome of the bulk operation itself (including
+        cancellation).
+        """
+        if not getattr(self, "_deferred_persist_pending", False):
+            return
+        self._deferred_persist_pending = False
+        if self._cache is None:
+            return
+        try:
+            # resort() rebuilds the version index and folder list, so the
+            # per-call rebuilds skipped during deferral are covered here.
+            await self._cache.resort()
+            await self._persist_current_cache(force=True)
+            self.bump_cache_version()
+        except Exception:
+            logger.error(
+                "%s Scanner: failed to finalize deferred cache persist",
+                self.model_type.capitalize(),
+                exc_info=True,
+            )
+
     async def update_single_model_cache(self, original_path: str, new_path: str, metadata: Optional[Dict[str, Any]], recalculate_type: bool = False) -> Union[bool, Dict[str, Any]]:
-        """Update cache after a model has been moved or modified"""
+        """Update cache after a model has been moved or modified.
+
+        Performs the full maintenance chain (version-index rebuild, resort,
+        whole-table persist, download-history sync) unless the scanner is
+        inside a :meth:`defer_cache_persist` context, in which case only
+        the in-memory entry swap and incremental index updates run and the
+        heavy chain executes once at context exit.
+        """
+        deferred = self._cache_persist_deferred
         cache = await self.get_cached_data()
 
-        existing_item = next((item for item in cache.raw_data if item['file_path'] == original_path), None)
+        existing_index: Optional[int] = None
+        existing_item = None
+        for idx, item in enumerate(cache.raw_data):
+            if item['file_path'] == original_path:
+                existing_item = item
+                existing_index = idx
+                break
+
         if existing_item:
             cache.remove_from_version_index(existing_item)
 
@@ -2662,11 +2744,18 @@ class ModelScanner:
                         del self._tags_count[tag]
         
         self._hash_index.remove_by_path(original_path)
-        
-        cache.raw_data = [
-            item for item in cache.raw_data
-            if item['file_path'] != original_path
-        ]
+
+        if deferred:
+            # In-place swap avoids the O(n) list rebuild per renamed file;
+            # indexes were already updated incrementally above/below, and the
+            # folder recompute happens in the single finalize resort().
+            if existing_index is not None:
+                cache.raw_data.pop(existing_index)
+        else:
+            cache.raw_data = [
+                item for item in cache.raw_data
+                if item['file_path'] != original_path
+            ]
 
         cache_modified = bool(existing_item) or bool(metadata)
         cache_entry: Optional[Dict[str, Any]] = None
@@ -2707,8 +2796,11 @@ class ModelScanner:
                     cache_entry.get('autov3') or None,
                 )
 
-            all_folders = set(item['folder'] for item in cache.raw_data)
-            cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
+            if not deferred:
+                # O(n) over raw_data; the finalize resort() recomputes the
+                # folder list once, so bulk callers skip it per file.
+                all_folders = set(item['folder'] for item in cache.raw_data)
+                cache.folders = sorted(list(all_folders), key=lambda x: x.lower())
 
             # The move target may live in directories the last scan never saw;
             # record the destination folder (and its parents) in the known
@@ -2723,13 +2815,18 @@ class ModelScanner:
             for tag in cache_entry.get('tags', []):
                 self._tags_count[tag] = self._tags_count.get(tag, 0) + 1
 
-        cache.rebuild_version_index()
+        if deferred:
+            if cache_modified:
+                self._deferred_persist_pending = True
+                self.bump_cache_version()
+        else:
+            cache.rebuild_version_index()
 
-        await cache.resort()
+            await cache.resort()
 
-        if cache_modified:
-            await self._persist_current_cache()
-            self.bump_cache_version()
+            if cache_modified:
+                await self._persist_current_cache()
+                self.bump_cache_version()
 
         if metadata and cache_entry is not None:
             return cache_entry
