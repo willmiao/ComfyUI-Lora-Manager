@@ -242,6 +242,37 @@ inputEl.addEventListener("change", () => {
 
 > **⚠️ Important**: For Vue-based DOM widgets with text inputs, follow the [Value Persistence Best Practices](dom-widgets/value-persistence-best-practices.md) to avoid sync issues. Key takeaway: use DOM element as single source of truth, avoid internal state variables and v-model.
 
+#### `serializeValue` does not reach the backend for input-backed widgets
+
+Do not use `widget.serializeValue` to transform a value on its way to the Python
+node. `graphToPrompt` (verified in frontend `1.47.12`) builds each node's inputs
+in two passes:
+
+```javascript
+for (const [i, w] of widgets.entries())        // pass 1
+  inputs[w.name] = w.serializeValue ? await w.serializeValue(node, i) : w.value
+for (const [i, slot] of node.inputs.entries()) {  // pass 2
+  const resolved = node.resolveInput(i)
+  if (resolved?.widgetInfo) { inputs[slot.name] = resolved.widgetInfo.value; continue }  // clobbers pass 1
+  inputs[slot.name] = [String(resolved.origin_id), parseInt(resolved.origin_slot)]
+}
+```
+
+Any widget that also exists as a node input (i.e. every standard `INPUT_TYPES`
+widget) gets its serialized value overwritten with the **raw** widget value.
+`serializeValue` still works for workflow persistence, just not for the prompt.
+ComfyUI's own `Comfy.SaveImageExtraOutput` extension is affected by this too, so
+it is an upstream behavior, not something a custom node can hook around.
+
+**Do this instead**: transform the value backend-side, using the `PROMPT` hidden
+input to read other nodes' widget values. See
+`SaveImageLM._resolve_cross_node_placeholders` in `py/nodes/save_image.py`.
+
+**Removed — don't reintroduce**: the `applyTextReplacements` / `formatDate` /
+`serializeValue` layer in `web/comfyui/save_image_extra_output.js`. It resolved
+`%NodeTitle.WidgetName%` filename placeholders in the frontend and silently
+stopped reaching the backend.
+
 ### 5.3 The Restoration Mechanism (`configure`)
 
 *   **`configure(data)`**: When a Workflow is loaded, `LGraphNode` calls its `configure(data)` method.
