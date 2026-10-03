@@ -3,9 +3,10 @@ import importlib.util
 import inspect
 import sys
 import types
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, AsyncIterator, Dict, List, Optional, Sequence
 from unittest import mock
 
 import pytest
@@ -176,6 +177,10 @@ class MockScanner:
 
     def reset_cancellation(self) -> None:
         self._cancelled = False
+
+    @asynccontextmanager
+    async def defer_cache_persist(self) -> AsyncIterator[None]:
+        yield None
 
     async def get_cached_data(self, force_refresh: bool = False):
         return self._cache

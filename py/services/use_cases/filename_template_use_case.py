@@ -33,7 +33,9 @@ class FilenameTemplateUseCase:
     An empty template restores the recorded original filename instead of
     rendering a template. Shares the auto-organize lock (and its in-progress
     error) so a bulk rename never runs concurrently with an auto-organize
-    operation.
+    operation. The whole loop runs inside a bulk rename session so cache
+    persist/resort and recipe maintenance happen once at the end instead of
+    per renamed file.
     """
 
     def __init__(
@@ -106,23 +108,24 @@ class FilenameTemplateUseCase:
 
             await self._emit_progress(progress_callback, result, "started")
 
-            for index in range(0, result.total, AUTO_ORGANIZE_BATCH_SIZE):
-                if self._scanner.is_cancelled():
-                    logger.info(
-                        "Filename template apply cancelled for %s", self._model_type
-                    )
-                    break
-
-                batch = models[index : index + AUTO_ORGANIZE_BATCH_SIZE]
-                for model in batch:
+            async with self._lifecycle_service.bulk_rename_session() as bulk_context:
+                for index in range(0, result.total, AUTO_ORGANIZE_BATCH_SIZE):
                     if self._scanner.is_cancelled():
+                        logger.info(
+                            "Filename template apply cancelled for %s", self._model_type
+                        )
                         break
-                    await self._process_model(model, template, result)
-                    result.processed += 1
 
-                await self._emit_progress(progress_callback, result, "processing")
-                # Yield between batches so the server stays responsive.
-                await asyncio.sleep(0.1)
+                    batch = models[index : index + AUTO_ORGANIZE_BATCH_SIZE]
+                    for model in batch:
+                        if self._scanner.is_cancelled():
+                            break
+                        await self._process_model(model, template, result, bulk_context)
+                        result.processed += 1
+
+                    await self._emit_progress(progress_callback, result, "processing")
+                    # Yield between batches so the server stays responsive.
+                    await asyncio.sleep(0.1)
 
             if self._scanner.is_cancelled():
                 result.status = "cancelled"
@@ -150,6 +153,7 @@ class FilenameTemplateUseCase:
         model: Dict[str, Any],
         template: str,
         result: AutoOrganizeResult,
+        bulk_context: Any = None,
     ) -> None:
         model_name = model.get("model_name", "Unknown")
         try:
@@ -177,7 +181,7 @@ class FilenameTemplateUseCase:
                 return
 
             await self._lifecycle_service.rename_model(
-                file_path=file_path, new_file_name=new_stem
+                file_path=file_path, new_file_name=new_stem, bulk_context=bulk_context
             )
             result.success_count += 1
 

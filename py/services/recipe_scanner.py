@@ -4580,14 +4580,64 @@ class RecipeScanner:
 
         return syntax_parts
 
+    async def build_lora_hash_index(self) -> Dict[str, List[Dict[str, Any]]]:
+        """Build a one-shot lowercase-LoRA-hash → recipes index.
+
+        Scans the recipe cache exactly once (O(recipes × loras)) and returns
+        a mapping of lowercase lora ``hash`` to the list of recipe dicts
+        containing it. Bulk rename loops pass this index to
+        :meth:`update_lora_filename_by_hash` so per-file lookups are O(1)
+        instead of rescanning every recipe for each renamed LoRA.
+        """
+        cache = await self.get_cached_data()
+        index: Dict[str, List[Dict[str, Any]]] = {}
+        if not cache or not cache.raw_data:
+            return index
+
+        for recipe in cache.raw_data:
+            loras = recipe.get("loras", [])
+            if not isinstance(loras, list):
+                continue
+            for lora in loras:
+                if not isinstance(lora, dict):
+                    continue
+                hash_value = (lora.get("hash") or "").lower()
+                if hash_value:
+                    index.setdefault(hash_value, []).append(recipe)
+        return index
+
+    async def finalize_bulk_filename_updates(self) -> None:
+        """Run once after a bulk rename session that deferred maintenance.
+
+        Refreshes folder metadata and schedules a single re-sort. Filename-only
+        renames never change recipe folders, so the deferred refresh is
+        redundant but cheap; skipping it per file is what makes bulk renames
+        O(1)-per-file.
+        """
+        if self._cache is None:
+            return
+        self._schedule_resort()
+
     async def update_lora_filename_by_hash(
-        self, hash_value: str, new_file_name: str
+        self,
+        hash_value: str,
+        new_file_name: str,
+        *,
+        hash_index: Optional[Dict[str, List[Dict[str, Any]]]] = None,
+        defer_maintenance: bool = False,
     ) -> Tuple[int, int]:
         """Update file_name in all recipes that contain a LoRA with the specified hash.
 
         Args:
             hash_value: The SHA256 hash value of the LoRA
             new_file_name: The new file_name to set
+            hash_index: Optional prebuilt index from
+                :meth:`build_lora_hash_index`. When given, the O(recipes)
+                cache scan (and its folder-metadata walk) is skipped and the
+                affected recipes are looked up directly — the bulk rename path.
+            defer_maintenance: When True, skip the folder-metadata refresh and
+                resort scheduling. The caller MUST run
+                :meth:`finalize_bulk_filename_updates` exactly once afterwards.
 
         Returns:
             Tuple[int, int]: (number of recipes updated in files, number of recipes updated in cache)
@@ -4598,17 +4648,21 @@ class RecipeScanner:
         # Always use lowercase hash for consistency
         hash_value = hash_value.lower()
 
-        # Get cache
-        cache = await self.get_cached_data()
-        if not cache or not cache.raw_data:
-            return 0, 0
+        if hash_index is not None:
+            candidate_recipes = hash_index.get(hash_value, [])
+        else:
+            # Get cache
+            cache = await self.get_cached_data()
+            if not cache or not cache.raw_data:
+                return 0, 0
+            candidate_recipes = cache.raw_data
 
         file_updated_count = 0
         cache_updated_count = 0
 
-        # Find recipes that need updating from the cache
+        # Find recipes that need updating
         recipes_to_update = []
-        for recipe in cache.raw_data:
+        for recipe in candidate_recipes:
             loras = recipe.get("loras", [])
             if not isinstance(loras, list):
                 continue
@@ -4654,7 +4708,9 @@ class RecipeScanner:
         # We don't necessarily need to resort because LoRA file_name isn't a sort key,
         # but we might want to schedule a resort if we're paranoid or if searching relies on sorted state.
         # Given it's a rename of a dependency, search results might change if searching by LoRA name.
-        self._schedule_resort()
+        # Bulk callers defer this to a single finalize_bulk_filename_updates() call.
+        if not defer_maintenance:
+            self._schedule_resort()
 
         return file_updated_count, cache_updated_count
 
