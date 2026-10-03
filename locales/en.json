@@ -251,7 +251,6 @@
         "modelname": "Model Name",
         "tags": "Tags",
         "creator": "Creator",
-        "hash": "Hash",
         "title": "Recipe Title",
         "loraName": "LoRA Filename",
         "loraModel": "LoRA Model Name",
@@ -1839,6 +1838,8 @@
         "sendToWorkflow": "Send to ComfyUI",
         "sendToWorkflowText": "Send to ComfyUI",
         "copyHash": "Copy hash",
+        "copyCivitaiId": "Copy Civitai ID",
+        "civitaiIdCopied": "Civitai ID copied to clipboard",
         "deleteModelWithShortcut": "Delete model (Del)"
       },
       "openFileLocation": {
@@ -1857,6 +1858,8 @@
         "baseModel": "Base Model",
         "size": "Size",
         "hashes": "Hashes",
+        "civitaiModelId": "Model ID",
+        "civitaiVersionId": "Version ID",
         "unknown": "Unknown",
         "usageTips": "Usage Tips",
         "additionalNotes": "Additional Notes",

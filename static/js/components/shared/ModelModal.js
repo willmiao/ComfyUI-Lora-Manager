@@ -367,7 +367,9 @@ export async function showModelModal(model, modelType) {
     const escapedFolderPath = escapeHtml((modelWithFullData.file_path || '').replace(/[^/]+$/, '') || 'N/A');
     // De-emphasized hash display: a borderless full-width footnote line below
     // the info grid — sha256 middle-truncated (first 10 + last 6), autov3 in
-    // full (12 chars); the full value is copied via data-hash.
+    // full (12 chars); the full value is copied via data-hash. Civitai model /
+    // version ids join the same line on the right when the model comes from
+    // the Civitai ecosystem (a model card corresponds to one Civitai version).
     const modelSha256 = modelWithFullData.sha256 || '';
     const modelAutov3 = modelWithFullData.autov3 || '';
     const truncatedSha256 = modelSha256.length > 16
@@ -395,8 +397,47 @@ export async function showModelModal(model, modelType) {
                 </button>
             </span>`);
     }
-    const hashesMarkup = modelSha256 && hashEntries.length ? `
-                        <div class="hash-footnote" aria-label="${translate('modals.model.metadata.hashes', {}, 'Hashes')}">${hashEntries.join('<span class="hash-sep">·</span>')}
+    const normalizeCivitaiId = (value) => {
+        if (value === undefined || value === null) return '';
+        const normalized = String(value).trim();
+        // "0" is used as a placeholder for unknown ids in some metadata sources
+        return normalized && normalized !== '0' ? normalized : '';
+    };
+    const civitaiInfo = modelWithFullData.civitai || {};
+    const footnoteModelId = normalizeCivitaiId(civitaiInfo.modelId ?? civitaiInfo.model_id);
+    const footnoteVersionId = normalizeCivitaiId(civitaiInfo.id);
+    const copyCivitaiIdTitle = translate('modals.model.actions.copyCivitaiId', {}, 'Copy Civitai ID');
+    const civitaiIdCopiedToast = escapeAttribute(translate('modals.model.actions.civitaiIdCopied', {}, 'Civitai ID copied to clipboard'));
+    const civitaiIdEntries = [];
+    if (footnoteModelId) {
+        civitaiIdEntries.push(`
+            <span class="hash-entry civitai-id-entry">
+                <span class="hash-kind">${translate('modals.model.metadata.civitaiModelId', {}, 'Model ID')}</span>
+                <span class="model-hash-value" title="${escapeAttribute(footnoteModelId)}">${escapeHtml(footnoteModelId)}</span>
+                <button class="hash-copy-btn" data-action="copy-hash" data-hash="${escapeAttribute(footnoteModelId)}" data-toast="${civitaiIdCopiedToast}" title="${copyCivitaiIdTitle}">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </span>`);
+    }
+    if (footnoteVersionId) {
+        civitaiIdEntries.push(`
+            <span class="hash-entry civitai-id-entry">
+                <span class="hash-kind">${translate('modals.model.metadata.civitaiVersionId', {}, 'Version ID')}</span>
+                <span class="model-hash-value" title="${escapeAttribute(footnoteVersionId)}">${escapeHtml(footnoteVersionId)}</span>
+                <button class="hash-copy-btn" data-action="copy-hash" data-hash="${escapeAttribute(footnoteVersionId)}" data-toast="${civitaiIdCopiedToast}" title="${copyCivitaiIdTitle}">
+                    <i class="fas fa-copy"></i>
+                </button>
+            </span>`);
+    }
+    const footnoteParts = [];
+    if (hashEntries.length) {
+        footnoteParts.push(hashEntries.join('<span class="hash-sep">·</span>'));
+    }
+    if (civitaiIdEntries.length) {
+        footnoteParts.push(`<span class="civitai-id-group">${civitaiIdEntries.join('<span class="hash-sep">·</span>')}</span>`);
+    }
+    const hashesMarkup = footnoteParts.length ? `
+                        <div class="hash-footnote" aria-label="${translate('modals.model.metadata.hashes', {}, 'Hashes')}">${footnoteParts.join('')}
                         </div>` : '';
     const useNewIcons = state.global.settings.use_new_license_icons !== false;
     const licenseIcons = useNewIcons
@@ -987,7 +1028,7 @@ function setupEventHandlers(filePath, modelType) {
                 break;
             case 'copy-hash':
                 if (target.dataset.hash) {
-                    copyToClipboard(target.dataset.hash, 'Hash copied to clipboard');
+                    copyToClipboard(target.dataset.hash, target.dataset.toast || 'Hash copied to clipboard');
                 }
                 break;
         }

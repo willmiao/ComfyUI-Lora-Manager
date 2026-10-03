@@ -125,6 +125,14 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > (terminology in §2, "OpenModelDB feature"), so the "no remaining placeholders" claim
 > holds again.
 
+> **Status (2026-10, Civitai ids in model modal):** the model modal's hash footnote now
+> shows the Civitai model id and version id (right-aligned, with copy buttons), adding
+> 4 keys (`modals.model.metadata.civitaiModelId` / `.civitaiVersionId`,
+> `modals.model.actions.copyCivitaiId` / `.civitaiIdCopied`). The same pass removed the
+> search-options "hash" toggle (`header.search.filters.hash`) because hash/id search is
+> now always on. All 9 locales are translated (terminology in §2, "Civitai ids feature"),
+> so the "no remaining placeholders" claim holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -602,6 +610,24 @@ locale's existing `settings.metadataArchive.enableCivarchiveApi(Help)` phrasing,
 | Term | Rendering |
 |---|---|
 | catalogue (the OpenModelDB catalogue) | zh-CN 目录 · zh-TW 目錄 · ja カタログ · ko 카탈로그 · fr catalogue · de Katalog · es catálogo · ru каталог · he קטלוג |
+
+### Civitai ids feature (model/version id in the model modal)
+
+The model modal's hash footnote shows the Civitai **model id** and **version id** with
+copy buttons (`modals.model.metadata.civitaiModelId` / `.civitaiVersionId` labels,
+`modals.model.actions.copyCivitaiId` tooltip, `.civitaiIdCopied` toast). **"ID" stays
+Latin in every locale** (same precedent as `recipes.*.copyId`), and `Civitai` is the
+brand (R3) — it is never translated or transliterated; the casing mirrors `en.json`
+verbatim (R9). The copy/copied strings reuse each locale's existing clipboard patterns
+(`modals.model.actions.copyHash` / `openFileLocation.copied`).
+
+| Term | Rendering |
+|---|---|
+| Model ID (label) | zh-CN 模型 ID · zh-TW 模型 ID · ja モデル ID · ko 모델 ID · fr ID du modèle · de Modell-ID · es ID del modelo · ru ID модели · he מזהה מודל |
+| Version ID (label) | zh-CN 版本 ID · zh-TW 版本 ID · ja バージョン ID · ko 버전 ID · fr ID de version · de Versions-ID · es ID de versión · ru ID версии · he מזהה גרסה |
+
+Hebrew uses its established מזהה ("identifier") noun instead of Latin `ID` in these
+labels, matching `recipes.*.copyId` (העתק מזהה מתכון).
 
 ---
 

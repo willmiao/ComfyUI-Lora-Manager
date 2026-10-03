@@ -304,7 +304,6 @@ export class SearchManager {
             pageState.searchOptions.modelname = options.modelname || false;
             pageState.searchOptions.tags = options.tags || false;
             pageState.searchOptions.creator = options.creator || false;
-            pageState.searchOptions.hash = options.hash || false;
         }
       }
       

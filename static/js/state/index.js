@@ -124,7 +124,6 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                hash: false,
                 recursive: getStorageItem(`${MODEL_TYPES.LORA}_recursiveSearch`, true),
             },
             filters: {
@@ -191,7 +190,6 @@ export const state = {
                 filename: true,
                 modelname: true,
                 creator: false,
-                hash: false,
                 recursive: getStorageItem(`${MODEL_TYPES.CHECKPOINT}_recursiveSearch`, true),
             },
             filters: {
@@ -231,7 +229,6 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                hash: false,
                 recursive: getStorageItem(`${MODEL_TYPES.EMBEDDING}_recursiveSearch`, true),
             },
             filters: {
@@ -269,7 +266,6 @@ export const state = {
                 modelname: true,
                 tags: false,
                 creator: false,
-                hash: false,
                 recursive: getStorageItem(`${MODEL_TYPES.OTHER}_recursiveSearch`, true),
             },
             filters: {

@@ -432,7 +432,6 @@ class SearchStrategy:
         "tags": False,
         "recursive": True,
         "creator": False,
-        "hash": False,
     }
 
     def __init__(
@@ -495,13 +494,14 @@ class SearchStrategy:
                     results.append(item)
                     continue
 
-            # Hash search is always exact (never fuzzy): match the full
-            # sha256, its autov2 prefix (first 10 chars), or the autov3 hash.
-            if options.get("hash", False):
-                hash_query = search_lower.strip()
-                if hash_query and self._matches_hash(item, hash_query):
-                    results.append(item)
-                    continue
+            # Hash/id search is always exact (never fuzzy) and always on: it
+            # matches the full sha256, its autov2 prefix (first 10 chars),
+            # the autov3 hash, or the Civitai model/version ids. Exact-match
+            # semantics mean it adds no noise to ordinary keyword searches.
+            hash_query = search_lower.strip()
+            if hash_query and self._matches_hash(item, hash_query):
+                results.append(item)
+                continue
 
         return results
 
@@ -515,6 +515,18 @@ class SearchStrategy:
         autov3 = item.get("autov3")
         if isinstance(autov3, str) and autov3 and hash_query == autov3.lower():
             return True
+        civitai = item.get("civitai")
+        if isinstance(civitai, dict):
+            # A model card corresponds to one Civitai version: `modelId` is
+            # the model id (may match several cards when the library holds
+            # multiple versions), `id` is the version id (unique per card).
+            for key in ("modelId", "model_id", "id"):
+                value = civitai.get(key)
+                if value is None:
+                    continue
+                value_str = str(value).strip()
+                if value_str and value_str != "0" and hash_query == value_str:
+                    return True
         return False
 
     def _matches(
