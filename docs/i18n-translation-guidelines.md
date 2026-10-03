@@ -120,6 +120,11 @@ Locales: `en`, `zh-CN`, `zh-TW`, `ja`, `ko`, `fr`, `de`, `es`, `ru`, `he` (RTL).
 > style. All 9 locales are translated (terminology in §2, "Download routing feature"),
 > so the "no remaining placeholders" claim holds again.
 
+> **Status (2026-10, OpenModelDB):** the OpenModelDB metadata-provider toggle added 2 keys
+> (`settings.metadataArchive.enableOpenmodeldbApi(Help)`); all 9 locales are translated
+> (terminology in §2, "OpenModelDB feature"), so the "no remaining placeholders" claim
+> holds again.
+
 ---
 
 ## 1. Hard rules (do not violate)
@@ -585,6 +590,18 @@ page of the download modal; its two button labels come from `checkpoints.modelTy
 directly (model-type names, R3). The tooltip quotes the `modals.download.useDefaultPath`
 label verbatim with each locale's UI-label quoting style (zh-CN “ ”, zh-TW/ja 「 」,
 ko `' '`, fr « … », de „ … “, es/ru/he «…»).
+
+### OpenModelDB feature
+
+**OpenModelDB** is a brand name and stays Latin in every locale (R3, same as CivitAI /
+CivArchive); `openmodeldb.info` is a URL and stays verbatim. **Upscaler** follows the
+Other Models rule (model-type name, Latin everywhere). The label/help mirror each
+locale's existing `settings.metadataArchive.enableCivarchiveApi(Help)` phrasing, and
+"metadata" uses the §5 rendering per locale.
+
+| Term | Rendering |
+|---|---|
+| catalogue (the OpenModelDB catalogue) | zh-CN 目录 · zh-TW 目錄 · ja カタログ · ko 카탈로그 · fr catalogue · de Katalog · es catálogo · ru каталог · he קטלוג |
 
 ---
 
