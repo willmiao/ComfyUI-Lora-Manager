@@ -14,6 +14,7 @@ from typing import Any, Dict, Mapping, Optional
 from .base import GROUP_PREFIXES, ModelSource, SourceRef, clean_source_url
 from .huggingface import HuggingFaceSource
 from .modelscope import ModelScopeIntlSource, ModelScopeSource
+from .openmodeldb import OpenModelDBSource
 from .tensorart import TensorArtSource
 
 logger = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ _SOURCES: tuple[ModelSource, ...] = (
     ModelScopeSource(),
     ModelScopeIntlSource(),
     TensorArtSource(),
+    OpenModelDBSource(),
 )
 
 _BY_PLATFORM: Dict[str, ModelSource] = {s.platform: s for s in _SOURCES}

@@ -47,6 +47,7 @@ GROUP_PREFIXES: dict[str, str] = {
     "modelscope": "ms",
     "modelscope-ai": "msai",
     "tensorart": "ta",
+    "openmodeldb": "omdb",
 }
 
 
@@ -288,6 +289,11 @@ class ModelSource:
     #: Sub-directory the "use default paths" template places downloads in.
     default_subdir: str = ""
 
+    #: Source id used to build the example URL shown in UI copy and error
+    #: messages.  ``owner/name`` suits repository sites; sites with a
+    #: different identity shape override it with a real example.
+    example_source_id: str = "user/repo"
+
     #: Lenient pattern used to recognise URLs already stored in metadata.
     #: Captures the site-specific source id in group ``id``.
     url_pattern: re.Pattern[str] | None = None
@@ -339,6 +345,26 @@ class ModelSource:
         """Return the canonical model-page URL for *source_id*."""
 
         raise NotImplementedError
+
+    def is_valid_source_id(self, source_id: str) -> bool:
+        """Return ``True`` when *source_id* is a safe id on this site.
+
+        Defaults to the ``owner/name`` repository rule; sites whose ids are
+        not repositories (OpenModelDB's flat model ids) override it.
+        """
+
+        return is_valid_source_id(source_id)
+
+    def default_subdir_parts(self, source_id: str) -> tuple[str, ...]:
+        """Path segments appended to the model root by "use default paths".
+
+        Defaults to ``<default_subdir>/<owner>/<repo>`` so downloads from
+        repository sites stay namespaced by author.  Sites without an
+        owner/repo split override it.
+        """
+
+        owner, repo_name = source_id.split("/", 1)
+        return (self.default_subdir, owner, repo_name)
 
     def asset_base_url(self, source_id: str, revision: str = "") -> str:
         """Base URL used to resolve repository-relative asset paths."""
@@ -431,6 +457,18 @@ class ModelSource:
         raise ModelSourceError(
             f"{self.label or self.platform} does not support downloads", status=400
         )
+
+    async def resolve_download_url(
+        self, source_id: str, filename: str, revision: str = ""
+    ) -> str:
+        """Resolve the download URL for one file, allowing async lookups.
+
+        Defaults to the synchronous :meth:`file_download_url`; sites whose
+        download URL is not derivable from the id alone (OpenModelDB stores
+        the URL inside its catalogue entry) override this to look it up.
+        """
+
+        return self.file_download_url(source_id, filename, revision)
 
     def resolve_revision(self, revision: str = "") -> str:
         """Return *revision*, falling back to this site's default branch."""

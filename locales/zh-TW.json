@@ -793,6 +793,8 @@
             "downloadComplete": "下載成功完成",
             "enableCivarchiveApi": "啟用 CivArchive API 作為中繼資料提供者",
             "enableCivarchiveApiHelp": "開啟後，CivArchive API 將作為模型中繼資料的備用來源（例如用於已從 CivitAI 刪除的模型）。關閉可完全避免 CivArchive 的速率限制。",
+            "enableOpenmodeldbApi": "[TODO: Translate] Enable OpenModelDB as metadata provider",
+            "enableOpenmodeldbApiHelp": "[TODO: Translate] When on, upscaler metadata is also looked up in the OpenModelDB catalogue (openmodeldb.info) when CivitAI has no record. The catalogue is cached locally and refreshed daily.",
             "providerOrder": "中繼資料提供者回退順序",
             "providerOrderHelp": "CivitAI API 始終優先嘗試。選擇查詢中繼資料時其餘提供者的順序。",
             "providerOrderCivitaiArchiveSqlite": "CivitAI → CivArchive → Archive DB",

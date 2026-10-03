@@ -1,5 +1,5 @@
 import { showToast, openCivitai, sendLoraToWorkflow, sendEmbeddingToWorkflow, sendModelPathToWorkflow, buildLoraSyntax, copyToClipboard } from '../../utils/uiHelpers.js';
-import { getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, openModelSource } from '../../utils/modelSourceHelpers.js';
+import { getModelSource, getModelSourceInfo, getModelSourceGroupKey, getModelSourceViewTitle, openModelSource } from '../../utils/modelSourceHelpers.js';
 import { modalManager } from '../../managers/ModalManager.js';
 import { MODEL_TYPES } from '../../api/apiConfig.js';
 import {
@@ -30,6 +30,18 @@ function getModalFilePath(fallback = '') {
         return modalElement.dataset.filePath;
     }
     return fallback;
+}
+
+/**
+ * Source descriptor for a model that was hash-enriched from the OpenModelDB
+ * catalogue: it carries no `source_url`, so `getModelSourceInfo` finds
+ * nothing and the page link lives in the civitai payload instead.
+ */
+function getOpenModelDBSourceInfo(model) {
+    const url = model?.civitai?.openmodeldb?.url;
+    if (typeof url !== 'string' || !url) return null;
+    const descriptor = getModelSource('openmodeldb');
+    return descriptor ? { ...descriptor, sourceId: '', url } : null;
 }
 
 const COMMERCIAL_ICON_CONFIG = [
@@ -398,7 +410,7 @@ export async function showModelModal(model, modelType) {
 <div class="civitai-view" title="${translate('modals.model.actions.viewOnCivitai', {}, 'View on Civitai')}" data-action="view-civitai" data-filepath="${escapedFilePathAttr}">
     <i class="fas fa-globe"></i> ${translate('modals.model.actions.viewOnCivitaiText', {}, 'View on Civitai')}
 </div>`.trim() : '';
-    const sourceInfo = getModelSourceInfo(modelWithFullData);
+    const sourceInfo = getModelSourceInfo(modelWithFullData) || getOpenModelDBSourceInfo(modelWithFullData);
     const escapedSourceUrl = sourceInfo?.url ? escapeAttribute(sourceInfo.url) : '';
     const isHuggingFaceSource = sourceInfo?.platform === 'huggingface';
     const sourceTitle = sourceInfo ? getModelSourceViewTitle(sourceInfo) : '';

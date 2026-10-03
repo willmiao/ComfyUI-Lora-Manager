@@ -251,7 +251,28 @@ class ServiceRegistry:
             cls._services[service_name] = client
             logger.debug(f"Created and registered {service_name}")
             return client
-    
+
+    @classmethod
+    async def get_openmodeldb_client(cls):
+        """Get or create OpenModelDB client instance"""
+        service_name = "openmodeldb_client"
+
+        if service_name in cls._services:
+            return cls._services[service_name]
+
+        async with cls._get_lock(service_name):
+            # Double-check after acquiring lock
+            if service_name in cls._services:
+                return cls._services[service_name]
+
+            # Import here to avoid circular imports
+            from .openmodeldb_client import OpenModelDBClient
+
+            client = await OpenModelDBClient.get_instance()
+            cls._services[service_name] = client
+            logger.debug(f"Created and registered {service_name}")
+            return client
+
     @classmethod
     async def get_download_manager(cls):
         """Get or create Download manager instance"""

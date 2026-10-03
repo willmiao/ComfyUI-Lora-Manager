@@ -299,8 +299,28 @@ The `metadata_source` field indicates which provider last updated the metadata:
 |-------|--------|
 | `"civitai_api"` | Civitai API |
 | `"civarchive"` | CivArchive API |
+| `"openmodeldb"` | OpenModelDB catalogue (upscaler models only; hash-matched) |
 | `"archive_db"` | Metadata Archive Database |
 | `null` | No external source (user-defined only) |
+
+When `metadata_source` is `"openmodeldb"`, the `civitai` payload is a
+CivitAI-shaped version dict synthesized from the OpenModelDB catalogue entry
+(no numeric `id`/`modelId`), and the OpenModelDB-native details live in its
+`openmodeldb` block (`id`, `url`, `authors`, `architecture`,
+`architectureName`, `scale`, `license`, `date`).
+
+In that payload, `images[].url` is always a displayable asset: paired
+comparisons use the site-hosted thumbnail because the `LR`/`SR` originals
+are ephemeral imgdiff viewer sessions that 404 outside them (the original
+viewer link is kept as `images[].meta.comparisonUrl` for reference), and the
+model-level thumbnail leads the list since the card preview derives from
+`images[0]`. `files[].name` is derived from any URL path segment with a
+model extension (mediafire-style mirrors bury it mid-path) or synthesized as
+`{model_id}.{type}` for folder links.
+
+Models downloaded from OpenModelDB additionally carry `source_platform:
+"openmodeldb"` and `source_url` (the model page URL); their download-time
+hydration is recorded as `metadata_source: "source:openmodeldb"`.
 
 ---
 

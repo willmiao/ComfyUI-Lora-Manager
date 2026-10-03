@@ -222,6 +222,17 @@ describe('DownloadManager.detectUrlType — external model source URLs', () => {
         expect(intl.platform).toBe('modelscope-ai');
     });
 
+    it('detects an OpenModelDB model URL with its flat id', () => {
+        const result = DownloadManager.detectUrlType(
+            'https://openmodeldb.info/models/4x-UltraSharp'
+        );
+        expect(result).toEqual({
+            type: 'model-source-repo',
+            platform: 'openmodeldb',
+            repo: '4x-UltraSharp',
+        });
+    });
+
     it('rejects path traversal in either platform', () => {
         expect(
             DownloadManager.detectUrlType('https://modelscope.cn/models/../etc/passwd')

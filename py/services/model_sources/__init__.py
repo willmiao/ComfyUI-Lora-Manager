@@ -1,4 +1,4 @@
-"""External model-source providers (Hugging Face, ModelScope, TensorArt).
+"""External model-source providers (Hugging Face, ModelScope, TensorArt, OpenModelDB).
 
 This package is the single abstraction over "a site that hosts models and
 a model card".  See :mod:`py.services.model_sources.base` for the provider
@@ -30,6 +30,7 @@ from .hydration import (
     resolve_site_base_model,
 )
 from .modelscope import ModelScopeIntlSource, ModelScopeSource
+from .openmodeldb import OpenModelDBSource
 from .registry import (
     LEGACY_HF_URL_FIELD,
     SOURCE_PLATFORM_FIELD,
@@ -59,6 +60,7 @@ __all__ = [
     "HuggingFaceSource",
     "ModelScopeIntlSource",
     "ModelScopeSource",
+    "OpenModelDBSource",
     "SOURCE_PLATFORM_FIELD",
     "SOURCE_URL_FIELD",
     "SourceRef",

@@ -74,6 +74,7 @@ Enriches models linked to an external model site with metadata extracted by an L
 | ModelScope (`modelscope.cn`) | yes | yes | yes |
 | ModelScope International (`modelscope.ai`) | yes | yes | yes |
 | TensorArt | yes | no (see below) | no |
+| OpenModelDB | yes | yes (card data from the catalogue, no README) | yes |
 
 `modelscope.cn` and `modelscope.ai` are **separate catalogues, not mirrors** — a
 repository published on one is routinely absent from the other — so each is
@@ -84,6 +85,8 @@ version groups (`ms:` / `msai:`) and default download directories. Keep the two
 tables in `modelSourceHelpers.js` and `registry.py` in step when adding a site.
 
 TensorArt is link-only: `tensor.art` sits behind a Cloudflare managed challenge and its internal API requires session authorization, so the backend cannot read its model pages. Linking still stores the canonical page URL and the "View on TensorArt" link works.
+
+OpenModelDB is the upscaler catalogue: model ids are flat tokens (no `owner/name`), there are no revisions and no README — `fetch_model_card_context()` reads everything (description, license, tags, example images) from the disk-cached bulk catalogue in `py/services/openmodeldb_client.py`. Only PyTorch resources (`.pth`/`.safetensors`) are downloadable, and only via mirrors that serve raw bytes: HTML-gateway hosts (`mediafire.com`, `mega.nz`, `drive.google.com`) are skipped in favour of a direct mirror, and a model with only gateway mirrors reports a manual-download hint instead of a file list. Filenames are derived from URL path segments (mediafire buries them mid-path) or synthesized as `{model_id}.{type}` for folder links.
 
 **What it does**:
 1. Reads the model's `.metadata.json` to get the source (`source_platform` + `source_url`, or the legacy `hf_url`)

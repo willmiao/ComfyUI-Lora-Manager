@@ -18,7 +18,7 @@ import {
     detectModelSourceDownloadUrl,
     getModelSource,
     isExternalModelSource,
-    isValidRepoId,
+    isValidSourceId,
 } from '../utils/modelSourceHelpers.js';
 
 export class DownloadManager {
@@ -534,7 +534,7 @@ export class DownloadManager {
         const sourceInfo = detectModelSourceDownloadUrl(trimmed);
         if (sourceInfo) {
             // Reject path-traversal patterns like "../.." or "user/.."
-            if (!isValidRepoId(sourceInfo.repo)) {
+            if (!isValidSourceId(sourceInfo.platform, sourceInfo.repo)) {
                 return null;
             }
             return {
