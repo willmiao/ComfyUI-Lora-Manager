@@ -292,6 +292,15 @@
     font-size: 0.8em;
 }
 
+/* Civitai model/version ids — pushed to the right end of the footnote line */
+.hash-footnote .civitai-id-group {
+    display: inline-flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    margin-left: auto;
+}
+
 .hash-footnote .hash-copy-btn {
     display: inline-flex;
     align-items: center;

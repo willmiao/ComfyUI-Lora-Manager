@@ -251,7 +251,6 @@
                 "modelname": "Название модели",
                 "tags": "Теги",
                 "creator": "Автор",
-                "hash": "Хэш",
                 "title": "Название рецепта",
                 "loraName": "Имя файла LoRA",
                 "loraModel": "Название модели LoRA",
@@ -1837,6 +1836,8 @@
                 "sendToWorkflow": "Отправить в ComfyUI",
                 "sendToWorkflowText": "Отправить в ComfyUI",
                 "copyHash": "Копировать хеш",
+                "copyCivitaiId": "Копировать ID Civitai",
+                "civitaiIdCopied": "ID Civitai скопирован в буфер обмена",
                 "deleteModelWithShortcut": "Удалить модель (Del)"
             },
             "openFileLocation": {
@@ -1855,6 +1856,8 @@
                 "baseModel": "Базовая модель",
                 "size": "Размер",
                 "hashes": "Хэши",
+                "civitaiModelId": "ID модели",
+                "civitaiVersionId": "ID версии",
                 "unknown": "Неизвестно",
                 "usageTips": "Советы по использованию",
                 "additionalNotes": "Дополнительные заметки",

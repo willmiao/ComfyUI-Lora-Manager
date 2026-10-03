@@ -165,10 +165,74 @@ describe('Model modal hash rendering', () => {
     expect(rows[0].querySelector('.hash-kind').textContent).toBe('SHA256');
   });
 
-  it('hides the hashes item entirely when sha256 is empty', async () => {
+  it('renders autov3 alone when sha256 is empty', async () => {
     await renderModal(makeModel({ sha256: '', autov3: AUTOV3 }));
 
+    const rows = document.querySelectorAll('.hash-footnote .hash-entry');
+    expect(rows).toHaveLength(1);
+    expect(rows[0].querySelector('.hash-kind').textContent).toBe('AutoV3');
+  });
+
+  it('hides the footnote entirely when there are no hashes and no civitai ids', async () => {
+    await renderModal(makeModel({ sha256: '', autov3: '', civitai: {} }));
+
     expect(document.querySelector('.hash-footnote')).toBeNull();
+  });
+
+  it('renders civitai model and version ids with copy buttons', async () => {
+    await renderModal(makeModel({ civitai: { modelId: 12345, id: 67890 } }));
+
+    const group = document.querySelector('.hash-footnote .civitai-id-group');
+    expect(group).not.toBeNull();
+
+    const entries = group.querySelectorAll('.civitai-id-entry');
+    expect(entries).toHaveLength(2);
+
+    expect(entries[0].querySelector('.hash-kind').textContent).toBe('Model ID');
+    expect(entries[0].querySelector('.model-hash-value').textContent).toBe('12345');
+    expect(entries[0].querySelector('[data-action="copy-hash"]').dataset.hash).toBe('12345');
+
+    expect(entries[1].querySelector('.hash-kind').textContent).toBe('Version ID');
+    expect(entries[1].querySelector('.model-hash-value').textContent).toBe('67890');
+    expect(entries[1].querySelector('[data-action="copy-hash"]').dataset.hash).toBe('67890');
+  });
+
+  it('hides civitai ids for models without civitai data', async () => {
+    await renderModal(makeModel({ civitai: {} }));
+
+    expect(document.querySelector('.hash-footnote .civitai-id-group')).toBeNull();
+  });
+
+  it.each([0, '0', null, undefined, ''])('treats civitai id %s as missing', async (missingId) => {
+    await renderModal(makeModel({ civitai: { modelId: missingId, id: missingId } }));
+
+    expect(document.querySelector('.hash-footnote .civitai-id-group')).toBeNull();
+  });
+
+  it('falls back to snake_case model_id', async () => {
+    await renderModal(makeModel({ civitai: { model_id: 777, id: 888 } }));
+
+    const group = document.querySelector('.hash-footnote .civitai-id-group');
+    const entries = group.querySelectorAll('.civitai-id-entry');
+    expect(entries[0].querySelector('.model-hash-value').textContent).toBe('777');
+    expect(entries[1].querySelector('.model-hash-value').textContent).toBe('888');
+  });
+
+  it('still renders the footnote when only civitai ids exist', async () => {
+    await renderModal(makeModel({ sha256: '', autov3: '', civitai: { modelId: 12345, id: 67890 } }));
+
+    const footnote = document.querySelector('.hash-footnote');
+    expect(footnote).not.toBeNull();
+    expect(footnote.querySelectorAll('.civitai-id-entry')).toHaveLength(2);
+  });
+
+  it('copies the version id with the civitai toast when its copy button is clicked', async () => {
+    await renderModal(makeModel({ civitai: { modelId: 12345, id: 67890 } }));
+
+    const entries = document.querySelectorAll('.civitai-id-entry [data-action="copy-hash"]');
+    entries[1].click();
+
+    expect(copyToClipboard).toHaveBeenCalledWith('67890', 'Civitai ID copied to clipboard');
   });
 
   it('copies the full hash when the copy button is clicked', async () => {

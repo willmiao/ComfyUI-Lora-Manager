@@ -251,7 +251,6 @@
                 "modelname": "モデル名",
                 "tags": "タグ",
                 "creator": "作成者",
-                "hash": "ハッシュ",
                 "title": "レシピタイトル",
                 "loraName": "LoRAファイル名",
                 "loraModel": "LoRAモデル名",
@@ -1837,6 +1836,8 @@
                 "sendToWorkflow": "ComfyUI に送信",
                 "sendToWorkflowText": "ComfyUI に送信",
                 "copyHash": "ハッシュをコピー",
+                "copyCivitaiId": "Civitai IDをコピー",
+                "civitaiIdCopied": "Civitai IDをクリップボードにコピーしました",
                 "deleteModelWithShortcut": "モデルを削除（Del）"
             },
             "openFileLocation": {
@@ -1855,6 +1856,8 @@
                 "baseModel": "ベースモデル",
                 "size": "サイズ",
                 "hashes": "ハッシュ",
+                "civitaiModelId": "モデル ID",
+                "civitaiVersionId": "バージョン ID",
                 "unknown": "不明",
                 "usageTips": "使用のヒント",
                 "additionalNotes": "追加メモ",

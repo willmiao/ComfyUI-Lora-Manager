@@ -251,7 +251,6 @@
                 "modelname": "模型名称",
                 "tags": "标签",
                 "creator": "创作者",
-                "hash": "哈希",
                 "title": "配方标题",
                 "loraName": "LoRA 文件名",
                 "loraModel": "LoRA 模型名称",
@@ -1837,6 +1836,8 @@
                 "sendToWorkflow": "发送到 ComfyUI",
                 "sendToWorkflowText": "发送到 ComfyUI",
                 "copyHash": "复制哈希值",
+                "copyCivitaiId": "复制 Civitai ID",
+                "civitaiIdCopied": "Civitai ID 已复制到剪贴板",
                 "deleteModelWithShortcut": "删除模型（Del）"
             },
             "openFileLocation": {
@@ -1855,6 +1856,8 @@
                 "baseModel": "基础模型",
                 "size": "大小",
                 "hashes": "哈希值",
+                "civitaiModelId": "模型 ID",
+                "civitaiVersionId": "版本 ID",
                 "unknown": "未知",
                 "usageTips": "使用提示",
                 "additionalNotes": "附加备注",

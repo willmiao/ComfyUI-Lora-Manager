@@ -13,20 +13,13 @@ SHA256 = "abcdef1234567890" + "f" * 48  # 64-char hex
 AUTOV2 = SHA256[:10]
 AUTOV3 = "0123456789ab"
 
+# Hash/id exact matching is always on; these options only disable the
+# scope-based branches so tests exercise the hash branch in isolation.
 HASH_ONLY_OPTIONS = {
     "filename": False,
     "modelname": False,
     "tags": False,
     "creator": False,
-    "hash": True,
-}
-
-HASH_OFF_OPTIONS = {
-    "filename": False,
-    "modelname": False,
-    "tags": False,
-    "creator": False,
-    "hash": False,
 }
 
 
@@ -88,9 +81,11 @@ class TestSearchStrategyHash:
         item = make_item(autov3="")
         assert strategy.apply([item], AUTOV3, HASH_ONLY_OPTIONS) == []
 
-    def test_hash_option_disabled(self, strategy):
-        assert strategy.apply([make_item()], SHA256, HASH_OFF_OPTIONS) == []
-        assert strategy.apply([make_item()], AUTOV3, HASH_OFF_OPTIONS) == []
+    def test_hash_matching_is_always_on(self, strategy):
+        # There is no hash option anymore: exact hash/id matching happens
+        # regardless of the search scope options.
+        assert len(strategy.apply([make_item()], SHA256, HASH_ONLY_OPTIONS)) == 1
+        assert len(strategy.apply([make_item()], AUTOV3, HASH_ONLY_OPTIONS)) == 1
 
     def test_fuzzy_mode_still_exact(self, strategy):
         # Fuzzy matching must never apply to the hash field
@@ -102,6 +97,48 @@ class TestSearchStrategyHash:
     def test_missing_sha256_does_not_match(self, strategy):
         item = make_item(sha256="", autov3=None)
         assert strategy.apply([item], SHA256, HASH_ONLY_OPTIONS) == []
+
+
+class TestSearchStrategyCivitaiIds:
+    """Hash search also exact-matches Civitai model/version ids."""
+
+    def test_version_id_matches(self, strategy):
+        item = make_item(civitai={"modelId": 12345, "id": 67890})
+        assert len(strategy.apply([item], "67890", HASH_ONLY_OPTIONS)) == 1
+
+    def test_model_id_matches(self, strategy):
+        item = make_item(civitai={"modelId": 12345, "id": 67890})
+        assert len(strategy.apply([item], "12345", HASH_ONLY_OPTIONS)) == 1
+
+    def test_model_id_matches_all_versions_of_the_model(self, strategy):
+        v1 = make_item(file_name="v1.safetensors", civitai={"modelId": 12345, "id": 111})
+        v2 = make_item(file_name="v2.safetensors", civitai={"modelId": 12345, "id": 222})
+        other = make_item(file_name="other.safetensors", civitai={"modelId": 999, "id": 333})
+        result = strategy.apply([v1, v2, other], "12345", HASH_ONLY_OPTIONS)
+        assert {r["file_name"] for r in result} == {"v1.safetensors", "v2.safetensors"}
+
+    def test_snake_case_model_id_matches(self, strategy):
+        item = make_item(civitai={"model_id": 12345, "id": 67890})
+        assert len(strategy.apply([item], "12345", HASH_ONLY_OPTIONS)) == 1
+
+    def test_string_ids_match(self, strategy):
+        item = make_item(civitai={"modelId": "12345", "id": "67890"})
+        assert len(strategy.apply([item], "67890", HASH_ONLY_OPTIONS)) == 1
+
+    def test_unknown_id_does_not_match(self, strategy):
+        item = make_item(civitai={"modelId": 12345, "id": 67890})
+        assert strategy.apply([item], "555", HASH_ONLY_OPTIONS) == []
+
+    @pytest.mark.parametrize("missing", [0, "0", None, ""])
+    def test_placeholder_ids_do_not_match(self, strategy, missing):
+        item = make_item(sha256="", autov3=None, civitai={"modelId": missing, "id": missing})
+        assert strategy.apply([item], "0", HASH_ONLY_OPTIONS) == []
+
+    def test_missing_civitai_data_does_not_match(self, strategy):
+        item = make_item(sha256="", autov3=None, civitai=None)
+        assert strategy.apply([item], "12345", HASH_ONLY_OPTIONS) == []
+        item = make_item(sha256="", autov3=None)
+        assert strategy.apply([item], "12345", HASH_ONLY_OPTIONS) == []
 
 
 class TestFormatResponseAutov3:
