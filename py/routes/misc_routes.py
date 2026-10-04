@@ -31,6 +31,7 @@ from .handlers.misc_handlers import (
     ModelLibraryHandler,
     NodeRegistry,
     NodeRegistryHandler,
+    PriceAlertsHandler,
     SettingsHandler,
     SidecarMigrationHandler,
     SupportersHandler,
@@ -140,6 +141,10 @@ class MiscRoutes:
         doctor = DoctorHandler(settings_service=self._settings)
         example_workflows = ExampleWorkflowsHandler()
         base_model = BaseModelHandlerSet()
+        price_alerts = PriceAlertsHandler(
+            settings_service=self._settings,
+            service_registry=self._service_registry_adapter,
+        )
         model_source_handler = ModelSourceHandler()
         agent_handler = AgentHandler()
         download_routing = DownloadRoutingHandler()
@@ -163,6 +168,7 @@ class MiscRoutes:
             doctor=doctor,
             example_workflows=example_workflows,
             base_model=base_model,
+            price_alerts=price_alerts,
             model_source_handler=model_source_handler,
             agent_handler=agent_handler,
             download_routing=download_routing,

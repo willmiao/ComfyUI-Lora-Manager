@@ -5,7 +5,9 @@ model versions and flag when it drops below a threshold or becomes free.
 **Related:** [#1060 — Some "Early Access" models are not identified correctly](https://github.com/willmiao/ComfyUI-Lora-Manager/issues/1060)
 (closed) established `is_paid`, the Paid badge and `hide_paid_updates`; this FR is the next step
 after gate *state* — gate *price*.
-**Status:** v2 — **P0–P3 implemented** (see §10 for what shipped and the deviations from this plan).
+**Status:** v3 — **P0–P3 implemented** (§10 records what shipped and the deviations); **P5 (alerts
+panel) planned** in §11, not implemented. The grid-level "price alert only" filter was dropped by
+owner decision, so §11 defines the panel as the only new browsing surface.
 Feasibility was verified against this repo and upstream CivitAI `main` (`6d29ed1368`), including live
 probes against `civitai.com` / `civitai.red`.
 **Scope:** every model type that goes through `ModelUpdateService` (lora / checkpoint / embedding /
@@ -379,3 +381,222 @@ extension is GET-only per `AGENTS.md`):
 * `tests/services/test_civitai_client.py` — page fetch happy path, unusable payloads, rate limits.
 * `tests/routes/test_model_update_handler.py` — alerts endpoint, gate events for non-updating records.
 
+---
+
+## 11. P5 — Price alerts panel
+
+**Goal:** a single surface that answers "what got cheaper / became free, and can I act on it".
+
+**Status:** **P5a implemented** (see §11.9); P5b (inline threshold editing, *Refresh prices*, type
+chips, ignore action) and P5c (polish) are not.
+
+**Naming:** called P4a–c in earlier discussion; renumbered to **P5** because §5 already uses P4 for
+"docs and upstream".
+
+**Owner decision:** the grid-level "price alert only" filter is **out of scope**. The panel is the
+only new browsing surface; the existing per-version badges and the update-check toast stay as they
+are. Consequence: the panel carries the "act on it" affordances itself (§11.2), and discoverability
+rests on the bell badge plus the controls-dropdown entry (§11.1 D8).
+
+### 11.1 Locked decisions
+
+| # | Decision | Why / evidence |
+| --- | --- | --- |
+| D1 | Host it as a **third tab in the existing notification bell modal**, driven by `UpdateService` | `templates/components/modals.html` is included by `templates/base.html:75`, so the bell exists on every page; `UpdateService` already has `toggleUpdateModal()`, `switchNotificationTab()`, tab badges, arrow-key tab navigation and a list/empty-state pattern (`renderRecentBanners`) |
+| D2 | One **global** endpoint `GET /api/lm/price-alerts`, registered **once** in `MiscRoutes` | The update DB is one file per library shared by all model types (`cache/model_update/<library>.sqlite`), and `ServiceRegistry.get_model_update_service()` returns one shared instance (`py/services/service_registry.py:153`). `get_price_alerts` only filters on `s.model_type`, so `model_type=None` is all types in one query. Adding it to `COMMON_ROUTE_DEFINITIONS` would bind the same path once per model type (4×) |
+| D3 | **Compare the threshold at read time** (`WHERE v.price_buzz <= ?`); keep `price_alert_state` for the toast edge only | As shipped, panel membership only changes after a refresh, so editing the threshold in the panel would look broken |
+| D4 | New column `price_alert_since REAL` | `price_alert_state` is a boolean; "dropped 3 days ago" and an unread count both need the moment the state flipped, which the existing edge detection already knows |
+| D5 | Unread state is **client-side** (`localStorage` watermark compared against `price_alert_since`) | No per-user read-state table and no sync logic; the worst case is a conservative badge on a second browser |
+| D6 | Row actions: **CivitAI** always; **Open** only when the payload resolved a local file path | `showModelModal(model, modelType)` needs a local metadata object and re-fetches by `file_path` (`static/js/components/shared/ModelModal.js:343-361`); a gated version the user does not own has no local file |
+| D7 | **Refresh prices** must bypass the price TTL | Prices stay fresh for `price_check_ttl_hours` (24 h by default), so without a force flag the button would appear to do nothing |
+| D8 | **Two non-permanent entry points**, both opening the bell on the Price alerts tab: the **updates dropdown** in the controls bar, and the **global context menu** (right-click on empty space) | The controls dropdown already hosts `checkUpdatesMenuItem` (`templates/components/controls.html:114-126`) and costs no layout space. The global menu is the established home for library-wide occasional actions and already holds the sibling `check-model-updates` (`templates/components/context_menu.html:185`); it has only 7 items and existing hide/separator machinery (`GlobalContextMenu.showMenu` / `_updateSeparatorVisibility`). The **model-card menu is deliberately left alone** — it already has 20 items, and P5b's *Refresh prices* covers the per-model case |
+| D9 | Bell badge shows the **unread alert count**; when there are none it keeps today's behaviour (dot for app updates). The same cached count is appended to the global context menu item (`Price alerts (3)`) | Otherwise a price drop is invisible until the user opens the bell. The count is fetched once on init **only when `price_tracking_enabled`**, so users who never enable the feature pay nothing |
+| D10 | The global context menu item is **always visible** on model pages (hidden on recipes, like its siblings) | The panel's disabled state is the explanation plus a deep link into Settings; hiding the entry would make the feature undiscoverable for exactly the users who have not enabled it yet |
+
+### 11.2 Information architecture
+
+```
+┌ Price alerts                                        [Refresh prices] ┐
+│ Threshold: 500 Buzz  (click to edit)                                 │
+│ [ Under threshold ] [ Became free ]        Type: All · LoRA · …      │
+├──────────────────────────────────────────────────────────────────────┤
+│ ▸ Glorious Art · Checkpoint · 2 versions                             │
+│     Alpha · 250 Buzz  (was 500) · Blue Buzz OK                       │
+│     EA until Oct 10 · Not in library · dropped 3 days ago            │
+│     [CivitAI]  [Open]  [Ignore]                                      │
+│ ▸ Eira Kishida · LoRA · 1 version                                    │
+│     125 Buzz · In library · dropped today        [CivitAI] [Open]    │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+* Segments cover both halves of the FR: `Under threshold` (price at or below the threshold) and
+  `Became free` (versions with `gate_lapsed_at`, no price).
+* Grouped by model (a model often has several versions at the same price), sorted cheapest first
+  then most recently crossed; the type chips filter client-side over the loaded list.
+* Row: effective price with the list price struck through when on sale, Blue Buzz note, EA end date,
+  in-library marker, and "dropped X ago" from `price_alert_since`.
+* Actions: open on CivitAI, open the local model modal (only when a file path was resolved), ignore
+  this version (reuses `setVersionUpdateIgnore`).
+
+### 11.3 Data contract
+
+```
+GET /api/lm/price-alerts?limit=200
+{
+  "success": true,
+  "enabled": true,                  // price_tracking_enabled
+  "thresholdBuzz": 500,
+  "newestCheckedAt": 1791039694.5,  // staleness copy ("prices last checked X ago")
+  "alerts": [
+    {
+      "modelId": 2981320, "modelType": "checkpoint",
+      "modelName": "Glorious Art",          // best-effort, from the scanner cache
+      "versionId": 3379626, "versionName": "Alpha",
+      "kind": "below_threshold",            // or "became_free"
+      "priceBuzz": 250, "listPriceBuzz": 500,
+      "acceptsBlueBuzz": true, "priceSaleEndsAt": null,
+      "priceAlertSince": 1791000000.0,
+      "gateLapsedAt": null,
+      "earlyAccessEndsAt": null, "isPaid": true, "isEarlyAccess": false,
+      "isInLibrary": false,
+      "filePath": null,                     // set only when resolvable
+      "civitaiUrl": "https://civitai.com/models/2981320?modelVersionId=3379626"
+    }
+  ]
+}
+```
+
+One list with a `kind` discriminator (not two lists) so "All" needs no second request. `civitaiUrl`
+is built server-side with the existing `build_civitai_model_page_url` so `civitai_host` stays the
+single source of truth.
+
+### 11.4 States (all three must be designed, not just the happy path)
+
+1. **Tracking off** — explain that CivitAI publishes no price in its public API and that the feature
+   reads the model page, plus a button that opens Settings → Library.
+2. **On, nothing matching** — "nothing under N Buzz right now", with the threshold editable inline.
+3. **Stale / offline / rate-limited** — keep the last known list, add a "prices last checked X ago"
+   line and a retry; never blank the panel.
+
+### 11.5 Tasks
+
+**P5a — panel usable end to end**
+
+1. `py/services/model_update_service.py`
+   * `get_price_alerts(model_type=None, *, threshold_buzz, limit=200)` — optional type filter, live
+     threshold comparison, `kind`, `price_alert_since`; keep the shipped per-type call site working.
+   * `price_alert_since` column through all eight enumerations (§4.1), set on the `0 → 1` edge and
+     cleared on `1 → 0` inside `_build_record_from_remote`.
+2. `py/routes/misc_route_registrar.py` + `py/routes/handlers/misc_handlers.py` — register
+   `GET /api/lm/price-alerts` **once**, using `ServiceRegistry.get_model_update_service()` and the
+   settings service; resolve `modelName` / `filePath` best-effort per model type from the scanner
+   caches (`version_index[version_id]` → `file_path`, `file_name`; item `model_name` with a
+   `file_name` fallback), and omit them when resolution fails.
+3. `templates/components/modals/update_modal.html` — third tab + panel skeleton (segments, threshold
+   row, list container, empty/disabled blocks), reusing `data-notification-tab` /
+   `data-notification-panel`.
+4. `static/js/managers/UpdateService.js` — `renderPriceAlerts()`, panel fetch on open, tab badge
+   count, threshold display, row rendering and actions, `localStorage` watermark; extend
+   `updateTabBadges()` and `switchNotificationTab()`.
+5. `static/js/api/apiConfig.js` + a small fetch helper — the endpoint is global, so it does not
+   belong in the per-model-type `endpoints` map.
+6. `templates/components/controls.html` + `static/js/components/controls/PageControls.js` — the
+   controls-dropdown item (D8).
+7. `templates/components/context_menu.html` + `static/js/components/ContextMenu/GlobalContextMenu.js`
+   — the global-context-menu item (D8): one template entry, the recipes-page hide list in
+   `showMenu()`, one `case` in `handleMenuAction`, and the optional `(N)` count from the cached
+   alert count. Both entries call one shared `openPriceAlertsPanel()` helper.
+8. `locales/en.json` + `python scripts/sync_translation_keys.py`.
+
+*Acceptance:* with tracking on and one refresh done, the bell shows a count, the tab lists the
+versions with prices, CivitAI opens the right page, Open appears only for in-library models and opens
+the modal, all three states render, and it works from every page type.
+
+**P5b — actions and polish**
+
+* Inline threshold editing (read-time comparison makes it instant) and **Refresh prices** with a
+  `force_price_refresh` flag on the existing refresh endpoint (or a dedicated
+  `POST /api/lm/price-alerts/refresh`).
+* Type chips and a "only versions I do not own" toggle (this is open question 2 from §9).
+* Ignore-this-version action.
+
+**P5c — optional**
+
+* Thumbnails from the scanner cache, "unread only", focus-management pass on the new tab, and a
+  deep link from the panel into the settings section.
+
+### 11.6 Tests
+
+* `tests/services/test_model_update_service.py` — `model_type=None` spans types; live threshold
+  parameter; `price_alert_since` set/cleared on the edge.
+* `tests/routes/` — the global route is registered exactly once and returns the documented shape;
+  `filePath` resolution is best-effort (mock scanner; omit on failure).
+* `tests/frontend/` — vitest for `renderPriceAlerts` covering rows, both segments, the three states
+  and the badge count with a mocked fetch.
+* Manual eyeball for layout, per the repo's UI verification policy.
+
+### 11.7 Risks
+
+| Risk | Mitigation |
+| --- | --- |
+| The bell modal is nominally about app updates; a third tab changes its character | Clear labelling, and only count/badge when the feature is on; the app-update dot behaviour is unchanged when there are no alerts |
+| Resolving local file paths pulls scanner caches into an app-wide route | Best-effort with `try/except`, one `get_cached_data()` per type (in-memory), omit the field and hide the Open button when it fails |
+| `price_alert_since` is another migration | Same eight-touchpoint discipline as §4.1, covered by the existing migration test |
+| A global route in `COMMON_ROUTE_DEFINITIONS` would bind 4× | Register it in `MiscRoutes` instead (D2) |
+| Menu bloat / entry sprawl | Two entries maximum (D8), both calling one helper; the 20-item model-card menu is explicitly untouched |
+| Panel data goes stale between refreshes | Show `newestCheckedAt`; the refresh action (P5b) makes it explicit rather than silent |
+
+### 11.8 Open questions for the owner
+
+1. **Badge policy** — count unread alerts on the bell (recommended, D9), or leave the bell alone and
+   put the number only on the tab?
+2. **Unread at all** — the `localStorage` watermark (recommended, D5), or simply "current matches"
+   with no read state?
+3. **Threshold editing inside the panel** — convenient, but it silently changes a global setting from
+   a surface the user opened just to look.
+4. **"Open in library"** — worth the scanner-cache coupling (D6), or should the row offer only
+   "CivitAI" plus a copy-link action?
+5. **Thumbnails** — skip for weight (recommended) or show them?
+6. **Entry visibility when tracking is off** — always show the global-context-menu item
+   (recommended, D10: the panel's disabled state educates and deep-links to Settings), or hide it
+   until the feature is enabled for a cleaner menu?
+7. **Count in the menu label** — `Price alerts (3)` using the cached count (recommended, D9), or a
+   plain label with the number only on the bell/tab?
+
+### 11.9 What shipped (P5a)
+
+Answers to §11.8: badge counts unread alerts (D9), unread uses the `localStorage` watermark (D5),
+threshold editing is **display-only in P5a** (editing is P5b), "Open in library" ships with the
+best-effort path resolution (D6), no thumbnails, the context-menu item is always visible (D10), and
+the menu label carries the count (D9).
+
+| Area | Where |
+| --- | --- |
+| `price_alert_since` column through all eight enumerations, set on the `0 → 1` edge, preserved while the alert stands, cleared when the price rises | `py/services/model_update_service.py` |
+| `get_price_alerts(model_type=None, *, threshold_buzz, limit)` — read-time threshold, `kind`, one list across types; `newest_price_checked_at()` | `py/services/model_update_service.py` |
+| Global endpoint `GET /api/lm/price-alerts`, registered once | `py/routes/misc_route_registrar.py`, `py/routes/misc_routes.py`, `PriceAlertsHandler` in `py/routes/handlers/misc_handlers.py` |
+| Third bell tab, panel skeleton, segments, three states | `templates/components/modals/update_modal.html`, `static/css/components/modal/update-modal.css` |
+| Loader, renderer, unread watermark, badge, `openPriceAlertsPanel()` | `static/js/managers/UpdateService.js` |
+| Entry points (controls dropdown + global context menu, count in the label) | `templates/components/controls.html`, `static/js/components/controls/PageControls.js`, `templates/components/context_menu.html`, `static/js/components/ContextMenu/GlobalContextMenu.js` |
+
+Deviations and decisions made while implementing:
+
+* **`became_free` is reported even while price tracking is off.** It needs no price data, so the
+  panel shows the "tracking is off" explanation *and* whatever became free instead of hiding the
+  half of the feature that already works.
+* **`price_alert_since` is also set on first sight** of an already-cheap version. The toast stays
+  silent (edge-triggered, §10.3), but the count is non-zero, which is what invites the user into the
+  panel after enabling the feature.
+* **The per-type frontend client method was removed** (`baseModelApi.getPriceAlerts` and the
+  `priceAlerts` entry in `apiConfig.js`): with the global endpoint it was dead code. The per-type
+  **backend** route stays for the companion extension and a possible future grid filter.
+* **`openPriceAlertsTab()` exists because `toggleUpdateModal()` closes an open bell** — an entry
+  point calling it unconditionally would dismiss the modal instead of switching tabs.
+* **Local context uses the existing indexes** (`cache.model_id_index` for `model_name`,
+  `cache.version_index` for `file_path`/`file_name`), so it is O(1) per row; every failure just
+  omits the fields and the row loses its "Open" button.
+
+Verification: `pytest` 3652 passed / 7 skipped, `npm run test:js` 1444 passed, plus a sandboxed
+standalone server run that seeded the update DB and confirmed the payload shape, the `kind`
+split, the `civitaiUrl`, and that changing `price_alert_threshold_buzz` through `POST /api/lm/settings`
+changes panel membership immediately with no refresh.

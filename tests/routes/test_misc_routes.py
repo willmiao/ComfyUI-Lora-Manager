@@ -6,7 +6,7 @@ import subprocess
 import zipfile
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import patch, MagicMock
+from unittest.mock import AsyncMock, patch, MagicMock
 
 import pytest
 from aiohttp import web
@@ -16,6 +16,8 @@ from py.routes.handlers import misc_handlers
 from py.routes.handlers.misc_handlers import (
     BackupHandler,
     DoctorHandler,
+    MiscHandlerSet,
+    PriceAlertsHandler,
     FileSystemHandler,
     HealthCheckHandler,
     LoraCodeHandler,
@@ -2865,3 +2867,220 @@ async def test_sidecar_migration_handler_relocate_root_requires_old_root():
     assert response.status == 400
     assert "old_root" in payload["error"]
     assert use_case.calls == []
+
+
+# --- Global price alerts panel endpoint -------------------------------------
+
+
+class _AnyHandler:
+    def __getattr__(self, _name):
+        return lambda request: None
+
+
+def _stub_misc_handler_set(**overrides) -> MiscHandlerSet:
+    names = (
+        "health",
+        "settings",
+        "usage_stats",
+        "lora_code",
+        "trained_words",
+        "model_examples",
+        "node_registry",
+        "model_library",
+        "metadata_archive",
+        "backup",
+        "filesystem",
+        "custom_words",
+        "wildcards",
+        "supporters",
+        "doctor",
+        "example_workflows",
+        "base_model",
+        "price_alerts",
+        "model_source_handler",
+        "agent_handler",
+        "download_routing",
+        "sidecar_migration",
+    )
+    handlers = {name: _AnyHandler() for name in names}
+    handlers.update(overrides)
+    return MiscHandlerSet(**handlers)
+
+
+def test_every_misc_route_definition_resolves_to_a_handler():
+    """A route added to the table without a mapping entry 500s only on a live
+    server, so assert the whole table resolves here."""
+
+    mapping = _stub_misc_handler_set().to_route_mapping()
+
+    assert [
+        definition.handler_name
+        for definition in MISC_ROUTE_DEFINITIONS
+        if definition.handler_name not in mapping
+    ] == []
+
+
+def test_price_alerts_route_is_registered_once_app_wide():
+    definitions = [
+        definition
+        for definition in MISC_ROUTE_DEFINITIONS
+        if definition.handler_name == "get_price_alerts"
+    ]
+
+    # Exactly one entry, and no {prefix}: the panel spans every model type.
+    assert len(definitions) == 1
+    assert definitions[0].method == "GET"
+    assert definitions[0].path == "/api/lm/price-alerts"
+
+
+def _price_alerts_adapter(update_service, scanners=None):
+    async def _unused_scanner():
+        raise AssertionError("scanner should not be requested in this test")
+
+    async def _get_scanner():
+        return scanners
+
+    return ServiceRegistryAdapter(
+        get_lora_scanner=_get_scanner,
+        get_checkpoint_scanner=_unused_scanner,
+        get_embedding_scanner=_unused_scanner,
+        get_downloaded_version_history_service=_unused_scanner,
+        get_model_update_service=AsyncMock(return_value=update_service),
+    )
+
+
+class _FakeUpdateService:
+    def __init__(self, alerts):
+        self.alerts = alerts
+        self.calls = []
+
+    async def get_price_alerts(self, model_type=None, *, threshold_buzz=None, limit=200):
+        self.calls.append((model_type, threshold_buzz, limit))
+        return [dict(alert) for alert in self.alerts]
+
+    def newest_price_checked_at(self):
+        return 1791039694.5
+
+
+@pytest.mark.asyncio
+async def test_price_alerts_handler_returns_the_global_list():
+    update_service = _FakeUpdateService(
+        [
+            {
+                "modelId": 2981320,
+                "modelType": "checkpoint",
+                "versionId": 3379626,
+                "kind": "below_threshold",
+                "priceBuzz": 250,
+            }
+        ]
+    )
+    settings = DummySettings(
+        {
+            "price_tracking_enabled": True,
+            "price_alert_threshold_buzz": 300,
+            "civitai_host": "civitai.com",
+        }
+    )
+    handler = PriceAlertsHandler(
+        settings_service=settings,
+        service_registry=_price_alerts_adapter(update_service),
+    )
+
+    response = await handler.get_price_alerts(
+        FakeRequest(method="GET", query={"limit": "50"})  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    assert payload["enabled"] is True
+    assert payload["thresholdBuzz"] == 300
+    assert payload["newestCheckedAt"] == 1791039694.5
+    assert payload["alerts"][0]["civitaiUrl"] == (
+        "https://civitai.com/models/2981320?modelVersionId=3379626"
+    )
+    # All model types in one call, with the threshold resolved from settings.
+    assert update_service.calls == [(None, 300, 50)]
+
+
+@pytest.mark.asyncio
+async def test_price_alerts_handler_decorates_local_context():
+    update_service = _FakeUpdateService(
+        [
+            {
+                "modelId": 1,
+                "modelType": "lora",
+                "versionId": 12,
+                "kind": "below_threshold",
+                "priceBuzz": 250,
+            }
+        ]
+    )
+    cache = SimpleNamespace(
+        model_id_index={1: [{"model_name": "Glorious Art", "file_name": "glorious.safetensors"}]},
+        version_index={12: {"file_path": "/models/loras/glorious.safetensors", "file_name": "glorious.safetensors"}},
+    )
+
+    class _Scanner:
+        async def get_cached_data(self):
+            return cache
+
+    async def _get_scanner():
+        return _Scanner()
+
+    adapter = ServiceRegistryAdapter(
+        get_lora_scanner=_get_scanner,
+        get_checkpoint_scanner=_get_scanner,
+        get_embedding_scanner=_get_scanner,
+        get_downloaded_version_history_service=_get_scanner,
+        get_model_update_service=AsyncMock(return_value=update_service),
+    )
+    handler = PriceAlertsHandler(
+        settings_service=DummySettings({"civitai_host": "civitai.red"}),
+        service_registry=adapter,
+    )
+
+    response = await handler.get_price_alerts(
+        FakeRequest(method="GET")  # pyright: ignore[reportArgumentType]
+    )
+    alert = _json_payload(response)["alerts"][0]
+
+    assert alert["modelName"] == "Glorious Art"
+    assert alert["filePath"] == "/models/loras/glorious.safetensors"
+    assert alert["civitaiUrl"].startswith("https://civitai.red/models/1")
+
+
+@pytest.mark.asyncio
+async def test_price_alerts_handler_survives_a_cold_scanner_cache():
+    """Local context is best-effort: the panel must still render."""
+
+    update_service = _FakeUpdateService(
+        [{"modelId": 1, "modelType": "lora", "versionId": 12, "kind": "became_free"}]
+    )
+
+    async def _broken_scanner():
+        raise RuntimeError("scanner not ready")
+
+    adapter = ServiceRegistryAdapter(
+        get_lora_scanner=_broken_scanner,
+        get_checkpoint_scanner=_broken_scanner,
+        get_embedding_scanner=_broken_scanner,
+        get_downloaded_version_history_service=_broken_scanner,
+        get_model_update_service=AsyncMock(return_value=update_service),
+    )
+    handler = PriceAlertsHandler(
+        settings_service=DummySettings(), service_registry=adapter
+    )
+
+    response = await handler.get_price_alerts(
+        FakeRequest(method="GET")  # pyright: ignore[reportArgumentType]
+    )
+    payload = _json_payload(response)
+
+    assert response.status == 200
+    assert payload["success"] is True
+    # Tracking is off in this fixture, so the panel explains itself.
+    assert payload["enabled"] is False
+    assert "modelName" not in payload["alerts"][0]
+    assert "filePath" not in payload["alerts"][0]

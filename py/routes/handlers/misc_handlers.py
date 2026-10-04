@@ -48,6 +48,7 @@ from ...services.cache_health_monitor import CacheHealthMonitor, CacheHealthStat
 from ...services.use_cases.sidecar_migration_use_case import SidecarMigrationUseCase
 from ...services.websocket_progress_callback import WebSocketBroadcastCallback
 from ...utils.models import BaseModelMetadata
+from ...utils.civitai_utils import build_civitai_model_page_url
 from ...utils.constants import (
     CIVITAI_USER_MODEL_TYPES,
     DEFAULT_NODE_COLOR,
@@ -2241,6 +2242,11 @@ class ServiceRegistryAdapter:
     get_downloaded_version_history_service: Callable[[], Awaitable[Any]]
     get_backup_service: Callable[[], Awaitable[Any]] = _noop_backup_service
     get_other_scanner: Callable[[], Awaitable[Any]] = ServiceRegistry.get_other_scanner
+    # Shared across model types (the update DB is per library), which is what lets
+    # the global price-alerts endpoint cover every type in one query.
+    get_model_update_service: Callable[[], Awaitable[Any]] = (
+        ServiceRegistry.get_model_update_service
+    )
 
 
 class ModelLibraryHandler:
@@ -4313,6 +4319,149 @@ class SidecarMigrationHandler:
             return web.json_response({"success": False, "error": str(exc)}, status=500)
 
 
+class PriceAlertsHandler:
+    """Data for the global Buzz price-alerts panel.
+
+    App-wide on purpose: the update DB is one file per library shared by every
+    model type, and ``ServiceRegistry.get_model_update_service()`` hands out one
+    instance, so the whole panel is a single query. Registered once (see
+    ``MISC_ROUTE_DEFINITIONS``) rather than once per model type.
+    """
+
+    # Model type -> adapter attribute, for the best-effort local name/path lookup.
+    _SCANNER_ATTRS = {
+        "lora": "get_lora_scanner",
+        "checkpoint": "get_checkpoint_scanner",
+        "embedding": "get_embedding_scanner",
+        "other": "get_other_scanner",
+    }
+
+    def __init__(
+        self,
+        *,
+        settings_service,
+        service_registry: ServiceRegistryAdapter,
+    ) -> None:
+        self._settings = settings_service
+        self._service_registry = service_registry
+
+    def _setting(self, key: str, default: Any) -> Any:
+        if self._settings is None:
+            return default
+        try:
+            value = self._settings.get(key, default)
+        except Exception:
+            return default
+        return default if value is None else value
+
+    async def get_price_alerts(self, request: web.Request) -> web.Response:
+        """Versions under the alert threshold, plus the ones that became free.
+
+        GET with an optional ``limit`` so the companion extension can call it too.
+        """
+
+        try:
+            limit = int(request.query.get("limit") or 200)
+        except (TypeError, ValueError):
+            limit = 200
+
+        threshold = 0
+        try:
+            threshold = max(0, int(self._setting("price_alert_threshold_buzz", 0)))
+        except (TypeError, ValueError):
+            threshold = 0
+
+        try:
+            update_service = await self._service_registry.get_model_update_service()
+        except Exception as exc:  # pragma: no cover - defensive
+            logger.error("Price alerts unavailable: %s", exc, exc_info=True)
+            return web.json_response(
+                {"success": False, "error": "Update service unavailable"}, status=503
+            )
+
+        try:
+            alerts = await update_service.get_price_alerts(
+                None, threshold_buzz=threshold, limit=limit
+            )
+            newest_checked_at = update_service.newest_price_checked_at()
+        except Exception as exc:
+            logger.error("Failed to load price alerts: %s", exc, exc_info=True)
+            return web.json_response(
+                {"success": False, "error": str(exc)}, status=500
+            )
+
+        await self._decorate_local_context(alerts)
+
+        civitai_host = self._setting("civitai_host", "civitai.com")
+        for alert in alerts:
+            alert["civitaiUrl"] = build_civitai_model_page_url(
+                alert.get("modelId"),
+                alert.get("versionId"),
+                host=civitai_host,
+            )
+
+        return web.json_response(
+            {
+                "success": True,
+                "enabled": bool(self._setting("price_tracking_enabled", False)),
+                "thresholdBuzz": threshold,
+                "newestCheckedAt": newest_checked_at,
+                "alerts": alerts,
+            }
+        )
+
+    async def _decorate_local_context(self, alerts: Sequence[Dict[str, Any]]) -> None:
+        """Attach ``modelName`` / ``filePath`` / ``fileName`` when the model is local.
+
+        Best-effort by design: the panel must render even when a scanner cache is
+        cold or a type is unavailable, so every failure just leaves the fields as
+        None and the UI hides the affordances that need them.
+        """
+
+        by_type: Dict[str, set] = {}
+        for alert in alerts:
+            model_type = alert.get("modelType")
+            model_id = alert.get("modelId")
+            if not model_type or model_id is None:
+                continue
+            by_type.setdefault(model_type, set()).add(model_id)
+
+        for model_type, model_ids in by_type.items():
+            attr = self._SCANNER_ATTRS.get(model_type)
+            scanner_getter = getattr(self._service_registry, attr, None) if attr else None
+            if scanner_getter is None:
+                continue
+            try:
+                scanner = await scanner_getter()
+                cache = await scanner.get_cached_data()
+            except Exception as exc:
+                logger.debug(
+                    "Skipping local context for %s price alerts: %s", model_type, exc
+                )
+                continue
+
+            model_index = getattr(cache, "model_id_index", None) or {}
+            version_index = getattr(cache, "version_index", None) or {}
+            for alert in alerts:
+                if alert.get("modelType") != model_type:
+                    continue
+                if alert.get("modelId") not in model_ids:
+                    continue
+
+                entries = model_index.get(alert.get("modelId")) or []
+                if entries and isinstance(entries[0], Mapping):
+                    first = entries[0]
+                    alert["modelName"] = first.get("model_name") or first.get(
+                        "file_name"
+                    )
+
+                version_entry = version_index.get(alert.get("versionId"))
+                if isinstance(version_entry, Mapping):
+                    alert["filePath"] = version_entry.get("file_path")
+                    alert["fileName"] = version_entry.get("file_name")
+                    alert.setdefault("modelName", version_entry.get("model_name"))
+
+
 class MiscHandlerSet:
     """Aggregate handlers into a lookup compatible with the registrar."""
 
@@ -4336,6 +4485,7 @@ class MiscHandlerSet:
         doctor: DoctorHandler,
         example_workflows: ExampleWorkflowsHandler,
         base_model: BaseModelHandlerSet,
+        price_alerts: PriceAlertsHandler,
         model_source_handler: Any = None,
         agent_handler: Any = None,
         download_routing: Any = None,
@@ -4358,6 +4508,7 @@ class MiscHandlerSet:
         self.doctor = doctor
         self.example_workflows = example_workflows
         self.base_model = base_model
+        self.price_alerts = price_alerts
         self.model_source_handler = model_source_handler
         self.agent_handler = agent_handler
         self.download_routing = download_routing
@@ -4371,6 +4522,7 @@ class MiscHandlerSet:
             "get_init_status": self.health.get_init_status,
             "get_settings": self.settings.get_settings,
             "update_settings": self.settings.update_settings,
+            "get_price_alerts": self.price_alerts.get_price_alerts,
             "get_doctor_diagnostics": self.doctor.get_doctor_diagnostics,
             "repair_doctor_cache": self.doctor.repair_doctor_cache,
             "resolve_doctor_filename_conflicts": self.doctor.resolve_filename_conflicts,
@@ -4447,4 +4599,5 @@ def build_service_registry_adapter() -> ServiceRegistryAdapter:
         get_other_scanner=ServiceRegistry.get_other_scanner,
         get_downloaded_version_history_service=ServiceRegistry.get_downloaded_version_history_service,
         get_backup_service=ServiceRegistry.get_backup_service,
+        get_model_update_service=ServiceRegistry.get_model_update_service,
     )

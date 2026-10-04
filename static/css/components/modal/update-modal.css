@@ -652,3 +652,167 @@
         margin-top: 5px;
     }
 }
+
+/* --- Buzz price alerts panel --------------------------------------------- */
+
+.price-alerts {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.price-alerts-disabled {
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--lora-surface);
+    padding: var(--space-2);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    align-items: flex-start;
+}
+
+.price-alerts-disabled-text {
+    margin: 0;
+    color: var(--text-color);
+    opacity: 0.85;
+    font-size: 0.9rem;
+}
+
+.price-alerts-settings-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: 0.4rem 0.7rem;
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--card-bg, #fff);
+    color: var(--text-color);
+    cursor: pointer;
+}
+
+.price-alerts-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.price-alerts-segments {
+    display: inline-flex;
+    gap: var(--space-1);
+}
+
+.price-alerts-segment {
+    padding: 0.35rem 0.65rem;
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--lora-surface);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.85rem;
+}
+
+.price-alerts-segment.active {
+    background: var(--lora-accent, #845ef7);
+    border-color: var(--lora-accent, #845ef7);
+    color: #fff;
+}
+
+.price-alerts-threshold {
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.price-alerts-note {
+    margin: 0;
+    font-size: 0.8rem;
+    opacity: 0.75;
+}
+
+.price-alerts-empty {
+    margin: var(--space-2) 0 0;
+    opacity: 0.7;
+    font-size: 0.9rem;
+}
+
+.price-alerts-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    max-height: 46vh;
+    overflow-y: auto;
+}
+
+.price-alert-item {
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    padding: var(--space-2);
+    background: var(--card-bg, #fff);
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.price-alert-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.price-alert-model {
+    font-weight: 600;
+}
+
+.price-alert-price {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+}
+
+.price-alert-price.is-alert {
+    color: #2b8a3e;
+}
+
+[data-theme="dark"] .price-alert-price.is-alert {
+    color: #69db7c;
+}
+
+.price-alert-was {
+    text-decoration: line-through;
+    opacity: 0.6;
+    font-weight: 400;
+    margin-left: 0.35rem;
+}
+
+.price-alert-meta {
+    font-size: 0.8rem;
+    opacity: 0.75;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.price-alert-actions {
+    display: flex;
+    gap: var(--space-1);
+    flex-wrap: wrap;
+}
+
+.price-alert-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.25rem 0.55rem;
+    border: 1px solid var(--lora-border);
+    border-radius: var(--border-radius-sm);
+    background: var(--lora-surface);
+    color: var(--text-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+}

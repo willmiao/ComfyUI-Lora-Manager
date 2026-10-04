@@ -234,6 +234,9 @@
         },
         "groupByModel": {
             "label": "按模型分組"
+        },
+        "priceAlerts": {
+            "label": "[TODO: Translate] Price alerts"
         }
     },
     "header": {
@@ -942,7 +945,9 @@
                 "action": "更新",
                 "menuLabel": "顯示更新選項",
                 "check": "檢查更新",
-                "checkTooltip": "檢查更新可能耗時。"
+                "checkTooltip": "檢查更新可能耗時。",
+                "priceAlerts": "[TODO: Translate] Price alerts",
+                "priceAlertsTooltip": "[TODO: Translate] Buzz price alerts for paid versions"
             }
         },
         "bulkOperations": {
@@ -2321,7 +2326,8 @@
         "notificationsTitle": "通知中心",
         "tabs": {
             "updates": "更新",
-            "messages": "訊息"
+            "messages": "訊息",
+            "priceAlerts": "[TODO: Translate] Price Alerts"
         },
         "updateAvailable": "有新版本可用",
         "noChangelogAvailable": "無詳細更新日誌。請至 GitHub 查看更多資訊。",
@@ -2377,6 +2383,32 @@
             "shown": "{time} 顯示",
             "dismissed": "{time} 關閉",
             "active": "仍在顯示"
+        },
+        "priceAlerts": {
+            "disabled": "[TODO: Translate] CivitAI does not publish prices in its public API, so prices are read from the model page. Turn on price tracking to see them here.",
+            "openSettings": "[TODO: Translate] Open settings",
+            "segmentsLabel": "[TODO: Translate] Alert kind",
+            "segments": {
+                "belowThreshold": "[TODO: Translate] Under threshold",
+                "becameFree": "[TODO: Translate] Became free"
+            },
+            "thresholdLabel": "[TODO: Translate] Alert threshold: {buzz} Buzz",
+            "empty": "[TODO: Translate] Nothing is under your price threshold right now.",
+            "emptyFree": "[TODO: Translate] No version has become free yet.",
+            "loadFailed": "[TODO: Translate] Could not refresh the alerts; showing the last known list.",
+            "lastChecked": "[TODO: Translate] Prices last checked {when}",
+            "justNow": "[TODO: Translate] just now",
+            "minutesAgo": "[TODO: Translate] {count} min ago",
+            "hoursAgo": "[TODO: Translate] {count} h ago",
+            "daysAgo": "[TODO: Translate] {count} d ago",
+            "freeNow": "[TODO: Translate] Free now",
+            "blueBuzz": "[TODO: Translate] Blue Buzz OK",
+            "earlyAccessUntil": "[TODO: Translate] Early access until {date}",
+            "inLibrary": "[TODO: Translate] In library",
+            "notInLibrary": "[TODO: Translate] Not in library",
+            "droppedAgo": "[TODO: Translate] dropped {when}",
+            "openCivitai": "[TODO: Translate] Open on CivitAI",
+            "openLocal": "[TODO: Translate] Open"
         }
     },
     "support": {
