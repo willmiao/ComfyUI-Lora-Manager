@@ -2024,6 +2024,20 @@ async def test_failed_price_attempt_is_not_retried_within_the_ttl(tmp_path):
 
 
 @pytest.mark.asyncio
+async def test_priced_count_reports_known_prices(tmp_path):
+    service = _price_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    assert service.count_priced_versions("lora") == 0
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    assert service.count_priced_versions("lora") == 1
+    assert service.count_priced_versions("checkpoint") == 0
+
+
+@pytest.mark.asyncio
 async def test_forced_refresh_reprices_within_the_ttl(tmp_path):
     service = _long_ttl_service(tmp_path, price_tracking_enabled=True)
     scanner = DummyScanner(LOCAL_RAW_DATA)

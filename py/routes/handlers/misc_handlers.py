@@ -4385,6 +4385,7 @@ class PriceAlertsHandler:
             )
             newest_checked_at = update_service.newest_price_checked_at()
             unavailable_count = update_service.count_unavailable_prices()
+            priced_count = update_service.count_priced_versions()
         except Exception as exc:
             logger.error("Failed to load price alerts: %s", exc, exc_info=True)
             return web.json_response(
@@ -4410,6 +4411,9 @@ class PriceAlertsHandler:
                 # Gated versions whose price could not be read (mature models
                 # are served only by the challenged civitai.red host).
                 "unavailableCount": unavailable_count,
+                # Lets the empty state explain a 0 Buzz threshold instead of
+                # claiming there is simply nothing to show.
+                "pricedCount": priced_count,
                 "alerts": alerts,
             }
         )

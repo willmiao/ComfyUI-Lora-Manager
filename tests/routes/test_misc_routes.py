@@ -2950,10 +2950,11 @@ def _price_alerts_adapter(update_service, scanners=None):
 
 
 class _FakeUpdateService:
-    def __init__(self, alerts, *, unavailable_count=0):
+    def __init__(self, alerts, *, unavailable_count=0, priced_count=0):
         self.alerts = alerts
         self.calls = []
         self.unavailable_count = unavailable_count
+        self.priced_count = priced_count
 
     async def get_price_alerts(self, model_type=None, *, threshold_buzz=None, limit=200):
         self.calls.append((model_type, threshold_buzz, limit))
@@ -2964,6 +2965,9 @@ class _FakeUpdateService:
 
     def count_unavailable_prices(self, model_type=None):
         return self.unavailable_count
+
+    def count_priced_versions(self, model_type=None):
+        return self.priced_count
 
 
 @pytest.mark.asyncio
@@ -3002,6 +3006,7 @@ async def test_price_alerts_handler_returns_the_global_list():
     assert payload["thresholdBuzz"] == 300
     assert payload["newestCheckedAt"] == 1791039694.5
     assert payload["unavailableCount"] == 0
+    assert payload["pricedCount"] == 0
     assert payload["alerts"][0]["civitaiUrl"] == (
         "https://civitai.com/models/2981320?modelVersionId=3379626"
     )

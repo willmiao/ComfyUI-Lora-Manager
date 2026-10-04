@@ -1362,6 +1362,36 @@ class ModelUpdateService:
             return None
         return float(row["newest"])
 
+    def count_priced_versions(self, model_type: Optional[str] = None) -> int:
+        """Versions with a known price, for the panel's empty state.
+
+        Without it, a user whose threshold is 0 sees "nothing is under your price
+        threshold" while dozens of paid versions already have a price.
+        """
+
+        params: List[Any] = []
+        type_filter = ""
+        if model_type:
+            type_filter = "AND s.model_type = ?"
+            params.append(model_type)
+
+        with self._connect() as conn:
+            row = conn.execute(
+                f"""
+                SELECT COUNT(*) AS priced
+                FROM model_update_versions v
+                JOIN model_update_status s ON s.model_id = v.model_id
+                WHERE v.should_ignore = 0
+                  AND s.should_ignore_model = 0
+                  {type_filter}
+                  AND v.price_buzz IS NOT NULL
+                """,
+                tuple(params),
+            ).fetchone()
+        if row is None:
+            return 0
+        return int(row["priced"])
+
     def count_unavailable_prices(self, model_type: Optional[str] = None) -> int:
         """Gated versions whose price we tried to read and could not.
 

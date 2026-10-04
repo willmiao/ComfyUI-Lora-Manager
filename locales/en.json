@@ -2411,7 +2411,8 @@
       "droppedAgo": "dropped {when}",
       "openCivitai": "Open on CivitAI",
       "openLocal": "Open",
-      "unavailable": "{count} paid version(s) have no readable price (mature models can only be read in a browser)"
+      "unavailable": "{count} paid version(s) have no readable price (mature models can only be read in a browser)",
+      "emptyZeroThreshold": "{count} paid version(s) have a known price, but your threshold is 0 Buzz so only free versions are listed. Set a threshold in Settings - Library to catch price drops."
     }
   },
   "support": {

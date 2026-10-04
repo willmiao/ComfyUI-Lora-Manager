@@ -29,7 +29,8 @@ async function fetchPriceAlerts(limit = 200) {
         enabled: payload.enabled === true,
         thresholdBuzz: payload.thresholdBuzz ?? 0,
         newestCheckedAt: payload.newestCheckedAt ?? null,
-        unavailableCount: payload.unavailableCount ?? 0
+        unavailableCount: payload.unavailableCount ?? 0,
+        pricedCount: payload.pricedCount ?? 0
     };
 }
 
@@ -114,6 +115,7 @@ export class UpdateService {
         this.priceAlertsThreshold = 0;
         this.priceAlertsNewestCheckedAt = null;
         this.priceAlertsUnavailableCount = 0;
+        this.priceAlertsPricedCount = 0;
         this.priceAlertsLoading = false;
         this.priceAlertSegment = 'below_threshold';
         this.unreadPriceAlertCount = 0;
@@ -407,6 +409,7 @@ export class UpdateService {
             this.priceAlertsThreshold = payload.thresholdBuzz;
             this.priceAlertsNewestCheckedAt = payload.newestCheckedAt;
             this.priceAlertsUnavailableCount = payload.unavailableCount || 0;
+            this.priceAlertsPricedCount = payload.pricedCount || 0;
             this.refreshUnreadPriceAlertCount();
             this.renderPriceAlerts();
             return this.priceAlerts;
@@ -512,17 +515,7 @@ export class UpdateService {
 
         list.innerHTML = '';
         if (!alerts.length) {
-            empty.textContent = this.priceAlertSegment === 'became_free'
-                ? translate(
-                      'update.priceAlerts.emptyFree',
-                      {},
-                      'No version has become free yet.'
-                  )
-                : translate(
-                      'update.priceAlerts.empty',
-                      {},
-                      'Nothing is under your price threshold right now.'
-                  );
+            empty.textContent = this.buildPriceAlertsEmptyText();
             empty.classList.remove('hidden');
             return;
         }
@@ -531,6 +524,33 @@ export class UpdateService {
         alerts.forEach((alert) => {
             list.appendChild(this.buildPriceAlertItem(alert));
         });
+    }
+
+    /**
+     * The empty state has to explain a 0 Buzz threshold: "nothing is under your
+     * threshold" is technically true but useless when dozens of paid versions
+     * already have a known price.
+     */
+    buildPriceAlertsEmptyText() {
+        if (this.priceAlertSegment === 'became_free') {
+            return translate(
+                'update.priceAlerts.emptyFree',
+                {},
+                'No version has become free yet.'
+            );
+        }
+        if (!this.priceAlertsThreshold && this.priceAlertsPricedCount > 0) {
+            return translate(
+                'update.priceAlerts.emptyZeroThreshold',
+                { count: this.priceAlertsPricedCount },
+                `${this.priceAlertsPricedCount} paid version(s) have a known price, but your threshold is 0 Buzz so only free versions are listed. Set a threshold in Settings - Library to catch price drops.`
+            );
+        }
+        return translate(
+            'update.priceAlerts.empty',
+            {},
+            'Nothing is under your price threshold right now.'
+        );
     }
 
     buildPriceAlertItem(alert) {

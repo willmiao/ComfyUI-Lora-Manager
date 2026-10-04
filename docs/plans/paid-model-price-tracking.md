@@ -671,3 +671,15 @@ a price-only pass cannot silently extend the metadata TTL. Two related semantics
 Verified by copying a real instance's update DB into a sandbox and running a non-forced check:
 `bulk metadata fetches: 0` (version lists came entirely from cache) while priced versions went
 **1 → 20** and the panel listed 19 alerts.
+
+### 11.12 The empty state has to explain a 0 Buzz threshold
+
+The default threshold is 0 ("only tell me when a version becomes free"), and the settings copy says
+so. The panel did not: a real instance with **52 priced paid versions** and an untouched threshold
+showed "Nothing is under your price threshold right now" plus a small "Alert threshold: 0 Buzz" in
+the corner, which reads as "the feature is broken".
+
+The empty state is now threshold-aware, using a new `pricedCount` in the payload: when the threshold
+is 0 and prices are known, it says how many paid versions have a price and where to set a threshold.
+The read-time threshold comparison means changing it takes effect immediately — no re-check needed
+(measured on a copy of that instance's DB: 0 Buzz -> 0 alerts, 100 -> 44, 500 -> 48, 5000 -> 51).

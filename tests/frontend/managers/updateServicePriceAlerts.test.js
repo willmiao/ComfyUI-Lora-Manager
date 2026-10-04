@@ -218,6 +218,36 @@ describe('UpdateService price alerts panel', () => {
         expect(note.textContent).toContain('3 paid version(s) have no readable price');
     });
 
+    it('explains a 0 Buzz threshold instead of claiming there is nothing', async () => {
+        // The exact confusion a real user hit: 52 priced versions, threshold 0,
+        // and an empty panel saying "nothing is under your threshold".
+        global.fetch = vi.fn().mockResolvedValue(
+            createFetchResponse(
+                alertPayload([], { thresholdBuzz: 0, pricedCount: 52 })
+            )
+        );
+
+        await service.loadPriceAlerts({ force: true });
+
+        const empty = document.getElementById('priceAlertsEmpty');
+        expect(empty.classList.contains('hidden')).toBe(false);
+        expect(empty.textContent).toContain('52 paid version(s) have a known price');
+        expect(empty.textContent).toContain('threshold is 0 Buzz');
+    });
+
+    it('keeps the plain empty message when a real threshold is set', async () => {
+        global.fetch = vi.fn().mockResolvedValue(
+            createFetchResponse(
+                alertPayload([], { thresholdBuzz: 500, pricedCount: 52 })
+            )
+        );
+
+        await service.loadPriceAlerts({ force: true });
+
+        const empty = document.getElementById('priceAlertsEmpty');
+        expect(empty.textContent).toBe('Nothing is under your price threshold right now.');
+    });
+
     it('keeps the last known list when the request fails', async () => {
         global.fetch = vi
             .fn()
