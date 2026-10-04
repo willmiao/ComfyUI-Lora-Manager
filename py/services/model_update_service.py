@@ -1472,16 +1472,33 @@ class ModelUpdateService:
         # Optional price capture. Runs after the version list is known so only the
         # models that actually carry a gate pay for a second (page) request, and
         # stays outside the lock along with the other network I/O.
+        #
+        # Deliberately independent of the metadata TTL: the cached record already
+        # carries the gate, so enabling price tracking (or letting the *price* TTL
+        # lapse) must not wait for the version list to go stale. Otherwise a user
+        # who turns the feature on prices only the handful of models that happened
+        # to need a metadata refresh that round.
+        priced_versions: Optional[List[ModelVersionRecord]] = None
+        price_candidates: Optional[Sequence[ModelVersionRecord]] = None
+        if refresh_succeeded and isinstance(fetched_versions, list) and fetched_versions:
+            price_candidates = fetched_versions
+        elif existing is not None and existing.versions:
+            price_candidates = existing.versions
+
         if (
-            refresh_succeeded
-            and isinstance(fetched_versions, list)
-            and fetched_versions
+            price_candidates
             and metadata_provider is not None
-            and self._should_fetch_prices(fetched_versions, existing)
-        ):
-            fetched_versions = await self._apply_model_prices(
-                metadata_provider, model_id, fetched_versions
+            and self._should_fetch_prices(
+                price_candidates, existing, force=force_refresh
             )
+        ):
+            price_candidates = await self._apply_model_prices(
+                metadata_provider, model_id, price_candidates
+            )
+            if refresh_succeeded and isinstance(fetched_versions, list):
+                fetched_versions = list(price_candidates)
+            else:
+                priced_versions = list(price_candidates)
 
         if fallback_attempted:
             if refresh_succeeded and isinstance(fetched_versions, list):
@@ -1547,6 +1564,11 @@ class ModelUpdateService:
                     local_base_models=local_base_models,
                 )
             else:
+                if priced_versions is not None and existing is not None:
+                    # Metadata came from the cache, but the prices did not: keep
+                    # them without touching last_checked_at, so the metadata TTL is
+                    # not silently extended by a price-only pass.
+                    existing = replace(existing, versions=priced_versions)
                 record = self._merge_with_local_versions(
                     existing,
                     normalized_local,
@@ -2187,6 +2209,8 @@ class ModelUpdateService:
         self,
         remote_versions: Sequence[ModelVersionRecord],
         existing: Optional[ModelUpdateRecord],
+        *,
+        force: bool = False,
     ) -> bool:
         """Whether this model needs a price fetch this round.
 
@@ -2194,10 +2218,18 @@ class ModelUpdateService:
         nothing. A stored price is refreshed once its TTL lapses, and immediately
         when the gate itself changed (a new end date or sale window is a reason to
         believe the price moved).
+
+        A *failed* attempt counts as an attempt: without that, a mature model whose
+        page no host will serve would be retried on every single update check.
+        ``force`` (the user asked explicitly) overrides the TTL.
         """
 
         if not self._price_tracking_enabled():
             return False
+        if force:
+            return any(
+                self._has_structural_gate(version) for version in remote_versions
+            )
 
         existing_map = (
             {version.version_id: version for version in existing.versions}
@@ -2213,9 +2245,10 @@ class ModelUpdateService:
             stored = existing_map.get(remote_version.version_id)
             if stored is None:
                 return True
-            if stored.price_checked_at is None:
+            anchor = stored.price_checked_at or stored.price_check_attempted_at
+            if anchor is None:
                 return True
-            if (now - stored.price_checked_at) >= ttl:
+            if (now - anchor) >= ttl:
                 return True
             if (stored.paid_access or None) != (remote_version.paid_access or None):
                 return True

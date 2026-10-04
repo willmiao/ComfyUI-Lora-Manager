@@ -652,3 +652,22 @@ Recorded options for mature models, deliberately **not** implemented:
 "convenience" — the page route is demonstrably unreliable (one host challenges non-browser clients,
 the other two hide mature models from anonymous visitors), so a supported field is the only way for
 any third-party tool to show prices for the models where creators monetize most.
+
+### 11.11 Price capture is independent of the metadata TTL
+
+Found in a real instance: after enabling price tracking, a normal "Check updates" captured exactly
+**one** price out of 718 models. The price capture only ran when the *version list* was re-fetched
+(`refresh_succeeded`), so it inherited the metadata TTL: with 24 h metadata and 24 h price TTLs, only
+the 6 models whose metadata happened to be stale were ever priced.
+
+The cached record already carries the gate, so the price pass now runs off whichever version list is
+available — freshly fetched or stored — and applies the result without touching `last_checked_at`, so
+a price-only pass cannot silently extend the metadata TTL. Two related semantics:
+
+* A **failed** attempt (`price_check_attempted_at`) satisfies the price TTL, so a mature model whose
+  page no host will serve is not retried on every single update check.
+* An explicitly **forced** check re-prices within the TTL (`_should_fetch_prices(..., force=True)`).
+
+Verified by copying a real instance's update DB into a sandbox and running a non-forced check:
+`bulk metadata fetches: 0` (version lists came entirely from cache) while priced versions went
+**1 → 20** and the panel listed 19 alerts.

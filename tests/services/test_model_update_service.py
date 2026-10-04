@@ -1373,6 +1373,9 @@ class FakeSettings:
     def get(self, key, default=None):
         return self._values.get(key, default)
 
+    def set(self, key, value):
+        self._values[key] = value
+
 
 class PriceProvider(DummyProvider):
     """DummyProvider that can also serve prices."""
@@ -1955,3 +1958,82 @@ async def test_unavailable_marker_clears_when_the_version_becomes_free(tmp_path)
 
     assert record.versions[0].price_check_attempted_at is None
     assert service.count_unavailable_prices("lora") == 0
+
+
+def _long_ttl_service(tmp_path, **settings):
+    """A service whose metadata TTL does not lapse during the test."""
+
+    return ModelUpdateService(
+        str(tmp_path / "updates.sqlite"),
+        ttl_seconds=86400,
+        settings_manager=FakeSettings(settings),
+    )
+
+
+@pytest.mark.asyncio
+async def test_prices_are_fetched_even_when_the_version_list_is_fresh(tmp_path):
+    """Enabling price tracking must not wait for the metadata TTL.
+
+    The cached record already carries the gate, so a fresh version list is no
+    reason to skip the price: otherwise turning the feature on prices only the
+    handful of models that happened to need a metadata refresh that round.
+    """
+
+    service = _long_ttl_service(tmp_path, price_tracking_enabled=False)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    assert provider.price_calls == 0
+    metadata_calls = provider.calls
+    checked_at_before = (await service.get_record("lora", 1)).last_checked_at
+
+    service._settings.set("price_tracking_enabled", True)
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    record = await service.get_record("lora", 1)
+    version = next(v for v in record.versions if v.version_id == 12)
+
+    # The version list came from the cache this round ...
+    assert provider.calls == metadata_calls
+    # ... and the price was captured anyway.
+    assert provider.price_calls == 1
+    assert version.price_buzz == 250
+    assert version.price_checked_at is not None
+    assert version.price_check_attempted_at is not None
+    # A price-only pass must not extend the metadata TTL.
+    assert record.last_checked_at == checked_at_before
+
+
+@pytest.mark.asyncio
+async def test_failed_price_attempt_is_not_retried_within_the_ttl(tmp_path):
+    """A mature model whose page no host will serve must not cost two requests
+    on every single update check."""
+
+    service = _long_ttl_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=None)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    assert provider.price_calls == 1
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+
+    assert provider.price_calls == 1
+    assert service.count_unavailable_prices("lora") == 1
+
+
+@pytest.mark.asyncio
+async def test_forced_refresh_reprices_within_the_ttl(tmp_path):
+    service = _long_ttl_service(tmp_path, price_tracking_enabled=True)
+    scanner = DummyScanner(LOCAL_RAW_DATA)
+    provider = PriceProvider(GATED_RESPONSE, prices=PRICE_PAYLOAD)
+
+    await service.refresh_for_model_type("lora", scanner, provider)
+    assert provider.price_calls == 1
+
+    await service.refresh_for_model_type(
+        "lora", scanner, provider, force_refresh=True
+    )
+
+    assert provider.price_calls == 2
